@@ -232,8 +232,10 @@ export default function AipSummaryTable({
                                     <DropdownMenuItem
                                         onClick={handlePrintPreview}
                                     >
-                                        <FileText className="mr-2 h-4 w-4 text-red-600" />{' '}
-                                        Print Preview
+                                        <div className="flex items-center">
+                                            <FileText className="mr-2 h-4 w-4" />
+                                            <span>Print Preview</span>
+                                        </div>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
