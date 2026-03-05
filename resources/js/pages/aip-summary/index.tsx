@@ -25,7 +25,7 @@ import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
 import DeleteDialog from '@/pages/aip-summary/delete-dialog';
 import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
 import { useAipColumns } from '@/pages/aip-summary/table/columns';
-import { exportToPrint } from '@/pages/aip-summary/utils/export-utils';
+// import { exportToPrint } from '@/pages/aip-summary/utils/export-utils';
 
 import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
 
@@ -98,9 +98,7 @@ export default function AipSummaryTable({
     aipEntries,
     masterPpas,
 }: AipSummaryTableProp) {
-    console.log(fiscalYear);
     console.log(aipEntries);
-    // console.log(masterPpas);
 
     const [searchValue, setSearchValue] = useState('');
     const [selectorState, setSelectorState] = useState({
@@ -120,20 +118,9 @@ export default function AipSummaryTable({
     ];
 
     const selectedEntry = useMemo(() => {
-        // console.log(selectedEntryId);
-        // console.log(!selectedEntryId);
-
         if (!selectedEntryId) return null;
-
-        // console.log(selectedEntryId);
-
-        // return findEntryInTree(aipEntries, selectedEntryId);
-        // console.log(findPpaInTree(aipEntries, selectedEntryId));
-
         return findPpaInTree(aipEntries, selectedEntryId);
     }, [aipEntries, selectedEntryId]);
-
-    // console.log(selectedEntry);
 
     const handleImportLibrary = () => {
         setSelectorState({
@@ -162,7 +149,6 @@ export default function AipSummaryTable({
     };
 
     const handleEdit = useCallback((entry) => {
-        // console.log(entry.id);
         setSelectedEntryId(entry.id);
         setIsEditOpen(true);
     }, []);

@@ -16,7 +16,7 @@ interface ExportToPdfDialogProps {
     fiscalYear: FiscalYear;
 }
 
-// This disables hyphenation globally
+// This disables hyphenation on wrap globally
 Font.registerHyphenationCallback((word) => [word]);
 
 export default function ExportToPdfDialog({
@@ -75,7 +75,7 @@ export default function ExportToPdfDialog({
         headerGroup: { flexDirection: 'column', padding: 0 },
     });
 
-    const getNestedValue = (obj, path) => {
+    const getNestedValue = (obj: Ppa, path: string) => {
         const value = path
             .split('.')
             .reduce((acc, part) => acc && acc[part], obj);
@@ -127,7 +127,9 @@ export default function ExportToPdfDialog({
             : value;
     };
 
-    const formatNumber = (value) => {
+    const formatNumber = (value: string) => {
+        // console.log(value);
+
         const num = parseFloat(value);
         // If it's null, undefined, NaN, or exactly 0, return "-"
         if (!value || isNaN(num) || num === 0) return '-';
@@ -138,7 +140,7 @@ export default function ExportToPdfDialog({
         }).format(num);
     };
 
-    const renderOrderedRows = (initialEntries) => {
+    const renderOrderedRows = (initialEntries: Ppa[]) => {
         console.log(initialEntries);
 
         const result = [];
@@ -242,7 +244,7 @@ export default function ExportToPdfDialog({
         return result;
     };
 
-    const MyDocument = ({ data }) => {
+    const MyDocument = ({ data }: { data: Ppa[] }) => {
         return (
             <Document>
                 <Page
@@ -551,7 +553,7 @@ export default function ExportToPdfDialog({
                         </View>
 
                         {/* data rows */}
-                        {renderOrderedRows(aipEntries)}
+                        {renderOrderedRows(data)}
 
                         <View
                             fixed
@@ -586,12 +588,14 @@ export default function ExportToPdfDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="m-0 h-full rounded-none p-0 pt-11 sm:max-w-full">
-                <DialogTitle className="sr-only">PDF Viewer</DialogTitle>
+            <DialogContent className="m-0 flex h-full flex-col gap-0 rounded-none p-0 sm:max-w-full">
+                <div className="p-4 pb-3">
+                    <DialogTitle>PDF Preview</DialogTitle>
 
-                <DialogDescription className="sr-only">
-                    Visual preview of the AIP Report.
-                </DialogDescription>
+                    <DialogDescription className="sr-only">
+                        Visual preview of the AIP Report.
+                    </DialogDescription>
+                </div>
 
                 <div className="h-full rounded-none bg-white sm:max-w-full">
                     <PDFViewer width="100%" height="100%" showToolbar={true}>

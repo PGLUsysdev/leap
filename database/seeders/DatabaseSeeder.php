@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\FundingSource;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -67,6 +68,8 @@ class DatabaseSeeder extends Seeder
             PpmpCategorySeeder::class,
             PpmpPriceListSeeder::class,
             PpmpSeeder::class,
+
+            FundingSourceSeeder::class,
         ]);
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');

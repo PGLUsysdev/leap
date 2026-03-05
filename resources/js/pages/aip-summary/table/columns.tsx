@@ -2,21 +2,24 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { Plus, Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Ppa, AipEntry } from '@/pages/types/types';
+import { Ppa } from '@/pages/types/types';
 
 export const formatNumber = (val: string) => {
     const num = parseFloat(val);
-    return isNaN(num)
-        ? '0.00'
-        : num.toLocaleString(undefined, {
+
+    return num
+        ? num.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
-          });
+          })
+        : '-';
 };
 
 export const formatDate = (dateString: string) => {
     if (!dateString) return '';
+
     const date = new Date(dateString);
+
     if (isNaN(date.getTime())) return dateString;
 
     const months = [
@@ -40,9 +43,9 @@ export const formatDate = (dateString: string) => {
 };
 
 interface ColumnActions {
-    onAddEntry: (entry: Ppa) => void; // Changed from Ppa
-    onEdit: (entry: AipEntry) => void; // Changed from Ppa
-    onDelete: (entry: AipEntry) => void; // Changed from Ppa
+    onAddEntry: (entry: Ppa) => void;
+    onEdit: (entry: Ppa) => void;
+    onDelete: (entry: Ppa) => void;
     masterPpas: Ppa[];
 }
 
@@ -105,7 +108,7 @@ export const getColumns = ({
             </div>
         ),
     }),
-    columnHelper.accessor('office.name', {
+    columnHelper.accessor('office.acronym', {
         header: 'Implementing Office/Department',
         size: 500,
         cell: (info) => (
@@ -136,38 +139,49 @@ export const getColumns = ({
             </div>
         ),
     }),
+    columnHelper.accessor('aip_entry.funding_source.title', {
+        header: 'Funding Source',
+        cell: (info) => {
+            const value = info.getValue();
+
+            if (value === undefined)
+                return <span className="bg-yellow items-center">-</span>;
+
+            return value;
+        },
+    }),
     columnHelper.group({
         header: 'Amount (in thousand pesos)',
         columns: [
             columnHelper.accessor('aip_entry.ps_amount', {
                 header: () => <div className="text-right">PS</div>,
-                cell: (i) => (
+                cell: (info) => (
                     <span className="block text-right">
-                        {formatNumber(i.getValue())}
+                        {formatNumber(info.getValue())}
                     </span>
                 ),
             }),
             columnHelper.accessor('aip_entry.mooe_amount', {
                 header: () => <div className="text-right">MOOE</div>,
-                cell: (i) => (
+                cell: (info) => (
                     <span className="block text-right">
-                        {formatNumber(i.getValue())}
+                        {formatNumber(info.getValue())}
                     </span>
                 ),
             }),
             columnHelper.accessor('aip_entry.fe_amount', {
                 header: () => <div className="text-right">FE</div>,
-                cell: (i) => (
+                cell: (info) => (
                     <span className="block text-right">
-                        {formatNumber(i.getValue())}
+                        {formatNumber(info.getValue())}
                     </span>
                 ),
             }),
             columnHelper.accessor('aip_entry.co_amount', {
                 header: () => <div className="text-right">CO</div>,
-                cell: (i) => (
+                cell: (info) => (
                     <span className="block text-right">
-                        {formatNumber(i.getValue())}
+                        {formatNumber(info.getValue())}
                     </span>
                 ),
             }),
@@ -175,9 +189,6 @@ export const getColumns = ({
                 id: 'amount.total',
                 header: () => <div className="text-right">Total</div>,
                 cell: ({ row }) => {
-                    // console.log(row.original);
-
-                    // const amount = row.original;
                     const total =
                         parseFloat(row.original.aip_entry?.ps_amount || '0') +
                         parseFloat(row.original.aip_entry?.mooe_amount || '0') +
@@ -215,16 +226,12 @@ export const getColumns = ({
     }),
     columnHelper.display({
         id: 'actions',
-        // enableHiding: false,
-        // enablePinning: true,
         size: 116,
         cell: ({ row }) => {
             const entry = row.original;
             const ppaId = entry.aip_entry?.ppa_id;
             const masterNode = ppaId ? findPpaInTree(masterPpas, ppaId) : null;
             const isSubActivity = masterNode?.type === 'Sub-Activity';
-
-            // console.log(entry);
 
             return (
                 <div className="flex justify-between">

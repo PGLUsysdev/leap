@@ -37,10 +37,9 @@ class AipEntryController extends Controller
                 ->with([
                     'office',
                     'parent',
-                    'aipEntry' => fn($q) => $q->where(
-                        'fiscal_year_id',
-                        $yearId,
-                    ),
+                    'aipEntry' => fn($q) => $q
+                        ->where('fiscal_year_id', $yearId)
+                        ->with('fundingSource'),
                     'children' => $loadAipTree,
                 ]);
         };
@@ -51,7 +50,7 @@ class AipEntryController extends Controller
         return Inertia::render('aip-summary/index', [
             'fiscalYear' => $fiscalYear,
             'aipEntries' => $aipEntries,
-            
+
             'masterPpas' => $ppaMasterList,
             'offices' => $offices,
             'chartOfAccounts' => ChartOfAccount::all(),

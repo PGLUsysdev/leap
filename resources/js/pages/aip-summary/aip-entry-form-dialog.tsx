@@ -221,16 +221,13 @@ export default function AipEntryFormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            {/* <DialogContent className="max-h-[90vh] max-w-full overflow-y-auto sm:max-w-4xl lg:max-w-5xl"> */}
-            <DialogContent className="sm:max-w-[70rem]">
+            <DialogContent className="h-[90vh] sm:max-w-[90vw]">
                 <DialogHeader>
                     <DialogTitle>Edit AIP Entry</DialogTitle>
-                    <DialogDescription>
-                        {/* Modify the details for this program/project allocation. */}
-                    </DialogDescription>
+                    <DialogDescription></DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="h-120">
+                <ScrollArea className="min-h-0 flex-1">
                     <Form {...form}>
                         <form
                             id="aip-entry-form"
@@ -829,7 +826,7 @@ export default function AipEntryFormDialog({
                     </Form>
                 </ScrollArea>
 
-                <DialogFooter>
+                <DialogFooter className="mt-auto flex-none shrink-0">
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}

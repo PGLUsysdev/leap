@@ -40,6 +40,11 @@ class AipEntry extends Model
         return $this->belongsTo(Ppa::class);
     }
 
+    public function fundingSource(): BelongsTo
+    {
+        return $this->belongsTo(FundingSource::class);
+    }
+
     public function itemizedCosts()
     {
         return $this->hasMany(PpaItemizedCost::class, 'aip_entry_id');

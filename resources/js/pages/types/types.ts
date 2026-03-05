@@ -5,6 +5,7 @@ export interface AipEntry {
     start_date: string;
     end_date: string;
     expected_output: string;
+    funding_source?: FundingSource;
     ps_amount: string;
     mooe_amount: string;
     fe_amount: string;
@@ -204,4 +205,15 @@ export interface AipSummary {
         ccet_adaptation: string | null;
         ccet_mitigation: string | null;
     };
+}
+
+export interface FundingSource {
+    id: number;
+    fund_type: string;
+    code: string;
+    title: string;
+    description: string;
+    allow_typhoon: string;
+    created_at: string | null;
+    updated_at: string | null;
 }
