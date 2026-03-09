@@ -20,6 +20,7 @@ use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpHeaderController;
 use App\Http\Controllers\PpmpItemController;
 use App\Http\Controllers\PpmpController;
+use App\Http\Controllers\FundingSourceController;
 
 Route::get(
     '/',
@@ -52,6 +53,22 @@ Route::prefix('aip/{fiscalYear}')->group(function () {
 Route::get('price-lists', [PpmpPriceListController::class, 'index'])->name(
     'price-lists.index',
 );
+
+// funding-source
+Route::get('funding-sources', [FundingSourceController::class, 'index'])->name(
+    'funding-sources.index',
+);
+Route::post('funding-sources', [FundingSourceController::class, 'store'])->name(
+    'funding-sources.store',
+);
+Route::patch('funding-sources/{fundingSource}', [
+    FundingSourceController::class,
+    'update',
+])->name('funding-sources.update');
+Route::delete('funding-sources/{fundingSource}', [
+    FundingSourceController::class,
+    'destroy',
+])->name('funding-sources.destroy');
 
 // ---
 

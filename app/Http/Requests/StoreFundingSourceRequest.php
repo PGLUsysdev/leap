@@ -11,7 +11,7 @@ class StoreFundingSourceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,11 @@ class StoreFundingSourceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'fund_type' => 'required|string',
+            'code' => 'required|string',
+            'title' => 'required|string',
+            'description' => 'nullable|string',
+            'allow_typhoon' => 'required|boolean',
         ];
     }
 }

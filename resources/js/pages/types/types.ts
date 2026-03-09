@@ -213,8 +213,8 @@ export interface FundingSource {
     fund_type: string;
     code: string;
     title: string;
-    description: string;
-    allow_typhoon: string;
+    description: string | null;
+    allow_typhoon: boolean;
     created_at: string | null;
     updated_at: string | null;
     pivot: {

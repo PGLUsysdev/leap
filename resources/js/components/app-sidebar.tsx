@@ -32,6 +32,11 @@ const mainNavItems: NavItem[] = [
         href: '/ppa',
         icon: FileText,
     },
+    {
+        title: 'Funding Sources',
+        href: '/funding-sources',
+        icon: FileText,
+    },
     // {
     //     title: 'PPMP Management',
     //     href: '/ppmp-headers',
