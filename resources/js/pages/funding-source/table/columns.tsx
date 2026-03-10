@@ -1,4 +1,4 @@
-import { ColumnDef, createColumnHelper, RowData } from '@tanstack/react-table';
+import { createColumnHelper, RowData } from '@tanstack/react-table';
 import { FundingSource } from '@/pages/types/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ declare module '@tanstack/table-core' {
 
 const columnHelper = createColumnHelper<FundingSource>();
 
-export const columns: ColumnDef<FundingSource, any>[] = [
+export const columns = [
     columnHelper.accessor('fund_type', {
         header: 'Fund Type',
         cell: (value) => <span className="text-wrap">{value.getValue()}</span>,

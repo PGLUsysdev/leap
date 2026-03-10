@@ -18,8 +18,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData> {
+    columns: ColumnDef<TData, any>[];
     data: TData[];
     onEdit?: (record: TData) => void;
     onDelete?: (record: TData) => void;
@@ -51,13 +51,13 @@ const getCommonPinningStyles = <TData,>(
     };
 };
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData>({
     columns,
     data,
     onEdit,
     onDelete,
     children,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState<any>([]);
 
     const table = useReactTable({

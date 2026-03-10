@@ -17,7 +17,7 @@ class PpmpPriceListController extends Controller
      */
     public function index()
     {
-        $priceList = PpmpPriceList::all();
+        $priceList = PpmpPriceList::with(['chartOfAccount', 'category'])->get();
         $chartOfAccounts = ChartOfAccount::all();
         $ppmpCategory = PpmpCategory::all();
 

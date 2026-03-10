@@ -1,119 +1,61 @@
-import { createColumnHelper } from '@tanstack/react-table'; // Added this import
-import { router } from '@inertiajs/react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, CheckCircle2, XCircle } from 'lucide-react';
-import { summary } from '@/routes/aip';
+import { createColumnHelper } from '@tanstack/react-table';
 import { PriceList } from '@/pages/types/types';
-import { update } from '@/routes/aip/index';
+import { Button } from '@/components/ui/button';
+import { Pencil, Trash } from 'lucide-react';
 
-// 1. Initialize the helper with your specific Data Type
 const columnHelper = createColumnHelper<PriceList>();
 
-// 2. Define columns using the helper methods
 export const columns = [
-    // Accessor Column
     columnHelper.accessor('item_number', {
         header: 'Item Number',
+        size: 100,
+        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
-
-    // Accessor Column with Custom Cell
     columnHelper.accessor('description', {
         header: 'Description',
+        size: 200,
+        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
     columnHelper.accessor('unit_of_measurement', {
         header: 'Unit of Measurement',
+        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
     columnHelper.accessor('price', {
-        header: 'Price',
+        header: () => (
+            <div className="pr-8 text-end">
+                <span>Price</span>
+            </div>
+        ),
+        cell: (value) => (
+            <div className="pr-8 text-end">
+                <span className="text-wrap tabular-nums">
+                    {value.getValue()}
+                </span>
+            </div>
+        ),
     }),
-    columnHelper.accessor('ppmp_category_id', {
+    columnHelper.accessor('category.name', {
         header: 'PPMP Category',
+        size: 200,
+        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
-    columnHelper.accessor('chart_of_account_id', {
+    columnHelper.accessor('chart_of_account.account_title', {
         header: 'Expense Account',
+        size: 300,
+        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
-
-    columnHelper.accessor('created_at', {
-        header: 'Created At',
-        cell: (info) => {
-            const value = info.getValue();
-
-            if (!value)
-                return <span className="text-muted-foreground">N/A</span>;
-
-            return new Date(value).toLocaleString('en-US', {
-                dateStyle: 'medium',
-                // timeStyle: 'short',
-            });
-        },
-    }),
-
-    columnHelper.accessor('updated_at', {
-        header: 'Updated At',
-        cell: (info) => {
-            const value = info.getValue();
-
-            if (!value)
-                return <span className="text-muted-foreground">N/A</span>;
-
-            return new Date(value).toLocaleString('en-US', {
-                dateStyle: 'medium',
-                // timeStyle: 'short',
-            });
-        },
-    }),
-
-    // Display Column (Actions)
     columnHelper.display({
-        id: 'actions',
-        cell: ({ row }) => {
-            const aip = row.original; // Access the full object
-
-            const handleStatusChange = (newStatus: string) => {
-                router.patch(update({ id: aip.id }), { status: newStatus });
-            };
-
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem
-                            onClick={() => router.visit(summary(aip.id).url)}
-                        >
-                            Open AIP Summary
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            disabled={aip.status === 'Open'}
-                            onClick={() => handleStatusChange('Open')}
-                        >
-                            Mark as Open
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            disabled={aip.status === 'Closed'}
-                            onClick={() => handleStatusChange('Closed')}
-                        >
-                            Mark as Closed
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            );
-        },
+        id: 'action',
+        size: 85,
+        cell: () => (
+            <div className="flex gap-0.5">
+                <Button size="icon">
+                    <Pencil />
+                </Button>
+                <Button size="icon" variant="destructive">
+                    <Trash />
+                </Button>
+            </div>
+        ),
     }),
 ];

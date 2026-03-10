@@ -1,18 +1,12 @@
-import * as React from 'react';
+import { useState, CSSProperties, ReactElement } from 'react';
 import {
+    Column,
     ColumnDef,
-    ColumnFiltersState,
-    SortingState,
-    // ExpandedState,
     flexRender,
     getCoreRowModel,
-    getFilteredRowModel,
-    getSortedRowModel,
-    getExpandedRowModel,
     useReactTable,
-    Column,
+    getFilteredRowModel,
 } from '@tanstack/react-table';
-import { CSSProperties } from 'react';
 import {
     Table,
     TableBody,
@@ -21,31 +15,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData> {
+    columns: ColumnDef<TData, any>[];
     data: TData[];
-    searchKey?: string;
-    searchValue?: string;
-    onSearchChange?: (value: string) => void;
-    getSubRows?: (originalRow: TData, index: number) => TData[] | undefined;
-    emptyMessage?: string;
+    children: ReactElement;
 }
-
-const PINNED_COLUMN_COLORS = {
-    header: {
-        background: 'var(--primary)',
-    },
-    cell: {
-        background: 'var(--background)',
-        evenBackground: 'var(--muted)',
-    },
-};
 
 const getCommonPinningStyles = <TData,>(
     column: Column<TData>,
-    isHeaderCell = false,
-    isEvenRow = false,
 ): CSSProperties => {
     const isPinned = column.getIsPinned();
     const isLastLeftPinnedColumn =
@@ -55,144 +35,124 @@ const getCommonPinningStyles = <TData,>(
 
     return {
         boxShadow: isLastLeftPinnedColumn
-            ? '-1px 0 0 0 var(--muted) inset'
+            ? '-4px 0 4px -4px gray inset'
             : isFirstRightPinnedColumn
               ? '1px 0 0 0 var(--muted) inset'
               : undefined,
         left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
         right:
             isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
+        opacity: isPinned ? 0.95 : 1,
         position: isPinned ? 'sticky' : 'relative',
         width: column.getSize(),
-        minWidth: column.columnDef.minSize,
-        maxWidth: column.columnDef.maxSize,
-        // zIndex: isPinned ? 0 : 0,
-        backgroundColor: isPinned
-            ? isHeaderCell
-                ? PINNED_COLUMN_COLORS.header.background
-                : isEvenRow
-                  ? PINNED_COLUMN_COLORS.cell.evenBackground
-                  : PINNED_COLUMN_COLORS.cell.background
-            : undefined,
+        backgroundColor: isFirstRightPinnedColumn ? 'var(--background)' : '',
     };
 };
 
-export default function DataTable<TData, TValue>({
+export default function DataTable<TData>({
     columns,
     data,
-    searchKey = 'ppa_desc',
-    searchValue,
-    onSearchChange,
-    getSubRows,
-    emptyMessage = 'No results.',
-}: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = React.useState<SortingState>([]);
-    const [columnFilters, setColumnFilters] =
-        React.useState<ColumnFiltersState>([]);
+    children,
+}: DataTableProps<TData>) {
+    const [globalFilter, setGlobalFilter] = useState<any>([]);
 
     const table = useReactTable({
         data,
         columns,
-        state: {
-            sorting,
-            columnFilters,
-            expanded: true,
-        },
-        onSortingChange: setSorting,
-        onColumnFiltersChange: setColumnFilters,
         getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
+        // meta: { onEdit, onDelete },
+        initialState: {
+            columnPinning: {
+                right: ['action'],
+            },
+        },
         getFilteredRowModel: getFilteredRowModel(),
-        getExpandedRowModel: getExpandedRowModel(),
-        getSubRows,
-        filterFromLeafRows: true,
-        maxLeafRowFilterDepth: 100,
-        // enableColumnPinning: true,
-        // initialState: {
-        //     columnPinning: { right: ['actions'] },
-        // },
-        columnResizeMode: 'onChange',
+        state: {
+            globalFilter,
+        },
+        onGlobalFilterChange: setGlobalFilter,
     });
 
-    // Sync external search value with table filter
-    React.useEffect(() => {
-        if (searchValue !== undefined && onSearchChange) {
-            const currentFilter = table
-                .getColumn(searchKey)
-                ?.getFilterValue() as string;
-            if (currentFilter !== searchValue) {
-                table.getColumn(searchKey)?.setFilterValue(searchValue);
-            }
-        }
-    }, [searchValue, searchKey, table, onSearchChange]);
-
     return (
-        <Table
-        // className="fixed"
-        >
-            <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => {
-                            const { column } = header;
-                            return (
-                                <TableHead
-                                    key={header.id}
-                                    className="bg-primary font-bold text-primary-foreground"
-                                    style={{
-                                        ...getCommonPinningStyles(column, true),
-                                        width: header.getSize(),
-                                    }}
-                                >
-                                    {header.isPlaceholder
-                                        ? null
-                                        : flexRender(
-                                              header.column.columnDef.header,
-                                              header.getContext(),
-                                          )}
-                                </TableHead>
-                            );
-                        })}
-                    </TableRow>
-                ))}
-            </TableHeader>
-            <TableBody className="[&_tr:nth-child(even)]:bg-muted">
-                {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
-                            {row.getVisibleCells().map((cell, index) => {
-                                const { column } = cell;
-                                return (
-                                    <TableCell
-                                        key={cell.id}
+        <div className="flex flex-col gap-4">
+            <div className="flex justify-between">
+                <Input
+                    placeholder="Filter price lists..."
+                    value={table.getState().globalFilter ?? ''}
+                    onChange={(event) =>
+                        table.setGlobalFilter(event.target.value)
+                    }
+                    className="max-w-sm"
+                />
+
+                {children}
+            </div>
+
+            <ScrollArea className="h-[calc(100vh-9rem)] rounded-md border">
+                <Table style={{ tableLayout: 'fixed' }}>
+                    <TableHeader>
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id}>
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead
+                                        key={header.id}
                                         style={{
+                                            width: header.getSize(),
                                             ...getCommonPinningStyles(
-                                                column,
-                                                false,
-                                                index % 2 === 1,
+                                                header.column,
                                             ),
+                                            backgroundColor: 'var(--primary)',
                                         }}
                                     >
-                                        {flexRender(
-                                            cell.column.columnDef.cell,
-                                            cell.getContext(),
-                                        )}
-                                    </TableCell>
-                                );
-                            })}
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell
-                            colSpan={columns.length}
-                            className="h-24 text-center"
-                        >
-                            No results.
-                        </TableCell>
-                    </TableRow>
-                )}
-            </TableBody>
-        </Table>
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext(),
+                                              )}
+                                    </TableHead>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableHeader>
+
+                    <TableBody>
+                        {table.getRowModel().rows?.length ? (
+                            table.getRowModel().rows.map((row) => (
+                                <TableRow key={row.id}>
+                                    {row.getVisibleCells().map((cell) => (
+                                        <TableCell
+                                            key={cell.id}
+                                            style={{
+                                                width: cell.column.getSize(),
+                                                ...getCommonPinningStyles(
+                                                    cell.column,
+                                                ),
+                                            }}
+                                        >
+                                            {flexRender(
+                                                cell.column.columnDef.cell,
+                                                cell.getContext(),
+                                            )}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={columns.length}
+                                    className="h-24 text-center"
+                                >
+                                    No results.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+                <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+        </div>
     );
 }
