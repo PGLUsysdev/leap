@@ -1,4 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import {
+    useState,
+    // useRef,
+    useEffect,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -23,17 +27,20 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { ChartOfAccount, PpmpCategory } from '@/pages/types/types';
+import { ChartOfAccount, PpmpCategory, PriceList } from '@/pages/types/types';
 import { router } from '@inertiajs/react';
-import { Switch } from '@/components/ui/switch';
+// import { Switch } from '@/components/ui/switch';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+// import { update } from '@/routes/profile';
 
 interface FormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
+    selectedPriceList: PriceList | null;
+
     ppmpPriceList: unknown[];
     selectedEntry: { id: number } | null;
     ppmpItems: unknown[];
@@ -41,32 +48,31 @@ interface FormDialogProps {
 
 const formSchema = z
     .object({
-        aip_entry_id: z.number(),
-        ppmp_price_list_id: z.number().optional(),
         expenseAccount: z
             .number()
             .refine((val) => val !== undefined && val !== null && val !== 0, {
                 message: 'Expense account is required',
-            }), // expense account
+            }),
         category: z.number().optional(),
         customCategory: z.string().optional(),
-        itemNo: z.string().min(1, 'Item number is required.'),
+        itemNo: z.coerce.number().min(1, 'Item number is required.'),
         description: z.string().min(1, 'Description is required.'),
         unitOfMeasurement: z
             .string()
             .min(1, 'Unit of measurement is required.'),
         price: z.string().min(1, 'Price is required.'),
-        isCustomItem: z.boolean(),
-        isCustomCategory: z.boolean(),
+        isCustomCategory: z.boolean().optional(),
     })
     .refine(
         (data) => {
-            if (data.isCustomItem) {
-                return data.isCustomCategory
-                    ? !!data.customCategory?.trim()
-                    : !!data.category;
+            if (data.isCustomCategory) {
+                return (
+                    !!data.customCategory &&
+                    data.customCategory.trim().length > 0
+                );
+            } else {
+                return !!data.category && data.category !== 0;
             }
-            return true;
         },
         {
             message: 'Category is required',
@@ -79,145 +85,149 @@ export default function FormDialog({
     onOpenChange,
     chartOfAccounts,
     ppmpCategories,
+    selectedPriceList,
 
-    ppmpPriceList = [],
-    selectedEntry = null,
-    ppmpItems = [],
+    // selectedEntry = null,
 }: FormDialogProps) {
+    console.log(selectedPriceList);
+
     const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
     const [openCategoryCommand, setOpenCategoryCommand] = useState(false);
-    const [openDescriptionCommand, setOpenDescriptionCommand] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            aip_entry_id: selectedEntry?.id || 0,
-            ppmp_price_list_id: 0,
             expenseAccount: undefined,
             category: undefined,
             customCategory: '',
-            itemNo: '',
+            itemNo: 0,
             description: '',
             unitOfMeasurement: '',
             price: '',
-            isCustomItem: false,
             isCustomCategory: false,
         },
     });
 
-    const isCustomItem = form.watch('isCustomItem');
     const isCustomCategory = form.watch('isCustomCategory');
-    const selectedExpenseAccount = form.watch('expenseAccount');
-    const selectedCategory = form.watch('category');
+    // const selectedExpenseAccount = form.watch('expenseAccount');
+    // const selectedCategory = form.watch('category');
 
-    const allPriceLists = chartOfAccounts.flatMap(
-        (account) =>
-            account.ppmp_price_lists?.map((priceList) => ({
-                ...priceList,
-                account_title: account.account_title,
-                account_number: account.account_number,
-            })) || [],
-    );
+    // const allPriceLists = chartOfAccounts.flatMap(
+    //     (account) =>
+    //         account.ppmp_price_lists?.map((priceList) => ({
+    //             ...priceList,
+    //             account_title: account.account_title,
+    //             account_number: account.account_number,
+    //         })) || [],
+    // );
 
-    const filteredPriceLists = allPriceLists.filter((priceList) => {
-        const matchesAccount = selectedExpenseAccount
-            ? priceList.chart_of_account_id === selectedExpenseAccount
-            : true;
+    // const filteredPriceLists = allPriceLists.filter((priceList) => {
+    //     const matchesAccount = selectedExpenseAccount
+    //         ? priceList.chart_of_account_id === selectedExpenseAccount
+    //         : true;
 
-        const matchesCategory = selectedCategory
-            ? priceList.category?.id === selectedCategory
-            : true;
+    //     const matchesCategory = selectedCategory
+    //         ? priceList.category?.id === selectedCategory
+    //         : true;
 
-        return matchesAccount && matchesCategory;
-    });
+    //     return matchesAccount && matchesCategory;
+    // });
 
-    const isExpenseAccountChangingFromDescription = useRef(false);
-
-    useEffect(() => {
-        if (!isExpenseAccountChangingFromDescription.current && !isCustomItem) {
-            form.setValue('description', '');
-            form.setValue('itemNo', '');
-            form.setValue('unitOfMeasurement', '');
-            form.setValue('price', '');
-            form.setValue('ppmp_price_list_id', 0);
-        }
-
-        isExpenseAccountChangingFromDescription.current = false;
-    }, [selectedExpenseAccount, selectedCategory, form, isCustomItem]);
-
-    useEffect(() => {
-        form.setValue('description', '');
-        form.setValue('itemNo', '');
-        form.setValue('unitOfMeasurement', '');
-        form.setValue('price', '');
-        form.setValue('ppmp_price_list_id', 0);
-        form.setValue('category', 0);
-        form.setValue('customCategory', '');
-    }, [isCustomItem, form]);
-
+    // for the category toggle
     useEffect(() => {
         form.setValue('category', undefined);
         form.setValue('customCategory', '');
     }, [isCustomCategory, form]);
 
+    // decided what initial values to put in the form
+    useEffect(() => {
+        // console.log(selectedPriceList);
+
+        if (selectedPriceList) {
+            form.reset({
+                expenseAccount: selectedPriceList.chart_of_account?.id,
+                customCategory: undefined,
+                category: selectedPriceList.category?.id,
+                itemNo: selectedPriceList.item_number,
+                description: selectedPriceList.description,
+                unitOfMeasurement: selectedPriceList.unit_of_measurement,
+                price: selectedPriceList.price,
+            });
+        } else {
+            form.reset({
+                expenseAccount: 0,
+                customCategory: undefined,
+                category: undefined,
+                itemNo: 0,
+                description: '',
+                unitOfMeasurement: '',
+                price: '0.00',
+            });
+        }
+    }, [selectedPriceList]);
+
     function onSubmit(data: z.infer<typeof formSchema>) {
-        const itemNumber = parseInt(data.itemNo);
+        // console.log(data);
 
-        if (isNaN(itemNumber) || itemNumber <= 0) {
-            alert('Please enter a valid item number (positive integer)');
-            return;
+        if (selectedPriceList) {
+            // console.log('edit');
+
+            router.visit(`/price-lists/${selectedPriceList.id}`, {
+                method: 'patch',
+                data,
+            });
+        } else {
+            // console.log('add');
+
+            router.visit('/price-lists', {
+                method: 'post',
+                data,
+            });
         }
 
-        const price = parseFloat(data.price);
-        if (isNaN(price) || price < 0) {
-            alert('Please enter a valid price (positive number)');
-            return;
-        }
+        // const itemNumber = data.itemNo;
+        // const price = parseFloat(data.price);
 
-        const customItemData = {
-            aip_entry_id: data.aip_entry_id,
-            item_number: itemNumber,
-            description: data.description,
-            unit_of_measurement: data.unitOfMeasurement,
-            price: price,
-            chart_of_account_id: data.expenseAccount,
-            ppmp_category_id: isCustomCategory ? null : data.category,
-            custom_category: isCustomCategory ? data.customCategory : null,
-        };
+        // if (isNaN(itemNumber) || itemNumber <= 0) {
+        //     alert('Please enter a valid item number (positive integer)');
+        //     return;
+        // }
 
-        console.log(customItemData);
+        // if (isNaN(price) || price < 0) {
+        //     alert('Please enter a valid price (positive number)');
+        //     return;
+        // }
 
-        router.post('/ppmp/custom', customItemData, {
-            onSuccess: () => onOpenChange(false),
-            onError: (errors) =>
-                console.error('Error creating custom PPMP item:', errors),
-            preserveState: false,
-        });
+        // const customItemData = {
+        //     aip_entry_id: data.aip_entry_id,
+        //     item_number: data.itemNo,
+        //     description: data.description,
+        //     unit_of_measurement: data.unitOfMeasurement,
+        //     price: data.price,
+        //     chart_of_account_id: data.expenseAccount,
+        //     ppmp_category_id: isCustomCategory ? null : data.category,
+        //     custom_category: isCustomCategory ? data.customCategory : null,
+        // };
+
+        // router.post('/ppmp/custom', customItemData, {
+        //     onSuccess: () => onOpenChange(false),
+        //     onError: (errors) =>
+        //         console.error('Error creating custom PPMP item:', errors),
+        //     preserveState: false,
+        // });
     }
-
-    const handleReset = () => {
-        form.reset({
-            aip_entry_id: selectedEntry?.id || 0,
-            ppmp_price_list_id: 0,
-            expenseAccount: undefined,
-            category: undefined,
-            customCategory: '',
-            itemNo: '',
-            description: '',
-            unitOfMeasurement: '',
-            price: '',
-            isCustomItem: false,
-            isCustomCategory: false,
-        });
-    };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Add PPMP Item</DialogTitle>
+                    <DialogTitle>
+                        {selectedPriceList ? 'Edit PPMP Item' : 'Add PPMP Item'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Add a new item to the PPMP list
+                        {selectedPriceList
+                            ? 'Editing the item to the PPMP list'
+                            : 'Add a new item to the PPMP list'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -480,7 +490,7 @@ export default function FormDialog({
                                     />
                                 )}
 
-                                {isCustomItem && (
+                                {/* {isCustomItem && (
                                     <div className="flex items-center space-x-2">
                                         <Switch
                                             id="custom-category-toggle"
@@ -503,7 +513,7 @@ export default function FormDialog({
                                                 : 'Predefined Category'}
                                         </label>
                                     </div>
-                                )}
+                                )} */}
                             </Field>
                         </div>
 
@@ -632,21 +642,13 @@ export default function FormDialog({
                     <Button
                         type="button"
                         variant="outline"
-                        onClick={handleReset}
-                    >
-                        Reset
-                    </Button>
-
-                    <Button
-                        type="button"
-                        variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
                         Cancel
                     </Button>
 
                     <Button type="submit" form="form-rhf-demo">
-                        Add Item
+                        {selectedPriceList ? 'Save Changes' : 'Add Item'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

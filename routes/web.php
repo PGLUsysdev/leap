@@ -70,6 +70,19 @@ Route::delete('funding-sources/{fundingSource}', [
     'destroy',
 ])->name('funding-sources.destroy');
 
+// price-list
+Route::post('price-lists', [PpmpPriceListController::class, 'store'])->name(
+    'price-lists.store',
+);
+Route::patch('price-lists/{ppmpPriceList}', [
+    PpmpPriceListController::class,
+    'update',
+])->name('price-lists.update');
+Route::delete('price-lists/{ppmpPriceList}', [
+    PpmpPriceListController::class,
+    'destroy',
+])->name('price-lists.destroy');
+
 // ---
 
 Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);

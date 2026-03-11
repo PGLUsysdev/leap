@@ -8,16 +8,26 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { router } from '@inertiajs/react';
+import { PriceList } from '@/pages/types/types';
 
 interface DeleteDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    data: PriceList;
 }
 
 export default function DeleteDialog({
     open,
     onOpenChange,
+    data,
 }: DeleteDialogProps) {
+    function handleDelete() {
+        console.log('delete');
+
+        router.visit(`/price-lists/${data.id}`, { method: 'delete', data });
+    }
+
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
@@ -35,7 +45,9 @@ export default function DeleteDialog({
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
 
-                    <AlertDialogAction>Continue</AlertDialogAction>
+                    <AlertDialogAction onClick={handleDelete}>
+                        Delete
+                    </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>

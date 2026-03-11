@@ -27,6 +27,10 @@ export default function PriceListPage({
 }: PriceListPageProps) {
     const [openEdit, setOpenEdit] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
+    const [selectedPriceList, setSelectedPriceList] =
+        useState<PriceList | null>(null);
+
+    // console.log(selectedPriceList);
 
     // const [file, setFile] = useState(null);
 
@@ -94,10 +98,13 @@ export default function PriceListPage({
     // }
 
     function handleAdd() {
+        setSelectedPriceList(null);
+
         setOpenEdit(true);
     }
 
-    function handleEdit() {
+    function handleEdit(data: PriceList) {
+        setSelectedPriceList(data);
         setOpenEdit(true);
     }
 
@@ -140,9 +147,14 @@ export default function PriceListPage({
                 onOpenChange={setOpenEdit}
                 chartOfAccounts={chartOfAccounts}
                 ppmpCategories={ppmpCategory}
+                selectedPriceList={selectedPriceList}
             />
 
-            <DeleteDialog open={openDelete} onOpenChange={setOpenDelete} />
+            <DeleteDialog
+                open={openDelete}
+                onOpenChange={setOpenDelete}
+                data={selectedPriceList}
+            />
         </AppLayout>
     );
 }

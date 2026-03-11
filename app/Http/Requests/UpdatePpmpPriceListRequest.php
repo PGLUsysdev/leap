@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePpmpPriceListRequest extends FormRequest
 {
@@ -22,14 +23,20 @@ class UpdatePpmpPriceListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // 'item_code' => 'required|string|max:50|unique:ppmp_price_lists,item_code,' . $this->ppmpPriceList->id,
-            'item_number' =>
-                'required|integer|unique:ppmp_price_lists,item_number,' .
-                $this->ppmpPriceList->id,
+            'expenseAccount' => 'required|integer|exists:chart_of_accounts,id',
+            'category' => 'required_without:customCategory|nullable|integer',
+            'customCategory' =>
+                'required_without:category|nullable|string|max:255',
+            'itemNo' => [
+                'required',
+                'integer',
+                Rule::unique('ppmp_price_lists', 'item_number')->ignore(
+                    $this->ppmpPriceList?->id,
+                ),
+            ],
             'description' => 'required|string|max:255',
-            'unit_of_measurement' => 'required|string|max:20',
-            'price' => 'required|numeric|min:0|max:99999999999999999.99',
-            'chart_of_account_id' => 'required|exists:chart_of_accounts,id',
+            'unitOfMeasurement' => 'required|string|max:50',
+            'price' => 'required|numeric|min:0',
         ];
     }
 }

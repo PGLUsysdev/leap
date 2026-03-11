@@ -47,7 +47,7 @@ export default function ExportToPdfDialog({
         'aip_entry.start_date',
         'aip_entry.end_date',
         'aip_entry.expected_output',
-        'aip_entry.funding_source',
+        'aip_entry.funding_source.title',
         'aip_entry.ps_amount',
         'aip_entry.mooe_amount',
         'aip_entry.fe_amount',
@@ -55,7 +55,7 @@ export default function ExportToPdfDialog({
         'aip_entry.total_amount',
         'aip_entry.ccet_adaptation',
         'aip_entry.ccet_mitigation',
-        'aip_entry.typology',
+        'aip_entry.typology.code',
     ];
     const office =
         'OFFICE OF THE PROVINCIAL GOVERNOR - INFORMATION AND COMMUNICATIONS TECHNOLOGY UNIT';

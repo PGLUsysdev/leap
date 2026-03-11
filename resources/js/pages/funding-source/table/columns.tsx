@@ -1,8 +1,12 @@
 import { createColumnHelper, RowData } from '@tanstack/react-table';
 import { FundingSource } from '@/pages/types/types';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash, Check, X } from 'lucide-react';
+// import { Badge } from '@/components/ui/badge';
+import {
+    Pencil,
+    Trash,
+    // Check, X
+} from 'lucide-react';
 
 declare module '@tanstack/table-core' {
     interface TableMeta<TData extends RowData> {
@@ -34,26 +38,26 @@ export const columns = [
             <span className="text-wrap">{value.getValue() ?? '-'}</span>
         ),
     }),
-    columnHelper.accessor('allow_typhoon', {
-        header: 'Allow Typhoon',
-        cell: (value) => (
-            <span className="text-wrap">
-                {value.getValue() ? (
-                    <Badge className="flex items-center gap-1">
-                        <Check /> True
-                    </Badge>
-                ) : (
-                    <Badge
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                    >
-                        <X />
-                        False
-                    </Badge>
-                )}
-            </span>
-        ),
-    }),
+    // columnHelper.accessor('allow_typhoon', {
+    //     header: 'Allow Typhoon',
+    //     cell: (value) => (
+    //         <span className="text-wrap">
+    //             {value.getValue() ? (
+    //                 <Badge className="flex items-center gap-1">
+    //                     <Check /> True
+    //                 </Badge>
+    //             ) : (
+    //                 <Badge
+    //                     variant="secondary"
+    //                     className="flex items-center gap-1"
+    //                 >
+    //                     <X />
+    //                     False
+    //                 </Badge>
+    //             )}
+    //         </span>
+    //     ),
+    // }),
     columnHelper.display({
         id: 'action',
         size: 87,
