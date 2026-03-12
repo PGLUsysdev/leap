@@ -10,7 +10,7 @@ import {
     useReactTable,
 } from '@tanstack/react-table';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Table,
     TableBody,
@@ -27,20 +27,8 @@ interface DataTableProps<TData, TValue> {
     children?: React.ReactNode;
 }
 
-const PINNED_COLUMN_COLORS = {
-    header: {
-        background: 'var(--primary)',
-    },
-    cell: {
-        background: 'var(--background)',
-        evenBackground: 'var(--muted)',
-    },
-};
-
 const getCommonPinningStyles = <TData,>(
     column: Column<TData>,
-    isHeaderCell = false,
-    isEvenRow = false,
 ): CSSProperties => {
     const isPinned = column.getIsPinned();
     const isLastLeftPinnedColumn =
@@ -50,24 +38,17 @@ const getCommonPinningStyles = <TData,>(
 
     return {
         boxShadow: isLastLeftPinnedColumn
-            ? '-1px 0 0 0 var(--muted) inset'
+            ? '-4px 0 4px -4px gray inset'
             : isFirstRightPinnedColumn
               ? '1px 0 0 0 var(--muted) inset'
               : undefined,
         left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
         right:
             isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
+        // opacity: isPinned ? 0.95 : 1,
         position: isPinned ? 'sticky' : 'relative',
         width: column.getSize(),
-        minWidth: column.columnDef.minSize,
-        maxWidth: column.columnDef.maxSize,
-        backgroundColor: isPinned
-            ? isHeaderCell
-                ? PINNED_COLUMN_COLORS.header.background
-                : isEvenRow
-                  ? PINNED_COLUMN_COLORS.cell.evenBackground
-                  : PINNED_COLUMN_COLORS.cell.background
-            : undefined,
+        backgroundColor: isFirstRightPinnedColumn ? 'var(--background)' : '',
     };
 };
 
@@ -96,6 +77,11 @@ export function PpaDataTable<TData, TValue>({
         filterFromLeafRows: true,
         globalFilterFn: 'includesString',
         onGlobalFilterChange: setGlobalFilter,
+        initialState: {
+            columnPinning: {
+                right: ['action'],
+            },
+        },
         state: {
             expanded: true,
             globalFilter,
@@ -117,15 +103,24 @@ export function PpaDataTable<TData, TValue>({
             </div>
 
             <ScrollArea className="h-[calc(100vh-8rem)] rounded-md border">
-                <Table>
+                <Table style={{ tableLayout: 'fixed' }}>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead
-                                        key={header.id}
-                                        className="bg-primary font-bold text-primary-foreground"
-                                    >
+                                {headerGroup.headers.map((header) => {
+                                    return (
+                                        <TableHead
+                                            key={header.id}
+                                            style={{
+                                                width: header.getSize(),
+                                                ...getCommonPinningStyles(
+                                                    header.column,
+                                                ),
+                                                backgroundColor:
+                                                    'var(--primary)',
+                                                color: 'var(--primary-foreground)',
+                                            }}
+                                        >
                                         {header.isPlaceholder
                                             ? null
                                             : flexRender(
@@ -133,17 +128,27 @@ export function PpaDataTable<TData, TValue>({
                                                       .header,
                                                   header.getContext(),
                                               )}
-                                    </TableHead>
-                                ))}
+                                        </TableHead>
+                                    );
+                                })}
                             </TableRow>
                         ))}
                     </TableHeader>
-                    <TableBody className="[&_tr:nth-child(even)]:bg-muted">
+                    
+                    <TableBody>
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
                                 <TableRow key={row.id}>
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
+                                        <TableCell
+                                            key={cell.id}
+                                            style={{
+                                                width: cell.column.getSize(),
+                                                ...getCommonPinningStyles(
+                                                    cell.column,
+                                                ),
+                                            }}
+                                        >
                                             {flexRender(
                                                 cell.column.columnDef.cell,
                                                 cell.getContext(),
@@ -164,6 +169,7 @@ export function PpaDataTable<TData, TValue>({
                         )}
                     </TableBody>
                 </Table>
+                <ScrollBar orientation="horizontal" />
             </ScrollArea>
         </div>
     );

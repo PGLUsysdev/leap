@@ -1,31 +1,38 @@
-import { ColumnDef } from '@tanstack/react-table';
+import { createColumnHelper, RowData } from '@tanstack/react-table';
 import { CheckCircle2, XCircle, Pencil, Trash, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Ppa } from '@/pages/types/types';
 
-// --- Column Definitions ---
-export const columns: ColumnDef<Ppa>[] = [
-    {
-        accessorKey: 'full_code',
+declare module '@tanstack/table-core' {
+    interface TableMeta<TData extends RowData> {
+        onAdd?: (parent: TData, childType: string) => void;
+        onEdit?: (record: TData) => void;
+        onDelete?: (record: TData) => void;
+    }
+}
+
+const columnHelper = createColumnHelper<Ppa>();
+
+export const columns = [
+    columnHelper.accessor('full_code', {
         header: 'AIP Reference Code',
-        cell: ({ getValue }) => (
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-sm">
-                {getValue<string>()}
-            </code>
+        size: 100,
+        cell: (value) => (
+            <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>
         ),
-    },
-    {
-        accessorKey: 'title',
+    }),
+    columnHelper.accessor('title', {
         header: 'Program/Project/Activity Description',
-        cell: ({ row }) => {
-            const ppa = row.original;
+        size: 300,
+        cell: (info) => {
+            const ppa = info.row.original;
             return (
                 <div
-                    style={{ paddingLeft: `${row.depth * 24}px` }}
+                    style={{ paddingLeft: `${info.row.depth * 24}px` }}
                     className="flex items-center gap-2"
                 >
-                    {row.depth > 0 && (
+                    {info.row.depth > 0 && (
                         <span className="text-muted-foreground opacity-50">
                             ↳
                         </span>
@@ -36,7 +43,7 @@ export const columns: ColumnDef<Ppa>[] = [
                         </span>
                         <span
                             className={`leading-tight break-words whitespace-normal ${
-                                row.depth === 0 ? 'font-bold' : 'font-medium'
+                                info.row.depth === 0 ? 'font-bold' : 'font-medium'
                             }`}
                         >
                             {ppa.title}
@@ -45,14 +52,13 @@ export const columns: ColumnDef<Ppa>[] = [
                 </div>
             );
         },
-    },
-    {
-        accessorKey: 'is_active',
+    }),
+    columnHelper.accessor('is_active', {
         header: 'Status',
-        cell: ({ getValue }) => {
-            const active = getValue<boolean>();
+        cell: (value) => {
+            const active = value.getValue<boolean>();
             return active ? (
-                <Badge variant="primary">
+                <Badge variant="default">
                     <CheckCircle2 className="mr-1 h-3 w-3" /> Active
                 </Badge>
             ) : (
@@ -61,43 +67,15 @@ export const columns: ColumnDef<Ppa>[] = [
                 </Badge>
             );
         },
-    },
-    {
-        id: 'actions',
-        size: 30,
+    }),
+    columnHelper.display({
+        id: 'action',
+        size: 58,
         cell: ({ row, table }) => {
             const ppa = row.original;
-            const meta = table.options.meta as any;
-
-            console.log(ppa);
 
             return (
                 <>
-                    {/*<DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button size="icon">
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {ppa.type === 'Program' && (
-                                <DropdownMenuItem
-                                    onClick={() => meta.onAdd(ppa, 'Project')}
-                                >
-                                    Add Project
-                                </DropdownMenuItem>
-                            )}
-
-                            {ppa.type === 'Project' && (
-                                <DropdownMenuItem
-                                    onClick={() => meta.onAdd(ppa, 'Activity')}
-                                >
-                                    Add Activity
-                                </DropdownMenuItem>
-                            )}
-                        </DropdownMenuContent>
-                    </DropdownMenu>*/}
-
                     <Button
                         onClick={() => {
                             // Logic to determine what the next child level should be
@@ -111,7 +89,7 @@ export const columns: ColumnDef<Ppa>[] = [
                                 nextType = 'Activity';
                             else nextType = 'Sub-Activity'; // If it's an Activity, add a Sub-Activity
 
-                            meta.onAdd(ppa, nextType);
+                            table.options.meta?.onAdd?.(ppa, nextType);
                         }}
                         size="icon"
                         disabled={ppa.type === 'Sub-Activity'}
@@ -119,12 +97,15 @@ export const columns: ColumnDef<Ppa>[] = [
                         <Plus className="h-4 w-4" />
                     </Button>
 
-                    <Button onClick={() => meta.onEdit(ppa)} size="icon">
+                    <Button
+                        onClick={() => table.options.meta?.onEdit?.(ppa)}
+                        size="icon"
+                    >
                         <Pencil />
                     </Button>
 
                     <Button
-                        onClick={() => meta.onDelete(ppa)}
+                        onClick={() => table.options.meta?.onDelete?.(ppa)}
                         size="icon"
                         variant="destructive"
                     >
@@ -133,5 +114,5 @@ export const columns: ColumnDef<Ppa>[] = [
                 </>
             );
         },
-    },
+    }),
 ];
