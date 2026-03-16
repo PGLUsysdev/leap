@@ -1,12 +1,14 @@
-import type { CSSProperties, ReactElement } from 'react';
-import { useState, useMemo } from 'react';
-import type { Column, ColumnDef } from '@tanstack/react-table';
+import { useState } from 'react';
+import type { ReactElement } from 'react';
 import {
     flexRender,
     getCoreRowModel,
-    useReactTable,
     getFilteredRowModel,
+    useReactTable,
 } from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Input } from '@/components/ui/input';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Table,
     TableBody,
@@ -15,10 +17,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-import type { Office } from '@/pages/types/types';
 import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
+import type { Office } from '@/pages/types/types';
 
 interface DataTableProps<TData> {
     columns: ColumnDef<TData, any>[];
@@ -61,7 +61,7 @@ export default function DataTable<TData>({
     onDelete,
     children,
 }: DataTableProps<TData>) {
-    const [globalFilter, setGlobalFilter] = useState<any>([]);
+    const [globalFilter, setGlobalFilter] = useState('');
 
     const table = useReactTable({
         data,
@@ -74,11 +74,11 @@ export default function DataTable<TData>({
             },
         },
         getFilteredRowModel: getFilteredRowModel(),
-        globalFilterFn: globalFilterFn,
         state: {
             globalFilter,
         },
         onGlobalFilterChange: setGlobalFilter,
+        globalFilterFn: globalFilterFn,
     });
 
     return (
@@ -154,7 +154,7 @@ export default function DataTable<TData>({
                                     colSpan={columns.length}
                                     className="h-24 text-center"
                                 >
-                                    No results.
+                                    No results found.
                                 </TableCell>
                             </TableRow>
                         )}

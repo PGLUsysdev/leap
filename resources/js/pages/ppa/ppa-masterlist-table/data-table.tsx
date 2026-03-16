@@ -1,14 +1,14 @@
 // resources\js\pages\ppa\ppa-masterlist-table\data-table.tsx
 
-import * as React from 'react';
-import type { ColumnDef } from '@tanstack/react-table';
+import { useState } from 'react';
+import type { ReactElement } from 'react';
 import {
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
-    getExpandedRowModel,
     useReactTable,
 } from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
@@ -20,12 +20,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
+import { getExpandedRowModel } from '@tanstack/react-table';
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
-    meta?: any; // Used for the onAdd/onEdit/onDelete callbacks
-    children?: React.ReactNode;
+    meta?: any;
+    children?: ReactElement;
 }
 
 export function PpaDataTable<TData, TValue>({
@@ -34,44 +35,40 @@ export function PpaDataTable<TData, TValue>({
     meta,
     children,
 }: DataTableProps<TData, TValue>) {
-    const [value, setValue] = React.useState('');
-    const [globalFilter, setGlobalFilter] = React.useState('');
-
-    // Debounce Search
-    React.useEffect(() => {
-        const timeout = setTimeout(() => setGlobalFilter(value), 300);
-        return () => clearTimeout(timeout);
-    }, [value]);
+    const [globalFilter, setGlobalFilter] = useState('');
 
     const table = useReactTable({
         data,
         columns,
-        getSubRows: (row: any) => row.children ?? [],
         getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getExpandedRowModel: getExpandedRowModel(),
-        filterFromLeafRows: true,
-        globalFilterFn: 'includesString',
-        onGlobalFilterChange: setGlobalFilter,
+        meta,
         initialState: {
             columnPinning: {
                 right: ['action'],
             },
         },
+        getFilteredRowModel: getFilteredRowModel(),
         state: {
             expanded: true,
             globalFilter,
         },
-        meta,
+        onGlobalFilterChange: setGlobalFilter,
+
+        // for expanded rows
+        getSubRows: (row: any) => row.children ?? [], // Defines the data structure for nesting. It tells the table where to find child records within a row (e.g., row.children). Without this, the table treats all data as a flat list.
+        getExpandedRowModel: getExpandedRowModel(), // Handles the ui logic for expansion. It dynamically calculates which sub-rows should be visible or hidden based on the user's toggle state.
+        filterFromLeafRows: true, // allows filtering sub rows
     });
 
     return (
-        <div className="space-y-4">
-            <div className="flex justify-between">
+        <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
                 <Input
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    placeholder="Search Programs/Projects/Activities..."
+                    placeholder="Filter programs/projects/activities..."
+                    value={table.getState().globalFilter ?? ''}
+                    onChange={(event) =>
+                        table.setGlobalFilter(event.target.value)
+                    }
                     className="max-w-sm"
                 />
 
@@ -83,30 +80,27 @@ export function PpaDataTable<TData, TValue>({
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => {
-                                    return (
-                                        <TableHead
-                                            key={header.id}
-                                            style={{
-                                                width: header.getSize(),
-                                                ...getCommonPinningStyles(
-                                                    header.column,
-                                                ),
-                                                backgroundColor:
-                                                    'var(--primary)',
-                                                color: 'var(--primary-foreground)',
-                                            }}
-                                        >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef
-                                                          .header,
-                                                      header.getContext(),
-                                                  )}
-                                        </TableHead>
-                                    );
-                                })}
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead
+                                        key={header.id}
+                                        style={{
+                                            width: header.getSize(),
+                                            ...getCommonPinningStyles(
+                                                header.column,
+                                            ),
+                                            backgroundColor: 'var(--primary)',
+                                            color: 'var(--primary-foreground)',
+                                        }}
+                                    >
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext(),
+                                              )}
+                                    </TableHead>
+                                ))}
                             </TableRow>
                         ))}
                     </TableHeader>
@@ -139,7 +133,7 @@ export function PpaDataTable<TData, TValue>({
                                     colSpan={columns.length}
                                     className="h-24 text-center"
                                 >
-                                    No results.
+                                    No results found.
                                 </TableCell>
                             </TableRow>
                         )}
