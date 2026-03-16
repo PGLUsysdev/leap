@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { columns } from './columns';
-import { DataTable } from './data-table';
+import DataTable from './data-table';
 import type { FundingSource } from '@/pages/types/types';
 
 interface FundingSourceTablePageProps {

@@ -31,6 +31,8 @@ export default function DeleteDialog({
     function handleDelete() {
         router.visit(`/funding-sources/${initialData?.id}`, {
             method: 'delete',
+            preserveState: true,
+            preserveScroll: true,
             onStart: () => setIsLoading(true),
             onFinish: () => setIsLoading(false),
             onSuccess: () => setOpen(false),

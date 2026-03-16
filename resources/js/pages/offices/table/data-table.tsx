@@ -1,8 +1,6 @@
-import type { CSSProperties, ReactElement} from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 import { useState, useMemo } from 'react';
-import type {
-    Column,
-    ColumnDef} from '@tanstack/react-table';
+import type { Column, ColumnDef } from '@tanstack/react-table';
 import {
     flexRender,
     getCoreRowModel,
@@ -20,6 +18,7 @@ import {
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import type { Office } from '@/pages/types/types';
+import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
 
 interface DataTableProps<TData> {
     columns: ColumnDef<TData, any>[];
@@ -30,49 +29,29 @@ interface DataTableProps<TData> {
 }
 
 // Custom global filter function to include office account code
-const globalFilterFn = (row: any, _columnId: string, filterValue: string | any) => {
+const globalFilterFn = (
+    row: any,
+    _columnId: string,
+    filterValue: string | any,
+) => {
     if (!filterValue || typeof filterValue !== 'string') return true;
-    
+
     const office = row.original as Office;
     const searchValue = filterValue.toLowerCase();
-    
+
     // Generate the full account code
     const sector = office.sector?.code ?? '0000';
     const lgu = office.lgu_level?.code ?? '0';
     const type = office.office_type?.code ?? '00';
     const officeCode = office.code ?? '000';
     const fullCode = `${sector}-${lgu}-${type}-${officeCode}`.toLowerCase();
-    
+
     // Search in office name, acronym, and generated account code
     return (
         office.name?.toLowerCase().includes(searchValue) ||
         office.acronym?.toLowerCase().includes(searchValue) ||
         fullCode.includes(searchValue)
     );
-};
-
-const getCommonPinningStyles = <TData,>(
-    column: Column<TData>,
-): CSSProperties => {
-    const isPinned = column.getIsPinned();
-    const isLastLeftPinnedColumn =
-        isPinned === 'left' && column.getIsLastColumn('left');
-    const isFirstRightPinnedColumn =
-        isPinned === 'right' && column.getIsFirstColumn('right');
-
-    return {
-        boxShadow: isLastLeftPinnedColumn
-            ? '-4px 0 4px -4px gray inset'
-            : isFirstRightPinnedColumn
-              ? '1px 0 0 0 var(--muted) inset'
-              : undefined,
-        left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-        right:
-            isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-        position: isPinned ? 'sticky' : 'relative',
-        width: column.getSize(),
-        backgroundColor: isFirstRightPinnedColumn ? 'var(--background)' : '',
-    };
 };
 
 export default function DataTable<TData>({

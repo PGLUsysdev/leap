@@ -1,13 +1,8 @@
-import type { RowData } from '@tanstack/react-table';
 import { createColumnHelper } from '@tanstack/react-table';
-import type { FundingSource } from '@/pages/types/types';
+import type { RowData } from '@tanstack/react-table';
+import { Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-// import { Badge } from '@/components/ui/badge';
-import {
-    Pencil,
-    Trash,
-    // Check, X
-} from 'lucide-react';
+import type { FundingSource } from '@/pages/types/types';
 
 declare module '@tanstack/table-core' {
     interface TableMeta<TData extends RowData> {

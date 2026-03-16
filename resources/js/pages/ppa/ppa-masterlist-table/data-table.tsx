@@ -1,8 +1,7 @@
 // resources\js\pages\ppa\ppa-masterlist-table\data-table.tsx
 
 import * as React from 'react';
-import type {
-    ColumnDef} from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
 import {
     flexRender,
     getCoreRowModel,
@@ -20,6 +19,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -27,31 +27,6 @@ interface DataTableProps<TData, TValue> {
     meta?: any; // Used for the onAdd/onEdit/onDelete callbacks
     children?: React.ReactNode;
 }
-
-const getCommonPinningStyles = <TData,>(
-    column: Column<TData>,
-): CSSProperties => {
-    const isPinned = column.getIsPinned();
-    const isLastLeftPinnedColumn =
-        isPinned === 'left' && column.getIsLastColumn('left');
-    const isFirstRightPinnedColumn =
-        isPinned === 'right' && column.getIsFirstColumn('right');
-
-    return {
-        boxShadow: isLastLeftPinnedColumn
-            ? '-4px 0 4px -4px gray inset'
-            : isFirstRightPinnedColumn
-              ? '1px 0 0 0 var(--muted) inset'
-              : undefined,
-        left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-        right:
-            isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-        // opacity: isPinned ? 0.95 : 1,
-        position: isPinned ? 'sticky' : 'relative',
-        width: column.getSize(),
-        backgroundColor: isFirstRightPinnedColumn ? 'var(--background)' : '',
-    };
-};
 
 export function PpaDataTable<TData, TValue>({
     columns,
@@ -122,20 +97,20 @@ export function PpaDataTable<TData, TValue>({
                                                 color: 'var(--primary-foreground)',
                                             }}
                                         >
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                  header.column.columnDef
-                                                      .header,
-                                                  header.getContext(),
-                                              )}
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef
+                                                          .header,
+                                                      header.getContext(),
+                                                  )}
                                         </TableHead>
                                     );
                                 })}
                             </TableRow>
                         ))}
                     </TableHeader>
-                    
+
                     <TableBody>
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (

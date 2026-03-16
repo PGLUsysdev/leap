@@ -3,7 +3,8 @@ import type {
     ColumnDef,
     ColumnFiltersState,
     SortingState,
-    Column} from '@tanstack/react-table';
+    Column,
+} from '@tanstack/react-table';
 import {
     // ExpandedState,
     flexRender,
@@ -11,7 +12,7 @@ import {
     getFilteredRowModel,
     getSortedRowModel,
     getExpandedRowModel,
-    useReactTable
+    useReactTable,
 } from '@tanstack/react-table';
 import type { CSSProperties } from 'react';
 import {

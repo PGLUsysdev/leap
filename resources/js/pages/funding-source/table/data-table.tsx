@@ -1,14 +1,16 @@
-import type { CSSProperties, ReactElement } from 'react';
+// finalized table
+
 import { useState } from 'react';
-import type {
-    Column,
-    ColumnDef} from '@tanstack/react-table';
+import type { ReactElement } from 'react';
 import {
     flexRender,
     getCoreRowModel,
-    useReactTable,
     getFilteredRowModel,
+    useReactTable,
 } from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
+import { Input } from '@/components/ui/input';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Table,
     TableBody,
@@ -17,8 +19,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
 
 interface DataTableProps<TData> {
     columns: ColumnDef<TData, any>[];
@@ -28,39 +29,14 @@ interface DataTableProps<TData> {
     children: ReactElement;
 }
 
-const getCommonPinningStyles = <TData,>(
-    column: Column<TData>,
-): CSSProperties => {
-    const isPinned = column.getIsPinned();
-    const isLastLeftPinnedColumn =
-        isPinned === 'left' && column.getIsLastColumn('left');
-    const isFirstRightPinnedColumn =
-        isPinned === 'right' && column.getIsFirstColumn('right');
-
-    return {
-        boxShadow: isLastLeftPinnedColumn
-            ? '-4px 0 4px -4px gray inset'
-            : isFirstRightPinnedColumn
-              ? '1px 0 0 0 var(--muted) inset'
-              : undefined,
-        left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-        right:
-            isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-        opacity: isPinned ? 0.95 : 1,
-        position: isPinned ? 'sticky' : 'relative',
-        width: column.getSize(),
-        backgroundColor: isFirstRightPinnedColumn ? 'var(--background)' : '',
-    };
-};
-
-export function DataTable<TData>({
+export default function DataTable<TData>({
     columns,
     data,
     onEdit,
     onDelete,
     children,
 }: DataTableProps<TData>) {
-    const [globalFilter, setGlobalFilter] = useState<any>([]);
+    const [globalFilter, setGlobalFilter] = useState('');
 
     const table = useReactTable({
         data,
@@ -81,7 +57,7 @@ export function DataTable<TData>({
 
     return (
         <div className="flex flex-col gap-4">
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between">
                 <Input
                     placeholder="Filter funding source..."
                     value={table.getState().globalFilter ?? ''}
@@ -99,30 +75,27 @@ export function DataTable<TData>({
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => {
-                                    return (
-                                        <TableHead
-                                            key={header.id}
-                                            style={{
-                                                width: header.getSize(),
-                                                ...getCommonPinningStyles(
-                                                    header.column,
-                                                ),
-                                                backgroundColor:
-                                                    'var(--primary)',
-                                                color: 'var(--primary-foreground)',
-                                            }}
-                                        >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef
-                                                          .header,
-                                                      header.getContext(),
-                                                  )}
-                                        </TableHead>
-                                    );
-                                })}
+                                {headerGroup.headers.map((header) => (
+                                    <TableHead
+                                        key={header.id}
+                                        style={{
+                                            width: header.getSize(),
+                                            ...getCommonPinningStyles(
+                                                header.column,
+                                            ),
+                                            backgroundColor: 'var(--primary)',
+                                            color: 'var(--primary-foreground)',
+                                        }}
+                                    >
+                                        {header.isPlaceholder
+                                            ? null
+                                            : flexRender(
+                                                  header.column.columnDef
+                                                      .header,
+                                                  header.getContext(),
+                                              )}
+                                    </TableHead>
+                                ))}
                             </TableRow>
                         ))}
                     </TableHeader>
@@ -130,12 +103,7 @@ export function DataTable<TData>({
                     <TableBody>
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={
-                                        row.getIsSelected() && 'selected'
-                                    }
-                                >
+                                <TableRow key={row.id}>
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell
                                             key={cell.id}
@@ -160,7 +128,7 @@ export function DataTable<TData>({
                                     colSpan={columns.length}
                                     className="h-24 text-center"
                                 >
-                                    No results.
+                                    No results found.
                                 </TableCell>
                             </TableRow>
                         )}
