@@ -355,7 +355,7 @@ export const columns: ColumnDef<Ppmp>[] = [
     },
     {
         id: 'actions',
-        size: 50,
+        size: 52,
         cell: ({ row, table }) => (
             <div className="flex justify-center">
                 <Button

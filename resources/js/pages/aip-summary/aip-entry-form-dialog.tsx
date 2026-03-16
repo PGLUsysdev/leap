@@ -818,7 +818,7 @@ export default function AipEntryFormDialog({
                                                                     />
 
                                                                     <InputGroupAddon>
-                                                                        <InputGroupText className="text-white">
+                                                                        <InputGroupText className="text-foreground">
                                                                             TOTAL
                                                                         </InputGroupText>
                                                                     </InputGroupAddon>

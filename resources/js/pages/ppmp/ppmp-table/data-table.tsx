@@ -1,12 +1,9 @@
-import type {
-    ColumnDef,
-    Column} from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
 import {
     flexRender,
     getCoreRowModel,
-    useReactTable
+    useReactTable,
 } from '@tanstack/react-table';
-import type { CSSProperties } from 'react';
 import {
     Table,
     TableBody,
@@ -18,6 +15,7 @@ import {
 } from '@/components/ui/table';
 import { columns } from './columns';
 import type { Ppmp } from '@/pages/types/types';
+import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
 
 interface PpmpTableProps {
     ppmpItems: Ppmp[];
@@ -29,51 +27,6 @@ interface DataTableProps<TData, TValue> {
     data: TData[];
     onDelete: (item: TData) => void;
 }
-
-const PINNED_COLUMN_COLORS = {
-    header: {
-        background: 'var(--primary)',
-    },
-    cell: {
-        background: 'var(--background)',
-        evenBackground: 'var(--muted)',
-    },
-};
-
-const getCommonPinningStyles = <TData,>(
-    column: Column<TData>,
-    isHeaderCell = false,
-    isEvenRow = false,
-): CSSProperties => {
-    const isPinned = column.getIsPinned();
-    const isLastLeftPinnedColumn =
-        isPinned === 'left' && column.getIsLastColumn('left');
-    const isFirstRightPinnedColumn =
-        isPinned === 'right' && column.getIsFirstColumn('right');
-
-    return {
-        boxShadow: isLastLeftPinnedColumn
-            ? '-1px 0 0 0 var(--muted) inset'
-            : isFirstRightPinnedColumn
-              ? '1px 0 0 0 var(--muted) inset'
-              : undefined,
-        left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
-        right:
-            isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
-        position: isPinned ? 'sticky' : 'relative',
-        width: column.getSize(),
-        minWidth: column.columnDef.minSize,
-        maxWidth: column.columnDef.maxSize,
-        // zIndex: isPinned ? 0 : 0,
-        backgroundColor: isPinned
-            ? isHeaderCell
-                ? PINNED_COLUMN_COLORS.header.background
-                : isEvenRow
-                  ? PINNED_COLUMN_COLORS.cell.evenBackground
-                  : PINNED_COLUMN_COLORS.cell.background
-            : undefined,
-    };
-};
 
 export default function PpmpTable({ ppmpItems, onDelete }: PpmpTableProps) {
     return (
@@ -127,13 +80,11 @@ export function DataTable<TData, TValue>({
                                     <TableHead
                                         key={header.id}
                                         colSpan={header.colSpan}
-                                        className="bg-primary font-bold text-primary-foreground"
                                         style={{
-                                            ...getCommonPinningStyles(
-                                                column,
-                                                true,
-                                            ),
+                                            ...getCommonPinningStyles(column),
                                             width: header.getSize(),
+                                            backgroundColor: 'var(--primary)',
+                                            color: 'var(--primary-foreground)',
                                         }}
                                     >
                                         {header.isPlaceholder
@@ -149,7 +100,7 @@ export function DataTable<TData, TValue>({
                         </TableRow>
                     ))}
                 </TableHeader>
-                <TableBody className="[&_tr:nth-child(even)]:bg-muted">
+                <TableBody>
                     {table.getRowModel().rows?.length ? (
                         table.getRowModel().rows.map((row, index) => (
                             <TableRow key={row.id}>
@@ -162,8 +113,6 @@ export function DataTable<TData, TValue>({
                                             style={{
                                                 ...getCommonPinningStyles(
                                                     column,
-                                                    false,
-                                                    index % 2 === 1,
                                                 ),
                                             }}
                                         >

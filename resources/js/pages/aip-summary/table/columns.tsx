@@ -2,7 +2,8 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { useMemo } from 'react';
 import { Plus, Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { Ppa } from '@/pages/types/types';
+import type { Ppa, FundingSource } from '@/pages/types/types';
+import { Badge } from '@/components/ui/badge';
 
 export const formatNumber = (val: string) => {
     const num = parseFloat(val);
@@ -30,7 +31,6 @@ export const formatDate = (dateString: string) => {
         'Nov',
         'Dec',
     ];
-
     const dateSplit = dateString.split('-');
 
     return `${months[Number(dateSplit[1]) - 1]}-${dateSplit[2]}`;
@@ -65,10 +65,10 @@ export const getColumns = ({
     onEdit,
     onDelete,
     masterPpas,
-}: ColumnActions): ColumnDef<Ppa, string>[] => [
+}: ColumnActions): ColumnDef<Ppa, any>[] => [
     columnHelper.accessor('full_code', {
         header: 'AIP Reference Code',
-        size: 300,
+        size: 200,
         cell: (info) => (
             <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-[12px]">
                 {info.getValue()}
@@ -77,9 +77,10 @@ export const getColumns = ({
     }),
     columnHelper.accessor('title', {
         header: 'Program/Project/Activity Description',
+        size: 400,
         filterFn: (row, _columnId, value) => {
-            const description = row.getValue('title');
-            const refCode = row.getValue('full_code');
+            const description: string = row.getValue('title');
+            const refCode: string = row.getValue('full_code');
             const searchValue = (value as string)?.toLowerCase() || '';
 
             return (
@@ -87,7 +88,6 @@ export const getColumns = ({
                 refCode.toLowerCase().includes(searchValue)
             );
         },
-        size: 600,
         cell: ({ row, getValue }) => (
             <div
                 style={{ paddingLeft: `${row.depth * 20}px` }}
@@ -104,7 +104,7 @@ export const getColumns = ({
     }),
     columnHelper.accessor('office.acronym', {
         header: 'Implementing Office/Department',
-        size: 300,
+        size: 250,
         cell: (info) => (
             <div className="break-words whitespace-normal">
                 {info.getValue()}
@@ -113,6 +113,7 @@ export const getColumns = ({
     }),
     columnHelper.group({
         header: 'Schedule of Implementation',
+        size: 250,
         columns: [
             columnHelper.accessor('aip_entry.start_date', {
                 header: 'Start Date',
@@ -126,26 +127,27 @@ export const getColumns = ({
     }),
     columnHelper.accessor('aip_entry.expected_output', {
         header: 'Expected Outputs',
-        size: 600,
+        size: 500,
         cell: (info) => (
             <div className="break-words whitespace-normal">
                 {info.getValue()}
             </div>
         ),
     }),
-    columnHelper.accessor('aip_entry.funding_source.title', {
+    columnHelper.accessor('aip_entry.funding_source', {
         header: 'Funding Source',
-        cell: (info) => {
-            const value = info.getValue();
-
-            if (value === undefined)
-                return <span className="bg-yellow items-center">-</span>;
-
-            return value;
-        },
+        size: 200,
+        cell: (info) => (
+            <div className="flex flex-wrap gap-1">
+                {info.getValue().map((value: FundingSource) => (
+                    <Badge key={value.id}>{value.code}</Badge>
+                ))}
+            </div>
+        ),
     }),
     columnHelper.group({
         header: 'Amount (in thousand pesos)',
+        size: 600,
         columns: [
             columnHelper.accessor('aip_entry.ps_amount', {
                 header: () => <div className="text-right">PS</div>,
@@ -199,6 +201,7 @@ export const getColumns = ({
     }),
     columnHelper.group({
         header: 'CC Expenditure',
+        size: 200,
         columns: [
             columnHelper.accessor('aip_entry.ccet_adaptation', {
                 header: () => <div className="text-right">Adaptation</div>,
@@ -220,7 +223,7 @@ export const getColumns = ({
     }),
     columnHelper.display({
         id: 'actions',
-        size: 116,
+        size: 126,
         cell: ({ row }) => {
             const entry = row.original;
             const ppaId = entry.aip_entry?.ppa_id;
@@ -228,7 +231,7 @@ export const getColumns = ({
             const isSubActivity = masterNode?.type === 'Sub-Activity';
 
             return (
-                <div className="flex justify-between">
+                <div className="flex gap-1">
                     <Button
                         title="Add PPA"
                         size="icon"
