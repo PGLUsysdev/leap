@@ -7,16 +7,16 @@
         "jsx-a11y": {
             "polymorphicPropName": null,
             "components": {},
-            "attributes": {}
+            "attributes": {},
         },
         "next": {
-            "rootDir": []
+            "rootDir": [],
         },
         "react": {
             "formComponents": [],
             "linkComponents": [],
             "version": null,
-            "componentWrapperFunctions": []
+            "componentWrapperFunctions": [],
         },
         "jsdoc": {
             "ignorePrivate": false,
@@ -26,19 +26,30 @@
             "augmentsExtendsReplacesDocs": false,
             "implementsReplacesDocs": false,
             "exemptDestructuredRootsFromChecks": false,
-            "tagNamePreference": {}
+            "tagNamePreference": {},
         },
         "vitest": {
-            "typecheck": false
-        }
+            "typecheck": false,
+        },
     },
     "env": {
-        "builtin": true
+        "builtin": true,
     },
     "globals": {},
-    "ignorePatterns": [],
+    "ignorePatterns": [
+        "vendor/**",
+        "node_modules/**",
+        "public/**",
+        "bootstrap/ssr/**",
+        "tailwind.config.js",
+        "vite.config.ts",
+        "resources/js/actions/**",
+        "resources/js/components/ui/**",
+        "resources/js/routes/**",
+        "resources/js/wayfinder/**",
+    ],
     "options": {
         "typeAware": true,
-        "typeCheck": true
-    }
+        "typeCheck": true,
+    },
 }

@@ -8,6 +8,8 @@
         "dev": "vite",
         "format": "prettier --write resources/",
         "format:check": "prettier --check resources/",
+        "fmt": "oxfmt resources/",
+        "fmt:check": "oxfmt resources/ --check",
         "lint": "oxlint",
         "lint:fix": "oxlint --fix",
         "types:check": "tsc --noEmit"
@@ -77,6 +79,7 @@
         "babel-plugin-react-compiler": "^1.0.0",
         "concurrently": "^9.2.1",
         "laravel-vite-plugin": "^2.1.0",
+        "oxfmt": "^0.41.0",
         "oxlint": "^1.55.0",
         "oxlint-tsgolint": "^0.16.0",
         "prettier": "^3.8.1",

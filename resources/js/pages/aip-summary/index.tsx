@@ -245,6 +245,7 @@ export default function AipSummaryTable({
                             onSearchChange={setSearchValue}
                             getSubRows={(row) => row.children}
                         />
+
                         <ScrollBar orientation="horizontal" />
                     </ScrollArea>
                 </div>

@@ -1,2 +1,11 @@
-resources/js/components/ui/*
-resources/views/mail/*
+# Standard Laravel exclusions
+/vendor
+/node_modules
+/public
+/storage
+/bootstrap/cache
+
+# Build artifacts
+mix-manifest.json
+package-lock.json
+composer.lock
