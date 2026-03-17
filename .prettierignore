@@ -1,3 +1,6 @@
+resources/js/*
+resources/views/mail/*
+
 # Standard Laravel exclusions
 /vendor
 /node_modules
