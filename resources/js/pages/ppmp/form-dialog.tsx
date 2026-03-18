@@ -56,7 +56,7 @@ export default function PpmpFormDialog({
     selectedEntry = null,
     fundingSources,
 }: PpmpFormDialogProps) {
-    // console.log(chartOfAccounts);
+    console.log(chartOfAccounts);
     // console.log(ppmpCategories);
 
     const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
@@ -129,15 +129,15 @@ export default function PpmpFormDialog({
     // console.log(filteredChartOfAccounts);
 
     const filteredPpmpCategories = selectedExpenseAccount
-        ? chartOfAccounts.filter((category) =>
-              category.ppmp_price_lists?.some(
-                  (priceList) =>
-                      priceList.chart_of_account_id === selectedExpenseAccount,
-              ),
+        ? ppmpCategories.filter((cat) =>
+              // Find the selected account in your main data
+              chartOfAccounts
+                  .find((acc) => acc.id === selectedExpenseAccount)
+                  ?.ppmp_price_lists?.some(
+                      (priceList) => priceList.category?.id === cat.id,
+                  ),
           )
         : ppmpCategories;
-
-    console.log(filteredPpmpCategories);
 
     const isExpenseAccountChangingFromDescription = useRef(false);
 
