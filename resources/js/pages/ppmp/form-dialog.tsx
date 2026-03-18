@@ -56,7 +56,8 @@ export default function PpmpFormDialog({
     selectedEntry = null,
     fundingSources,
 }: PpmpFormDialogProps) {
-    // console.log(fundingSources);
+    // console.log(chartOfAccounts);
+    // console.log(ppmpCategories);
 
     const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
     const [openFundingSourceCommand, setOpenFundingSourceCommand] =
@@ -64,7 +65,7 @@ export default function PpmpFormDialog({
     const [openCategoryCommand, setOpenCategoryCommand] = useState(false);
     const [openDescriptionCommand, setOpenDescriptionCommand] = useState(false);
 
-    const isFirstRender = useRef(true);
+    // const isFirstRender = useRef(true);
 
     const form = useForm<FormSchemaType>({
         resolver: zodResolver(formSchema),
@@ -86,6 +87,13 @@ export default function PpmpFormDialog({
     const selectedExpenseAccount = form.watch('expenseAccount');
     const selectedCategory = form.watch('category');
 
+    // useEffect(() => console.log(isCustomItem), [isCustomItem]);
+    useEffect(
+        () => console.log(selectedExpenseAccount),
+        [selectedExpenseAccount],
+    );
+    // useEffect(() => console.log(selectedCategory), [selectedCategory]);
+
     const allPriceLists = chartOfAccounts.flatMap(
         (account) =>
             account.ppmp_price_lists?.map((priceList) => ({
@@ -94,6 +102,8 @@ export default function PpmpFormDialog({
                 account_number: account.account_number,
             })) || [],
     );
+
+    // console.log(allPriceLists);
 
     const filteredPriceLists = allPriceLists.filter((priceList) => {
         const matchesAccount = selectedExpenseAccount
@@ -106,6 +116,28 @@ export default function PpmpFormDialog({
 
         return matchesAccount && matchesCategory;
     });
+
+    // chart of accounts filter
+    const filteredChartOfAccounts = selectedCategory
+        ? chartOfAccounts.filter((account) =>
+              account.ppmp_price_lists?.some(
+                  (priceList) => priceList.category?.id === selectedCategory,
+              ),
+          )
+        : chartOfAccounts;
+
+    // console.log(filteredChartOfAccounts);
+
+    const filteredPpmpCategories = selectedExpenseAccount
+        ? chartOfAccounts.filter((category) =>
+              category.ppmp_price_lists?.some(
+                  (priceList) =>
+                      priceList.chart_of_account_id === selectedExpenseAccount,
+              ),
+          )
+        : ppmpCategories;
+
+    console.log(filteredPpmpCategories);
 
     const isExpenseAccountChangingFromDescription = useRef(false);
 
@@ -308,7 +340,7 @@ export default function PpmpFormDialog({
                                                                     found.
                                                                 </CommandEmpty>
                                                                 <CommandGroup heading="Chart of Accounts">
-                                                                    {chartOfAccounts.map(
+                                                                    {filteredChartOfAccounts.map(
                                                                         (
                                                                             account,
                                                                         ) => (
@@ -416,7 +448,7 @@ export default function PpmpFormDialog({
                                                             </CommandEmpty>
 
                                                             <CommandGroup heading="Categories">
-                                                                {ppmpCategories.map(
+                                                                {filteredPpmpCategories.map(
                                                                     (
                                                                         category,
                                                                     ) => (
