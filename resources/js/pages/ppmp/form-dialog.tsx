@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -12,11 +12,6 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import {
-    InputGroup,
-    InputGroupButton,
-    InputGroupAddon,
-} from '@/components/ui/input-group';
-import {
     Command,
     CommandDialog,
     CommandEmpty,
@@ -27,7 +22,6 @@ import {
 } from '@/components/ui/command';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-// import * as z from 'zod';
 import type {
     ChartOfAccount,
     PpmpCategory,
@@ -36,8 +30,11 @@ import type {
 import { router } from '@inertiajs/react';
 import { Switch } from '@/components/ui/switch';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { formSchema, type FormSchemaType } from './form-dialog-schema';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+} from '@/components/ui/button-group';
 
 interface PpmpFormDialogProps {
     open: boolean;
@@ -56,16 +53,12 @@ export default function PpmpFormDialog({
     selectedEntry = null,
     fundingSources,
 }: PpmpFormDialogProps) {
-    console.log(chartOfAccounts);
-    // console.log(ppmpCategories);
-
     const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
     const [openFundingSourceCommand, setOpenFundingSourceCommand] =
         useState(false);
     const [openCategoryCommand, setOpenCategoryCommand] = useState(false);
     const [openDescriptionCommand, setOpenDescriptionCommand] = useState(false);
-
-    // const isFirstRender = useRef(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<FormSchemaType>({
         resolver: zodResolver(formSchema),
@@ -87,13 +80,30 @@ export default function PpmpFormDialog({
     const selectedExpenseAccount = form.watch('expenseAccount');
     const selectedCategory = form.watch('category');
 
-    // useEffect(() => console.log(isCustomItem), [isCustomItem]);
-    useEffect(
-        () => console.log(selectedExpenseAccount),
-        [selectedExpenseAccount],
-    );
-    // useEffect(() => console.log(selectedCategory), [selectedCategory]);
+    const filteredChartOfAccounts = !isCustomItem
+        ? selectedCategory
+            ? chartOfAccounts.filter((account) =>
+                  account.ppmp_price_lists?.some(
+                      (priceList) =>
+                          priceList.category?.id === selectedCategory,
+                  ),
+              )
+            : chartOfAccounts
+        : chartOfAccounts;
 
+    const filteredPpmpCategories = !isCustomItem
+        ? selectedExpenseAccount
+            ? ppmpCategories.filter((cat) =>
+                  chartOfAccounts
+                      .find((acc) => acc.id === selectedExpenseAccount)
+                      ?.ppmp_price_lists?.some(
+                          (priceList) => priceList.category?.id === cat.id,
+                      ),
+              )
+            : ppmpCategories
+        : ppmpCategories;
+
+    // refactor pricelist this later ? maybe
     const allPriceLists = chartOfAccounts.flatMap(
         (account) =>
             account.ppmp_price_lists?.map((priceList) => ({
@@ -103,43 +113,21 @@ export default function PpmpFormDialog({
             })) || [],
     );
 
-    // console.log(allPriceLists);
+    const filteredPriceLists = !isCustomItem
+        ? allPriceLists.filter((priceList) => {
+              const matchesAccount = selectedExpenseAccount
+                  ? priceList.chart_of_account_id === selectedExpenseAccount
+                  : true;
 
-    const filteredPriceLists = allPriceLists.filter((priceList) => {
-        const matchesAccount = selectedExpenseAccount
-            ? priceList.chart_of_account_id === selectedExpenseAccount
-            : true;
+              const matchesCategory = selectedCategory
+                  ? priceList.category?.id === selectedCategory
+                  : true;
 
-        const matchesCategory = selectedCategory
-            ? priceList.category?.id === selectedCategory
-            : true;
+              return matchesAccount && matchesCategory;
+          })
+        : allPriceLists;
 
-        return matchesAccount && matchesCategory;
-    });
-
-    // chart of accounts filter
-    const filteredChartOfAccounts = selectedCategory
-        ? chartOfAccounts.filter((account) =>
-              account.ppmp_price_lists?.some(
-                  (priceList) => priceList.category?.id === selectedCategory,
-              ),
-          )
-        : chartOfAccounts;
-
-    // console.log(filteredChartOfAccounts);
-
-    const filteredPpmpCategories = selectedExpenseAccount
-        ? ppmpCategories.filter((cat) =>
-              // Find the selected account in your main data
-              chartOfAccounts
-                  .find((acc) => acc.id === selectedExpenseAccount)
-                  ?.ppmp_price_lists?.some(
-                      (priceList) => priceList.category?.id === cat.id,
-                  ),
-          )
-        : ppmpCategories;
-
-    const isExpenseAccountChangingFromDescription = useRef(false);
+    // const isExpenseAccountChangingFromDescription = useRef(false);
 
     // useEffect(() => {
     //     if (isFirstRender.current) {
@@ -168,7 +156,7 @@ export default function PpmpFormDialog({
     //     form.setValue('category', null);
     // }, [isCustomItem, form]);
 
-    const handleReset = () => {
+    function handleReset(bool: boolean) {
         form.reset({
             aip_entry_id: selectedEntry?.id || null,
             ppmp_price_list_id: null,
@@ -179,60 +167,43 @@ export default function PpmpFormDialog({
             unitOfMeasurement: null,
             price: null,
             fundingSource: null,
-            isCustomItem: false,
+            isCustomItem: bool,
         });
-    };
+    }
 
     function onSubmit(data: FormSchemaType) {
-        console.log(data);
+        if (isCustomItem) {
+            // console.log('custom item', data);
+            // router.post('/ppmp/custom', data, {
+            //     onStart: () => setIsLoading(true),
+            //     onFinish: () => setIsLoading(false),
+            //     onSuccess: () => onOpenChange(false),
+            //     onError: (errors) =>
+            //         console.error('Error creating custom PPMP item:', errors),
+            //     preserveState: false,
+            // });
+        } else {
+            console.log(data);
 
-        // if (isCustomItem) {
-        //     const itemNumber = data.itemNo;
-
-        //     const customItemData = {
-        //         aip_entry_id: data.aip_entry_id,
-        //         item_number: itemNumber,
-        //         description: data.description,
-        //         unit_of_measurement: data.unitOfMeasurement,
-        //         price: data.price,
-        //         chart_of_account_id: data.expenseAccount,
-        //         ppmp_category_id: data.category,
-        //         custom_category: null,
-        //     };
-
-        //     router.post('/ppmp/custom', customItemData, {
-        //         onSuccess: () => onOpenChange(false),
-        //         onError: (errors) =>
-        //             console.error('Error creating custom PPMP item:', errors),
-        //         preserveState: false,
-        //     });
-        // } else {
-        //     console.log(data);
-
-        //     if (!data.ppmp_price_list_id) {
-        //         alert('Please select an item from the price list');
-        //         return;
-        //     }
-
-        //     const submitData = {
-        //         aip_entry_id: data.aip_entry_id,
-        //         ppmp_price_list_id: data.ppmp_price_list_id,
-        //         funding_source_id: data.fundingSource,
-        //     };
-
-        //     router.post('/ppmp', submitData, {
-        //         onSuccess: () => onOpenChange(false),
-        //         onError: (errors) =>
-        //             console.error('Error creating PPMP item:', errors),
-        //         preserveState: false,
-        //     });
-        // }
+            router.post('/ppmp', data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => onOpenChange(false),
+                onError: (errors) =>
+                    console.error('Error creating PPMP item:', errors),
+                preserveState: false,
+            });
+        }
     }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             {/* Increased width to max-w-2xl for better side-by-side layout */}
-            <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl">
+            <DialogContent
+                className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl"
+                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
+                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle>Add PPMP Item</DialogTitle>
                     <DialogDescription>
@@ -243,14 +214,16 @@ export default function PpmpFormDialog({
                 <div className="flex min-h-0">
                     <ScrollArea className="pr-4">
                         <div className="grid gap-6">
-                            <div className="flex items-center space-x-2 py-2">
+                            {/* <div className="flex items-center space-x-2 py-2">
                                 <Switch
                                     id="custom-item-toggle"
                                     checked={isCustomItem}
-                                    onCheckedChange={(checked) =>
-                                        form.setValue('isCustomItem', checked)
-                                    }
+                                    onCheckedChange={(checked) => {
+                                        form.setValue('isCustomItem', checked);
+                                        handleReset(!isCustomItem);
+                                    }}
                                 />
+
                                 <label
                                     htmlFor="custom-item-toggle"
                                     className="text-sm font-medium"
@@ -259,7 +232,7 @@ export default function PpmpFormDialog({
                                         ? 'Custom Item'
                                         : 'Price List Item'}
                                 </label>
-                            </div>
+                            </div> */}
 
                             <form
                                 id="form-rhf-demo"
@@ -281,47 +254,81 @@ export default function PpmpFormDialog({
                                                         fieldState.invalid
                                                     }
                                                 >
-                                                    {/*<FieldContent>*/}
                                                     <FieldLabel htmlFor="expense-select">
                                                         Expense Account
                                                     </FieldLabel>
 
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        role="combobox"
-                                                        aria-expanded={
-                                                            openExpenseCommand
-                                                        }
-                                                        className={cn(
-                                                            'w-full justify-between px-3 text-left font-normal',
-                                                            !field.value &&
-                                                                'text-muted-foreground',
-                                                            fieldState.invalid &&
-                                                                'border-destructive ring-destructive',
-                                                        )}
-                                                        onClick={() =>
-                                                            setOpenExpenseCommand(
-                                                                true,
-                                                            )
-                                                        }
-                                                    >
-                                                        {selectedAccount ? (
-                                                            <span className="truncate">
-                                                                <code className="mr-2 rounded bg-muted p-0.5 text-xs">
+                                                    {/* <div className="flex w-full"> */}
+                                                    <ButtonGroup className="flex w-full">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="flex-1 items-center justify-between"
+                                                            onClick={() =>
+                                                                setOpenExpenseCommand(
+                                                                    true,
+                                                                )
+                                                            }
+                                                        >
+                                                            {selectedAccount ? (
+                                                                <span className="truncate">
+                                                                    <code className="mr-2 rounded bg-muted p-0.5 text-xs">
+                                                                        {
+                                                                            selectedAccount.account_number
+                                                                        }
+                                                                    </code>
                                                                     {
-                                                                        selectedAccount.account_number
+                                                                        selectedAccount.account_title
                                                                     }
-                                                                </code>
-                                                                {
-                                                                    selectedAccount.account_title
+                                                                </span>
+                                                            ) : (
+                                                                'Select expense account'
+                                                            )}
+                                                            <ChevronsUpDown />
+                                                        </Button>
+
+                                                        <ButtonGroupSeparator />
+
+                                                        <Button
+                                                            type="button"
+                                                            size="icon"
+                                                            variant="secondary"
+                                                            className="w-20 shrink-0"
+                                                            onClick={() => {
+                                                                form.setValue(
+                                                                    'expenseAccount',
+                                                                    null,
+                                                                );
+                                                                if (
+                                                                    !isCustomItem
+                                                                ) {
+                                                                    form.setValue(
+                                                                        'category',
+                                                                        null,
+                                                                    );
+                                                                    form.setValue(
+                                                                        'description',
+                                                                        null,
+                                                                    );
+                                                                    form.setValue(
+                                                                        'itemNo',
+                                                                        null,
+                                                                    );
+                                                                    form.setValue(
+                                                                        'price',
+                                                                        null,
+                                                                    );
+                                                                    form.setValue(
+                                                                        'unitOfMeasurement',
+                                                                        null,
+                                                                    );
                                                                 }
-                                                            </span>
-                                                        ) : (
-                                                            'Select expense account'
-                                                        )}
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                    </Button>
+                                                            }}
+                                                        >
+                                                            Clear
+                                                        </Button>
+                                                    </ButtonGroup>
+                                                    {/* </div> */}
 
                                                     <CommandDialog
                                                         open={
@@ -356,6 +363,18 @@ export default function PpmpFormDialog({
                                                                                     setOpenExpenseCommand(
                                                                                         false,
                                                                                     );
+                                                                                    if (
+                                                                                        !isCustomItem
+                                                                                    ) {
+                                                                                        form.setValue(
+                                                                                            'category',
+                                                                                            null,
+                                                                                        );
+                                                                                        form.setValue(
+                                                                                            'description',
+                                                                                            null,
+                                                                                        );
+                                                                                    }
                                                                                 }}
                                                                             >
                                                                                 <div className="flex w-full items-center justify-between">
@@ -389,7 +408,6 @@ export default function PpmpFormDialog({
                                                             ]}
                                                         />
                                                     )}
-                                                    {/*</FieldContent>*/}
                                                 </Field>
                                             );
                                         }}
@@ -408,24 +426,61 @@ export default function PpmpFormDialog({
                                                     Category
                                                 </FieldLabel>
 
-                                                <Button
-                                                    onClick={() =>
-                                                        setOpenCategoryCommand(
-                                                            true,
-                                                        )
-                                                    }
-                                                    variant="outline"
-                                                    className="flex justify-between"
-                                                    role="combobox"
-                                                >
-                                                    {ppmpCategories.find(
-                                                        (cat) =>
-                                                            cat.id ===
-                                                            field.value,
-                                                    )?.name ||
-                                                        'Select category'}
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
+                                                <ButtonGroup className="flex w-full">
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setOpenCategoryCommand(
+                                                                true,
+                                                            )
+                                                        }
+                                                        variant="outline"
+                                                        className="flex-1 items-center justify-between"
+                                                    >
+                                                        {ppmpCategories.find(
+                                                            (cat) =>
+                                                                cat.id ===
+                                                                field.value,
+                                                        )?.name ||
+                                                            'Select category'}
+                                                        <ChevronsUpDown />
+                                                    </Button>
+
+                                                    <ButtonGroupSeparator />
+
+                                                    <Button
+                                                        type="button"
+                                                        size="icon"
+                                                        variant="secondary"
+                                                        className="w-20 shrink-0"
+                                                        onClick={() => {
+                                                            form.setValue(
+                                                                'category',
+                                                                null,
+                                                            );
+                                                            if (!isCustomItem) {
+                                                                form.setValue(
+                                                                    'description',
+                                                                    null,
+                                                                );
+                                                                form.setValue(
+                                                                    'itemNo',
+                                                                    null,
+                                                                );
+                                                                form.setValue(
+                                                                    'price',
+                                                                    null,
+                                                                );
+                                                                form.setValue(
+                                                                    'unitOfMeasurement',
+                                                                    null,
+                                                                );
+                                                            }
+                                                        }}
+                                                    >
+                                                        Clear
+                                                    </Button>
+                                                </ButtonGroup>
 
                                                 <CommandDialog
                                                     open={openCategoryCommand}
@@ -466,6 +521,14 @@ export default function PpmpFormDialog({
                                                                                 setOpenCategoryCommand(
                                                                                     false,
                                                                                 );
+                                                                                if (
+                                                                                    !isCustomItem
+                                                                                ) {
+                                                                                    form.setValue(
+                                                                                        'description',
+                                                                                        null,
+                                                                                    );
+                                                                                }
                                                                             }}
                                                                         >
                                                                             <div className="flex w-full items-center justify-between">
@@ -509,20 +572,57 @@ export default function PpmpFormDialog({
                                                     Procurement Item
                                                 </FieldLabel>
 
-                                                <InputGroup
-                                                    onClick={() =>
-                                                        setOpenDescriptionCommand(
-                                                            true,
-                                                        )
-                                                    }
-                                                >
-                                                    {filteredPriceLists.find(
-                                                        (priceList) =>
-                                                            priceList.id ===
-                                                            field.value,
-                                                    )?.description ||
-                                                        'Select procurement item'}
-                                                </InputGroup>
+                                                <ButtonGroup className="flex w-full">
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setOpenDescriptionCommand(
+                                                                true,
+                                                            )
+                                                        }
+                                                        variant="outline"
+                                                        className="flex-1 items-center justify-between"
+                                                    >
+                                                        {filteredPriceLists.find(
+                                                            (priceList) =>
+                                                                priceList.id ===
+                                                                field.value,
+                                                        )?.description ||
+                                                            'Select procurement item'}
+                                                        <ChevronsUpDown />
+                                                    </Button>
+
+                                                    <ButtonGroupSeparator />
+
+                                                    <Button
+                                                        type="button"
+                                                        size="icon"
+                                                        variant="secondary"
+                                                        className="w-20 shrink-0"
+                                                        onClick={() => {
+                                                            form.setValue(
+                                                                'description',
+                                                                null,
+                                                            );
+                                                            if (!isCustomItem) {
+                                                                form.setValue(
+                                                                    'itemNo',
+                                                                    null,
+                                                                );
+                                                                form.setValue(
+                                                                    'price',
+                                                                    null,
+                                                                );
+                                                                form.setValue(
+                                                                    'unitOfMeasurement',
+                                                                    null,
+                                                                );
+                                                            }
+                                                        }}
+                                                    >
+                                                        Clear
+                                                    </Button>
+                                                </ButtonGroup>
 
                                                 <CommandDialog
                                                     open={
@@ -555,35 +655,55 @@ export default function PpmpFormDialog({
                                                                                 field.onChange(
                                                                                     priceList.id,
                                                                                 );
-                                                                                isExpenseAccountChangingFromDescription.current = true;
 
-                                                                                form.setValue(
-                                                                                    'itemNo',
-                                                                                    priceList.item_number,
-                                                                                );
-                                                                                form.setValue(
-                                                                                    'unitOfMeasurement',
-                                                                                    priceList.unit_of_measurement,
-                                                                                );
-                                                                                form.setValue(
-                                                                                    'price',
-                                                                                    priceList.price,
-                                                                                );
-                                                                                form.setValue(
-                                                                                    'expenseAccount',
-                                                                                    priceList.chart_of_account_id,
-                                                                                );
+                                                                                // isExpenseAccountChangingFromDescription.current = true;
+
                                                                                 form.setValue(
                                                                                     'ppmp_price_list_id',
                                                                                     priceList.id,
                                                                                 );
-                                                                                form.setValue(
-                                                                                    'category',
-                                                                                    priceList
-                                                                                        .category
-                                                                                        ?.id ||
-                                                                                        null,
-                                                                                );
+                                                                                if (
+                                                                                    !isCustomItem
+                                                                                ) {
+                                                                                    form.setValue(
+                                                                                        'expenseAccount',
+                                                                                        priceList.chart_of_account_id,
+                                                                                        {
+                                                                                            shouldValidate: true,
+                                                                                        },
+                                                                                    );
+                                                                                    form.setValue(
+                                                                                        'category',
+                                                                                        priceList
+                                                                                            .category
+                                                                                            ?.id ||
+                                                                                            null,
+                                                                                        {
+                                                                                            shouldValidate: true,
+                                                                                        },
+                                                                                    );
+                                                                                    form.setValue(
+                                                                                        'itemNo',
+                                                                                        priceList.item_number,
+                                                                                        {
+                                                                                            shouldValidate: true,
+                                                                                        },
+                                                                                    );
+                                                                                    form.setValue(
+                                                                                        'price',
+                                                                                        priceList.price,
+                                                                                        {
+                                                                                            shouldValidate: true,
+                                                                                        },
+                                                                                    );
+                                                                                    form.setValue(
+                                                                                        'unitOfMeasurement',
+                                                                                        priceList.unit_of_measurement,
+                                                                                        {
+                                                                                            shouldValidate: true,
+                                                                                        },
+                                                                                    );
+                                                                                }
 
                                                                                 setOpenDescriptionCommand(
                                                                                     false,
@@ -636,59 +756,73 @@ export default function PpmpFormDialog({
                                         )}
                                     />
 
-                                    <Controller
-                                        name="itemNo"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => (
-                                            <Field
-                                                data-invalid={
-                                                    fieldState.invalid
-                                                }
-                                            >
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
-                                                    Item No.
-                                                </FieldLabel>
+                                    <div className="grid grid-cols-7 gap-6">
+                                        <div className="col-span-1">
+                                            <Controller
+                                                name="itemNo"
+                                                control={form.control}
+                                                render={({
+                                                    field,
+                                                    fieldState,
+                                                }) => (
+                                                    <Field
+                                                        data-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    >
+                                                        <FieldLabel
+                                                            htmlFor={field.name}
+                                                        >
+                                                            Item No.
+                                                        </FieldLabel>
 
-                                                <Input
-                                                    {...field}
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    type="number"
-                                                    min="1"
-                                                    value={field.value ?? ''}
-                                                    readOnly={!isCustomItem}
-                                                    disabled={!isCustomItem}
-                                                    onChange={(e) =>
-                                                        field.onChange(
-                                                            e.target.value ===
+                                                        <Input
+                                                            {...field}
+                                                            id={field.name}
+                                                            aria-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                            type="number"
+                                                            min="1"
+                                                            value={
+                                                                field.value ??
                                                                 ''
-                                                                ? null
-                                                                : parseInt(
-                                                                      e.target
-                                                                          .value,
-                                                                      10,
-                                                                  ),
-                                                        )
-                                                    }
-                                                />
+                                                            }
+                                                            readOnly={
+                                                                !isCustomItem
+                                                            }
+                                                            disabled={
+                                                                !isCustomItem
+                                                            }
+                                                            onChange={(e) =>
+                                                                field.onChange(
+                                                                    e.target
+                                                                        .value ===
+                                                                        ''
+                                                                        ? null
+                                                                        : parseInt(
+                                                                              e
+                                                                                  .target
+                                                                                  .value,
+                                                                              10,
+                                                                          ),
+                                                                )
+                                                            }
+                                                        />
 
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                        {fieldState.invalid && (
+                                                            <FieldError
+                                                                errors={[
+                                                                    fieldState.error,
+                                                                ]}
+                                                            />
+                                                        )}
+                                                    </Field>
                                                 )}
-                                            </Field>
-                                        )}
-                                    />
+                                            />
+                                        </div>
 
-                                    <div className="grid grid-cols-3 gap-6">
-                                        <div className="col-span-2">
+                                        <div className="col-span-4">
                                             <Controller
                                                 name="price"
                                                 control={form.control}
@@ -762,7 +896,7 @@ export default function PpmpFormDialog({
                                             />
                                         </div>
 
-                                        <div className="col-span-1">
+                                        <div className="col-span-2">
                                             <Controller
                                                 name="unitOfMeasurement"
                                                 control={form.control}
@@ -790,6 +924,12 @@ export default function PpmpFormDialog({
                                                             value={
                                                                 field.value ??
                                                                 ''
+                                                            }
+                                                            readOnly={
+                                                                !isCustomItem
+                                                            }
+                                                            disabled={
+                                                                !isCustomItem
                                                             }
                                                         />
 
@@ -830,46 +970,55 @@ export default function PpmpFormDialog({
                                                         Funding Source
                                                     </FieldLabel>
 
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        role="combobox"
-                                                        aria-expanded={
-                                                            openFundingSourceCommand
-                                                        }
-                                                        className={cn(
-                                                            'w-full justify-between px-3 text-left font-normal',
-                                                            !field.value &&
-                                                                'text-muted-foreground',
-                                                            fieldState.invalid &&
-                                                                'border-destructive ring-destructive',
-                                                        )}
-                                                        onClick={() =>
-                                                            setOpenFundingSourceCommand(
-                                                                true,
-                                                            )
-                                                        }
-                                                    >
-                                                        {selectedFundingSource ? (
-                                                            <span className="truncate">
-                                                                <code className="mr-2 rounded bg-muted p-0.5 text-xs">
+                                                    <ButtonGroup className="flex w-full">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="flex-1 items-center justify-between"
+                                                            onClick={() =>
+                                                                setOpenFundingSourceCommand(
+                                                                    true,
+                                                                )
+                                                            }
+                                                        >
+                                                            {selectedFundingSource ? (
+                                                                <span className="truncate">
+                                                                    <code className="mr-2 rounded bg-muted p-0.5 text-xs">
+                                                                        {
+                                                                            selectedFundingSource
+                                                                                .funding_source
+                                                                                ?.code
+                                                                        }
+                                                                    </code>
                                                                     {
                                                                         selectedFundingSource
                                                                             .funding_source
-                                                                            ?.code
+                                                                            ?.title
                                                                     }
-                                                                </code>
-                                                                {
-                                                                    selectedFundingSource
-                                                                        .funding_source
-                                                                        ?.title
-                                                                }
-                                                            </span>
-                                                        ) : (
-                                                            'Select funding source'
-                                                        )}
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                    </Button>
+                                                                </span>
+                                                            ) : (
+                                                                'Select funding source'
+                                                            )}
+                                                            <ChevronsUpDown />
+                                                        </Button>
+
+                                                        <ButtonGroupSeparator />
+
+                                                        <Button
+                                                            type="button"
+                                                            size="icon"
+                                                            variant="secondary"
+                                                            className="w-20 shrink-0"
+                                                            onClick={() => {
+                                                                form.setValue(
+                                                                    'fundingSource',
+                                                                    null,
+                                                                );
+                                                            }}
+                                                        >
+                                                            Clear
+                                                        </Button>
+                                                    </ButtonGroup>
 
                                                     <CommandDialog
                                                         open={
@@ -967,23 +1116,27 @@ export default function PpmpFormDialog({
                 </div>
 
                 <DialogFooter>
-                    <Button
+                    {/* <Button
                         type="button"
                         variant="outline"
-                        onClick={handleReset}
+                        onClick={() => handleReset(false)}
+                        disabled={isLoading}
                     >
                         Reset
-                    </Button>
-
+                    </Button> */}
                     <Button
                         type="button"
                         variant="outline"
+                        disabled={isLoading}
                         onClick={() => onOpenChange(false)}
                     >
                         Cancel
                     </Button>
-
-                    <Button type="submit" form="form-rhf-demo">
+                    <Button
+                        type="submit"
+                        form="form-rhf-demo"
+                        disabled={isLoading}
+                    >
                         Add Item
                     </Button>
                 </DialogFooter>

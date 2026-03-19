@@ -41,6 +41,12 @@ return new class extends Migration {
             $table->decimal('dec_amount', 15, 2)->default(0);
 
             $table->timestamps();
+
+            $table->unique([
+                'aip_entry_id',
+                'ppmp_price_list_id',
+                'funding_source_id',
+            ]);
         });
     }
 

@@ -99,48 +99,35 @@ class PpmpController extends Controller
     {
         $validated = $request->validated();
 
-        // dd($validated);
-
-        try {
-            $ppmp = Ppmp::create([
-                'aip_entry_id' => $validated['aip_entry_id'],
-                'ppmp_price_list_id' => $validated['ppmp_price_list_id'],
-                'funding_source_id' => $validated['funding_source_id'],
-                'jan_qty' => 0,
-                'jan_amount' => 0,
-                'feb_qty' => 0,
-                'feb_amount' => 0,
-                'mar_qty' => 0,
-                'mar_amount' => 0,
-                'apr_qty' => 0,
-                'apr_amount' => 0,
-                'may_qty' => 0,
-                'may_amount' => 0,
-                'jun_qty' => 0,
-                'jun_amount' => 0,
-                'jul_qty' => 0,
-                'jul_amount' => 0,
-                'aug_qty' => 0,
-                'aug_amount' => 0,
-                'sep_qty' => 0,
-                'sep_amount' => 0,
-                'oct_qty' => 0,
-                'oct_amount' => 0,
-                'nov_qty' => 0,
-                'nov_amount' => 0,
-                'dec_qty' => 0,
-                'dec_amount' => 0,
-            ]);
-
-            $this->updateAipMooeAmount($ppmp->aip_entry_id);
-
-            return back()->with('success', 'PPMP item created successfully');
-        } catch (\Exception $e) {
-            return back()->with(
-                'error',
-                'Failed to create PPMP item: ' . $e->getMessage(),
-            );
-        }
+        Ppmp::create([
+            'aip_entry_id' => $validated['aip_entry_id'],
+            'ppmp_price_list_id' => $validated['ppmp_price_list_id'],
+            'funding_source_id' => $validated['fundingSource'],
+            'jan_qty' => 0,
+            'jan_amount' => 0,
+            'feb_qty' => 0,
+            'feb_amount' => 0,
+            'mar_qty' => 0,
+            'mar_amount' => 0,
+            'apr_qty' => 0,
+            'apr_amount' => 0,
+            'may_qty' => 0,
+            'may_amount' => 0,
+            'jun_qty' => 0,
+            'jun_amount' => 0,
+            'jul_qty' => 0,
+            'jul_amount' => 0,
+            'aug_qty' => 0,
+            'aug_amount' => 0,
+            'sep_qty' => 0,
+            'sep_amount' => 0,
+            'oct_qty' => 0,
+            'oct_amount' => 0,
+            'nov_qty' => 0,
+            'nov_amount' => 0,
+            'dec_qty' => 0,
+            'dec_amount' => 0,
+        ]);
     }
 
     /**
@@ -148,95 +135,101 @@ class PpmpController extends Controller
      */
     public function storeCustomItem(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'aip_entry_id' => 'required|exists:aip_entries,id',
-                'item_number' =>
-                    'required|integer|min:1|unique:ppmp_price_lists,item_number',
-                'description' => 'required|string',
-                'unit_of_measurement' => 'required|string|max:20',
-                'price' => 'required|numeric|min:0',
-                'chart_of_account_id' => 'required|exists:chart_of_accounts,id',
-                'fundingSource' => 'required|integer|exists:funding_sources,id',
-                'ppmp_category_id' => 'nullable|exists:ppmp_categories,id',
-                'custom_category' =>
-                    'nullable|string|max:100|required_without:ppmp_category_id',
-            ]);
+        $validated = $request->validate([
+            'expenseAccount' => 'required|integer|exists:chart_of_accounts,id',
+            'aip_entry_id' => 'required|integer|exists:aip_entries,id',
+            'ppmp_price_list_id' =>
+                'required|integer|exists:ppmp_price_lists,id',
+            'fundingSource' => 'required|integer|exists:funding_sources,id',
+            'itemNo' => 'required|integer|min:1',
+            'description' => 'required|string',
+            'unitOfMeasurement' => 'required|string|max:20',
+            'price' => 'required|numeric|min:0',
+            'category' => 'required|integer|exists:ppmp_categories,id',
+        ]);
 
-            // Use a transaction to ensure data integrity
-            return \DB::transaction(function () use ($validated) {
-                // 1. Handle Category
-                $categoryId = $validated['ppmp_category_id'];
+        Ppmp::create([
+            'aip_entry_id' => $validated['aip_entry_id'],
+            'ppmp_price_list_id' => $validated['ppmp_price_list_id'],
+            'funding_source_id' => $validated['fundingSource'],
+            'jan_qty' => 0,
+            'jan_amount' => 0,
+            'feb_qty' => 0,
+            'feb_amount' => 0,
+            'mar_qty' => 0,
+            'mar_amount' => 0,
+            'apr_qty' => 0,
+            'apr_amount' => 0,
+            'may_qty' => 0,
+            'may_amount' => 0,
+            'jun_qty' => 0,
+            'jun_amount' => 0,
+            'jul_qty' => 0,
+            'jul_amount' => 0,
+            'aug_qty' => 0,
+            'aug_amount' => 0,
+            'sep_qty' => 0,
+            'sep_amount' => 0,
+            'oct_qty' => 0,
+            'oct_amount' => 0,
+            'nov_qty' => 0,
+            'nov_amount' => 0,
+            'dec_qty' => 0,
+            'dec_amount' => 0,
+        ]);
 
-                if (
-                    empty($categoryId) &&
-                    !empty($validated['custom_category'])
-                ) {
-                    $newCategory = PpmpCategory::create([
-                        'name' => $validated['custom_category'],
-                    ]);
-                    $categoryId = $newCategory->id;
-                }
+        // // 1. Handle Category
+        // $categoryId = $validated['ppmp_category_id'];
 
-                // 2. Create the price list
-                $newPriceList = PpmpPriceList::create([
-                    'item_number' => $validated['item_number'],
-                    'description' => $validated['description'],
-                    'unit_of_measurement' => $validated['unit_of_measurement'],
-                    'price' => $validated['price'],
-                    'chart_of_account_id' => $validated['chart_of_account_id'],
-                    'ppmp_category_id' => $categoryId,
-                ]);
+        // if (empty($categoryId) && !empty($validated['custom_category'])) {
+        //     $newCategory = PpmpCategory::create([
+        //         'name' => $validated['custom_category'],
+        //     ]);
+        //     $categoryId = $newCategory->id;
+        // }
 
-                // 3. Create the PPMP with the funding_source_id
-                $ppmp = Ppmp::create([
-                    'aip_entry_id' => $validated['aip_entry_id'],
-                    'ppmp_price_list_id' => $newPriceList->id,
-                    'funding_source_id' => $validated['fundingSource'],
-                    'jan_qty' => 0,
-                    'jan_amount' => 0,
-                    'feb_qty' => 0,
-                    'feb_amount' => 0,
-                    'mar_qty' => 0,
-                    'mar_amount' => 0,
-                    'apr_qty' => 0,
-                    'apr_amount' => 0,
-                    'may_qty' => 0,
-                    'may_amount' => 0,
-                    'jun_qty' => 0,
-                    'jun_amount' => 0,
-                    'jul_qty' => 0,
-                    'jul_amount' => 0,
-                    'aug_qty' => 0,
-                    'aug_amount' => 0,
-                    'sep_qty' => 0,
-                    'sep_amount' => 0,
-                    'oct_qty' => 0,
-                    'oct_amount' => 0,
-                    'nov_qty' => 0,
-                    'nov_amount' => 0,
-                    'dec_qty' => 0,
-                    'dec_amount' => 0,
-                ]);
+        // // 2. Create the price list
+        // $newPriceList = PpmpPriceList::create([
+        //     'item_number' => $validated['item_number'],
+        //     'description' => $validated['description'],
+        //     'unit_of_measurement' => $validated['unit_of_measurement'],
+        //     'price' => $validated['price'],
+        //     'chart_of_account_id' => $validated['chart_of_account_id'],
+        //     'ppmp_category_id' => $categoryId,
+        // ]);
 
-                $this->updateAipMooeAmount($ppmp->aip_entry_id);
+        // // 3. Create the PPMP with the funding_source_id
+        // Ppmp::create([
+        //     'aip_entry_id' => $validated['aip_entry_id'],
+        //     'ppmp_price_list_id' => $newPriceList->id,
+        //     'funding_source_id' => $validated['fundingSource'],
+        //     'jan_qty' => 0,
+        //     'jan_amount' => 0,
+        //     'feb_qty' => 0,
+        //     'feb_amount' => 0,
+        //     'mar_qty' => 0,
+        //     'mar_amount' => 0,
+        //     'apr_qty' => 0,
+        //     'apr_amount' => 0,
+        //     'may_qty' => 0,
+        //     'may_amount' => 0,
+        //     'jun_qty' => 0,
+        //     'jun_amount' => 0,
+        //     'jul_qty' => 0,
+        //     'jul_amount' => 0,
+        //     'aug_qty' => 0,
+        //     'aug_amount' => 0,
+        //     'sep_qty' => 0,
+        //     'sep_amount' => 0,
+        //     'oct_qty' => 0,
+        //     'oct_amount' => 0,
+        //     'nov_qty' => 0,
+        //     'nov_amount' => 0,
+        //     'dec_qty' => 0,
+        //     'dec_amount' => 0,
+        // ]);
 
-                return back()->with(
-                    'success',
-                    'Custom PPMP item created successfully',
-                );
-            });
-        } catch (\Exception $e) {
-            \Log::error('Custom PPMP Creation Error:', [
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-
-            return back()->with(
-                'error',
-                'Failed to create custom PPMP item: ' . $e->getMessage(),
-            );
-        }
+        // $this->updateAipMooeAmount($ppmp->aip_entry_id);
     }
 
     /**
@@ -292,34 +285,12 @@ class PpmpController extends Controller
      */
     public function destroy(Ppmp $ppmp)
     {
-        try {
-            // Log the deletion attempt
-            \Log::info('Attempting to delete PPMP item:', [
-                'id' => $ppmp->id,
-                'description' => $ppmp->item_description,
-            ]);
+        $aipEntryId = $ppmp->aip_entry_id; // Store before deletion
 
-            $aipEntryId = $ppmp->aip_entry_id; // Store before deletion
+        // Delete the PPMP item
+        $ppmp->delete();
 
-            // Delete the PPMP item
-            $ppmp->delete();
-
-            \Log::info('PPMP item deleted successfully:', ['id' => $ppmp->id]);
-
-            // Update AIP MOOE amount after PPMP deletion
-            $this->updateAipMooeAmount($aipEntryId);
-
-            return back()->with('success', 'PPMP item deleted successfully');
-        } catch (\Exception $e) {
-            \Log::error('PPMP Deletion Error:', [
-                'error' => $e->getMessage(),
-                'ppmp_id' => $ppmp->id,
-            ]);
-
-            return back()->with(
-                'error',
-                'Failed to delete PPMP item: ' . $e->getMessage(),
-            );
-        }
+        // Update AIP MOOE amount after PPMP deletion
+        $this->updateAipMooeAmount($aipEntryId);
     }
 }

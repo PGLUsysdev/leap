@@ -24,7 +24,7 @@ class StorePpmpRequest extends FormRequest
         return [
             'aip_entry_id' => 'required|exists:aip_entries,id',
             'ppmp_price_list_id' => 'required|exists:ppmp_price_lists,id',
-            'funding_source_id' => 'required|integer|exists:funding_sources,id',
+            'fundingSource' => 'required|integer|exists:funding_sources,id',
         ];
     }
 }

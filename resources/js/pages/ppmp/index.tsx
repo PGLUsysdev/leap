@@ -99,7 +99,7 @@ export default function PpmpPage({
                     // onEdit={handleEdit}
                     onDelete={handleDelete}
                 >
-                    <div className="flex items-center justify-between">
+                    <div className="flex gap-2">
                         <Select
                             onValueChange={(value) =>
                                 handleFundingSourceSelect(value)
@@ -128,59 +128,57 @@ export default function PpmpPage({
                             </SelectContent>
                         </Select>
 
-                        <div className="flex gap-2">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        <FileDown /> Export
-                                    </Button>
-                                </DropdownMenuTrigger>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">
+                                    <FileDown /> Export
+                                </Button>
+                            </DropdownMenuTrigger>
 
-                                <DropdownMenuContent>
-                                    <DropdownMenuGroup>
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                exportToPrint({
-                                                    filteredPpmpItems,
-                                                    ppmpCategories,
-                                                    chartOfAccounts,
-                                                })
-                                            }
-                                        >
-                                            <Printer /> Print
-                                        </DropdownMenuItem>
+                            <DropdownMenuContent>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            exportToPrint({
+                                                filteredPpmpItems,
+                                                ppmpCategories,
+                                                chartOfAccounts,
+                                            })
+                                        }
+                                    >
+                                        <Printer /> Print
+                                    </DropdownMenuItem>
 
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                exportToPDF({
-                                                    filteredPpmpItems,
-                                                    ppmpCategories,
-                                                    chartOfAccounts,
-                                                })
-                                            }
-                                        >
-                                            <FileText /> To PDF
-                                        </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            exportToPDF({
+                                                filteredPpmpItems,
+                                                ppmpCategories,
+                                                chartOfAccounts,
+                                            })
+                                        }
+                                    >
+                                        <FileText /> To PDF
+                                    </DropdownMenuItem>
 
-                                        <DropdownMenuItem
-                                            onClick={() =>
-                                                exportToExcel({
-                                                    filteredPpmpItems,
-                                                    ppmpCategories,
-                                                    chartOfAccounts,
-                                                })
-                                            }
-                                        >
-                                            <Sheet /> To Excel
-                                        </DropdownMenuItem>
-                                    </DropdownMenuGroup>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            exportToExcel({
+                                                filteredPpmpItems,
+                                                ppmpCategories,
+                                                chartOfAccounts,
+                                            })
+                                        }
+                                    >
+                                        <Sheet /> To Excel
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-                            <Button onClick={() => setOpen(true)}>
-                                <Plus /> Add Item
-                            </Button>
-                        </div>
+                        <Button onClick={() => setOpen(true)}>
+                            <Plus /> Add Item
+                        </Button>
                     </div>
                 </PpmpTablePage>
             </div>

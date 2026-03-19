@@ -1,161 +1,117 @@
-import { describe, it, expect } from 'bun:test'; // Changed import source
+import { expect, test, describe } from 'bun:test';
 import { formSchema } from './form-dialog-schema';
 
-describe('Form Schema Validation (Select Input Handling with Nulls)', () => {
-    // Helper to provide base valid data
-    const validBaseData = {
-        aip_entry_id: 1,
-        ppmp_price_list_id: 100,
-        expenseAccount: 101, 
-        itemNo: 1001,
-        description: 101, 
-        unitOfMeasurement: 'pc',
-        price: '5000',
-        fundingSource: 1, 
-        category: 5, 
+describe('formSchema Validation Suite', () => {
+    const validMock = {
+        aip_entry_id: 101,
+        ppmp_price_list_id: 202,
+        expenseAccount: 303,
+        category: 1,
+        itemNo: 5,
+        description: 99,
+        unitOfMeasurement: 'Piece',
+        price: '1500.50',
+        fundingSource: 1,
         isCustomItem: false,
     };
 
-    it('should pass with valid selected values', () => {
-        const result = formSchema.safeParse(validBaseData);
+    test('should pass with 100% valid data', () => {
+        const result = formSchema.safeParse(validMock);
         expect(result.success).toBe(true);
     });
 
-    // ### Select Field Failures (Null Default States)
+    describe('Initial State and Nullability', () => {
+        test('should fail if all fields are null (initial state)', () => {
+            const initialState = {
+                aip_entry_id: null,
+                ppmp_price_list_id: null,
+                expenseAccount: null,
+                category: null,
+                itemNo: null,
+                description: null,
+                unitOfMeasurement: null,
+                price: null,
+                fundingSource: null,
+                isCustomItem: false,
+            };
+            const result = formSchema.safeParse(initialState);
+            expect(result.success).toBe(false);
 
-    it('should fail if expenseAccount is null', () => {
-        const invalidData = { ...validBaseData, expenseAccount: null };
-        const result = formSchema.safeParse(invalidData);
-
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            const issue = result.error.issues.find((i) => i.path.includes('expenseAccount'));
-            expect(issue).toBeDefined();
-        }
+            if (!result.success) {
+                // Confirming that multiple fields are caught by refinements
+                expect(result.error.issues.length).toBeGreaterThan(5);
+            }
+        });
     });
 
-    it('should fail if fundingSource is null', () => {
-        const invalidData = { ...validBaseData, fundingSource: null };
-        const result = formSchema.safeParse(invalidData);
+    describe('Numeric ID Refinements (Non-zero check)', () => {
+        const numericFields = [
+            'aip_entry_id',
+            'ppmp_price_list_id',
+            'expenseAccount',
+            'category',
+            'fundingSource',
+            'description',
+        ];
 
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            const issue = result.error.issues.find((i) => i.path.includes('fundingSource'));
-            expect(issue).toBeDefined();
-        }
+        numericFields.forEach((field) => {
+            test(`should fail if ${field} is 0`, () => {
+                const invalidData = { ...validMock, [field]: 0 };
+                const result = formSchema.safeParse(invalidData);
+                expect(result.success).toBe(false);
+                if (!result.success) {
+                    const issue = result.error.issues.find((i) =>
+                        i.path.includes(field),
+                    );
+                    expect(issue?.message).toBeDefined();
+                }
+            });
+        });
     });
 
-    it('should fail if description is null', () => {
-        const invalidData = { ...validBaseData, description: null };
-        const result = formSchema.safeParse(invalidData);
+    describe('Field Specific Validations', () => {
+        test('should fail if unitOfMeasurement is an empty string after trim', () => {
+            const result = formSchema.safeParse({
+                ...validMock,
+                unitOfMeasurement: '   ',
+            });
+            expect(result.success).toBe(false);
+        });
 
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            const issue = result.error.issues.find((i) => i.path.includes('description'));
-            expect(issue).toBeDefined();
-        }
-    });
+        test('should fail if price contains non-numeric characters', () => {
+            // Testing with a comma which is not allowed by your regex
+            const result = formSchema.safeParse({
+                ...validMock,
+                price: '1,200.00',
+            });
+            expect(result.success).toBe(false);
+            if (!result.success) {
+                expect(result.error.issues[0].message).toBe(
+                    'Price must contain only numeric characters',
+                );
+            }
+        });
 
-    // ### Select Field Default States (Null when unselected)
+        test('should pass if price is a clean decimal string', () => {
+            const result = formSchema.safeParse({
+                ...validMock,
+                price: '1200.00',
+            });
+            expect(result.success).toBe(true);
+        });
 
-    it('should accept null for expenseAccount when no item is selected', () => {
-        const data = { ...validBaseData, expenseAccount: null };
-        const result = formSchema.safeParse(data);
-        
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            const issue = result.error.issues.find((i) => i.path.includes('expenseAccount'));
-            expect(issue).toBeDefined();
-            expect(issue?.message).toBe('Expense account is required');
-        }
-    });
+        test('should fail if itemNo is a negative number', () => {
+            const result = formSchema.safeParse({ ...validMock, itemNo: -1 });
+            expect(result.success).toBe(false);
+        });
 
-    it('should accept null for description when no item is selected', () => {
-        const data = { ...validBaseData, description: null };
-        const result = formSchema.safeParse(data);
-        
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            const issue = result.error.issues.find((i) => i.path.includes('description'));
-            expect(issue).toBeDefined();
-            expect(issue?.message).toBe('Description is required');
-        }
-    });
-
-    it('should accept null for fundingSource when no item is selected', () => {
-        const data = { ...validBaseData, fundingSource: null };
-        const result = formSchema.safeParse(data);
-        
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            const issue = result.error.issues.find((i) => i.path.includes('fundingSource'));
-            expect(issue).toBeDefined();
-        }
-    });
-
-    it('should fail if category is null', () => {
-        const invalidData = { ...validBaseData, category: null };
-        const result = formSchema.safeParse(invalidData);
-
-        expect(result.success).toBe(false);
-        if (!result.success) {
-            const issue = result.error.issues.find((i) => i.path.includes('category'));
-            expect(issue).toBeDefined();
-            expect(issue?.message).toBe('Category is required');
-        }
-    });
-
-    it('should accept number IDs for select inputs when items are selected', () => {
-        const result = formSchema.safeParse(validBaseData);
-        expect(result.success).toBe(true);
-    });
-
-    // ### Number Field Default States (Zero checks)
-
-    it('should fail if ppmp_price_list_id is zero', () => {
-        const result = formSchema.safeParse({ ...validBaseData, ppmp_price_list_id: 0 });
-        expect(result.success).toBe(false);
-    });
-
-    it('should fail if aip_entry_id is zero', () => {
-        const result = formSchema.safeParse({ ...validBaseData, aip_entry_id: 0 });
-        expect(result.success).toBe(false);
-    });
-
-    it('should fail if fundingSource is zero', () => {
-        const result = formSchema.safeParse({ ...validBaseData, fundingSource: 0 });
-        expect(result.success).toBe(false);
-    });
-
-    it('should fail if itemNo is zero', () => {
-        const result = formSchema.safeParse({ ...validBaseData, itemNo: 0 });
-        expect(result.success).toBe(false);
-    });
-
-    // ### Price Field Validation
-
-    it('should pass if price contains valid numeric content', () => {
-        const result = formSchema.safeParse({ ...validBaseData, price: '5000' });
-        expect(result.success).toBe(true);
-    });
-
-    it('should pass if price contains decimal numeric content', () => {
-        const result = formSchema.safeParse({ ...validBaseData, price: '99.99' });
-        expect(result.success).toBe(true);
-    });
-
-    it('should fail if price contains non-numeric content', () => {
-        const result = formSchema.safeParse({ ...validBaseData, price: 'abc' });
-        expect(result.success).toBe(false);
-    });
-
-    it('should fail if price is empty string', () => {
-        const result = formSchema.safeParse({ ...validBaseData, price: '' });
-        expect(result.success).toBe(false);
-    });
-
-    it('should pass if price contains zero', () => {
-        const result = formSchema.safeParse({ ...validBaseData, price: '0' });
-        expect(result.success).toBe(true);
+        test('should validate that isCustomItem is a boolean', () => {
+            // @ts-ignore
+            const result = formSchema.safeParse({
+                ...validMock,
+                isCustomItem: 'true',
+            });
+            expect(result.success).toBe(false);
+        });
     });
 });
