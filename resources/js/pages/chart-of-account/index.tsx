@@ -5,7 +5,8 @@ import type { ChartOfAccount } from '@/types/global';
 import ChartOfAccountTablePage from '@/pages/chart-of-account/table/page';
 import { Button } from '@/components/ui/button';
 import FormDialog from '@/pages/chart-of-account/form-dialog';
-import DeleteDialog from '@/pages/chart-of-account/delete-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { router } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Chart of Accounts', href: '#' },
@@ -18,12 +19,13 @@ interface ChartOfAccountPageProps {
 export default function ChartOfAccountPage({
     chartOfAccounts,
 }: ChartOfAccountPageProps) {
-    console.log(chartOfAccounts);
-
     const [open, setOpen] = useState(false);
-    const [openDelete, setOpenDelete] = useState(false);
     const [selectedAccount, setSelectedAccount] =
         useState<ChartOfAccount | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    console.log(selectedAccount);
 
     function handleAdd() {
         setSelectedAccount(null);
@@ -31,8 +33,6 @@ export default function ChartOfAccountPage({
     }
 
     function handleEdit(account: ChartOfAccount) {
-        console.log(account);
-
         const newAccount = {
             ...account,
             is_postable: account.is_postable ? true : false,
@@ -43,9 +43,22 @@ export default function ChartOfAccountPage({
         setOpen(true);
     }
 
-    function handleDelete(account: ChartOfAccount) {
+    function handleDeleteDialogOpen(account: ChartOfAccount) {
         setSelectedAccount(account);
-        setOpenDelete(true);
+        setIsDeleteDialogOpen(true);
+    }
+
+    function handleDelete() {
+        router.delete(`/chart-of-accounts/${selectedAccount?.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setIsDeleteDialogOpen(false);
+                setSelectedAccount(null);
+            },
+            onFinish: () => setIsLoading(false),
+        });
     }
 
     return (
@@ -54,7 +67,7 @@ export default function ChartOfAccountPage({
                 <ChartOfAccountTablePage
                     data={chartOfAccounts}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteDialogOpen}
                 >
                     <div className="flex justify-end">
                         <Button onClick={handleAdd}>
@@ -71,9 +84,24 @@ export default function ChartOfAccountPage({
             />
 
             <DeleteDialog
-                open={openDelete}
-                setOpen={setOpenDelete}
-                initialData={selectedAccount}
+                isOpen={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                title="Remove from AIP Summary?"
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedAccount?.account_title}"
+                        </span>
+                        ?
+                    </>
+                }
+                onConfirm={handleDelete}
+                onCancel={() => {
+                    setIsDeleteDialogOpen(false);
+                    setSelectedAccount(null);
+                }}
+                isLoading={isLoading}
             />
         </AppLayout>
     );

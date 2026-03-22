@@ -5,7 +5,8 @@ import type { PpmpCategory } from '@/types/global';
 import PpmpCategoryTablePage from '@/pages/ppmp-category/table/page';
 import { Button } from '@/components/ui/button';
 import FormDialog from '@/pages/ppmp-category/form-dialog';
-import DeleteDialog from '@/pages/ppmp-category/delete-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { router } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'PPMP Category', href: '#' }];
 
@@ -16,12 +17,13 @@ interface PpmpCategoryPageProps {
 export default function PpmpCategoryPage({
     ppmpCategories,
 }: PpmpCategoryPageProps) {
-    console.log(ppmpCategories);
-
     const [open, setOpen] = useState(false);
-    const [openDelete, setOpenDelete] = useState(false);
     const [selectedCategory, setSelectedCategory] =
         useState<PpmpCategory | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    console.log(selectedCategory);
 
     function handleAdd() {
         setSelectedCategory(null);
@@ -29,8 +31,6 @@ export default function PpmpCategoryPage({
     }
 
     function handleEdit(category: PpmpCategory) {
-        console.log(category);
-
         const newCategory = {
             ...category,
         };
@@ -39,9 +39,22 @@ export default function PpmpCategoryPage({
         setOpen(true);
     }
 
-    function handleDelete(category: PpmpCategory) {
+    function handleDeleteDialogOpen(category: PpmpCategory) {
         setSelectedCategory(category);
-        setOpenDelete(true);
+        setIsDeleteDialogOpen(true);
+    }
+
+    function handleDelete() {
+        router.delete(`/ppmp-categories/${selectedCategory?.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setIsDeleteDialogOpen(false);
+                setSelectedCategory(null);
+            },
+            onFinish: () => setIsLoading(false),
+        });
     }
 
     return (
@@ -50,7 +63,7 @@ export default function PpmpCategoryPage({
                 <PpmpCategoryTablePage
                     data={ppmpCategories}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteDialogOpen}
                 >
                     <div className="flex justify-end">
                         <Button onClick={handleAdd}>Add PPMP Category</Button>
@@ -65,9 +78,24 @@ export default function PpmpCategoryPage({
             />
 
             <DeleteDialog
-                open={openDelete}
-                setOpen={setOpenDelete}
-                initialData={selectedCategory}
+                isOpen={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                title="Remove from AIP Summary?"
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedCategory?.name}"
+                        </span>
+                        ?
+                    </>
+                }
+                onConfirm={handleDelete}
+                onCancel={() => {
+                    setIsDeleteDialogOpen(false);
+                    setSelectedCategory(null);
+                }}
+                isLoading={isLoading}
             />
         </AppLayout>
     );

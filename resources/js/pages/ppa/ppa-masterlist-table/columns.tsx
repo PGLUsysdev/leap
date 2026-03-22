@@ -74,48 +74,44 @@ export const columns = [
     columnHelper.display({
         id: 'action',
         size: 58,
-        cell: ({ row, table }) => {
-            const ppa = row.original;
+        minSize: 58,
+        maxSize: 58,
+        cell: ({ row, table }) => (
+            <div className="flex gap-1">
+                <Button
+                    onClick={() => {
+                        // Logic to determine what the next child level should be
+                        let nextType: 'Project' | 'Activity' | 'Sub-Activity';
 
-            return (
-                <>
-                    <Button
-                        onClick={() => {
-                            // Logic to determine what the next child level should be
-                            let nextType:
-                                | 'Project'
-                                | 'Activity'
-                                | 'Sub-Activity';
+                        if (row.original.type === 'Program')
+                            nextType = 'Project';
+                        else if (row.original.type === 'Project')
+                            nextType = 'Activity';
+                        else nextType = 'Sub-Activity'; // If it's an Activity, add a Sub-Activity
 
-                            if (ppa.type === 'Program') nextType = 'Project';
-                            else if (ppa.type === 'Project')
-                                nextType = 'Activity';
-                            else nextType = 'Sub-Activity'; // If it's an Activity, add a Sub-Activity
+                        table.options.meta?.onAdd?.(row.original, nextType);
+                    }}
+                    size="icon"
+                    disabled={row.original.type === 'Sub-Activity'}
+                >
+                    <Plus className="h-4 w-4" />
+                </Button>
 
-                            table.options.meta?.onAdd?.(ppa, nextType);
-                        }}
-                        size="icon"
-                        disabled={ppa.type === 'Sub-Activity'}
-                    >
-                        <Plus className="h-4 w-4" />
-                    </Button>
+                <Button
+                    size="icon"
+                    onClick={() => table.options.meta?.onEdit?.(row.original)}
+                >
+                    <Pencil />
+                </Button>
 
-                    <Button
-                        onClick={() => table.options.meta?.onEdit?.(ppa)}
-                        size="icon"
-                    >
-                        <Pencil />
-                    </Button>
-
-                    <Button
-                        onClick={() => table.options.meta?.onDelete?.(ppa)}
-                        size="icon"
-                        variant="destructive"
-                    >
-                        <Trash />
-                    </Button>
-                </>
-            );
-        },
+                <Button
+                    size="icon"
+                    variant="destructive"
+                    onClick={() => table.options.meta?.onDelete?.(row.original)}
+                >
+                    <Trash />
+                </Button>
+            </div>
+        ),
     }),
 ];

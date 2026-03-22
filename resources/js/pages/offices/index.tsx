@@ -2,11 +2,11 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { router } from '@inertiajs/react';
 import FormDialog from './form-dialog';
-import DeleteDialog from './delete-dialog';
 import OfficeTablePage from './table/page';
 import type { Office, Sector, LguLevel, OfficeType } from '@/types/global';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { router } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Offices', href: '#' }];
 
@@ -23,15 +23,12 @@ export default function OfficesPage({
     lguLevels,
     officeTypes,
 }: OfficesPageProps) {
-    console.log(offices);
-
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [selectedOfficeForDelete, setSelectedOfficeForDelete] =
-        useState<Office | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    console.log(selectedOffice);
+    // console.log(selectedOffice);
 
     const handleCreate = () => {
         setSelectedOffice(null);
@@ -43,9 +40,22 @@ export default function OfficesPage({
         setIsDialogOpen(true);
     }
 
-    function handleDelete(office: Office) {
-        setSelectedOfficeForDelete(office);
+    function handleDeleteDialogOpen(office: Office) {
+        setSelectedOffice(office);
         setIsDeleteDialogOpen(true);
+    }
+
+    function handleDelete() {
+        router.delete(`/offices/${selectedOffice?.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setIsDeleteDialogOpen(false);
+                setSelectedOffice(null);
+            },
+            onFinish: () => setIsLoading(false),
+        });
     }
 
     return (
@@ -54,7 +64,7 @@ export default function OfficesPage({
                 <OfficeTablePage
                     data={offices}
                     onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteDialogOpen}
                 >
                     <Button onClick={handleCreate}>Add Office</Button>
                 </OfficeTablePage>
@@ -69,9 +79,24 @@ export default function OfficesPage({
                 />
 
                 <DeleteDialog
-                    open={isDeleteDialogOpen}
-                    setOpen={setIsDeleteDialogOpen}
-                    initialData={selectedOfficeForDelete}
+                    isOpen={isDeleteDialogOpen}
+                    onOpenChange={setIsDeleteDialogOpen}
+                    title="Delete Office?"
+                    description={
+                        <>
+                            Are you sure you want to remove{' '}
+                            <span className="font-bold text-foreground">
+                                "{selectedOffice?.name}"
+                            </span>
+                            ?
+                        </>
+                    }
+                    onConfirm={handleDelete}
+                    onCancel={() => {
+                        setIsDeleteDialogOpen(false);
+                        setSelectedOffice(null);
+                    }}
+                    isLoading={isLoading}
                 />
             </div>
         </AppLayout>

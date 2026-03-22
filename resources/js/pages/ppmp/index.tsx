@@ -20,7 +20,8 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import PpmpFormDialog from '@/pages/ppmp/form-dialog';
 import PpmpTablePage from './ppmp-table/page';
-import DeleteDialog from './delete-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { router } from '@inertiajs/react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -65,14 +66,15 @@ export default function PpmpPage({
     ppmpCategories,
     fundingSources,
 }: PpmpPageProps) {
-    // console.log(ppmpItems);
-    console.log(fundingSources);
-
     const [open, setOpen] = useState(false);
     const [openAlert, setOpenAlert] = useState(false);
-    const [openDelete, setOpenDelete] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
     const [selectedFundingSource, setSelectedFundingSource] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // console.log(selectedSource);
+    // console.log(selectedFundingSource);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
@@ -83,11 +85,6 @@ export default function PpmpPage({
         { title: `PPMP Management`, href: `#` },
     ];
 
-    function handleDelete(source: Ppmp) {
-        setSelectedSource(source);
-        setOpenDelete(true);
-    }
-
     function handleFundingSourceSelect(value: string) {
         const id = Number(value);
         setSelectedFundingSource(id);
@@ -97,11 +94,27 @@ export default function PpmpPage({
         selectedFundingSource !== 0
             ? ppmpItems.filter(
                   (ppmpItem) =>
-                      selectedFundingSource === ppmpItem.funding_source.id,
+                      selectedFundingSource === ppmpItesm.funding_source.id,
               )
             : ppmpItems;
 
-    // console.log(filteredPpmpItems);
+    function handleDeleteDialogOpen(source: Ppmp) {
+        setSelectedSource(source);
+        setIsDeleteDialogOpen(true);
+    }
+
+    function handleDelete() {
+        router.delete(`/ppmp/${selectedSource?.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setIsDeleteDialogOpen(false);
+                setSelectedSource(null);
+            },
+            onFinish: () => setIsLoading(false),
+        });
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -109,7 +122,7 @@ export default function PpmpPage({
                 <PpmpTablePage
                     data={filteredPpmpItems}
                     // onEdit={handleEdit}
-                    onDelete={handleDelete}
+                    onDelete={handleDeleteDialogOpen}
                 >
                     <div className="flex gap-2">
                         <Select
@@ -210,12 +223,6 @@ export default function PpmpPage({
                 fundingSources={fundingSources}
             />
 
-            <DeleteDialog
-                open={openDelete}
-                setOpen={setOpenDelete}
-                initialData={selectedSource}
-            />
-
             <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -235,6 +242,27 @@ export default function PpmpPage({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <DeleteDialog
+                isOpen={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                title="Remove from AIP Summary?"
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedSource?.ppmp_price_list?.description}"
+                        </span>
+                        ?
+                    </>
+                }
+                onConfirm={handleDelete}
+                onCancel={() => {
+                    setIsDeleteDialogOpen(false);
+                    setSelectedSource(null);
+                }}
+                isLoading={isLoading}
+            />
         </AppLayout>
     );
 }

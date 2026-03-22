@@ -16,15 +16,14 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import DataTable from '@/pages/aip-summary/table/data-table';
 import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
-import DeleteDialog from '@/pages/aip-summary/delete-dialog';
+// import DeleteDialog from '@/pages/aip-summary/delete-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
 import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
 import { useAipColumns } from '@/pages/aip-summary/table/columns';
-// import { exportToPrint } from '@/pages/aip-summary/utils/export-utils';
-
 import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
-
 import type { FiscalYear, Ppa, FundingSource } from '@/types/global';
 import { type BreadcrumbItem } from '@/types';
+import { router } from '@inertiajs/react';
 
 interface AipSummaryTableProp {
     fiscalYear: FiscalYear;
@@ -105,9 +104,13 @@ export default function AipSummaryTable({
         description: '',
     });
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    // const [selectedEntry, setSelectedEntry] = useState<Ppa | null>(null);
     const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
     const [isExportOpen, setIsExportOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    console.log(selectedEntryId);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
@@ -152,8 +155,21 @@ export default function AipSummaryTable({
 
     const handleOpenDeleteDialog = useCallback((entry) => {
         setSelectedEntryId(entry.id);
-        setIsDeleteAlertOpen(true);
+        setIsDeleteDialogOpen(true);
     }, []);
+
+    const handleDelete = () => {
+        router.delete(`/aip-entries/${selectedEntry?.aip_entry?.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => setIsLoading(true),
+            onFinish: () => {
+                setIsLoading(false);
+                setSelectedEntryId(null);
+            },
+            onSuccess: () => setIsDeleteDialogOpen(false),
+        });
+    };
 
     const columns = useAipColumns({
         onAddEntry: handleAddEntry,
@@ -161,6 +177,18 @@ export default function AipSummaryTable({
         onDelete: handleOpenDeleteDialog,
         masterPpas,
     });
+
+    // const handleDelete = () => {
+    //     if (!selectedEntry) return;
+
+    //     router.delete(`/aip-entries/${selectedEntry.aip_entry.id}`, {
+    //         preserveScroll: true,
+    //         onFinish: () => {
+    //             setIsDeleteDialogOpen(false);
+    //             setSelectedEntry(null);
+    //         },
+    //     });
+    // };
 
     // const handleExportExcel = () => {
     //     exportToExcel(aipEntries, fiscalYear);
@@ -267,10 +295,31 @@ export default function AipSummaryTable({
 
             {/*alert dialog*/}
             <DeleteDialog
-                isDeleteAlertOpen={isDeleteAlertOpen}
-                setIsDeleteAlertOpen={setIsDeleteAlertOpen}
-                selectedEntry={selectedEntry}
-                setSelectedEntryId={setSelectedEntryId}
+                isOpen={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                title="Remove from AIP Summary?"
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedEntry?.title}"
+                        </span>
+                        ?
+                        {selectedEntry?.children &&
+                            selectedEntry.children.length > 0 && (
+                                <span className="mt-2 block font-semibold text-destructive italic">
+                                    Warning: This will also remove all nested
+                                    sub-projects and activities.
+                                </span>
+                            )}
+                    </>
+                }
+                onConfirm={handleDelete}
+                onCancel={() => {
+                    setIsDeleteDialogOpen(false);
+                    setSelectedEntryId(null);
+                }}
+                isLoading={isLoading}
             />
 
             <ExportToPdfDialog

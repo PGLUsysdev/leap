@@ -1,5 +1,3 @@
-// resources\js\pages\ppa\ppa-masterlist-table\data-table.tsx
-
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import {
@@ -25,14 +23,18 @@ import { getExpandedRowModel } from '@tanstack/react-table';
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
-    meta?: any;
+    onAdd?: (parent: TData, childType: string) => void;
+    onEdit?: (record: TData) => void;
+    onDelete?: (record: TData) => void;
     children?: ReactElement;
 }
 
 export function PpaDataTable<TData, TValue>({
     columns,
     data,
-    meta,
+    onAdd,
+    onEdit,
+    onDelete,
     children,
 }: DataTableProps<TData, TValue>) {
     const [globalFilter, setGlobalFilter] = useState('');
@@ -41,7 +43,7 @@ export function PpaDataTable<TData, TValue>({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        meta,
+        meta: { onAdd, onEdit, onDelete },
         initialState: {
             columnPinning: {
                 right: ['action'],
@@ -139,6 +141,7 @@ export function PpaDataTable<TData, TValue>({
                         )}
                     </TableBody>
                 </Table>
+
                 <ScrollBar orientation="horizontal" />
             </ScrollArea>
         </div>
