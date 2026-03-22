@@ -73,9 +73,7 @@ export const columns = [
     }),
     columnHelper.display({
         id: 'action',
-        size: 58,
-        minSize: 58,
-        maxSize: 58,
+        size: 60,
         cell: ({ row, table }) => (
             <div className="flex gap-1">
                 <Button
