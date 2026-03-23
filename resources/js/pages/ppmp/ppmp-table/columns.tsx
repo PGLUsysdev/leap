@@ -105,6 +105,10 @@ export const columns = [
         header: 'Funding Source',
         cell: (info) => <span className="text-wrap">{info.getValue()}</span>,
     }),
+    columnHelper.accessor('ppmp_price_list.chart_of_account.expense_class', {
+        header: 'Expense Class',
+        cell: (info) => <span className="text-wrap">{info.getValue()}</span>,
+    }),
     columnHelper.accessor('ppmp_price_list.chart_of_account.account_title', {
         header: 'Expense Account',
         size: 300,

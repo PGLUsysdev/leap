@@ -712,7 +712,7 @@ export default function AipEntryFormDialog({
                                                                             data?.id
                                                                         ) {
                                                                             router.visit(
-                                                                                `/aip/${fiscalYear.id}/summary/${data.aip_entry.id}/ppmp`,
+                                                                                `/aip/${fiscalYear.id}/summary/${data.aip_entry?.id}/ppmp`,
                                                                             );
                                                                         }
                                                                     }}

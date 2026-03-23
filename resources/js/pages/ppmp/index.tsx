@@ -25,13 +25,11 @@ import { router } from '@inertiajs/react';
 import {
     AlertDialog,
     AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
 import { type BreadcrumbItem } from '@/types';
@@ -93,13 +91,21 @@ export default function PpmpPage({
         setSelectedFundingSource(id);
     }
 
-    const filteredPpmpItems =
-        selectedFundingSource !== 0
-            ? ppmpItems.filter(
-                  (ppmpItem) =>
-                      selectedFundingSource === ppmpItem.funding_source.id,
-              )
-            : ppmpItems;
+    const filteredPpmpItems = ppmpItems.filter((ppmpItem) => {
+        // 1. Check Funding Source (if 0, it passes everything)
+        const matchesFunding =
+            selectedFundingSource === 0 ||
+            ppmpItem.funding_source.id === selectedFundingSource;
+
+        // 2. Check Expense Class (if 'ALL', it passes everything)
+        const matchesExpenseClass =
+            selectedExpenseClass === 'ALL' ||
+            ppmpItem.ppmp_price_list?.chart_of_account?.expense_class ===
+                selectedExpenseClass;
+
+        // Item must satisfy both conditions
+        return matchesFunding && matchesExpenseClass;
+    });
 
     const filteredChartOfAccounts =
         selectedExpenseClass === 'ALL'
