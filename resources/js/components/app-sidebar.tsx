@@ -47,6 +47,21 @@ const mainNavItems: NavItem[] = [
         href: '/offices',
         icon: Users,
     },
+    {
+        title: 'Sectors',
+        href: '/sectors',
+        icon: Users,
+    },
+    {
+        title: 'Lgu Levels',
+        href: '/lgu-levels',
+        icon: Users,
+    },
+    {
+        title: 'Office Types',
+        href: '/office-types',
+        icon: Users,
+    },
     { title: '', href: '', type: 'separator' },
     {
         title: 'Price Lists',

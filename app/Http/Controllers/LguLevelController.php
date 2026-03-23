@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LguLevel;
 use App\Http\Requests\StoreLguLevelRequest;
 use App\Http\Requests\UpdateLguLevelRequest;
+use Inertia\Inertia;
 
 class LguLevelController extends Controller
 {
@@ -13,7 +14,9 @@ class LguLevelController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('lgu-level/index', [
+            'lguLevels' => LguLevel::all(),
+        ]);
     }
 
     /**
@@ -29,7 +32,9 @@ class LguLevelController extends Controller
      */
     public function store(StoreLguLevelRequest $request)
     {
-        //
+        $validated = $request->validated();
+
+        LguLevel::create($validated);
     }
 
     /**
@@ -53,7 +58,9 @@ class LguLevelController extends Controller
      */
     public function update(UpdateLguLevelRequest $request, LguLevel $lguLevel)
     {
-        //
+        $validated = $request->validated();
+
+        $lguLevel->update($validated);
     }
 
     /**
@@ -61,6 +68,6 @@ class LguLevelController extends Controller
      */
     public function destroy(LguLevel $lguLevel)
     {
-        //
+        $lguLevel->delete();
     }
 }

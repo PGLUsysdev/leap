@@ -86,7 +86,7 @@ export default function ChartOfAccountPage({
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title="Remove from AIP Summary?"
+                title="Delete Chart of Account?"
                 description={
                     <>
                         Are you sure you want to remove{' '}

@@ -21,7 +21,9 @@ use App\Http\Controllers\PpmpHeaderController;
 use App\Http\Controllers\PpmpItemController;
 use App\Http\Controllers\PpmpController;
 use App\Http\Controllers\FundingSourceController;
+use App\Http\Controllers\LguLevelController;
 use App\Http\Controllers\PpmpCategoryController;
+use App\Http\Controllers\OfficeTypeController;
 
 Route::get(
     '/',
@@ -158,7 +160,51 @@ Route::delete('/aip-ppa/{aipPpa}', [PpaController::class, 'destroy'])->name(
     'aip-ppa.destroy',
 );
 
-Route::get('sectors', [SectorController::class, 'index']);
+// sectors (active)
+Route::get('sectors', [SectorController::class, 'index'])->name(
+    'sectors.index',
+);
+Route::post('sectors', [SectorController::class, 'store'])->name(
+    'sectors.store',
+);
+Route::patch('sectors/{sector}', [SectorController::class, 'update'])->name(
+    'sectors.update',
+);
+Route::delete('sectors/{sector}', [SectorController::class, 'destroy'])->name(
+    'sectors.destroy',
+);
+
+// lgu-levels (active)
+Route::get('lgu-levels', [LguLevelController::class, 'index'])->name(
+    'lgu-levels.index',
+);
+Route::post('lgu-levels', [LguLevelController::class, 'store'])->name(
+    'lgu-levels.store',
+);
+Route::patch('lgu-levels/{lguLevel}', [
+    LguLevelController::class,
+    'update',
+])->name('lgu-levels.update');
+Route::delete('lgu-levels/{lguLevel}', [
+    LguLevelController::class,
+    'destroy',
+])->name('lgu-levels.destroy');
+
+// office-types (active)
+Route::get('office-types', [OfficeTypeController::class, 'index'])->name(
+    'office-types.index',
+);
+Route::post('office-types', [OfficeTypeController::class, 'store'])->name(
+    'office-types.store',
+);
+Route::patch('office-types/{officeType}', [
+    OfficeTypeController::class,
+    'update',
+])->name('office-types.update');
+Route::delete('office-types/{officeType}', [
+    OfficeTypeController::class,
+    'destroy',
+])->name('office-types.destroy');
 
 // aip summary
 Route::post('aip/{aip_id}/import', [AipEntryController::class, 'store']);

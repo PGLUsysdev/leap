@@ -81,7 +81,7 @@ export default function PriceListPage({
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title="Remove from AIP Summary?"
+                title="Delete Price List?"
                 description={
                     <>
                         Are you sure you want to remove{' '}

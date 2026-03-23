@@ -80,7 +80,7 @@ export default function FundingSourcePage({
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title="Remove from AIP Summary?"
+                title="Delete Funding Source?"
                 description={
                     <>
                         Are you sure you want to remove{' '}

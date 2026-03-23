@@ -1,57 +1,49 @@
 import { useState } from 'react';
+import TablePage from './table/page';
+import { Button } from '@/components/ui/button';
+import FormDialog from './form-dialog';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { PpmpCategory } from '@/types/global';
-import PpmpCategoryTablePage from '@/pages/ppmp-category/table/page';
-import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/ppmp-category/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
+import type { OfficeType } from '@/types/global';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'PPMP Category', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Office Types', href: '#' }];
 
-interface PpmpCategoryPageProps {
-    ppmpCategories: PpmpCategory[];
+interface OfficeTypePageProps {
+    officeTypes: OfficeType[];
 }
 
-export default function PpmpCategoryPage({
-    ppmpCategories,
-}: PpmpCategoryPageProps) {
+export default function SectorPage({ officeTypes }: OfficeTypePageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] =
-        useState<PpmpCategory | null>(null);
+    const [selectedOfficeType, setSelectedOfficeType] =
+        useState<OfficeType | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    console.log(selectedCategory);
-
     function handleAdd() {
-        setSelectedCategory(null);
+        setSelectedOfficeType(null);
         setOpen(true);
     }
 
-    function handleEdit(category: PpmpCategory) {
-        const newCategory = {
-            ...category,
-        };
-
-        setSelectedCategory(newCategory);
+    function handleEdit(data: OfficeType) {
+        setSelectedOfficeType(data);
         setOpen(true);
     }
 
-    function handleDeleteDialogOpen(category: PpmpCategory) {
-        setSelectedCategory(category);
+    function handleDeleteDialogOpen(data: OfficeType) {
+        setSelectedOfficeType(data);
         setIsDeleteDialogOpen(true);
     }
 
     function handleDelete() {
-        router.delete(`/ppmp-categories/${selectedCategory?.id}`, {
+        router.delete(`/office-types/${selectedOfficeType?.id}`, {
             preserveState: true,
             preserveScroll: true,
             onStart: () => setIsLoading(true),
             onSuccess: () => {
                 setIsDeleteDialogOpen(false);
-                setSelectedCategory(null);
+                setSelectedOfficeType(null);
             },
             onFinish: () => setIsLoading(false),
         });
@@ -60,32 +52,32 @@ export default function PpmpCategoryPage({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
-                <PpmpCategoryTablePage
-                    data={ppmpCategories}
+                <TablePage
+                    data={officeTypes}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
                     <div className="flex justify-end">
-                        <Button onClick={handleAdd}>Add PPMP Category</Button>
+                        <Button onClick={handleAdd}>Add Office Type</Button>
                     </div>
-                </PpmpCategoryTablePage>
+                </TablePage>
             </div>
 
             <FormDialog
                 open={open}
                 setOpen={setOpen}
-                initialData={selectedCategory}
+                initialData={selectedOfficeType}
             />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title="Delete PPMP Category?"
+                title="Delete Office Type?"
                 description={
                     <>
                         Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
-                            "{selectedCategory?.name}"
+                            "{selectedOfficeType?.type}"
                         </span>
                         ?
                     </>
@@ -93,7 +85,7 @@ export default function PpmpCategoryPage({
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setIsDeleteDialogOpen(false);
-                    setSelectedCategory(null);
+                    setSelectedOfficeType(null);
                 }}
                 isLoading={isLoading}
             />

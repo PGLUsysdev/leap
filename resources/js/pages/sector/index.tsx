@@ -1,57 +1,48 @@
 import { useState } from 'react';
+import TablePage from './table/page';
+import { Button } from '@/components/ui/button';
+import FormDialog from './form-dialog';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { PpmpCategory } from '@/types/global';
-import PpmpCategoryTablePage from '@/pages/ppmp-category/table/page';
-import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/ppmp-category/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
+import type { Sector } from '@/types/global';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'PPMP Category', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Sectors', href: '#' }];
 
-interface PpmpCategoryPageProps {
-    ppmpCategories: PpmpCategory[];
+interface SectorPageProps {
+    sectors: Sector[];
 }
 
-export default function PpmpCategoryPage({
-    ppmpCategories,
-}: PpmpCategoryPageProps) {
+export default function SectorPage({ sectors }: SectorPageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] =
-        useState<PpmpCategory | null>(null);
+    const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    console.log(selectedCategory);
-
     function handleAdd() {
-        setSelectedCategory(null);
+        setSelectedSector(null);
         setOpen(true);
     }
 
-    function handleEdit(category: PpmpCategory) {
-        const newCategory = {
-            ...category,
-        };
-
-        setSelectedCategory(newCategory);
+    function handleEdit(data: Sector) {
+        setSelectedSector(data);
         setOpen(true);
     }
 
-    function handleDeleteDialogOpen(category: PpmpCategory) {
-        setSelectedCategory(category);
+    function handleDeleteDialogOpen(data: Sector) {
+        setSelectedSector(data);
         setIsDeleteDialogOpen(true);
     }
 
     function handleDelete() {
-        router.delete(`/ppmp-categories/${selectedCategory?.id}`, {
+        router.delete(`/sectors/${selectedSector?.id}`, {
             preserveState: true,
             preserveScroll: true,
             onStart: () => setIsLoading(true),
             onSuccess: () => {
                 setIsDeleteDialogOpen(false);
-                setSelectedCategory(null);
+                setSelectedSector(null);
             },
             onFinish: () => setIsLoading(false),
         });
@@ -60,32 +51,32 @@ export default function PpmpCategoryPage({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
-                <PpmpCategoryTablePage
-                    data={ppmpCategories}
+                <TablePage
+                    data={sectors}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
                     <div className="flex justify-end">
-                        <Button onClick={handleAdd}>Add PPMP Category</Button>
+                        <Button onClick={handleAdd}>Add Sector</Button>
                     </div>
-                </PpmpCategoryTablePage>
+                </TablePage>
             </div>
 
             <FormDialog
                 open={open}
                 setOpen={setOpen}
-                initialData={selectedCategory}
+                initialData={selectedSector}
             />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title="Delete PPMP Category?"
+                title="Delete Sector?"
                 description={
                     <>
                         Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
-                            "{selectedCategory?.name}"
+                            "{selectedSector?.sector}"
                         </span>
                         ?
                     </>
@@ -93,7 +84,7 @@ export default function PpmpCategoryPage({
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setIsDeleteDialogOpen(false);
-                    setSelectedCategory(null);
+                    setSelectedSector(null);
                 }}
                 isLoading={isLoading}
             />

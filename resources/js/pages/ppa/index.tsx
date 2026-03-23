@@ -103,7 +103,7 @@ export default function PpaPage({
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title="Remove from AIP Summary?"
+                title="Delete PPA?"
                 description={
                     <>
                         Are you sure you want to remove{' '}

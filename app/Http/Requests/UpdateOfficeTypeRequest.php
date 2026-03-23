@@ -11,7 +11,7 @@ class UpdateOfficeTypeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class UpdateOfficeTypeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'code' => ['required', 'string', 'max:2'],
+            'type' => ['required', 'string', 'max:20'],
         ];
     }
 }

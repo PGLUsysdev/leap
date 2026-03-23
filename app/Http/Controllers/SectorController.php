@@ -14,10 +14,8 @@ class SectorController extends Controller
      */
     public function index()
     {
-        $sectors = Sector::all();
-
-        return Inertia::render('sectors/index', [
-            'sectors' => $sectors,
+        return Inertia::render('sector/index', [
+            'sectors' => Sector::all(),
         ]);
     }
 
@@ -34,7 +32,9 @@ class SectorController extends Controller
      */
     public function store(StoreSectorRequest $request)
     {
-        //
+        $validated = $request->validated();
+
+        Sector::create($validated);
     }
 
     /**
@@ -58,7 +58,9 @@ class SectorController extends Controller
      */
     public function update(UpdateSectorRequest $request, Sector $sector)
     {
-        //
+        $validated = $request->validated();
+
+        $sector->update($validated);
     }
 
     /**
@@ -66,6 +68,6 @@ class SectorController extends Controller
      */
     public function destroy(Sector $sector)
     {
-        //
+        $sector->delete();
     }
 }

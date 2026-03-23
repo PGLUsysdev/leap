@@ -11,7 +11,7 @@ class StoreLguLevelRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class StoreLguLevelRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'code' => ['required', 'string', 'size:1'],
+            'level' => ['required', 'string', 'max:20'],
         ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OfficeType;
 use App\Http\Requests\StoreOfficeTypeRequest;
 use App\Http\Requests\UpdateOfficeTypeRequest;
+use Inertia\Inertia;
 
 class OfficeTypeController extends Controller
 {
@@ -13,7 +14,9 @@ class OfficeTypeController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('office-type/index', [
+            'officeTypes' => OfficeType::all(),
+        ]);
     }
 
     /**
@@ -29,7 +32,9 @@ class OfficeTypeController extends Controller
      */
     public function store(StoreOfficeTypeRequest $request)
     {
-        //
+        $validated = $request->validated();
+
+        OfficeType::create($validated);
     }
 
     /**
@@ -51,9 +56,13 @@ class OfficeTypeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateOfficeTypeRequest $request, OfficeType $officeType)
-    {
-        //
+    public function update(
+        UpdateOfficeTypeRequest $request,
+        OfficeType $officeType,
+    ) {
+        $validated = $request->validated();
+
+        $officeType->update($validated);
     }
 
     /**
@@ -61,6 +70,6 @@ class OfficeTypeController extends Controller
      */
     public function destroy(OfficeType $officeType)
     {
-        //
+        $officeType->delete();
     }
 }
