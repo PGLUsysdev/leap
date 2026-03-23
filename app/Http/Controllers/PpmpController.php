@@ -31,7 +31,10 @@ class PpmpController extends Controller
             ])
             ->get();
 
-        $chartOfAccounts = ChartOfAccount::where('expense_class', 'MOOE')
+        $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
+            'MOOE',
+            'CO',
+        ])
             ->with(['ppmpPriceLists.category'])
             ->get();
 

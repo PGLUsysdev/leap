@@ -52,6 +52,7 @@ export function MultiSelect({
         <>
             <div className="flex flex-col gap-2">
                 <Button
+                    type="button"
                     variant="outline"
                     role="combobox"
                     className="h-auto w-full justify-between py-2"

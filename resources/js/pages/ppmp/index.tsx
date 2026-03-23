@@ -72,9 +72,12 @@ export default function PpmpPage({
     const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
     const [selectedFundingSource, setSelectedFundingSource] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedExpenseClass, setSelectedExpenseClass] =
+        useState<string>('ALL');
 
-    // console.log(selectedSource);
-    // console.log(selectedFundingSource);
+    // console.log(aipEntry);
+    // console.log(ppmpItems);
+    console.log(chartOfAccounts);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
@@ -94,9 +97,16 @@ export default function PpmpPage({
         selectedFundingSource !== 0
             ? ppmpItems.filter(
                   (ppmpItem) =>
-                      selectedFundingSource === ppmpItesm.funding_source.id,
+                      selectedFundingSource === ppmpItem.funding_source.id,
               )
             : ppmpItems;
+
+    const filteredChartOfAccounts =
+        selectedExpenseClass === 'ALL'
+            ? chartOfAccounts
+            : chartOfAccounts.filter(
+                  (acc) => acc.expense_class === selectedExpenseClass,
+              );
 
     function handleDeleteDialogOpen(source: Ppmp) {
         setSelectedSource(source);
@@ -133,12 +143,38 @@ export default function PpmpPage({
                             <SelectTrigger className="w-full max-w-48">
                                 <SelectValue placeholder="Select funding source" />
                             </SelectTrigger>
+
+                            <Select
+                                onValueChange={(value) =>
+                                    setSelectedExpenseClass(value)
+                                }
+                                defaultValue="ALL"
+                            >
+                                <SelectTrigger className="w-full max-w-40">
+                                    <SelectValue placeholder="Expense Class" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Expense Class</SelectLabel>
+                                        <SelectItem value="ALL">
+                                            All Classes
+                                        </SelectItem>
+                                        <SelectItem value="MOOE">
+                                            MOOE
+                                        </SelectItem>
+                                        <SelectItem value="CO">CO</SelectItem>
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Funding Sources</SelectLabel>
+
                                     <SelectItem key="0" value="0">
                                         Show All
                                     </SelectItem>
+
                                     {fundingSources.map((fs) => (
                                         <SelectItem
                                             key={fs.funding_source?.id}
@@ -217,7 +253,7 @@ export default function PpmpPage({
             <PpmpFormDialog
                 open={open}
                 onOpenChange={setOpen}
-                chartOfAccounts={chartOfAccounts}
+                chartOfAccounts={filteredChartOfAccounts}
                 ppmpCategories={ppmpCategories}
                 selectedEntry={aipEntry}
                 fundingSources={fundingSources}
