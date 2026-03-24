@@ -51,6 +51,7 @@ class PpmpController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'fundingSources' => $ppaFundingSources,
+            'initialChoice' => request()->query('choice'),
         ]);
     }
 

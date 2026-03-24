@@ -106,6 +106,7 @@ const CurrencyInput = ({
     label,
     action,
     readOnly = false,
+    className,
 }: {
     field: {
         value: string;
@@ -120,6 +121,7 @@ const CurrencyInput = ({
     label: string;
     action?: React.ReactNode;
     readOnly?: boolean;
+    className?: string;
 }) => {
     const [isFocused, setIsFocused] = React.useState(false);
 
@@ -144,7 +146,8 @@ const CurrencyInput = ({
     return (
         <Field data-invalid={fieldState.invalid}>
             <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-            <div className="flex gap-2">
+
+            <div className={`flex gap-2 ${className}`}>
                 <Input
                     value={displayValue}
                     id={field.name}
@@ -165,6 +168,7 @@ const CurrencyInput = ({
                 />
                 {action}
             </div>
+
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
         </Field>
     );
@@ -677,6 +681,7 @@ export default function AipEntryFormDialog({
                                                                 fieldState
                                                             }
                                                             label="Personal Services (PS)"
+                                                            className="pr-10"
                                                         />
                                                     )}
                                                 />
@@ -706,7 +711,7 @@ export default function AipEntryFormDialog({
                                                                             data?.id
                                                                         ) {
                                                                             router.visit(
-                                                                                `/aip/${fiscalYear.id}/summary/${data.aip_entry?.id}/ppmp`,
+                                                                                `/aip/${fiscalYear.id}/summary/${data.aip_entry?.id}/ppmp?choice=MOOE`,
                                                                             );
                                                                         }
                                                                     }}
@@ -732,6 +737,7 @@ export default function AipEntryFormDialog({
                                                                 fieldState
                                                             }
                                                             label="Financial Expense (FE)"
+                                                            className="pr-10"
                                                         />
                                                     )}
                                                 />
@@ -761,7 +767,7 @@ export default function AipEntryFormDialog({
                                                                             data?.id
                                                                         ) {
                                                                             router.visit(
-                                                                                `/aip/${fiscalYear.id}/summary/${data.aip_entry?.id}/ppmp`,
+                                                                                `/aip/${fiscalYear.id}/summary/${data.aip_entry?.id}/ppmp?choice=CO`,
                                                                             );
                                                                         }
                                                                     }}

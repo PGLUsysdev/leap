@@ -63,6 +63,7 @@ export default function PpmpPage({
     chartOfAccounts,
     ppmpCategories,
     fundingSources,
+    initialChoice,
 }: PpmpPageProps) {
     const [open, setOpen] = useState(false);
     const [openAlert, setOpenAlert] = useState(false);
@@ -75,7 +76,8 @@ export default function PpmpPage({
 
     // console.log(aipEntry);
     // console.log(ppmpItems);
-    console.log(chartOfAccounts);
+    // console.log(chartOfAccounts);
+    console.log(initialChoice);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
@@ -143,35 +145,33 @@ export default function PpmpPage({
                     <div className="flex gap-2">
                         <Select
                             onValueChange={(value) =>
+                                setSelectedExpenseClass(value)
+                            }
+                            defaultValue={initialChoice}
+                        >
+                            <SelectTrigger className="w-full max-w-40">
+                                <SelectValue placeholder="Expense Class" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Expense Class</SelectLabel>
+                                    <SelectItem value="ALL">
+                                        All Classes
+                                    </SelectItem>
+                                    <SelectItem value="MOOE">MOOE</SelectItem>
+                                    <SelectItem value="CO">CO</SelectItem>
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            onValueChange={(value) =>
                                 handleFundingSourceSelect(value)
                             }
                         >
                             <SelectTrigger className="w-full max-w-48">
                                 <SelectValue placeholder="Select funding source" />
                             </SelectTrigger>
-
-                            <Select
-                                onValueChange={(value) =>
-                                    setSelectedExpenseClass(value)
-                                }
-                                defaultValue="ALL"
-                            >
-                                <SelectTrigger className="w-full max-w-40">
-                                    <SelectValue placeholder="Expense Class" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectLabel>Expense Class</SelectLabel>
-                                        <SelectItem value="ALL">
-                                            All Classes
-                                        </SelectItem>
-                                        <SelectItem value="MOOE">
-                                            MOOE
-                                        </SelectItem>
-                                        <SelectItem value="CO">CO</SelectItem>
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
 
                             <SelectContent>
                                 <SelectGroup>
@@ -252,6 +252,8 @@ export default function PpmpPage({
                         <Button onClick={() => setOpen(true)}>
                             <Plus /> Add Item
                         </Button>
+
+                        <span>Showing all MOOE with All Funding Source</span>
                     </div>
                 </PpmpTablePage>
             </div>
