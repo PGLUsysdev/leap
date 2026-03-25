@@ -47,7 +47,16 @@ class AipEntry extends Model
             'ppa_funding_sources',
             'ppa_id',
             'funding_source_id',
-        )->withPivot('mooe_amount', 'co_amount')->withTimestamps();
+        )
+            ->withPivot(
+                'ps_amount',
+                'mooe_amount',
+                'fe_amount',
+                'co_amount',
+                'ccet_adaptation',
+                'ccet_mitigation',
+            )
+            ->withTimestamps();
     }
 
     public function itemizedCosts()

@@ -19,7 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Form } from '@/components/ui/form';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
 import {
     Popover,
@@ -36,6 +36,7 @@ import {
     InputGroupInput,
     InputGroupText,
 } from '@/components/ui/input-group';
+import PpaFundingSourceTablePage from '@/pages/aip-summary/ppa-funding-source-table/page';
 
 interface AipFormProps {
     open: boolean;
@@ -254,7 +255,7 @@ export default function AipEntryFormDialog({
             fundingSource: values.fundingSource.map((fund) => fund.id),
         };
 
-        console.log(payload);
+        // console.log(payload);
 
         router.put(`/aip-entries/${data.aip_entry?.id}`, payload, {
             onSuccess: () => {
@@ -1067,6 +1068,11 @@ export default function AipEntryFormDialog({
                             </div>
                         </form>
                     </Form>
+
+                    {/* table here */}
+                    <div className="w-250 rounded-md border p-4">
+                        <PpaFundingSourceTablePage data={data} />
+                    </div>
                 </ScrollArea>
 
                 <DialogFooter className="mt-auto flex-none shrink-0">

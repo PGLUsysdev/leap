@@ -4,6 +4,7 @@ import { Plus, Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Ppa, FundingSource } from '@/types/global';
 import { Badge } from '@/components/ui/badge';
+import { Decimal } from 'decimal.js'; // Added Decimal.js import
 
 export const formatNumber = (val: string) => {
     const num = parseFloat(val);
@@ -137,89 +138,212 @@ export const getColumns = ({
     columnHelper.accessor('aip_entry.funding_source', {
         header: 'Funding Source',
         size: 300,
-        cell: (info) => (
-            <div className="flex flex-col gap-4">
-                {info.getValue().map((value: FundingSource) => (
-                    <Badge key={value.id}>{value.code}</Badge>
-                ))}
-            </div>
-        ),
+        cell: (info) =>
+            info.getValue().length !== 0 ? (
+                <div className="flex flex-col gap-4">
+                    {info.getValue().map((value: FundingSource) => (
+                        <Badge key={value.id}>{value.code}</Badge>
+                    ))}
+                </div>
+            ) : (
+                '-'
+            ),
     }),
     columnHelper.group({
         header: 'Amount (in thousand pesos)',
         size: 600,
         columns: [
-            columnHelper.accessor('aip_entry.ps_amount', {
+            columnHelper.accessor('aip_entry.funding_source', {
+                id: 'ps_amount',
                 header: () => <div className="text-right">PS</div>,
-                cell: (info) => (
-                    <span className="block text-right">
-                        {formatNumber(info.getValue())}
-                    </span>
-                ),
+                cell: (info) => {
+                    return info.getValue().length !== 0 ? (
+                        <div className="flex flex-col gap-4">
+                            {info.getValue().map((amount) => {
+                                return (
+                                    <span
+                                        key={amount.id}
+                                        className="block text-right"
+                                    >
+                                        {formatNumber(amount.pivot.ps_amount)}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <span className="block text-right">-</span>
+                    );
+                },
             }),
-            columnHelper.accessor('aip_entry.mooe_amount', {
+            columnHelper.accessor('aip_entry.funding_source', {
+                id: 'mooe_amount',
                 header: () => <div className="text-right">MOOE</div>,
-                cell: (info) => (
-                    <span className="block text-right">
-                        {formatNumber(info.getValue())}
-                    </span>
-                ),
+                cell: (info) => {
+                    return info.getValue().length !== 0 ? (
+                        <div className="flex flex-col gap-4">
+                            {info.getValue().map((amount) => {
+                                return (
+                                    <span
+                                        key={amount.id}
+                                        className="block text-right"
+                                    >
+                                        {formatNumber(amount.pivot.mooe_amount)}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <span className="block text-right">-</span>
+                    );
+                },
             }),
-            columnHelper.accessor('aip_entry.fe_amount', {
+            columnHelper.accessor('aip_entry.funding_source', {
+                id: 'fe_amount',
                 header: () => <div className="text-right">FE</div>,
-                cell: (info) => (
-                    <span className="block text-right">
-                        {formatNumber(info.getValue())}
-                    </span>
-                ),
+                cell: (info) => {
+                    return info.getValue().length !== 0 ? (
+                        <div className="flex flex-col gap-4">
+                            {info.getValue().map((amount) => {
+                                return (
+                                    <span
+                                        key={amount.id}
+                                        className="block text-right"
+                                    >
+                                        {formatNumber(amount.pivot.fe_amount)}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <span className="block text-right">-</span>
+                    );
+                },
             }),
-            columnHelper.accessor('aip_entry.co_amount', {
+            columnHelper.accessor('aip_entry.funding_source', {
+                id: 'co_amount',
                 header: () => <div className="text-right">CO</div>,
-                cell: (info) => (
-                    <span className="block text-right">
-                        {formatNumber(info.getValue())}
-                    </span>
-                ),
+                cell: (info) => {
+                    return info.getValue().length !== 0 ? (
+                        <div className="flex flex-col gap-4">
+                            {info.getValue().map((amount) => {
+                                return (
+                                    <span
+                                        key={amount.id}
+                                        className="block text-right"
+                                    >
+                                        {formatNumber(amount.pivot.co_amount)}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <span className="block text-right">-</span>
+                    );
+                },
             }),
             columnHelper.display({
-                id: 'amount.total',
+                id: 'amount_total',
                 header: () => <div className="text-right">Total</div>,
                 cell: ({ row }) => {
-                    const total =
-                        parseFloat(row.original.aip_entry?.ps_amount || '0') +
-                        parseFloat(row.original.aip_entry?.mooe_amount || '0') +
-                        parseFloat(row.original.aip_entry?.fe_amount || '0') +
-                        parseFloat(row.original.aip_entry?.co_amount || '0');
-                    return (
-                        <span className="block text-right font-bold">
-                            {formatNumber(total.toString())}
-                        </span>
+                    const items = row.original.aip_entry?.funding_source;
+
+                    function calcTotalAmount(data) {
+                        const pivot = data.pivot;
+
+                        // Use Decimal.js for precise addition
+                        const total = new Decimal(pivot.co_amount || 0)
+                            .plus(new Decimal(pivot.fe_amount || 0))
+                            .plus(new Decimal(pivot.mooe_amount || 0))
+                            .plus(new Decimal(pivot.ps_amount || 0));
+
+                        return total.toString();
+                    }
+
+                    return items?.length !== 0 ? (
+                        <div className="flex flex-col gap-4">
+                            {items?.map((amount) => {
+                                return (
+                                    <span
+                                        key={amount.id}
+                                        className="block text-right"
+                                    >
+                                        {formatNumber(calcTotalAmount(amount))}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <span className="block text-right">-</span>
                     );
                 },
             }),
         ],
     }),
     columnHelper.group({
-        header: 'CC Expenditure',
-        size: 200,
+        header: 'AMOUNT of Climate Change Expenditure (in thousand pesos)',
+        size: 400,
         columns: [
-            columnHelper.accessor('aip_entry.ccet_adaptation', {
-                header: () => <div className="text-right">Adaptation</div>,
-                cell: (i) => (
-                    <span className="block text-right">
-                        {formatNumber(i.getValue())}
-                    </span>
+            columnHelper.accessor('aip_entry.funding_source', {
+                id: 'cc_adaptation',
+                header: () => (
+                    <div className="text-right">Climate Change Adaptation</div>
                 ),
+                cell: (info) => {
+                    return info.getValue().length !== 0 ? (
+                        <div className="flex flex-col gap-4">
+                            {info.getValue().map((amount) => {
+                                return (
+                                    <span
+                                        key={amount.id}
+                                        className="block text-right"
+                                    >
+                                        {formatNumber(
+                                            amount.pivot.ccet_adaptation,
+                                        )}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <span className="block text-right">-</span>
+                    );
+                },
             }),
-            columnHelper.accessor('aip_entry.ccet_mitigation', {
-                header: () => <div className="text-right">Mitigation</div>,
-                cell: (i) => (
-                    <span className="block text-right">
-                        {formatNumber(i.getValue())}
-                    </span>
+            columnHelper.accessor('aip_entry.funding_source', {
+                id: 'cc_mitigation',
+                header: () => (
+                    <div className="text-right">Climate Change Mitigation</div>
                 ),
+                cell: (info) => {
+                    return info.getValue().length !== 0 ? (
+                        <div className="flex flex-col gap-4">
+                            {info.getValue().map((amount) => {
+                                return (
+                                    <span
+                                        key={amount.id}
+                                        className="block text-right"
+                                    >
+                                        {formatNumber(
+                                            amount.pivot.ccet_mitigation,
+                                        )}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <span className="block text-right">-</span>
+                    );
+                },
             }),
         ],
+    }),
+    columnHelper.display({
+        id: 'cc_typology_code',
+        header: 'CC Typology Code',
+        size: 124,
+        cell: () => {
+            return <span className="block text-right">-</span>;
+        },
     }),
     columnHelper.display({
         id: 'actions',
@@ -251,8 +375,8 @@ export const getColumns = ({
 
                     <Button
                         title="Delete"
-                        variant="destructive"
                         size="icon"
+                        variant="destructive"
                         onClick={() => onDelete(entry)}
                     >
                         <Trash />

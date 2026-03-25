@@ -63,6 +63,7 @@ export default function ExportToPdfDialog({
         tableCell: {
             margin: 2,
             fontSize: 7,
+            paddingVertical: 2,
             textAlign: 'center',
         },
         headerGroup: { flexDirection: 'column', padding: 0 },
@@ -146,6 +147,16 @@ export default function ExportToPdfDialog({
             console.log(field);
             value = fs.pivot?.[field];
             console.log(value);
+
+            if (field === 'total_amount') {
+                const ps = parseFloat(fs.pivot?.ps_amount || 0);
+                const mooe = parseFloat(fs.pivot?.mooe_amount || 0);
+                const fe = parseFloat(fs.pivot?.fe_amount || 0);
+                const co = parseFloat(fs.pivot?.co_amount || 0);
+                value = ps + mooe + fe + co;
+            } else {
+                value = fs.pivot?.[field];
+            }
 
             // Fallback to item.aip_entry if value isn't in fs (in case API places them differently)
             if (value === undefined && item.aip_entry) {
@@ -278,11 +289,11 @@ export default function ExportToPdfDialog({
                                         style={{
                                             flexDirection: 'row',
                                             flexGrow: 1,
-                                            borderBottomWidth:
-                                                fsIndex <
-                                                fundingSources.length - 1
-                                                    ? 1
-                                                    : 0,
+                                            // borderBottomWidth:
+                                            //     fsIndex <
+                                            //     fundingSources.length - 1
+                                            //         ? 1
+                                            //         : 0,
                                         }}
                                     >
                                         {/* CHANGE 2: Slice up to 15 to map Col 14 inside the inner loop */}

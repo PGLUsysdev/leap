@@ -227,6 +227,12 @@ export interface PpaFundingSource {
     id: number;
     ppa_id: number;
     funding_source_id: number;
+    ps_amount: string | null;
+    mooe_amount: string | null;
+    fe_amount: string | null;
+    co_amount: string | null;
+    ccet_adaptation: string | null;
+    ccet_mitigation: string | null;
     created_at: string | null;
     updated_at: string | null;
     funding_source?: FundingSource;

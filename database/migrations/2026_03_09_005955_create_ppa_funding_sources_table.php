@@ -18,6 +18,8 @@ return new class extends Migration {
             $table->decimal('mooe_amount', 19, 2)->default(0);
             $table->decimal('fe_amount', 19, 2)->default(0);
             $table->decimal('co_amount', 19, 2)->default(0);
+            $table->decimal('ccet_adaptation', 19, 2)->default(0);
+            $table->decimal('ccet_mitigation', 19, 2)->default(0);
             $table->timestamps();
         });
     }
