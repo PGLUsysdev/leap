@@ -3,9 +3,8 @@ import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, parseISO } from 'date-fns';
-import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, ListPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -41,6 +40,21 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { router } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuPortal,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import type { FiscalYear, Ppa, FundingSource, Office } from '@/types/global';
 
@@ -115,6 +129,15 @@ export default function AipEntryFormDialog({
             parseFloat(row.fe_amount || '0') +
             parseFloat(row.co_amount || '0')
         );
+    };
+
+    const handleGoToPpmp = (fundId: string, choice: 'MOOE' | 'CO') => {
+        if (!isEdit || !entry) return;
+
+        router.get(`/aip/${fiscalYear.id}/summary/${entry.id}/ppmp`, {
+            choice: choice,
+            fund: fundId,
+        });
     };
 
     useEffect(() => {
@@ -358,6 +381,7 @@ export default function AipEntryFormDialog({
                                         <h3 className="text-sm font-semibold">
                                             Funding Distribution
                                         </h3>
+
                                         <Button
                                             type="button"
                                             variant="outline"
@@ -414,6 +438,7 @@ export default function AipEntryFormDialog({
                                                     <TableHead className="w-[50px]"></TableHead>
                                                 </TableRow>
                                             </TableHeader>
+
                                             <TableBody>
                                                 {fields.map((field, index) => (
                                                     <TableRow key={field.id}>
@@ -541,6 +566,66 @@ export default function AipEntryFormDialog({
                                                                 )}
                                                             />
                                                         </TableCell>
+                                                        <TableCell className="text-center">
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger
+                                                                    asChild
+                                                                >
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="icon"
+                                                                        className="h-8 w-8"
+                                                                        disabled={
+                                                                            !isEdit ||
+                                                                            !watchedSources?.[
+                                                                                index
+                                                                            ]
+                                                                                ?.funding_source_id
+                                                                        }
+                                                                        title="Manage PPMP Items"
+                                                                    >
+                                                                        <ListPlus className="h-4 w-4" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuLabel>
+                                                                        Project
+                                                                        Procurement
+                                                                    </DropdownMenuLabel>
+                                                                    <DropdownMenuSeparator />
+                                                                    <DropdownMenuItem
+                                                                        onClick={() =>
+                                                                            handleGoToPpmp(
+                                                                                watchedSources[
+                                                                                    index
+                                                                                ]
+                                                                                    .funding_source_id,
+                                                                                'MOOE',
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        Manage
+                                                                        MOOE
+                                                                        Items
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        onClick={() =>
+                                                                            handleGoToPpmp(
+                                                                                watchedSources[
+                                                                                    index
+                                                                                ]
+                                                                                    .funding_source_id,
+                                                                                'CO',
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        Manage
+                                                                        Capital
+                                                                        Outlay
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </TableCell>
                                                         <TableCell>
                                                             <Button
                                                                 type="button"
@@ -559,6 +644,7 @@ export default function AipEntryFormDialog({
                                                 ))}
                                             </TableBody>
                                         </Table>
+
                                         <ScrollBar orientation="horizontal" />
                                     </div>
                                 </div>

@@ -64,7 +64,10 @@ export default function PpmpPage({
     ppmpCategories,
     fundingSources,
     initialChoice,
+    initialFund,
 }: PpmpPageProps) {
+    console.log(fundingSources);
+
     const [open, setOpen] = useState(false);
     const [openAlert, setOpenAlert] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -175,6 +178,7 @@ export default function PpmpPage({
                             onValueChange={(value) =>
                                 handleFundingSourceSelect(value)
                             }
+                            defaultValue={initialFund}
                         >
                             <SelectTrigger className="w-full max-w-48">
                                 <SelectValue placeholder="Select funding source" />
