@@ -17,6 +17,8 @@ interface FundingSourcePageProps {
 export default function FundingSourcePage({
     fundingSources,
 }: FundingSourcePageProps) {
+    console.log(fundingSources);
+
     const [open, setOpen] = useState(false);
     const [selectedSource, setSelectedSource] = useState<FundingSource | null>(
         null,

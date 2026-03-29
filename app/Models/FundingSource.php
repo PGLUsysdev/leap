@@ -10,11 +10,5 @@ class FundingSource extends Model
     /** @use HasFactory<\Database\Factories\FundingSourceFactory> */
     use HasFactory;
 
-    protected $fillable = [
-        'fund_type',
-        'code',
-        'title',
-        'description',
-        'allow_typhoon',
-    ];
+    protected $fillable = ['fund_type', 'code', 'title', 'description'];
 }

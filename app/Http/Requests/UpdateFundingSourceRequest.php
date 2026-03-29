@@ -26,7 +26,6 @@ class UpdateFundingSourceRequest extends FormRequest
             'code' => 'required|string',
             'title' => 'required|string',
             'description' => 'nullable|string',
-            'allow_typhoon' => 'required|boolean',
         ];
     }
 }

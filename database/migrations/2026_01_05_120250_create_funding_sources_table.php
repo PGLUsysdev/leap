@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->string('code', 50);
             $table->text('title');
             $table->text('description')->nullable();
-            $table->boolean('allow_typhoon')->default(false);
+            // $table->boolean('allow_typhoon')->default(false);
             $table->timestamps();
         });
     }

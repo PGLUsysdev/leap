@@ -1,15 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import type { RowData } from '@tanstack/react-table';
 import { Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { FundingSource } from '@/types/global';
-
-// declare module '@tanstack/table-core' {
-//     interface TableMeta<TData extends RowData> {
-//         onEdit?: (record: TData) => void;
-//         onDelete?: (record: TData) => void;
-//     }
-// }
 
 const columnHelper = createColumnHelper<FundingSource>();
 
@@ -34,26 +26,6 @@ export const columns = [
             <span className="text-wrap">{value.getValue() ?? '-'}</span>
         ),
     }),
-    // columnHelper.accessor('allow_typhoon', {
-    //     header: 'Allow Typhoon',
-    //     cell: (value) => (
-    //         <span className="text-wrap">
-    //             {value.getValue() ? (
-    //                 <Badge className="flex items-center gap-1">
-    //                     <Check /> True
-    //                 </Badge>
-    //             ) : (
-    //                 <Badge
-    //                     variant="secondary"
-    //                     className="flex items-center gap-1"
-    //                 >
-    //                     <X />
-    //                     False
-    //                 </Badge>
-    //             )}
-    //         </span>
-    //     ),
-    // }),
     columnHelper.display({
         id: 'action',
         size: 86,

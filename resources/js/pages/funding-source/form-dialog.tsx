@@ -37,7 +37,6 @@ const formSchema = z.object({
     code: z.string().trim().min(1, { message: 'Code is required' }),
     title: z.string().trim().min(1, { message: 'Title is required' }),
     description: z.string().trim().nullable(),
-    allow_typhoon: z.boolean(),
 });
 
 export default function FormDialog({
@@ -58,7 +57,6 @@ export default function FormDialog({
             code: '',
             title: '',
             description: '',
-            allow_typhoon: false,
         },
     });
 
@@ -70,7 +68,6 @@ export default function FormDialog({
                     code: '',
                     title: '',
                     description: '',
-                    allow_typhoon: false,
                 },
             );
         }
@@ -79,15 +76,19 @@ export default function FormDialog({
     function onSubmit(data: z.infer<typeof formSchema>) {
         if (isEditing) {
             router.patch(`/funding-sources/${initialData.id}`, data, {
+                preserveScroll: true,
+                preserveState: true,
                 onStart: () => setIsLoading(true),
-                onFinish: () => setIsLoading(false),
                 onSuccess: () => setOpen(false),
+                onFinish: () => setIsLoading(false),
             });
         } else {
             router.post('/funding-sources', data, {
+                preserveScroll: true,
+                preserveState: true,
                 onStart: () => setIsLoading(true),
-                onFinish: () => setIsLoading(false),
                 onSuccess: () => setOpen(false),
+                onFinish: () => setIsLoading(false),
             });
         }
     }
@@ -241,48 +242,6 @@ export default function FormDialog({
                                                 autoComplete="off"
                                                 className="min-h-15"
                                             />
-
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="allow_typhoon"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <div className="flex flex-col gap-1">
-                                                <FieldLabel htmlFor="allow_typhoon">
-                                                    Allow Typhoon
-                                                </FieldLabel>
-
-                                                <label htmlFor="allow_typhoon">
-                                                    <div className="flex items-center gap-2 rounded-md border p-2">
-                                                        <Checkbox
-                                                            id="allow_typhoon"
-                                                            checked={
-                                                                field.value
-                                                            }
-                                                            onCheckedChange={
-                                                                field.onChange
-                                                            }
-                                                        />
-
-                                                        <span>
-                                                            {field.value
-                                                                ? 'True'
-                                                                : 'False'}
-                                                        </span>
-                                                    </div>
-                                                </label>
-                                            </div>
 
                                             {fieldState.invalid && (
                                                 <FieldError

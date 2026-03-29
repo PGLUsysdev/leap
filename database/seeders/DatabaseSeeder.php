@@ -31,20 +31,23 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
 
+            FiscalYearSeeder::class,
+
             SectorSeeder::class,
             LguLevelSeeder::class,
             OfficeTypeSeeder::class,
 
+            FundingSourceSeeder::class,
+
             OfficeSeeder::class,
+
             AllotmentClassSeeder::class,
             AccountGroupSeeder::class,
             ChartOfAccountSeeder::class,
-            FiscalYearSeeder::class,
             PpaSeeder::class,
             AipEntrySeeder::class,
             PpmpCategorySeeder::class,
             PpmpPriceListSeeder::class,
-            FundingSourceSeeder::class,
             PpmpSeeder::class,
             PpaFundingSourceSeeder::class,
         ]);
