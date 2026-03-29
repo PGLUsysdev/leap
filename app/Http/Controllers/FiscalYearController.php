@@ -61,14 +61,14 @@ class FiscalYearController extends Controller
         UpdateFiscalYearRequest $request,
         FiscalYear $fiscal_year,
     ) {
-        $fiscal_year->update($request->validated());
+        // $fiscal_year->update($request->validated());
     }
 
     // update fiscal year status
     public function updateStatus(Request $request, FiscalYear $fiscalYear)
     {
         $validated = $request->validate([
-            'status' => 'required|in:active,inactive,closed',
+            'status' => 'required|string|in:active,inactive,closed',
         ]);
 
         $fiscalYear->update($validated);

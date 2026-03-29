@@ -77,21 +77,19 @@ export default function FormDialog({
     }, [initialData, open, form]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        isEditing
-            ? router.visit(`/funding-sources/${initialData.id}`, {
-                  method: 'patch',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              })
-            : router.visit('/funding-sources', {
-                  method: 'post',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              });
+        if (isEditing) {
+            router.patch(`/funding-sources/${initialData.id}`, data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        } else {
+            router.post('/funding-sources', data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        }
     }
 
     return (

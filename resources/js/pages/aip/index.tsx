@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import FiscalYearFormDialog from '@/pages/aip/fiscal-year-form-dialog';
+import FormDialog from '@/pages/aip/form-dialog';
 import { type BreadcrumbItem } from '@/types';
 import type { FiscalYear, FiscalYearStatus } from '@/types/global';
 import FiscalYearTablePage from './table/page';
 import { router } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -18,12 +20,9 @@ interface AipProps {
 }
 
 export default function AipPage({ fiscalYears }: AipProps) {
-    console.log(fiscalYears);
+    const [openFormDialog, setOpenFormDialog] = useState(false);
 
     function onUpdateStatus(data: FiscalYear, status: FiscalYearStatus) {
-        console.log(data);
-        console.log(status);
-
         router.patch(
             `/aip/${data.id}/status`,
             { status: status },
@@ -39,8 +38,12 @@ export default function AipPage({ fiscalYears }: AipProps) {
         );
     }
 
-    function onOpen(data: FiscalYear) {
+    function handleOpenAipSummary(data: FiscalYear) {
         router.get(`/aip/${data.id}/summary`);
+    }
+
+    function handleOpenFormDialog() {
+        setOpenFormDialog(true);
     }
 
     return (
@@ -51,11 +54,15 @@ export default function AipPage({ fiscalYears }: AipProps) {
                     // onEdit={onEdit}
                     // onDelete={onDelete}
                     onUpdateStatus={onUpdateStatus}
-                    onOpen={onOpen}
+                    onOpen={handleOpenAipSummary}
                 >
-                    <FiscalYearFormDialog />
+                    <Button onClick={handleOpenFormDialog}>
+                        Initialize AIP
+                    </Button>
                 </FiscalYearTablePage>
             </div>
+
+            <FormDialog open={openFormDialog} setOpen={setOpenFormDialog} />
         </AppLayout>
     );
 }

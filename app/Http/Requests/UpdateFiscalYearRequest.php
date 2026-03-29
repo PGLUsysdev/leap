@@ -22,7 +22,7 @@ class UpdateFiscalYearRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|string|in:Open,Closed',
-        ];
+                // 'status' => 'required|string|in:active,inactive,closed',
+            ];
     }
 }

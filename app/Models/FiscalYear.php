@@ -13,11 +13,11 @@ class FiscalYear extends Model
     protected $fillable = ['year', 'status'];
 
     protected $attributes = [
-        'status' => 'Open',
+        'status' => 'active',
     ];
 
-    public function aipEntries()
-    {
-        return $this->hasMany(AipEntry::class, 'fiscal_year_id');
-    }
+    // public function aipEntries()
+    // {
+    //     return $this->hasMany(AipEntry::class, 'fiscal_year_id');
+    // }
 }

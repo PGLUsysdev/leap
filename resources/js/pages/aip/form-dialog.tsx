@@ -12,7 +12,6 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog';
 import {
     Field,
@@ -30,9 +29,13 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Plus } from 'lucide-react';
 import { generateYearRange } from '@/pages/aip/utils/generate-year-range';
-import { store } from '@/routes/aip/index';
+// import { store } from '@/routes/aip/index';
+
+interface FormDialogProps {
+    open: boolean;
+    setOpen: (value: boolean) => void;
+}
 
 const formSchema = z.object({
     year: z.number().int(),
@@ -41,8 +44,7 @@ const formSchema = z.object({
 const yearNow = new Date().getFullYear();
 const years = generateYearRange(yearNow, 5, 5);
 
-export default function FiscalYearFormDialog() {
-    const [open, setOpen] = useState(false);
+export default function FormDialog({ open, setOpen }: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -53,14 +55,12 @@ export default function FiscalYearFormDialog() {
     });
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        setIsLoading(true);
-
-        router.post(store(), data, {
+        // router.post(store(), data, {
+        router.post('/aip', data, {
+            onStart: () => setIsLoading(true),
             onSuccess: () => {
                 setOpen(false);
-                setIsLoading(false);
             },
-
             onError: (errors) => {
                 if (errors.year) {
                     form.setError('year', {
@@ -68,20 +68,17 @@ export default function FiscalYearFormDialog() {
                         message: errors.year,
                     });
                 }
-                setIsLoading(false);
             },
+            onFinish: () => setIsLoading(false),
         });
     }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button>
-                    <Plus />
-                    Initialize AIP
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
+            <DialogContent
+                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
+                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle>
                         Initialize Annual Investment Program
@@ -105,7 +102,6 @@ export default function FiscalYearFormDialog() {
                                         <FieldLabel htmlFor="fiscal-year-form-year">
                                             Fiscal Year
                                         </FieldLabel>
-                                        {/* <FieldDescription>Description...</FieldDescription> */}
                                     </FieldContent>
 
                                     <Select
@@ -150,9 +146,14 @@ export default function FiscalYearFormDialog() {
                 </form>
 
                 <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
+                    <Button
+                        variant="outline"
+                        onClick={() => setOpen(false)}
+                        disabled={isLoading}
+                    >
+                        Cancel
+                    </Button>
+
                     <Button
                         form="fiscal-year-form"
                         type="submit"
