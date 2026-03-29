@@ -17,7 +17,8 @@ class SectorFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->word(),
+            'code' => $this->faker->unique()->word(),
         ];
     }
 }

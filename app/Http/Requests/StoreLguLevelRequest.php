@@ -23,7 +23,7 @@ class StoreLguLevelRequest extends FormRequest
     {
         return [
             'code' => ['required', 'string', 'size:1'],
-            'level' => ['required', 'string', 'max:20'],
+            'name' => ['required', 'string', 'max:20'],
         ];
     }
 }

@@ -1,10 +1,56 @@
-export interface FiscalYear {
+export interface Sector {
     id: number;
-    year: string;
-    status: string; // change later to enum
+    code: string;
+    name: string;
     created_at: string | null;
     updated_at: string | null;
 }
+
+export interface LguLevel {
+    id: number;
+    code: string;
+    name: string;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export interface OfficeType {
+    id: number;
+    code: string;
+    name: string;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export interface Office {
+    id: number;
+    sector_id: number | null;
+    lgu_level_id: number;
+    office_type_id: number;
+    code: string;
+    name: string;
+    acronym: string | null;
+    is_lee: boolean;
+    created_at: string | null;
+    updated_at: string | null;
+
+    full_code: string;
+
+    lgu_level?: LguLevel;
+    office_type?: OfficeType;
+    sector?: Sector;
+}
+
+export type FiscalYearStatus = 'active' | 'inactive' | 'closed';
+
+export interface FiscalYear {
+    id: number;
+    year: string;
+    status: FiscalYearStatus;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
 export interface AipEntry {
     id: number;
     fiscal_year_id: number;
@@ -67,47 +113,6 @@ export interface Ppa {
     ppa_funding_sources?: PpaFundingSource[];
 
     full_code: string;
-}
-
-export interface LguLevel {
-    id: number;
-    code: string;
-    level: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-export interface OfficeType {
-    id: number;
-    code: string;
-    type: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-export interface Sector {
-    id: number;
-    code: string;
-    sector: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-export interface Office {
-    id: number;
-    sector_id: number | null;
-    lgu_level_id: number;
-    office_type_id: number;
-    code: string;
-    name: string;
-    acronym: string | null;
-    is_lee: boolean;
-    created_at: string | null;
-    updated_at: string | null;
-
-    lgu_level?: LguLevel;
-    office_type?: OfficeType;
-    sector?: Sector;
 }
 
 // --- not checked

@@ -5,31 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash } from 'lucide-react';
 
-declare module '@tanstack/table-core' {
-    interface TableMeta<TData extends RowData> {
-        onEdit?: (record: TData) => void;
-        onDelete?: (record: TData) => void;
-    }
-}
+// declare module '@tanstack/table-core' {
+//     interface TableMeta<TData extends RowData> {
+//         onEdit?: (record: TData) => void;
+//         onDelete?: (record: TData) => void;
+//     }
+// }
 
 const columnHelper = createColumnHelper<Office>();
 
 export const columns = [
-    columnHelper.display({
-        id: 'full_code',
+    columnHelper.accessor('full_code', {
+        // id: 'full_code',
         header: 'Office Account Code',
         // size: 200,
-        cell: ({ row }) => {
-            const office = row.original;
-            const sector = office.sector?.code ?? '0000';
-            // const subsector = '000';
-            const lgu = office.lgu_level?.code ?? '0';
-            const type = office.office_type?.code ?? '00';
-            const officeCode = office.code ?? '000';
-            return (
-                // <code className="font-mono text-xs">{`${sector}-${subsector}-${lgu}-${type}-${officeCode}`}</code>
-                <code className="font-mono text-xs">{`${sector}-${lgu}-${type}-${officeCode}`}</code>
-            );
+        cell: (info) => {
+            return <code className="font-mono">{info.getValue()}</code>;
         },
     }),
     columnHelper.accessor('name', {

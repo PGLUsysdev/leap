@@ -23,7 +23,7 @@ class UpdateSectorRequest extends FormRequest
     {
         return [
             'code' => ['required', 'string', 'max:4'],
-            'sector' => ['required', 'string', 'max:50'],
+            'name' => ['required', 'string', 'max:50'],
         ];
     }
 }

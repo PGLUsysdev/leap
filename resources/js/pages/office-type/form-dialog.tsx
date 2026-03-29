@@ -36,7 +36,7 @@ const formSchema = z.object({
         .trim()
         .min(1, { message: 'Code is required' })
         .max(2, { message: 'Code must not exceed 2 characters' }),
-    type: z
+    name: z
         .string()
         .trim()
         .min(1, { message: 'Type is required' })
@@ -58,7 +58,7 @@ export default function FormDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             code: '',
-            type: '',
+            name: '',
         },
     });
 
@@ -67,28 +67,28 @@ export default function FormDialog({
             form.reset(
                 initialData ?? {
                     code: '',
-                    type: '',
+                    name: '',
                 },
             );
         }
     }, [initialData, open, form]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        isEditing
-            ? router.visit(`/office-types/${initialData.id}`, {
-                  method: 'patch',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              })
-            : router.visit('/office-types', {
-                  method: 'post',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              });
+        console.log(data);
+
+        if (isEditing) {
+            router.patch(`/office-types/${initialData.id}`, data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        } else {
+            router.post('/office-types', data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        }
     }
 
     return (
@@ -117,7 +117,7 @@ export default function FormDialog({
                         >
                             <FieldGroup className="pb-4">
                                 <Controller
-                                    name="type"
+                                    name="name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field

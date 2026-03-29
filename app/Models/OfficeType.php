@@ -10,5 +10,5 @@ class OfficeType extends Model
     /** @use HasFactory<\Database\Factories\OfficeTypeFactory> */
     use HasFactory;
 
-    protected $fillable = ['code', 'type'];
+    protected $fillable = ['code', 'name'];
 }

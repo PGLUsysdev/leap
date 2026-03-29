@@ -22,33 +22,33 @@ class Office extends Model
         'is_lee',
     ];
 
-    // protected function fullCode(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: function () {
-    //             $sector = $this->sector?->code ?? '0000';
-    //             $lgu = $this->lguLevel?->code ?? '0';
-    //             $type = $this->officeType?->code ?? '00';
-    //             $office = $this->code ?? '000';
+    protected $appends = ['full_code'];
 
-    //             // Example: 1000-0-01-011
-    //             return "{$sector}-{$lgu}-{$type}-{$office}";
-    //         },
-    //     );
-    // }
+    protected function fullCode(): Attribute
+    {
+        return Attribute::make(
+            get: fn() => sprintf(
+                '%s-%s-%s-%s',
+                $this->sector?->code ?? '0000',
+                $this->lguLevel?->code ?? '0',
+                $this->officeType?->code ?? '00',
+                $this->code ?? '000',
+            ),
+        );
+    }
 
     public function sector()
     {
-        return $this->belongsTo(Sector::class);
+        return $this->belongsTo(Sector::class, 'sector_id');
     }
 
     public function lguLevel()
     {
-        return $this->belongsTo(LguLevel::class);
+        return $this->belongsTo(LguLevel::class, 'lgu_level_id');
     }
 
     public function officeType()
     {
-        return $this->belongsTo(OfficeType::class);
+        return $this->belongsTo(OfficeType::class, 'office_type_id');
     }
 }

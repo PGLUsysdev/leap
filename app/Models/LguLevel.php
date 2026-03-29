@@ -10,5 +10,5 @@ class LguLevel extends Model
     /** @use HasFactory<\Database\Factories\LguLevelFactory> */
     use HasFactory;
 
-    protected $fillable = ['code', 'level'];
+    protected $fillable = ['code', 'name'];
 }

@@ -59,7 +59,7 @@ export default function DataTable<TData>({
         <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
                 <Input
-                    placeholder="Filter lgu levels..."
+                    placeholder="Filter LGU levels..."
                     value={table.getState().globalFilter ?? ''}
                     onChange={(event) =>
                         table.setGlobalFilter(event.target.value)

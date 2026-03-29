@@ -4,12 +4,12 @@ import { Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { LguLevel } from '@/types/global';
 
-declare module '@tanstack/table-core' {
-    interface TableMeta<TData extends RowData> {
-        onEdit?: (record: TData) => void;
-        onDelete?: (record: TData) => void;
-    }
-}
+// declare module '@tanstack/table-core' {
+//     interface TableMeta<TData extends RowData> {
+//         onEdit?: (record: TData) => void;
+//         onDelete?: (record: TData) => void;
+//     }
+// }
 
 const columnHelper = createColumnHelper<LguLevel>();
 
@@ -18,8 +18,8 @@ export const columns = [
         header: 'Code',
         cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
-    columnHelper.accessor('level', {
-        header: 'Level',
+    columnHelper.accessor('name', {
+        header: 'Name',
         cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
     columnHelper.display({

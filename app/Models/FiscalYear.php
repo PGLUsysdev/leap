@@ -18,6 +18,6 @@ class FiscalYear extends Model
 
     public function aipEntries()
     {
-        return $this->hasMany(AipEntry::class);
+        return $this->hasMany(AipEntry::class, 'fiscal_year_id');
     }
 }

@@ -77,7 +77,7 @@ export default function SectorPage({ officeTypes }: OfficeTypePageProps) {
                     <>
                         Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
-                            "{selectedOfficeType?.type}"
+                            "{selectedOfficeType?.name}"
                         </span>
                         ?
                     </>

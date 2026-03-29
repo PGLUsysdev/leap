@@ -8,7 +8,7 @@ import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
 import type { LguLevel } from '@/types/global';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Lgu Levels', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'LGU Levels', href: '#' }];
 
 interface LguLevelPageProps {
     lguLevels: LguLevel[];
@@ -59,7 +59,7 @@ export default function LguLevelPage({ lguLevels }: LguLevelPageProps) {
                     onDelete={handleDeleteDialogOpen}
                 >
                     <div className="flex justify-end">
-                        <Button onClick={handleAdd}>Add Lgu Level</Button>
+                        <Button onClick={handleAdd}>Add LGU Level</Button>
                     </div>
                 </TablePage>
             </div>
@@ -78,7 +78,7 @@ export default function LguLevelPage({ lguLevels }: LguLevelPageProps) {
                     <>
                         Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
-                            "{selectedLguLevel?.level}"
+                            "{selectedLguLevel?.name}"
                         </span>
                         ?
                     </>

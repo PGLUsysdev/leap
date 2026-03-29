@@ -18,7 +18,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import type { Sector, LguLevel, OfficeType } from '@/types/global';
 import { router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Select,
     SelectContent,
@@ -103,96 +103,24 @@ export default function FormDialog({
         }
     }, [initialData, open, form]);
 
-    // Live Preview Logic
-    const watchedValues = form.watch();
-    const generatedCode = useMemo(() => {
-        const sector =
-            sectors.find((s) => String(s.id) === watchedValues.sector_id)
-                ?.code ?? '0000';
-        const lgu =
-            lguLevels.find((l) => String(l.id) === watchedValues.lgu_level_id)
-                ?.code ?? '0';
-        const type =
-            officeTypes.find(
-                (t) => String(t.id) === watchedValues.office_type_id,
-            )?.code ?? '00';
-        const suffix = watchedValues.code.padStart(3, '0');
-
-        return `${sector}-${lgu}-${type}-${suffix}`;
-    }, [watchedValues, sectors, lguLevels, officeTypes]);
-
-    function onSubmit(values: FormValues) {
-        isEditing
-            ? router.visit(`/offices/${initialData.id}`, {
-                  method: 'patch',
-                  data: values,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => onOpenChange(false),
-                  onError: (errors) => {
-                      console.error('Backend errors:', errors);
-
-                      // Handle validation errors from backend
-                      Object.keys(errors).forEach((field) => {
-                          const errorMessage = Array.isArray(errors[field])
-                              ? errors[field][0]
-                              : errors[field];
-
-                          console.log(
-                              `Setting error for field: ${field}, message: ${errorMessage}`,
-                          );
-
-                          // Set the error directly without forcing validation
-                          form.setError(field as any, {
-                              type: 'manual',
-                              message: errorMessage,
-                          });
-                      });
-
-                      // Log the form state after setting all errors
-                      setTimeout(() => {
-                          console.log(
-                              'All form errors:',
-                              form.formState.errors,
-                          );
-                      }, 100);
-                  },
-              })
-            : router.visit('/offices', {
-                  method: 'post',
-                  data: values,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => onOpenChange(false),
-                  onError: (errors) => {
-                      console.error('Backend errors:', errors);
-
-                      // Handle validation errors from backend
-                      Object.keys(errors).forEach((field) => {
-                          const errorMessage = Array.isArray(errors[field])
-                              ? errors[field][0]
-                              : errors[field];
-
-                          console.log(
-                              `Setting error for field: ${field}, message: ${errorMessage}`,
-                          );
-
-                          // Set the error directly without forcing validation
-                          form.setError(field as any, {
-                              type: 'manual',
-                              message: errorMessage,
-                          });
-                      });
-
-                      // Log the form state after setting all errors
-                      setTimeout(() => {
-                          console.log(
-                              'All form errors:',
-                              form.formState.errors,
-                          );
-                      }, 100);
-                  },
-              });
+    function onSubmit(data: FormValues) {
+        if (isEditing) {
+            router.patch(`/offices/${initialData.id}`, data, {
+                preserveState: true,
+                preserveScroll: true,
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => onOpenChange(false),
+            });
+        } else {
+            router.post('/offices', data, {
+                preserveState: true,
+                preserveScroll: true,
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => onOpenChange(false),
+            });
+        }
     }
 
     return (
@@ -225,7 +153,7 @@ export default function FormDialog({
                                     Generated Account Code
                                 </span>
                                 <div className="font-mono text-xl font-bold text-primary">
-                                    {generatedCode}
+                                    {initialData?.full_code}
                                 </div>
                             </div>
 
@@ -254,7 +182,7 @@ export default function FormDialog({
                                                         value={String(item.id)}
                                                     >
                                                         {item.code} -{' '}
-                                                        {item.sector}
+                                                        {item.name}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -297,7 +225,7 @@ export default function FormDialog({
                                                                 item.id,
                                                             )}
                                                         >
-                                                            {item.level}
+                                                            {item.name}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -340,7 +268,7 @@ export default function FormDialog({
                                                             )}
                                                         >
                                                             {item.code} -{' '}
-                                                            {item.type}
+                                                            {item.name}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>

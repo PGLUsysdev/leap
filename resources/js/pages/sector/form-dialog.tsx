@@ -32,7 +32,7 @@ interface FormDialogProps {
 
 const formSchema = z.object({
     code: z.string().trim().min(1, { message: 'Code is required' }),
-    sector: z.string().trim().min(1, { message: 'Title is required' }),
+    name: z.string().trim().min(1, { message: 'Title is required' }),
 });
 
 export default function FormDialog({
@@ -50,7 +50,7 @@ export default function FormDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             code: '',
-            sector: '',
+            name: '',
         },
     });
 
@@ -59,28 +59,28 @@ export default function FormDialog({
             form.reset(
                 initialData ?? {
                     code: '',
-                    sector: '',
+                    name: '',
                 },
             );
         }
     }, [initialData, open, form]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        isEditing
-            ? router.visit(`/sectors/${initialData.id}`, {
-                  method: 'patch',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              })
-            : router.visit('/sectors', {
-                  method: 'post',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              });
+        // console.log(data);
+
+        if (isEditing) {
+            router.patch(`/sectors/${initialData.id}`, data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        } else {
+            router.post('/sectors', data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        }
     }
 
     return (
@@ -111,7 +111,7 @@ export default function FormDialog({
                         >
                             <FieldGroup className="pb-4">
                                 <Controller
-                                    name="sector"
+                                    name="name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field

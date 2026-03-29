@@ -29,10 +29,12 @@ class DatabaseSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
         $this->call([
-            LguLevelSeeder::class,
             UserSeeder::class,
+
             SectorSeeder::class,
+            LguLevelSeeder::class,
             OfficeTypeSeeder::class,
+
             OfficeSeeder::class,
             AllotmentClassSeeder::class,
             AccountGroupSeeder::class,

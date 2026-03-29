@@ -1,8 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Library, FileDown, FileText, Search } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Library, FileDown, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,11 +8,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import AppLayout from '@/layouts/app-layout';
-// import DataTable from '@/pages/aip-summary/table/data-table';
 import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
-// import { useAipColumns } from '@/pages/aip-summary/table/columns';
 import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
 import type { FiscalYear, Ppa, FundingSource, Office } from '@/types/global';
 import { type BreadcrumbItem } from '@/types';
@@ -71,19 +67,6 @@ const findPpaInTree = (ppas: Ppa[], targetId: number) => {
     return null;
 };
 
-// const findEntryInTree = (nodes: Ppa[], targetId: number) => {
-//     for (const node of nodes) {
-//         if (node.id === targetId) return node;
-
-//         if (node.children && node.children.length > 0) {
-//             const found = findEntryInTree(node.children, targetId);
-//             if (found) return found;
-//         }
-//     }
-
-//     return null;
-// };
-
 export default function AipSummaryTable({
     fiscalYear,
     aipEntries,
@@ -91,22 +74,15 @@ export default function AipSummaryTable({
     offices,
     masterPpas,
 }: AipSummaryTableProp) {
-    console.log(masterPpas);
     // console.log(fiscalYear);
-    // console.log(aipEntries);
+    console.log(aipEntries);
     // console.log(fundingSources);
+    // console.log(offices);
+    console.log(masterPpas);
 
-    // const [searchValue, setSearchValue] = useState('');
-    // const [selectorState, setSelectorState] = useState({
-    //     isOpen: false,
-    //     data: [] as Ppa[],
-    //     title: '',
-    //     description: '',
-    // });
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState<Ppa | null>(null);
-    // const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
     const [isExportOpen, setIsExportOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -117,19 +93,12 @@ export default function AipSummaryTable({
         description: '',
     });
 
-    console.log(selectedEntry);
-
-    // console.log(selectedEntryId);
+    // console.log(selectedEntry);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
         { title: `AIP Summary FY ${fiscalYear.year}`, href: '#' },
     ];
-
-    // const selectedEntry = useMemo(() => {
-    //     if (!selectedEntryId) return null;
-    //     return findPpaInTree(aipEntries, selectedEntryId);
-    // }, [aipEntries, selectedEntryId]);
 
     const handleImportLibrary = () => {
         setSelectorState({
@@ -143,7 +112,6 @@ export default function AipSummaryTable({
 
     const handleAddEntry = useCallback(
         (entry: Ppa) => {
-            // 1. Find the node in the masterPpas tree to get all its potential children
             const masterNode = findPpaInTree(masterPpas, entry.id);
 
             if (!masterNode) {
@@ -151,10 +119,9 @@ export default function AipSummaryTable({
                 return;
             }
 
-            // 2. Open the selector with the children of the selected PPA
             setSelectorState({
                 isOpen: true,
-                data: masterNode.children || [], // Only show children of this specific node
+                data: masterNode.children || [],
                 title: `Add Sub-entries to: ${masterNode.title}`,
                 description: `Select items to add under ${masterNode.type} ${masterNode.full_code}`,
             });
@@ -187,25 +154,6 @@ export default function AipSummaryTable({
         });
     }
 
-    // const columns = useAipColumns({
-    // onAddEntry: handleAddEntry,
-    // onEdit: handleEdit,
-    // onDelete: handleOpenDeleteDialog,
-    // masterPpas,
-    // });
-
-    // const handleDelete = () => {
-    //     if (!selectedEntry) return;
-
-    //     router.delete(`/aip-entries/${selectedEntry.aip_entry.id}`, {
-    //         preserveScroll: true,
-    //         onFinish: () => {
-    //             setIsDeleteDialogOpen(false);
-    //             setSelectedEntry(null);
-    //         },
-    //     });
-    // };
-
     function handlePrintPreview() {
         setIsExportOpen(true);
     }
@@ -218,47 +166,31 @@ export default function AipSummaryTable({
                     onAdd={handleAddEntry}
                     onEdit={handleEditDialogOpen}
                     onDelete={handleDeleteDialogOpen}
-                    // columns={columns}
-                    // ---
-                    // searchKey="title"
-                    // searchValue={searchValue}
-                    // onSearchChange={setSearchValue}
-                    // getSubRows={(row) => row.children}
                 >
-                    {/* <div className="relative">
-                            <Search className="absolute top-2.5 left-2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search projects or activities..."
-                                value={searchValue}
-                                onChange={(event) =>
-                                    setSearchValue(event.target.value)
-                                }
-                                className="max-w-sm pl-8"
-                            />
-                        </div> */}
+                    <div className="flex gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline">
+                                    <FileDown className="mr-2 h-4 w-4" /> Export
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={handlePrintPreview}>
+                                    <div className="flex items-center">
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        <span className="text-nowrap">
+                                            Print Preview
+                                        </span>
+                                    </div>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline">
-                                <FileDown className="mr-2 h-4 w-4" /> Export
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={handlePrintPreview}>
-                                <div className="flex items-center">
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    <span className="text-nowrap">
-                                        Print Preview
-                                    </span>
-                                </div>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <Button onClick={handleImportLibrary}>
-                        <Library className="mr-2 h-4 w-4" /> Import from Library
-                    </Button>
-                    {/* </div> */}
+                        <Button onClick={handleImportLibrary}>
+                            <Library className="mr-2 h-4 w-4" /> Import from
+                            Library
+                        </Button>
+                    </div>
                 </TablePage>
             </div>
 

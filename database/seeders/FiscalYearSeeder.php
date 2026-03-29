@@ -14,9 +14,9 @@ class FiscalYearSeeder extends Seeder
     public function run(): void
     {
         $fiscalYears = [
-            ['year' => 2023, 'status' => 'Closed'],
-            ['year' => 2024, 'status' => 'Closed'],
-            ['year' => 2025, 'status' => 'Open'],
+            ['year' => 2023, 'status' => 'active'],
+            ['year' => 2024, 'status' => 'inactive'],
+            ['year' => 2025, 'status' => 'closed'],
         ];
 
         foreach ($fiscalYears as $fiscalYear) {

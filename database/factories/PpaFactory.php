@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Office;
+use App\Models\FiscalYear;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +19,11 @@ class PpaFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'title' => $this->faker->sentence(),
+            'type' => 'Program',
+            'code_suffix' => $this->faker->unique()->numerify('###'), // Generates '001', '542', etc.
+            'office_id' => Office::factory(),
+            'parent_id' => null,
         ];
     }
 }

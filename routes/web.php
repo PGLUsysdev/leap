@@ -45,6 +45,10 @@ Route::patch('/aip/{fiscal_year}', [
     FiscalYearController::class,
     'update',
 ])->name('aip.update');
+Route::patch('/aip/{fiscal_year}/status', [
+    FiscalYearController::class,
+    'updateStatus',
+])->name('aip.update-status');
 
 // aip-summary
 Route::prefix('aip/{fiscalYear}')->group(function () {

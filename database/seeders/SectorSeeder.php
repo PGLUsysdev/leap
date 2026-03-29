@@ -14,10 +14,10 @@ class SectorSeeder extends Seeder
     public function run(): void
     {
         $sectors = [
-            ['code' => '1000', 'sector' => 'General Public Services Sector'], // General Public Services Sector
-            ['code' => '3000', 'sector' => 'Social Services Sector'], // Social Services Sector / District Hospitals
-            ['code' => '8000', 'sector' => 'Economic Services Sector'], // Economic Services Sector
-            ['code' => '9000', 'sector' => 'Other Services'], // Special Accounts
+            ['code' => '1000', 'name' => 'General Public Services Sector'], // General Public Services Sector
+            ['code' => '3000', 'name' => 'Social Services Sector'], // Social Services Sector / District Hospitals
+            ['code' => '8000', 'name' => 'Economic Services Sector'], // Economic Services Sector
+            ['code' => '9000', 'name' => 'Other Services'], // Special Accounts
         ];
 
         foreach ($sectors as $sector) {

@@ -1,79 +1,172 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import type { RowData } from '@tanstack/react-table';
-import { Pencil, Trash } from 'lucide-react';
+import { Pencil, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { FundingSource } from '@/types/global';
+import type { FiscalYear } from '@/types/global';
+import { Badge } from '@/components/ui/badge';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    // DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-declare module '@tanstack/table-core' {
+import type { RowData } from '@tanstack/react-table';
+
+declare module '@tanstack/react-table' {
     interface TableMeta<TData extends RowData> {
-        onEdit?: (record: TData) => void;
-        onDelete?: (record: TData) => void;
+        onEdit?: (data: TData) => void;
+        onDelete?: (data: TData) => void;
+        onUpdateStatus?: (
+            data: TData,
+            status: 'active' | 'inactive' | 'closed',
+        ) => void;
+        onOpen?: (data: TData) => void;
     }
 }
 
-const columnHelper = createColumnHelper<FundingSource>();
+const columnHelper = createColumnHelper<FiscalYear>();
 
 export const columns = [
-    columnHelper.accessor('fund_type', {
-        header: 'Fund Type',
+    columnHelper.accessor('year', {
+        header: 'Fiscal Year',
         cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
-    columnHelper.accessor('code', {
-        header: 'Code',
-        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
+    columnHelper.accessor('status', {
+        header: 'Status',
+        cell: (info) => {
+            const status = info.getValue(); // 'active' | 'inactive' | 'closed'
+
+            const STATUS_MAP = {
+                active: { label: 'Active', variant: 'default' as const },
+                inactive: { label: 'Inactive', variant: 'secondary' as const },
+                closed: { label: 'Closed', variant: 'outline' as const },
+            } as const;
+
+            const config = STATUS_MAP[status] || {
+                label: status,
+                variant: 'secondary',
+            };
+
+            return (
+                <Badge variant={config.variant} className="capitalize">
+                    {config.label}
+                </Badge>
+            );
+        },
     }),
-    columnHelper.accessor('title', {
-        header: 'Title',
-        size: 500,
-        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
+    columnHelper.accessor('created_at', {
+        header: 'Created At',
+        // size: 500,
+        cell: (info) => {
+            const rawValue = info.getValue();
+            const date = new Date(String(rawValue));
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            });
+
+            return <span className="text-wrap">{formattedDate}</span>;
+        },
     }),
-    columnHelper.accessor('description', {
-        header: 'Description',
-        size: 300,
-        cell: (value) => (
-            <span className="text-wrap">{value.getValue() ?? '-'}</span>
-        ),
+    columnHelper.accessor('updated_at', {
+        header: 'Updated At',
+        // size: 300,
+        cell: (info) => {
+            const rawValue = info.getValue();
+            const date = new Date(String(rawValue));
+            const formattedDate = date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            });
+
+            return <span className="text-wrap">{formattedDate}</span>;
+        },
     }),
-    // columnHelper.accessor('allow_typhoon', {
-    //     header: 'Allow Typhoon',
-    //     cell: (value) => (
-    //         <span className="text-wrap">
-    //             {value.getValue() ? (
-    //                 <Badge className="flex items-center gap-1">
-    //                     <Check /> True
-    //                 </Badge>
-    //             ) : (
-    //                 <Badge
-    //                     variant="secondary"
-    //                     className="flex items-center gap-1"
-    //                 >
-    //                     <X />
-    //                     False
-    //                 </Badge>
-    //             )}
-    //         </span>
-    //     ),
-    // }),
     columnHelper.display({
         id: 'action',
-        size: 86,
-        cell: ({ row, table }) => (
-            <div className="flex items-center gap-1">
-                <Button
-                    size="icon"
-                    onClick={() => table.options.meta?.onEdit?.(row.original)}
-                >
-                    <Pencil />
-                </Button>
+        size: 38,
+        cell: ({ row, table }) => {
+            const initialStatus = row.original.status;
 
-                <Button
+            return (
+                <div className="flex items-center gap-1">
+                    <Button
+                        size="icon"
+                        onClick={() =>
+                            table.options.meta?.onOpen?.(row.original)
+                        }
+                    >
+                        <ExternalLink />
+                    </Button>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                size="icon"
+                                title="Change AIP status"
+                                onClick={() =>
+                                    table.options.meta?.onEdit?.(row.original)
+                                }
+                            >
+                                <Pencil />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuGroup>
+                                <DropdownMenuLabel>
+                                    Change AIP Status
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        table.options.meta?.onUpdateStatus?.(
+                                            row.original,
+                                            'active',
+                                        )
+                                    }
+                                    disabled={initialStatus === 'active'}
+                                >
+                                    Active
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        table.options.meta?.onUpdateStatus?.(
+                                            row.original,
+                                            'inactive',
+                                        )
+                                    }
+                                    disabled={initialStatus === 'inactive'}
+                                >
+                                    Inactive
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        table.options.meta?.onUpdateStatus?.(
+                                            row.original,
+                                            'closed',
+                                        )
+                                    }
+                                    disabled={initialStatus === 'closed'}
+                                >
+                                    Closed
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    {/* <Button
                     size="icon"
                     variant="destructive"
                     onClick={() => table.options.meta?.onDelete?.(row.original)}
                 >
                     <Trash />
-                </Button>
-            </div>
-        ),
+                </Button> */}
+                </div>
+            );
+        },
     }),
 ];

@@ -1,11 +1,9 @@
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
 import FiscalYearFormDialog from '@/pages/aip/fiscal-year-form-dialog';
-import { columns } from '@/pages/aip/fiscal-year-table/columns';
-import { FiscalYearDataTable } from '@/pages/aip/fiscal-year-table/data-table';
-import type { FiscalYear } from '@/types/global';
-// import { index } from '@/routes/aip';
-import DataTable from './table/page';
+import { type BreadcrumbItem } from '@/types';
+import type { FiscalYear, FiscalYearStatus } from '@/types/global';
+import FiscalYearTablePage from './table/page';
+import { router } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -22,18 +20,41 @@ interface AipProps {
 export default function AipPage({ fiscalYears }: AipProps) {
     console.log(fiscalYears);
 
+    function onUpdateStatus(data: FiscalYear, status: FiscalYearStatus) {
+        console.log(data);
+        console.log(status);
+
+        router.patch(
+            `/aip/${data.id}/status`,
+            { status: status },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    console.log('Status updated successfully');
+                },
+                onError: (errors) => {
+                    console.error('Failed to update status', errors);
+                },
+            },
+        );
+    }
+
+    function onOpen(data: FiscalYear) {
+        router.get(`/aip/${data.id}/summary`);
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="p-4">
-                <FiscalYearDataTable
-                    columns={columns}
+                <FiscalYearTablePage
                     data={fiscalYears}
-                    searchKey="year"
+                    // onEdit={onEdit}
+                    // onDelete={onDelete}
+                    onUpdateStatus={onUpdateStatus}
+                    onOpen={onOpen}
                 >
                     <FiscalYearFormDialog />
-                </FiscalYearDataTable>
-
-                {/* <DataTable></DataTable> */}
+                </FiscalYearTablePage>
             </div>
         </AppLayout>
     );

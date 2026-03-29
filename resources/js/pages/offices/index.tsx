@@ -23,6 +23,8 @@ export default function OfficesPage({
     lguLevels,
     officeTypes,
 }: OfficesPageProps) {
+    // console.log(offices);
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);

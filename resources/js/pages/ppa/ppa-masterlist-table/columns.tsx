@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types/global';
 
-declare module '@tanstack/table-core' {
-    interface TableMeta<TData extends RowData> {
-        onAdd?: (parent: TData, childType: string) => void;
-        onEdit?: (record: TData) => void;
-        onDelete?: (record: TData) => void;
-    }
-}
+// declare module '@tanstack/table-core' {
+//     interface TableMeta<TData extends RowData> {
+//         onAdd?: (parent: TData, childType: string) => void;
+//         onEdit?: (record: TData) => void;
+//         onDelete?: (record: TData) => void;
+//     }
+// }
 
 const columnHelper = createColumnHelper<Ppa>();
 

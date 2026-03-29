@@ -17,7 +17,9 @@ class FiscalYearFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            // Use faker to generate a unique year
+            'year' => $this->faker->unique()->year(),
+            'status' => 'Open',
         ];
     }
 }

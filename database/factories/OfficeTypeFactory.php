@@ -17,7 +17,9 @@ class OfficeTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            // Based on your previous tables, this is likely 'type' or 'office_type'
+            'type' => $this->faker->word(),
+            'code' => $this->faker->unique()->bothify('OT-##'), // The missing NOT NULL column
         ];
     }
 }

@@ -23,7 +23,7 @@ class StoreOfficeTypeRequest extends FormRequest
     {
         return [
             'code' => ['required', 'string', 'max:2'],
-            'type' => ['required', 'string', 'max:20'],
+            'name' => ['required', 'string', 'max:20'],
         ];
     }
 }

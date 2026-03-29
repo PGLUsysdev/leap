@@ -25,6 +25,46 @@ class AipEntryController extends Controller
      */
     public function index(FiscalYear $fiscalYear)
     {
+        $yearId = $fiscalYear->id;
+        $filter = fn($q) => $q->where('fiscal_year_id', $yearId);
+        $hasAip = fn($q) => $q->whereHas('aipEntries', $filter);
+
+        $aipEntries = Ppa::whereNull('parent_id')
+            ->whereHas('aipEntries', $filter)
+            ->with([
+                // programs
+                'aipEntries' => $filter,
+                'ppaFundingSources.fundingSource',
+                'office.sector',
+                'office.lguLevel',
+                'office.officeType',
+
+                // projects
+                'children' => $hasAip,
+                'children.aipEntries' => $filter,
+                'children.ppaFundingSources.fundingSource',
+                'children.office.sector',
+                'children.office.lguLevel',
+                'children.office.officeType',
+
+                // activities
+                'children.children' => $hasAip,
+                'children.children.aipEntries' => $filter,
+                'children.children.ppaFundingSources.fundingSource',
+                'children.children.office.sector',
+                'children.children.office.lguLevel',
+                'children.children.office.officeType',
+
+                // sub-activities
+                'children.children.children' => $hasAip,
+                'children.children.children.aipEntries' => $filter,
+                'children.children.children.ppaFundingSources.fundingSource',
+                'children.children.children.office.sector',
+                'children.children.children.office.lguLevel',
+                'children.children.children.office.officeType',
+            ])
+            ->get();
+
         $ppaMasterList = Ppa::whereNull('parent_id')
             ->with([
                 'office.sector',
@@ -45,46 +85,6 @@ class AipEntryController extends Controller
             ])
             ->get();
 
-        $yearId = $fiscalYear->id;
-        $filter = fn($q) => $q->where('fiscal_year_id', $yearId);
-        $hasAip = fn($q) => $q->whereHas('aipEntries', $filter);
-
-        $aipEntries = Ppa::whereNull('parent_id')
-            ->whereHas('aipEntries', $filter)
-            ->with([
-                // --- LEVEL 1: Program (Roots) ---
-                'aipEntries' => $filter,
-                'ppaFundingSources.fundingSource',
-                'office.sector',
-                'office.lguLevel',
-                'office.officeType',
-
-                // --- LEVEL 2: Projects ---
-                'children' => $hasAip,
-                'children.aipEntries' => $filter,
-                'children.ppaFundingSources.fundingSource',
-                'children.office.sector',
-                'children.office.lguLevel',
-                'children.office.officeType',
-
-                // --- LEVEL 3: Activities ---
-                'children.children' => $hasAip,
-                'children.children.aipEntries' => $filter,
-                'children.children.ppaFundingSources.fundingSource',
-                'children.children.office.sector',
-                'children.children.office.lguLevel',
-                'children.children.office.officeType',
-
-                // --- LEVEL 4: Sub-Activities ---
-                'children.children.children' => $hasAip,
-                'children.children.children.aipEntries' => $filter,
-                'children.children.children.ppaFundingSources.fundingSource',
-                'children.children.children.office.sector',
-                'children.children.children.office.lguLevel',
-                'children.children.children.office.officeType',
-            ])
-            ->get();
-
         $offices = Office::all();
 
         return Inertia::render('aip-summary/index', [
@@ -93,10 +93,6 @@ class AipEntryController extends Controller
             'fundingSources' => FundingSource::all(),
             'offices' => $offices,
             'masterPpas' => $ppaMasterList,
-
-            // 'chartOfAccounts' => ChartOfAccount::all(),
-            // 'ppmpPriceList' => PpmpPriceList::all(),
-            // 'ppmpItems' => Ppmp::with(['ppmpPriceList'])->get(),
         ]);
     }
 

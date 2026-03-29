@@ -15,6 +15,8 @@ interface SectorPageProps {
 }
 
 export default function SectorPage({ sectors }: SectorPageProps) {
+    console.log(sectors);
+
     const [open, setOpen] = useState(false);
     const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -76,7 +78,7 @@ export default function SectorPage({ sectors }: SectorPageProps) {
                     <>
                         Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
-                            "{selectedSector?.sector}"
+                            "{selectedSector?.name}"
                         </span>
                         ?
                     </>

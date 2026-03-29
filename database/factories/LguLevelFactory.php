@@ -17,7 +17,8 @@ class LguLevelFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'code' => $this->faker->unique()->bothify('LGU-##'), // Generates something like LGU-42
+            'name' => $this->faker->word(),
         ];
     }
 }

@@ -5,12 +5,12 @@ import { Button } from '@/components/ui/button';
 import type { FundingSource } from '@/types/global';
 import { Decimal } from 'decimal.js';
 
-declare module '@tanstack/table-core' {
-    interface TableMeta<TData extends RowData> {
-        onEdit?: (record: TData) => void;
-        onDelete?: (record: TData) => void;
-    }
-}
+// declare module '@tanstack/table-core' {
+//     interface TableMeta<TData extends RowData> {
+//         onEdit?: (record: TData) => void;
+//         onDelete?: (record: TData) => void;
+//     }
+// }
 
 const columnHelper = createColumnHelper<FundingSource>();
 

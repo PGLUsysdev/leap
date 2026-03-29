@@ -19,11 +19,13 @@ import {
 } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
 
-interface DataTableProps<TData> {
+interface DataTableProps<TData, TStatus = any> {
     columns: ColumnDef<TData, any>[];
     data: TData[];
-    onEdit?: (record: TData) => void;
-    onDelete?: (record: TData) => void;
+    onEdit?: (data: TData) => void;
+    onDelete?: (data: TData) => void;
+    onUpdateStatus?: (data: TData, status: TStatus) => void;
+    onOpen?: (data: TData) => void;
     children: ReactElement;
 }
 
@@ -32,6 +34,8 @@ export default function DataTable<TData>({
     data,
     onEdit,
     onDelete,
+    onUpdateStatus,
+    onOpen,
     children,
 }: DataTableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState('');
@@ -40,7 +44,7 @@ export default function DataTable<TData>({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        meta: { onEdit, onDelete },
+        meta: { onEdit, onDelete, onUpdateStatus, onOpen },
         initialState: {
             columnPinning: {
                 right: ['action'],

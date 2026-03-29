@@ -35,7 +35,7 @@ const formSchema = z.object({
         .string()
         .trim()
         .length(1, { message: 'Code must be exactly 1 character' }),
-    level: z
+    name: z
         .string()
         .trim()
         .min(1, { message: 'Level is required' })
@@ -55,7 +55,7 @@ export default function FormDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             code: '',
-            level: '',
+            name: '',
         },
     });
 
@@ -64,28 +64,26 @@ export default function FormDialog({
             form.reset(
                 initialData ?? {
                     code: '',
-                    level: '',
+                    name: '',
                 },
             );
         }
     }, [initialData, open, form]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        isEditing
-            ? router.visit(`/lgu-levels/${initialData.id}`, {
-                  method: 'patch',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              })
-            : router.visit('/lgu-levels', {
-                  method: 'post',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              });
+        if (isEditing) {
+            router.patch(`/lgu-levels/${initialData.id}`, data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        } else {
+            router.post('/lgu-levels', data, {
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        }
     }
 
     return (
@@ -97,14 +95,12 @@ export default function FormDialog({
             >
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditing
-                            ? 'Edit Funding Source'
-                            : 'Add New Funding Source'}
+                        {isEditing ? 'Edit Lgu Level' : 'Add New Lgu Level'}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditing
-                            ? 'Modify the details of the existing funding source below.'
-                            : 'Fill in the information to create a new funding record.'}
+                            ? 'Modify the details of the existing Lgu level below.'
+                            : 'Fill in the information to create a new LGU level record.'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -149,7 +145,7 @@ export default function FormDialog({
                                 />
 
                                 <Controller
-                                    name="level"
+                                    name="name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field

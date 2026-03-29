@@ -17,7 +17,13 @@ class OfficeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->company(),
+            'code' => $this->faker->unique()->bothify('OFF-###'), // The missing NOT NULL column
+
+            // Relationships you already fixed
+            'lgu_level_id' => \App\Models\LguLevel::factory(),
+            'sector_id' => \App\Models\Sector::factory(),
+            'office_type_id' => \App\Models\OfficeType::factory(),
         ];
     }
 }
