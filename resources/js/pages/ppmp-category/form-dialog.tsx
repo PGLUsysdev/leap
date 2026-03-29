@@ -39,8 +39,6 @@ export default function FormDialog({
     setOpen,
     initialData,
 }: FormDialogProps) {
-    // console.log(initialData);
-
     const [isLoading, setIsLoading] = useState(false);
 
     const isEditing = !!initialData;
@@ -63,21 +61,23 @@ export default function FormDialog({
     }, [initialData, open, form]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        isEditing
-            ? router.visit(`/ppmp-categories/${initialData.id}`, {
-                  method: 'patch',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              })
-            : router.visit('/ppmp-categories', {
-                  method: 'post',
-                  data,
-                  onStart: () => setIsLoading(true),
-                  onFinish: () => setIsLoading(false),
-                  onSuccess: () => setOpen(false),
-              });
+        if (isEditing) {
+            router.patch(`/ppmp-categories/${initialData.id}`, data, {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        } else {
+            router.post('/ppmp-categories', data, {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setIsLoading(true),
+                onFinish: () => setIsLoading(false),
+                onSuccess: () => setOpen(false),
+            });
+        }
     }
 
     return (
@@ -145,9 +145,13 @@ export default function FormDialog({
                 </div>
 
                 <DialogFooter>
-                    <DialogClose asChild disabled={isLoading}>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
+                    <Button
+                        variant="outline"
+                        onClick={() => setOpen(false)}
+                        disabled={isLoading}
+                    >
+                        Cancel
+                    </Button>
 
                     <Button
                         type="submit"

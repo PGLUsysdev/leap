@@ -31,11 +31,7 @@ export default function PpmpCategoryPage({
     }
 
     function handleEdit(category: PpmpCategory) {
-        const newCategory = {
-            ...category,
-        };
-
-        setSelectedCategory(newCategory);
+        setSelectedCategory(category);
         setOpen(true);
     }
 

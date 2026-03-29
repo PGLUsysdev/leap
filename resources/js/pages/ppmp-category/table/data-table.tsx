@@ -1,5 +1,3 @@
-// finalized table
-
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 import {

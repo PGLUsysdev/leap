@@ -1,15 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import type { RowData } from '@tanstack/react-table';
 import { Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PpmpCategory } from '@/types/global';
-
-// declare module '@tanstack/table-core' {
-//     interface TableMeta<TData extends RowData> {
-//         onEdit?: (record: TData) => void;
-//         onDelete?: (record: TData) => void;
-//     }
-// }
 
 const columnHelper = createColumnHelper<PpmpCategory>();
 

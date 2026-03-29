@@ -39,14 +39,15 @@ class DatabaseSeeder extends Seeder
 
             FundingSourceSeeder::class,
 
+            PpmpCategorySeeder::class,
+            ChartOfAccountSeeder::class,
+
             OfficeSeeder::class,
 
             AllotmentClassSeeder::class,
             AccountGroupSeeder::class,
-            ChartOfAccountSeeder::class,
             PpaSeeder::class,
             AipEntrySeeder::class,
-            PpmpCategorySeeder::class,
             PpmpPriceListSeeder::class,
             PpmpSeeder::class,
             PpaFundingSourceSeeder::class,
