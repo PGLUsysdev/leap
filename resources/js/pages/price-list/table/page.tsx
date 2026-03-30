@@ -22,7 +22,8 @@ export default function PriceListTablePage({
             data={data}
             onEdit={onEdit}
             onDelete={onDelete}
-            children={children}
-        />
+        >
+            {children}
+        </DataTable>
     );
 }

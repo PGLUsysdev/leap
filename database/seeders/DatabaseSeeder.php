@@ -32,26 +32,24 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
 
             FiscalYearSeeder::class,
-
             SectorSeeder::class,
             LguLevelSeeder::class,
             OfficeTypeSeeder::class,
-
             FundingSourceSeeder::class,
-
             PpmpCategorySeeder::class,
             ChartOfAccountSeeder::class,
 
             OfficeSeeder::class,
-
             PpaSeeder::class,
+
+            PpaFundingSourceSeeder::class,
+            AipEntrySeeder::class,
+            PpmpPriceListSeeder::class,
+
+            PpmpSeeder::class,
 
             AllotmentClassSeeder::class,
             AccountGroupSeeder::class,
-            AipEntrySeeder::class,
-            PpmpPriceListSeeder::class,
-            PpmpSeeder::class,
-            PpaFundingSourceSeeder::class,
         ]);
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');

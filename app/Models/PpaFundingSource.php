@@ -23,11 +23,6 @@ class PpaFundingSource extends Model
         // 'cc_typology_code',
     ];
 
-    // public function funding_source()
-    // {
-    //     return $this->belongsTo(FundingSource::class);
-    // }
-
     public function fundingSource()
     {
         return $this->belongsTo(FundingSource::class, 'funding_source_id');

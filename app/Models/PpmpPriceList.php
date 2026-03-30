@@ -38,19 +38,4 @@ class PpmpPriceList extends Model
     {
         return $this->belongsTo(FundingSource::class);
     }
-
-    public function itemizedCosts()
-    {
-        return $this->hasMany(PpaItemizedCost::class, 'ppmp_price_list_id');
-    }
-
-    // public function scopeByExpenseClass($query, $expenseClass)
-    // {
-    //     return $query->where('expense_class', $expenseClass);
-    // }
-
-    // public function scopeByAccountCode($query, $accountCode)
-    // {
-    //     return $query->where('account_code', $accountCode);
-    // }
 }

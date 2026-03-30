@@ -51,8 +51,16 @@ export default function PriceListPage({
             preserveScroll: true,
             onStart: () => setIsLoading(true),
             onSuccess: () => {
+                console.log('Success:', 'Record deleted');
+
                 setIsDeleteDialogOpen(false);
                 setSelectedPriceList(null);
+            },
+            onError: (errors) => {
+                console.error(
+                    'Delete Error:',
+                    errors.database || 'An unknown error occurred',
+                );
             },
             onFinish: () => setIsLoading(false),
         });
