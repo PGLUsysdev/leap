@@ -3,15 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle } from 'lucide-react';
-
-export interface Ppa {
-    id: number;
-    title: string;
-    type: 'Program' | 'Project' | 'Activity';
-    full_code: string;
-    is_active: boolean;
-    children?: Ppa[];
-}
+import type { Ppa } from '@/types/global';
 
 interface ColumnProps {
     setRowSelection: React.Dispatch<React.SetStateAction<RowSelectionState>>;
@@ -26,7 +18,7 @@ export const getPpaColumns = ({
 }: ColumnProps) => [
     columnHelper.display({
         id: 'select',
-        // size: 10,
+        size: 50,
         header: ({ table }) => (
             <Checkbox
                 checked={
@@ -103,9 +95,9 @@ export const getPpaColumns = ({
             );
         },
     }),
-    columnHelper.accessor('title', {
+    columnHelper.accessor('name', {
         header: 'Type & Title',
-        // size: 600,
+        size: 500,
         cell: ({ row, getValue }) => {
             const type = row.original.type;
             const title = getValue();

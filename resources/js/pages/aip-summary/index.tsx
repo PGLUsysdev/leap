@@ -78,7 +78,7 @@ export default function AipSummaryTable({
     console.log(aipEntries);
     // console.log(fundingSources);
     // console.log(offices);
-    console.log(masterPpas);
+    // console.log(masterPpas);
 
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -122,7 +122,7 @@ export default function AipSummaryTable({
             setSelectorState({
                 isOpen: true,
                 data: masterNode.children || [],
-                title: `Add Sub-entries to: ${masterNode.title}`,
+                title: `Add Sub-entries to: ${masterNode.name}`,
                 description: `Select items to add under ${masterNode.type} ${masterNode.full_code}`,
             });
         },
@@ -223,7 +223,7 @@ export default function AipSummaryTable({
                     <>
                         Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
-                            "{selectedEntry?.title}"
+                            "{selectedEntry?.name}"
                         </span>
                         ?
                         {selectedEntry?.children &&

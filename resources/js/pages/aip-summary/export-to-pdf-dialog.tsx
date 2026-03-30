@@ -34,7 +34,7 @@ export default function ExportToPdfDialog({
 
     const keys = [
         'full_code',
-        'title',
+        'name',
         'office.acronym',
         'aip_entries.0.start_date', // Updated
         'aip_entries.0.end_date', // Updated
@@ -190,7 +190,7 @@ export default function ExportToPdfDialog({
 
         while (stack.length > 0) {
             const { item, level, path } = stack.pop()!;
-            let displayTitle = getNestedValue(item, 'title');
+            let displayTitle = getNestedValue(item, 'name');
 
             if (level === 0) {
                 // Level 0: Programs use Letters (A, B, C...)

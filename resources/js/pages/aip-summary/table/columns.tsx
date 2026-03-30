@@ -52,58 +52,23 @@ export const formatDate = (dateString: string) => {
 const columnHelper = createColumnHelper<Ppa>();
 
 export const columns = [
-    columnHelper.accessor('office', {
+    columnHelper.accessor('full_code', {
         header: 'AIP Reference Code',
         size: 250,
         cell: (info) => {
-            const office = info.getValue();
-            const row = info.row;
-
-            // 1. Base Office Codes (keeping their specific padding)
-            const sector = office?.sector?.code ?? '0';
-            const lguLevel = office?.lgu_level?.code ?? '00';
-            const officeType = office?.office_type?.code ?? '00';
-            const officeCode = office?.code ?? '000';
-            const baseCode = `${sector}-${lguLevel}-${officeType}-${officeCode}`;
-
-            // 2. Generate the Hierarchy Path
-            const getHierarchyPath = (currentRow: any): string[] => {
-                const path: string[] = [];
-                let current = currentRow;
-
-                while (current) {
-                    const suffix = current.original.code_suffix;
-                    const depth = current.depth; // 0 = Program, 1 = Project, 2 = Activity, 3 = Sub-Activity
-
-                    if (suffix) {
-                        // If it's the 4th level (Sub-Activity), strip leading zeros
-                        // Otherwise, keep the original string (e.g., "001")
-                        const formattedSuffix =
-                            depth === 3
-                                ? parseInt(suffix, 10).toString()
-                                : suffix;
-
-                        path.unshift(formattedSuffix);
-                    }
-                    current = current.getParentRow();
-                }
-                return path;
-            };
-
-            const hierarchyCode = getHierarchyPath(row).join('-');
-
             return (
                 <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-[12px]">
-                    {hierarchyCode ? `${baseCode}-${hierarchyCode}` : baseCode}
+                    {/* {hierarchyCode ? `${baseCode}-${hierarchyCode}` : baseCode} */}
+                    {info.getValue()}
                 </code>
             );
         },
     }),
-    columnHelper.accessor('title', {
+    columnHelper.accessor('name', {
         header: 'Program/Project/Activity Description',
         size: 400,
         filterFn: (row, _columnId, value) => {
-            const description: string = row.getValue('title');
+            const description: string = row.getValue('name');
             const refCode: string = row.getValue('full_code');
             const searchValue = (value as string)?.toLowerCase() || '';
 

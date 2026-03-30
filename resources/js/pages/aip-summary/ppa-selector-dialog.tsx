@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import {
     Dialog,
@@ -10,12 +10,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Download } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { DataTable } from '@/pages/aip-summary/ppa-import-table/data-table';
-import {
-    getPpaColumns,
-    // Ppa,
-} from '@/pages/aip-summary/ppa-import-table/columns';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Spinner } from '@/components/ui/spinner';
+import { getPpaColumns } from '@/pages/aip-summary/ppa-import-table/columns';
 import type { RowSelectionState } from '@tanstack/react-table';
 import type { Ppa } from '@/types/global';
 
@@ -42,6 +41,13 @@ export default function PpaSelectorDialog({
     const [globalFilter, setGlobalFilter] = useState('');
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        if (!isOpen) {
+            setRowSelection({});
+            setGlobalFilter('');
+        }
+    }, [isOpen]);
+
     // Create a Set for faster lookups in the column definitions
     const existingIdsSet = useMemo(
         () => new Set(existingPpaIds),
@@ -59,28 +65,35 @@ export default function PpaSelectorDialog({
     );
 
     const handleImport = () => {
-        // Since rowSelection keys are the string IDs
-        // Filter out any IDs that are already in existingIdsSet (just in case)
+        // Filter out items already in the AIP (just in case)
         const selectedIds = Object.keys(rowSelection).filter(
             (id) => !existingIdsSet.has(Number(id)),
         );
 
-        console.log('Importing IDs:', selectedIds);
-
         if (selectedIds.length === 0) return;
-
-        setLoading(true);
 
         router.post(
             `/aip/${fiscalYearId}/import`,
             { ppa_ids: selectedIds },
             {
-                onSuccess: () => {
-                    setLoading(false);
-                    onClose();
-                    setRowSelection({}); // Clear checkboxes after import
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => {
+                    setLoading(true);
                 },
-                onError: () => setLoading(false),
+                onSuccess: () => {
+                    // Success logic: Close and reset
+                    onClose();
+                    setRowSelection({});
+                },
+                onError: (errors) => {
+                    // Optional: Handle validation errors or toast notifications here
+                    console.error('Import failed:', errors);
+                },
+                onFinish: () => {
+                    // This runs regardless of success or error
+                    setLoading(false);
+                },
             },
         );
     };
@@ -92,13 +105,22 @@ export default function PpaSelectorDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-[80%]">
-                <DialogHeader className="p-6 pb-2">
+            <DialogContent
+                className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-[80%]"
+                onPointerDownOutside={(e) => {
+                    if (loading) e.preventDefault();
+                }}
+                onEscapeKeyDown={(e) => {
+                    if (loading) e.preventDefault();
+                }}
+            >
+                <DialogHeader className="">
                     <DialogTitle>{title}</DialogTitle>
+
                     <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
 
-                <div className="px-6 py-2">
+                <div>
                     <div className="relative">
                         <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -110,32 +132,47 @@ export default function PpaSelectorDialog({
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-6 py-2">
-                    <DataTable
-                        columns={columns}
-                        data={data}
-                        rowSelection={rowSelection}
-                        setRowSelection={setRowSelection}
-                        globalFilter={globalFilter}
-                        setGlobalFilter={setGlobalFilter}
-                        getSubRows={(row) => row.children}
-                    />
+                {/* <div className="flex-1 overflow-y-auto px-6 py-2"> */}
+                <div className="flex min-h-0 flex-1">
+                    <ScrollArea className="w-full flex-1 rounded border pr-3">
+                        <DataTable
+                            columns={columns}
+                            data={data}
+                            rowSelection={rowSelection}
+                            setRowSelection={setRowSelection}
+                            globalFilter={globalFilter}
+                            setGlobalFilter={setGlobalFilter}
+                            getSubRows={(row) => row.children}
+                        />
+                    </ScrollArea>
                 </div>
 
-                <DialogFooter className="flex items-center justify-between border-t bg-muted/30 p-6 pt-3">
+                <DialogFooter className="sm:flex-row sm:items-center sm:justify-between">
                     <div className="text-sm text-muted-foreground">
                         {newSelectedCount} new item(s) selected
                     </div>
-                    <div className="flex gap-3">
-                        <Button variant="ghost" onClick={onClose}>
+
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={onClose}
+                            disabled={loading}
+                        >
                             Cancel
                         </Button>
+
                         <Button
                             onClick={handleImport}
                             disabled={newSelectedCount === 0 || loading}
                         >
-                            <Download className="mr-2 h-4 w-4" />
-                            {loading ? 'Importing...' : 'Import Selected'}
+                            {loading ? (
+                                <span className="flex items-center gap-1">
+                                    <Spinner />
+                                    Importing...
+                                </span>
+                            ) : (
+                                'Import Selected'
+                            )}
                         </Button>
                     </div>
                 </DialogFooter>
