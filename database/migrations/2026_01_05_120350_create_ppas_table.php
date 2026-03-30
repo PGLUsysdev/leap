@@ -21,7 +21,7 @@ return new class extends Migration {
                 ->constrained('ppas')
                 ->onDelete('cascade');
 
-            $table->string('title');
+            $table->string('name');
             $table->enum('type', [
                 'Program',
                 'Project',

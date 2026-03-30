@@ -15,34 +15,48 @@ class Ppa extends Model
     protected $fillable = [
         'office_id',
         'parent_id',
-        'title',
+        'name',
         'type',
         'code_suffix',
         'is_active',
     ];
 
-    // protected $appends = ['full_code'];
+    protected $appends = ['full_code'];
 
-    // protected function fullCode(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: function () {
-    //             $suffix = $this->code_suffix ?? '000';
+    protected function fullCode(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $suffix = $this->code_suffix ?? '0000';
 
-    //             if ($this->parent_id) {
-    //                 $parent = $this->parent;
+                // 1. If this PPA has a parent, get the parent's full code first
+                if ($this->parent_id) {
+                    // Use the loaded relation if available to prevent N+1 queries
+                    $parent = $this->relationLoaded('parent')
+                        ? $this->parent
+                        : $this->parent()->first();
 
-    //                 if ($parent) {
-    //                     return $parent->full_code . '-' . $suffix;
-    //                 }
-    //             }
+                    if ($parent) {
+                        return $parent->full_code . '-' . $suffix;
+                    }
+                }
 
-    //             $officePrefix = $this->office?->full_code ?? '0000-0-00-000';
+                // 2. If no parent, we are at the top level (Program).
+                // We start with the Office Code.
+                $office = $this->relationLoaded('office')
+                    ? $this->office
+                    : $this->office()->first();
+                $officePrefix = $office?->full_code ?? '0000-0-00-000';
 
-    //             return $officePrefix . '-' . $suffix;
-    //         },
-    //     );
-    // }
+                return $officePrefix . '-' . $suffix;
+            },
+        );
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Ppa::class, 'parent_id');
+    }
 
     public function children()
     {

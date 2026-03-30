@@ -22,10 +22,12 @@ class UpdatePpaRequest extends FormRequest
     public function rules(): array
     {
         return [
-                // REMOVE reference_code because the system manages it.
-                // We only allow updating the description and the office_id (though office is usually locked)
-                // 'description' => 'required|string|max:255',
-                // 'office_id' => 'required|exists:offices,id',
-            ];
+            'office_id' => 'required|exists:offices,id',
+            'parent_id' => 'nullable|exists:ppas,id',
+            'name' => 'required|string',
+            'type' => 'required|in:Program,Project,Activity,Sub-Activity',
+            'code_suffix' => 'required|string|max:3',
+            'is_active' => 'boolean',
+        ];
     }
 }

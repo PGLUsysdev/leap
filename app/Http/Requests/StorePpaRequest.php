@@ -24,7 +24,7 @@ class StorePpaRequest extends FormRequest
         return [
             'office_id' => 'required|exists:offices,id',
             'parent_id' => 'nullable|exists:ppas,id',
-            'title' => 'required|string',
+            'name' => 'required|string',
             'type' => 'required|in:Program,Project,Activity,Sub-Activity',
             'code_suffix' => 'required|string|max:3',
             'is_active' => 'boolean',

@@ -28,40 +28,40 @@ class PpaSeeder extends Seeder
         $ppaStructure = [
             // Manpower Services - Program
             [
-                'title' => 'Manpower Services',
+                'name' => 'Manpower Services',
                 'type' => 'Program',
                 'children' => [],
             ],
 
             // Operational Activities - Program
             [
-                'title' => 'Operational Activities',
+                'name' => 'Operational Activities',
                 'type' => 'Program',
                 'children' => [
                     [
-                        'title' =>
+                        'name' =>
                             'Development, Deployment, and Maintenance of Information Systems',
                         'type' => 'Project',
                     ],
                     [
-                        'title' => 'Data Management and Repository',
+                        'name' => 'Data Management and Repository',
                         'type' => 'Project',
                     ],
                     [
-                        'title' =>
+                        'name' =>
                             'PGLU Infrastructure and Connectivity Management',
                         'type' => 'Project',
                     ],
                     [
-                        'title' => 'ICT Memberships, Trainings and Conferences',
+                        'name' => 'ICT Memberships, Trainings and Conferences',
                         'type' => 'Project',
                     ],
                     [
-                        'title' => 'La Union Peace and Order Systems (LUPOS)',
+                        'name' => 'La Union Peace and Order Systems (LUPOS)',
                         'type' => 'Project',
                     ],
                     [
-                        'title' => 'Information Systems Strategic Plan (ISSP)',
+                        'name' => 'Information Systems Strategic Plan (ISSP)',
                         'type' => 'Project',
                     ],
                 ],
@@ -69,16 +69,16 @@ class PpaSeeder extends Seeder
 
             // Strategic Activities - Program
             [
-                'title' => 'Strategic Activities',
+                'name' => 'Strategic Activities',
                 'type' => 'Program',
                 'children' => [
                     [
-                        'title' =>
+                        'name' =>
                             'AgriDigitization (Agri-Marketplace) LU Ordinance No. 423-2023 SP Resolution 194-2022',
                         'type' => 'Project',
                     ],
                     [
-                        'title' =>
+                        'name' =>
                             'La Union ICT Council (LUICTC) LU Ordinance No. 443-2024',
                         'type' => 'Project',
                     ],
@@ -87,16 +87,16 @@ class PpaSeeder extends Seeder
 
             // Capacity Building Programs - Program
             [
-                'title' => 'Capacity Building Programs',
+                'name' => 'Capacity Building Programs',
                 'type' => 'Program',
                 'children' => [
                     [
-                        'title' =>
+                        'name' =>
                             'Capacity Development Program for ICTU Personnel and Attendance to ICT Commits, Conferences, and Awarding Ceremony',
                         'type' => 'Project',
                     ],
                     [
-                        'title' =>
+                        'name' =>
                             'Conduct of Benchmarking and Best ICT Sharing',
                         'type' => 'Project',
                     ],
@@ -105,21 +105,21 @@ class PpaSeeder extends Seeder
 
             // Administrative Support Services - Program
             [
-                'title' => 'Administrative Support Services',
+                'name' => 'Administrative Support Services',
                 'type' => 'Program',
                 'children' => [
-                    ['title' => 'Office Administration', 'type' => 'Project'],
+                    ['name' => 'Office Administration', 'type' => 'Project'],
                     [
-                        'title' => 'Human Resource Management Services',
+                        'name' => 'Human Resource Management Services',
                         'type' => 'Project',
                     ],
-                    ['title' => 'Records Management', 'type' => 'Project'],
+                    ['name' => 'Records Management', 'type' => 'Project'],
                     [
-                        'title' => 'Management of All Financial Documents',
+                        'name' => 'Management of All Financial Documents',
                         'type' => 'Project',
                     ],
                     [
-                        'title' => 'General Administrative Services',
+                        'name' => 'General Administrative Services',
                         'type' => 'Project',
                     ],
                 ],
@@ -133,7 +133,7 @@ class PpaSeeder extends Seeder
             $program = Ppa::create([
                 'office_id' => $office->id,
                 'parent_id' => null,
-                'title' => $programData['title'],
+                'name' => $programData['name'],
                 'type' => $programData['type'],
                 'code_suffix' => str_pad($programCounter, 3, '0', STR_PAD_LEFT),
                 'is_active' => true,
@@ -145,7 +145,7 @@ class PpaSeeder extends Seeder
                 $project = Ppa::create([
                     'office_id' => $office->id,
                     'parent_id' => $program->id,
-                    'title' => $projectData['title'],
+                    'name' => $projectData['name'],
                     'type' => $projectData['type'],
                     'code_suffix' => str_pad(
                         $projectCounter,
@@ -158,7 +158,7 @@ class PpaSeeder extends Seeder
 
                 // Create specific Activities for "Development, Deployment, and Maintenance of Information Systems" project
                 if (
-                    $projectData['title'] ===
+                    $projectData['name'] ===
                     'Development, Deployment, and Maintenance of Information Systems'
                 ) {
                     $specificActivities = [
@@ -180,7 +180,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -193,7 +193,7 @@ class PpaSeeder extends Seeder
                     }
                     // Create specific Activities for "Data Management and Repository" project
                 } elseif (
-                    $projectData['title'] === 'Data Management and Repository'
+                    $projectData['name'] === 'Data Management and Repository'
                 ) {
                     $specificActivities = [
                         'Maintenance of Data Management and Repository',
@@ -204,7 +204,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -217,7 +217,7 @@ class PpaSeeder extends Seeder
                     }
                     // Create specific Activities for "PGLU Infrastructure and Connectivity Management" project
                 } elseif (
-                    $projectData['title'] ===
+                    $projectData['name'] ===
                     'PGLU Infrastructure and Connectivity Management'
                 ) {
                     $specificActivities = [
@@ -235,7 +235,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -248,7 +248,7 @@ class PpaSeeder extends Seeder
                     }
                     // Create specific Activities for "ICT Memberships, Trainings and Conferences" project
                 } elseif (
-                    $projectData['title'] ===
+                    $projectData['name'] ===
                     'ICT Memberships, Trainings and Conferences'
                 ) {
                     $specificActivities = [
@@ -264,7 +264,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -277,7 +277,7 @@ class PpaSeeder extends Seeder
                     }
                     // Create specific Activities for "La Union Peace and Order Systems (LUPOS)" project
                 } elseif (
-                    $projectData['title'] ===
+                    $projectData['name'] ===
                     'La Union Peace and Order Systems (LUPOS)'
                 ) {
                     $specificActivities = [
@@ -289,7 +289,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -302,7 +302,7 @@ class PpaSeeder extends Seeder
                     }
                     // Create specific Activities for "Information Systems Strategic Plan (ISSP)" project
                 } elseif (
-                    $projectData['title'] ===
+                    $projectData['name'] ===
                     'Information Systems Strategic Plan (ISSP)'
                 ) {
                     $specificActivities = [
@@ -314,7 +314,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -326,7 +326,7 @@ class PpaSeeder extends Seeder
                         ]);
                     }
                     // Create specific Activities for "Office Administration" project
-                } elseif ($projectData['title'] === 'Office Administration') {
+                } elseif ($projectData['name'] === 'Office Administration') {
                     $specificActivities = [
                         'Preparation and Assessment of Work Program and Budget and other Office Reports/Plans',
                         'Conduct of Monthly Staff and WIG Meeting cum Staff Development Session',
@@ -338,7 +338,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -351,7 +351,7 @@ class PpaSeeder extends Seeder
                     }
                     // Create specific Activities for "Human Resource Management Services" project
                 } elseif (
-                    $projectData['title'] ===
+                    $projectData['name'] ===
                     'Human Resource Management Services'
                 ) {
                     $specificActivities = [
@@ -365,7 +365,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -377,7 +377,7 @@ class PpaSeeder extends Seeder
                         ]);
                     }
                     // Create specific Activities for "Records Management" project
-                } elseif ($projectData['title'] === 'Records Management') {
+                } elseif ($projectData['name'] === 'Records Management') {
                     $specificActivities = [
                         'Updating and Management of All Records',
                         'Management of all Incoming and Outgoing Communications',
@@ -387,7 +387,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -400,7 +400,7 @@ class PpaSeeder extends Seeder
                     }
                     // Create specific Activities for "General Administrative Services" project
                 } elseif (
-                    $projectData['title'] === 'General Administrative Services'
+                    $projectData['name'] === 'General Administrative Services'
                 ) {
                     $specificActivities = [
                         'Janitorial Services',
@@ -415,7 +415,7 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' => $activityTitle,
+                            'name' => $activityTitle,
                             'type' => 'Activity',
                             'code_suffix' => str_pad(
                                 $index + 1,
@@ -432,9 +432,9 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'title' =>
+                            'name' =>
                                 "Mock Activity $k for " .
-                                substr($projectData['title'], 0, 30) .
+                                substr($projectData['name'], 0, 30) .
                                 '...',
                             'type' => 'Activity',
                             'code_suffix' => str_pad($k, 2, '0', STR_PAD_LEFT),

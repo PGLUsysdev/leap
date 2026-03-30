@@ -20,23 +20,23 @@ import {
 import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
 import { getExpandedRowModel } from '@tanstack/react-table';
 
-interface DataTableProps<TData, TValue> {
-    columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData> {
+    columns: ColumnDef<TData, any>[];
     data: TData[];
-    onAdd?: (parent: TData, childType: string) => void;
+    onAdd?: (parent: TData, childType: any) => void;
     onEdit?: (record: TData) => void;
     onDelete?: (record: TData) => void;
     children?: ReactElement;
 }
 
-export function PpaDataTable<TData, TValue>({
+export function PpaDataTable<TData>({
     columns,
     data,
     onAdd,
     onEdit,
     onDelete,
     children,
-}: DataTableProps<TData, TValue>) {
+}: DataTableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState('');
 
     const table = useReactTable({

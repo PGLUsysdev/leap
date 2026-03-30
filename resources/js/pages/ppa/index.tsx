@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import type { Ppa } from '@/types/global';
+import type { Ppa, Office } from '@/types/global';
 import PpaTablePage from '@/pages/ppa/ppa-masterlist-table/page';
-import PpaFormDialog from '@/pages/ppa/form';
+import PpaFormDialog from '@/pages/ppa/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
 
@@ -17,51 +17,59 @@ export default function PpaPage({
     offices,
 }: {
     ppaTree: Ppa[];
-    offices: any[];
+    offices: Office[];
 }) {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [dialogMode, setDialogMode] = useState<'add' | 'edit'>('add');
+    // Form Dialog States
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
     const [targetType, setTargetType] = useState<Ppa['type']>('Program');
-    const [activePpa, setActivePpa] = useState<Ppa | null>(null);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
 
-    console.log(activePpa);
+    // Explicitly separated states for "Parent" (Add) and "Self" (Edit)
+    const [parentPpa, setParentPpa] = useState<Ppa | null>(null);
+    const [editPpa, setEditPpa] = useState<Ppa | null>(null);
 
-    function handleAdd(parent, childType: string) {
-        console.log(parent);
-        console.log(childType);
+    // Delete Dialog States
+    const [deletePpa, setDeletePpa] = useState<Ppa | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-        setDialogMode('add');
-        setActivePpa(parent);
+    // Handlers
+    function handleAddRoot() {
+        setFormMode('add');
+        setTargetType('Program');
+        setParentPpa(null);
+        setEditPpa(null);
+        setIsFormOpen(true);
+    }
+
+    function handleAddChild(parent: Ppa, childType: Ppa['type']) {
+        setFormMode('add');
         setTargetType(childType);
-        setIsDialogOpen(true);
+        setParentPpa(parent);
+        setEditPpa(null);
+        setIsFormOpen(true);
     }
 
-    function handleEdit(data: Ppa) {
-        setDialogMode('edit');
-        setActivePpa(data);
-        setTargetType(data.type);
-        setIsDialogOpen(true);
+    function handleEdit(item: Ppa) {
+        setFormMode('edit');
+        setTargetType(item.type);
+        setEditPpa(item);
+        setParentPpa(null);
+        setIsFormOpen(true);
     }
 
-    function handleDeleteDialogOpen(data: Ppa) {
-        console.log('delete');
-
-        setActivePpa(data);
-        setIsDeleteDialogOpen(true);
+    function handleDeleteOpen(item: Ppa) {
+        setDeletePpa(item);
     }
 
     function handleDelete() {
-        router.delete(`/ppas/${activePpa?.id}`, {
+        if (!deletePpa) return;
+
+        router.delete(`/ppas/${deletePpa.id}`, {
             preserveState: true,
             preserveScroll: true,
-            onStart: () => setIsLoading(true),
-            onSuccess: () => {
-                setIsDeleteDialogOpen(false);
-                setActivePpa(null);
-            },
-            onFinish: () => setIsLoading(false),
+            onStart: () => setIsDeleting(true),
+            onSuccess: () => setDeletePpa(null),
+            onFinish: () => setIsDeleting(false),
         });
     }
 
@@ -70,55 +78,40 @@ export default function PpaPage({
             <div className="flex flex-col gap-4 p-4">
                 <PpaTablePage
                     data={ppaTree}
-                    onAdd={handleAdd}
+                    onAdd={handleAddChild}
                     onEdit={handleEdit}
-                    onDelete={handleDeleteDialogOpen}
+                    onDelete={handleDeleteOpen}
                 >
-                    <Button
-                        onClick={() => {
-                            setDialogMode('add');
-                            setActivePpa(null);
-                            setTargetType('Program');
-                            setIsDialogOpen(true);
-                        }}
-                    >
-                        New Program
-                    </Button>
+                    <Button onClick={handleAddRoot}>New Program</Button>
                 </PpaTablePage>
             </div>
 
             <PpaFormDialog
-                mode={dialogMode}
-                data={activePpa}
-                type={targetType}
-                onSuccess={() => setIsDialogOpen(false)}
-                offices={offices}
-                isDialogOpen={isDialogOpen}
-                setIsDialogOpen={setIsDialogOpen}
-                dialogMode={dialogMode}
+                isOpen={isFormOpen}
+                onOpenChange={setIsFormOpen}
+                mode={formMode}
                 targetType={targetType}
-                activePpa={activePpa}
+                parentPpa={parentPpa}
+                editPpa={editPpa}
+                offices={offices}
             />
 
             <DeleteDialog
-                isOpen={isDeleteDialogOpen}
-                onOpenChange={setIsDeleteDialogOpen}
+                isOpen={!!deletePpa}
+                onOpenChange={(open) => !open && setDeletePpa(null)}
                 title="Delete PPA?"
                 description={
                     <>
                         Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
-                            "{activePpa?.title}"
+                            "{deletePpa?.name}"
                         </span>
                         ?
                     </>
                 }
                 onConfirm={handleDelete}
-                onCancel={() => {
-                    setIsDeleteDialogOpen(false);
-                    setActivePpa(null);
-                }}
-                isLoading={isLoading}
+                onCancel={() => setDeletePpa(null)}
+                isLoading={isDeleting}
             />
         </AppLayout>
     );

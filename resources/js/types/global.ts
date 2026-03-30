@@ -100,7 +100,7 @@ export interface Ppa {
     id: number;
     office_id: number;
     parent_id: number | null;
-    title: string;
+    name: string;
     type: 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
     code_suffix: string;
     is_active: boolean;

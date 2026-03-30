@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
-import type { Ppa } from './columns';
 import { columns } from './columns';
 import { PpaDataTable } from './data-table';
+import type { Ppa } from '@/types/global';
 
 interface PpaTablePageProps {
     data: Ppa[];

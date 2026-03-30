@@ -1,17 +1,8 @@
-import type { RowData } from '@tanstack/react-table';
 import { createColumnHelper } from '@tanstack/react-table';
 import { CheckCircle2, XCircle, Pencil, Trash, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types/global';
-
-// declare module '@tanstack/table-core' {
-//     interface TableMeta<TData extends RowData> {
-//         onAdd?: (parent: TData, childType: string) => void;
-//         onEdit?: (record: TData) => void;
-//         onDelete?: (record: TData) => void;
-//     }
-// }
 
 const columnHelper = createColumnHelper<Ppa>();
 
@@ -23,7 +14,7 @@ export const columns = [
             <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>
         ),
     }),
-    columnHelper.accessor('title', {
+    columnHelper.accessor('name', {
         header: 'Program/Project/Activity Description',
         size: 300,
         cell: (info) => {
@@ -49,7 +40,7 @@ export const columns = [
                                     : 'font-medium'
                             }`}
                         >
-                            {ppa.title}
+                            {ppa.name}
                         </span>
                     </div>
                 </div>

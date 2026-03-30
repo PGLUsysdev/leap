@@ -35,76 +35,65 @@ import {
 } from '@/components/ui/dialog';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Office, Ppa } from '@/types/global';
+import { Spinner } from '@/components/ui/spinner';
 
-// 1. Validation Schema
+// Zod Schema updated to match your exact Types (using 'name' instead of 'title')
 const formSchema = z.object({
     office_id: z.string().min(1, 'Implementing office is required'),
-    title: z.string().min(1, 'Title is required'),
+    name: z.string().min(1, 'Name is required'),
     code_suffix: z
         .string()
         .min(1, 'Suffix is required')
         .max(3, 'Suffix must be 3 digits (e.g., 001)')
         .regex(/^\d+$/, 'Suffix must be numeric'),
     type: z.enum(['Program', 'Project', 'Activity', 'Sub-Activity']),
-    is_active: z.boolean().default(true),
+    // Removed .default(true) to fix the TypeScript / Resolver error
+    is_active: z.boolean(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface Office {
-    id: number;
-    sector_id: number;
-    lgu_level_id: number;
-    office_type_id: number;
-    code: string;
-    name: string;
-    is_lee: number;
-    created_at: string;
-    updated_at: string;
-    full_code: string;
-    // Relationships (Eager Loaded)
-    sector?: any;
-    lgu_level?: any;
-    office_type?: any;
-}
-
 interface PpaFormDialogProps {
-    data?: any;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
     mode: 'add' | 'edit';
-    type?: 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
-    onSuccess?: () => void;
+    targetType: Ppa['type'];
+    parentPpa: Ppa | null;
+    editPpa: Ppa | null;
     offices: Office[];
-    isDialogOpen: boolean;
-    setIsDialogOpen: (open: boolean) => void;
-    dialogMode: string;
-    targetType: string;
-    activePpa?: any;
 }
 
 export default function PpaFormDialog({
-    data,
+    isOpen,
+    onOpenChange,
     mode,
-    type,
-    onSuccess,
-    offices,
-    isDialogOpen,
-    setIsDialogOpen,
-    dialogMode,
     targetType,
-    activePpa,
+    parentPpa,
+    editPpa,
+    offices,
 }: PpaFormDialogProps) {
+    console.log({
+        isOpen,
+        onOpenChange,
+        mode,
+        targetType,
+        parentPpa,
+        editPpa,
+        offices,
+    });
+
     const isEditing = mode === 'edit';
-    const isAddingChild = mode === 'add' && !!data;
+    const isAddingChild = mode === 'add' && !!parentPpa;
 
-    // State for Office Command Dialog
     const [openOfficeCommand, setOpenOfficeCommand] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // 2. Initialize Form
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             office_id: '',
-            title: '',
+            name: '',
             code_suffix: '',
             type: 'Program',
             is_active: true,
@@ -113,92 +102,108 @@ export default function PpaFormDialog({
 
     const selectedOfficeId = Number(form.watch('office_id'));
     const codeSuffix = form.watch('code_suffix');
-    const currentType = form.watch('type');
 
-    const officeFullCode = offices.find(
-        (office) => office.id === selectedOfficeId,
-    )?.full_code;
+    // Sync form with props when dialog opens
+    useEffect(() => {
+        if (!isOpen) return;
+
+        if (isEditing && editPpa) {
+            form.reset({
+                office_id: editPpa.office_id.toString(),
+                name: editPpa.name,
+                code_suffix: editPpa.code_suffix,
+                type: editPpa.type,
+                is_active: !!editPpa.is_active,
+            });
+        } else if (mode === 'add') {
+            form.reset({
+                office_id: parentPpa?.office_id?.toString() || '',
+                name: '',
+                code_suffix: '',
+                type: targetType,
+                is_active: true,
+            });
+        }
+    }, [isOpen, isEditing, editPpa, parentPpa, mode, targetType, form]);
 
     const getCodePreview = () => {
         const suffix = codeSuffix || '000';
 
-        if (currentType === 'Program') {
-            return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
+        // 1. Adding a child: Base code is parent's full code
+        if (isAddingChild && parentPpa?.full_code) {
+            return `${parentPpa.full_code}-${suffix}`;
         }
 
-        // For Projects, Activities, and Sub-Activities:
-        // We use the full_code of the 'data' (the parent) passed to the dialog
-        if (data?.full_code) {
-            return `${data.full_code}-${suffix}`;
+        // 2. Editing an item (not root): Remove its old suffix and append new one
+        if (isEditing && editPpa?.full_code && editPpa.type !== 'Program') {
+            const baseCode = editPpa.full_code
+                .split('-')
+                .slice(0, -1)
+                .join('-');
+            return `${baseCode}-${suffix}`;
         }
 
-        // Fallback for UI during loading/missing parent context
-        return `...-${suffix}`;
+        // 3. Root Program: Use Office full_code
+        const officeFullCode = offices.find(
+            (o) => o.id === selectedOfficeId,
+        )?.full_code;
+        return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
     };
 
-    // 3. Sync form with props when dialog opens
-    useEffect(() => {
-        if (isEditing) {
-            form.reset({
-                office_id: data?.office_id?.toString() || '',
-                title: data?.title || '',
-                code_suffix: data?.code_suffix || '',
-                type: data?.type || 'Program',
-                is_active: !!data?.is_active,
-            });
-        } else if (mode === 'add') {
-            form.reset({
-                // Automatically inherit office_id from parent (data) if adding a child
-                office_id: data?.office_id?.toString() || '',
-                title: '',
-                code_suffix: '',
-                type: (targetType as any) || type || 'Program',
-                is_active: true,
-            });
-        }
-    }, [data, mode, type, targetType, isDialogOpen]);
-
-    // 4. Submit Handler
     function onSubmit(values: FormValues) {
-        const payload: any = { ...values };
+        console.log(values);
 
-        if (isEditing) {
-            router.patch(`/ppas/${data.id}`, payload, {
-                onSuccess: () => {
-                    setIsDialogOpen(false);
-                    onSuccess?.();
-                },
-            });
-        } else {
-            // When adding Project, Activity, or Sub-Activity, data is the Parent
-            if (isAddingChild) {
-                payload.parent_id = data.id;
-            }
+        // Coerce office_id to number to match your TS Type before sending to backend
+        const payload: Record<string, any> = {
+            ...values,
+            office_id: Number(values.office_id),
+        };
 
-            router.post('/ppas', payload, {
+        if (isEditing && editPpa) {
+            router.patch(`/ppas/${editPpa.id}`, payload, {
+                preserveState: true,
+                preserveScroll: true,
+                onStart: () => setIsSubmitting(true),
                 onSuccess: () => {
                     form.reset();
-                    setIsDialogOpen(false);
-                    onSuccess?.();
+                    onOpenChange(false);
                 },
+                onFinish: () => setIsSubmitting(false),
+            });
+        } else {
+            if (isAddingChild && parentPpa) {
+                payload.parent_id = parentPpa.id;
+            }
+            router.post('/ppas', payload, {
+                preserveState: true,
+                preserveScroll: true,
+                onStart: () => setIsSubmitting(true),
+                onSuccess: () => {
+                    form.reset();
+                    onOpenChange(false);
+                },
+                onFinish: () => setIsSubmitting(false),
             });
         }
     }
 
     return (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogContent className="sm:max-w-2xl">
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent
+                className="sm:max-w-2xl"
+                onPointerDownOutside={(e) => isSubmitting && e.preventDefault()}
+                onEscapeKeyDown={(e) => isSubmitting && e.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle>
-                        {dialogMode === 'add'
-                            ? `Add ${targetType}`
-                            : `Edit ${targetType}`}
+                        {isEditing ? `Edit ${targetType}` : `Add ${targetType}`}
                     </DialogTitle>
-
                     <DialogDescription>
-                        {dialogMode === 'add' && activePpa
-                            ? `Creating under: ${activePpa.title}`
-                            : 'Modify the details of this PPA entry.'}
+                        {isAddingChild
+                            ? `Creating under: ${parentPpa?.name}`
+                            : isEditing
+                              ? `Modify the details of this ${targetType.toLowerCase()}.`
+                              : `Create a new root level ${targetType.toLowerCase()}.`}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -218,7 +223,7 @@ export default function PpaFormDialog({
                                 Entry Type
                             </span>
                             <span className="w-fit rounded border bg-background px-2 py-1 text-sm font-bold text-primary shadow-sm">
-                                {form.watch('type')}
+                                {targetType}
                             </span>
                         </div>
                     </div>
@@ -242,7 +247,7 @@ export default function PpaFormDialog({
                                         </FormLabel>
 
                                         {isEditing || isAddingChild ? (
-                                            // LOCKED STATE (Editing or Adding Child)
+                                            // LOCKED STATE
                                             <div className="flex w-full items-center gap-3 rounded-lg border bg-muted/40 p-3 shadow-sm ring-1 ring-black/5 ring-inset">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm">
                                                     <span className="text-lg">
@@ -258,20 +263,18 @@ export default function PpaFormDialog({
                                                         )?.name || 'Loading...'}
                                                     </span>
                                                     <span className="text-[10px] text-muted-foreground uppercase italic">
-                                                        Inherited from parent
-                                                        (Locked)
+                                                        {isEditing
+                                                            ? 'Locked during edit'
+                                                            : 'Inherited from parent (Locked)'}
                                                     </span>
                                                 </div>
-                                                {/* Hidden input to ensure the value is still sent with the form */}
                                                 <input
                                                     type="hidden"
-                                                    {...form.register(
-                                                        'office_id',
-                                                    )}
+                                                    {...field}
                                                 />
                                             </div>
                                         ) : (
-                                            // SELECTABLE STATE (New Program) - COMMAND DIALOG
+                                            // SELECTABLE STATE (New Program)
                                             <>
                                                 <Button
                                                     type="button"
@@ -426,16 +429,16 @@ export default function PpaFormDialog({
                             </div>
                         </div>
 
-                        {/* TITLE FIELD */}
+                        {/* NAME FIELD */}
                         <FormField
                             control={form.control}
-                            name="title"
+                            name="name"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Official Title</FormLabel>
+                                    <FormLabel>Official Name / Title</FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder={`Enter the name of the ${form.watch('type').toLowerCase()}...`}
+                                            placeholder={`Enter the name of the ${targetType.toLowerCase()}...`}
                                             className="min-h-[100px] resize-none"
                                             {...field}
                                         />
@@ -450,16 +453,25 @@ export default function PpaFormDialog({
                     </form>
                 </Form>
 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <DialogFooter className="flex gap-2">
                     <Button
-                        variant="ghost"
-                        onClick={() => setIsDialogOpen(false)}
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={isSubmitting}
                     >
                         Cancel
                     </Button>
 
-                    <Button type="submit" form="ppa-form">
-                        {dialogMode === 'add' ? 'Create PPA' : 'Save Changes'}
+                    <Button
+                        type="submit"
+                        form="ppa-form"
+                        disabled={isSubmitting}
+                    >
+                        <div className="flex items-center gap-1">
+                            {isSubmitting && <Spinner />}
+
+                            {isEditing ? 'Save Changes' : 'Create PPA'}
+                        </div>
                     </Button>
                 </DialogFooter>
             </DialogContent>
