@@ -18,6 +18,11 @@ export const columns = [
         size: 300,
         cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
+    columnHelper.accessor('description', {
+        header: 'Description',
+        size: 300,
+        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
+    }),
     columnHelper.accessor('account_type', {
         header: 'Account Type',
         size: 100,

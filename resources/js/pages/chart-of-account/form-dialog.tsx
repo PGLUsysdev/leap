@@ -5,6 +5,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from '@/components/ui/dialog';
 import type { ChartOfAccount } from '@/types/global';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -127,6 +128,7 @@ export default function FormDialog({
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
+            <DialogDescription></DialogDescription>
             <DialogContent
                 className="flex max-h-[90vh] flex-col gap-0 overflow-hidden"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
@@ -425,7 +427,17 @@ export default function FormDialog({
                         disabled={isLoading}
                     >
                         {isLoading ? (
-                            <Spinner />
+                            isEditing ? (
+                                <span className="flex items-center gap-1">
+                                    <Spinner />
+                                    Saving Changes
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-1">
+                                    <Spinner />
+                                    Creating Account
+                                </span>
+                            )
                         ) : isEditing ? (
                             'Save Changes'
                         ) : (
