@@ -51,4 +51,9 @@ class Office extends Model
     {
         return $this->belongsTo(OfficeType::class, 'office_type_id');
     }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
 }

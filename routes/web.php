@@ -24,6 +24,7 @@ use App\Http\Controllers\FundingSourceController;
 use App\Http\Controllers\LguLevelController;
 use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\OfficeTypeController;
+use App\Http\Controllers\UserController;
 
 Route::get(
     '/',
@@ -37,6 +38,9 @@ Route::middleware(['auth', 'verified'])->group(
         'dashboard',
     ),
 );
+
+// users
+Route::get('users', [UserController::class, 'index'])->name('users.index');
 
 // aip
 Route::get('aip', [FiscalYearController::class, 'index'])->name('aip.index');

@@ -83,6 +83,12 @@ const mainNavItems: NavItem[] = [
         href: '/funding-sources',
         icon: BanknoteArrowUp,
     },
+    { title: '', href: '', type: 'separator' },
+    {
+        title: 'Users',
+        href: '/users',
+        icon: Gem,
+    },
 ];
 
 // const footerNavItems: NavItem[] = [

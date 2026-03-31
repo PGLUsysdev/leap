@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { columns } from './columns';
-import { PpaDataTable } from './data-table';
+// import { PpaDataTable } from './data-table';
+import { DataTable } from '@/components/data-table';
 import type { Ppa } from '@/types/global';
 
 interface PpaTablePageProps {
@@ -19,14 +20,16 @@ export default function PpaTablePage({
     children,
 }: PpaTablePageProps) {
     return (
-        <PpaDataTable
+        <DataTable
             columns={columns}
             data={data}
+            getSubRows={(row) => row.children}
             onAdd={onAdd}
             onEdit={onEdit}
             onDelete={onDelete}
+            withSearch={true}
         >
             {children}
-        </PpaDataTable>
+        </DataTable>
     );
 }
