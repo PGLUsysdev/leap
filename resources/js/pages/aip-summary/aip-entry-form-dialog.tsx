@@ -3,7 +3,7 @@ import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, parseISO } from 'date-fns';
-import { CalendarIcon, Plus, Trash2, ListPlus } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, ListPlus, Check } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -33,7 +33,9 @@ import {
 import {
     Table,
     TableBody,
+    TableCaption,
     TableCell,
+    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -49,6 +51,18 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    Command,
+    CommandDialog,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+    CommandShortcut,
+} from '@/components/ui/command';
+import { Separator } from '@/components/ui/separator';
 
 import type { FiscalYear, Ppa, FundingSource, Office } from '@/types/global';
 
@@ -93,8 +107,16 @@ export default function AipEntryFormDialog({
     fundingSources,
     offices,
 }: Props) {
-    // console.log(fiscalYear);
+    console.log({
+        open,
+        onOpenChange,
+        data,
+        fiscalYear,
+        fundingSources,
+        offices,
+    });
 
+    const [openOfficeComamnd, setOpenOfficeComamnd] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<FormValues>({
@@ -242,13 +264,14 @@ export default function AipEntryFormDialog({
                                 onSubmit={form.handleSubmit(onSubmit)}
                                 className="flex flex-1 flex-col overflow-hidden"
                             >
-                                <div className="space-y-8 p-6">
+                                <div className="space-y-4 p-4">
                                     {/* Top Metadata */}
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                                        <Field>
+                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
+                                        <Field className="col-span-1">
                                             <FieldLabel>
                                                 AIP Reference Code
                                             </FieldLabel>
+
                                             <Input
                                                 value={data?.full_code}
                                                 readOnly
@@ -256,8 +279,10 @@ export default function AipEntryFormDialog({
                                                 placeholder="AUTO-GENERATED"
                                             />
                                         </Field>
-                                        <Field className="md:col-span-1">
+
+                                        <Field className="col-span-2">
                                             <FieldLabel>PPA Title</FieldLabel>
+
                                             <Input
                                                 value={data?.name || ''}
                                                 readOnly
@@ -265,61 +290,119 @@ export default function AipEntryFormDialog({
                                             />
                                         </Field>
 
-                                        {/* Editable Office Selection */}
-                                        <Controller
-                                            name="office_id"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
-                                                    <FieldLabel>
-                                                        Office
-                                                    </FieldLabel>
-                                                    <Select
-                                                        onValueChange={
-                                                            field.onChange
+                                        <div className="col-span-2">
+                                            <Controller
+                                                name="office_id"
+                                                control={form.control}
+                                                render={({
+                                                    field,
+                                                    fieldState,
+                                                }) => (
+                                                    <Field
+                                                        data-invalid={
+                                                            fieldState.invalid
                                                         }
-                                                        value={field.value}
                                                     >
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select Office" />
-                                                        </SelectTrigger>
+                                                        <FieldLabel>
+                                                            Office
+                                                        </FieldLabel>
 
-                                                        <SelectContent>
-                                                            {offices?.map(
-                                                                (office) => (
-                                                                    <SelectItem
-                                                                        key={
-                                                                            office.id
-                                                                        }
-                                                                        value={office.id.toString()}
-                                                                    >
-                                                                        {
-                                                                            office.acronym
-                                                                        }{' '}
-                                                                        -{' '}
-                                                                        {
-                                                                            office.name
-                                                                        }
-                                                                    </SelectItem>
-                                                                ),
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                </Field>
-                                            )}
-                                        />
+                                                        <Button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                setOpenOfficeComamnd(
+                                                                    true,
+                                                                )
+                                                            }
+                                                            variant="outline"
+                                                        >
+                                                            {offices.find(
+                                                                (office) =>
+                                                                    office.id ===
+                                                                    Number(
+                                                                        field.value,
+                                                                    ),
+                                                            )?.name ||
+                                                                'No office selected'}
+                                                        </Button>
+
+                                                        <CommandDialog
+                                                            open={
+                                                                openOfficeComamnd
+                                                            }
+                                                            onOpenChange={
+                                                                setOpenOfficeComamnd
+                                                            }
+                                                        >
+                                                            <Command>
+                                                                <CommandInput placeholder="Type to search..." />
+                                                                <CommandList>
+                                                                    <CommandGroup>
+                                                                        <Table>
+                                                                            <TableHeader>
+                                                                                <TableRow>
+                                                                                    <TableHead className="text-xs opacity-50">
+                                                                                        Acronym
+                                                                                    </TableHead>
+                                                                                    <TableHead className="text-xs opacity-50">
+                                                                                        Office
+                                                                                        Name
+                                                                                    </TableHead>
+                                                                                </TableRow>
+                                                                            </TableHeader>
+
+                                                                            <TableBody>
+                                                                                {offices.map(
+                                                                                    (
+                                                                                        office,
+                                                                                    ) => (
+                                                                                        <TableRow
+                                                                                            key={
+                                                                                                office.id
+                                                                                            }
+                                                                                            onClick={() => {
+                                                                                                field.onChange(
+                                                                                                    String(
+                                                                                                        office.id,
+                                                                                                    ),
+                                                                                                );
+
+                                                                                                setOpenOfficeComamnd(
+                                                                                                    false,
+                                                                                                );
+                                                                                            }}
+                                                                                            className="cursor-pointer"
+                                                                                        >
+                                                                                            <TableCell className="font-medium">
+                                                                                                {office.acronym ||
+                                                                                                    '-'}
+                                                                                            </TableCell>
+                                                                                            <TableCell>
+                                                                                                <div className="text-wrap">
+                                                                                                    {office?.name ||
+                                                                                                        '-'}
+                                                                                                </div>
+                                                                                            </TableCell>
+                                                                                        </TableRow>
+                                                                                    ),
+                                                                                )}
+                                                                            </TableBody>
+                                                                        </Table>
+                                                                    </CommandGroup>
+                                                                </CommandList>
+                                                            </Command>
+                                                        </CommandDialog>
+
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    </Field>
+                                                )}
+                                            />
+                                        </div>
                                     </div>
-
-                                    <Separator />
 
                                     {/* Implementation Details */}
                                     <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -341,7 +424,7 @@ export default function AipEntryFormDialog({
                                                         </FieldLabel>
                                                         <Textarea
                                                             {...field}
-                                                            className="min-h-[100px]"
+                                                            className="min-h-25"
                                                         />
                                                         <FieldError
                                                             errors={[
@@ -352,6 +435,7 @@ export default function AipEntryFormDialog({
                                                 )}
                                             />
                                         </div>
+
                                         <div className="space-y-4">
                                             {['start_date', 'end_date'].map(
                                                 (key) => (
@@ -781,5 +865,3 @@ export default function AipEntryFormDialog({
         </Dialog>
     );
 }
-
-const Separator = () => <div className="h-px w-full bg-border" />;

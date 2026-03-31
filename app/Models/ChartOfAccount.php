@@ -23,8 +23,8 @@ class ChartOfAccount extends Model
         'description',
     ];
 
-    // public function ppmpPriceLists()
-    // {
-    //     return $this->hasMany(PpmpPriceList::class);
-    // }
+    public function ppmpPriceLists()
+    {
+        return $this->hasMany(PpmpPriceList::class);
+    }
 }

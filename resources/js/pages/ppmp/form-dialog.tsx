@@ -28,7 +28,6 @@ import type {
     PpaFundingSource,
 } from '@/types/global';
 import { router } from '@inertiajs/react';
-import { Switch } from '@/components/ui/switch';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { formSchema, type FormSchemaType } from './form-dialog-schema';
 import {
@@ -797,9 +796,9 @@ export default function PpmpFormDialog({
                                                             readOnly={
                                                                 !isCustomItem
                                                             }
-                                                            disabled={
-                                                                !isCustomItem
-                                                            }
+                                                            // disabled={
+                                                            //     !isCustomItem
+                                                            // }
                                                             onChange={(e) =>
                                                                 field.onChange(
                                                                     e.target
@@ -863,9 +862,9 @@ export default function PpmpFormDialog({
                                                             readOnly={
                                                                 !isCustomItem
                                                             }
-                                                            disabled={
-                                                                !isCustomItem
-                                                            }
+                                                            // disabled={
+                                                            //     !isCustomItem
+                                                            // }
                                                             onChange={(e) => {
                                                                 const val =
                                                                     e.target
@@ -934,9 +933,9 @@ export default function PpmpFormDialog({
                                                             readOnly={
                                                                 !isCustomItem
                                                             }
-                                                            disabled={
-                                                                !isCustomItem
-                                                            }
+                                                            // disabled={
+                                                            //     !isCustomItem
+                                                            // }
                                                         />
 
                                                         {fieldState.invalid && (

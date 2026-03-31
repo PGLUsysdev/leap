@@ -72,10 +72,13 @@ export default function PpmpPage({
     const [openAlert, setOpenAlert] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
-    const [selectedFundingSource, setSelectedFundingSource] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedExpenseClass, setSelectedExpenseClass] =
-        useState<string>('ALL');
+    const [selectedFundingSource, setSelectedFundingSource] = useState(
+        Number(initialFund) || 0,
+    );
+    const [selectedExpenseClass, setSelectedExpenseClass] = useState<string>(
+        initialChoice || 'ALL',
+    );
 
     // console.log(aipEntry);
     // console.log(ppmpItems);
@@ -137,6 +140,39 @@ export default function PpmpPage({
         });
     }
 
+    const handleExpenseClassChange = (value: string) => {
+        setSelectedExpenseClass(value);
+
+        router.get(
+            window.location.pathname,
+            {
+                choice: value,
+                fund: selectedFundingSource,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
+    const handleFundingSourceChange = (value: string) => {
+        const id = Number(value);
+        setSelectedFundingSource(id);
+
+        router.get(
+            window.location.pathname,
+            {
+                choice: selectedExpenseClass,
+                fund: id,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="w-full flex-1 px-4 py-4">
@@ -148,10 +184,8 @@ export default function PpmpPage({
                 >
                     <div className="flex gap-2">
                         <Select
-                            onValueChange={(value) =>
-                                setSelectedExpenseClass(value)
-                            }
-                            defaultValue={initialChoice}
+                            onValueChange={handleExpenseClassChange}
+                            value={selectedExpenseClass}
                         >
                             <SelectTrigger className="w-full max-w-40">
                                 <SelectValue placeholder="Expense Class" />
@@ -175,10 +209,8 @@ export default function PpmpPage({
                         </Select>
 
                         <Select
-                            onValueChange={(value) =>
-                                handleFundingSourceSelect(value)
-                            }
-                            defaultValue={initialFund}
+                            onValueChange={handleFundingSourceChange}
+                            defaultValue={String(selectedFundingSource)}
                         >
                             <SelectTrigger className="w-full max-w-48">
                                 <SelectValue placeholder="Select funding source" />
