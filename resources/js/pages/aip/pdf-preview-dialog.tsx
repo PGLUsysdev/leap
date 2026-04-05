@@ -78,7 +78,7 @@ const formatNumber = (value: number | string | undefined) => {
 const MyDocument = ({ data }: { data: App[] }) => {
     return (
         <Document title="Quarterly Procurement Report">
-            <Page size="A4" orientation="landscape" style={styles.page}>
+            <Page size={[612, 936]} orientation="landscape" style={styles.page}>
                 {/* --- Header Section --- */}
                 <View fixed style={{ marginBottom: 10, textAlign: 'center' }}>
                     <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
