@@ -13,7 +13,7 @@ interface EditableCellProps {
     column: any;
 }
 
-export const formatNumber = (val: string | number) => {
+const formatNumber = (val: string | number) => {
     const num = typeof val === 'string' ? parseFloat(val) : val;
     return isNaN(num) || num === null
         ? '0.00'
@@ -100,7 +100,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
 
 const columnHelper = createColumnHelper<Ppmp>();
 
-export const columns = [
+const columns = [
     columnHelper.accessor('funding_source.code', {
         header: 'Funding Source',
         cell: (info) => <span className="text-wrap">{info.getValue()}</span>,
@@ -509,3 +509,5 @@ export const columns = [
         ),
     }),
 ];
+
+export default columns;

@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
 import PpmpFormDialog from '@/pages/ppmp/form-dialog';
-import PpmpTablePage from './ppmp-table/page';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
 import {
@@ -31,6 +30,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { DataTable } from '@/components/data-table';
+import columns from './table/columns';
 
 import { type BreadcrumbItem } from '@/types';
 import type {
@@ -54,6 +55,8 @@ interface PpmpPageProps {
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
     fundingSources: PpaFundingSource[];
+    initialChoice: 'MOOE' | 'CO';
+    initialFund: number;
 }
 
 export default function PpmpPage({
@@ -176,11 +179,18 @@ export default function PpmpPage({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="w-full flex-1 px-4 py-4">
-                <PpmpTablePage
+                {/* <PpmpTablePage
                     data={filteredPpmpItems}
                     // onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                     // text={<span>Showing all MOOE with All Funding Source</span>}
+                > */}
+                <DataTable
+                    columns={columns}
+                    data={filteredPpmpItems}
+                    withSearch={true}
+                    // onEdit={handleEdit}
+                    onDelete={handleDeleteDialogOpen}
                 >
                     <div className="flex gap-2">
                         <Select
@@ -296,7 +306,7 @@ export default function PpmpPage({
                             <Plus /> Add Item
                         </Button>
                     </div>
-                </PpmpTablePage>
+                </DataTable>
             </div>
 
             <PpmpFormDialog
