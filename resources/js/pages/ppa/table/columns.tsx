@@ -6,7 +6,7 @@ import type { Ppa } from '@/types/global';
 
 const columnHelper = createColumnHelper<Ppa>();
 
-export const columns = [
+const columns = [
     columnHelper.accessor('full_code', {
         header: 'AIP Reference Code',
         size: 100,
@@ -104,3 +104,5 @@ export const columns = [
         ),
     }),
 ];
+
+export default columns;

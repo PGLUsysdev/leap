@@ -73,15 +73,15 @@ export default function PpaFormDialog({
     editPpa,
     offices,
 }: PpaFormDialogProps) {
-    console.log({
-        isOpen,
-        onOpenChange,
-        mode,
-        targetType,
-        parentPpa,
-        editPpa,
-        offices,
-    });
+    // console.log({
+    //     isOpen,
+    //     onOpenChange,
+    //     mode,
+    //     targetType,
+    //     parentPpa,
+    //     editPpa,
+    //     offices,
+    // });
 
     const isEditing = mode === 'edit';
     const isAddingChild = mode === 'add' && !!parentPpa;

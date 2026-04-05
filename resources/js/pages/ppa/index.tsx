@@ -3,10 +3,11 @@ import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import type { Ppa, Office } from '@/types/global';
-import PpaTablePage from '@/pages/ppa/ppa-masterlist-table/page';
 import PpaFormDialog from '@/pages/ppa/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
+import { DataTable } from '@/components/data-table';
+import columns from './table/columns';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'PPA Master Library', href: '#' },
@@ -32,6 +33,8 @@ export default function PpaPage({
     const [deletePpa, setDeletePpa] = useState<Ppa | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    console.log({ parentPpa, editPpa });
+
     // Handlers
     function handleAddRoot() {
         setFormMode('add');
@@ -47,6 +50,14 @@ export default function PpaPage({
         setParentPpa(parent);
         setEditPpa(null);
         setIsFormOpen(true);
+    }
+
+    function handleDialogOpenChange(isOpen: boolean) {
+        setIsFormOpen(isOpen);
+        if (!isOpen) {
+            setParentPpa(null);
+            setEditPpa(null);
+        }
     }
 
     function handleEdit(item: Ppa) {
@@ -76,19 +87,21 @@ export default function PpaPage({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
-                <PpaTablePage
+                <DataTable
+                    columns={columns}
                     data={ppaTree}
+                    withSearch={true}
                     onAdd={handleAddChild}
                     onEdit={handleEdit}
                     onDelete={handleDeleteOpen}
                 >
                     <Button onClick={handleAddRoot}>New Program</Button>
-                </PpaTablePage>
+                </DataTable>
             </div>
 
             <PpaFormDialog
                 isOpen={isFormOpen}
-                onOpenChange={setIsFormOpen}
+                onOpenChange={handleDialogOpenChange}
                 mode={formMode}
                 targetType={targetType}
                 parentPpa={parentPpa}
