@@ -5,7 +5,7 @@ import type { ChartOfAccount } from '@/types/global';
 
 const columnHelper = createColumnHelper<ChartOfAccount>();
 
-export const columns = [
+const columns = [
     columnHelper.accessor('account_number', {
         header: 'Account Number',
         size: 150,
@@ -84,3 +84,5 @@ export const columns = [
         ),
     }),
 ];
+
+export default columns;

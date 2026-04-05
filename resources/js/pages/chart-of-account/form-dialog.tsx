@@ -108,21 +108,28 @@ export default function FormDialog({
             description: values.description === '' ? null : values.description,
         };
 
-        const options = {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => setIsLoading(true),
-            onSuccess: () => {
-                setOpen(false);
-                form.reset();
-            },
-            onFinish: () => setIsLoading(false),
-        };
-
         if (isEditing) {
-            router.patch(`/chart-of-accounts/${initialData.id}`, data, options);
+            router.patch(`/chart-of-accounts/${initialData.id}`, data, {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setIsLoading(true),
+                onSuccess: () => {
+                    setOpen(false);
+                    form.reset();
+                },
+                onFinish: () => setIsLoading(false),
+            });
         } else {
-            router.post('/chart-of-accounts', data, options);
+            router.post('/chart-of-accounts', data, {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setIsLoading(true),
+                onSuccess: () => {
+                    setOpen(false);
+                    form.reset();
+                },
+                onFinish: () => setIsLoading(false),
+            });
         }
     }
 

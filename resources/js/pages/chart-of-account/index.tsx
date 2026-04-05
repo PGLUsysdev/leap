@@ -2,11 +2,12 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import type { ChartOfAccount } from '@/types/global';
-import ChartOfAccountTablePage from '@/pages/chart-of-account/table/page';
 import { Button } from '@/components/ui/button';
 import FormDialog from '@/pages/chart-of-account/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
+import { DataTable } from '@/components/data-table';
+import columns from './table/columns';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Chart of Accounts', href: '#' },
@@ -19,8 +20,6 @@ interface ChartOfAccountPageProps {
 export default function ChartOfAccountPage({
     chartOfAccounts,
 }: ChartOfAccountPageProps) {
-    console.log(chartOfAccounts);
-
     const [open, setOpen] = useState(false);
     const [selectedAccount, setSelectedAccount] =
         useState<ChartOfAccount | null>(null);
@@ -32,6 +31,11 @@ export default function ChartOfAccountPage({
     function handleAdd() {
         setSelectedAccount(null);
         setOpen(true);
+    }
+
+    function handleDialogOpenChange(isOpen: boolean) {
+        setOpen(isOpen);
+        if (!isOpen) setSelectedAccount(null);
     }
 
     function handleEdit(account: ChartOfAccount) {
@@ -66,8 +70,10 @@ export default function ChartOfAccountPage({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
-                <ChartOfAccountTablePage
+                <DataTable
+                    columns={columns}
                     data={chartOfAccounts}
+                    withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
@@ -76,12 +82,12 @@ export default function ChartOfAccountPage({
                             Add Chart of Account
                         </Button>
                     </div>
-                </ChartOfAccountTablePage>
+                </DataTable>
             </div>
 
             <FormDialog
                 open={open}
-                setOpen={setOpen}
+                setOpen={handleDialogOpenChange}
                 initialData={selectedAccount}
             />
 
