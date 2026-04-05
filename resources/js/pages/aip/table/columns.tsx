@@ -9,7 +9,6 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    // DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -17,9 +16,10 @@ import type { RowData } from '@tanstack/react-table';
 
 declare module '@tanstack/react-table' {
     interface TableMeta<TData extends RowData> {
-        onAdd?: (data: TData, type: any) => void;
         onEdit?: (data: TData) => void;
         onDelete?: (data: TData) => void;
+
+        onAdd?: (data: TData, type: any) => void;
         onUpdateStatus?: (
             data: TData,
             status: 'active' | 'inactive' | 'closed',

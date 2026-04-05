@@ -1,16 +1,8 @@
-import type { RowData } from '@tanstack/react-table';
 import { createColumnHelper } from '@tanstack/react-table';
 import type { Office } from '@/types/global';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash } from 'lucide-react';
-
-// declare module '@tanstack/table-core' {
-//     interface TableMeta<TData extends RowData> {
-//         onEdit?: (record: TData) => void;
-//         onDelete?: (record: TData) => void;
-//     }
-// }
 
 const columnHelper = createColumnHelper<Office>();
 

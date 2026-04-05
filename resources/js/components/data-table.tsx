@@ -24,11 +24,13 @@ interface DataTableProps<TData> {
     data: TData[];
     isExpandedAll?: boolean;
     withSearch?: boolean;
-    onAdd?: (parent: TData, childType: any) => void;
-    onEdit?: (record: TData) => void;
-    onDelete?: (record: TData) => void;
     children?: ReactElement;
     withRowSpan?: boolean;
+
+    onEdit?: (data: TData) => void;
+    onDelete?: (data: TData) => void;
+
+    onAdd?: (parent: TData, childType: any) => void;
 }
 
 export function DataTable<TData>({

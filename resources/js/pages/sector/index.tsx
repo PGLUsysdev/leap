@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import TablePage from './table/page';
 import { Button } from '@/components/ui/button';
 import FormDialog from './form-dialog';
 import AppLayout from '@/layouts/app-layout';
@@ -7,6 +6,8 @@ import { type BreadcrumbItem } from '@/types';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
 import type { Sector } from '@/types/global';
+import { DataTable } from '@/components/data-table';
+import columns from '@/pages/sector/table/columns';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Sectors', href: '#' }];
 
@@ -15,16 +16,21 @@ interface SectorPageProps {
 }
 
 export default function SectorPage({ sectors }: SectorPageProps) {
-    console.log(sectors);
-
     const [open, setOpen] = useState(false);
     const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    console.log(selectedSector);
+
     function handleAdd() {
         setSelectedSector(null);
         setOpen(true);
+    }
+
+    function handleDialogOpenChange(isOpen: boolean) {
+        setOpen(isOpen);
+        if (!isOpen) setSelectedSector(null);
     }
 
     function handleEdit(data: Sector) {
@@ -53,7 +59,8 @@ export default function SectorPage({ sectors }: SectorPageProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
-                <TablePage
+                <DataTable
+                    columns={columns}
                     data={sectors}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
@@ -61,12 +68,12 @@ export default function SectorPage({ sectors }: SectorPageProps) {
                     <div className="flex justify-end">
                         <Button onClick={handleAdd}>Add Sector</Button>
                     </div>
-                </TablePage>
+                </DataTable>
             </div>
 
             <FormDialog
                 open={open}
-                setOpen={setOpen}
+                setOpen={handleDialogOpenChange}
                 initialData={selectedSector}
             />
 

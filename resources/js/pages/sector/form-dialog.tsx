@@ -40,7 +40,7 @@ export default function FormDialog({
     setOpen,
     initialData,
 }: FormDialogProps) {
-    console.log(initialData);
+    // console.log(initialData);
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -66,19 +66,21 @@ export default function FormDialog({
     }, [initialData, open, form]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        // console.log(data);
-
         if (isEditing) {
             router.patch(`/sectors/${initialData.id}`, data, {
+                preserveState: true,
+                preserveScroll: true,
                 onStart: () => setIsLoading(true),
-                onFinish: () => setIsLoading(false),
                 onSuccess: () => setOpen(false),
+                onFinish: () => setIsLoading(false),
             });
         } else {
             router.post('/sectors', data, {
+                preserveState: true,
+                preserveScroll: true,
                 onStart: () => setIsLoading(true),
-                onFinish: () => setIsLoading(false),
                 onSuccess: () => setOpen(false),
+                onFinish: () => setIsLoading(false),
             });
         }
     }
