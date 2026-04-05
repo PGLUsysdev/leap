@@ -5,7 +5,7 @@ import type { PriceList } from '@/types/global';
 
 const columnHelper = createColumnHelper<PriceList>();
 
-export const columns = [
+const columns = [
     columnHelper.accessor('item_number', {
         header: 'Item Number',
         size: 100,
@@ -67,3 +67,5 @@ export const columns = [
         ),
     }),
 ];
+
+export default columns;

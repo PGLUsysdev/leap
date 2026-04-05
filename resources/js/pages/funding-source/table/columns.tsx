@@ -5,7 +5,7 @@ import type { FundingSource } from '@/types/global';
 
 const columnHelper = createColumnHelper<FundingSource>();
 
-export const columns = [
+const columns = [
     columnHelper.accessor('fund_type', {
         header: 'Fund Type',
         cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
@@ -49,3 +49,5 @@ export const columns = [
         ),
     }),
 ];
+
+export default columns;

@@ -3,10 +3,11 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import type { PriceList, ChartOfAccount, PpmpCategory } from '@/types/global';
-import PriceListTablePage from '@/pages/price-list/table/page';
 import FormDialog from '@/pages/price-list/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
+import { DataTable } from '@/components/data-table';
+import columns from './table/columns';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Price Lists', href: '#' }];
 
@@ -33,6 +34,11 @@ export default function PriceListPage({
         setSelectedPriceList(null);
 
         setOpenEdit(true);
+    }
+
+    function handleDialogOpenChange(isOpen: boolean) {
+        setOpenEdit(isOpen);
+        if (!isOpen) setSelectedPriceList(null);
     }
 
     function handleEdit(data: PriceList) {
@@ -69,18 +75,20 @@ export default function PriceListPage({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="p-4">
-                <PriceListTablePage
+                <DataTable
+                    columns={columns}
                     data={priceList}
+                    withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
                     <Button onClick={handleAdd}>Add Price List</Button>
-                </PriceListTablePage>
+                </DataTable>
             </div>
 
             <FormDialog
                 open={openEdit}
-                onOpenChange={setOpenEdit}
+                onOpenChange={handleDialogOpenChange}
                 chartOfAccounts={chartOfAccounts}
                 ppmpCategories={ppmpCategory}
                 selectedPriceList={selectedPriceList}
