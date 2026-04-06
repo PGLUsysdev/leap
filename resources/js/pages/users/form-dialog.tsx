@@ -13,7 +13,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Field, FieldLabel, FieldError } from '@/components/ui/field'; // Adjust paths based on your project
+import { Field, FieldLabel, FieldError } from '@/components/ui/field';
 import {
     Select,
     SelectContent,
@@ -83,10 +83,7 @@ export default function FormDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="space-y-4 py-4"
-                >
+                <form onSubmit={form.handleSubmit(onSubmit)} className="py-6">
                     <Controller
                         name="status"
                         control={form.control}
@@ -123,23 +120,23 @@ export default function FormDialog({
                             </Field>
                         )}
                     />
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={form.formState.isSubmitting}
-                        >
-                            Save Changes
-                        </Button>
-                    </DialogFooter>
                 </form>
+
+                <DialogFooter>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        type="submit"
+                        disabled={form.formState.isSubmitting}
+                    >
+                        Save Changes
+                    </Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );

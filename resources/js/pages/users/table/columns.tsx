@@ -20,18 +20,21 @@ const columns = [
     }),
     columnHelper.accessor('office.name', {
         header: 'Department / Office',
+        size: 300,
         cell: (info) => {
             return <div className="text-wrap">{info.getValue()}</div>;
         },
     }),
     columnHelper.accessor('status', {
         header: 'Status',
+        size: 100,
         cell: (info) => {
             return <div className="text-wrap">{info.getValue()}</div>;
         },
     }),
     columnHelper.display({
         id: 'action',
+        size: 22,
         cell: ({ row, table }) => {
             return (
                 <div>
