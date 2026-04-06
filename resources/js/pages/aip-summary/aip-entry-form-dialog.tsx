@@ -546,7 +546,7 @@ export default function AipEntryFormDialog({
                                                         <TableHead className="text-right">
                                                             Mitigation
                                                         </TableHead>
-                                                        <TableHead className="w-[150px] text-left">
+                                                        <TableHead className="w-5 text-left">
                                                             CC Typology Code
                                                         </TableHead>
                                                         <TableHead className="w-[50px]"></TableHead>
@@ -720,21 +720,19 @@ export default function AipEntryFormDialog({
                                                                                 }
                                                                                 readOnly
                                                                                 placeholder="---"
-                                                                                className="pointer-events-none min-w-[120px] border-none text-left shadow-none"
+                                                                                className="pointer-events-none min-w-5 border-none text-left shadow-none"
                                                                             />
                                                                         )}
                                                                     />
                                                                 </TableCell>
 
-                                                                <TableCell className="text-center">
+                                                                <TableCell>
                                                                     <DropdownMenu>
                                                                         <DropdownMenuTrigger
                                                                             asChild
                                                                         >
                                                                             <Button
-                                                                                variant="outline"
                                                                                 size="icon"
-                                                                                className="h-8 w-8"
                                                                                 disabled={
                                                                                     !isEdit ||
                                                                                     !watchedSources?.[
@@ -785,18 +783,16 @@ export default function AipEntryFormDialog({
                                                                             </DropdownMenuItem>
                                                                         </DropdownMenuContent>
                                                                     </DropdownMenu>
-                                                                </TableCell>
 
-                                                                <TableCell>
                                                                     <Button
                                                                         type="button"
-                                                                        variant="ghost"
                                                                         size="icon"
                                                                         onClick={() =>
                                                                             remove(
                                                                                 index,
                                                                             )
                                                                         }
+                                                                        title="Remove Funding Source"
                                                                     >
                                                                         <Trash2 className="h-4 w-4" />
                                                                     </Button>

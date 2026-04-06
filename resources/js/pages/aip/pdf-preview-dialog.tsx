@@ -270,7 +270,7 @@ const MyDocument = ({
                                 }}
                             >
                                 <Text style={styles.tableHeaderCell}>
-                                    Quarterly Funding Distribution (H1)
+                                    {/* Quarterly Funding Distribution (H1) */}
                                 </Text>
                             </View>
                             <View style={{ flexDirection: 'row', flex: 1 }}>
@@ -413,7 +413,12 @@ const MyDocument = ({
                             </View>
 
                             <View style={{ flexDirection: 'row', flex: 1 }}>
-                                {['Q1', 'Q2', 'Q3', 'Q4'].map((q, idx) => {
+                                {[
+                                    '1ST QUARTER',
+                                    '2ND QUARTER',
+                                    '3RD QUARTER',
+                                    '4TH QUARTER',
+                                ].map((q, idx) => {
                                     const startIdx = 6 + idx * 2;
                                     const qtyW = COLUMN_WIDTHS[startIdx]; // e.g., 4
                                     const amtW = COLUMN_WIDTHS[startIdx + 1]; // e.g., 6

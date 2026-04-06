@@ -14,6 +14,7 @@ import {
     TableHead,
     TableHeader,
     TableRow,
+    TableFooter,
 } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -218,6 +219,35 @@ export function DataTable<TData>({
                             </TableRow>
                         )}
                     </TableBody>
+
+                    <TableFooter className="sticky bottom-0 bg-secondary/50 backdrop-blur-sm">
+                        {table.getFooterGroups().map((footerGroup) => (
+                            <TableRow key={footerGroup.id}>
+                                {footerGroup.headers.map((column) => {
+                                    return (
+                                        <TableCell
+                                            key={column.id}
+                                            colSpan={column.colSpan}
+                                            style={{
+                                                width: `${column.getSize()}px`,
+                                                ...getCommonPinningStyles(
+                                                    column.column,
+                                                ),
+                                            }}
+                                        >
+                                            {column.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      column.column.columnDef
+                                                          .footer,
+                                                      column.getContext(),
+                                                  )}
+                                        </TableCell>
+                                    );
+                                })}
+                            </TableRow>
+                        ))}
+                    </TableFooter>
                 </Table>
 
                 <ScrollBar orientation="horizontal" className="z-10" />

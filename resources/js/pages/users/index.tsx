@@ -13,6 +13,8 @@ interface UsersIndexProps {
 }
 
 export default function UsersIndex({ users }: UsersIndexProps) {
+    console.log(users);
+
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [openFormDialog, setOpenFormDialog] = useState(false);
 

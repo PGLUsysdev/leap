@@ -41,7 +41,8 @@ class PpmpController extends Controller
         $ppmpCategories = PpmpCategory::all();
 
         $ppaFundingSources = PpaFundingSource::with('fundingSource')
-            ->where('aip_entry_id', $aipEntry->ppa_id)
+            // ->where('aip_entry_id', $aipEntry->ppa_id)
+            ->where('aip_entry_id', $aipEntry->id)
             ->get();
 
         return Inertia::render('ppmp/index', [
@@ -153,12 +154,10 @@ class PpmpController extends Controller
             'dec_amount' => 0,
         ]);
 
-        $expenseClass = $ppmp->ppmpPriceList->chartOfAccount->expense_class;
-
-        $this->updateAipAmount(
+        $this->updatePpaFundingSourceTotals(
             $ppmp->aip_entry_id,
-            $expenseClass,
             $ppmp->funding_source_id,
+            $ppmp->ppmpPriceList->chartOfAccount->expense_class,
         );
     }
 
@@ -179,13 +178,10 @@ class PpmpController extends Controller
             $monthAmount => $validated['quantity'] * $unitPrice,
         ]);
 
-        $expenseClass = $ppmp->ppmpPriceList->chartOfAccount->expense_class;
-
-        // Pass the funding_source_id to the sync method
-        $this->updateAipAmount(
+        $this->updatePpaFundingSourceTotals(
             $ppmp->aip_entry_id,
-            $expenseClass,
             $ppmp->funding_source_id,
+            $ppmp->ppmpPriceList->chartOfAccount->expense_class,
         );
 
         return back();
@@ -212,15 +208,66 @@ class PpmpController extends Controller
      */
     public function destroy(Ppmp $ppmp)
     {
+        // Capture details before deletion
         $aipEntryId = $ppmp->aip_entry_id;
-        // Capture class BEFORE deletion
+        $fsId = $ppmp->funding_source_id;
         $expenseClass = $ppmp->ppmpPriceList->chartOfAccount->expense_class;
-
-        $fsId = $ppmp->funding_source_id; // Capture before delete
 
         $ppmp->delete();
 
-        // Trigger dynamic recalculation for the specific class
-        $this->updateAipAmount($aipEntryId, $expenseClass, $fsId);
+        // Re-calculate totals (the sum will now be smaller)
+        $this->updatePpaFundingSourceTotals($aipEntryId, $fsId, $expenseClass);
+    }
+
+    private function updatePpaFundingSourceTotals(
+        $aipEntryId,
+        $fundingSourceId,
+        $expenseClass,
+    ) {
+        // Map Expense Class to the actual column in ppa_funding_sources
+        $columnMap = [
+            'MOOE' => 'mooe_amount',
+            'CO' => 'co_amount',
+            'PS' => 'ps_amount', // Extension for future-proofing
+            'FE' => 'fe_amount', // Extension for future-proofing
+        ];
+
+        $targetColumn = $columnMap[$expenseClass] ?? null;
+
+        if (!$targetColumn) {
+            return;
+        }
+
+        // 1. Calculate the grand total of all 12 months for this specific group
+        // We sum every monthly amount column in the database
+        $totalAmount =
+            Ppmp::where('aip_entry_id', $aipEntryId)
+                ->where('funding_source_id', $fundingSourceId)
+                ->whereHas('ppmpPriceList.chartOfAccount', function (
+                    $query,
+                ) use ($expenseClass) {
+                    $query->where('expense_class', $expenseClass);
+                })
+                ->selectRaw(
+                    'SUM(
+            jan_amount + feb_amount + mar_amount + apr_amount + 
+            may_amount + jun_amount + jul_amount + aug_amount + 
+            sep_amount + oct_amount + nov_amount + dec_amount
+        ) as total',
+                )
+                ->value('total') ?? 0;
+
+        // 2. Update the PpaFundingSource table
+        // We use updateOrCreate in case a row doesn't exist yet for this funding source
+        PpaFundingSource::updateOrCreate(
+            [
+                'aip_entry_id' => $aipEntryId,
+                'funding_source_id' => $fundingSourceId,
+            ],
+            [
+                $targetColumn => $totalAmount,
+                'updated_at' => now(),
+            ],
+        );
     }
 }

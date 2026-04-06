@@ -57,6 +57,8 @@ export default function FormDialog({
     }, [data, form]);
 
     function onSubmit(values: FormValues) {
+        console.log(values);
+
         if (!data) return;
 
         // We use backticks (``) to build the URL string with the user's ID
@@ -83,7 +85,11 @@ export default function FormDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={form.handleSubmit(onSubmit)} className="py-6">
+                <form
+                    id="user-status-form"
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="py-6"
+                >
                     <Controller
                         name="status"
                         control={form.control}
@@ -132,6 +138,7 @@ export default function FormDialog({
                     </Button>
                     <Button
                         type="submit"
+                        form="user-status-form"
                         disabled={form.formState.isSubmitting}
                     >
                         Save Changes
