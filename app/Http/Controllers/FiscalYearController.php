@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FiscalYear;
 use App\Models\AipEntry;
 use App\Models\Ppa;
+use App\Models\Office;
 use App\Models\Ppmp;
 use App\Http\Requests\StoreFiscalYearRequest;
 use App\Http\Requests\UpdateFiscalYearRequest;
@@ -18,39 +19,85 @@ class FiscalYearController extends Controller
      */
     public function index(Request $request)
     {
+        $user = $request->user();
+        // BACSU (ID 4) or Admin
+        $isControlOffice = $user->office_id === 4 || $user->role === 'admin';
+
         return Inertia::render('aip/index', [
             'fiscalYears' => FiscalYear::all(),
-            'app' => Inertia::optional(function () use ($request) {
+
+            // 1. Add the offices prop (Required for your sidebar dropdown)
+            'offices' => $isControlOffice
+                ? Office::orderBy('name', 'asc')->get()
+                : [],
+
+            'app' => Inertia::optional(function () use (
+                $request,
+                $user,
+                $isControlOffice,
+            ) {
                 $id = $request->query('fiscal_year_id');
 
                 if (!$id) {
                     return null;
                 }
 
-                return Ppmp::with([
-                    'ppmpPriceList.category',
+                // 2. Determine target scope
+                $targetOfficeId = $isControlOffice
+                    ? $request->query('office_id', 'all')
+                    : $user->office_id;
+
+                $query = Ppmp::with([
+                    'ppmpPriceList.category', // Kept exactly as your working code
                     'ppmpPriceList.chartOfAccount',
-                ])
-                    ->whereHas('aipEntry', function ($query) use ($id) {
-                        $query->where('fiscal_year_id', $id);
-                    })
-                    ->get()
+                ])->whereHas('aipEntry', function ($query) use ($id) {
+                    $query->where('fiscal_year_id', $id);
+                });
+
+                // 3. Apply Office Filter
+                if ($targetOfficeId !== 'all') {
+                    $query->whereHas('aipEntry.ppa', function ($q) use (
+                        $targetOfficeId,
+                    ) {
+                        $q->where('office_id', $targetOfficeId);
+                    });
+                }
+
+                $items = $query->get();
+
+                // 4. Consolidation Logic (If 'all' is selected, sum items with same price list ID)
+                if ($targetOfficeId === 'all') {
+                    $items = $items
+                        ->groupBy('ppmp_price_list_id')
+                        ->map(function ($group) {
+                            $item = clone $group->first();
+                            $months = [
+                                'jan',
+                                'feb',
+                                'mar',
+                                'apr',
+                                'may',
+                                'jun',
+                                'jul',
+                                'aug',
+                                'sep',
+                                'oct',
+                                'nov',
+                                'dec',
+                            ];
+                            foreach ($months as $m) {
+                                $item->{"{$m}_qty"} = $group->sum("{$m}_qty");
+                                $item->{"{$m}_amount"} = $group->sum(
+                                    "{$m}_amount",
+                                );
+                            }
+                            return $item;
+                        });
+                }
+
+                return $items
                     ->map(function ($item) {
-                        // Define month groups for cleaner calculation
-                        $months = [
-                            'jan',
-                            'feb',
-                            'mar',
-                            'apr',
-                            'may',
-                            'jun',
-                            'jul',
-                            'aug',
-                            'sep',
-                            'oct',
-                            'nov',
-                            'dec',
-                        ];
+                        // --- YOUR ORIGINAL CALCULATION LOGIC (UNTOUCHED) ---
                         $quarters = [
                             'q1' => ['jan', 'feb', 'mar'],
                             'q2' => ['apr', 'may', 'jun'],
@@ -58,7 +105,6 @@ class FiscalYearController extends Controller
                             'q4' => ['oct', 'nov', 'dec'],
                         ];
 
-                        // Calculate Quarterly Quantities and Amounts
                         foreach ($quarters as $q => $mths) {
                             $qtyKey = "{$q}_qty";
                             $amtKey = "{$q}_amount";
@@ -77,7 +123,6 @@ class FiscalYearController extends Controller
                             );
                         }
 
-                        // Calculate Grand Totals
                         $item->total_qty =
                             $item->q1_qty +
                             $item->q2_qty +
@@ -91,12 +136,11 @@ class FiscalYearController extends Controller
 
                         return $item;
                     })
-                    // Step 1: Group by Category Name
+                    // --- YOUR ORIGINAL GROUPING LOGIC (UNTOUCHED) ---
                     ->groupBy(function ($item) {
                         return $item->ppmpPriceList->category->name ??
                             'Uncategorized';
                     })
-                    // Step 2: Map through each Category and group by Account Title
                     ->map(function ($categoryGroup) {
                         return $categoryGroup->groupBy(function ($item) {
                             return $item->ppmpPriceList->chartOfAccount

@@ -12,7 +12,6 @@ import PdfPreviewDialog from './pdf-preview-dialog';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Annual Investment Programs',
-        // href: index().url,
         href: '#',
     },
 ];
@@ -20,28 +19,22 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface AipProps {
     fiscalYears: FiscalYear[];
     app: App[];
+    offices: any[]; // Add this line
 }
 
-export default function AipPage({ fiscalYears, app }: AipProps) {
-    console.log({ fiscalYears, app });
+export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
+    console.log(app);
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
     const [openPdfPreviewDialog, setOpenPdfPreviewDialog] = useState(false);
     const [selectedYear, setSelectedYear] = useState<FiscalYear | null>(null);
 
+    // Standard Handlers (Ensure these exist if DataTable uses them)
     function onUpdateStatus(data: FiscalYear, status: FiscalYearStatus) {
         router.patch(
             `/aip/${data.id}/status`,
-            { status: status },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    console.log('Status updated successfully');
-                },
-                onError: (errors) => {
-                    console.error('Failed to update status', errors);
-                },
-            },
+            { status },
+            { preserveScroll: true },
         );
     }
 
@@ -53,19 +46,18 @@ export default function AipPage({ fiscalYears, app }: AipProps) {
         setOpenFormDialog(true);
     }
 
+    /**
+     * Trigger PDF generation
+     * This loads the initial data (Consolidated for BACSU, Office-only for others)
+     */
     function handleGeneratePdf(selectedYearId: FiscalYear) {
-        console.log(selectedYearId);
-
         setSelectedYear(selectedYearId);
 
         router.reload({
-            only: ['app'], // Request the optional prop
+            only: ['app'],
             data: { fiscal_year_id: selectedYearId.id },
-            // onStart: () => setIsGenerating(true),
-            onSuccess: () => console.log('fetched data'),
-            // onFinish: () => setIsGenerating(false),
+            onSuccess: () => setOpenPdfPreviewDialog(true),
         });
-        setOpenPdfPreviewDialog(true);
     }
 
     return (
@@ -74,10 +66,10 @@ export default function AipPage({ fiscalYears, app }: AipProps) {
                 <DataTable
                     columns={columns}
                     data={fiscalYears}
-                    withSearch={true}
                     onUpdateStatus={onUpdateStatus}
                     onOpen={handleOpenAipSummary}
                     onGeneratePdf={handleGeneratePdf}
+                    withSearch={true}
                 >
                     <Button onClick={handleOpenFormDialog}>
                         Initialize AIP
@@ -92,6 +84,7 @@ export default function AipPage({ fiscalYears, app }: AipProps) {
                 onOpenChange={setOpenPdfPreviewDialog}
                 data={app}
                 fiscalYear={selectedYear}
+                offices={offices} // Verified: Passed to Dialog
             />
         </AppLayout>
     );

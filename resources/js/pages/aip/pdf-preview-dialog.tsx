@@ -15,31 +15,26 @@ import {
 } from '@/components/ui/dialog';
 import type { App, FiscalYear } from '@/types/global';
 
+import { useState } from 'react';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { router, usePage } from '@inertiajs/react';
+import { Loader2 } from 'lucide-react';
+
 interface PdfPreviewDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     data: App[];
-    fiscalYear: FiscalYear;
+    fiscalYear: FiscalYear | null;
+    offices: any[];
 }
 
-// 1. Define Column Widths (Totaling 100%)
-// Item(15), UOM(5), Price(7), Q1(13), Q2(13), Q3(13), Q4(13), Total(21)
-const COLUMN_WIDTHS = [
-    5, // 0: Item No
-    20, // 1: Description (+5) - Better for long item names
-    5, // 2: Unit
-    10, // 3: Unit Cost (+2)
-    5, // 4: Qty
-    11, // 5: Total Cost (+3) - Totals are usually wider digits
-    4, // 6: Q1 Qty
-    6, // 7: Q1 Amt
-    4, // 8: Q2 Qty
-    6, // 9: Q2 Amt
-    4, // 10: Q3 Qty
-    6, // 11: Q3 Amt
-    4, // 12: Q4 Qty
-    10, // 13: Q4 Amt (+4) - Adjusted last column to hit 100
-];
+const COLUMN_WIDTHS = [5, 20, 5, 10, 5, 11, 4, 6, 4, 6, 4, 6, 4, 10];
 
 const styles = StyleSheet.create({
     page: { padding: 30, fontFamily: 'Helvetica' },
@@ -79,13 +74,14 @@ const formatNumber = (value: number | string | undefined) => {
 const MyDocument = ({
     data,
     fiscalYear,
+    officeLabel, // Added prop to make the header work
 }: {
     data: App[];
     fiscalYear: FiscalYear;
+    officeLabel: string;
 }) => {
     const getWidth = (index: number) => `${COLUMN_WIDTHS[index]}%`;
 
-    // Helper to render an empty row with a title in the description column
     const TitleRow = ({
         title,
         isCategory,
@@ -100,7 +96,6 @@ const MyDocument = ({
                 { backgroundColor: isCategory ? '#e2e8f0' : '#f8fafc' },
             ]}
         >
-            {/* 0: Item No (Empty) */}
             <View
                 style={[
                     { width: getWidth(0) },
@@ -110,8 +105,6 @@ const MyDocument = ({
             >
                 <Text style={styles.tableCell} />
             </View>
-
-            {/* 1: Description (Title goes here) */}
             <View style={[{ width: getWidth(1) }, styles.borderRight]}>
                 <Text
                     style={[
@@ -120,15 +113,12 @@ const MyDocument = ({
                             textAlign: 'left',
                             fontWeight: 'bold',
                             textTransform: 'uppercase',
-                            // paddingLeft: isCategory ? 2 : 10 // Indent Account titles slightly
                         },
                     ]}
                 >
-                    {isCategory ? `${title}` : title}
+                    {title}
                 </Text>
             </View>
-
-            {/* 2-13: Remaining Columns (Empty with borders) */}
             {COLUMN_WIDTHS.slice(2).map((_, i) => (
                 <View
                     key={i}
@@ -143,13 +133,11 @@ const MyDocument = ({
     return (
         <Document title="">
             <Page size={[612, 936]} orientation="landscape" style={styles.page}>
-                {/* --- Header Section --- */}
                 <View style={{ gap: 20 }}>
                     <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
                         FDP Form 4a - Annual Procurement Plan or Procurement
                         List
                     </Text>
-
                     <View
                         fixed
                         style={{ marginBottom: 10, textAlign: 'center' }}
@@ -157,18 +145,12 @@ const MyDocument = ({
                         <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
                             ANNUAL PROCUREMENT PLAN
                         </Text>
-
                         <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
                             FOR THE YEAR {fiscalYear.year}
                         </Text>
-
-                        {/* <Text style={{ fontSize: 8 }}>
-                        Province of Example - Information Technology Unit
-                    </Text> */}
                     </View>
                 </View>
 
-                {/* --- Table Header --- */}
                 <View fixed>
                     <View
                         style={[
@@ -178,7 +160,6 @@ const MyDocument = ({
                             { height: 40 },
                         ]}
                     >
-                        {/* 1st col: Spans Item No. (0) to QTY (4) */}
                         <View
                             style={{
                                 width: `${COLUMN_WIDTHS.slice(0, 5).reduce((a, b) => a + b, 0)}%`,
@@ -196,9 +177,8 @@ const MyDocument = ({
                                     },
                                 ]}
                             >
-                                Province, City or Municipality: {'location'}
+                                Province, City or Municipality: La Union
                             </Text>
-
                             <Text
                                 style={[
                                     styles.tableHeaderCell,
@@ -210,7 +190,6 @@ const MyDocument = ({
                             >
                                 Plan Control No.
                             </Text>
-
                             <Text
                                 style={[
                                     styles.tableHeaderCell,
@@ -220,11 +199,10 @@ const MyDocument = ({
                                     },
                                 ]}
                             >
-                                Department / Office: {'office'}
+                                Department / Office: {officeLabel}
                             </Text>
                         </View>
 
-                        {/* 2nd col: Planned Amount -> Regular (Spans index 5: Total Cost) */}
                         <View
                             style={[
                                 styles.headerGroup,
@@ -252,7 +230,6 @@ const MyDocument = ({
                             </View>
                         </View>
 
-                        {/* 3rd col: Contingency & Total (Spans Q1 Qty (6) to Q2 Amount (9)) */}
                         <View
                             style={[
                                 styles.headerGroup,
@@ -269,9 +246,7 @@ const MyDocument = ({
                                     justifyContent: 'center',
                                 }}
                             >
-                                <Text style={styles.tableHeaderCell}>
-                                    {/* Quarterly Funding Distribution (H1) */}
-                                </Text>
+                                <Text style={styles.tableHeaderCell}></Text>
                             </View>
                             <View style={{ flexDirection: 'row', flex: 1 }}>
                                 <View
@@ -298,7 +273,6 @@ const MyDocument = ({
                             </View>
                         </View>
 
-                        {/* 4th col: Date Submitted (Takes remaining space: 10 to 15) */}
                         <View
                             style={{
                                 width: `${COLUMN_WIDTHS.slice(10, 14).reduce((a, b) => a + b, 0)}%`,
@@ -325,9 +299,6 @@ const MyDocument = ({
                             { height: 40 },
                         ]}
                     >
-                        {/* Note: We removed borderTop here so it sits flush with the row above */}
-
-                        {/* Indices 0-5 */}
                         <View
                             style={[
                                 { width: `${COLUMN_WIDTHS[0]}%` },
@@ -390,7 +361,6 @@ const MyDocument = ({
                             </Text>
                         </View>
 
-                        {/* The Quarterly/Total group starts here (Index 6 to 15) */}
                         <View
                             style={[
                                 styles.headerGroup,
@@ -403,7 +373,6 @@ const MyDocument = ({
                                 style={{
                                     borderBottomWidth: 1,
                                     borderRightWidth: 1,
-                                    // flex: 1,
                                     justifyContent: 'center',
                                 }}
                             >
@@ -411,7 +380,6 @@ const MyDocument = ({
                                     DISTRIBUTION
                                 </Text>
                             </View>
-
                             <View style={{ flexDirection: 'row', flex: 1 }}>
                                 {[
                                     '1ST QUARTER',
@@ -420,25 +388,20 @@ const MyDocument = ({
                                     '4TH QUARTER',
                                 ].map((q, idx) => {
                                     const startIdx = 6 + idx * 2;
-                                    const qtyW = COLUMN_WIDTHS[startIdx]; // e.g., 4
-                                    const amtW = COLUMN_WIDTHS[startIdx + 1]; // e.g., 6
-                                    const groupWidth = qtyW + amtW; // e.g., 10
-
+                                    const groupWidth =
+                                        COLUMN_WIDTHS[startIdx] +
+                                        COLUMN_WIDTHS[startIdx + 1];
                                     const parentWidth = COLUMN_WIDTHS.slice(
                                         6,
                                         14,
                                     ).reduce((a, b) => a + b, 0);
-                                    const relativeGroupWidth =
-                                        (groupWidth / parentWidth) * 100;
-
                                     return (
                                         <View
                                             key={q}
                                             style={{
-                                                width: `${relativeGroupWidth}%`,
+                                                width: `${(groupWidth / parentWidth) * 100}%`,
                                             }}
                                         >
-                                            {/* Quarter Label */}
                                             <View
                                                 style={[
                                                     styles.borderBottom,
@@ -455,14 +418,12 @@ const MyDocument = ({
                                                     {q}
                                                 </Text>
                                             </View>
-
-                                            {/* Sub-labels with MATCHING widths to rows */}
                                             <View style={styles.row}>
                                                 <View
                                                     style={[
                                                         {
-                                                            width: `${(qtyW / groupWidth) * 100}%`,
-                                                        }, // Matches the '4' in your 4/6 split
+                                                            width: `${(COLUMN_WIDTHS[startIdx] / groupWidth) * 100}%`,
+                                                        },
                                                         styles.borderRight,
                                                         styles.centered,
                                                     ]}
@@ -475,12 +436,11 @@ const MyDocument = ({
                                                         Qty
                                                     </Text>
                                                 </View>
-
                                                 <View
                                                     style={[
                                                         {
-                                                            width: `${(amtW / groupWidth) * 100}%`,
-                                                        }, // Matches the '6' in your 4/6 split
+                                                            width: `${(COLUMN_WIDTHS[startIdx + 1] / groupWidth) * 100}%`,
+                                                        },
                                                         styles.borderRight,
                                                         styles.centered,
                                                     ]}
@@ -502,53 +462,52 @@ const MyDocument = ({
                     </View>
                 </View>
 
-                {/* --- Data Rows --- */}
-                {/* {data.map((item, index) => ( */}
                 {Object.entries(data).map(
                     ([categoryName, chartOfAccounts]: [string, any]) => {
                         const categoryItems = Object.values(
                             chartOfAccounts,
                         ).flat() as any[];
-                        const catTotalAmt = categoryItems.reduce(
-                            (sum, item) =>
-                                sum + (Number(item.total_amount) || 0),
-                            0,
-                        );
-                        const catQ1Amt = categoryItems.reduce(
-                            (sum, item) => sum + (Number(item.q1_amount) || 0),
-                            0,
-                        );
-                        const catQ2Amt = categoryItems.reduce(
-                            (sum, item) => sum + (Number(item.q2_amount) || 0),
-                            0,
-                        );
-                        const catQ3Amt = categoryItems.reduce(
-                            (sum, item) => sum + (Number(item.q3_amount) || 0),
-                            0,
-                        );
-                        const catQ4Amt = categoryItems.reduce(
-                            (sum, item) => sum + (Number(item.q4_amount) || 0),
-                            0,
-                        );
+                        const catTotals = {
+                            amt: categoryItems.reduce(
+                                (sum, item) =>
+                                    sum + (Number(item.total_amount) || 0),
+                                0,
+                            ),
+                            q1: categoryItems.reduce(
+                                (sum, item) =>
+                                    sum + (Number(item.q1_amount) || 0),
+                                0,
+                            ),
+                            q2: categoryItems.reduce(
+                                (sum, item) =>
+                                    sum + (Number(item.q2_amount) || 0),
+                                0,
+                            ),
+                            q3: categoryItems.reduce(
+                                (sum, item) =>
+                                    sum + (Number(item.q3_amount) || 0),
+                                0,
+                            ),
+                            q4: categoryItems.reduce(
+                                (sum, item) =>
+                                    sum + (Number(item.q4_amount) || 0),
+                                0,
+                            ),
+                        };
 
                         return (
                             <View key={categoryName} break={false}>
-                                {/* CATEGORY ROW (Title in Description Col) */}
                                 <TitleRow
                                     title={categoryName}
                                     isCategory={true}
                                 />
-
                                 {Object.entries(chartOfAccounts).map(
                                     ([accountTitle, items]: [string, any]) => (
                                         <View key={accountTitle}>
-                                            {/* CHART OF ACCOUNT ROW (Title in Description Col) */}
                                             <TitleRow
                                                 title={accountTitle}
                                                 isCategory={false}
                                             />
-
-                                            {/* ITEM ROWS */}
                                             {items.map(
                                                 (item: any, index: number) => (
                                                     <View
@@ -872,8 +831,6 @@ const MyDocument = ({
                                         </View>
                                     ),
                                 )}
-
-                                {/* CATEGORY FOOTER (Follows same col structure) */}
                                 <View
                                     style={[
                                         styles.row,
@@ -911,29 +868,14 @@ const MyDocument = ({
                                     </View>
                                     <View
                                         style={[
-                                            { width: getWidth(2) },
+                                            {
+                                                width: `${COLUMN_WIDTHS.slice(2, 5).reduce((a, b) => a + b, 0)}%`,
+                                            },
                                             styles.borderRight,
                                         ]}
                                     >
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(3) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
-                                        <Text style={styles.tableCell} />
-                                    </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(4) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
-                                        <Text style={styles.tableCell} />
-                                    </View>
-
                                     <View
                                         style={[
                                             { width: getWidth(5) },
@@ -949,10 +891,9 @@ const MyDocument = ({
                                                 },
                                             ]}
                                         >
-                                            {formatNumber(catTotalAmt)}
+                                            {formatNumber(catTotals.amt)}
                                         </Text>
                                     </View>
-
                                     <View
                                         style={[
                                             { width: getWidth(6) },
@@ -976,7 +917,7 @@ const MyDocument = ({
                                                 },
                                             ]}
                                         >
-                                            {formatNumber(catQ1Amt)}
+                                            {formatNumber(catTotals.q1)}
                                         </Text>
                                     </View>
                                     <View
@@ -1002,7 +943,7 @@ const MyDocument = ({
                                                 },
                                             ]}
                                         >
-                                            {formatNumber(catQ2Amt)}
+                                            {formatNumber(catTotals.q2)}
                                         </Text>
                                     </View>
                                     <View
@@ -1028,7 +969,7 @@ const MyDocument = ({
                                                 },
                                             ]}
                                         >
-                                            {formatNumber(catQ3Amt)}
+                                            {formatNumber(catTotals.q3)}
                                         </Text>
                                     </View>
                                     <View
@@ -1054,7 +995,7 @@ const MyDocument = ({
                                                 },
                                             ]}
                                         >
-                                            {formatNumber(catQ4Amt)}
+                                            {formatNumber(catTotals.q4)}
                                         </Text>
                                     </View>
                                 </View>
@@ -1063,7 +1004,6 @@ const MyDocument = ({
                     },
                 )}
 
-                {/* --- Footer / Pagination --- */}
                 <View
                     fixed
                     style={{
@@ -1090,21 +1030,103 @@ export default function PdfPreviewDialog({
     onOpenChange,
     data,
     fiscalYear,
+    offices,
 }: PdfPreviewDialogProps) {
-    console.log({ data, fiscalYear });
+    const { auth } = usePage().props as any;
+    const [isReloading, setIsReloading] = useState(false);
+    const [selectedOfficeId, setSelectedOfficeId] = useState<string>('all');
+
+    const isBACSU = auth.user.office_id === 4 || auth.user.role === 'admin';
+
+    const handleOfficeChange = (officeId: string) => {
+        if (!fiscalYear) return;
+        setSelectedOfficeId(officeId);
+        setIsReloading(true);
+        router.reload({
+            only: ['app'],
+            data: { fiscal_year_id: fiscalYear.id, office_id: officeId },
+            onFinish: () => setIsReloading(false),
+        });
+    };
+
+    const getOfficeLabel = () => {
+        if (!isBACSU) return `${auth.user.office?.acronym || 'My Office'}`;
+        if (selectedOfficeId === 'all') return 'CONSOLIDATED - ALL OFFICES';
+        const selected = offices.find(
+            (o) => o.id.toString() === selectedOfficeId,
+        );
+        return selected ? selected.acronym : '';
+    };
+
+    if (!fiscalYear) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex h-screen flex-col gap-0 rounded-none p-0 sm:max-w-screen">
-                <DialogHeader className="p-4">
-                    <DialogTitle>PDF Preview</DialogTitle>
-                    <DialogDescription className="sr-only"></DialogDescription>
+            <DialogContent className="flex h-[95vh] flex-col gap-0 rounded-none p-0 sm:max-w-[95vw]">
+                <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b p-4">
+                    <DialogTitle>APP Preview - {fiscalYear.year}</DialogTitle>
                 </DialogHeader>
 
-                <div className="h-full">
-                    <PDFViewer width="100%" height="100%">
-                        <MyDocument data={data} fiscalYear={fiscalYear} />
-                    </PDFViewer>
+                <div className="flex flex-1 overflow-hidden">
+                    {isBACSU && (
+                        <div className="w-80 space-y-4 border-r bg-muted/10 p-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-muted-foreground uppercase">
+                                    Report Scope
+                                </label>
+                                <Select
+                                    value={selectedOfficeId}
+                                    onValueChange={handleOfficeChange}
+                                    disabled={isReloading}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Office" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">
+                                            Consolidated (Whole PGLU)
+                                        </SelectItem>
+                                        <div className="my-1 h-px bg-muted" />
+                                        {offices.map((o) => (
+                                            <SelectItem
+                                                key={o.id}
+                                                value={o.id.toString()}
+                                            >
+                                                {o.acronym}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            {isReloading && (
+                                <div className="flex animate-pulse items-center gap-2 text-primary">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    <span className="text-xs font-medium">
+                                        Updating PDF...
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="relative flex-1 bg-gray-500">
+                        {isReloading && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
+                                <Loader2 className="h-10 w-10 animate-spin text-white" />
+                            </div>
+                        )}
+                        <PDFViewer
+                            width="100%"
+                            height="100%"
+                            style={{ border: 'none' }}
+                        >
+                            <MyDocument
+                                data={data}
+                                fiscalYear={fiscalYear}
+                                officeLabel={getOfficeLabel()}
+                            />
+                        </PDFViewer>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
