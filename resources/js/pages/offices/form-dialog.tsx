@@ -80,14 +80,18 @@ export default function FormDialog({
     useEffect(() => {
         if (open) {
             if (initialData) {
+                const rawCode = initialData.code
+                    ? String(parseInt(initialData.code, 10))
+                    : '';
+
                 form.reset({
                     sector_id: String(initialData.sector_id || ''),
                     lgu_level_id: String(initialData.lgu_level_id || ''),
                     office_type_id: String(initialData.office_type_id || ''),
-                    code: initialData.code || '',
+                    code: rawCode,
                     name: initialData.name || '',
                     acronym: initialData.acronym || '',
-                    is_lee: initialData.is_lee || false,
+                    is_lee: Boolean(initialData.is_lee || false),
                 });
             } else {
                 form.reset({
@@ -104,8 +108,11 @@ export default function FormDialog({
     }, [initialData, open, form]);
 
     function onSubmit(data: FormValues) {
+        const paddedCode = data.code.padStart(3, '0');
+        const payload = { ...data, code: paddedCode };
+
         if (isEditing) {
-            router.patch(`/offices/${initialData.id}`, data, {
+            router.patch(`/offices/${initialData.id}`, payload, {
                 preserveState: true,
                 preserveScroll: true,
                 onStart: () => setIsLoading(true),
@@ -126,7 +133,7 @@ export default function FormDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="flex-col gap-0 overflow-hidden"
+                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
             >
@@ -146,14 +153,49 @@ export default function FormDialog({
                         <form
                             id="office-form"
                             onSubmit={form.handleSubmit(onSubmit)}
-                            className="space-y-4"
+                            className="space-y-6"
                         >
                             <div className="rounded-lg bg-muted p-3 text-center">
                                 <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                                     Generated Account Code
                                 </span>
+
                                 <div className="font-mono text-xl font-bold text-primary">
-                                    {initialData?.full_code}
+                                    {(() => {
+                                        const sectorId =
+                                            form.watch('sector_id');
+                                        const lguLevelId =
+                                            form.watch('lgu_level_id');
+                                        const officeTypeId =
+                                            form.watch('office_type_id');
+                                        const suffixRaw = form.watch('code');
+
+                                        const selectedSector = sectors.find(
+                                            (s) => String(s.id) === sectorId,
+                                        );
+                                        const selectedLguLevel = lguLevels.find(
+                                            (l) => String(l.id) === lguLevelId,
+                                        );
+                                        const selectedOfficeType =
+                                            officeTypes.find(
+                                                (ot) =>
+                                                    String(ot.id) ===
+                                                    officeTypeId,
+                                            );
+
+                                        const sectorCode =
+                                            selectedSector?.code || '0000';
+                                        const lguLevelCode =
+                                            selectedLguLevel?.code || '0';
+                                        const officeTypeCode =
+                                            selectedOfficeType?.code || '00';
+                                        // Pad suffix to 3 digits for preview
+                                        const suffixCode = suffixRaw?.trim()
+                                            ? suffixRaw.padStart(3, '0')
+                                            : '000';
+
+                                        return `${sectorCode}-${lguLevelCode}-${officeTypeCode}-${suffixCode}`;
+                                    })()}
                                 </div>
                             </div>
 
@@ -196,7 +238,7 @@ export default function FormDialog({
                                 )}
                             />
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-6">
                                 <Controller
                                     name="lgu_level_id"
                                     control={form.control}
@@ -283,7 +325,7 @@ export default function FormDialog({
                                 />
                             </div>
 
-                            <div className="grid grid-cols-4 gap-4">
+                            <div className="grid grid-cols-4 gap-6">
                                 <div className="col-span-3">
                                     <Controller
                                         name="name"
@@ -320,6 +362,7 @@ export default function FormDialog({
                                         )}
                                     />
                                 </div>
+
                                 <div className="col-span-1">
                                     <Controller
                                         name="code"
@@ -344,6 +387,21 @@ export default function FormDialog({
                                                     }
                                                     placeholder="001"
                                                     autoComplete="off"
+                                                    onChange={(e) => {
+                                                        // Allow only digits, max 3 chars
+                                                        const raw =
+                                                            e.target.value;
+                                                        const digits =
+                                                            raw.replace(
+                                                                /\D/g,
+                                                                '',
+                                                            );
+                                                        const truncated =
+                                                            digits.slice(0, 3);
+                                                        field.onChange(
+                                                            truncated,
+                                                        );
+                                                    }}
                                                 />
                                                 {fieldState.invalid && (
                                                     <FieldError

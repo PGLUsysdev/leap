@@ -27,6 +27,7 @@ interface DataTableProps<TData> {
     withSearch?: boolean;
     children?: ReactElement;
     withRowSpan?: boolean;
+    withFooter?: boolean;
 
     onEdit?: (data: TData) => void;
     onDelete?: (data: TData) => void;
@@ -53,6 +54,7 @@ export function DataTable<TData>({
     children,
     withSearch = false,
     withRowSpan = false,
+    withFooter = false,
 }: DataTableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState('');
 
@@ -220,34 +222,36 @@ export function DataTable<TData>({
                         )}
                     </TableBody>
 
-                    <TableFooter className="sticky bottom-0 bg-secondary">
-                        {table.getFooterGroups().map((footerGroup) => (
-                            <TableRow key={footerGroup.id}>
-                                {footerGroup.headers.map((column) => {
-                                    return (
-                                        <TableCell
-                                            key={column.id}
-                                            colSpan={column.colSpan}
-                                            style={{
-                                                width: `${column.getSize()}px`,
-                                                ...getCommonPinningStyles(
-                                                    column.column,
-                                                ),
-                                            }}
-                                        >
-                                            {column.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      column.column.columnDef
-                                                          .footer,
-                                                      column.getContext(),
-                                                  )}
-                                        </TableCell>
-                                    );
-                                })}
-                            </TableRow>
-                        ))}
-                    </TableFooter>
+                    {withFooter && (
+                        <TableFooter className="sticky bottom-0 bg-secondary">
+                            {table.getFooterGroups().map((footerGroup) => (
+                                <TableRow key={footerGroup.id}>
+                                    {footerGroup.headers.map((column) => {
+                                        return (
+                                            <TableCell
+                                                key={column.id}
+                                                colSpan={column.colSpan}
+                                                style={{
+                                                    width: `${column.getSize()}px`,
+                                                    ...getCommonPinningStyles(
+                                                        column.column,
+                                                    ),
+                                                }}
+                                            >
+                                                {column.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                          column.column
+                                                              .columnDef.footer,
+                                                          column.getContext(),
+                                                      )}
+                                            </TableCell>
+                                        );
+                                    })}
+                                </TableRow>
+                            ))}
+                        </TableFooter>
+                    )}
                 </Table>
 
                 <ScrollBar orientation="horizontal" className="z-10" />

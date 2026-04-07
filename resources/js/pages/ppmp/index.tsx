@@ -191,6 +191,7 @@ export default function PpmpPage({
                     withSearch={true}
                     // onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
+                    withFooter={true}
                 >
                     <div className="flex gap-2">
                         <Select
