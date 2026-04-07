@@ -23,6 +23,7 @@ import { type BreadcrumbItem } from '@/types';
 import { router } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
 import columns from './table/columns';
+import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
 
 interface AipSummaryTableProp {
     fiscalYear: FiscalYear;
@@ -94,6 +95,7 @@ export default function AipSummaryTable({
         title: '',
         description: '',
     });
+    const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
 
     console.log(selectedEntry);
 
@@ -263,6 +265,7 @@ export default function AipSummaryTable({
                     onAdd={handleAddEntry}
                     onEdit={handleEditDialogOpen}
                     onDelete={handleDeleteDialogOpen}
+                    withFooter={true}
                 >
                     <div className="flex gap-2">
                         <DropdownMenu>
@@ -271,12 +274,29 @@ export default function AipSummaryTable({
                                     <FileDown className="mr-2 h-4 w-4" /> Export
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+
+                            <DropdownMenuContent
+                                align="end"
+                                className="w-max min-w-[max-content]"
+                            >
                                 <DropdownMenuItem onClick={handlePrintPreview}>
                                     <div className="flex items-center">
                                         <FileText className="mr-2 h-4 w-4" />
-                                        <span className="text-nowrap">
+
+                                        <span className="whitespace-nowrap">
                                             Print Preview
+                                        </span>
+                                    </div>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem
+                                    onClick={() => setIsSummaryExportOpen(true)}
+                                >
+                                    <div className="flex items-center">
+                                        <FileText className="mr-2 h-4 w-4" />
+
+                                        <span className="whitespace-nowrap">
+                                            Export Summary (Totals)
                                         </span>
                                     </div>
                                 </DropdownMenuItem>
@@ -343,6 +363,13 @@ export default function AipSummaryTable({
             <ExportToPdfDialog
                 open={isExportOpen}
                 onOpenChange={setIsExportOpen}
+                aipEntries={aipEntries}
+                fiscalYear={fiscalYear}
+            />
+
+            <ExportSummaryToPdfDialog
+                open={isSummaryExportOpen}
+                onOpenChange={setIsSummaryExportOpen}
                 aipEntries={aipEntries}
                 fiscalYear={fiscalYear}
             />

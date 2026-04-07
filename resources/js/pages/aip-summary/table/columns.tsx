@@ -35,6 +35,15 @@ export const formatDate = (dateString: string) => {
     return `${months[Number(dateSplit[1]) - 1]}-${dateSplit[2]}`;
 };
 
+const sumField = (rows: any[], field: keyof FlattenedPpa['current_fs']) => {
+    return rows.reduce((sum, row) => {
+        const value = row.original.current_fs?.[field];
+        const num =
+            typeof value === 'string' ? parseFloat(value) : (value ?? 0);
+        return sum + (isNaN(num) ? 0 : num);
+    }, 0);
+};
+
 const columnHelper = createColumnHelper<FlattenedPpa>();
 
 const columns = [
@@ -134,6 +143,15 @@ const columns = [
                         {formatNumber(info.getValue())}
                     </div>
                 ),
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().rows;
+                    const total = sumField(rows, 'ps_amount');
+                    return (
+                        <div className="text-right font-bold">
+                            {formatNumber(total.toString())}
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor('current_fs.mooe_amount', {
                 id: 'mooe_amount',
@@ -143,6 +161,15 @@ const columns = [
                         {formatNumber(info.getValue())}
                     </div>
                 ),
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().rows;
+                    const total = sumField(rows, 'mooe_amount');
+                    return (
+                        <div className="text-right font-bold">
+                            {formatNumber(total.toString())}
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor('current_fs.fe_amount', {
                 id: 'fe_amount',
@@ -152,6 +179,15 @@ const columns = [
                         {formatNumber(info.getValue())}
                     </div>
                 ),
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().rows;
+                    const total = sumField(rows, 'fe_amount');
+                    return (
+                        <div className="text-right font-bold">
+                            {formatNumber(total.toString())}
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor('current_fs.co_amount', {
                 id: 'co_amount',
@@ -161,6 +197,15 @@ const columns = [
                         {formatNumber(info.getValue())}
                     </div>
                 ),
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().rows;
+                    const total = sumField(rows, 'co_amount');
+                    return (
+                        <div className="text-right font-bold">
+                            {formatNumber(total.toString())}
+                        </div>
+                    );
+                },
             }),
             columnHelper.display({
                 id: 'amount_total',
@@ -172,6 +217,23 @@ const columns = [
                         .plus(fs.fe_amount || 0)
                         .plus(fs.mooe_amount || 0)
                         .plus(fs.ps_amount || 0);
+                    return (
+                        <div className="text-right font-bold">
+                            {formatNumber(total.toString())}
+                        </div>
+                    );
+                },
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().rows;
+                    const total = rows.reduce((sum, row) => {
+                        const fs = row.original.current_fs;
+                        if (!fs) return sum;
+                        const rowTotal = new Decimal(fs.co_amount || 0)
+                            .plus(fs.fe_amount || 0)
+                            .plus(fs.mooe_amount || 0)
+                            .plus(fs.ps_amount || 0);
+                        return sum + rowTotal.toNumber();
+                    }, 0);
                     return (
                         <div className="text-right font-bold">
                             {formatNumber(total.toString())}
@@ -198,6 +260,15 @@ const columns = [
                         {formatNumber(info.getValue())}
                     </div>
                 ),
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().rows;
+                    const total = sumField(rows, 'ccet_adaptation');
+                    return (
+                        <div className="text-right font-bold">
+                            {formatNumber(total.toString())}
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor('current_fs.ccet_mitigation', {
                 id: 'cc_mitigation',
@@ -207,6 +278,15 @@ const columns = [
                         {formatNumber(info.getValue())}
                     </div>
                 ),
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().rows;
+                    const total = sumField(rows, 'ccet_mitigation');
+                    return (
+                        <div className="text-right font-bold">
+                            {formatNumber(total.toString())}
+                        </div>
+                    );
+                },
             }),
         ],
     }),
@@ -215,6 +295,7 @@ const columns = [
         id: 'cc_typology_code',
         header: 'Typology',
         cell: () => <div className="text-right">-</div>,
+        footer: () => <div className="text-left font-medium">Total</div>, // optional label
     }),
     columnHelper.display({
         id: 'action',

@@ -223,33 +223,37 @@ export function DataTable<TData>({
                     </TableBody>
 
                     {withFooter && (
-                        <TableFooter className="sticky bottom-0 bg-secondary">
-                            {table.getFooterGroups().map((footerGroup) => (
-                                <TableRow key={footerGroup.id}>
-                                    {footerGroup.headers.map((column) => {
-                                        return (
-                                            <TableCell
-                                                key={column.id}
-                                                colSpan={column.colSpan}
-                                                style={{
-                                                    width: `${column.getSize()}px`,
-                                                    ...getCommonPinningStyles(
-                                                        column.column,
-                                                    ),
-                                                }}
-                                            >
-                                                {column.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                          column.column
-                                                              .columnDef.footer,
-                                                          column.getContext(),
-                                                      )}
-                                            </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            ))}
+                        <TableFooter className="sticky bottom-0 bg-secondary shadow-[inset_0_1px_0_0_var(--muted)]">
+                            <TableRow>
+                                {table.getAllLeafColumns().map((column) => {
+                                    return (
+                                        <TableCell
+                                            key={column.id}
+                                            style={{
+                                                width: `${column.getSize()}px`,
+                                                // ...getCommonPinningStyles(
+                                                //     column,
+                                                // ),
+                                            }}
+                                        >
+                                            {/*
+                                                We render the footer defined on the leaf column.
+                                                Since getLeafColumns doesn't provide a 'header' context 
+                                                directly like getFooterGroups, we use column.columnDef.footer
+                                            */}
+                                            {column.columnDef.footer
+                                                ? flexRender(
+                                                      column.columnDef.footer,
+                                                      {
+                                                          column: column,
+                                                          table: table,
+                                                      } as any,
+                                                  )
+                                                : null}
+                                        </TableCell>
+                                    );
+                                })}
+                            </TableRow>
                         </TableFooter>
                     )}
                 </Table>

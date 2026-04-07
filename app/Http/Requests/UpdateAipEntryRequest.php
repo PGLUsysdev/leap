@@ -26,7 +26,7 @@ class UpdateAipEntryRequest extends FormRequest
             'expected_output' => 'required|string',
             'start_date' => 'required|date',
             'end_date' => 'required|date',
-            'ppa_funding_sources' => 'required|array|min:1',
+            'ppa_funding_sources' => 'nullable|array',
             'ppa_funding_sources.*.funding_source_id' =>
                 'required|exists:funding_sources,id',
             // Validate amounts are numeric even if sent as strings
