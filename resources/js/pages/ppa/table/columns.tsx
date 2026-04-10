@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, Pencil, Trash, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types/global';
+import { Separator } from '@/components/ui/separator';
 
 const columnHelper = createColumnHelper<Ppa>();
 
@@ -66,7 +67,7 @@ const columns = [
         id: 'action',
         size: 120,
         cell: ({ row, table }) => (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
                 <Button
                     onClick={() => {
                         // Logic to determine what the next child level should be
@@ -82,21 +83,29 @@ const columns = [
                     }}
                     size="icon"
                     disabled={row.original.type === 'Sub-Activity'}
+                    variant="ghost"
                 >
                     <Plus className="h-4 w-4" />
                 </Button>
 
+                <Separator orientation="vertical" />
+
                 <Button
                     size="icon"
+                    variant="ghost"
                     onClick={() => table.options.meta?.onEdit?.(row.original)}
                 >
                     <Pencil />
                 </Button>
 
+                <Separator orientation="vertical" />
+
                 <Button
                     size="icon"
-                    variant="destructive"
+                    // variant="destructive"
+                    variant="ghost"
                     onClick={() => table.options.meta?.onDelete?.(row.original)}
+                    className="text-red-500 hover:bg-red-500/10 hover:text-red-500"
                 >
                     <Trash />
                 </Button>

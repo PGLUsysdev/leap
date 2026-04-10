@@ -153,8 +153,7 @@ export function DataTable<TData>({
                                     <TableHead
                                         key={header.id}
                                         colSpan={header.colSpan}
-                                        // The shadow is moved here to ensure every row level has a bottom line
-                                        className="shadow-[inset_0_-1px_0_0_var(--muted)]"
+                                        className="border-b-0 shadow-[inset_0_-1px_0_0_var(--muted)]"
                                         style={{
                                             width: `${header.getSize()}px`,
                                             // minWidth: `${header.getSize()}px`,

@@ -14,14 +14,21 @@ import { index } from '@/routes/aip';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
-    LayoutGrid,
-    FileText,
-    Users,
-    FolderTree,
     BanknoteArrowUp,
-    Gem,
-    Tags,
+    Briefcase,
+    Building2,
     Calculator,
+    ClipboardList,
+    FileText,
+    FolderTree,
+    Gem,
+    Landmark,
+    Layers,
+    LayoutGrid,
+    PieChart,
+    Receipt,
+    Tags,
+    Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -40,33 +47,33 @@ const mainNavItems: NavItem[] = [
     {
         title: 'PPA Masterlist',
         href: '/ppa',
-        icon: FileText,
+        icon: ClipboardList, // More specific to a "Masterlist" than FileText
     },
     {
         title: 'Offices',
         href: '/offices',
-        icon: Users,
+        icon: Building2, // Represents physical/organizational entities
     },
     {
         title: 'Sectors',
         href: '/sectors',
-        icon: Users,
+        icon: PieChart, // Represents segments or divisions
     },
     {
         title: 'Lgu Levels',
         href: '/lgu-levels',
-        icon: Users,
+        icon: Layers, // Represents hierarchical levels
     },
     {
         title: 'Office Types',
         href: '/office-types',
-        icon: Users,
+        icon: Briefcase, // Differentiates categories of work/offices
     },
     { title: '', href: '', type: 'separator' },
     {
         title: 'Price Lists',
         href: '/price-lists',
-        icon: Gem,
+        icon: Receipt, // Better suited for pricing/billing than Gem
     },
     {
         title: 'PPMP Categories',
@@ -81,13 +88,13 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Funding Sources',
         href: '/funding-sources',
-        icon: BanknoteArrowUp,
+        icon: Landmark, // Represents the institutional source of funds
     },
     { title: '', href: '', type: 'separator' },
     {
         title: 'Users',
         href: '/users',
-        icon: Gem,
+        icon: Users, // Standardized for people management
     },
 ];
 

@@ -142,7 +142,8 @@ export default function ExportSummaryToPdfDialog({
 
     const SummaryDocument = () => (
         <Document>
-            <Page size="A4" orientation="landscape" style={styles.page}>
+            {/* Changed size from "A4" to [936, 612] for 13x8.5 landscape */}
+            <Page size={[936, 612]} style={styles.page}>
                 <Text style={styles.title}>
                     Annual Investment Program (AIP)
                 </Text>

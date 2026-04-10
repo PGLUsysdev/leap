@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->boolean('is_lee')->default(false);
             $table->timestamps();
 
-            $table->unique(['sector_id', 'lgu_level_id', 'office_type_id', 'code']);
+            // $table->unique(['sector_id', 'lgu_level_id', 'office_type_id', 'code']);
         });
     }
 

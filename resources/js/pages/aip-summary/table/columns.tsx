@@ -295,7 +295,7 @@ const columns = [
         id: 'cc_typology_code',
         header: 'Typology',
         cell: () => <div className="text-right">-</div>,
-        footer: () => <div className="text-left font-medium">Total</div>, // optional label
+        footer: () => <div className="text-right font-medium">-</div>, // optional label
     }),
     columnHelper.display({
         id: 'action',
