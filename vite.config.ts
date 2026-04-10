@@ -6,12 +6,12 @@ import tailwindcss from '@tailwindcss/vite';
 import { wayfinder } from '@laravel/vite-plugin-wayfinder';
 
 export default defineConfig({
-    server: {
-        host: '0.0.0.0',
-        hmr: {
-            host: '10.10.26.120',
-        },
-    },
+    // server: {
+    //     host: '0.0.0.0',
+    //     hmr: {
+    //         host: '10.10.26.120',
+    //     },
+    // },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],

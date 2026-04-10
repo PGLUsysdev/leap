@@ -17,31 +17,35 @@ class UserSeeder extends Seeder
     {
         $users = [
             [
-                'name' => 'System Admin',
-                'email' => 'admin@example.com',
-                'password' => Hash::make('password'), // Change this!
+                'name' => 'Admin',
+                'email' => 'admin@mail.com',
+                'password' => Hash::make('12345678'),
                 'role' => 'admin',
-                'status' => 'active', // Admin must be active to log in!
+                'status' => 'active',
             ],
             [
-                'name' => 'System Administrator',
-                'email' => 'admin@lgu.gov.ph',
-                'password' => Hash::make('password'),
+                'name' => 'OPG',
+                'email' => 'opg@mail.com',
+                'password' => Hash::make('12345678'),
                 'email_verified_at' => Carbon::now(),
+                'office_id' => 1,
             ],
             [
-                'name' => 'Hon. Local Chief Executive',
-                'email' => 'mayor@lgu.gov.ph',
-                'password' => Hash::make('password'),
+                'name' => 'BACSU',
+                'email' => 'bacsu@mail.com',
+                'password' => Hash::make('12345678'),
                 'email_verified_at' => Carbon::now(),
+                'office_id' => 2,
+
             ],
             [
-                'name' => 'Planning Officer',
-                'email' => 'planning@lgu.gov.ph',
-                'password' => Hash::make('password'),
+                'name' => 'PICTO',
+                'email' => 'picto@mail.com',
+                'password' => Hash::make('12345678'),
                 'email_verified_at' => Carbon::now(),
+                'office_id' => 18,
+
             ],
-            // ... add the rest of your users here
         ];
 
         foreach ($users as $userData) {

@@ -14,8 +14,7 @@ class PpaSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get office with ID 11
-        $office = Office::find(11);
+        $office = Office::find(18);
 
         if (!$office) {
             $this->command->error(
