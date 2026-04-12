@@ -11,7 +11,6 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-// import { router } from '@inertiajs/react';
 
 import type { RowData } from '@tanstack/react-table';
 
@@ -30,6 +29,7 @@ declare module '@tanstack/react-table' {
         ) => void;
         onOpen?: (data: TData) => void;
         onGeneratePdf?: (data: TData) => void;
+        onOpenPpmpSummary?: (data: TData) => void;
     }
 }
 
@@ -95,7 +95,7 @@ const columns = [
     }),
     columnHelper.display({
         id: 'action',
-        size: 120,
+        size: 154,
         cell: ({ row, table }) => {
             const initialStatus = row.original.status;
 
@@ -169,18 +169,22 @@ const columns = [
                         title="Generate APP"
                         size="icon"
                         onClick={() => {
-                            // console.log(row.original);
-                            // router.reload({
-                            //     only: ['app'], // Request the optional prop
-                            //     // onStart: () => setIsGenerating(true),
-                            //     onSuccess: () =>
-                            //         console.log('fetched data'),
-                            //     // onFinish: () => setIsGenerating(false),
-                            // });
                             table.options.meta?.onGeneratePdf?.(row.original);
                         }}
                     >
                         <FileText />
+                    </Button>
+
+                    <Button
+                        title="Open PPMP Summary"
+                        size="icon"
+                        onClick={() => {
+                            table.options.meta?.onOpenPpmpSummary?.(
+                                row.original,
+                            );
+                        }}
+                    >
+                        <ExternalLink />
                     </Button>
                 </div>
             );

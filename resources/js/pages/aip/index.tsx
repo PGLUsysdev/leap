@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/data-table';
 import columns from './table/columns';
 import PdfPreviewDialog from './pdf-preview-dialog';
+import { index } from '@/routes/ppmp-summaries';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -46,10 +47,8 @@ export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
         setOpenFormDialog(true);
     }
 
-    /**
-     * Trigger PDF generation
-     * This loads the initial data (Consolidated for BACSU, Office-only for others)
-     */
+    // Trigger PDF generation
+    // This loads the initial data (Consolidated for BACSU, Office-only for others)
     function handleGeneratePdf(selectedYearId: FiscalYear) {
         setSelectedYear(selectedYearId);
 
@@ -58,6 +57,11 @@ export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
             data: { fiscal_year_id: selectedYearId.id },
             onSuccess: () => setOpenPdfPreviewDialog(true),
         });
+    }
+
+    function handleOpenPpmpSummary(data: FiscalYear) {
+        // finalized redirecting route
+        router.visit(index({ fiscalYear: data.id }));
     }
 
     return (
@@ -69,6 +73,7 @@ export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
                     onUpdateStatus={onUpdateStatus}
                     onOpen={handleOpenAipSummary}
                     onGeneratePdf={handleGeneratePdf}
+                    onOpenPpmpSummary={handleOpenPpmpSummary}
                     withSearch={true}
                 >
                     <Button onClick={handleOpenFormDialog}>

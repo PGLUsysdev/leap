@@ -39,6 +39,7 @@ interface DataTableProps<TData> {
     ) => void;
     onOpen?: (data: TData) => void;
     onGeneratePdf?: (data: TData) => void;
+    onOpenPpmpSummary?: (data: TData) => void;
 }
 
 export function DataTable<TData>({
@@ -50,6 +51,7 @@ export function DataTable<TData>({
     onUpdateStatus,
     onOpen,
     onGeneratePdf,
+    onOpenPpmpSummary,
     children,
     withSearch = false,
     withRowSpan = false,
@@ -76,6 +78,7 @@ export function DataTable<TData>({
             onUpdateStatus,
             onOpen,
             onGeneratePdf,
+            onOpenPpmpSummary,
         },
         getSubRows: (row: any) => row.children,
         getExpandedRowModel: getExpandedRowModel(),
