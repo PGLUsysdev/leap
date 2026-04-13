@@ -31,6 +31,7 @@ export default function PpmpSummaryPage({
                     columns={columns}
                     data={priceLists}
                     withSearch={true}
+                    withFooter={true}
                 />
             </div>
         </AppLayout>

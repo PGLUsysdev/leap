@@ -86,6 +86,23 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                             </span>
                         );
                     },
+                    footer: () => {
+                        const grandTotal = data.reduce(
+                            (sum, row) =>
+                                sum +
+                                row.ppmps.reduce(
+                                    (rowSum, p) =>
+                                        rowSum + Number(p.total_amount || 0),
+                                    0,
+                                ),
+                            0,
+                        );
+                        return (
+                            <span className="font-bold text-blue-600">
+                                {grandTotal.toLocaleString()}
+                            </span>
+                        );
+                    },
                 }),
             ],
         }),
@@ -129,6 +146,32 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                             ? (entry as any)[`q${q}_amount`]
                                             : 0;
                                         return Number(amount).toLocaleString(
+                                            undefined,
+                                            { minimumFractionDigits: 2 },
+                                        );
+                                    },
+                                    footer: () => {
+                                        const quarterTotal = data.reduce(
+                                            (sum, row) => {
+                                                const entry = row.ppmps.find(
+                                                    (p) =>
+                                                        p.aip_entry.ppa.id ===
+                                                        ppa.id,
+                                                );
+                                                return (
+                                                    sum +
+                                                    Number(
+                                                        entry
+                                                            ? (entry as any)[
+                                                                  `q${q}_amount`
+                                                              ]
+                                                            : 0,
+                                                    )
+                                                );
+                                            },
+                                            0,
+                                        );
+                                        return quarterTotal.toLocaleString(
                                             undefined,
                                             { minimumFractionDigits: 2 },
                                         );
