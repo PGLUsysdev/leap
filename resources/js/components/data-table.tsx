@@ -40,6 +40,7 @@ interface DataTableProps<TData> {
     onOpen?: (data: TData) => void;
     onGeneratePdf?: (data: TData) => void;
     onOpenPpmpSummary?: (data: TData) => void;
+    negativeHeight?: number;
 }
 
 export function DataTable<TData>({
@@ -56,6 +57,7 @@ export function DataTable<TData>({
     withSearch = false,
     withRowSpan = false,
     withFooter = false,
+    negativeHeight = 8,
 }: DataTableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState('');
 
@@ -137,7 +139,8 @@ export function DataTable<TData>({
             {/* Keep your ScrollArea exactly as it was */}
             <ScrollArea
                 ref={tableContainerRef}
-                className="h-[calc(100vh-8rem)] rounded-md border"
+                style={{ height: `calc(100vh - ${negativeHeight}rem)` }}
+                className="rounded-md border"
             >
                 {/* <Table style={{ tableLayout: 'fixed', width: '100%' }}> */}
                 <Table

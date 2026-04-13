@@ -69,6 +69,7 @@ export interface AipEntry {
     updated_at: string | null;
 
     ppa_funding_sources?: PpaFundingSource[];
+    ppa?: Ppa;
 }
 
 export interface FundingSource {

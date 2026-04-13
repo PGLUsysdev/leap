@@ -41,13 +41,14 @@ class PpmpController extends Controller
         $ppmpCategories = PpmpCategory::all();
 
         $ppaFundingSources = PpaFundingSource::with('fundingSource')
-            // ->where('aip_entry_id', $aipEntry->ppa_id)
             ->where('aip_entry_id', $aipEntry->id)
             ->get();
 
+        $selectedAipEntry = AipEntry::with(['ppa'])->find($aipEntry->id);
+
         return Inertia::render('ppmp/index', [
             'fiscalYear' => $fiscalYear,
-            'aipEntry' => $aipEntry,
+            'aipEntry' => $selectedAipEntry,
             'ppmpItems' => $ppmpItems,
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,

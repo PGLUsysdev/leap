@@ -69,7 +69,10 @@ export default function PpmpPage({
     initialChoice,
     initialFund,
 }: PpmpPageProps) {
-    console.log(fundingSources);
+    console.log({
+        aipEntry,
+        // fundingSources
+    });
 
     const [open, setOpen] = useState(false);
     const [openAlert, setOpenAlert] = useState(false);
@@ -178,13 +181,11 @@ export default function PpmpPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="w-full flex-1 px-4 py-4">
-                {/* <PpmpTablePage
-                    data={filteredPpmpItems}
-                    // onEdit={handleEdit}
-                    onDelete={handleDeleteDialogOpen}
-                    // text={<span>Showing all MOOE with All Funding Source</span>}
-                > */}
+            <div className="flex flex-col gap-4 p-4">
+                <small className="text-sm leading-none font-medium">
+                    Viewing: {aipEntry?.ppa?.name}
+                </small>
+
                 <DataTable
                     columns={columns}
                     data={filteredPpmpItems}
@@ -192,6 +193,7 @@ export default function PpmpPage({
                     // onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                     withFooter={true}
+                    negativeHeight={9.9}
                 >
                     <div className="flex gap-2">
                         <Select

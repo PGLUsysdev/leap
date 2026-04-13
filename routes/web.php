@@ -185,7 +185,7 @@ Route::get('home', function () {
 Route::get('ppa-list', [PpaListController::class, 'index']);
 Route::patch('ppa-list/{program}', [PpaListController::class, 'update']);
 
-Route::get('lgu-profile', [LguProfileController::class, 'index']);
+// Route::get('lgu-profile', [LguProfileController::class, 'index']);
 
 // aip ppa - master list for ppa
 Route::get('aip-ppa', [PpaController::class, 'index']);
