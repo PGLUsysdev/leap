@@ -33,7 +33,7 @@ export default function PpaPage({
     const [deletePpa, setDeletePpa] = useState<Ppa | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    console.log({ parentPpa, editPpa });
+    // console.log({ parentPpa, editPpa });
 
     // Handlers
     function handleAddRoot() {

@@ -133,14 +133,15 @@ export default function FormDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
+                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden"
             >
                 <DialogHeader>
                     <DialogTitle>
                         {isEditing ? 'Edit Office' : 'Create New Office'}
                     </DialogTitle>
+
                     <DialogDescription>
                         {isEditing
                             ? 'Modify the details of the existing office below.'
