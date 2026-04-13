@@ -22,7 +22,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,6 +45,19 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+    Field,
+    FieldContent,
+    FieldDescription,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+    FieldLegend,
+    FieldSeparator,
+    FieldSet,
+    FieldTitle,
+} from '@/components/ui/field';
+import { Controller, useForm } from 'react-hook-form';
 
 const formSchema = z.object({
     office_id: z.string().min(1, 'Implementing office is required'),
@@ -205,10 +217,10 @@ export default function PpaFormDialog({
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent
                     className="sm:max-w-2xl"
+                    onEscapeKeyDown={(e) => isSubmitting && e.preventDefault()}
                     onPointerDownOutside={(e) =>
                         isSubmitting && e.preventDefault()
                     }
-                    onEscapeKeyDown={(e) => isSubmitting && e.preventDefault()}
                 >
                     <DialogHeader>
                         <DialogTitle>
@@ -225,22 +237,24 @@ export default function PpaFormDialog({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col gap-5">
                         <div className="flex gap-6">
-                            <div className="flex-3 rounded-lg bg-card p-3">
+                            <div className="flex flex-3 flex-col gap-1 rounded-lg bg-card p-3">
                                 <div className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
                                     AIP Reference Code Preview
                                 </div>
+
                                 <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xl font-semibold">
                                     {getCodePreview()}
                                 </code>
                             </div>
 
                             <div className="flex-1 rounded-lg bg-card p-3">
-                                <div className="flex flex-col">
+                                <div className="flex flex-col gap-1">
                                     <span className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
                                         Entry Type
                                     </span>
+
                                     <span className="w-fit rounded border bg-background px-2 py-1 text-sm font-bold text-primary shadow-sm">
                                         {targetType}
                                     </span>
@@ -248,216 +262,285 @@ export default function PpaFormDialog({
                             </div>
                         </div>
 
-                        <Form {...form}>
-                            <form
-                                id="ppa-form"
-                                onSubmit={form.handleSubmit(onSubmit)}
-                            >
-                                <div className="space-y-6">
-                                    <FormField
-                                        control={form.control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>
+                        <form
+                            id="ppa-form"
+                            onSubmit={form.handleSubmit(onSubmit)}
+                        >
+                            <FieldGroup>
+                                {/* final textarea */}
+                                <Controller
+                                    name="name"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                    className="gap-1"
+                                                >
                                                     PPA Description
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Textarea
-                                                        placeholder={`Enter the name of the ${targetType.toLowerCase()}...`}
-                                                        className="min-h-25 resize-none"
-                                                        {...field}
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
+
+                                                <Textarea
+                                                    {...field}
+                                                    id={field.name}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    placeholder={`Enter the name of the ${targetType.toLowerCase()}...`}
+                                                    className="min-h-25 resize-none"
+                                                />
+
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
                                                     />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <div className="col-span-1 md:col-span-2">
-                                        <FormField
-                                            control={form.control}
-                                            name="office_id"
-                                            render={({ field }) => (
-                                                <FormItem className="w-full">
-                                                    <FormLabel className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                                                        Implementing Office
-                                                    </FormLabel>
-
-                                                    {isEditing ||
-                                                    isAddingChild ? (
-                                                        <div className="flex w-full items-center gap-3 rounded-lg border bg-muted/40 p-3 shadow-sm ring-1 ring-black/5 ring-inset">
-                                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm">
-                                                                <span className="text-lg">
-                                                                    🏢
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex min-w-0 flex-col">
-                                                                <span className="truncate text-sm font-semibold">
-                                                                    {offices.find(
-                                                                        (o) =>
-                                                                            o.id.toString() ===
-                                                                            field.value,
-                                                                    )?.name ||
-                                                                        'Loading...'}
-                                                                </span>
-                                                                <span className="text-[10px] text-muted-foreground uppercase italic">
-                                                                    {isEditing
-                                                                        ? 'Locked during edit'
-                                                                        : 'Inherited from parent (Locked)'}
-                                                                </span>
-                                                            </div>
-                                                            <input
-                                                                type="hidden"
-                                                                {...field}
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                role="combobox"
-                                                                aria-expanded={
-                                                                    openOfficeCommand
-                                                                }
-                                                                className={cn(
-                                                                    'w-full justify-between px-3 text-left font-normal',
-                                                                    !field.value &&
-                                                                        'text-muted-foreground',
-                                                                )}
-                                                                onClick={() =>
-                                                                    setOpenOfficeCommand(
-                                                                        true,
-                                                                    )
-                                                                }
-                                                            >
-                                                                {field.value ? (
-                                                                    <span className="truncate">
-                                                                        {
-                                                                            offices.find(
-                                                                                (
-                                                                                    o,
-                                                                                ) =>
-                                                                                    o.id.toString() ===
-                                                                                    field.value,
-                                                                            )
-                                                                                ?.name
-                                                                        }
-                                                                    </span>
-                                                                ) : (
-                                                                    'Select implementing office...'
-                                                                )}
-                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                            </Button>
-
-                                                            <CommandDialog
-                                                                open={
-                                                                    openOfficeCommand
-                                                                }
-                                                                onOpenChange={
-                                                                    setOpenOfficeCommand
-                                                                }
-                                                                className="flex max-h-125 flex-col"
-                                                            >
-                                                                <Command>
-                                                                    <CommandInput placeholder="Search office name..." />
-                                                                    <CommandList className="max-h-none flex-1">
-                                                                        <CommandEmpty>
-                                                                            No
-                                                                            office
-                                                                            found.
-                                                                        </CommandEmpty>
-                                                                        <CommandGroup heading="Offices">
-                                                                            {offices.map(
-                                                                                (
-                                                                                    office,
-                                                                                ) => (
-                                                                                    <CommandItem
-                                                                                        key={
-                                                                                            office.id
-                                                                                        }
-                                                                                        value={`${office.acronym} ${office.name}`}
-                                                                                        onSelect={() => {
-                                                                                            form.setValue(
-                                                                                                'office_id',
-                                                                                                office.id.toString(),
-                                                                                            );
-                                                                                            setOpenOfficeCommand(
-                                                                                                false,
-                                                                                            );
-                                                                                        }}
-                                                                                    >
-                                                                                        <div className="grid w-full grid-cols-[80px_1fr_24px] items-center gap-2">
-                                                                                            <span className="font-medium text-muted-foreground">
-                                                                                                {office.acronym ??
-                                                                                                    '-'}
-                                                                                            </span>
-
-                                                                                            <span className="truncate">
-                                                                                                {
-                                                                                                    office.name
-                                                                                                }
-                                                                                            </span>
-
-                                                                                            <div className="flex justify-end">
-                                                                                                {field.value ===
-                                                                                                    office.id.toString() && (
-                                                                                                    <Check className="h-4 w-4 opacity-100" />
-                                                                                                )}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </CommandItem>
-                                                                                ),
-                                                                            )}
-                                                                        </CommandGroup>
-                                                                    </CommandList>
-                                                                </Command>
-                                                            </CommandDialog>
-                                                        </>
-                                                    )}
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-                                        <div className="md:col-span-2">
-                                            <FormField
-                                                control={form.control}
-                                                name="code_suffix"
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>
-                                                            Suffix (Sequence)
-                                                        </FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="e.g. 001"
-                                                                {...field}
-                                                                maxLength={3}
-                                                                autoComplete="off"
-                                                            />
-                                                        </FormControl>
-                                                        <FormDescription>
-                                                            3-digit code for the
-                                                            reference ID.
-                                                        </FormDescription>
-                                                        <FormMessage />
-                                                    </FormItem>
                                                 )}
-                                            />
-                                        </div>
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
 
-                                        <div className="md:col-span-3">
-                                            <FormField
-                                                control={form.control}
-                                                name="is_active"
-                                                render={({ field }) => (
-                                                    <FormItem className="flex h-full flex-row items-start space-y-0 space-x-3 rounded-md border p-4 shadow-sm">
-                                                        <FormControl>
+                                <Controller
+                                    name="office_id"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                    className="gap-1"
+                                                >
+                                                    <span>
+                                                        Implementing Office
+                                                    </span>
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
+
+                                                {isEditing || isAddingChild ? (
+                                                    <div className="flex w-full items-center gap-3 rounded-lg border bg-muted/40 p-3 shadow-sm ring-1 ring-black/5 ring-inset">
+                                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm">
+                                                            <span className="text-lg">
+                                                                🏢
+                                                            </span>
+                                                        </div>
+
+                                                        <div className="flex min-w-0 flex-col">
+                                                            <span className="truncate text-sm font-semibold">
+                                                                {offices.find(
+                                                                    (o) =>
+                                                                        o.id.toString() ===
+                                                                        field.value,
+                                                                )?.name ||
+                                                                    'Loading...'}
+                                                            </span>
+
+                                                            <span className="text-[10px] text-muted-foreground uppercase italic">
+                                                                {isEditing
+                                                                    ? 'Locked during edit'
+                                                                    : 'Inherited from parent (Locked)'}
+                                                            </span>
+                                                        </div>
+
+                                                        <input
+                                                            type="hidden"
+                                                            {...field}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {/* final button for command dialog */}
+                                                        <Button
+                                                            id={field.name}
+                                                            type="button"
+                                                            variant="outline"
+                                                            className={cn(
+                                                                'justify-between',
+                                                                !field.value &&
+                                                                    'text-muted-foreground',
+                                                            )}
+                                                            onClick={() =>
+                                                                setOpenOfficeCommand(
+                                                                    true,
+                                                                )
+                                                            }
+                                                        >
+                                                            {field.value ? (
+                                                                <span className="truncate">
+                                                                    {
+                                                                        offices.find(
+                                                                            (
+                                                                                o,
+                                                                            ) =>
+                                                                                o.id.toString() ===
+                                                                                field.value,
+                                                                        )?.name
+                                                                    }
+                                                                </span>
+                                                            ) : (
+                                                                'Select implementing office...'
+                                                            )}
+
+                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                        </Button>
+
+                                                        {/* final command dialog */}
+                                                        <CommandDialog
+                                                            open={
+                                                                openOfficeCommand
+                                                            }
+                                                            onOpenChange={
+                                                                setOpenOfficeCommand
+                                                            }
+                                                            className="flex max-h-[90vh] flex-col"
+                                                        >
+                                                            <Command>
+                                                                <CommandInput placeholder="Search office name..." />
+
+                                                                <CommandList className="max-h-none flex-1">
+                                                                    <CommandEmpty>
+                                                                        No
+                                                                        office
+                                                                        found.
+                                                                    </CommandEmpty>
+
+                                                                    <CommandGroup heading="Offices">
+                                                                        {offices.map(
+                                                                            (
+                                                                                office,
+                                                                            ) => (
+                                                                                <CommandItem
+                                                                                    key={
+                                                                                        office.id
+                                                                                    }
+                                                                                    value={`${office.acronym} ${office.name}`}
+                                                                                    data-checked={
+                                                                                        field.value ===
+                                                                                        office.id.toString()
+                                                                                    }
+                                                                                    onSelect={() => {
+                                                                                        form.setValue(
+                                                                                            'office_id',
+                                                                                            office.id.toString(),
+                                                                                        );
+
+                                                                                        setOpenOfficeCommand(
+                                                                                            false,
+                                                                                        );
+                                                                                    }}
+                                                                                    className="items-start gap-4 py-2"
+                                                                                >
+                                                                                    <div className="grid w-full grid-cols-4 gap-4">
+                                                                                        <span className="col-span-1">
+                                                                                            {office.acronym ??
+                                                                                                '-'}
+                                                                                        </span>
+
+                                                                                        <span className="col-span-3 whitespace-normal">
+                                                                                            {
+                                                                                                office.name
+                                                                                            }
+                                                                                        </span>
+                                                                                    </div>
+                                                                                </CommandItem>
+                                                                            ),
+                                                                        )}
+                                                                    </CommandGroup>
+                                                                </CommandList>
+                                                            </Command>
+                                                        </CommandDialog>
+                                                    </>
+                                                )}
+
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
+
+                                {/* final text input controller */}
+                                <Controller
+                                    name="code_suffix"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                    className="gap-1"
+                                                >
+                                                    Code Suffix
+                                                    <span className="text-destructive">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
+
+                                                <Input
+                                                    {...field}
+                                                    id={field.name}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    placeholder="sample. 001"
+                                                    maxLength={3}
+                                                    autoComplete="off"
+                                                />
+
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
+
+                                {/* final checkbox controller */}
+                                <div>
+                                    <Controller
+                                        name="is_active"
+                                        control={form.control}
+                                        render={({ field, fieldState }) => (
+                                            <FieldSet>
+                                                <FieldContent>
+                                                    <FieldLegend variant="label">
+                                                        Status
+                                                    </FieldLegend>
+
+                                                    <FieldGroup>
+                                                        <Field
+                                                            orientation="horizontal"
+                                                            data-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                        >
                                                             <Checkbox
+                                                                id={field.name}
+                                                                aria-invalid={
+                                                                    fieldState.invalid
+                                                                }
                                                                 checked={
                                                                     field.value
                                                                 }
@@ -465,32 +548,38 @@ export default function PpaFormDialog({
                                                                     field.onChange
                                                                 }
                                                             />
-                                                        </FormControl>
-                                                        <div className="space-y-1 leading-none">
-                                                            <FormLabel className="cursor-pointer">
-                                                                Active Entry
-                                                            </FormLabel>
-                                                            <FormDescription>
-                                                                Only active PPAs
-                                                                can be selected
-                                                                for annual
-                                                                budget planning.
-                                                            </FormDescription>
-                                                        </div>
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
+
+                                                            <FieldLabel
+                                                                htmlFor={
+                                                                    field.name
+                                                                }
+                                                                className="font-normal"
+                                                            >
+                                                                Active
+                                                            </FieldLabel>
+                                                        </Field>
+                                                    </FieldGroup>
+
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </FieldContent>
+                                            </FieldSet>
+                                        )}
+                                    />
                                 </div>
 
                                 {/* Hidden field to ensure type is always submitted */}
                                 <input
-                                    type="hidden"
                                     {...form.register('type')}
+                                    type="hidden"
                                 />
-                            </form>
-                        </Form>
+                            </FieldGroup>
+                        </form>
                     </div>
 
                     <DialogFooter className="flex gap-2">
