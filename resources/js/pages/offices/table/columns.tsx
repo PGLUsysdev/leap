@@ -10,14 +10,14 @@ const columns = [
     columnHelper.accessor('full_code', {
         // id: 'full_code',
         header: 'Office Account Code',
-        // size: 200,
+        size: 200,
         cell: (info) => {
             return <code className="font-mono">{info.getValue()}</code>;
         },
     }),
     columnHelper.accessor('name', {
         header: 'Office Name',
-        // size: 200,
+        size: 300,
         cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
     }),
     columnHelper.accessor('acronym', {
