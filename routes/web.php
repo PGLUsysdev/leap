@@ -29,12 +29,14 @@ use App\Http\Controllers\TestDataTableController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\PpmpSummaryController;
 
-Route::get(
-    '/',
-    fn() => Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]),
-)->name('home');
+// Route::get(
+//     '/',
+//     fn() => Inertia::render('welcome', [
+//         'canRegister' => Features::enabled(Features::registration()),
+//     ]),
+// )->name('home');
+
+Route::redirect('/', '/login');
 
 Route::middleware(['auth', 'verified'])->group(
     fn() => Route::get('dashboard', fn() => Inertia::render('dashboard'))->name(

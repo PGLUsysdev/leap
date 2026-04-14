@@ -115,6 +115,18 @@ export default function Login({
                     {status}
                 </div>
             )}
+
+            <div className="absolute right-0 bottom-0 mt-4 text-center text-xs text-muted-foreground">
+                v{__APP_VERSION__}
+            </div>
+
+            {/* <svg
+                viewBox="0 0 1000 50"
+                preserveAspectRatio="none"
+                className="absolute bottom-[-20rem] left-0 h-200 w-full fill-muted"
+            >
+                <path d="M 0,50 A 500,50 0 0 1 1000,50 Z" />
+            </svg> */}
         </AuthLayout>
     );
 }
