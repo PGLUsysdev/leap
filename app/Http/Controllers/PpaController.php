@@ -17,6 +17,21 @@ use App\Models\OfficeType;
 class PpaController extends Controller
 {
     /**
+     * Get the digit length for code suffix based on PPA type.
+     * Returns 0 for dynamic formatting (no padding).
+     */
+    private function getCodeSuffixLength(string $type): int
+    {
+        return match ($type) {
+            'Program' => 3,
+            'Project' => 2,
+            'Activity' => 2,
+            'Sub-Activity' => 0, // Dynamic, no padding
+            default => 3,
+        };
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()
@@ -67,6 +82,34 @@ class PpaController extends Controller
     {
         $validated = $request->validated();
 
+        // Auto-generate code_suffix and sort_order based on sibling count and type
+        $parentId = $validated['parent_id'] ?? null;
+        $type = $validated['type'];
+        $siblingCount = Ppa::where('parent_id', $parentId)->count();
+        $digitLength = $this->getCodeSuffixLength($type);
+
+        // Get the maximum sort_order among siblings
+        $maxSortOrder =
+            Ppa::where('parent_id', $parentId)->max('sort_order') ?? -1;
+        $sortOrder = $maxSortOrder + 1;
+
+        // Apply type-specific formatting
+        if ($digitLength === 0) {
+            // Dynamic formatting (Sub-Activity) - no padding
+            $codeSuffix = (string) ($siblingCount + 1);
+        } else {
+            // Fixed length formatting with leading zeros
+            $codeSuffix = str_pad(
+                $siblingCount + 1,
+                $digitLength,
+                '0',
+                STR_PAD_LEFT,
+            );
+        }
+
+        $validated['code_suffix'] = $codeSuffix;
+        $validated['sort_order'] = $sortOrder;
+
         Ppa::create($validated);
     }
 
@@ -101,9 +144,52 @@ class PpaController extends Controller
      */
     public function destroy(Ppa $ppa)
     {
+        $parentId = $ppa->parent_id;
+
         // This will delete the PPA and its children if you have
         // a cascade delete set up in your migration.
         $ppa->delete();
+
+        // Renumber remaining siblings with type-specific formatting
+        if ($parentId !== null) {
+            $siblings = Ppa::where('parent_id', $parentId)
+                ->orderBy('sort_order')
+                ->get();
+
+            // First, set all siblings to temporary unique values to avoid unique constraint violation
+            // Use numeric values that fit within 4-character limit (last 3 digits + 9 prefix)
+            foreach ($siblings as $sibling) {
+                $tempValue =
+                    '9' . str_pad($sibling->id % 999, 3, '0', STR_PAD_LEFT);
+                $sibling->update([
+                    'code_suffix' => $tempValue,
+                ]);
+            }
+
+            // Then, update all siblings to their final values
+            foreach ($siblings as $index => $sibling) {
+                $digitLength = $this->getCodeSuffixLength($sibling->type);
+
+                // Apply type-specific formatting
+                if ($digitLength === 0) {
+                    // Dynamic formatting (Sub-Activity) - no padding
+                    $codeSuffix = (string) ($index + 1);
+                } else {
+                    // Fixed length formatting with leading zeros
+                    $codeSuffix = str_pad(
+                        $index + 1,
+                        $digitLength,
+                        '0',
+                        STR_PAD_LEFT,
+                    );
+                }
+
+                $sibling->update([
+                    'sort_order' => $index,
+                    'code_suffix' => $codeSuffix,
+                ]);
+            }
+        }
 
         return redirect()->back()->with('success', 'Entry deleted.');
     }
@@ -131,9 +217,38 @@ class PpaController extends Controller
         array_splice($ids, $oldIndex, 1);
         array_splice($ids, $newIndex, 0, $activeId);
 
-        // 4. Batch update the sort_order column
+        // 4. First, set all siblings to temporary unique values to avoid unique constraint violation
+        // Use numeric values that fit within 4-character limit (last 3 digits + 9 prefix)
+        foreach ($ids as $id) {
+            $tempValue = '9' . str_pad($id % 999, 3, '0', STR_PAD_LEFT);
+            Ppa::where('id', $id)->update([
+                'code_suffix' => $tempValue,
+            ]);
+        }
+
+        // 5. Then, update all siblings to their final values with type-specific formatting
         foreach ($ids as $index => $id) {
-            Ppa::where('id', $id)->update(['sort_order' => $index]);
+            $ppa = Ppa::findOrFail($id);
+            $digitLength = $this->getCodeSuffixLength($ppa->type);
+
+            // Apply type-specific formatting
+            if ($digitLength === 0) {
+                // Dynamic formatting (Sub-Activity) - no padding
+                $codeSuffix = (string) ($index + 1);
+            } else {
+                // Fixed length formatting with leading zeros
+                $codeSuffix = str_pad(
+                    $index + 1,
+                    $digitLength,
+                    '0',
+                    STR_PAD_LEFT,
+                );
+            }
+
+            $ppa->update([
+                'sort_order' => $index,
+                'code_suffix' => $codeSuffix,
+            ]);
         }
 
         // return response()->json(['status' => 'success']);

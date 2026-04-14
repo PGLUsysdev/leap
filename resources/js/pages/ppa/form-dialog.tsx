@@ -55,11 +55,7 @@ import { usePage } from '@inertiajs/react';
 const formSchema = z.object({
     office_id: z.string().min(1, 'Implementing office is required'),
     name: z.string().min(1, 'Name is required'),
-    code_suffix: z
-        .string()
-        .min(1, 'Suffix is required')
-        .max(3, 'Suffix must be 3 digits (e.g., 001)')
-        .regex(/^\d+$/, 'Suffix must be numeric'),
+    code_suffix: z.string().optional(),
     type: z.enum(['Program', 'Project', 'Activity', 'Sub-Activity']),
     is_active: z.boolean(),
 });
@@ -149,13 +145,41 @@ export default function PpaFormDialog({
     ]);
 
     const getCodePreview = () => {
-        const suffix = codeSuffix || '000';
+        // For add mode, show type-specific auto-generated placeholder
+        if (!isEditing) {
+            // Determine placeholder based on type
+            let suffix: string;
+            switch (targetType) {
+                case 'Program':
+                    suffix = 'XXX'; // 3 digits
+                    break;
+                case 'Project':
+                    suffix = 'XX'; // 2 digits
+                    break;
+                case 'Activity':
+                    suffix = 'XX'; // 2 digits
+                    break;
+                case 'Sub-Activity':
+                    suffix = 'X'; // 1 digit, dynamic
+                    break;
+                default:
+                    suffix = 'XXX';
+            }
 
-        if (isAddingChild && parentPpa?.full_code) {
-            return `${parentPpa.full_code}-${suffix}`;
+            if (isAddingChild && parentPpa?.full_code) {
+                return `${parentPpa.full_code}-${suffix}`;
+            }
+
+            const officeFullCode = offices.find(
+                (o) => o.id === selectedOfficeId,
+            )?.full_code;
+            return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
         }
 
-        if (isEditing && editPpa?.full_code && editPpa.type !== 'Program') {
+        // For edit mode, show the actual suffix
+        const suffix = codeSuffix || '000';
+
+        if (editPpa?.full_code && editPpa.type !== 'Program') {
             const baseCode = editPpa.full_code
                 .split('-')
                 .slice(0, -1)
@@ -503,49 +527,54 @@ export default function PpaFormDialog({
                                         )}
                                     />
 
-                                    {/* final text input controller */}
-                                    <Controller
-                                        name="code_suffix"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => (
-                                            <Field
-                                                data-invalid={
-                                                    fieldState.invalid
-                                                }
-                                            >
-                                                <FieldContent>
-                                                    <FieldLabel
-                                                        htmlFor={field.name}
-                                                        className="gap-1"
-                                                    >
-                                                        Code Suffix
-                                                        <span className="text-destructive">
-                                                            *
-                                                        </span>
-                                                    </FieldLabel>
+                                    {/* final text input controller - only for edit mode */}
+                                    {isEditing && (
+                                        <Controller
+                                            name="code_suffix"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldContent>
+                                                        <FieldLabel
+                                                            htmlFor={field.name}
+                                                            className="gap-1"
+                                                        >
+                                                            Code Suffix
+                                                            <span className="text-xs text-muted-foreground">
+                                                                (Auto-generated,
+                                                                read-only)
+                                                            </span>
+                                                        </FieldLabel>
 
-                                                    <Input
-                                                        {...field}
-                                                        id={field.name}
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                        placeholder="sample. 001"
-                                                        maxLength={3}
-                                                        autoComplete="off"
-                                                    />
-
-                                                    {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
+                                                        <Input
+                                                            {...field}
+                                                            id={field.name}
+                                                            aria-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                            placeholder="Auto-generated"
+                                                            maxLength={10}
+                                                            autoComplete="off"
+                                                            disabled
+                                                            className="bg-muted"
                                                         />
-                                                    )}
-                                                </FieldContent>
-                                            </Field>
-                                        )}
-                                    />
+
+                                                        {fieldState.invalid && (
+                                                            <FieldError
+                                                                errors={[
+                                                                    fieldState.error,
+                                                                ]}
+                                                            />
+                                                        )}
+                                                    </FieldContent>
+                                                </Field>
+                                            )}
+                                        />
+                                    )}
 
                                     <div className="rounded bg-card p-4">
                                         {/* final checkbox controller */}
