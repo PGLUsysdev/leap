@@ -1,11 +1,11 @@
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type SharedData } from '@/types';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import FormDialog from './form-dialog';
 import type { Office, Sector, LguLevel, OfficeType } from '@/types/global';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
 import columns from './table/columns';
 
@@ -24,19 +24,31 @@ export default function OfficesPage({
     lguLevels,
     officeTypes,
 }: OfficesPageProps) {
+    const { auth } = usePage<SharedData>().props;
+    const userRole = auth.user.role as string;
+
     console.log(offices);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
+    const [selectedParentOffice, setSelectedParentOffice] =
+        useState<Office | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    console.log(selectedOffice);
+    console.log('office:', selectedOffice);
+    console.log('parentOffice', selectedParentOffice);
 
-    const handleCreate = () => {
+    function handleCreate() {
         setSelectedOffice(null);
         setIsDialogOpen(true);
-    };
+    }
+
+    function handleCreateChild(data: Office) {
+        setSelectedOffice(null);
+        setSelectedParentOffice(data);
+        setIsDialogOpen(true);
+    }
 
     function handleDialogOpenChange(isOpen: boolean) {
         setIsDialogOpen(isOpen);
@@ -45,6 +57,7 @@ export default function OfficesPage({
 
     function handleEdit(value: Office) {
         setSelectedOffice(value);
+        setSelectedParentOffice(null);
         setIsDialogOpen(true);
     }
 
@@ -73,10 +86,13 @@ export default function OfficesPage({
                     columns={columns}
                     data={offices}
                     withSearch={true}
+                    onAdd={handleCreateChild}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    <Button onClick={handleCreate}>Add Office</Button>
+                    {userRole === 'admin' ? (
+                        <Button onClick={handleCreate}>Add Office</Button>
+                    ) : undefined}
                 </DataTable>
             </div>
 
@@ -84,9 +100,11 @@ export default function OfficesPage({
                 open={isDialogOpen}
                 onOpenChange={handleDialogOpenChange}
                 initialData={selectedOffice}
+                parentOffice={selectedParentOffice}
                 sectors={sectors}
                 lguLevels={lguLevels}
                 officeTypes={officeTypes}
+                offices={offices}
             />
 
             <DeleteDialog
@@ -100,6 +118,14 @@ export default function OfficesPage({
                             "{selectedOffice?.name}"
                         </span>
                         ?
+                        {selectedOffice?.children &&
+                            selectedOffice.children.length > 0 && (
+                                <>
+                                    {' '}
+                                    This will also delete all sub-units under
+                                    this office.
+                                </>
+                            )}
                     </>
                 }
                 onConfirm={handleDelete}

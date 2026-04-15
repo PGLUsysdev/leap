@@ -28,10 +28,13 @@ class AipEntryController extends Controller
         $officeId = auth()->user()->office_id;
         $yearId = $fiscalYear->id;
 
+        // Get all office IDs in the user's office hierarchy (user's office + all child offices)
+        $officeIds = $this->getOfficeHierarchyIds($officeId);
+
         $yearFilter = fn($q) => $q->where('fiscal_year_id', $yearId);
         $hasAipFilter = fn($q) => $q->whereHas('aipEntries', $yearFilter);
 
-        $aipEntries = Ppa::where('office_id', $officeId)
+        $aipEntries = Ppa::whereIn('office_id', $officeIds)
             ->whereNull('parent_id')
             ->whereHas('aipEntries', $yearFilter)
             ->orderBy('sort_order')
@@ -45,6 +48,7 @@ class AipEntryController extends Controller
                 'office.sector',
                 'office.lguLevel',
                 'office.officeType',
+                'office.parent',
 
                 // projects
                 'children' => fn($q) => $hasAipFilter($q)->orderBy(
@@ -58,6 +62,7 @@ class AipEntryController extends Controller
                 'children.office.sector',
                 'children.office.lguLevel',
                 'children.office.officeType',
+                'children.office.parent',
 
                 // activities
                 'children.children' => fn($q) => $hasAipFilter($q)->orderBy(
@@ -73,6 +78,7 @@ class AipEntryController extends Controller
                 'children.children.office.sector',
                 'children.children.office.lguLevel',
                 'children.children.office.officeType',
+                'children.children.office.parent',
 
                 // sub-activities
                 'children.children.children' => fn($q) => $hasAipFilter(
@@ -88,26 +94,30 @@ class AipEntryController extends Controller
                 'children.children.children.office.sector',
                 'children.children.children.office.lguLevel',
                 'children.children.children.office.officeType',
+                'children.children.children.office.parent',
             ])
             ->get();
 
-        $ppaMasterList = Ppa::where('office_id', $officeId)
+        $ppaMasterList = Ppa::whereIn('office_id', $officeIds)
             ->whereNull('parent_id')
             ->orderBy('sort_order')
             ->with([
                 'office.sector',
                 'office.lguLevel',
                 'office.officeType',
+                'office.parent',
 
                 'children' => fn($q) => $q->orderBy('sort_order'),
                 'children.office.sector',
                 'children.office.lguLevel',
                 'children.office.officeType',
+                'children.office.parent',
 
                 'children.children' => fn($q) => $q->orderBy('sort_order'),
                 'children.children.office.sector',
                 'children.children.office.lguLevel',
                 'children.children.office.officeType',
+                'children.children.office.parent',
 
                 'children.children.children' => fn($q) => $q->orderBy(
                     'sort_order',
@@ -115,6 +125,7 @@ class AipEntryController extends Controller
                 'children.children.children.office.sector',
                 'children.children.children.office.lguLevel',
                 'children.children.children.office.officeType',
+                'children.children.children.office.parent',
             ])
             ->get();
 
@@ -353,6 +364,41 @@ class AipEntryController extends Controller
             $descendants = array_merge(
                 $descendants,
                 $this->getDescendantPpaIds($childId),
+            );
+        }
+
+        return $descendants;
+    }
+
+    /**
+     * Get all office IDs in the user's office hierarchy (user's office + all child offices).
+     */
+    private function getOfficeHierarchyIds($officeId)
+    {
+        // Start with the user's office
+        $officeIds = [$officeId];
+
+        // Get all child offices recursively
+        $childOfficeIds = $this->getChildOfficeIds($officeId);
+        $officeIds = array_merge($officeIds, $childOfficeIds);
+
+        return $officeIds;
+    }
+
+    /**
+     * Recursively find all child office IDs.
+     */
+    private function getChildOfficeIds($parentId)
+    {
+        $children = Office::where('parent_id', $parentId)
+            ->pluck('id')
+            ->toArray();
+
+        $descendants = $children;
+        foreach ($children as $childId) {
+            $descendants = array_merge(
+                $descendants,
+                $this->getChildOfficeIds($childId),
             );
         }
 

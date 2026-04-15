@@ -16,6 +16,7 @@ class Office extends Model
         'sector_id',
         'lgu_level_id',
         'office_type_id',
+        'parent_id',
         'code',
         'name',
         'acronym',
@@ -50,6 +51,27 @@ class Office extends Model
     public function officeType()
     {
         return $this->belongsTo(OfficeType::class, 'office_type_id');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Office::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Office::class, 'parent_id');
+    }
+
+    // Add this for infinite nesting
+    public function childrenRecursive()
+    {
+        return $this->children()->with([
+            'childrenRecursive',
+            'sector',
+            'lguLevel',
+            'officeType',
+        ]);
     }
 
     public function users()

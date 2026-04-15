@@ -2,7 +2,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import type { Office } from '@/types/global';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash } from 'lucide-react';
+import { Pencil, Trash, Plus } from 'lucide-react';
 
 const columnHelper = createColumnHelper<Office>();
 
@@ -18,7 +18,22 @@ const columns = [
     columnHelper.accessor('name', {
         header: 'Office Name',
         size: 300,
-        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
+        cell: ({ row }) => (
+            <div className="flex items-center gap-2">
+                <span
+                    className={`flex gap-2 text-wrap ${
+                        row.original.parent_id ? 'ml-8' : ''
+                    }`}
+                >
+                    {row.original.parent_id && (
+                        <span className="text-muted-foreground opacity-50">
+                            ↳
+                        </span>
+                    )}
+                    {row.getValue('name')}
+                </span>
+            </div>
+        ),
     }),
     columnHelper.accessor('acronym', {
         header: 'Acronym',
@@ -42,9 +57,17 @@ const columns = [
     }),
     columnHelper.display({
         id: 'action',
-        size: 82,
+        size: 120,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">
+                <Button
+                    size="icon"
+                    onClick={() => table.options.meta?.onAdd?.(row.original)}
+                    disabled={!!row.original.parent_id}
+                >
+                    <Plus />
+                </Button>
+
                 <Button
                     size="icon"
                     onClick={() => table.options.meta?.onEdit?.(row.original)}

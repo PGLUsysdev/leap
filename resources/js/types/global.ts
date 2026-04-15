@@ -27,6 +27,7 @@ export interface Office {
     sector_id: number | null;
     lgu_level_id: number;
     office_type_id: number;
+    parent_id: number | null;
     code: string;
     name: string;
     acronym: string | null;
@@ -39,6 +40,8 @@ export interface Office {
     lgu_level?: LguLevel;
     office_type?: OfficeType;
     sector?: Sector;
+    parent?: Office;
+    children?: Office[];
 }
 
 export type FiscalYearStatus = 'active' | 'inactive' | 'closed';

@@ -40,12 +40,15 @@ interface FormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialData: Office | null;
+    parentOffice: Office | null;
     sectors: Sector[];
     lguLevels: LguLevel[];
     officeTypes: OfficeType[];
+    offices: Office[];
 }
 
 const formSchema = z.object({
+    parent_id: z.string().optional(),
     sector_id: z.string().min(1, 'Sector is required'),
     lgu_level_id: z.string().min(1, 'LGU Level is required'),
     office_type_id: z.string().min(1, 'Office Type is required'),
@@ -64,17 +67,26 @@ export default function FormDialog({
     open,
     onOpenChange,
     initialData,
+    parentOffice,
     sectors,
     lguLevels,
     officeTypes,
+    offices,
 }: FormDialogProps) {
+    // console.log({
+    //     initialData,
+    // });
+
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const isEditing = !!initialData;
+    const isAddingChild = !isEditing && !!parentOffice;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            parent_id: 'none',
             sector_id: '',
             lgu_level_id: '',
             office_type_id: '',
@@ -93,6 +105,7 @@ export default function FormDialog({
                     : '';
 
                 form.reset({
+                    parent_id: String(initialData.parent_id || 'none'),
                     sector_id: String(initialData.sector_id || ''),
                     lgu_level_id: String(initialData.lgu_level_id || ''),
                     office_type_id: String(initialData.office_type_id || ''),
@@ -101,8 +114,24 @@ export default function FormDialog({
                     acronym: initialData.acronym || '',
                     is_lee: Boolean(initialData.is_lee || false),
                 });
+            } else if (parentOffice) {
+                const rawCode = parentOffice.code
+                    ? String(parseInt(parentOffice.code, 10))
+                    : '';
+
+                form.reset({
+                    parent_id: String(parentOffice.id),
+                    sector_id: String(parentOffice.sector_id || ''),
+                    lgu_level_id: String(parentOffice.lgu_level_id || ''),
+                    office_type_id: String(parentOffice.office_type_id || ''),
+                    code: rawCode,
+                    name: '',
+                    acronym: '',
+                    is_lee: false,
+                });
             } else {
                 form.reset({
+                    parent_id: 'none',
                     sector_id: '',
                     lgu_level_id: '',
                     office_type_id: '',
@@ -113,27 +142,43 @@ export default function FormDialog({
                 });
             }
         }
-    }, [initialData, open, form]);
+    }, [initialData, parentOffice, open, form]);
 
     function onSubmit(data: FormValues) {
         const paddedCode = data.code.padStart(3, '0');
-        const payload = { ...data, code: paddedCode };
+        const payload = {
+            ...data,
+            code: paddedCode,
+            parent_id: data.parent_id === 'none' ? null : data.parent_id,
+        };
 
         if (isEditing) {
             router.patch(`/offices/${initialData.id}`, payload, {
                 preserveState: true,
                 preserveScroll: true,
-                onStart: () => setIsLoading(true),
+                onStart: () => {
+                    setIsLoading(true);
+                    setError(null);
+                },
                 onFinish: () => setIsLoading(false),
                 onSuccess: () => onOpenChange(false),
+                onError: (errors) => {
+                    setError(Object.values(errors).join('. '));
+                },
             });
         } else {
-            router.post('/offices', data, {
+            router.post('/offices', payload, {
                 preserveState: true,
                 preserveScroll: true,
-                onStart: () => setIsLoading(true),
+                onStart: () => {
+                    setIsLoading(true);
+                    setError(null);
+                },
                 onFinish: () => setIsLoading(false),
                 onSuccess: () => onOpenChange(false),
+                onError: (errors) => {
+                    setError(Object.values(errors).join('. '));
+                },
             });
         }
     }
@@ -155,6 +200,12 @@ export default function FormDialog({
                             ? 'Modify the details of the existing office below.'
                             : 'Fill in the information to create a new office record.'}
                     </DialogDescription>
+
+                    {error && (
+                        <div className="mt-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                            {error}
+                        </div>
+                    )}
                 </DialogHeader>
 
                 <div className="flex min-h-0 flex-1">
@@ -214,6 +265,94 @@ export default function FormDialog({
                                     </div>
                                 </div>
 
+                                {!(
+                                    !isAddingChild &&
+                                    (!isEditing || !initialData?.parent_id)
+                                ) && (
+                                    <Controller
+                                        name="parent_id"
+                                        control={form.control}
+                                        render={({ field, fieldState }) => (
+                                            <Field
+                                                data-invalid={
+                                                    fieldState.invalid
+                                                }
+                                            >
+                                                <FieldContent>
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                        className="gap-1"
+                                                    >
+                                                        Parent Office
+                                                        {/* <span className="text-red-500">
+                                                            *
+                                                        </span> */}
+                                                    </FieldLabel>
+
+                                                    <Select
+                                                        name={field.name}
+                                                        value={field.value}
+                                                        onValueChange={
+                                                            field.onChange
+                                                        }
+                                                        disabled={
+                                                            isAddingChild ||
+                                                            (isEditing &&
+                                                                initialData?.parent_id)
+                                                        }
+                                                    >
+                                                        <SelectTrigger
+                                                            id={field.name}
+                                                            className="w-full"
+                                                        >
+                                                            <SelectValue placeholder="Select parent office (optional)" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="none">
+                                                                No parent
+                                                            </SelectItem>
+                                                            {offices
+                                                                .filter(
+                                                                    (office) =>
+                                                                        // Prevent selecting self when editing
+                                                                        !initialData ||
+                                                                        office.id !==
+                                                                            initialData.id,
+                                                                )
+                                                                .map(
+                                                                    (
+                                                                        office,
+                                                                    ) => (
+                                                                        <SelectItem
+                                                                            key={
+                                                                                office.id
+                                                                            }
+                                                                            value={String(
+                                                                                office.id,
+                                                                            )}
+                                                                        >
+                                                                            {
+                                                                                office.name
+                                                                            }
+                                                                        </SelectItem>
+                                                                    ),
+                                                                )}
+                                                        </SelectContent>
+                                                    </Select>
+
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </FieldContent>
+                                            </Field>
+                                        )}
+                                    />
+                                )}
+
                                 {/* final select controller */}
                                 <Controller
                                     name="sector_id"
@@ -239,6 +378,11 @@ export default function FormDialog({
                                                     value={field.value}
                                                     onValueChange={
                                                         field.onChange
+                                                    }
+                                                    disabled={
+                                                        isAddingChild ||
+                                                        (isEditing &&
+                                                            initialData?.parent_id)
                                                     }
                                                 >
                                                     <SelectTrigger
@@ -306,6 +450,11 @@ export default function FormDialog({
                                                         value={field.value}
                                                         onValueChange={
                                                             field.onChange
+                                                        }
+                                                        disabled={
+                                                            isAddingChild ||
+                                                            (isEditing &&
+                                                                initialData?.parent_id)
                                                         }
                                                     >
                                                         <SelectTrigger
@@ -378,6 +527,11 @@ export default function FormDialog({
                                                         onValueChange={
                                                             field.onChange
                                                         }
+                                                        disabled={
+                                                            isAddingChild ||
+                                                            (isEditing &&
+                                                                initialData?.parent_id)
+                                                        }
                                                     >
                                                         <SelectTrigger
                                                             id={field.name}
@@ -427,51 +581,6 @@ export default function FormDialog({
                                 </div>
 
                                 <div className="grid grid-cols-4 gap-6">
-                                    <div className="col-span-3">
-                                        {/* final text input controller */}
-                                        <Controller
-                                            name="name"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
-                                                    <FieldContent>
-                                                        <FieldLabel
-                                                            htmlFor={field.name}
-                                                            className="gap-1"
-                                                        >
-                                                            Office Name
-                                                            <span className="text-red-500">
-                                                                *
-                                                            </span>
-                                                        </FieldLabel>
-
-                                                        <Input
-                                                            {...field}
-                                                            id={field.name}
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
-                                                            placeholder="Office of the Mayor"
-                                                            autoComplete="off"
-                                                        />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
-                                                            />
-                                                        )}
-                                                    </FieldContent>
-                                                </Field>
-                                            )}
-                                        />
-                                    </div>
-
                                     <div className="col-span-1">
                                         {/* final text input controller */}
                                         <Controller
@@ -502,6 +611,11 @@ export default function FormDialog({
                                                             }
                                                             placeholder="001"
                                                             autoComplete="off"
+                                                            disabled={
+                                                                isAddingChild ||
+                                                                (isEditing &&
+                                                                    initialData?.parent_id)
+                                                            }
                                                             // maxLength={3}
                                                             onChange={(e) => {
                                                                 const raw =
@@ -521,6 +635,51 @@ export default function FormDialog({
                                                                     truncated,
                                                                 );
                                                             }}
+                                                        />
+
+                                                        {fieldState.invalid && (
+                                                            <FieldError
+                                                                errors={[
+                                                                    fieldState.error,
+                                                                ]}
+                                                            />
+                                                        )}
+                                                    </FieldContent>
+                                                </Field>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <div className="col-span-3">
+                                        {/* final text input controller */}
+                                        <Controller
+                                            name="name"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldContent>
+                                                        <FieldLabel
+                                                            htmlFor={field.name}
+                                                            className="gap-1"
+                                                        >
+                                                            Office Name
+                                                            <span className="text-red-500">
+                                                                *
+                                                            </span>
+                                                        </FieldLabel>
+
+                                                        <Input
+                                                            {...field}
+                                                            id={field.name}
+                                                            aria-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                            placeholder="sample. Office of the Provincial Governor"
+                                                            autoComplete="off"
                                                         />
 
                                                         {fieldState.invalid && (
@@ -562,7 +721,7 @@ export default function FormDialog({
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
-                                                    placeholder="PTO"
+                                                    placeholder="sample. OPG"
                                                     autoComplete="off"
                                                 />
 

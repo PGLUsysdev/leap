@@ -3,6 +3,7 @@ import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, parseISO } from 'date-fns';
+import { usePage } from '@inertiajs/react';
 import {
     CalendarIcon,
     Plus,
@@ -118,19 +119,25 @@ export default function AipEntryFormDialog({
     fundingSources,
     offices,
 }: Props) {
-    // console.log({
-    //     open,
-    //     onOpenChange,
-    //     data,
-    //     fiscalYear,
-    //     fundingSources,
-    //     offices,
-    // });
+    const { auth } = usePage().props as any;
+    const userOfficeId = auth?.user?.office_id;
+
+    // Filter offices to show only user's office and its children
+    const filteredOffices = useMemo(() => {
+        if (!userOfficeId) return offices;
+
+        const userOffice = offices.find((o) => o.id === userOfficeId);
+        if (!userOffice) return offices;
+
+        // Get user's office and all its children
+        const userOfficeChildren = offices.filter(
+            (o) => o.parent_id === userOfficeId,
+        );
+        return [userOffice, ...userOfficeChildren];
+    }, [offices, userOfficeId]);
 
     const [openOfficeComamnd, setOpenOfficeComamnd] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    const isOfficeAutoSelected = !!data?.office_id;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -342,14 +349,11 @@ export default function AipEntryFormDialog({
                                                                             true,
                                                                         )
                                                                     }
-                                                                    disabled={
-                                                                        isOfficeAutoSelected
-                                                                    }
                                                                 >
                                                                     {field.value ? (
                                                                         <span className="truncate">
                                                                             {
-                                                                                offices.find(
+                                                                                filteredOffices.find(
                                                                                     (
                                                                                         o,
                                                                                     ) =>
@@ -392,7 +396,7 @@ export default function AipEntryFormDialog({
                                                                                     </TableHeader>
 
                                                                                     <TableBody>
-                                                                                        {offices.map(
+                                                                                        {filteredOffices.map(
                                                                                             (
                                                                                                 office,
                                                                                             ) => (

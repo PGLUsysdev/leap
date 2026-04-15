@@ -96,7 +96,13 @@ const columns = [
         id: 'office_acronym',
         header: () => <div className="text-left">Implementing Office</div>,
         size: 150,
-        cell: (info) => info.getValue(),
+        cell: ({ row }) => {
+            const office = row.original.office;
+            if (office?.parent?.acronym && office?.acronym) {
+                return `${office.parent.acronym}/${office.acronym}`;
+            }
+            return office?.acronym || '-';
+        },
         meta: { rowSpan: true },
     }),
     columnHelper.group({

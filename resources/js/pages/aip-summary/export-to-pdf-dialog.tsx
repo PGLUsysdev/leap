@@ -175,8 +175,16 @@ export default function ExportToPdfDialog({
                                         return item.full_code || '-';
                                     if (colIndex === 1)
                                         return displayTitle || '-';
-                                    if (colIndex === 2)
-                                        return item.office?.acronym || '-';
+                                    if (colIndex === 2) {
+                                        const office = item.office;
+                                        if (
+                                            office?.parent?.acronym &&
+                                            office?.acronym
+                                        ) {
+                                            return `${office.parent.acronym}/${office.acronym}`;
+                                        }
+                                        return office?.acronym || '-';
+                                    }
                                     if (colIndex === 3)
                                         return formatDate(aipEntry?.start_date);
                                     if (colIndex === 4)

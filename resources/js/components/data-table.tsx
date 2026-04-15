@@ -329,7 +329,7 @@ export function DataTable<TData extends { id: unknown }>({
                                                         (row.original as any)
                                                             .current_fs?.id
                                                             ? `${row.id}-${(row.original as any).current_fs.id}`
-                                                            : row.id
+                                                            : `${row.id}-${row.index}`
                                                     }
                                                     row={row}
                                                     table={table}

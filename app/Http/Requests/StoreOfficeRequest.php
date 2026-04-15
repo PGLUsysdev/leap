@@ -23,24 +23,14 @@ class StoreOfficeRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'parent_id' => 'nullable|exists:offices,id',
             'sector_id' => 'required|exists:sectors,id',
             'lgu_level_id' => 'required|exists:lgu_levels,id',
             'office_type_id' => 'required|exists:office_types,id',
             'name' => 'required|string|max:100',
             'acronym' => 'nullable|string|max:20',
             'is_lee' => 'boolean',
-            'code' => [
-                'required',
-                'string',
-                'max:3',
-                // Unique check: A suffix cannot be repeated for the same Sector + LGU Level + Office Type
-                Rule::unique('offices')->where(
-                    fn($q) => $q
-                        ->where('sector_id', $this->input('sector_id'))
-                        ->where('lgu_level_id', $this->input('lgu_level_id'))
-                        ->where('office_type_id', $this->input('office_type_id')),
-                ),
-            ],
+            'code' => 'required|string|max:3',
         ];
     }
 }
