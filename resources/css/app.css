@@ -8,28 +8,38 @@
 :root {
     --background: oklch(0.9195 0.0169 88.003);
     --foreground: oklch(0.235 0 0);
+    
     --card: oklch(0.953 0.0156 86.4257);
     --card-foreground: oklch(0.235 0 0);
+    
     --popover: oklch(0.953 0.0156 86.4257);
     --popover-foreground: oklch(0.235 0 0);
+
     --primary: oklch(0.3012 0 0);
     --primary-foreground: oklch(0.9169 0.0175 99.616);
+    
     --secondary: oklch(0.8647 0.0201 87.5232);
     --secondary-foreground: oklch(0.3012 0 0);
+
     --muted: oklch(0.834 0.0232 87.163);
     --muted-foreground: oklch(0.4688 0.0136 84.5932);
+    
     --accent: oklch(0.9169 0.0175 99.616);
-    --accent-foreground: oklch(0.3012 0 0);
+    --accent-foreground: oklch(30.118% 0.00003 271.152);
+
     --destructive: oklch(0.5771 0.2152 27.325);
     --destructive-foreground: oklch(1 0 0);
+    
     --border: oklch(0.8434 0.0231 87.1621);
     --input: oklch(0.8434 0.0231 87.1621);
     --ring: oklch(0.3012 0 0);
+    
     --chart-1: oklch(0.6863 0.1743 34.2614);
     --chart-2: oklch(0.235 0 0);
     --chart-3: oklch(0.4688 0.0136 84.5932);
-    --chart-4: oklch(0.7057 0.025 82.0932);
+    --chart-4: oklch(0.7057 0.025 82.09 32);
     --chart-5: oklch(0.834 0.0232 87.163);
+
     --sidebar: oklch(0.8985 0.0199 87.5195);
     --sidebar-foreground: oklch(0.235 0 0);
     --sidebar-primary: oklch(0.3012 0 0);
@@ -38,6 +48,7 @@
     --sidebar-accent-foreground: oklch(0.3012 0 0);
     --sidebar-border: oklch(0.8434 0.0231 87.1621);
     --sidebar-ring: oklch(0.3012 0 0);
+
     --font-sans: 'Outfit Variable', sans-serif;
     --font-serif: 'Playfair Display', serif;
     --font-mono: 'JetBrains Mono', monospace;
