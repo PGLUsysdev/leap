@@ -28,7 +28,7 @@ const RowDragHandleCell = ({ rowId }: { rowId: string }) => {
             ref={setActivatorNodeRef}
             {...attributes}
             {...listeners}
-            className="cursor-grab rounded hover:bg-accent active:cursor-grabbing"
+            className="cursor-grab rounded active:cursor-grabbing"
         >
             <GripVertical />
         </Button>
@@ -81,10 +81,12 @@ const columns = [
                             ↳
                         </span>
                     )}
+
                     <div className="flex flex-col">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase">
                             {ppa.type}
                         </span>
+
                         <span
                             className={`leading-tight break-words whitespace-normal ${
                                 info.row.depth === 0
