@@ -110,7 +110,6 @@ class PpmpPriceListController extends Controller
         $validatedMapped = [
             'chart_of_account_id' => $validated['expenseAccount'],
             'ppmp_category_id' => $validated['category'],
-            'item_number' => $validated['itemNo'],
             'description' => $validated['description'],
             'unit_of_measurement' => $validated['unitOfMeasurement'],
             'price' => $validated['price'],
