@@ -126,7 +126,7 @@ export default function FormDialog({
                 category: undefined,
                 description: '',
                 unitOfMeasurement: '',
-                price: '0.00',
+                price: undefined,
             });
         }
     }, [selectedPriceList, form]);
@@ -214,9 +214,23 @@ export default function FormDialog({
             category: undefined,
             description: '',
             unitOfMeasurement: '',
-            price: '0.00',
+            price: '',
         });
     }
+
+    useEffect(() => {
+        if (!open) {
+            form.reset({
+                expenseAccount: undefined,
+                category: undefined,
+                customCategory: '',
+                description: '',
+                unitOfMeasurement: '',
+                price: '',
+                isCustomCategory: false,
+            });
+        }
+    }, [open, form]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

@@ -378,6 +378,11 @@ export function DataTable<TData extends { id: unknown }>({
                                                     key={column.id}
                                                     style={{
                                                         width: `${column.getSize()}px`,
+                                                        ...getCommonPinningStyles(
+                                                            column,
+                                                            table,
+                                                            true,
+                                                        ),
                                                     }}
                                                 >
                                                     {column.columnDef.footer

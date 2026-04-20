@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react';
 export const getCommonPinningStyles = <TData>(
     column: Column<TData>,
     table: Table<any>,
+    isFooter = false,
 ): CSSProperties => {
     const isPinned = column.getIsPinned();
     const isLastLeftPinnedColumn =
@@ -38,6 +39,10 @@ export const getCommonPinningStyles = <TData>(
         maxWidth: isPinned ? `${size}px` : undefined,
 
         zIndex: isPinned ? 1 : 0,
-        backgroundColor: isFirstRightPinnedColumn ? 'var(--background)' : '',
+        backgroundColor: isFooter
+            ? 'var(--secondary)'
+            : isFirstRightPinnedColumn
+              ? 'var(--background)'
+              : '',
     };
 };

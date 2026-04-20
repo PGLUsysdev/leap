@@ -20,7 +20,7 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import PpmpFormDialog from '@/pages/ppmp/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -72,6 +72,9 @@ export default function PpmpPage({
     initialChoice,
     initialFund,
 }: PpmpPageProps) {
+    const { auth } = usePage().props;
+    console.log(auth);
+
     console.log({
         aipEntry,
         //     priceLists,
@@ -300,6 +303,7 @@ export default function PpmpPage({
                                                       aipEntry,
                                                       fundingSources,
                                                       selectedFundingSource,
+                                                      auth,
                                                   })
                                                 : setOpenAlert(true)
                                         }
@@ -318,6 +322,7 @@ export default function PpmpPage({
                                                       aipEntry,
                                                       fundingSources,
                                                       selectedFundingSource,
+                                                      auth,
                                                   })
                                                 : setOpenAlert(true)
                                         }
@@ -336,6 +341,7 @@ export default function PpmpPage({
                                                       aipEntry,
                                                       fundingSources,
                                                       selectedFundingSource,
+                                                      auth,
                                                   })
                                                 : setOpenAlert(true)
                                         }

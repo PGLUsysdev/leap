@@ -21,6 +21,7 @@ interface ExportToExcelProps {
     aipEntry: AipEntry;
     fundingSources: FundingSource[];
     selectedFundingSource: number;
+    auth: any;
 }
 
 export async function exportToExcel({
@@ -31,6 +32,7 @@ export async function exportToExcel({
     aipEntry,
     fundingSources,
     selectedFundingSource,
+    auth,
 }: ExportToExcelProps) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('PPMP');
@@ -207,6 +209,10 @@ export async function exportToExcel({
 
                     worksheet.getRow(currentRow).height = 30;
 
+                    // Format price column to show 2 decimal places
+                    const priceCell = worksheet.getCell(`E${currentRow}`);
+                    priceCell.numFmt = '0.00';
+
                     currentRow++;
                 });
 
@@ -376,7 +382,7 @@ export async function exportToExcel({
         String(Number(ppaDesc.col) - 1),
     );
 
-    officeName.value = 'NAME OF OFFICE';
+    officeName.value = auth.user.name;
     officeName.fill = {
         type: 'pattern',
         pattern: 'solid',
@@ -394,9 +400,9 @@ export async function exportToExcel({
     const selectedFunding = fundingSources.find(
         (fs) => fs.id === selectedFundingSource,
     );
-    fundingSource.value = `FUNDING SOURCE: ${selectedFunding?.code || 'N/A'}`;
-    aipRefCode.value = `AIP REF. CODE: ${aipEntry?.ppa?.full_code || 'N/A'}`;
-    ppaDesc.value = `PPA DESCRIPTION: ${aipEntry?.ppa?.name || 'N/A'}`;
+    fundingSource.value = `${selectedFunding?.code || 'N/A'}`;
+    aipRefCode.value = `${aipEntry?.ppa?.full_code || 'N/A'}`;
+    ppaDesc.value = `${aipEntry?.ppa?.name || 'N/A'}`;
     headerTitle.value = 'PROVINCIAL GOVERNMENT OF LA UNION';
     headerSubTitle.value = 'PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY 2026';
 
@@ -451,6 +457,7 @@ export async function exportToPrint({
     aipEntry,
     fundingSources,
     selectedFundingSource,
+    auth,
 }: ExportToExcelProps) {
     const longBondPaper = [8.5, 13];
     const convertInchToMm = (inch) => inch.map((value) => value * 25.4);
@@ -576,9 +583,15 @@ export async function exportToPrint({
                         priceList?.item_number,
                         priceList?.description,
                         priceList?.unit_of_measurement,
-                        price.toLocaleString(),
+                        price.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        }),
                         totalQty,
-                        totalAmt.toLocaleString(),
+                        totalAmt.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        }),
                         item.jan_qty,
                         item.jan_amount?.toLocaleString(),
                         item.feb_qty,
@@ -614,7 +627,11 @@ export async function exportToPrint({
                     .fill('')
                     .map((_, i) => {
                         if (i === 2) return 'TOTAL';
-                        if (i === 6) return groupTotalAmount.toLocaleString();
+                        if (i === 6)
+                            return groupTotalAmount.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            });
 
                         // Monthly Amount Columns are 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30
                         const monthAmtCols = [
@@ -623,7 +640,13 @@ export async function exportToPrint({
                         if (monthAmtCols.includes(i)) {
                             const monthIdx = (i - 8) / 2;
                             return monthlyTotals[monthIdx] > 0
-                                ? monthlyTotals[monthIdx].toLocaleString()
+                                ? monthlyTotals[monthIdx].toLocaleString(
+                                      undefined,
+                                      {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                      },
+                                  )
                                 : '';
                         }
                         return '';
@@ -641,7 +664,7 @@ export async function exportToPrint({
             [
                 { content: '', styles: { fillColor: [255, 255, 255] } },
                 {
-                    content: 'NAME OF OFFICE',
+                    content: `${auth.user.name}`,
                     colSpan: 6,
                     rowSpan: 2,
                     styles: {
@@ -668,7 +691,7 @@ export async function exportToPrint({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: `FUNDING SOURCE: ${selectedFunding?.code || 'N/A'}`,
+                    content: `${selectedFunding?.code || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -681,7 +704,7 @@ export async function exportToPrint({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: `AIP REF. CODE: ${aipEntry?.ppa?.full_code || 'N/A'}`,
+                    content: `${aipEntry?.ppa?.full_code || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -706,7 +729,7 @@ export async function exportToPrint({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: `PPA DESCRIPTION: ${aipEntry?.ppa?.name || 'N/A'}`,
+                    content: `${aipEntry?.ppa?.name || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -959,9 +982,15 @@ export async function exportToPDF({
                         priceList?.item_number,
                         priceList?.description,
                         priceList?.unit_of_measurement,
-                        price.toLocaleString(),
+                        price.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        }),
                         totalQty,
-                        totalAmt.toLocaleString(),
+                        totalAmt.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        }),
                         item.jan_qty,
                         item.jan_amount?.toLocaleString(),
                         item.feb_qty,
@@ -997,7 +1026,11 @@ export async function exportToPDF({
                     .fill('')
                     .map((_, i) => {
                         if (i === 2) return 'TOTAL';
-                        if (i === 6) return groupTotalAmount.toLocaleString();
+                        if (i === 6)
+                            return groupTotalAmount.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                            });
 
                         // Monthly Amount Columns are 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30
                         const monthAmtCols = [
@@ -1006,7 +1039,13 @@ export async function exportToPDF({
                         if (monthAmtCols.includes(i)) {
                             const monthIdx = (i - 8) / 2;
                             return monthlyTotals[monthIdx] > 0
-                                ? monthlyTotals[monthIdx].toLocaleString()
+                                ? monthlyTotals[monthIdx].toLocaleString(
+                                      undefined,
+                                      {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                      },
+                                  )
                                 : '';
                         }
                         return '';
@@ -1051,7 +1090,7 @@ export async function exportToPDF({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: `FUNDING SOURCE: ${selectedFunding?.code || 'N/A'}`,
+                    content: `${selectedFunding?.code || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -1064,7 +1103,7 @@ export async function exportToPDF({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: `AIP REF. CODE: ${aipEntry?.ppa?.full_code || 'N/A'}`,
+                    content: `${aipEntry?.ppa?.full_code || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -1089,7 +1128,7 @@ export async function exportToPDF({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: `PPA DESCRIPTION: ${aipEntry?.ppa?.name || 'N/A'}`,
+                    content: `${aipEntry?.ppa?.name || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],

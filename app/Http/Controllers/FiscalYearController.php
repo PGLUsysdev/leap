@@ -45,6 +45,9 @@ class FiscalYearController extends Controller
                     ? $request->query('office_id', 'all')
                     : $user->office_id;
 
+                // Add temporarily in the index method to debug
+                // dd($user->office_id, $isControlOffice, $targetOfficeId);
+
                 $query = Ppmp::with([
                     'ppmpPriceList.category', // Kept exactly as your working code
                     'ppmpPriceList.chartOfAccount',
