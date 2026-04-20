@@ -82,7 +82,9 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                         );
                         return (
                             <span className="font-bold text-blue-600">
-                                {total.toLocaleString()}
+                                {total.toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                })}
                             </span>
                         );
                     },
@@ -99,7 +101,9 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                         );
                         return (
                             <span className="font-bold text-blue-600">
-                                {grandTotal.toLocaleString()}
+                                {grandTotal.toLocaleString('en-US', {
+                                    minimumFractionDigits: 2,
+                                })}
                             </span>
                         );
                     },

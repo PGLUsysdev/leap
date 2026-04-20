@@ -14,6 +14,8 @@ export default function PpmpSummaryPage({
     priceLists,
     fiscalYear: _fiscalYear,
 }: PpmpSummaryPageProps) {
+    // console.log(priceLists);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: index().url },
         { title: `PPMP Summary for ${_fiscalYear?.year}`, href: '#' },

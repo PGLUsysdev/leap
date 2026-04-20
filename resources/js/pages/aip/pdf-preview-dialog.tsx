@@ -584,7 +584,7 @@ const MyDocument = ({
                                 />
                                 {Object.entries(chartOfAccounts).map(
                                     ([accountTitle, items]: [string, any]) => {
-                                        console.log(items);
+                                        // console.log(items);
 
                                         return (
                                             <View key={accountTitle}>
@@ -597,7 +597,7 @@ const MyDocument = ({
                                                         item: any,
                                                         index: number,
                                                     ) => {
-                                                        console.log(item);
+                                                        // console.log(item);
 
                                                         return (
                                                             <View
@@ -1131,13 +1131,13 @@ export default function PdfPreviewDialog({
     fiscalYear,
     offices,
 }: PdfPreviewDialogProps) {
-    console.log(offices);
+    // console.log(offices);
 
     const { auth } = usePage().props as any;
     const [isReloading, setIsReloading] = useState(false);
     const [selectedOfficeId, setSelectedOfficeId] = useState<string>('all');
 
-    console.log(auth);
+    // console.log(auth);
 
     const isBACSU = auth.user.office_id === 2 || auth.user.role === 'admin';
 
@@ -1168,7 +1168,7 @@ export default function PdfPreviewDialog({
         return selected?.acronym ?? '';
     };
 
-    console.log(getOfficeLabel());
+    // console.log(getOfficeLabel());
 
     if (!fiscalYear) return null;
 

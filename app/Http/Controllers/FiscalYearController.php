@@ -20,53 +20,47 @@ class FiscalYearController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        // BACSU (ID 4) or Admin
         $isControlOffice = $user->office_id === 2 || $user->role === 'admin';
 
         return Inertia::render('aip/index', [
             'fiscalYears' => FiscalYear::all(),
-
-            // 1. Add the offices prop (Required for your sidebar dropdown)
             'offices' => $isControlOffice ? Office::get() : [],
-
             'app' => Inertia::optional(function () use (
                 $request,
                 $user,
                 $isControlOffice,
             ) {
-                $id = $request->query('fiscal_year_id');
+                $id = $request->query('fiscal_year_id'); // fiscal_year_id = 4
 
                 if (!$id) {
                     return null;
                 }
 
-                // 2. Determine target scope
                 $targetOfficeId = $isControlOffice
                     ? $request->query('office_id', 'all')
                     : $user->office_id;
 
-                // Add temporarily in the index method to debug
-                // dd($user->office_id, $isControlOffice, $targetOfficeId);
-
                 $query = Ppmp::with([
-                    'ppmpPriceList.category', // Kept exactly as your working code
+                    'ppmpPriceList.category',
                     'ppmpPriceList.chartOfAccount',
                 ])->whereHas('aipEntry', function ($query) use ($id) {
                     $query->where('fiscal_year_id', $id);
                 });
 
-                // 3. Apply Office Filter
+                $officeIds = Office::where('id', $targetOfficeId)
+                    ->orWhere('parent_id', $targetOfficeId)
+                    ->pluck('id');
+
                 if ($targetOfficeId !== 'all') {
                     $query->whereHas('aipEntry.ppa', function ($q) use (
-                        $targetOfficeId,
+                        $officeIds,
                     ) {
-                        $q->where('office_id', $targetOfficeId);
+                        $q->whereIn('office_id', $officeIds);
                     });
                 }
 
                 $items = $query->get();
 
-                // 4. Consolidation Logic (If 'all' is selected, sum items with same price list ID)
                 if ($targetOfficeId === 'all') {
                     $items = $items
                         ->groupBy('ppmp_price_list_id')
@@ -98,7 +92,6 @@ class FiscalYearController extends Controller
 
                 return $items
                     ->map(function ($item) {
-                        // --- YOUR ORIGINAL CALCULATION LOGIC (UNTOUCHED) ---
                         $quarters = [
                             'q1' => ['jan', 'feb', 'mar'],
                             'q2' => ['apr', 'may', 'jun'],
@@ -137,7 +130,6 @@ class FiscalYearController extends Controller
 
                         return $item;
                     })
-                    // --- YOUR ORIGINAL GROUPING LOGIC (UNTOUCHED) ---
                     ->groupBy(function ($item) {
                         return $item->ppmpPriceList->category->name ??
                             'Uncategorized';
