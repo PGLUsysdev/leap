@@ -144,7 +144,6 @@ export interface ChartOfAccount {
     account_type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
     expense_class: 'PS' | 'MOOE' | 'FE' | 'CO';
     account_series: string | null;
-    parent_id: number | null;
     level: number;
     is_postable: boolean;
     is_active: boolean;
@@ -152,13 +151,14 @@ export interface ChartOfAccount {
     description: string | null;
     created_at: string;
     updated_at: string;
+
+    parent_id: number | null;
+
     ppmp_price_lists?: PriceList[];
 }
 
 export interface Ppmp {
     id: number;
-    aip_entry_id: number;
-    ppmp_price_list_id: number | null;
     jan_qty: number;
     jan_amount: string;
     feb_qty: number;
@@ -185,6 +185,11 @@ export interface Ppmp {
     dec_amount: string;
     created_at: string | null;
     updated_at: string | null;
+
+    aip_entry_id: number;
+    funding_source_id: number;
+    ppmp_price_list_id: number | null;
+
     ppmp_price_list?: PriceList;
     funding_source: FundingSource;
 }
@@ -192,15 +197,18 @@ export interface Ppmp {
 export interface PriceList {
     id: number;
     item_number: number;
+    sort_order: number;
     description: string;
     unit_of_measurement: string;
     price: string;
-    chart_of_account_id: number;
-    ppmp_category_id: number;
     created_at: string | null;
     updated_at: string | null;
-    category?: PpmpCategory;
+
+    ppmp_category_id: number;
+    chart_of_account_id: number;
+
     chart_of_account?: ChartOfAccount;
+    category?: PpmpCategory;
 }
 
 export interface PpmpCategory {
@@ -208,6 +216,8 @@ export interface PpmpCategory {
     name: string;
     created_at: string | null;
     updated_at: string | null;
+
+    chart_of_account_id: number;
 }
 
 export interface AipSummary {

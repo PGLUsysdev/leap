@@ -4,18 +4,33 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-import type { Ppmp, PpmpCategory, ChartOfAccount } from '@/types/global';
+import type {
+    Ppmp,
+    PriceList,
+    PpmpCategory,
+    ChartOfAccount,
+    AipEntry,
+    FundingSource,
+} from '@/types/global';
 
 interface ExportToExcelProps {
     filteredPpmpItems: Ppmp[];
+    priceLists: PriceList[];
     ppmpCategories: PpmpCategory[];
     chartOfAccounts: ChartOfAccount[];
+    aipEntry: AipEntry;
+    fundingSources: FundingSource[];
+    selectedFundingSource: number;
 }
 
 export async function exportToExcel({
     filteredPpmpItems,
+    priceLists,
     ppmpCategories,
     chartOfAccounts,
+    aipEntry,
+    fundingSources,
+    selectedFundingSource,
 }: ExportToExcelProps) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('PPMP');
@@ -74,8 +89,10 @@ export async function exportToExcel({
     // processing data
     const groupedByCategory = filteredPpmpItems.reduce(
         (acc, item) => {
-            const key =
-                item.ppmp_price_list?.category?.id?.toString() || 'undefined';
+            const priceList = priceLists.find(
+                (pl) => pl.id === item.ppmp_price_list_id,
+            );
+            const key = priceList?.ppmp_category_id?.toString() || 'undefined';
             if (!acc[key]) {
                 acc[key] = [];
             }
@@ -88,8 +105,11 @@ export async function exportToExcel({
         Object.entries(groupedByCategory).map(([key, value]) => {
             const subGrouped = value.reduce(
                 (acc, item) => {
+                    const priceList = priceLists.find(
+                        (pl) => pl.id === item.ppmp_price_list_id,
+                    );
                     const subKey =
-                        item.ppmp_price_list?.chart_of_account_id?.toString() ||
+                        priceList?.chart_of_account_id?.toString() ||
                         'undefined';
                     if (!acc[subKey]) {
                         acc[subKey] = [];
@@ -140,18 +160,19 @@ export async function exportToExcel({
                 const groupStartRow = currentRow;
 
                 items.forEach((item) => {
+                    const priceList = priceLists.find(
+                        (pl) => pl.id === item.ppmp_price_list_id,
+                    );
                     worksheet.addRow({
                         expenseAccount: chartOfAccounts.find((account) => {
                             return (
-                                account.id ===
-                                item.ppmp_price_list?.chart_of_account_id
+                                account.id === priceList?.chart_of_account_id
                             );
                         })?.account_title,
-                        itemNo: item.ppmp_price_list?.item_number,
-                        description: item.ppmp_price_list?.description,
-                        unitOfMeasurement:
-                            item.ppmp_price_list?.unit_of_measurement,
-                        price: Number(item.ppmp_price_list?.price),
+                        itemNo: priceList?.item_number,
+                        description: priceList?.description,
+                        unitOfMeasurement: priceList?.unit_of_measurement,
+                        price: Number(priceList?.price),
                         totalQuantity: {
                             formula: `SUM(H${currentRow}, J${currentRow}, L${currentRow}, N${currentRow}, P${currentRow}, R${currentRow}, T${currentRow}, V${currentRow}, X${currentRow}, Z${currentRow}, AB${currentRow}, AD${currentRow})`,
                         },
@@ -370,9 +391,12 @@ export async function exportToExcel({
         vertical: 'middle',
     };
 
-    fundingSource.value = 'FUNDING SOURCE';
-    aipRefCode.value = 'AIP REF. CODE';
-    ppaDesc.value = 'PPA DESCRIPTION';
+    const selectedFunding = fundingSources.find(
+        (fs) => fs.id === selectedFundingSource,
+    );
+    fundingSource.value = `FUNDING SOURCE: ${selectedFunding?.code || 'N/A'}`;
+    aipRefCode.value = `AIP REF. CODE: ${aipEntry?.ppa?.full_code || 'N/A'}`;
+    ppaDesc.value = `PPA DESCRIPTION: ${aipEntry?.ppa?.name || 'N/A'}`;
     headerTitle.value = 'PROVINCIAL GOVERNMENT OF LA UNION';
     headerSubTitle.value = 'PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY 2026';
 
@@ -421,8 +445,12 @@ import { centuryGothicBoldBase64 } from '@/fonts/CenturyGothicBold';
 
 export async function exportToPrint({
     filteredPpmpItems,
+    priceLists,
     ppmpCategories,
     chartOfAccounts,
+    aipEntry,
+    fundingSources,
+    selectedFundingSource,
 }: ExportToExcelProps) {
     const longBondPaper = [8.5, 13];
     const convertInchToMm = (inch) => inch.map((value) => value * 25.4);
@@ -438,12 +466,18 @@ export async function exportToPrint({
 
     doc.setFont('CenturyGothic');
 
+    const selectedFunding = fundingSources.find(
+        (fs) => fs.id === selectedFundingSource,
+    );
+
     const tableBody = [];
 
     // --- DATA PREPARATION ---
     const groupedByCategory = filteredPpmpItems.reduce((acc, item) => {
-        const key =
-            item.ppmp_price_list?.category?.id?.toString() || 'undefined';
+        const priceList = priceLists.find(
+            (pl) => pl.id === item.ppmp_price_list_id,
+        );
+        const key = priceList?.ppmp_category_id?.toString() || 'undefined';
         if (!acc[key]) acc[key] = [];
         acc[key].push(item);
         return acc;
@@ -463,9 +497,11 @@ export async function exportToPrint({
         });
 
         const accounts = items.reduce((acc, item) => {
+            const priceList = priceLists.find(
+                (pl) => pl.id === item.ppmp_price_list_id,
+            );
             const key =
-                item.ppmp_price_list?.chart_of_account_id?.toString() ||
-                'undefined';
+                priceList?.chart_of_account_id?.toString() || 'undefined';
             if (!acc[key]) acc[key] = [];
             acc[key].push(item);
             return acc;
@@ -489,7 +525,10 @@ export async function exportToPrint({
             const monthlyTotals = Array(12).fill(0);
 
             accountItems.forEach((item) => {
-                const price = Number(item.ppmp_price_list?.price || 0);
+                const priceList = priceLists.find(
+                    (pl) => pl.id === item.ppmp_price_list_id,
+                );
+                const price = Number(priceList?.price || 0);
 
                 // Array of monthly amounts to accumulate
                 const monthlyAmts = [
@@ -534,9 +573,9 @@ export async function exportToPrint({
                     isItem: true,
                     data: [
                         accountTitle,
-                        item.ppmp_price_list?.item_number,
-                        item.ppmp_price_list?.description,
-                        item.ppmp_price_list?.unit_of_measurement,
+                        priceList?.item_number,
+                        priceList?.description,
+                        priceList?.unit_of_measurement,
                         price.toLocaleString(),
                         totalQty,
                         totalAmt.toLocaleString(),
@@ -629,7 +668,7 @@ export async function exportToPrint({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: 'FUNDING SOURCE',
+                    content: `FUNDING SOURCE: ${selectedFunding?.code || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -642,7 +681,7 @@ export async function exportToPrint({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: 'AIP REF. CODE',
+                    content: `AIP REF. CODE: ${aipEntry?.ppa?.full_code || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -667,7 +706,7 @@ export async function exportToPrint({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: 'PPA DESCRIPTION',
+                    content: `PPA DESCRIPTION: ${aipEntry?.ppa?.name || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -789,8 +828,12 @@ export async function exportToPrint({
 
 export async function exportToPDF({
     filteredPpmpItems,
+    priceLists,
     ppmpCategories,
     chartOfAccounts,
+    aipEntry,
+    fundingSources,
+    selectedFundingSource,
 }: ExportToExcelProps) {
     const longBondPaper = [8.5, 13];
     const convertInchToMm = (inch) => inch.map((value) => value * 25.4);
@@ -806,12 +849,18 @@ export async function exportToPDF({
 
     doc.setFont('CenturyGothic');
 
+    const selectedFunding = fundingSources.find(
+        (fs) => fs.id === selectedFundingSource,
+    );
+
     const tableBody = [];
 
     // --- DATA PREPARATION ---
     const groupedByCategory = filteredPpmpItems.reduce((acc, item) => {
-        const key =
-            item.ppmp_price_list?.category?.id?.toString() || 'undefined';
+        const priceList = priceLists.find(
+            (pl) => pl.id === item.ppmp_price_list_id,
+        );
+        const key = priceList?.ppmp_category_id?.toString() || 'undefined';
         if (!acc[key]) acc[key] = [];
         acc[key].push(item);
         return acc;
@@ -831,9 +880,11 @@ export async function exportToPDF({
         });
 
         const accounts = items.reduce((acc, item) => {
+            const priceList = priceLists.find(
+                (pl) => pl.id === item.ppmp_price_list_id,
+            );
             const key =
-                item.ppmp_price_list?.chart_of_account_id?.toString() ||
-                'undefined';
+                priceList?.chart_of_account_id?.toString() || 'undefined';
             if (!acc[key]) acc[key] = [];
             acc[key].push(item);
             return acc;
@@ -857,7 +908,10 @@ export async function exportToPDF({
             const monthlyTotals = Array(12).fill(0);
 
             accountItems.forEach((item) => {
-                const price = Number(item.ppmp_price_list?.price || 0);
+                const priceList = priceLists.find(
+                    (pl) => pl.id === item.ppmp_price_list_id,
+                );
+                const price = Number(priceList?.price || 0);
 
                 // Array of monthly amounts to accumulate
                 const monthlyAmts = [
@@ -902,9 +956,9 @@ export async function exportToPDF({
                     isItem: true,
                     data: [
                         accountTitle,
-                        item.ppmp_price_list?.item_number,
-                        item.ppmp_price_list?.description,
-                        item.ppmp_price_list?.unit_of_measurement,
+                        priceList?.item_number,
+                        priceList?.description,
+                        priceList?.unit_of_measurement,
                         price.toLocaleString(),
                         totalQty,
                         totalAmt.toLocaleString(),
@@ -997,7 +1051,7 @@ export async function exportToPDF({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: 'FUNDING SOURCE',
+                    content: `FUNDING SOURCE: ${selectedFunding?.code || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -1010,7 +1064,7 @@ export async function exportToPDF({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: 'AIP REF. CODE',
+                    content: `AIP REF. CODE: ${aipEntry?.ppa?.full_code || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],
@@ -1035,7 +1089,7 @@ export async function exportToPDF({
             [
                 { content: '', styles: { fillColor: [146, 208, 80] } },
                 {
-                    content: 'PPA DESCRIPTION',
+                    content: `PPA DESCRIPTION: ${aipEntry?.ppa?.name || 'N/A'}`,
                     colSpan: 6,
                     styles: {
                         fillColor: [146, 208, 80],

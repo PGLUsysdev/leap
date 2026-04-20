@@ -23,36 +23,94 @@ class PpmpController extends Controller
      */
     public function index(FiscalYear $fiscalYear, AipEntry $aipEntry)
     {
-        $ppmpItems = Ppmp::where('aip_entry_id', $aipEntry->id)
-            ->with([
-                'fundingSource', // Direct relationship
-                'ppmpPriceList.category', // Nested relationships
-                'ppmpPriceList.chartOfAccount',
+        // $priceLists = Ppmp::where('aip_entry_id', $aipEntry->id)
+        //     ->with([
+        //         'fundingSource', // Direct relationship
+        //         'ppmpPriceList.category', // Nested relationships
+        //         'ppmpPriceList.chartOfAccount',
+        //     ])
+        //     ->get();
+
+        // $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
+        //     'MOOE',
+        //     'CO',
+        // ])
+        //     ->with(['ppmpPriceLists.category'])
+        //     ->get();
+
+        $selectedAipEntry = AipEntry::with(['ppa'])->find($aipEntry->id);
+
+        $ppmps = Ppmp::where('aip_entry_id', $aipEntry->id)
+            ->select([
+                'id',
+                'jan_qty',
+                'jan_amount',
+                'feb_qty',
+                'feb_amount',
+                'mar_qty',
+                'mar_amount',
+                'apr_qty',
+                'apr_amount',
+                'may_qty',
+                'may_amount',
+                'jun_qty',
+                'jun_amount',
+                'jul_qty',
+                'jul_amount',
+                'aug_qty',
+                'aug_amount',
+                'sep_qty',
+                'sep_amount',
+                'oct_qty',
+                'oct_amount',
+                'nov_qty',
+                'nov_amount',
+                'dec_qty',
+                'dec_amount',
+                'ppmp_price_list_id',
+                'funding_source_id',
             ])
             ->get();
+
+        $priceLists = PpmpPriceList::select([
+            'id',
+            'item_number',
+            'sort_order',
+            'description',
+            'unit_of_measurement',
+            'price',
+            'ppmp_category_id',
+            'chart_of_account_id',
+        ])->get();
 
         $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
             'MOOE',
             'CO',
-        ])
-            ->with(['ppmpPriceLists.category'])
-            ->get();
+        ])->get();
 
         $ppmpCategories = PpmpCategory::all();
 
-        $ppaFundingSources = PpaFundingSource::with('fundingSource')
-            ->where('aip_entry_id', $aipEntry->id)
-            ->get();
+        // $ppaFundingSources = PpaFundingSource::with('fundingSource')
+        //     ->where('aip_entry_id', $aipEntry->id)
+        //     ->get();
 
-        $selectedAipEntry = AipEntry::with(['ppa'])->find($aipEntry->id);
+        $fundingSources = FundingSource::whereHas(
+            'ppaFundingSources',
+            function ($query) use ($aipEntry) {
+                $query->where('aip_entry_id', $aipEntry->id);
+            },
+        )->get();
 
         return Inertia::render('ppmp/index', [
             'fiscalYear' => $fiscalYear,
             'aipEntry' => $selectedAipEntry,
-            'ppmpItems' => $ppmpItems,
+
+            'ppmps' => $ppmps,
+            'priceLists' => $priceLists,
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
-            'fundingSources' => $ppaFundingSources,
+            'fundingSources' => $fundingSources,
+
             'initialChoice' => request()->query('choice'),
             'initialFund' => request()->query('fund'),
         ]);

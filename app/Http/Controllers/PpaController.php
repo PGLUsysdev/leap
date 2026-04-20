@@ -31,39 +31,6 @@ class PpaController extends Controller
         };
     }
 
-    /**
-     * Display a listing of the resource.
-     */
-    // public function index()
-    // {
-    //     $userOfficeId = Auth::user()->office_id;
-
-    //     return Inertia::render('ppa/index', [
-    //         // Wrap these in closures!
-    //         'ppaTree' => fn() => Ppa::where('office_id', $userOfficeId)
-    //             ->whereNull('parent_id')
-    //             ->orderBy('sort_order')
-    //             ->with([
-    //                 'office',
-    //                 'children' => fn($q) => $q->orderBy('sort_order'),
-    //                 'children.office',
-    //                 'children.children' => fn($q) => $q->orderBy('sort_order'),
-    //                 'children.children.office',
-    //                 'children.children.children' => fn($q) => $q->orderBy(
-    //                     'sort_order',
-    //                 ),
-    //                 'children.children.children.office',
-    //             ])
-    //             ->get(),
-
-    //         'offices' => fn() => Office::with([
-    //             'sector',
-    //             'lguLevel',
-    //             'officeType',
-    //         ])->get(),
-    //     ]);
-    // }
-
     public function index()
     {
         $userOfficeId = Auth::user()->office_id;
@@ -102,6 +69,46 @@ class PpaController extends Controller
             ])->get(),
         ]);
     }
+
+    // public function index()
+    // {
+    //     $userOfficeId = Auth::user()->office_id;
+
+    //     return Inertia::render('ppa/index', [
+    //         // Send a simple, flat list of PPAs
+    //         'ppas' => fn() => Ppa::where('office_id', $userOfficeId)
+    //             ->orderBy('sort_order')
+    //             ->get(),
+
+    //         // Send a simple, flat list of Offices
+    //         'offices' => fn() => Office::all(),
+
+    //         // Send the "Support" tables separately so JS can map them
+    //         'sectors' => fn() => Sector::all(),
+    //         'lguLevels' => fn() => LguLevel::all(),
+    //         'officeTypes' => fn() => OfficeType::all(),
+    //     ]);
+    // }
+
+    // public function index()
+    // {
+    //     // $userOfficeId = Auth::user()->office_id;
+
+    //     return Inertia::render('ppa/index', [
+    //         // toBase() returns raw StdClass objects, much faster than Models
+    //         'ppas' => fn() => Ppa::select('id', 'name')->get(),
+
+    //         'offices' => fn() => Office::select('id', 'name')->get(),
+
+    //         'sectors' => fn() => Sector::select('id', 'name')->get(),
+
+    //         'lguLevels' => fn() => LguLevel::select('id', 'name')
+    //         ->get(),
+
+    //         'officeTypes' => fn() => OfficeType::select('id', 'name')
+    //         ->get(),
+    //     ]);
+    // }
 
     /**
      * Show the form for creating a new resource.

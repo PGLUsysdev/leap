@@ -23,7 +23,7 @@ export default function PriceListPage({
     chartOfAccounts,
     ppmpCategory,
 }: PriceListPageProps) {
-    console.log(priceList);
+    // console.log(priceList);
     // console.log(chartOfAccounts);
     // console.log(ppmpCategory);
 
@@ -35,7 +35,7 @@ export default function PriceListPage({
     const [error, setError] = useState<string | null>(null);
     const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
 
-    console.log(selectedPriceList);
+    // console.log(selectedPriceList);
 
     function handleAdd() {
         setSelectedPriceList(null);

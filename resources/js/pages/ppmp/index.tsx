@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -40,7 +40,8 @@ import type {
     ChartOfAccount,
     AipEntry,
     PpmpCategory,
-    PpaFundingSource,
+    FundingSource,
+    PriceList,
 } from '@/types/global';
 import {
     exportToExcel,
@@ -51,10 +52,11 @@ import {
 interface PpmpPageProps {
     fiscalYear: FiscalYear;
     aipEntry: AipEntry;
-    ppmpItems: Ppmp[];
+    ppmps: Ppmp[];
+    priceLists: PriceList[];
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
-    fundingSources: PpaFundingSource[];
+    fundingSources: FundingSource[];
     initialChoice: 'MOOE' | 'CO';
     initialFund: number;
 }
@@ -62,7 +64,8 @@ interface PpmpPageProps {
 export default function PpmpPage({
     fiscalYear,
     aipEntry,
-    ppmpItems,
+    ppmps,
+    priceLists,
     chartOfAccounts,
     ppmpCategories,
     fundingSources,
@@ -70,14 +73,12 @@ export default function PpmpPage({
     initialFund,
 }: PpmpPageProps) {
     console.log({
-        fiscalYear,
         aipEntry,
-        ppmpItems,
-        chartOfAccounts,
-        ppmpCategories,
-        fundingSources,
-        initialChoice,
-        initialFund,
+        //     priceLists,
+        //     chartOfAccounts,
+        //     ppmpCategories,
+        //     ppmps,
+        //     fundingSources,
     });
 
     const [open, setOpen] = useState(false);
@@ -91,11 +92,6 @@ export default function PpmpPage({
     const [selectedExpenseClass, setSelectedExpenseClass] = useState<string>(
         initialChoice || 'ALL',
     );
-
-    // console.log(aipEntry);
-    // console.log(ppmpItems);
-    // console.log(chartOfAccounts);
-    console.log(initialChoice);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
@@ -111,28 +107,43 @@ export default function PpmpPage({
         setSelectedFundingSource(id);
     }
 
-    const filteredPpmpItems = ppmpItems.filter((ppmpItem) => {
-        // 1. Check Funding Source (if 0, it passes everything)
+    const filteredPpmpItems = ppmps.filter((ppmp) => {
         const matchesFunding =
             selectedFundingSource === 0 ||
-            ppmpItem.funding_source.id === selectedFundingSource;
+            ppmp.funding_source_id === selectedFundingSource;
 
-        // 2. Check Expense Class (if 'ALL', it passes everything)
+        const priceList = priceLists.find(
+            (pl) => pl.id === ppmp.ppmp_price_list_id,
+        );
+
+        const chartOfAccount = chartOfAccounts.find(
+            (coa) => coa.id === priceList?.chart_of_account_id,
+        );
+
         const matchesExpenseClass =
             selectedExpenseClass === 'ALL' ||
-            ppmpItem.ppmp_price_list?.chart_of_account?.expense_class ===
-                selectedExpenseClass;
+            chartOfAccount?.expense_class === selectedExpenseClass;
 
-        // Item must satisfy both conditions
         return matchesFunding && matchesExpenseClass;
     });
 
-    const filteredChartOfAccounts =
-        selectedExpenseClass === 'ALL'
-            ? chartOfAccounts
-            : chartOfAccounts.filter(
-                  (acc) => acc.expense_class === selectedExpenseClass,
-              );
+    const processedData = useMemo(() => {
+        return filteredPpmpItems.map((item) => ({
+            ...item,
+            priceListDescription:
+                priceLists?.find((pl) => pl.id === item.ppmp_price_list_id)
+                    ?.description || '',
+        }));
+    }, [filteredPpmpItems, priceLists]);
+
+    console.log(processedData);
+
+    // const filteredChartOfAccounts =
+    //     selectedExpenseClass === 'ALL'
+    //         ? chartOfAccounts
+    //         : chartOfAccounts.filter(
+    //               (acc) => acc.expense_class === selectedExpenseClass,
+    //           );
 
     function handleDeleteDialogOpen(source: Ppmp) {
         setSelectedSource(source);
@@ -194,32 +205,34 @@ export default function PpmpPage({
 
                 <DataTable
                     columns={columns}
-                    data={filteredPpmpItems}
+                    data={processedData}
+                    // data={ppmps}
                     withSearch={true}
                     // onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                     withFooter={true}
                     negativeHeight={9.9}
+                    meta={{
+                        priceLists: priceLists,
+                        chartOfAccounts: chartOfAccounts,
+                        fundingSources: fundingSources,
+                    }}
                 >
                     <div className="flex gap-2">
                         <Select
                             onValueChange={handleExpenseClassChange}
                             value={selectedExpenseClass}
                         >
-                            <SelectTrigger className="w-full max-w-40">
+                            <SelectTrigger className="w-full max-w-40 min-w-30">
                                 <SelectValue placeholder="Expense Class" />
                             </SelectTrigger>
+
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Expense Class</SelectLabel>
-                                    <SelectItem value="MOOE">
-                                        {/* Maintenance and Other Operating Expenses */}
-                                        (MOOE)
-                                    </SelectItem>
-                                    <SelectItem value="CO">
-                                        {/* Capital Outlay  */}
-                                        (CO)
-                                    </SelectItem>
+
+                                    <SelectItem value="MOOE">MOOE</SelectItem>
+                                    <SelectItem value="CO">CO</SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
@@ -228,22 +241,39 @@ export default function PpmpPage({
                             onValueChange={handleFundingSourceChange}
                             defaultValue={String(selectedFundingSource)}
                         >
-                            <SelectTrigger className="w-full max-w-48">
-                                <SelectValue placeholder="Select funding source" />
+                            <SelectTrigger className="w-full max-w-48 min-w-30">
+                                <SelectValue placeholder="Select funding source">
+                                    {selectedFundingSource && (
+                                        <span>
+                                            {
+                                                fundingSources.find(
+                                                    (fs) =>
+                                                        fs.id ===
+                                                        selectedFundingSource,
+                                                )?.code
+                                            }
+                                        </span>
+                                    )}
+                                </SelectValue>
                             </SelectTrigger>
 
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Funding Sources</SelectLabel>
-
                                     {fundingSources.map((fs) => (
                                         <SelectItem
-                                            key={fs.funding_source?.id}
-                                            value={String(
-                                                fs.funding_source?.id,
-                                            )}
+                                            key={fs.id}
+                                            value={String(fs.id)}
+                                            className="gap-4"
                                         >
-                                            {fs.funding_source?.title}
+                                            <div className="flex gap-4">
+                                                <span className="bg-muted font-mono">
+                                                    {fs.code}
+                                                </span>
+                                                <div className="w-80">
+                                                    {fs.title}
+                                                </div>
+                                            </div>
                                         </SelectItem>
                                     ))}
                                 </SelectGroup>
@@ -264,8 +294,12 @@ export default function PpmpPage({
                                             selectedFundingSource
                                                 ? exportToPrint({
                                                       filteredPpmpItems,
+                                                      priceLists,
                                                       ppmpCategories,
                                                       chartOfAccounts,
+                                                      aipEntry,
+                                                      fundingSources,
+                                                      selectedFundingSource,
                                                   })
                                                 : setOpenAlert(true)
                                         }
@@ -278,8 +312,12 @@ export default function PpmpPage({
                                             selectedFundingSource
                                                 ? exportToPDF({
                                                       filteredPpmpItems,
+                                                      priceLists,
                                                       ppmpCategories,
                                                       chartOfAccounts,
+                                                      aipEntry,
+                                                      fundingSources,
+                                                      selectedFundingSource,
                                                   })
                                                 : setOpenAlert(true)
                                         }
@@ -292,8 +330,12 @@ export default function PpmpPage({
                                             selectedFundingSource
                                                 ? exportToExcel({
                                                       filteredPpmpItems,
+                                                      priceLists,
                                                       ppmpCategories,
                                                       chartOfAccounts,
+                                                      aipEntry,
+                                                      fundingSources,
+                                                      selectedFundingSource,
                                                   })
                                                 : setOpenAlert(true)
                                         }
@@ -314,7 +356,8 @@ export default function PpmpPage({
             <PpmpFormDialog
                 open={open}
                 onOpenChange={setOpen}
-                chartOfAccounts={filteredChartOfAccounts}
+                chartOfAccounts={chartOfAccounts}
+                priceLists={priceLists}
                 ppmpCategories={ppmpCategories}
                 selectedEntry={aipEntry}
                 fundingSources={fundingSources}

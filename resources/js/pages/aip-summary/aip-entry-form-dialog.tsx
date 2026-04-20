@@ -787,79 +787,93 @@ export default function AipEntryFormDialog({
                                                                 </TableCell>
 
                                                                 <TableCell>
-                                                                    <DropdownMenu>
-                                                                        <DropdownMenuTrigger
-                                                                            asChild
-                                                                        >
-                                                                            <Button
-                                                                                size="icon"
-                                                                                disabled={
-                                                                                    !isEdit ||
-                                                                                    !watchedSources?.[
-                                                                                        index
-                                                                                    ]
-                                                                                        ?.funding_source_id ||
-                                                                                    !watchedSources?.[
-                                                                                        index
-                                                                                    ]
-                                                                                        ?.id
-                                                                                }
-                                                                                title="Manage PPMP Items"
+                                                                    <div className="flex gap-1">
+                                                                        <DropdownMenu>
+                                                                            <DropdownMenuTrigger
+                                                                                asChild
                                                                             >
-                                                                                <ListPlus className="h-4 w-4" />
-                                                                            </Button>
-                                                                        </DropdownMenuTrigger>
-                                                                        <DropdownMenuContent align="end">
-                                                                            <DropdownMenuLabel>
-                                                                                Project
-                                                                                Procurement
-                                                                            </DropdownMenuLabel>
-                                                                            <DropdownMenuSeparator />
-                                                                            <DropdownMenuItem
-                                                                                onClick={() =>
-                                                                                    handleGoToPpmp(
-                                                                                        watchedSources[
+                                                                                <Button
+                                                                                    size="icon"
+                                                                                    title="Manage PPMP Items"
+                                                                                    disabled={
+                                                                                        !isEdit ||
+                                                                                        !watchedSources?.[
                                                                                             index
                                                                                         ]
-                                                                                            .funding_source_id,
-                                                                                        'MOOE',
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                Manage
-                                                                                MOOE
-                                                                                Items
-                                                                            </DropdownMenuItem>
-                                                                            <DropdownMenuItem
-                                                                                onClick={() =>
-                                                                                    handleGoToPpmp(
-                                                                                        watchedSources[
+                                                                                            ?.funding_source_id ||
+                                                                                        !watchedSources?.[
                                                                                             index
                                                                                         ]
-                                                                                            .funding_source_id,
-                                                                                        'CO',
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                Manage
-                                                                                Capital
-                                                                                Outlay
-                                                                            </DropdownMenuItem>
-                                                                        </DropdownMenuContent>
-                                                                    </DropdownMenu>
+                                                                                            ?.id
+                                                                                    }
+                                                                                >
+                                                                                    <ListPlus />
+                                                                                </Button>
+                                                                            </DropdownMenuTrigger>
 
-                                                                    <Button
-                                                                        type="button"
-                                                                        size="icon"
-                                                                        onClick={() =>
-                                                                            remove(
-                                                                                index,
-                                                                            )
-                                                                        }
-                                                                        title="Remove Funding Source"
-                                                                    >
-                                                                        <Trash2 className="h-4 w-4" />
-                                                                    </Button>
+                                                                            <DropdownMenuContent
+                                                                                align="end"
+                                                                                className="w-auto min-w-max"
+                                                                            >
+                                                                                <DropdownMenuLabel className="whitespace-nowrap">
+                                                                                    Project
+                                                                                    Procurement
+                                                                                </DropdownMenuLabel>
+
+                                                                                <DropdownMenuSeparator />
+
+                                                                                {/* <div className="flex gap-4"> */}
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() =>
+                                                                                        handleGoToPpmp(
+                                                                                            watchedSources[
+                                                                                                index
+                                                                                            ]
+                                                                                                .funding_source_id,
+                                                                                            'MOOE',
+                                                                                        )
+                                                                                    }
+                                                                                    className="whitespace-nowrap"
+                                                                                >
+                                                                                    Manage
+                                                                                    MOOE
+                                                                                    Items
+                                                                                </DropdownMenuItem>
+
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() =>
+                                                                                        handleGoToPpmp(
+                                                                                            watchedSources[
+                                                                                                index
+                                                                                            ]
+                                                                                                .funding_source_id,
+                                                                                            'CO',
+                                                                                        )
+                                                                                    }
+                                                                                    className="whitespace-nowrap"
+                                                                                >
+                                                                                    Manage
+                                                                                    Capital
+                                                                                    Outlay
+                                                                                </DropdownMenuItem>
+                                                                                {/* </div> */}
+                                                                            </DropdownMenuContent>
+                                                                        </DropdownMenu>
+
+                                                                        <Button
+                                                                            type="button"
+                                                                            size="icon"
+                                                                            variant="destructive"
+                                                                            onClick={() =>
+                                                                                remove(
+                                                                                    index,
+                                                                                )
+                                                                            }
+                                                                            title="Remove Funding Source"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </div>
                                                                 </TableCell>
                                                             </TableRow>
                                                         ),

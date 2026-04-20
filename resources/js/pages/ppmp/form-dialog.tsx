@@ -30,7 +30,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type {
     ChartOfAccount,
     PpmpCategory,
-    PpaFundingSource,
+    PriceList,
+    FundingSource,
 } from '@/types/global';
 import { router } from '@inertiajs/react';
 import { Check, ChevronsUpDown } from 'lucide-react';
@@ -44,9 +45,10 @@ interface PpmpFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     chartOfAccounts: ChartOfAccount[];
+    priceLists: PriceList[];
     ppmpCategories: PpmpCategory[];
     selectedEntry: { id: number } | null;
-    fundingSources: PpaFundingSource[];
+    fundingSources: FundingSource[];
     selectedExpenseClass: string;
     selectedFundingSourceId: number;
 }
@@ -55,12 +57,15 @@ export default function PpmpFormDialog({
     open,
     onOpenChange,
     chartOfAccounts,
+    priceLists,
     ppmpCategories,
     selectedEntry = null,
     fundingSources,
     selectedExpenseClass,
     selectedFundingSourceId,
 }: PpmpFormDialogProps) {
+    // console.log(ppmpCategories);
+
     const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
     const [openFundingSourceCommand, setOpenFundingSourceCommand] =
         useState(false);
@@ -88,6 +93,8 @@ export default function PpmpFormDialog({
     const selectedExpenseAccount = form.watch('expenseAccount');
     const selectedCategory = form.watch('category');
 
+    // console.log(selectedExpenseAccount);
+
     // Autofill funding source when dialog opens and a funding source is selected in the parent
     useEffect(() => {
         if (open && selectedFundingSourceId && selectedFundingSourceId !== 0) {
@@ -95,12 +102,30 @@ export default function PpmpFormDialog({
         }
     }, [open, selectedFundingSourceId, form]);
 
+    // Reset form when dialog closes
+    useEffect(() => {
+        if (!open) {
+            form.reset({
+                aip_entry_id: selectedEntry?.id || null,
+                ppmp_price_list_id: null,
+                expenseAccount: null,
+                category: null,
+                itemNo: null,
+                description: null,
+                unitOfMeasurement: null,
+                price: null,
+                isCustomItem: false,
+            });
+        }
+    }, [open, selectedEntry, form]);
+
     const filteredChartOfAccounts = !isCustomItem
         ? selectedCategory
             ? chartOfAccounts.filter((account) =>
-                  account.ppmp_price_lists?.some(
+                  priceLists.some(
                       (priceList) =>
-                          priceList.category?.id === selectedCategory,
+                          priceList.chart_of_account_id === account.id &&
+                          priceList.ppmp_category_id === selectedCategory,
                   ),
               )
             : chartOfAccounts
@@ -108,25 +133,22 @@ export default function PpmpFormDialog({
 
     const filteredPpmpCategories = !isCustomItem
         ? selectedExpenseAccount
-            ? ppmpCategories.filter((cat) =>
-                  chartOfAccounts
-                      .find((acc) => acc.id === selectedExpenseAccount)
-                      ?.ppmp_price_lists?.some(
-                          (priceList) => priceList.category?.id === cat.id,
-                      ),
+            ? ppmpCategories.filter(
+                  (cat) => cat.chart_of_account_id === selectedExpenseAccount,
               )
             : ppmpCategories
         : ppmpCategories;
 
-    // refactor pricelist this later ? maybe
-    const allPriceLists = chartOfAccounts.flatMap(
-        (account) =>
-            account.ppmp_price_lists?.map((priceList) => ({
-                ...priceList,
-                account_title: account.account_title,
-                account_number: account.account_number,
-            })) || [],
-    );
+    const allPriceLists = priceLists.map((priceList) => {
+        const account = chartOfAccounts.find(
+            (acc) => acc.id === priceList.chart_of_account_id,
+        );
+        return {
+            ...priceList,
+            account_title: account?.account_title,
+            account_number: account?.account_number,
+        };
+    });
 
     const filteredPriceLists = !isCustomItem
         ? allPriceLists.filter((priceList) => {
@@ -135,12 +157,14 @@ export default function PpmpFormDialog({
                   : true;
 
               const matchesCategory = selectedCategory
-                  ? priceList.category?.id === selectedCategory
+                  ? priceList.ppmp_category_id === selectedCategory
                   : true;
 
               return matchesAccount && matchesCategory;
           })
         : allPriceLists;
+
+    console.log('filteredPriceLists', filteredPriceLists);
 
     // const isExpenseAccountChangingFromDescription = useRef(false);
 
@@ -181,7 +205,7 @@ export default function PpmpFormDialog({
             description: null,
             unitOfMeasurement: null,
             price: null,
-            fundingSource: null,
+            // fundingSource: null,
             isCustomItem: bool,
         });
     }
@@ -538,15 +562,36 @@ export default function PpmpFormDialog({
                                                                                         field.onChange(
                                                                                             category.id,
                                                                                         );
+
                                                                                         setOpenCategoryCommand(
                                                                                             false,
                                                                                         );
+
                                                                                         if (
                                                                                             !isCustomItem
                                                                                         ) {
                                                                                             form.setValue(
                                                                                                 'description',
                                                                                                 null,
+                                                                                            );
+
+                                                                                            console.log(
+                                                                                                category.chart_of_account_id,
+                                                                                            );
+
+                                                                                            const found =
+                                                                                                chartOfAccounts.find(
+                                                                                                    (
+                                                                                                        coa,
+                                                                                                    ) =>
+                                                                                                        coa.id ===
+                                                                                                        category.chart_of_account_id,
+                                                                                                );
+
+                                                                                            form.setValue(
+                                                                                                'expenseAccount',
+                                                                                                found?.id ||
+                                                                                                    null,
                                                                                             );
                                                                                         }
                                                                                     }}
@@ -706,9 +751,7 @@ export default function PpmpFormDialog({
                                                                                             );
                                                                                             form.setValue(
                                                                                                 'category',
-                                                                                                priceList
-                                                                                                    .category
-                                                                                                    ?.id ||
+                                                                                                priceList.ppmp_category_id ||
                                                                                                     null,
                                                                                                 {
                                                                                                     shouldValidate: true,
@@ -1008,9 +1051,7 @@ export default function PpmpFormDialog({
                                             const selectedFundingSource =
                                                 fundingSources.find(
                                                     (fundingSource) =>
-                                                        fundingSource
-                                                            .funding_source
-                                                            ?.id ===
+                                                        fundingSource.id ===
                                                         field.value,
                                                 );
 
@@ -1048,15 +1089,11 @@ export default function PpmpFormDialog({
                                                                         <span className="truncate">
                                                                             <code className="mr-2 rounded bg-muted p-0.5 text-xs">
                                                                                 {
-                                                                                    selectedFundingSource
-                                                                                        .funding_source
-                                                                                        ?.code
+                                                                                    selectedFundingSource.code
                                                                                 }
                                                                             </code>
                                                                             {
-                                                                                selectedFundingSource
-                                                                                    .funding_source
-                                                                                    ?.title
+                                                                                selectedFundingSource.title
                                                                             }
                                                                         </span>
                                                                     ) : (
@@ -1111,16 +1148,12 @@ export default function PpmpFormDialog({
                                                                                 ) => (
                                                                                     <CommandItem
                                                                                         key={
-                                                                                            fundingSource
-                                                                                                .funding_source
-                                                                                                ?.id
+                                                                                            fundingSource.id
                                                                                         }
-                                                                                        value={`${fundingSource.funding_source?.fund_type} ${fundingSource.funding_source?.code} ${fundingSource.funding_source?.title}`}
+                                                                                        value={`${fundingSource.fund_type} ${fundingSource.code} ${fundingSource.title}`}
                                                                                         onSelect={() => {
                                                                                             field.onChange(
-                                                                                                fundingSource
-                                                                                                    .funding_source
-                                                                                                    ?.id,
+                                                                                                fundingSource.id,
                                                                                             );
                                                                                             setOpenFundingSourceCommand(
                                                                                                 false,
@@ -1130,27 +1163,19 @@ export default function PpmpFormDialog({
                                                                                         <div className="flex w-full items-center justify-between">
                                                                                             <div>
                                                                                                 {
-                                                                                                    fundingSource
-                                                                                                        .funding_source
-                                                                                                        ?.fund_type
+                                                                                                    fundingSource.fund_type
                                                                                                 }
                                                                                                 <code className="mr-2 rounded bg-muted p-1 text-xs">
                                                                                                     {
-                                                                                                        fundingSource
-                                                                                                            .funding_source
-                                                                                                            ?.code
+                                                                                                        fundingSource.code
                                                                                                     }
                                                                                                 </code>
                                                                                                 {
-                                                                                                    fundingSource
-                                                                                                        .funding_source
-                                                                                                        ?.title
+                                                                                                    fundingSource.title
                                                                                                 }
                                                                                             </div>
                                                                                             {field.value ===
-                                                                                                fundingSource
-                                                                                                    .funding_source
-                                                                                                    ?.id && (
+                                                                                                fundingSource.id && (
                                                                                                 <Check className="ml-2 h-4 w-4 opacity-100" />
                                                                                             )}
                                                                                         </div>

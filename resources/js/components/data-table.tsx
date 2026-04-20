@@ -75,6 +75,8 @@ interface DataTableProps<TData extends { id: unknown }> {
     negativeHeight?: number;
     onReorder?: (activeId: string, overId: string) => void;
     onMove?: (data: TData) => void;
+
+    meta: any;
 }
 
 const reorderTree = (data: any[], activeId: string, overId: string): any[] => {
@@ -117,6 +119,7 @@ export function DataTable<TData extends { id: unknown }>({
     negativeHeight = 8,
     onReorder,
     onMove,
+    meta,
 }: DataTableProps<TData>) {
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
@@ -150,6 +153,7 @@ export function DataTable<TData extends { id: unknown }>({
             onOpenPpmpSummary,
             onReorder,
             onMove,
+            meta,
         } as any,
         getSubRows: (row: any) => row.children,
         getExpandedRowModel: getExpandedRowModel(),

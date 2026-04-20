@@ -83,8 +83,6 @@ export default function FormDialog({
     ppmpCategories,
     selectedPriceList,
 }: FormDialogProps) {
-    // console.log(selectedPriceList);
-
     const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
     const [openCategoryCommand, setOpenCategoryCommand] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -106,7 +104,6 @@ export default function FormDialog({
 
     const isCustomCategory = form.watch('isCustomCategory');
 
-    // for the category toggle
     useEffect(() => {
         form.setValue('category', undefined);
         form.setValue('customCategory', '');
@@ -174,6 +171,51 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         }
+    }
+
+    const { watch, setValue } = form;
+    const selectedExpenseAccount = watch('expenseAccount');
+    const selectedCategory = watch('category');
+
+    const categoryId = ppmpCategories.filter((cat) => {
+        return cat.id === selectedCategory;
+    })[0]?.chart_of_account_id;
+
+    const filteredExpenseAccounts = selectedCategory
+        ? chartOfAccounts.filter((coa) => {
+              return coa.id === categoryId;
+          })
+        : chartOfAccounts;
+
+    const filteredCategories = selectedExpenseAccount
+        ? ppmpCategories.filter((pc) => {
+              return pc.chart_of_account_id === selectedExpenseAccount;
+          })
+        : ppmpCategories;
+
+    function handleExpenseAccountChange(id: number) {
+        const categoryExpenseAccount = id
+            ? ppmpCategories.filter((cat) => {
+                  return cat.id === id;
+              })[0]?.chart_of_account_id
+            : 0;
+
+        setValue('expenseAccount', categoryExpenseAccount, {
+            shouldValidate: true,
+            // shouldDirty: true,
+            // shouldTouch: true
+        });
+    }
+
+    function handleReset() {
+        form.reset({
+            expenseAccount: 0,
+            customCategory: undefined,
+            category: undefined,
+            description: '',
+            unitOfMeasurement: '',
+            price: '0.00',
+        });
     }
 
     return (
@@ -253,6 +295,7 @@ export default function FormDialog({
                                                         ) : (
                                                             'Select expense account'
                                                         )}
+
                                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                     </Button>
 
@@ -275,7 +318,7 @@ export default function FormDialog({
                                                                 </CommandEmpty>
 
                                                                 <CommandGroup heading="Chart of Accounts">
-                                                                    {chartOfAccounts.map(
+                                                                    {filteredExpenseAccounts.map(
                                                                         (
                                                                             account,
                                                                         ) => (
@@ -288,6 +331,7 @@ export default function FormDialog({
                                                                                     field.onChange(
                                                                                         account.id,
                                                                                     );
+
                                                                                     setOpenExpenseCommand(
                                                                                         false,
                                                                                     );
@@ -333,7 +377,7 @@ export default function FormDialog({
                             />
                         </div>
 
-                        <Field>
+                        <Field className="md:col-span-2">
                             <FieldContent>
                                 <FieldLabel htmlFor="category-select">
                                     Category
@@ -401,7 +445,7 @@ export default function FormDialog({
                                                                 ? selectedCat.name
                                                                 : 'Select category'}
 
-                                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                            <ChevronsUpDown className="ml-2 opacity-50" />
                                                         </Button>
 
                                                         <CommandDialog
@@ -424,7 +468,7 @@ export default function FormDialog({
                                                                     </CommandEmpty>
 
                                                                     <CommandGroup heading="Categories">
-                                                                        {ppmpCategories.map(
+                                                                        {filteredCategories.map(
                                                                             (
                                                                                 category,
                                                                             ) => (
@@ -441,6 +485,9 @@ export default function FormDialog({
                                                                                         );
                                                                                         setOpenCategoryCommand(
                                                                                             false,
+                                                                                        );
+                                                                                        handleExpenseAccountChange(
+                                                                                            category.id,
                                                                                         );
                                                                                     }}
                                                                                 >
@@ -591,6 +638,10 @@ export default function FormDialog({
                 </form>
 
                 <DialogFooter>
+                    <Button variant="outline" onClick={() => handleReset()}>
+                        Reset
+                    </Button>
+
                     <Button
                         type="button"
                         variant="outline"

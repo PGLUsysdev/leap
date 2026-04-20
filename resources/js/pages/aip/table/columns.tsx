@@ -1,7 +1,12 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, ExternalLink, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { FiscalYear } from '@/types/global';
+import type {
+    ChartOfAccount,
+    FiscalYear,
+    FundingSource,
+    PriceList,
+} from '@/types/global';
 import { Badge } from '@/components/ui/badge';
 import {
     DropdownMenu,
@@ -31,6 +36,11 @@ declare module '@tanstack/react-table' {
         onGeneratePdf?: (data: TData) => void;
         onOpenPpmpSummary?: (data: TData) => void;
         onReorder?: (activeId: string, overId: string) => void;
+        meta?: {
+            priceLists?: PriceList[];
+            chartOfAccounts?: ChartOfAccount[];
+            fundingSources?: FundingSource[];
+        };
     }
 }
 

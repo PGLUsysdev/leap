@@ -35,12 +35,13 @@ class PpmpPriceListController extends Controller
                 'chart_of_account_id',
                 'ppmp_category_id',
             ]);
-        // $chartOfAccounts = ChartOfAccount::all();
+
         $chartOfAccounts = ChartOfAccount::where(
             'expense_class',
             '!=',
             'PS',
         )->get();
+
         $ppmpCategory = PpmpCategory::all();
 
         return Inertia::render('price-list/index', [
