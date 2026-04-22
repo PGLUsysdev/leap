@@ -192,13 +192,23 @@ export default function FormDialog({
             >
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditing ? 'Edit Office' : 'Create New Office'}
+                        {isEditing
+                            ? isEditing && initialData?.parent_id
+                                ? 'Edit Sub Unit'
+                                : 'Edit Office'
+                            : isAddingChild
+                              ? 'Create New Sub Unit'
+                              : 'Create New Office'}
                     </DialogTitle>
 
                     <DialogDescription>
                         {isEditing
-                            ? 'Modify the details of the existing office below.'
-                            : 'Fill in the information to create a new office record.'}
+                            ? isEditing && initialData?.parent_id
+                                ? 'Modify the details of the existing sub unit below.'
+                                : 'Modify the details of the existing office below.'
+                            : isAddingChild
+                              ? 'Fill in the information to create a new sub unit record.'
+                              : 'Fill in the information to create a new office record.'}
                     </DialogDescription>
 
                     {error && (
@@ -666,7 +676,11 @@ export default function FormDialog({
                                                             htmlFor={field.name}
                                                             className="gap-1"
                                                         >
-                                                            Office Name
+                                                            {isAddingChild ||
+                                                            (isEditing &&
+                                                                initialData?.parent_id)
+                                                                ? 'Sub Unit Name'
+                                                                : 'Office Name'}
                                                             <span className="text-red-500">
                                                                 *
                                                             </span>
@@ -821,8 +835,12 @@ export default function FormDialog({
                         ) : isLoading ? (
                             <span className="flex items-center gap-1">
                                 <Spinner />
-                                Creating Office
+                                {isAddingChild
+                                    ? 'Creating Sub Unit'
+                                    : 'Creating Office'}
                             </span>
+                        ) : isAddingChild ? (
+                            'Create Sub Unit'
                         ) : (
                             'Create Office'
                         )}

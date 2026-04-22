@@ -50,6 +50,7 @@ import {
 } from '@/pages/ppmp/utils/export';
 
 import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-dialog';
+import ppmp from '@/routes/ppmp';
 
 interface PpmpPageProps {
     fiscalYear: FiscalYear;
@@ -75,23 +76,13 @@ export default function PpmpPage({
     initialFund,
 }: PpmpPageProps) {
     const { auth } = usePage().props;
-    console.log(auth);
-
-    // console.log({
-    //     aipEntry,
-    //     priceLists,
-    //     chartOfAccounts,
-    //     ppmpCategories,
-    //     ppmps,
-    //     fundingSources,
-    // });
 
     const [open, setOpen] = useState(false);
     const [openAlert, setOpenAlert] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedFundingSource, setSelectedFundingSource] = useState(
+    const [selectedFundingSourceId, setSelectedFundingSourceId] = useState(
         Number(initialFund) || 0,
     );
     const [selectedExpenseClass, setSelectedExpenseClass] = useState<string>(
@@ -113,13 +104,13 @@ export default function PpmpPage({
 
     function handleFundingSourceSelect(value: string) {
         const id = Number(value);
-        setSelectedFundingSource(id);
+        setSelectedFundingSourceId(id);
     }
 
     const filteredPpmpItems = ppmps.filter((ppmp) => {
         const matchesFunding =
-            selectedFundingSource === 0 ||
-            ppmp.funding_source_id === selectedFundingSource;
+            selectedFundingSourceId === 0 ||
+            ppmp.funding_source_id === selectedFundingSourceId;
 
         const priceList = priceLists.find(
             (pl) => pl.id === ppmp.ppmp_price_list_id,
@@ -136,6 +127,13 @@ export default function PpmpPage({
         return matchesFunding && matchesExpenseClass;
     });
 
+    const filteredChartOfAccounts =
+        selectedExpenseClass === 'ALL'
+            ? chartOfAccounts
+            : chartOfAccounts.filter(
+                  (acc) => acc.expense_class === selectedExpenseClass,
+              );
+
     const processedData = useMemo(() => {
         return filteredPpmpItems.map((item) => ({
             ...item,
@@ -144,15 +142,6 @@ export default function PpmpPage({
                     ?.description || '',
         }));
     }, [filteredPpmpItems, priceLists]);
-
-    // console.log(processedData);
-
-    // const filteredChartOfAccounts =
-    //     selectedExpenseClass === 'ALL'
-    //         ? chartOfAccounts
-    //         : chartOfAccounts.filter(
-    //               (acc) => acc.expense_class === selectedExpenseClass,
-    //           );
 
     function handleDeleteDialogOpen(source: Ppmp) {
         setSelectedSource(source);
@@ -179,7 +168,7 @@ export default function PpmpPage({
             window.location.pathname,
             {
                 choice: value,
-                fund: selectedFundingSource,
+                fund: selectedFundingSourceId,
             },
             {
                 preserveState: true,
@@ -190,7 +179,7 @@ export default function PpmpPage({
 
     const handleFundingSourceChange = (value: string) => {
         const id = Number(value);
-        setSelectedFundingSource(id);
+        setSelectedFundingSourceId(id);
 
         router.get(
             window.location.pathname,
@@ -204,8 +193,6 @@ export default function PpmpPage({
             },
         );
     };
-
-    // console.log(filteredPpmpItems);
 
     type PpmpWithFundingSource = Ppmp & FundingSource;
     type PpmpWithFundingSourceAndPriceList = PpmpWithFundingSource & PriceList;
@@ -258,8 +245,6 @@ export default function PpmpPage({
             };
         });
 
-    console.log(flatPpmpWithFsWithPlWithCoa);
-
     const groupedData: Record<
         number,
         PpmpWithFundingSourceAndPriceListAndCoa[]
@@ -267,12 +252,10 @@ export default function PpmpPage({
         (acc, current) => {
             const key = current.chart_of_account_id;
 
-            // If the key doesn't exist in our accumulator, create an empty array
             if (!acc[key]) {
                 acc[key] = [];
             }
 
-            // Push the current object into the group
             acc[key].push(current);
 
             return acc;
@@ -280,11 +263,7 @@ export default function PpmpPage({
         {} as Record<number, PpmpWithFundingSourceAndPriceListAndCoa[]>,
     );
 
-    console.log(groupedData);
-
-    // ---
-
-    const coaWithPriceLists = filteredPpmpItems.reduce(
+    const coaWithPriceLists = ppmps.reduce(
         (
             acc: (ChartOfAccount & { price_lists: (PriceList & Ppmp)[] })[],
             item,
@@ -313,7 +292,139 @@ export default function PpmpPage({
         [],
     );
 
+    const coaWithPriceListsByExpenseClass = ppmps.reduce(
+        (
+            acc: Record<
+                string,
+                (ChartOfAccount & { price_lists: (PriceList & Ppmp)[] })[]
+            >,
+            item,
+        ) => {
+            const priceList = priceLists.find(
+                (pl) => pl.id === item.ppmp_price_list_id,
+            );
+            const coa = chartOfAccounts.find(
+                (coa) => coa.id === priceList?.chart_of_account_id,
+            );
+
+            if (coa && priceList) {
+                const expenseClass = coa.expense_class;
+
+                if (!acc[expenseClass]) {
+                    acc[expenseClass] = [];
+                }
+
+                const existingCoa = acc[expenseClass].find(
+                    (c) => c.id === coa.id,
+                );
+                if (existingCoa) {
+                    existingCoa.price_lists.push({ ...priceList, ...item });
+                } else {
+                    acc[expenseClass].push({
+                        ...coa,
+                        price_lists: [{ ...priceList, ...item }],
+                    });
+                }
+            }
+
+            return acc;
+        },
+        {} as Record<
+            string,
+            (ChartOfAccount & { price_lists: (PriceList & Ppmp)[] })[]
+        >,
+    );
+
+    // console.log(filteredPpmpItems);
+    console.log(ppmps);
     console.log(coaWithPriceLists);
+    console.log(coaWithPriceListsByExpenseClass);
+
+    const selectedFundingSource = fundingSources.find((fs) => {
+        return fs.id === selectedFundingSourceId;
+    });
+
+    const priceListsWithCategory = priceLists.map((pl) => {
+        const category = ppmpCategories.find(
+            (cat) => cat.id === pl.ppmp_category_id,
+        );
+
+        if (!category) {
+            throw new Error(`PPMP category not found for price list ${pl.id}`);
+        }
+
+        return { ...pl, ...category };
+    });
+
+    const ppmpCategoriesWithCoa = ppmpCategories
+        .map((cat) => {
+            const coa = filteredChartOfAccounts.find(
+                (acc) => acc.id === cat.chart_of_account_id,
+            );
+
+            if (!coa) {
+                return null;
+            }
+
+            const {
+                id: coaId,
+                description: coaDescription,
+                account_number: coaAccountNumber,
+                account_title: coaAccountTitle,
+                account_type: coaAccountType,
+                expense_class: coaExpenseClass,
+                ...restCoa
+            } = coa;
+
+            return {
+                ...cat,
+                ...restCoa,
+                coa_id: coaId,
+                coa_description: coaDescription,
+                coa_account_number: coaAccountNumber,
+                coa_account_title: coaAccountTitle,
+                coa_account_type: coaAccountType,
+                coa_expense_class: coaExpenseClass,
+            };
+        })
+        .filter((cat): cat is NonNullable<typeof cat> => cat !== null);
+
+    const priceListsWithCoa = priceLists
+        .map((pl) => {
+            const coa = filteredChartOfAccounts.find(
+                (acc) => acc.id === pl.chart_of_account_id,
+            );
+
+            if (!coa) {
+                return null;
+            }
+
+            const {
+                id: coaId,
+                description: coaDescription,
+                account_number: coaAccountNumber,
+                account_title: coaAccountTitle,
+                account_type: coaAccountType,
+                expense_class: coaExpenseClass,
+                ...restCoa
+            } = coa;
+
+            return {
+                ...pl,
+                ...restCoa,
+                coa_id: coaId,
+                coa_description: coaDescription,
+                coa_account_number: coaAccountNumber,
+                coa_account_title: coaAccountTitle,
+                coa_account_type: coaAccountType,
+                coa_expense_class: coaExpenseClass,
+            };
+        })
+        .filter((pl): pl is NonNullable<typeof pl> => pl !== null);
+
+    // console.log('coa', filteredChartOfAccounts);
+    // console.log('cat', ppmpCategoriesWithCoa);
+    // console.log('pricelist', priceListsWithCoa);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -325,9 +436,7 @@ export default function PpmpPage({
                 <DataTable
                     columns={columns}
                     data={processedData}
-                    // data={ppmps}
                     withSearch={true}
-                    // onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                     withFooter={true}
                     negativeHeight={9.9}
@@ -358,17 +467,17 @@ export default function PpmpPage({
 
                         <Select
                             onValueChange={handleFundingSourceChange}
-                            defaultValue={String(selectedFundingSource)}
+                            defaultValue={String(selectedFundingSourceId)}
                         >
                             <SelectTrigger className="w-full max-w-48 min-w-30">
                                 <SelectValue placeholder="Select funding source">
-                                    {selectedFundingSource && (
+                                    {selectedFundingSourceId && (
                                         <span>
                                             {
                                                 fundingSources.find(
                                                     (fs) =>
                                                         fs.id ===
-                                                        selectedFundingSource,
+                                                        selectedFundingSourceId,
                                                 )?.code
                                             }
                                         </span>
@@ -410,7 +519,7 @@ export default function PpmpPage({
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem
                                         onClick={() =>
-                                            selectedFundingSource
+                                            selectedFundingSourceId
                                                 ? exportToPrint({
                                                       filteredPpmpItems,
                                                       priceLists,
@@ -418,7 +527,7 @@ export default function PpmpPage({
                                                       chartOfAccounts,
                                                       aipEntry,
                                                       fundingSources,
-                                                      selectedFundingSource,
+                                                      selectedFundingSourceId,
                                                       auth,
                                                       fiscalYear,
                                                   })
@@ -430,7 +539,7 @@ export default function PpmpPage({
 
                                     <DropdownMenuItem
                                         onClick={() =>
-                                            selectedFundingSource
+                                            selectedFundingSourceId
                                                 ? exportToPDF({
                                                       filteredPpmpItems,
                                                       priceLists,
@@ -438,7 +547,7 @@ export default function PpmpPage({
                                                       chartOfAccounts,
                                                       aipEntry,
                                                       fundingSources,
-                                                      selectedFundingSource,
+                                                      selectedFundingSourceId,
                                                       auth,
                                                       fiscalYear,
                                                   })
@@ -450,7 +559,7 @@ export default function PpmpPage({
 
                                     <DropdownMenuItem
                                         onClick={() =>
-                                            selectedFundingSource
+                                            selectedFundingSourceId
                                                 ? exportToExcel({
                                                       filteredPpmpItems,
                                                       priceLists,
@@ -458,7 +567,7 @@ export default function PpmpPage({
                                                       chartOfAccounts,
                                                       aipEntry,
                                                       fundingSources,
-                                                      selectedFundingSource,
+                                                      selectedFundingSourceId,
                                                       auth,
                                                       fiscalYear,
                                                   })
@@ -489,13 +598,13 @@ export default function PpmpPage({
             <PpmpFormDialog
                 open={open}
                 onOpenChange={setOpen}
-                chartOfAccounts={chartOfAccounts}
-                priceLists={priceLists}
-                ppmpCategories={ppmpCategories}
+                chartOfAccounts={filteredChartOfAccounts}
+                priceLists={priceListsWithCoa}
+                ppmpCategories={ppmpCategoriesWithCoa}
                 selectedEntry={aipEntry}
                 fundingSources={fundingSources}
                 selectedExpenseClass={selectedExpenseClass}
-                selectedFundingSourceId={selectedFundingSource}
+                selectedFundingSourceId={selectedFundingSourceId}
             />
 
             <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
@@ -523,8 +632,12 @@ export default function PpmpPage({
             <ExpenseAccountSummaryDialog
                 open={openExpenseAccountSummaryDialog}
                 onOpenChange={setOpenExpenseAccountSummaryDialog}
-                // flatPpmpWithFsWithPlWithCoa={flatPpmpWithFsWithPlWithCoa}
-                coaWithPriceLists={coaWithPriceLists}
+                coaWithPriceListsByExpenseClass={
+                    coaWithPriceListsByExpenseClass
+                }
+                aipEntry={aipEntry}
+                fundingSource={selectedFundingSource}
+                auth={auth}
             />
 
             <DeleteDialog

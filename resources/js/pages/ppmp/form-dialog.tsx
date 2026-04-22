@@ -45,8 +45,8 @@ interface PpmpFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     chartOfAccounts: ChartOfAccount[];
-    priceLists: PriceList[];
-    ppmpCategories: PpmpCategory[];
+    priceLists: any[];
+    ppmpCategories: any[];
     selectedEntry: { id: number } | null;
     fundingSources: FundingSource[];
     selectedExpenseClass: string;
@@ -64,8 +64,6 @@ export default function PpmpFormDialog({
     selectedExpenseClass,
     selectedFundingSourceId,
 }: PpmpFormDialogProps) {
-    // console.log(ppmpCategories);
-
     const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
     const [openFundingSourceCommand, setOpenFundingSourceCommand] =
         useState(false);
@@ -93,16 +91,12 @@ export default function PpmpFormDialog({
     const selectedExpenseAccount = form.watch('expenseAccount');
     const selectedCategory = form.watch('category');
 
-    // console.log(selectedExpenseAccount);
-
-    // Autofill funding source when dialog opens and a funding source is selected in the parent
     useEffect(() => {
         if (open && selectedFundingSourceId && selectedFundingSourceId !== 0) {
             form.setValue('fundingSource', selectedFundingSourceId);
         }
     }, [open, selectedFundingSourceId, form]);
 
-    // Reset form when dialog closes
     useEffect(() => {
         if (!open) {
             form.reset({
@@ -143,6 +137,7 @@ export default function PpmpFormDialog({
         const account = chartOfAccounts.find(
             (acc) => acc.id === priceList.chart_of_account_id,
         );
+
         return {
             ...priceList,
             account_title: account?.account_title,
@@ -163,8 +158,6 @@ export default function PpmpFormDialog({
               return matchesAccount && matchesCategory;
           })
         : allPriceLists;
-
-    console.log('filteredPriceLists', filteredPriceLists);
 
     // const isExpenseAccountChangingFromDescription = useRef(false);
 
@@ -212,7 +205,6 @@ export default function PpmpFormDialog({
 
     function onSubmit(data: FormSchemaType) {
         if (isCustomItem) {
-            // console.log('custom item', data);
             // router.post('/ppmp/custom', data, {
             //     onStart: () => setIsLoading(true),
             //     onFinish: () => setIsLoading(false),
@@ -222,8 +214,6 @@ export default function PpmpFormDialog({
             //     preserveState: false,
             // });
         } else {
-            console.log(data);
-
             router.post('/ppmp', data, {
                 onStart: () => setIsLoading(true),
                 onFinish: () => setIsLoading(false),
@@ -575,10 +565,6 @@ export default function PpmpFormDialog({
                                                                                                 null,
                                                                                             );
 
-                                                                                            console.log(
-                                                                                                category.chart_of_account_id,
-                                                                                            );
-
                                                                                             const found =
                                                                                                 chartOfAccounts.find(
                                                                                                     (
@@ -682,6 +668,7 @@ export default function PpmpFormDialog({
                                                                         'description',
                                                                         null,
                                                                     );
+
                                                                     if (
                                                                         !isCustomItem
                                                                     ) {
@@ -720,6 +707,7 @@ export default function PpmpFormDialog({
                                                                         No items
                                                                         found.
                                                                     </CommandEmpty>
+
                                                                     <CommandGroup heading="Procurement Items">
                                                                         {filteredPriceLists.map(
                                                                             (

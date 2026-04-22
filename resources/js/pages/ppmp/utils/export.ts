@@ -21,7 +21,7 @@ interface ExportToExcelProps {
     chartOfAccounts: ChartOfAccount[];
     aipEntry: AipEntry;
     fundingSources: FundingSource[];
-    selectedFundingSource: number;
+    selectedFundingSourceId: number;
     auth: any;
     fiscalYear: FiscalYear;
 }
@@ -33,7 +33,7 @@ export async function exportToExcel({
     chartOfAccounts,
     aipEntry,
     fundingSources,
-    selectedFundingSource,
+    selectedFundingSourceId,
     auth,
     fiscalYear,
 }: ExportToExcelProps) {
@@ -401,7 +401,7 @@ export async function exportToExcel({
     };
 
     const selectedFunding = fundingSources.find(
-        (fs) => fs.id === selectedFundingSource,
+        (fs) => fs.id === selectedFundingSourceId,
     );
     fundingSource.value = `${selectedFunding?.code || 'N/A'}`;
     aipRefCode.value = `${aipEntry?.ppa?.full_code || 'N/A'}`;
@@ -459,7 +459,7 @@ export async function exportToPrint({
     chartOfAccounts,
     aipEntry,
     fundingSources,
-    selectedFundingSource,
+    selectedFundingSourceId,
     auth,
     fiscalYear,
 }: ExportToExcelProps) {
@@ -478,7 +478,7 @@ export async function exportToPrint({
     doc.setFont('CenturyGothic');
 
     const selectedFunding = fundingSources.find(
-        (fs) => fs.id === selectedFundingSource,
+        (fs) => fs.id === selectedFundingSourceId,
     );
 
     const tableBody = [];
@@ -876,7 +876,7 @@ export async function exportToPDF({
     chartOfAccounts,
     aipEntry,
     fundingSources,
-    selectedFundingSource,
+    selectedFundingSourceId,
     auth,
     fiscalYear,
 }: ExportToExcelProps) {
@@ -895,7 +895,7 @@ export async function exportToPDF({
     doc.setFont('CenturyGothic');
 
     const selectedFunding = fundingSources.find(
-        (fs) => fs.id === selectedFundingSource,
+        (fs) => fs.id === selectedFundingSourceId,
     );
 
     const tableBody = [];

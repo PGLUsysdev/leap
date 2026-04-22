@@ -110,7 +110,11 @@ export default function OfficesPage({
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title="Delete Office?"
+                title={
+                    selectedOffice?.parent_id
+                        ? 'Delete Sub Unit?'
+                        : 'Delete Office?'
+                }
                 description={
                     <>
                         Are you sure you want to remove{' '}
@@ -123,7 +127,11 @@ export default function OfficesPage({
                                 <>
                                     {' '}
                                     This will also delete all sub-units under
-                                    this office.
+                                    this{' '}
+                                    {selectedOffice?.parent_id
+                                        ? 'sub unit'
+                                        : 'office'}
+                                    .
                                 </>
                             )}
                     </>
