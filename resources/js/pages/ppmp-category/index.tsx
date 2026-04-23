@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { PpmpCategory } from '@/types/global';
+import type { PpmpCategory, ChartOfAccount } from '@/types/global';
 import { Button } from '@/components/ui/button';
 import FormDialog from '@/pages/ppmp-category/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
@@ -13,18 +13,21 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'PPMP Category', href: '#' }];
 
 interface PpmpCategoryPageProps {
     ppmpCategories: PpmpCategory[];
+    chartOfAccounts: ChartOfAccount[];
 }
 
 export default function PpmpCategoryPage({
     ppmpCategories,
+    chartOfAccounts,
 }: PpmpCategoryPageProps) {
+    console.log(ppmpCategories);
+    console.log(chartOfAccounts);
+
     const [open, setOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] =
         useState<PpmpCategory | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    console.log(selectedCategory);
 
     function handleAdd() {
         setSelectedCategory(null);
@@ -59,12 +62,31 @@ export default function PpmpCategoryPage({
         });
     }
 
+    const categoryWithCoa = ppmpCategories.map((cat) => {
+        const coa = chartOfAccounts.find(
+            (coa) => coa.id === cat.chart_of_account_id,
+        );
+        return {
+            ...cat,
+            ...(coa
+                ? {
+                      account_number: coa.account_number,
+                      account_title: coa.account_title,
+                      account_type: coa.account_type,
+                  }
+                : {}),
+        };
+    });
+
+    console.log(categoryWithCoa);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
                 <DataTable
                     columns={columns}
-                    data={ppmpCategories}
+                    // data={ppmpCategories}
+                    data={categoryWithCoa}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
@@ -79,6 +101,7 @@ export default function PpmpCategoryPage({
                 open={open}
                 setOpen={handleDialogOpenChange}
                 initialData={selectedCategory}
+                chartOfAccounts={chartOfAccounts}
             />
 
             <DeleteDialog

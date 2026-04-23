@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PpmpCategory;
 use App\Http\Requests\StorePpmpCategoryRequest;
 use App\Http\Requests\UpdatePpmpCategoryRequest;
+use App\Models\ChartOfAccount;
 use Inertia\Inertia;
 
 class PpmpCategoryController extends Controller
@@ -16,6 +17,7 @@ class PpmpCategoryController extends Controller
     {
         return Inertia::render('ppmp-category/index', [
             'ppmpCategories' => PpmpCategory::all(),
+            'chartOfAccounts' => ChartOfAccount::all(),
         ]);
     }
 

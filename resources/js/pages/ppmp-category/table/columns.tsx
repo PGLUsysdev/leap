@@ -1,15 +1,33 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { PpmpCategory } from '@/types/global';
+import type { PpmpCategory, ChartOfAccount } from '@/types/global';
 
-const columnHelper = createColumnHelper<PpmpCategory>();
+type PpmpCategoriesWithCoa = PpmpCategory & ChartOfAccount;
+
+const columnHelper = createColumnHelper<PpmpCategoriesWithCoa>();
 
 const columns = [
     columnHelper.accessor('name', {
-        header: 'Name',
+        header: () => <div>Name</div>,
         size: 300,
-        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
+        cell: (value) => <div className="text-wrap">{value.getValue()}</div>,
+    }),
+    columnHelper.accessor('is_non_procurement', {
+        header: () => <div>Procurement Type</div>,
+        size: 300,
+        cell: (value) => (
+            <div className="text-wrap">
+                {value.getValue() ? 'Non-Procurement' : 'Procurement'}
+            </div>
+        ),
+    }),
+    columnHelper.accessor('account_title', {
+        header: () => <div>Account Title</div>,
+        size: 300,
+        cell: ({ getValue }) => (
+            <div className="text-wrap">{getValue() ?? '-'}</div>
+        ),
     }),
     columnHelper.display({
         id: 'action',

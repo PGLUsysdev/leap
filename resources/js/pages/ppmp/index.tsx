@@ -426,6 +426,9 @@ export default function PpmpPage({
     // console.log('cat', ppmpCategoriesWithCoa);
     // console.log('pricelist', priceListsWithCoa);
 
+    // console.log(processedData);
+    console.log(filteredPpmpItems);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">

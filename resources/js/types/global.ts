@@ -214,6 +214,7 @@ export interface PriceList {
 export interface PpmpCategory {
     id: number;
     name: string;
+    is_non_procurement: boolean;
     created_at: string | null;
     updated_at: string | null;
 

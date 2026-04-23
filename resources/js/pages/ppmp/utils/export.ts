@@ -463,6 +463,10 @@ export async function exportToPrint({
     auth,
     fiscalYear,
 }: ExportToExcelProps) {
+    console.log(filteredPpmpItems);
+    console.log(priceLists);
+    console.log(ppmpCategories);
+
     const longBondPaper = [8.5, 13];
     const convertInchToMm = (inch) => inch.map((value) => value * 25.4);
 
@@ -484,173 +488,286 @@ export async function exportToPrint({
     const tableBody = [];
 
     // --- DATA PREPARATION ---
-    const groupedByCategory = filteredPpmpItems.reduce((acc, item) => {
+    // Join filteredPpmpItems with priceLists and ppmpCategories to get is_non_procurement
+    const itemsWithCategory = filteredPpmpItems.map((item) => {
         const priceList = priceLists.find(
             (pl) => pl.id === item.ppmp_price_list_id,
         );
-        const key = priceList?.ppmp_category_id?.toString() || 'undefined';
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(item);
-        return acc;
-    }, {});
+        const category = priceList
+            ? ppmpCategories.find((c) => c.id === priceList.ppmp_category_id)
+            : null;
+        return {
+            ...item,
+            priceList,
+            category,
+            is_non_procurement: category?.is_non_procurement ?? false,
+        };
+    });
 
-    Object.entries(groupedByCategory).forEach(([categoryId, items]) => {
-        const categoryName =
-            ppmpCategories.find((c) => c.id === Number(categoryId))?.name ||
-            'Unknown';
-
-        // Category Row (Gray)
-        tableBody.push({
-            isCategory: true,
-            data: Array(31)
-                .fill('')
-                .map((_, i) => (i === 2 ? categoryName : '')),
-        });
-
-        const accounts = items.reduce((acc, item) => {
-            const priceList = priceLists.find(
-                (pl) => pl.id === item.ppmp_price_list_id,
-            );
-            const key =
-                priceList?.chart_of_account_id?.toString() || 'undefined';
+    // Group by is_non_procurement first
+    const groupedByProcurementType = itemsWithCategory.reduce(
+        (acc, item) => {
+            const key = item.is_non_procurement ? 'true' : 'false';
             if (!acc[key]) acc[key] = [];
             acc[key].push(item);
             return acc;
-        }, {});
+        },
+        {} as Record<string, typeof itemsWithCategory>,
+    );
 
-        Object.entries(accounts).forEach(([accountId, accountItems]) => {
-            const accountTitle =
-                chartOfAccounts.find((a) => a.id === Number(accountId))
-                    ?.account_title || 'Unknown';
+    console.log(groupedByProcurementType);
 
-            // Account Row (Peach)
+    const allProcurementTypeTotals: {
+        type: string;
+        totalAmount: number;
+        monthlyTotals: number[];
+    }[] = [];
+
+    Object.entries(groupedByProcurementType).forEach(
+        ([isNonProcurement, items]: [string, typeof itemsWithCategory]) => {
+            const procurementType =
+                isNonProcurement === 'true'
+                    ? 'NON-PROCUREMENT ITEMS'
+                    : 'PROCUREMENT ITEMS';
+
+            // Initialize procurement type totals
+            let procurementTypeTotalAmount = 0;
+            let procurementTypeMonthlyTotals = Array(12).fill(0);
+
+            // Procurement Type Header Row
             tableBody.push({
-                isAccount: true,
+                isProcurementType: true,
                 data: Array(31)
                     .fill('')
-                    .map((_, i) => (i === 2 ? accountTitle : '')),
+                    .map((_, i) => (i === 2 ? procurementType : '')),
             });
 
-            let groupTotalAmount = 0;
-            // Initialize totals for the 12 month amount columns
-            const monthlyTotals = Array(12).fill(0);
+            // Group by category within procurement type
+            const groupedByCategory = items.reduce((acc: any, item) => {
+                const key = item.category?.id?.toString() || 'undefined';
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(item);
+                return acc;
+            }, {});
 
-            let groupTotalPrice = 0;
-            // groupTotalPrice += price;
+            console.log(groupedByCategory);
 
-            accountItems.forEach((item) => {
-                const priceList = priceLists.find(
-                    (pl) => pl.id === item.ppmp_price_list_id,
-                );
-                const price = Number(priceList?.price || 0);
+            Object.entries(groupedByCategory).forEach(
+                ([categoryId, items]: [string, any]) => {
+                    const categoryName =
+                        ppmpCategories.find((c) => c.id === Number(categoryId))
+                            ?.name || 'Unknown';
 
-                groupTotalPrice += price;
+                    // Category Row (Gray)
+                    tableBody.push({
+                        isCategory: true,
+                        data: Array(31)
+                            .fill('')
+                            .map((_, i) => (i === 2 ? categoryName : '')),
+                    });
 
-                // Array of monthly amounts to accumulate
-                const monthlyAmts = [
-                    item.jan_amount,
-                    item.feb_amount,
-                    item.mar_amount,
-                    item.apr_amount,
-                    item.may_amount,
-                    item.jun_amount,
-                    item.jul_amount,
-                    item.aug_amount,
-                    item.sep_amount,
-                    item.oct_amount,
-                    item.nov_amount,
-                    item.dec_amount,
-                ];
+                    const accounts = items.reduce((acc: any, item: any) => {
+                        const key =
+                            item.priceList?.chart_of_account_id?.toString() ||
+                            'undefined';
+                        if (!acc[key]) acc[key] = [];
+                        acc[key].push(item);
+                        return acc;
+                    }, {});
 
-                const totalQty = [
-                    item.jan_qty,
-                    item.feb_qty,
-                    item.mar_qty,
-                    item.apr_qty,
-                    item.may_qty,
-                    item.jun_qty,
-                    item.jul_qty,
-                    item.aug_qty,
-                    item.sep_qty,
-                    item.oct_qty,
-                    item.nov_qty,
-                    item.dec_qty,
-                ].reduce((a, b) => a + Number(b || 0), 0);
+                    Object.entries(accounts).forEach(
+                        ([accountId, accountItems]) => {
+                            const accountTitle =
+                                chartOfAccounts.find(
+                                    (a) => a.id === Number(accountId),
+                                )?.account_title || 'Unknown';
 
-                const totalAmt = price * totalQty;
-                groupTotalAmount += totalAmt;
+                            // Account Row (Peach)
+                            tableBody.push({
+                                isAccount: true,
+                                data: Array(31)
+                                    .fill('')
+                                    .map((_, i) =>
+                                        i === 2 ? accountTitle : '',
+                                    ),
+                            });
 
-                // Sum up monthly amounts
-                monthlyAmts.forEach((amt, idx) => {
-                    monthlyTotals[idx] += Number(amt || 0);
-                });
+                            let groupTotalAmount = 0;
+                            // Initialize totals for the 12 month amount columns
+                            const monthlyTotals = Array(12).fill(0);
 
-                tableBody.push({
-                    isItem: true,
-                    data: [
-                        accountTitle,
-                        priceList?.item_number,
-                        priceList?.description,
-                        priceList?.unit_of_measurement,
-                        price.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                        }),
-                        totalQty,
-                        totalAmt.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                        }),
-                        item.jan_qty,
-                        item.jan_amount?.toLocaleString(),
-                        item.feb_qty,
-                        item.feb_amount?.toLocaleString(),
-                        item.mar_qty,
-                        item.mar_amount?.toLocaleString(),
-                        item.apr_qty,
-                        item.apr_amount?.toLocaleString(),
-                        item.may_qty,
-                        item.may_amount?.toLocaleString(),
-                        item.jun_qty,
-                        item.jun_amount?.toLocaleString(),
-                        item.jul_qty,
-                        item.jul_amount?.toLocaleString(),
-                        item.aug_qty,
-                        item.aug_amount?.toLocaleString(),
-                        item.sep_qty,
-                        item.sep_amount?.toLocaleString(),
-                        item.oct_qty,
-                        item.oct_amount?.toLocaleString(),
-                        item.nov_qty,
-                        item.nov_amount?.toLocaleString(),
-                        item.dec_qty,
-                        item.dec_amount?.toLocaleString(),
-                    ],
-                });
-            });
+                            let groupTotalPrice = 0;
 
-            // Total Row (Yellow) - Includes Monthly Column Totals
+                            accountItems.forEach((item) => {
+                                const price = Number(
+                                    item.priceList?.price || 0,
+                                );
+
+                                groupTotalPrice += price;
+
+                                // Array of monthly amounts to accumulate
+                                const monthlyAmts = [
+                                    item.jan_amount,
+                                    item.feb_amount,
+                                    item.mar_amount,
+                                    item.apr_amount,
+                                    item.may_amount,
+                                    item.jun_amount,
+                                    item.jul_amount,
+                                    item.aug_amount,
+                                    item.sep_amount,
+                                    item.oct_amount,
+                                    item.nov_amount,
+                                    item.dec_amount,
+                                ];
+
+                                const totalQty = [
+                                    item.jan_qty,
+                                    item.feb_qty,
+                                    item.mar_qty,
+                                    item.apr_qty,
+                                    item.may_qty,
+                                    item.jun_qty,
+                                    item.jul_qty,
+                                    item.aug_qty,
+                                    item.sep_qty,
+                                    item.oct_qty,
+                                    item.nov_qty,
+                                    item.dec_qty,
+                                ].reduce((a, b) => a + Number(b || 0), 0);
+
+                                const totalAmt = price * totalQty;
+                                groupTotalAmount += totalAmt;
+
+                                // Sum up monthly amounts
+                                monthlyAmts.forEach((amt, idx) => {
+                                    monthlyTotals[idx] += Number(amt || 0);
+                                });
+
+                                tableBody.push({
+                                    isItem: true,
+                                    data: [
+                                        accountTitle,
+                                        item.priceList?.item_number,
+                                        item.priceList?.description,
+                                        item.priceList?.unit_of_measurement,
+                                        price.toLocaleString(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        }),
+                                        totalQty,
+                                        totalAmt.toLocaleString(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        }),
+                                        item.jan_qty,
+                                        item.jan_amount?.toLocaleString(),
+                                        item.feb_qty,
+                                        item.feb_amount?.toLocaleString(),
+                                        item.mar_qty,
+                                        item.mar_amount?.toLocaleString(),
+                                        item.apr_qty,
+                                        item.apr_amount?.toLocaleString(),
+                                        item.may_qty,
+                                        item.may_amount?.toLocaleString(),
+                                        item.jun_qty,
+                                        item.jun_amount?.toLocaleString(),
+                                        item.jul_qty,
+                                        item.jul_amount?.toLocaleString(),
+                                        item.aug_qty,
+                                        item.aug_amount?.toLocaleString(),
+                                        item.sep_qty,
+                                        item.sep_amount?.toLocaleString(),
+                                        item.oct_qty,
+                                        item.oct_amount?.toLocaleString(),
+                                        item.nov_qty,
+                                        item.nov_amount?.toLocaleString(),
+                                        item.dec_qty,
+                                        item.dec_amount?.toLocaleString(),
+                                    ],
+                                });
+                            });
+
+                            // Total Row (Yellow) - Includes Monthly Column Totals
+                            tableBody.push({
+                                isTotal: true,
+                                data: Array(31)
+                                    .fill('')
+                                    .map((_, i) => {
+                                        // Label
+                                        if (i === 2) return 'TOTAL';
+
+                                        if (i === 4) {
+                                            return groupTotalPrice.toLocaleString(
+                                                undefined,
+                                                {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                },
+                                            );
+                                        }
+
+                                        // Group Total - This will now always show at least 0.00
+                                        if (i === 6) {
+                                            return groupTotalAmount.toLocaleString(
+                                                undefined,
+                                                {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                },
+                                            );
+                                        }
+
+                                        // Monthly Amount Columns
+                                        const monthAmtCols = [
+                                            8, 10, 12, 14, 16, 18, 20, 22, 24,
+                                            26, 28, 30,
+                                        ];
+                                        if (monthAmtCols.includes(i)) {
+                                            const monthIdx = (i - 8) / 2;
+                                            const value =
+                                                monthlyTotals[monthIdx] || 0; // Fallback to 0 if undefined
+
+                                            // Removed the " > 0 " check so 0 formatted becomes "0.00"
+                                            return value.toLocaleString(
+                                                undefined,
+                                                {
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 2,
+                                                },
+                                            );
+                                        }
+
+                                        return '';
+                                    }),
+                            });
+
+                            // Accumulate account totals into procurement type totals
+                            procurementTypeTotalAmount += groupTotalAmount;
+                            monthlyTotals.forEach((amt, idx) => {
+                                procurementTypeMonthlyTotals[idx] += amt;
+                            });
+                        },
+                    );
+                },
+            );
+
+            // Procurement Type Total Row
             tableBody.push({
-                isTotal: true,
+                isProcurementTypeTotal: true,
                 data: Array(31)
                     .fill('')
                     .map((_, i) => {
-                        // Label
-                        if (i === 2) return 'TOTAL';
+                        if (i === 2) return `TOTAL - FOR ${procurementType}`;
 
-                        if (i === 4) {
-                            return groupTotalPrice.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                            });
-                        }
-
-                        // Group Total - This will now always show at least 0.00
                         if (i === 6) {
-                            return groupTotalAmount.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                            });
+                            return procurementTypeTotalAmount.toLocaleString(
+                                undefined,
+                                {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                },
+                            );
                         }
 
                         // Monthly Amount Columns
@@ -659,9 +776,8 @@ export async function exportToPrint({
                         ];
                         if (monthAmtCols.includes(i)) {
                             const monthIdx = (i - 8) / 2;
-                            const value = monthlyTotals[monthIdx] || 0; // Fallback to 0 if undefined
-
-                            // Removed the " > 0 " check so 0 formatted becomes "0.00"
+                            const value =
+                                procurementTypeMonthlyTotals[monthIdx] || 0;
                             return value.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
@@ -671,7 +787,57 @@ export async function exportToPrint({
                         return '';
                     }),
             });
+
+            // Save procurement type totals for grand total
+            allProcurementTypeTotals.push({
+                type: procurementType,
+                totalAmount: procurementTypeTotalAmount,
+                monthlyTotals: [...procurementTypeMonthlyTotals],
+            });
+        },
+    );
+
+    // GRAND TOTAL Row
+    const grandTotalAmount = allProcurementTypeTotals.reduce(
+        (sum, pt) => sum + pt.totalAmount,
+        0,
+    );
+    const grandMonthlyTotals = Array(12).fill(0);
+    allProcurementTypeTotals.forEach((pt) => {
+        pt.monthlyTotals.forEach((amt, idx) => {
+            grandMonthlyTotals[idx] += amt;
         });
+    });
+
+    tableBody.push({
+        isGrandTotal: true,
+        data: Array(31)
+            .fill('')
+            .map((_, i) => {
+                if (i === 2) return 'GRAND TOTAL - FOR THE AIP/PPA';
+
+                if (i === 6) {
+                    return grandTotalAmount.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    });
+                }
+
+                // Monthly Amount Columns
+                const monthAmtCols = [
+                    8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
+                ];
+                if (monthAmtCols.includes(i)) {
+                    const monthIdx = (i - 8) / 2;
+                    const value = grandMonthlyTotals[monthIdx] || 0;
+                    return value.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    });
+                }
+
+                return '';
+            }),
     });
 
     // console.log(aipEntry);
@@ -830,7 +996,7 @@ export async function exportToPrint({
             }
 
             if (data.section === 'body') {
-                const rowMeta = tableBody[data.row.index];
+                const rowMeta: any = tableBody[data.row.index];
 
                 // Highlight Quantity Columns (Green)
                 const greenCols = [
@@ -841,6 +1007,11 @@ export async function exportToPrint({
                 }
 
                 // Metadata Styling (Bold Categorization)
+                if (rowMeta?.isProcurementType) {
+                    data.cell.styles.fillColor = [255, 255, 255];
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fontSize = 6;
+                }
                 if (rowMeta?.isCategory) {
                     data.cell.styles.fillColor = [208, 206, 206];
                     data.cell.styles.fontStyle = 'bold';
@@ -852,6 +1023,17 @@ export async function exportToPrint({
                 if (rowMeta?.isTotal) {
                     data.cell.styles.fillColor = [254, 242, 203];
                     data.cell.styles.fontStyle = 'bold';
+                }
+                if (rowMeta?.isProcurementTypeTotal) {
+                    data.cell.styles.fillColor = [255, 255, 0];
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fontSize = 5;
+                }
+                if (rowMeta?.isGrandTotal) {
+                    data.cell.styles.fillColor = [0, 176, 80];
+                    data.cell.styles.textColor = [0, 0, 0];
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.fontSize = 5;
                 }
             }
         },

@@ -23,6 +23,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 25,
                 'name' => 'Non-Procurement Items - Traveling Expenses - Local',
                 'chart_of_account_id' => 28,
+                'is_non_procurement' => true,
             ],
 
             // Traveling Expenses - Foreign
@@ -31,6 +32,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Traveling Expenses - Foreign',
                 'chart_of_account_id' => 29,
+                'is_non_procurement' => true,
             ],
 
             // Training Expenses
@@ -38,6 +40,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 27,
                 'name' => 'Non-Procurement Items - Training Expenses',
                 'chart_of_account_id' => 30,
+                'is_non_procurement' => true,
             ],
 
             // Scholarship Grants/Expenses
@@ -45,6 +48,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 28,
                 'name' => 'Non-Procurement Items - Scholarship Grants/Expenses',
                 'chart_of_account_id' => 31,
+                'is_non_procurement' => true,
             ],
 
             // Office Supplies Expenses
@@ -260,6 +264,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 44,
                 'name' => 'Non-Procurement Items - Water ',
                 'chart_of_account_id' => 48,
+                'is_non_procurement' => true,
             ],
 
             // Electricity Expenses
@@ -267,6 +272,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 45,
                 'name' => 'Non-Procurement Items - Electricity ',
                 'chart_of_account_id' => 49,
+                'is_non_procurement' => true,
             ],
 
             // Postage and Courier Services
@@ -281,6 +287,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 46,
                 'name' => 'Non-Procurement Items - Telephone ',
                 'chart_of_account_id' => 51,
+                'is_non_procurement' => true,
             ],
 
             // Internet Subscription Expenses
@@ -302,6 +309,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 49,
                 'name' => 'Non-Procurement Items - Awards and Rewards Expenses',
                 'chart_of_account_id' => 54,
+                'is_non_procurement' => true,
             ],
 
             // Prizes
@@ -309,6 +317,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 50,
                 'name' => 'Non-Procurement Items - Prizes',
                 'chart_of_account_id' => 55,
+                'is_non_procurement' => true,
             ],
 
             // Survey Expenses
@@ -316,6 +325,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 51,
                 'name' => 'Non-Procurement Items - Survey ',
                 'chart_of_account_id' => 56,
+                'is_non_procurement' => true,
             ],
 
             // Research, Exploration and Development Expenses
@@ -419,8 +429,9 @@ class PpmpCategorySeeder extends Seeder
             // Other General Services
             [
                 'id' => 66,
-                'name' => 'Other General Services',
+                'name' => 'Non-Procurement Items - Other General Services',
                 'chart_of_account_id' => 71,
+                'is_non_procurement' => true,
             ],
 
             // Repair and Maintenance - Investment Property
@@ -500,6 +511,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Subsidy to National Government Agenices ',
                 'chart_of_account_id' => 82,
+                'is_non_procurement' => true,
             ],
 
             // Subsidy to Other Local Government Units
@@ -508,6 +520,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Subsidy to Other Local Government Units',
                 'chart_of_account_id' => 83,
+                'is_non_procurement' => true,
             ],
 
             // Subsidy to Other Funds
@@ -515,6 +528,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 79,
                 'name' => 'Non-Procurement Items - Subsidy to Other Funds',
                 'chart_of_account_id' => 84,
+                'is_non_procurement' => true,
             ],
 
             // Subsidy to General Fund Proper/Special Accounts
@@ -523,6 +537,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Subsidy to General Fund Proper/Special Accounts',
                 'chart_of_account_id' => 85,
+                'is_non_procurement' => true,
             ],
 
             // Subsidy to Local Economic Enterprises/Public Utilities
@@ -531,6 +546,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Subsidy to Local Economic Enterprises/Public Utilities',
                 'chart_of_account_id' => 86,
+                'is_non_procurement' => true,
             ],
 
             // Subsidy-Others
@@ -538,6 +554,7 @@ class PpmpCategorySeeder extends Seeder
                 'id' => 82,
                 'name' => 'Non-Procurement Items - Others',
                 'chart_of_account_id' => 87,
+                'is_non_procurement' => true,
             ],
 
             // Transfers of Unspent Current Year DRRM Funds to the Trust Funds
@@ -546,6 +563,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Transfers of Unspent Current Year DRRM Funds to the Trust Funds',
                 'chart_of_account_id' => 88,
+                'is_non_procurement' => true,
             ],
 
             // Transfers for Project Equity Share/LGU Counterpart
@@ -554,6 +572,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Transfers for Project Equity Share/LGU Counterpart',
                 'chart_of_account_id' => 89,
+                'is_non_procurement' => true,
             ],
 
             // Taxes, Duties and Licenses
@@ -628,6 +647,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Membership Dues and Contributions to Organizations',
                 'chart_of_account_id' => 98,
+                'is_non_procurement' => true,
             ],
 
             // Subscription Expenses
@@ -646,6 +666,7 @@ class PpmpCategorySeeder extends Seeder
                 'name' =>
                     'Non-Procurement Items - Other Maintenance and Operating Expenses',
                 'chart_of_account_id' => 101,
+                'is_non_procurement' => true,
             ],
 
             // Capital Outlay ---
@@ -908,6 +929,8 @@ class PpmpCategorySeeder extends Seeder
                 [
                     'name' => $category['name'],
                     'chart_of_account_id' => $category['chart_of_account_id'],
+                    'is_non_procurement' =>
+                        $category['is_non_procurement'] ?? false,
                 ],
             );
         }
