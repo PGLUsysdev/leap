@@ -167,45 +167,35 @@ export default function FormDialog({
                 },
                 // onInvalid: (response) => {
                 //     console.error('Post Server Error:', response);
-                // },
                 onFinish: () => setIsLoading(false),
             });
         }
     }
 
-    const { watch, setValue } = form;
+    const { watch } = form;
     const selectedExpenseAccount = watch('expenseAccount');
     const selectedCategory = watch('category');
 
-    const categoryId = ppmpCategories.filter((cat) => {
-        return cat.id === selectedCategory;
-    })[0]?.chart_of_account_id;
+    const selectedCategoryData = ppmpCategories.find(
+        (cat) => cat.id === selectedCategory,
+    );
+    const categoryExpenseAccountIds =
+        selectedCategoryData?.chart_of_accounts?.map((coa: any) => coa.id) ||
+        [];
 
     const filteredExpenseAccounts = selectedCategory
-        ? chartOfAccounts.filter((coa) => {
-              return coa.id === categoryId;
-          })
+        ? chartOfAccounts.filter((coa) =>
+              categoryExpenseAccountIds.includes(coa.id),
+          )
         : chartOfAccounts;
 
     const filteredCategories = selectedExpenseAccount
         ? ppmpCategories.filter((pc) => {
-              return pc.chart_of_account_id === selectedExpenseAccount;
+              return pc.chart_of_accounts?.some(
+                  (coa: any) => coa.id === selectedExpenseAccount,
+              );
           })
         : ppmpCategories;
-
-    function handleExpenseAccountChange(id: number) {
-        const categoryExpenseAccount = id
-            ? ppmpCategories.filter((cat) => {
-                  return cat.id === id;
-              })[0]?.chart_of_account_id
-            : 0;
-
-        setValue('expenseAccount', categoryExpenseAccount, {
-            shouldValidate: true,
-            // shouldDirty: true,
-            // shouldTouch: true
-        });
-    }
 
     function handleReset() {
         form.reset({
@@ -499,9 +489,6 @@ export default function FormDialog({
                                                                                         );
                                                                                         setOpenCategoryCommand(
                                                                                             false,
-                                                                                        );
-                                                                                        handleExpenseAccountChange(
-                                                                                            category.id,
                                                                                         );
                                                                                     }}
                                                                                 >

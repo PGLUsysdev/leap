@@ -44,7 +44,9 @@ class PpmpController extends Controller
         ])->get();
 
         // $ppmpCategories = PpmpCategory::all();
-        $ppmpCategories = PpmpCategory::with('chartOfAccountPivot')->get();
+        $ppmpCategories = PpmpCategory::with(
+            'chartOfAccounts:id,account_title,account_number',
+        )->get();
 
         $fundingSources = FundingSource::whereHas(
             'ppaFundingSources',

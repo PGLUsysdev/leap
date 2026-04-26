@@ -611,17 +611,17 @@ export default function PpmpPage({
                 </DataTable>
             </div>
 
-            {/* <PpmpFormDialog
+            <PpmpFormDialog
                 open={open}
                 onOpenChange={setOpen}
-                chartOfAccounts={filteredChartOfAccounts}
-                priceLists={priceListsWithCoa}
-                ppmpCategories={ppmpCategoriesWithCoa}
+                chartOfAccounts={chartOfAccounts}
+                priceLists={priceLists}
+                ppmpCategories={ppmpCategories}
                 selectedEntry={aipEntry}
                 fundingSources={fundingSources}
                 selectedExpenseClass={selectedExpenseClass}
                 selectedFundingSourceId={selectedFundingSourceId}
-            /> */}
+            />
 
             <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
                 <AlertDialogContent>

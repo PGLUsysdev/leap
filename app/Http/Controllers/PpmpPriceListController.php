@@ -32,7 +32,9 @@ class PpmpPriceListController extends Controller
             'CO',
         ])->get();
 
-        $ppmpCategory = PpmpCategory::all();
+        $ppmpCategory = PpmpCategory::with(
+            'chartOfAccounts:id,account_title,account_number',
+        )->get();
 
         return Inertia::render('price-list/index', [
             'priceList' => $priceList,

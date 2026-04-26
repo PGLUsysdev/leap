@@ -113,23 +113,55 @@ export default function PpmpFormDialog({
         }
     }, [open, selectedEntry, form]);
 
+    // Clear procurement item when expense account changes
+    useEffect(() => {
+        const currentPriceListId = form.getValues('ppmp_price_list_id');
+        if (currentPriceListId && !isCustomItem) {
+            form.setValue('ppmp_price_list_id', null);
+            form.setValue('itemNo', null);
+            form.setValue('description', null);
+            form.setValue('unitOfMeasurement', null);
+            form.setValue('price', null);
+        }
+    }, [selectedExpenseAccount, form, isCustomItem]);
+
+    // Clear procurement item when category changes
+    useEffect(() => {
+        const currentPriceListId = form.getValues('ppmp_price_list_id');
+        if (currentPriceListId && !isCustomItem) {
+            form.setValue('ppmp_price_list_id', null);
+            form.setValue('itemNo', null);
+            form.setValue('description', null);
+            form.setValue('unitOfMeasurement', null);
+            form.setValue('price', null);
+        }
+    }, [selectedCategory, form, isCustomItem]);
+
+    // Get the chart of accounts associated with the selected category
+    const selectedCategoryData = ppmpCategories.find(
+        (cat) => cat.id === selectedCategory,
+    );
+    const categoryExpenseAccountIds =
+        selectedCategoryData?.chart_of_accounts?.map((coa: any) => coa.id) ||
+        [];
+
+    // Filter expense accounts based on selected category
     const filteredChartOfAccounts = !isCustomItem
         ? selectedCategory
-            ? chartOfAccounts.filter((account) =>
-                  priceLists.some(
-                      (priceList) =>
-                          priceList.chart_of_account_id === account.id &&
-                          priceList.ppmp_category_id === selectedCategory,
-                  ),
+            ? chartOfAccounts.filter((coa) =>
+                  categoryExpenseAccountIds.includes(coa.id),
               )
             : chartOfAccounts
         : chartOfAccounts;
 
+    // Filter categories based on selected expense account
     const filteredPpmpCategories = !isCustomItem
         ? selectedExpenseAccount
-            ? ppmpCategories.filter(
-                  (cat) => cat.chart_of_account_id === selectedExpenseAccount,
-              )
+            ? ppmpCategories.filter((pc) => {
+                  return pc.chart_of_accounts?.some(
+                      (coa: any) => coa.id === selectedExpenseAccount,
+                  );
+              })
             : ppmpCategories
         : ppmpCategories;
 
@@ -384,18 +416,6 @@ export default function PpmpFormDialog({
                                                                                             setOpenExpenseCommand(
                                                                                                 false,
                                                                                             );
-                                                                                            if (
-                                                                                                !isCustomItem
-                                                                                            ) {
-                                                                                                form.setValue(
-                                                                                                    'category',
-                                                                                                    null,
-                                                                                                );
-                                                                                                form.setValue(
-                                                                                                    'description',
-                                                                                                    null,
-                                                                                                );
-                                                                                            }
                                                                                         }}
                                                                                     >
                                                                                         <div className="flex w-full items-center justify-between">
@@ -556,30 +576,6 @@ export default function PpmpFormDialog({
                                                                                         setOpenCategoryCommand(
                                                                                             false,
                                                                                         );
-
-                                                                                        if (
-                                                                                            !isCustomItem
-                                                                                        ) {
-                                                                                            form.setValue(
-                                                                                                'description',
-                                                                                                null,
-                                                                                            );
-
-                                                                                            const found =
-                                                                                                chartOfAccounts.find(
-                                                                                                    (
-                                                                                                        coa,
-                                                                                                    ) =>
-                                                                                                        coa.id ===
-                                                                                                        category.chart_of_account_id,
-                                                                                                );
-
-                                                                                            form.setValue(
-                                                                                                'expenseAccount',
-                                                                                                found?.id ||
-                                                                                                    null,
-                                                                                            );
-                                                                                        }
                                                                                     }}
                                                                                 >
                                                                                     <div className="flex w-full items-center justify-between">
