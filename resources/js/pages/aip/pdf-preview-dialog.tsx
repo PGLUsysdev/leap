@@ -117,7 +117,7 @@ const MyDocument = ({
             style={[
                 styles.row,
                 styles.borderBottom,
-                { backgroundColor: isCategory ? '#e2e8f0' : '#f8fafc' },
+                { backgroundColor: isCategory ? '#d0cece' : '#fbe4d5' },
             ]}
         >
             <View
@@ -935,7 +935,7 @@ const MyDocument = ({
                                     style={[
                                         styles.row,
                                         styles.borderBottom,
-                                        { backgroundColor: '#cbd5e1' },
+                                        { backgroundColor: '#fef2cb' },
                                     ]}
                                     wrap={false}
                                 >
@@ -1103,6 +1103,567 @@ const MyDocument = ({
                         );
                     },
                 )}
+
+                <View style={{ marginTop: 0 }}>
+                    {/* <View
+                        style={[
+                            styles.row,
+                            // styles.borderTop,
+                            styles.borderBottom,
+                            { backgroundColor: '#d0cece' },
+                        ]}
+                    >
+                        <View
+                            style={[
+                                { width: getWidth(0) },
+                                styles.borderLeft,
+                                styles.borderRight,
+                            ]}
+                        >
+                            <Text style={styles.tableCell} />
+                        </View>
+                        <View
+                            style={[{ width: getWidth(1) }, styles.borderRight]}
+                        >
+                            <Text
+                                style={[
+                                    styles.tableCell,
+                                    {
+                                        textAlign: 'left',
+                                        fontWeight: 'bold',
+                                        textTransform: 'uppercase',
+                                    },
+                                ]}
+                            >
+                                CATEGORY TOTALS SUMMARY
+                            </Text>
+                        </View>
+                        {COLUMN_WIDTHS.slice(2).map((_, i) => (
+                            <View
+                                key={i}
+                                style={[
+                                    { width: getWidth(i + 2) },
+                                    styles.borderRight,
+                                ]}
+                            >
+                                <Text style={styles.tableCell} />
+                            </View>
+                        ))}
+                    </View> */}
+
+                    {(() => {
+                        const allCategoryTotals = Object.entries(data).map(
+                            ([categoryName, chartOfAccounts]: [
+                                string,
+                                any,
+                            ]) => {
+                                const categoryItems = Object.values(
+                                    chartOfAccounts,
+                                ).flat() as any[];
+                                return {
+                                    amt: categoryItems.reduce(
+                                        (sum, item) =>
+                                            sum +
+                                            (Number(item.total_amount) || 0),
+                                        0,
+                                    ),
+                                    q1: categoryItems.reduce(
+                                        (sum, item) =>
+                                            sum + (Number(item.q1_amount) || 0),
+                                        0,
+                                    ),
+                                    q2: categoryItems.reduce(
+                                        (sum, item) =>
+                                            sum + (Number(item.q2_amount) || 0),
+                                        0,
+                                    ),
+                                    q3: categoryItems.reduce(
+                                        (sum, item) =>
+                                            sum + (Number(item.q3_amount) || 0),
+                                        0,
+                                    ),
+                                    q4: categoryItems.reduce(
+                                        (sum, item) =>
+                                            sum + (Number(item.q4_amount) || 0),
+                                        0,
+                                    ),
+                                };
+                            },
+                        );
+
+                        const grandTotal = allCategoryTotals.reduce(
+                            (acc, cat) => ({
+                                amt: acc.amt + cat.amt,
+                                q1: acc.q1 + cat.q1,
+                                q2: acc.q2 + cat.q2,
+                                q3: acc.q3 + cat.q3,
+                                q4: acc.q4 + cat.q4,
+                            }),
+                            { amt: 0, q1: 0, q2: 0, q3: 0, q4: 0 },
+                        );
+
+                        return (
+                            <>
+                                {Object.entries(data).map(
+                                    ([categoryName, chartOfAccounts]: [
+                                        string,
+                                        any,
+                                    ]) => {
+                                        const categoryItems = Object.values(
+                                            chartOfAccounts,
+                                        ).flat() as any[];
+                                        const catTotals = {
+                                            amt: categoryItems.reduce(
+                                                (sum, item) =>
+                                                    sum +
+                                                    (Number(
+                                                        item.total_amount,
+                                                    ) || 0),
+                                                0,
+                                            ),
+                                            q1: categoryItems.reduce(
+                                                (sum, item) =>
+                                                    sum +
+                                                    (Number(item.q1_amount) ||
+                                                        0),
+                                                0,
+                                            ),
+                                            q2: categoryItems.reduce(
+                                                (sum, item) =>
+                                                    sum +
+                                                    (Number(item.q2_amount) ||
+                                                        0),
+                                                0,
+                                            ),
+                                            q3: categoryItems.reduce(
+                                                (sum, item) =>
+                                                    sum +
+                                                    (Number(item.q3_amount) ||
+                                                        0),
+                                                0,
+                                            ),
+                                            q4: categoryItems.reduce(
+                                                (sum, item) =>
+                                                    sum +
+                                                    (Number(item.q4_amount) ||
+                                                        0),
+                                                0,
+                                            ),
+                                        };
+
+                                        return (
+                                            <View
+                                                key={categoryName}
+                                                style={[
+                                                    styles.row,
+                                                    styles.borderBottom,
+                                                ]}
+                                                wrap={false}
+                                            >
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(0) },
+                                                        styles.borderLeft,
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={styles.tableCell}
+                                                    />
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(1) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.tableCell,
+                                                            {
+                                                                fontWeight:
+                                                                    'bold',
+                                                                textAlign:
+                                                                    'left',
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {categoryName.toUpperCase()}{' '}
+                                                        - TOTAL
+                                                    </Text>
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(2) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={styles.tableCell}
+                                                    />
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(3) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={styles.tableCell}
+                                                    />
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(4) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={styles.tableCell}
+                                                    />
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(5) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.tableCell,
+                                                            {
+                                                                fontWeight:
+                                                                    'bold',
+                                                                textAlign:
+                                                                    'right',
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {formatNumber(
+                                                            catTotals.amt,
+                                                        )}
+                                                    </Text>
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(6) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={styles.tableCell}
+                                                    />
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(7) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.tableCell,
+                                                            {
+                                                                fontWeight:
+                                                                    'bold',
+                                                                textAlign:
+                                                                    'right',
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {formatNumber(
+                                                            catTotals.q1,
+                                                        )}
+                                                    </Text>
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(8) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={styles.tableCell}
+                                                    />
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(9) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.tableCell,
+                                                            {
+                                                                fontWeight:
+                                                                    'bold',
+                                                                textAlign:
+                                                                    'right',
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {formatNumber(
+                                                            catTotals.q2,
+                                                        )}
+                                                    </Text>
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(10) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={styles.tableCell}
+                                                    />
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(11) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.tableCell,
+                                                            {
+                                                                fontWeight:
+                                                                    'bold',
+                                                                textAlign:
+                                                                    'right',
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {formatNumber(
+                                                            catTotals.q3,
+                                                        )}
+                                                    </Text>
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(12) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={styles.tableCell}
+                                                    />
+                                                </View>
+                                                <View
+                                                    style={[
+                                                        { width: getWidth(13) },
+                                                        styles.borderRight,
+                                                    ]}
+                                                >
+                                                    <Text
+                                                        style={[
+                                                            styles.tableCell,
+                                                            {
+                                                                fontWeight:
+                                                                    'bold',
+                                                                textAlign:
+                                                                    'right',
+                                                            },
+                                                        ]}
+                                                    >
+                                                        {formatNumber(
+                                                            catTotals.q4,
+                                                        )}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                        );
+                                    },
+                                )}
+
+                                <View
+                                    style={[
+                                        styles.row,
+                                        styles.borderBottom,
+                                        // styles.borderTop,
+                                        // { backgroundColor: '#d0cece' },
+                                    ]}
+                                    wrap={false}
+                                >
+                                    <View
+                                        style={[
+                                            { width: getWidth(0) },
+                                            styles.borderLeft,
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text style={styles.tableCell} />
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(1) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.tableCell,
+                                                {
+                                                    fontWeight: 'bold',
+                                                    textAlign: 'left',
+                                                },
+                                            ]}
+                                        >
+                                            TOTAL BUDGET
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(2) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text style={styles.tableCell} />
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(3) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text style={styles.tableCell} />
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(4) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text style={styles.tableCell} />
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(5) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.tableCell,
+                                                {
+                                                    fontWeight: 'bold',
+                                                    textAlign: 'right',
+                                                },
+                                            ]}
+                                        >
+                                            {formatNumber(grandTotal.amt)}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(6) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text style={styles.tableCell} />
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(7) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.tableCell,
+                                                {
+                                                    fontWeight: 'bold',
+                                                    textAlign: 'right',
+                                                },
+                                            ]}
+                                        >
+                                            {formatNumber(grandTotal.q1)}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(8) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text style={styles.tableCell} />
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(9) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.tableCell,
+                                                {
+                                                    fontWeight: 'bold',
+                                                    textAlign: 'right',
+                                                },
+                                            ]}
+                                        >
+                                            {formatNumber(grandTotal.q2)}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(10) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text style={styles.tableCell} />
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(11) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.tableCell,
+                                                {
+                                                    fontWeight: 'bold',
+                                                    textAlign: 'right',
+                                                },
+                                            ]}
+                                        >
+                                            {formatNumber(grandTotal.q3)}
+                                        </Text>
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(12) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text style={styles.tableCell} />
+                                    </View>
+                                    <View
+                                        style={[
+                                            { width: getWidth(13) },
+                                            styles.borderRight,
+                                        ]}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.tableCell,
+                                                {
+                                                    fontWeight: 'bold',
+                                                    textAlign: 'right',
+                                                },
+                                            ]}
+                                        >
+                                            {formatNumber(grandTotal.q4)}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </>
+                        );
+                    })()}
+                </View>
 
                 <View
                     fixed
