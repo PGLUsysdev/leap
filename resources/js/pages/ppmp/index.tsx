@@ -442,6 +442,8 @@ export default function PpmpPage({
         })
         .filter((pl): pl is NonNullable<typeof pl> => pl !== null);
 
+    console.log(processedData);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">

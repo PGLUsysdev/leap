@@ -55,12 +55,6 @@ class PpmpController extends Controller
             },
         )->get();
 
-        /* 
-            get ppmp based on aip entry
-            get all chart of accounts
-            get all category
-            get all procurement items
-        */
         return Inertia::render('ppmp/index', [
             'fiscalYear' => $fiscalYear,
             'aipEntry' => $selectedAipEntry,
