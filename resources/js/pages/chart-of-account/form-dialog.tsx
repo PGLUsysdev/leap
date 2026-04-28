@@ -138,7 +138,7 @@ export default function FormDialog({
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogDescription></DialogDescription>
             <DialogContent
-                className="flex max-h-[90vh] flex-col overflow-hidden"
+                className="flex max-h-[90vh] flex-col sm:max-w-sm"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
             >
@@ -148,8 +148,8 @@ export default function FormDialog({
                     </DialogTitle>
                 </DialogHeader>
 
-                <div className="flex min-h-0 flex-1 pt-2">
-                    <ScrollArea className="w-full pr-4">
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
                         <form
                             id="chart-of-account-form"
                             onSubmit={form.handleSubmit(onSubmit)}
@@ -531,7 +531,7 @@ export default function FormDialog({
                     </ScrollArea>
                 </div>
 
-                <DialogFooter className="pt-4">
+                <DialogFooter>
                     <Button
                         variant="outline"
                         onClick={() => setOpen(false)}

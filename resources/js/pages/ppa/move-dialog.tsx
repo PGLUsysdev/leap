@@ -213,7 +213,7 @@ export default function PpaMoveDialog({
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent
-                className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-[80%]"
+                className="flex max-h-[90vh] flex-col sm:max-w-[80%]"
                 onPointerDownOutside={(e) => {
                     if (loading) e.preventDefault();
                 }}
@@ -248,8 +248,8 @@ export default function PpaMoveDialog({
                     </div>
                 </div>
 
-                <div className="flex min-h-0 flex-1">
-                    <ScrollArea className="w-full flex-1 rounded border pr-3">
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -258,6 +258,7 @@ export default function PpaMoveDialog({
                                     <TableHead>Name</TableHead>
                                 </TableRow>
                             </TableHeader>
+
                             <TableBody>
                                 {flatItems.map((item) => {
                                     const isCurrentParent =

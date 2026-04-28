@@ -23,10 +23,10 @@ export const getCommonPinningStyles = <TData>(
 
     return {
         boxShadow: isLastLeftPinnedColumn
-            ? '-4px 0 4px -4px gray inset'
+            ? '-4px 0 4px -4px var(--border) inset'
             : isFirstRightPinnedColumn
               ? //   ? '4px 0 4px -4px gray inset'
-                '1px 0 0 0 var(--muted) inset'
+                '1px 0 0 0 var(--border) inset'
               : undefined,
 
         left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,

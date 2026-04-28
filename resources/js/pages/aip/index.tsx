@@ -31,7 +31,6 @@ interface AipProps {
 
 export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
     const { auth } = usePage<SharedData>().props;
-    // console.log(auth);
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
     const [openPdfPreviewDialog, setOpenPdfPreviewDialog] = useState(false);

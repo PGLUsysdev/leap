@@ -251,11 +251,11 @@ export default function PpaFormDialog({
         <>
             <Dialog open={isOpen} onOpenChange={onOpenChange}>
                 <DialogContent
+                    className="flex max-h-[90vh] flex-col sm:max-w-2xl"
                     onEscapeKeyDown={(e) => isSubmitting && e.preventDefault()}
                     onPointerDownOutside={(e) =>
                         isSubmitting && e.preventDefault()
                     }
-                    className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl"
                 >
                     <DialogHeader>
                         <DialogTitle>
@@ -273,8 +273,8 @@ export default function PpaFormDialog({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex min-h-0 flex-1">
-                        <ScrollArea className="w-full flex-1 pr-3">
+                    <div className="flex min-h-0">
+                        <ScrollArea className="w-full">
                             <form
                                 id="ppa-form"
                                 onSubmit={form.handleSubmit(onSubmit)}

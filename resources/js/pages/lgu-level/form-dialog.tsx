@@ -49,7 +49,6 @@ export default function FormDialog({
     initialData,
 }: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
-
     const isEditing = !!initialData;
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -94,7 +93,7 @@ export default function FormDialog({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
-                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden"
+                className="flex max-h-[90vh] flex-col sm:max-w-sm"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
             >
@@ -109,8 +108,8 @@ export default function FormDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex min-h-0 flex-1 pt-2">
-                    <ScrollArea className="w-full flex-1 pr-3">
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
                         <form
                             id="lgu-level-form"
                             onSubmit={form.handleSubmit(onSubmit)}
@@ -201,7 +200,7 @@ export default function FormDialog({
                 </div>
 
                 <DialogFooter>
-                    <DialogClose asChild disabled={isLoading}>
+                    <DialogClose disabled={isLoading} asChild>
                         <Button variant="outline">Cancel</Button>
                     </DialogClose>
 

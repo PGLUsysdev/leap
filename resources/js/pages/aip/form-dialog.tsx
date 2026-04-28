@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/dialog';
 import {
     Field,
-    // FieldDescription,
     FieldError,
     FieldGroup,
     FieldLabel,
@@ -29,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { generateYearRange } from '@/pages/aip/utils/generate-year-range';
-// import { store } from '@/routes/aip/index';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface FormDialogProps {
     open: boolean;
@@ -54,21 +53,20 @@ export default function FormDialog({ open, setOpen }: FormDialogProps) {
     });
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        // router.post(store(), data, {
         router.post('/aip', data, {
             preserveScroll: true,
             preserveState: true,
             onStart: () => setIsLoading(true),
-            onSuccess: () => {
-                setOpen(false);
-            },
             onError: (errors) => {
                 if (errors.year) {
                     form.setError('year', {
-                        type: 'manual',
+                        type: 'year',
                         message: errors.year,
                     });
                 }
+            },
+            onSuccess: () => {
+                setOpen(false);
             },
             onFinish: () => setIsLoading(false),
         });
@@ -77,6 +75,7 @@ export default function FormDialog({ open, setOpen }: FormDialogProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
+                className="flex max-h-[90vh] flex-col sm:max-w-sm"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
             >
@@ -89,62 +88,72 @@ export default function FormDialog({ open, setOpen }: FormDialogProps) {
                     </DialogDescription>
                 </DialogHeader>
 
-                <form
-                    id="fiscal-year-form"
-                    onSubmit={form.handleSubmit(onSubmit)}
-                >
-                    <FieldGroup>
-                        <Controller
-                            control={form.control}
-                            name="year"
-                            render={({ field, fieldState }) => (
-                                <Field data-invalid={fieldState.invalid}>
-                                    <FieldContent>
-                                        <FieldLabel htmlFor="fiscal-year-form-year">
-                                            Fiscal Year
-                                        </FieldLabel>
-                                    </FieldContent>
-
-                                    <Select
-                                        name={field.name}
-                                        value={
-                                            field.value
-                                                ? String(field.value)
-                                                : undefined
-                                        }
-                                        onValueChange={(value) =>
-                                            field.onChange(Number(value))
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            id="fiscal-year-form-year"
-                                            aria-invalid={fieldState.invalid}
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
+                        <form
+                            id="fiscal-year-form"
+                            onSubmit={form.handleSubmit(onSubmit)}
+                        >
+                            <FieldGroup>
+                                <Controller
+                                    control={form.control}
+                                    name="year"
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
                                         >
-                                            <SelectValue placeholder="Select year" />
-                                        </SelectTrigger>
+                                            <FieldContent>
+                                                <FieldLabel htmlFor="fiscal-year-form-year">
+                                                    Fiscal Year
+                                                </FieldLabel>
+                                            </FieldContent>
 
-                                        <SelectContent>
-                                            {years.map((year) => (
-                                                <SelectItem
-                                                    key={year}
-                                                    value={String(year)}
+                                            <Select
+                                                name={field.name}
+                                                value={
+                                                    field.value
+                                                        ? String(field.value)
+                                                        : undefined
+                                                }
+                                                onValueChange={(value) =>
+                                                    field.onChange(
+                                                        Number(value),
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    id="fiscal-year-form-year"
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
                                                 >
-                                                    {year}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                                    <SelectValue placeholder="Select year" />
+                                                </SelectTrigger>
 
-                                    {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                                <SelectContent>
+                                                    {years.map((year) => (
+                                                        <SelectItem
+                                                            key={year}
+                                                            value={String(year)}
+                                                        >
+                                                            {year}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
                                     )}
-                                </Field>
-                            )}
-                        />
-                    </FieldGroup>
-                </form>
+                                />
+                            </FieldGroup>
+                        </form>
+                    </ScrollArea>
+                </div>
 
                 <DialogFooter>
                     <Button

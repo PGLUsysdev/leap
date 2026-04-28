@@ -22,6 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import type { User } from '@/types/global';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const formSchema = z.object({
     status: z.enum(['pending', 'active', 'inactive']),
@@ -76,7 +77,7 @@ export default function FormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-sm">
                 <DialogHeader>
                     <DialogTitle>Edit User Status</DialogTitle>
                     <DialogDescription>
@@ -85,48 +86,55 @@ export default function FormDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form
-                    id="user-status-form"
-                    onSubmit={form.handleSubmit(onSubmit)}
-                    className="py-6"
-                >
-                    <Controller
-                        name="status"
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                            <Field data-invalid={fieldState.invalid}>
-                                <FieldLabel htmlFor={field.name}>
-                                    Account Status
-                                </FieldLabel>
-                                <Select
-                                    value={field.value}
-                                    onValueChange={field.onChange}
-                                >
-                                    <SelectTrigger
-                                        id={field.name}
-                                        aria-invalid={fieldState.invalid}
-                                    >
-                                        <SelectValue placeholder="Select status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="pending">
-                                            Pending
-                                        </SelectItem>
-                                        <SelectItem value="active">
-                                            Active
-                                        </SelectItem>
-                                        <SelectItem value="inactive">
-                                            Inactive
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {fieldState.invalid && (
-                                    <FieldError errors={[fieldState.error]} />
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
+                        <form
+                            id="user-status-form"
+                            onSubmit={form.handleSubmit(onSubmit)}
+                        >
+                            <Controller
+                                name="status"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldLabel htmlFor={field.name}>
+                                            Account Status
+                                        </FieldLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <SelectTrigger
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                            >
+                                                <SelectValue placeholder="Select status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="pending">
+                                                    Pending
+                                                </SelectItem>
+                                                <SelectItem value="active">
+                                                    Active
+                                                </SelectItem>
+                                                <SelectItem value="inactive">
+                                                    Inactive
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
                                 )}
-                            </Field>
-                        )}
-                    />
-                </form>
+                            />
+                        </form>
+                    </ScrollArea>
+                </div>
 
                 <DialogFooter>
                     <Button
@@ -136,6 +144,7 @@ export default function FormDialog({
                     >
                         Cancel
                     </Button>
+
                     <Button
                         type="submit"
                         form="user-status-form"

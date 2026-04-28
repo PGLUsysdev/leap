@@ -106,7 +106,7 @@ export default function PpaSelectorDialog({
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent
-                className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-[80%]"
+                className="flex max-h-[90vh] flex-col sm:max-w-[80%]"
                 onPointerDownOutside={(e) => {
                     if (loading) e.preventDefault();
                 }}
@@ -132,9 +132,8 @@ export default function PpaSelectorDialog({
                     </div>
                 </div>
 
-                {/* <div className="flex-1 overflow-y-auto px-6 py-2"> */}
-                <div className="flex min-h-0 flex-1">
-                    <ScrollArea className="w-full flex-1 rounded border pr-3">
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
                         <DataTable
                             columns={columns}
                             data={data}

@@ -261,7 +261,7 @@ export default function PpmpFormDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             {/* Increased width to max-w-2xl for better side-by-side layout */}
             <DialogContent
-                className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-2xl"
+                className="flex max-h-[90vh] flex-col sm:max-w-2xl"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
             >
@@ -273,7 +273,7 @@ export default function PpmpFormDialog({
                 </DialogHeader>
 
                 <div className="flex min-h-0">
-                    <ScrollArea className="pr-4">
+                    <ScrollArea className="w-full">
                         <div className="grid gap-6">
                             <form
                                 id="form-rhf-demo"

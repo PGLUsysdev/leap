@@ -164,7 +164,7 @@ export default function FormDialog({
         <>
             <Dialog open={open} onOpenChange={handleOpenChange}>
                 <DialogContent
-                    className="flex max-h-[90vh] flex-col gap-0 overflow-hidden"
+                    className="flex max-h-[90vh] flex-col sm:max-w-2xl"
                     onPointerDownOutside={(e) => {
                         if (isLoading) e.preventDefault();
                         if (hasUnsavedChanges) {
@@ -195,8 +195,8 @@ export default function FormDialog({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex min-h-0 flex-1 pt-2">
-                        <ScrollArea className="w-full flex-1 pr-3">
+                    <div className="flex min-h-0">
+                        <ScrollArea className="w-full">
                             <form
                                 id="ppmp-category-form"
                                 onSubmit={form.handleSubmit(onSubmit)}

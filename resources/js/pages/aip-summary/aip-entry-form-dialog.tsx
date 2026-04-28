@@ -257,7 +257,7 @@ export default function AipEntryFormDialog({
             onOpenChange={(val) => !isLoading && onOpenChange(val)}
         >
             <DialogContent
-                className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-[80%]"
+                className="flex max-h-[90vh] flex-col sm:max-w-[80%]"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
             >
@@ -275,8 +275,8 @@ export default function AipEntryFormDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex min-h-0 flex-1">
-                    <ScrollArea className="w-full flex-1 pr-3">
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
                         <Form {...form}>
                             <form
                                 id="aip-form"

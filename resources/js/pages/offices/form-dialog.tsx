@@ -73,13 +73,8 @@ export default function FormDialog({
     officeTypes,
     offices,
 }: FormDialogProps) {
-    // console.log({
-    //     initialData,
-    // });
-
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
     const isEditing = !!initialData;
     const isAddingChild = !isEditing && !!parentOffice;
 
@@ -186,9 +181,9 @@ export default function FormDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
+                className="flex max-h-[90vh] flex-col sm:max-w-sm"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
-                className="flex max-h-[90vh] flex-col overflow-hidden"
             >
                 <DialogHeader>
                     <DialogTitle>
@@ -211,6 +206,7 @@ export default function FormDialog({
                               : 'Fill in the information to create a new office record.'}
                     </DialogDescription>
 
+                    {/* what is this error section? */}
                     {error && (
                         <div className="mt-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                             {error}
@@ -218,8 +214,8 @@ export default function FormDialog({
                     )}
                 </DialogHeader>
 
-                <div className="flex min-h-0 flex-1">
-                    <ScrollArea className="w-full flex-1 pr-3">
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
                         <form
                             id="office-form"
                             onSubmit={form.handleSubmit(onSubmit)}

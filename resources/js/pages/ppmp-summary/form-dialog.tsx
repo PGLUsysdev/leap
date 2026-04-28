@@ -43,10 +43,7 @@ export default function FormDialog({
     setOpen,
     initialData,
 }: PpmpSummaryFormDialogProps) {
-    // console.log(initialData);
-
     const [isLoading, setIsLoading] = useState(false);
-
     const isEditing = !!initialData;
 
     const form = useForm<z.infer<typeof formSchema>>({

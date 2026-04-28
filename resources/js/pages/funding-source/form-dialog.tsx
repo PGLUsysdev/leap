@@ -96,7 +96,7 @@ export default function FormDialog({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
-                className="flex max-h-[90vh] flex-col gap-0 overflow-hidden"
+                className="flex max-h-[90vh] flex-col sm:max-w-sm"
                 onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
             >
@@ -113,8 +113,8 @@ export default function FormDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex min-h-0 flex-1 pt-2">
-                    <ScrollArea className="w-full flex-1 pr-3">
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
                         <form
                             id="funding-source-form"
                             onSubmit={form.handleSubmit(onSubmit)}
