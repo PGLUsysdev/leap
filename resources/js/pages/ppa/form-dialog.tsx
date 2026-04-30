@@ -485,8 +485,8 @@ export default function PpaFormDialog({
                                         )}
                                     />
 
-                                    {/* final text input controller - only for edit mode */}
-                                    {isEditing && (
+                                    {/* final text input controller - only for add mode */}
+                                    {!isEditing && (
                                         <Controller
                                             name="code_suffix"
                                             control={form.control}

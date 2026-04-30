@@ -71,7 +71,7 @@ class PpaController extends Controller
             });
         }
 
-        $ppa = $query->paginate(30)->withQueryString();
+        $ppa = $query->paginate(100)->withQueryString();
 
         $current = $parentId
             ? Ppa::with('ancestor.ancestor')->find($parentId)

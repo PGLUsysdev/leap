@@ -64,7 +64,6 @@ const columns = [
         header: 'AIP Reference Code',
         size: 200,
         cell: (value) => {
-            console.log(value.getValue());
             return (
                 <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>
             );

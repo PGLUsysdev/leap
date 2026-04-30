@@ -135,8 +135,6 @@ export function DataTable<TData extends { id: unknown }>({
     paginationObj,
     filters,
 }: DataTableProps<TData>) {
-    console.log(paginationObj);
-
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);

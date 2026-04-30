@@ -1,8 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
-import type { Ppa, Office, SharedData } from '@/types/global';
+import type {
+    Ppa,
+    Office,
+    SharedData,
+    PaginatedResponse,
+} from '@/types/global';
 import PpaFormDialog from '@/pages/ppa/form-dialog';
 import PpaMoveDialog from '@/pages/ppa/move-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
@@ -10,36 +15,12 @@ import { router, usePage } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
 import columns from './table/columns';
 import { index } from '@/routes/ppa';
-// import {
-//     Select,
-//     SelectContent,
-//     SelectItem,
-//     SelectTrigger,
-//     SelectValue,
-// } from '@/components/ui/select';
 
-const LEVEL_MAP = {
-    program: 0,
-    project: 1,
-    activity: 2,
-    'sub-activity': 3,
-    all: 3,
-};
-
-const filterTreeByLevel = (
-    data: Ppa[],
-    maxLevel: number,
-    currentLevel: number = 0,
-): Ppa[] => {
-    if (!Array.isArray(data)) return [];
-    if (currentLevel > maxLevel) return [];
-
-    return data.map((item) => ({
-        ...item,
-        children: item.children
-            ? filterTreeByLevel(item.children, maxLevel, currentLevel + 1)
-            : [],
-    }));
+const NEXT_TYPE_MAP: Record<Ppa['type'], Ppa['type']> = {
+    Program: 'Project',
+    Project: 'Activity',
+    Activity: 'Sub-Activity',
+    'Sub-Activity': 'Sub-Activity', // Should never be used as button will be hidden
 };
 
 export default function PpaPage({
@@ -48,26 +29,28 @@ export default function PpaPage({
     current,
     filters,
 }: {
-    ppaTree: { data: Ppa[]; [key: string]: any };
+    ppaTree: PaginatedResponse<Ppa>;
     offices: Office[];
     current: Ppa | null;
     filters: { search?: string; id?: string | number };
 }) {
     console.log(ppaTree);
-    // console.log(offices);
-    console.log(current);
 
-    const breadcrumbs = [
+    const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'PPA Master Library',
             href: null,
         },
         {
-            title: 'Programs',
+            title: 'All Programs',
             href: current ? index().url : null,
         },
         {
-            title: 'Projects',
+            title: current
+                ? (current.ancestor?.ancestor?.name ??
+                      current.ancestor?.name ??
+                      current.name) + ' Projects'
+                : null,
             href: current?.ancestor
                 ? index({
                       query: {
@@ -79,27 +62,33 @@ export default function PpaPage({
                 : null,
         },
         {
-            title: 'Activities',
+            title: current
+                ? (current.type === 'Project'
+                      ? current.name
+                      : (current.ancestor?.name ?? current.name)) +
+                  ' Activities'
+                : null,
             href: current?.ancestor
                 ? index({ query: { id: current.ancestor?.id } }).url
                 : null,
         },
         {
-            title: 'Subactivities',
+            title: current
+                ? current.type === 'Activity'
+                    ? current.name + ' Subactivities'
+                    : null
+                : null,
             href: null,
         },
-    ].filter((item) => {
-        if (item.title === 'PPA Master Library') return true;
-        if (item.title === 'Programs') return true;
-        if (item.title === 'Projects' && current) return true;
-        if (item.title === 'Activities' && current?.ancestor) return true;
-        if (item.title === 'Subactivities' && current?.ancestor?.ancestor)
-            return true;
+    ].filter((_, index) => {
+        if (index === 0) return true;
+        if (index === 1) return true;
+        if (index === 2 && current) return true;
+        if (index === 3 && current?.ancestor) return true;
+        if (index === 4 && current?.ancestor?.ancestor) return true;
 
         return false;
     });
-
-    console.log(breadcrumbs);
 
     const { auth } = usePage<SharedData>().props;
 
@@ -120,24 +109,7 @@ export default function PpaPage({
     const [movePpa, setMovePpa] = useState<Ppa | null>(null);
     const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
 
-    // View Level Filter State
-    const [viewLevel, setViewLevel] = useState<string>('all');
-
-    // Filter tree based on view level
-    const filteredPpaTree = useMemo(() => {
-        const level = LEVEL_MAP[viewLevel as keyof typeof LEVEL_MAP];
-        return filterTreeByLevel(ppaTree.data || [], level);
-    }, [ppaTree, viewLevel]);
-
     // Handlers
-    function handleAddRoot() {
-        setFormMode('add');
-        setTargetType('Program');
-        setParentPpa(null);
-        setEditPpa(null);
-        setIsFormOpen(true);
-    }
-
     function handleAddChild(parent: Ppa, childType: Ppa['type']) {
         setFormMode('add');
         setTargetType(childType);
@@ -205,14 +177,30 @@ export default function PpaPage({
         router.get(url, data, options);
     }
 
-    console.log(ppaTree.data);
+    const nextType = current ? NEXT_TYPE_MAP[current.type] : 'Program';
+
+    function handleAddNew() {
+        setFormMode('add');
+        setEditPpa(null);
+
+        if (!current) {
+            // We are at the very top - create root Program
+            setTargetType('Program');
+            setParentPpa(null);
+        } else {
+            // We are viewing children of current - create child of next type under current
+            setTargetType(nextType);
+            setParentPpa(current);
+        }
+
+        setIsFormOpen(true);
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
                 <DataTable
                     columns={columns}
-                    // data={filteredPpaTree}
                     data={ppaTree.data}
                     withSearch={true}
                     onAdd={handleAddChild}
@@ -226,33 +214,11 @@ export default function PpaPage({
                     filters={filters}
                 >
                     <div className="flex items-center gap-2">
-                        {/* <Select value={viewLevel} onValueChange={setViewLevel}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="View Level" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                                <SelectItem value="program">
-                                    Only Programs
-                                </SelectItem>
-
-                                <SelectItem value="project">
-                                    With Projects
-                                </SelectItem>
-
-                                <SelectItem value="activity">
-                                    With Activities
-                                </SelectItem>
-
-                                <SelectItem value="sub-activity">
-                                    Full Hierarchy
-                                </SelectItem>
-
-                                <SelectItem value="all">Show All</SelectItem>
-                            </SelectContent>
-                        </Select> */}
-
-                        <Button onClick={handleAddRoot}>New Program</Button>
+                        {current?.type !== 'Sub-Activity' && (
+                            <Button onClick={handleAddNew}>
+                                New {nextType}
+                            </Button>
+                        )}
                     </div>
                 </DataTable>
             </div>
