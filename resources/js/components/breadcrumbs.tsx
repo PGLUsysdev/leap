@@ -25,12 +25,24 @@ export function Breadcrumbs({
                             return (
                                 <Fragment key={index}>
                                     <BreadcrumbItem>
-                                        {isLast ? (
+                                        {/* {isLast ? (
                                             <BreadcrumbPage>
                                                 {item.title}
                                             </BreadcrumbPage>
                                         ) : (
                                             <BreadcrumbLink asChild>
+                                                <Link href={item.href}>
+                                                    {item.title}
+                                                </Link>
+                                            </BreadcrumbLink>
+                                        )} */}
+                                        {isLast || !item.href ? ( // If it's the last one OR href is null
+                                            <BreadcrumbPage>
+                                                {item.title}
+                                            </BreadcrumbPage>
+                                        ) : (
+                                            <BreadcrumbLink asChild>
+                                                {/* Only render Link if item.href is a valid string */}
                                                 <Link href={item.href}>
                                                     {item.title}
                                                 </Link>

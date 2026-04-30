@@ -59,6 +59,11 @@ class Ppa extends Model
         return $this->belongsTo(Ppa::class, 'parent_id');
     }
 
+    public function ancestor()
+    {
+        return $this->parent()->with('ancestor');
+    }
+
     public function children()
     {
         return $this->hasMany(Ppa::class, 'parent_id');
@@ -73,9 +78,4 @@ class Ppa extends Model
     {
         return $this->belongsTo(Office::class);
     }
-
-    // public function ppaFundingSources()
-    // {
-    //     return $this->hasMany(PpaFundingSource::class, 'ppa_id');
-    // }
 }

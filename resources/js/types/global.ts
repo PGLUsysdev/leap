@@ -119,6 +119,7 @@ export interface Ppa {
     // ppa_funding_sources?: PpaFundingSource[];
 
     full_code: string;
+    ancestor: Ppa;
 }
 
 export interface FlattenedPpa extends Ppa {
@@ -298,3 +299,26 @@ export type AuthData = {
 export type SharedData = {
     auth: AuthData;
 };
+
+export interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+    page: number | null;
+}
+
+export interface PaginatedResponse<T> {
+    current_page: number;
+    data: T[];
+    first_page_url: string;
+    from: number | null;
+    last_page: number;
+    last_page_url: string;
+    links: PaginationLink[];
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number | null;
+    total: number;
+}

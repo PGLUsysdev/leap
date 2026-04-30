@@ -9,4 +9,6 @@ class AllotmentClass extends Model
 {
     /** @use HasFactory<\Database\Factories\AllotmentClassFactory> */
     use HasFactory;
+
+    protected $fillable = ['code', 'name'];
 }

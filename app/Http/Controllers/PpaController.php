@@ -26,89 +26,68 @@ class PpaController extends Controller
             'Program' => 3,
             'Project' => 2,
             'Activity' => 2,
-            'Sub-Activity' => 0, // Dynamic, no padding
+            'Sub-Activity' => 0,
             default => 3,
         };
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $userOfficeId = Auth::user()->office_id;
+        $parentId = $request->query('id');
+        $search = $request->query('search');
 
-        return Inertia::render('ppa/index', [
-            'ppaTree' => function () use ($userOfficeId) {
-                // 1. Fetch ALL relevant rows in ONE query
-                $allPpas = Ppa::where('office_id', $userOfficeId)
-                    ->with('office')
-                    ->orderBy('sort_order')
-                    ->get();
+        $query = Ppa::where('office_id', $userOfficeId);
 
-                // 2. Build the tree using references (O(n) complexity)
-                $lookup = [];
-                foreach ($allPpas as $ppa) {
-                    $ppa->setRelation('children', collect()); // Initialize children collection
-                    $lookup[$ppa->id] = $ppa;
-                }
+        // 1. Navigation Scope (Stay in the current folder)
+        if ($parentId) {
+            $query->where('parent_id', $parentId);
+        } else {
+            $query->whereNull('parent_id');
+        }
 
-                $tree = collect();
-                foreach ($allPpas as $ppa) {
-                    if ($ppa->parent_id && isset($lookup[$ppa->parent_id])) {
-                        $lookup[$ppa->parent_id]->children->push($ppa);
-                    } else {
-                        $tree->push($ppa);
+        // 2. Search Logic
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                // Search by Name
+                $q->where('name', 'like', '%' . $search . '%')
+                    // Search by Suffix (e.g., '0041')
+                    ->orWhere('code_suffix', 'like', '%' . $search . '%');
+
+                // 3. SMART PARSING:
+                // If the user pasted a full code like "1000-1-03-009-0041"
+                if (str_contains($search, '-')) {
+                    $parts = explode('-', $search);
+                    $lastSegment = end($parts); // Get "0041"
+
+                    if (!empty($lastSegment)) {
+                        $q->orWhere(
+                            'code_suffix',
+                            'like',
+                            '%' . $lastSegment . '%',
+                        );
                     }
                 }
+            });
+        }
 
-                return $tree;
-            },
+        $ppa = $query->paginate(30)->withQueryString();
 
-            'offices' => fn() => Office::with([
-                'sector',
-                'lguLevel',
-                'officeType',
-            ])->get(),
+        $current = $parentId
+            ? Ppa::with('ancestor.ancestor')->find($parentId)
+            : null;
+        $offices = Office::with(['sector', 'lguLevel', 'officeType'])->get();
+
+        return Inertia::render('ppa/index', [
+            'ppaTree' => $ppa,
+            'offices' => $offices,
+            'current' => $current,
+            'filters' => [
+                'search' => $search,
+                'id' => $parentId,
+            ],
         ]);
     }
-
-    // public function index()
-    // {
-    //     $userOfficeId = Auth::user()->office_id;
-
-    //     return Inertia::render('ppa/index', [
-    //         // Send a simple, flat list of PPAs
-    //         'ppas' => fn() => Ppa::where('office_id', $userOfficeId)
-    //             ->orderBy('sort_order')
-    //             ->get(),
-
-    //         // Send a simple, flat list of Offices
-    //         'offices' => fn() => Office::all(),
-
-    //         // Send the "Support" tables separately so JS can map them
-    //         'sectors' => fn() => Sector::all(),
-    //         'lguLevels' => fn() => LguLevel::all(),
-    //         'officeTypes' => fn() => OfficeType::all(),
-    //     ]);
-    // }
-
-    // public function index()
-    // {
-    //     // $userOfficeId = Auth::user()->office_id;
-
-    //     return Inertia::render('ppa/index', [
-    //         // toBase() returns raw StdClass objects, much faster than Models
-    //         'ppas' => fn() => Ppa::select('id', 'name')->get(),
-
-    //         'offices' => fn() => Office::select('id', 'name')->get(),
-
-    //         'sectors' => fn() => Sector::select('id', 'name')->get(),
-
-    //         'lguLevels' => fn() => LguLevel::select('id', 'name')
-    //         ->get(),
-
-    //         'officeTypes' => fn() => OfficeType::select('id', 'name')
-    //         ->get(),
-    //     ]);
-    // }
 
     /**
      * Show the form for creating a new resource.

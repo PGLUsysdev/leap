@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import type { RowData } from '@tanstack/react-table';
-import { Separator } from '@/components/ui/separator';
+// import { Separator } from '@/components/ui/separator';
 
 declare module '@tanstack/react-table' {
     interface TableMeta<TData extends RowData> {
@@ -37,6 +37,7 @@ declare module '@tanstack/react-table' {
         onGeneratePdf?: (data: TData) => void;
         onOpenPpmpSummary?: (data: TData) => void;
         onReorder?: (activeId: string, overId: string) => void;
+        onShowChildren?: (data: TData) => void;
         meta?: {
             priceLists?: PriceList[];
             chartOfAccounts?: ChartOfAccount[];

@@ -12,7 +12,8 @@ class PpaFundingSource extends Model
     use HasFactory;
 
     protected $fillable = [
-        'ppa_id',
+        // 'ppa_id',
+        'aip_entry_id',
         'funding_source_id',
         'ps_amount',
         'mooe_amount',

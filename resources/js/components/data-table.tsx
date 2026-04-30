@@ -26,10 +26,17 @@ import {
 } from '@/components/ui/table';
 import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-
+import { router } from '@inertiajs/react';
+import {
+    ChevronFirst,
+    ChevronLast,
+    ChevronLeft,
+    ChevronRight,
+} from 'lucide-react';
 // needed for table body level scope DnD setup
 import {
     DndContext,
@@ -52,6 +59,7 @@ import {
 // needed for row & cell level scope DnD setup
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { PaginatedResponse } from '@/types/global';
 
 interface DataTableProps<TData extends { id: unknown }> {
     columns: ColumnDef<TData, any>[];
@@ -75,6 +83,9 @@ interface DataTableProps<TData extends { id: unknown }> {
     negativeHeight?: number;
     onReorder?: (activeId: string, overId: string) => void;
     onMove?: (data: TData) => void;
+    onShowChildren?: (data: TData) => void;
+
+    paginationObj?: PaginatedResponse<TData>;
 
     meta?: any;
 }
@@ -119,11 +130,49 @@ export function DataTable<TData extends { id: unknown }>({
     negativeHeight = 8,
     onReorder,
     onMove,
+    onShowChildren,
     meta,
+    paginationObj,
+    filters,
 }: DataTableProps<TData>) {
+    console.log(paginationObj);
+
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // for global search
+    const [searchValue, setSearchValue] = useState(filters.search || '');
+
+    // 2. Sync local state with props (if URL changes via browser back/forward)
+    useEffect(() => {
+        setSearchValue(filters.search || '');
+    }, [filters.search]);
+
+    // 3. Debounce and Trigger Inertia
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            // Only trigger if the value is actually different from the URL state
+            if (searchValue !== (filters.search || '')) {
+                router.get(
+                    window.location.pathname,
+                    {
+                        ...filters, // preserve other filters (like category, date, etc)
+                        search: searchValue,
+                        page: 1,
+                    },
+                    {
+                        preserveState: true,
+                        replace: true,
+                        preserveScroll: true, // Crucial for UX in tables
+                        only: ['ppaTree', 'filters'],
+                    },
+                );
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchValue]);
 
     useEffect(() => {
         setLocalData(data);
@@ -141,7 +190,11 @@ export function DataTable<TData extends { id: unknown }>({
         initialState: {
             columnPinning: { right: ['action'] },
         },
-        onGlobalFilterChange: setGlobalFilter,
+
+        // SERVER-SIDE SEARCH CONFIG
+        manualFiltering: true,
+        // onGlobalFilterChange: setSearchValue,
+
         getFilteredRowModel: withSearch ? getFilteredRowModel() : undefined,
         meta: {
             onAdd,
@@ -153,6 +206,7 @@ export function DataTable<TData extends { id: unknown }>({
             onOpenPpmpSummary,
             onReorder,
             onMove,
+            onShowChildren,
             meta,
         } as any,
         getSubRows: (row: any) => row.children,
@@ -160,11 +214,25 @@ export function DataTable<TData extends { id: unknown }>({
         filterFromLeafRows: true,
         state: {
             expanded: true,
-            globalFilter,
+
+            // for global search
+            globalFilter: searchValue,
+
+            // for pagination
+            pagination: {
+                pageIndex: paginationObj?.current_page
+                    ? paginationObj.current_page - 1
+                    : 0,
+                pageSize: paginationObj?.per_page ?? 0,
+            },
         },
 
         // for dnd
         getRowId: (row) => row.id?.toString() ?? '',
+
+        // for pagination
+        manualPagination: true,
+        pageCount: paginationObj ? paginationObj.last_page : undefined,
     });
 
     const { rows } = table.getRowModel();
@@ -245,10 +313,8 @@ export function DataTable<TData extends { id: unknown }>({
                         {withSearch ? (
                             <Input
                                 placeholder="Filter..."
-                                value={globalFilter ?? ''}
-                                onChange={(event) =>
-                                    table.setGlobalFilter(event.target.value)
-                                }
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
                                 className="max-w-sm"
                             />
                         ) : (
@@ -408,6 +474,58 @@ export function DataTable<TData extends { id: unknown }>({
                     <ScrollBar orientation="horizontal" className="z-30" />
                     <ScrollBar orientation="vertical" className="z-30" />
                 </ScrollArea>
+
+                {paginationObj === undefined || (
+                    <div className="flex items-center gap-1">
+                        <Button
+                            size="icon"
+                            onClick={() =>
+                                router.get(paginationObj.first_page_url)
+                            }
+                            disabled={paginationObj?.current_page === 1}
+                        >
+                            <ChevronFirst />
+                        </Button>
+                        <Button
+                            size="icon"
+                            onClick={() =>
+                                router.get(paginationObj.prev_page_url ?? '')
+                            }
+                            disabled={paginationObj?.current_page === 1}
+                        >
+                            <ChevronLeft />
+                        </Button>
+                        <Input
+                            defaultValue={paginationObj?.current_page}
+                            disabled
+                            className="w-10 text-center"
+                        />
+                        <Button
+                            size="icon"
+                            onClick={() =>
+                                router.get(paginationObj.next_page_url ?? '')
+                            }
+                            disabled={
+                                paginationObj?.current_page ===
+                                paginationObj?.last_page
+                            }
+                        >
+                            <ChevronRight />
+                        </Button>
+                        <Button
+                            size="icon"
+                            onClick={() =>
+                                router.get(paginationObj.last_page_url)
+                            }
+                            disabled={
+                                paginationObj?.current_page ===
+                                paginationObj?.last_page
+                            }
+                        >
+                            <ChevronLast />
+                        </Button>
+                    </div>
+                )}
             </div>
 
             <AlertErrorDialog

@@ -7,6 +7,7 @@ import {
     Plus,
     GripVertical,
     Move,
+    SquareArrowOutUpRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,35 +37,38 @@ const RowDragHandleCell = ({ rowId }: { rowId: string }) => {
 };
 
 const columns = [
-    columnHelper.display({
-        id: 'drag-handle',
-        // header: 'AIP Reference Code',
-        size: 100,
-        cell: ({ row, table }) => {
-            return (
-                <div className="gap-1">
-                    <RowDragHandleCell rowId={row.id} />
+    // columnHelper.display({
+    //     id: 'drag-handle',
+    //     // header: 'AIP Reference Code',
+    //     size: 100,
+    //     cell: ({ row, table }) => {
+    //         return (
+    //             <div className="gap-1">
+    //                 <RowDragHandleCell rowId={row.id} />
 
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() =>
-                            (table.options.meta as any)?.onMove?.(row.original)
-                        }
-                        disabled={row.original.type === 'Program'}
-                    >
-                        <Move />
-                    </Button>
-                </div>
-            );
-        },
-    }),
+    //                 <Button
+    //                     size="icon"
+    //                     variant="ghost"
+    //                     onClick={() =>
+    //                         (table.options.meta as any)?.onMove?.(row.original)
+    //                     }
+    //                     disabled={row.original.type === 'Program'}
+    //                 >
+    //                     <Move />
+    //                 </Button>
+    //             </div>
+    //         );
+    //     },
+    // }),
     columnHelper.accessor('full_code', {
         header: 'AIP Reference Code',
         size: 200,
-        cell: (value) => (
-            <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>
-        ),
+        cell: (value) => {
+            console.log(value.getValue());
+            return (
+                <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>
+            );
+        },
     }),
     columnHelper.accessor('name', {
         header: 'Program/Project/Activity Description',
@@ -121,7 +125,7 @@ const columns = [
         size: 120,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">
-                <Button
+                {/* <Button
                     onClick={() => {
                         let nextType: 'Project' | 'Activity' | 'Sub-Activity';
 
@@ -138,6 +142,17 @@ const columns = [
                     disabled={row.original.type === 'Sub-Activity'}
                 >
                     <Plus className="h-4 w-4" />
+                </Button> */}
+
+                <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() =>
+                        table.options.meta?.onShowChildren?.(row.original)
+                    }
+                    disabled={row.original.type === 'Sub-Activity'}
+                >
+                    <SquareArrowOutUpRight />
                 </Button>
 
                 <Button

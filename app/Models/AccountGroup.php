@@ -9,4 +9,6 @@ class AccountGroup extends Model
 {
     /** @use HasFactory<\Database\Factories\AccountGroupFactory> */
     use HasFactory;
+
+    protected $fillable = ['uacs_digit', 'name', 'normal_balance'];
 }

@@ -367,151 +367,111 @@ export default function PpaFormDialog({
                                                         </span>
                                                     </FieldLabel>
 
-                                                    {isEditing ||
-                                                    isAddingChild ? (
-                                                        <div className="flex w-full items-center gap-3 rounded-lg border bg-muted/40 p-3 shadow-sm ring-1 ring-black/5 ring-inset">
-                                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm">
-                                                                <span className="text-lg">
-                                                                    🏢
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="flex min-w-0 flex-col">
-                                                                <span className="truncate text-sm font-semibold">
-                                                                    {offices.find(
+                                                    <Button
+                                                        id={field.name}
+                                                        type="button"
+                                                        variant="outline"
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                        className={cn(
+                                                            'justify-between',
+                                                            !field.value &&
+                                                                'text-muted-foreground',
+                                                        )}
+                                                        onClick={() =>
+                                                            setOpenOfficeCommand(
+                                                                true,
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            isEditing ||
+                                                            isAddingChild ||
+                                                            isOfficeAutoSelected
+                                                        }
+                                                    >
+                                                        {field.value ? (
+                                                            <span className="truncate">
+                                                                {
+                                                                    offices.find(
                                                                         (o) =>
                                                                             o.id.toString() ===
                                                                             field.value,
-                                                                    )?.name ||
-                                                                        'Loading...'}
-                                                                </span>
-
-                                                                <span className="text-[10px] text-muted-foreground uppercase italic">
-                                                                    {isEditing
-                                                                        ? 'Locked during edit'
-                                                                        : 'Inherited from parent (Locked)'}
-                                                                </span>
-                                                            </div>
-
-                                                            <input
-                                                                type="hidden"
-                                                                {...field}
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            {/* final button for command dialog */}
-                                                            <Button
-                                                                id={field.name}
-                                                                type="button"
-                                                                variant="outline"
-                                                                aria-invalid={
-                                                                    fieldState.invalid
+                                                                    )?.name
                                                                 }
-                                                                className={cn(
-                                                                    'justify-between',
-                                                                    !field.value &&
-                                                                        'text-muted-foreground',
-                                                                )}
-                                                                onClick={() =>
-                                                                    setOpenOfficeCommand(
-                                                                        true,
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    isOfficeAutoSelected
-                                                                }
-                                                            >
-                                                                {field.value ? (
-                                                                    <span className="truncate">
-                                                                        {
-                                                                            offices.find(
-                                                                                (
-                                                                                    o,
-                                                                                ) =>
-                                                                                    o.id.toString() ===
-                                                                                    field.value,
-                                                                            )
-                                                                                ?.name
-                                                                        }
-                                                                    </span>
-                                                                ) : (
-                                                                    'Select implementing office...'
-                                                                )}
+                                                            </span>
+                                                        ) : (
+                                                            'Select implementing office...'
+                                                        )}
 
-                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                            </Button>
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
 
-                                                            {/* final command dialog */}
-                                                            <CommandDialog
-                                                                open={
-                                                                    openOfficeCommand
-                                                                }
-                                                                onOpenChange={
-                                                                    setOpenOfficeCommand
-                                                                }
-                                                                className="flex max-h-[90vh] flex-col"
-                                                            >
-                                                                <Command>
-                                                                    <CommandInput placeholder="Search office name..." />
+                                                    {/* final command dialog */}
+                                                    <CommandDialog
+                                                        open={openOfficeCommand}
+                                                        onOpenChange={
+                                                            setOpenOfficeCommand
+                                                        }
+                                                        className="flex max-h-[90vh] flex-col"
+                                                    >
+                                                        <Command>
+                                                            <CommandInput placeholder="Search office name..." />
 
-                                                                    <CommandList className="max-h-none flex-1">
-                                                                        <CommandEmpty>
-                                                                            No
-                                                                            office
-                                                                            found.
-                                                                        </CommandEmpty>
+                                                            <CommandList className="max-h-none flex-1">
+                                                                <CommandEmpty>
+                                                                    No office
+                                                                    found.
+                                                                </CommandEmpty>
 
-                                                                        <CommandGroup heading="Offices">
-                                                                            {offices.map(
-                                                                                (
-                                                                                    office,
-                                                                                ) => (
-                                                                                    <CommandItem
-                                                                                        key={
-                                                                                            office.id
+                                                                <CommandGroup heading="Offices">
+                                                                    {offices.map(
+                                                                        (
+                                                                            office,
+                                                                        ) => (
+                                                                            <CommandItem
+                                                                                key={
+                                                                                    office.id
+                                                                                }
+                                                                                value={`${office.acronym} ${office.name}`}
+                                                                                data-checked={
+                                                                                    field.value ===
+                                                                                    office.id.toString()
+                                                                                }
+                                                                                onSelect={() => {
+                                                                                    // form.setValue(
+                                                                                    //     'office_id',
+                                                                                    //     office.id.toString(),
+                                                                                    // );
+                                                                                    field.onChange(
+                                                                                        office.id.toString(),
+                                                                                    );
+
+                                                                                    setOpenOfficeCommand(
+                                                                                        false,
+                                                                                    );
+                                                                                }}
+                                                                                className="items-start gap-4 py-2"
+                                                                            >
+                                                                                <div className="grid w-full grid-cols-4 gap-4">
+                                                                                    <span className="col-span-1">
+                                                                                        {office.acronym ??
+                                                                                            '-'}
+                                                                                    </span>
+
+                                                                                    <span className="col-span-3 whitespace-normal">
+                                                                                        {
+                                                                                            office.name
                                                                                         }
-                                                                                        value={`${office.acronym} ${office.name}`}
-                                                                                        data-checked={
-                                                                                            field.value ===
-                                                                                            office.id.toString()
-                                                                                        }
-                                                                                        onSelect={() => {
-                                                                                            // form.setValue(
-                                                                                            //     'office_id',
-                                                                                            //     office.id.toString(),
-                                                                                            // );
-                                                                                            field.onChange(
-                                                                                                office.id.toString(),
-                                                                                            );
-
-                                                                                            setOpenOfficeCommand(
-                                                                                                false,
-                                                                                            );
-                                                                                        }}
-                                                                                        className="items-start gap-4 py-2"
-                                                                                    >
-                                                                                        <div className="grid w-full grid-cols-4 gap-4">
-                                                                                            <span className="col-span-1">
-                                                                                                {office.acronym ??
-                                                                                                    '-'}
-                                                                                            </span>
-
-                                                                                            <span className="col-span-3 whitespace-normal">
-                                                                                                {
-                                                                                                    office.name
-                                                                                                }
-                                                                                            </span>
-                                                                                        </div>
-                                                                                    </CommandItem>
-                                                                                ),
-                                                                            )}
-                                                                        </CommandGroup>
-                                                                    </CommandList>
-                                                                </Command>
-                                                            </CommandDialog>
-                                                        </>
-                                                    )}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </CommandItem>
+                                                                        ),
+                                                                    )}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                        </Command>
+                                                    </CommandDialog>
 
                                                     {fieldState.invalid && (
                                                         <FieldError
