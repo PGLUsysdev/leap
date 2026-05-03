@@ -37,29 +37,29 @@ const RowDragHandleCell = ({ rowId }: { rowId: string }) => {
 };
 
 const columns = [
-    // columnHelper.display({
-    //     id: 'drag-handle',
-    //     // header: 'AIP Reference Code',
-    //     size: 100,
-    //     cell: ({ row, table }) => {
-    //         return (
-    //             <div className="gap-1">
-    //                 <RowDragHandleCell rowId={row.id} />
+    columnHelper.display({
+        id: 'drag-handle',
+        // header: '',
+        size: 100,
+        cell: ({ row, table }) => {
+            return (
+                <div className="gap-1">
+                    {/* <RowDragHandleCell rowId={row.id} /> */}
 
-    //                 <Button
-    //                     size="icon"
-    //                     variant="ghost"
-    //                     onClick={() =>
-    //                         (table.options.meta as any)?.onMove?.(row.original)
-    //                     }
-    //                     disabled={row.original.type === 'Program'}
-    //                 >
-    //                     <Move />
-    //                 </Button>
-    //             </div>
-    //         );
-    //     },
-    // }),
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                            (table.options.meta as any)?.onMove?.(row.original)
+                        }
+                        // disabled={row.original.type === 'Program'}
+                    >
+                        <Move />
+                    </Button>
+                </div>
+            );
+        },
+    }),
     columnHelper.accessor('full_code', {
         header: 'AIP Reference Code',
         size: 200,

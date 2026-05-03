@@ -7,6 +7,7 @@ import type {
     Office,
     SharedData,
     PaginatedResponse,
+    Filter,
 } from '@/types/global';
 import PpaFormDialog from '@/pages/ppa/form-dialog';
 import PpaMoveDialog from '@/pages/ppa/move-dialog';
@@ -23,19 +24,27 @@ const NEXT_TYPE_MAP: Record<Ppa['type'], Ppa['type']> = {
     'Sub-Activity': 'Sub-Activity', // Should never be used as button will be hidden
 };
 
+interface PpaPageProps {
+    ppaTree: PaginatedResponse<Ppa>;
+    offices: Office[];
+    current: Ppa[];
+    filters: Filter;
+    movePpaTree: PaginatedResponse<Ppa>;
+    moveCurrent: Ppa[];
+}
+
 export default function PpaPage({
     ppaTree,
     offices,
     current,
     filters,
-}: {
-    ppaTree: PaginatedResponse<Ppa>;
-    offices: Office[];
-    current: Ppa[];
-    filters: { search?: string; id?: string | number };
-}) {
+    movePpaTree,
+    moveCurrent,
+}: PpaPageProps) {
     // console.log(ppaTree);
-    console.log(current);
+    console.log(movePpaTree);
+    console.log(moveCurrent);
+    // console.log(current);
 
     const breadcrumbs: BreadcrumbItem[] = [
         {
@@ -131,8 +140,33 @@ export default function PpaPage({
     }
 
     function handleMoveOpen(ppa: Ppa) {
-        setMovePpa(ppa);
-        setIsMoveDialogOpen(true);
+        const currentBackgroundId = filters.id;
+
+        // router.reload({
+        //     only: ['movePpaTree', 'moveCurrent'],
+        //     onSuccess: () => {
+        //         setMovePpa(ppa);
+        //         setIsMoveDialogOpen(true);
+        //     },
+        // });
+
+        router.get(
+            'ppa',
+            {
+                ...filters, // Preserve background search/page
+                move_id: currentBackgroundId, // Default modal to the current background folder
+                move_page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['movePpaTree', 'moveCurrent'], // Lazy load modal data
+                onSuccess: () => {
+                    setMovePpa(ppa); // The item we are moving
+                    setIsMoveDialogOpen(true); // Open the modal
+                },
+            },
+        );
     }
 
     function handleShowChildren(ppa: Ppa) {
@@ -179,6 +213,9 @@ export default function PpaPage({
                     paginationObj={ppaTree}
                     negativeHeight={11}
                     filters={filters}
+                    onlyKeys={['ppaTree', 'filters', 'current']}
+                    searchKey="search"
+                    pageKey="page"
                 >
                     <div className="flex items-center gap-2">
                         {(current.length === 0 ||
@@ -224,7 +261,9 @@ export default function PpaPage({
                 isOpen={isMoveDialogOpen}
                 onOpenChange={setIsMoveDialogOpen}
                 ppaToMove={movePpa}
-                ppaTree={ppaTree.data || []}
+                movePpaTree={movePpaTree}
+                moveCurrent={moveCurrent}
+                filters={filters}
             />
         </AppLayout>
     );

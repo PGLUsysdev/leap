@@ -322,3 +322,13 @@ export interface PaginatedResponse<T> {
     to: number | null;
     total: number;
 }
+
+export interface Filter {
+    search?: string;
+    id?: string | number;
+    move_search?: string;
+    move_id?: string | number;
+    move_page?: number;
+    page?: number;
+    [key: string]: any;
+}

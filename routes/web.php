@@ -291,6 +291,9 @@ Route::delete('ppas/{ppa}', [PpaController::class, 'destroy'])->name(
 Route::post('ppas/reorder', [PpaController::class, 'reorder'])->name(
     'ppa.reorder',
 );
+Route::get('ppa/move-index', [PpaController::class, 'moveIndex'])->name(
+    'ppa.move-index',
+);
 
 Route::get('aip-entries', [AipEntryController::class, 'index']);
 

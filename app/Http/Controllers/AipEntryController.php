@@ -136,7 +136,7 @@ class AipEntryController extends Controller
             'aipEntries' => $aipEntries,
             'fundingSources' => FundingSource::all(),
             'offices' => $offices,
-            'masterPpas' => $ppaMasterList,
+            // 'masterPpas' => $ppaMasterList,
         ]);
     }
 

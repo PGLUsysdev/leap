@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePpaRequest;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\Ppa;
 use App\Models\Office;
@@ -34,63 +35,92 @@ class PpaController extends Controller
     public function index(Request $request)
     {
         $userOfficeId = Auth::user()->office_id;
+
+        // 1. Handle Main Table Data
+        $ppa = $this->getPpaQuery($request, $userOfficeId, 'id', 'search')
+            ->paginate(50)
+            ->withQueryString();
+
+        // 2. Handle Ancestors / Breadcrumbs for MAIN TABLE
         $parentId = $request->query('id');
-        $search = $request->query('search');
-
-        $query = Ppa::where('office_id', $userOfficeId);
-
-        // 1. Navigation Scope (Stay in the current folder)
-        if ($parentId) {
-            $query->where('parent_id', $parentId);
-        } else {
-            $query->whereNull('parent_id');
-        }
-
-        // 2. Search Logic
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                // Search by Name
-                $q->where('name', 'like', '%' . $search . '%')
-                    // Search by Suffix (e.g., '0041')
-                    ->orWhere('code_suffix', 'like', '%' . $search . '%');
-
-                // 3. SMART PARSING:
-                // If the user pasted a full code like "1000-1-03-009-0041"
-                if (str_contains($search, '-')) {
-                    $parts = explode('-', $search);
-                    $lastSegment = end($parts); // Get "0041"
-
-                    if (!empty($lastSegment)) {
-                        $q->orWhere(
-                            'code_suffix',
-                            'like',
-                            '%' . $lastSegment . '%',
-                        );
-                    }
-                }
-            });
-        }
-
-        $ppa = $query->paginate(100)->withQueryString();
-
-        // getting ancestors for breadcrumb
         $current = $parentId
             ? Ppa::with('ancestor.ancestor')->find($parentId)
             : null;
-
         $flatCurrent = $current ? $this->flattenAncestors($current) : [];
-
-        $offices = Office::with(['sector', 'lguLevel', 'officeType'])->get();
 
         return Inertia::render('ppa/index', [
             'ppaTree' => $ppa,
-            'offices' => $offices,
+            'offices' => Office::with([
+                'sector',
+                'lguLevel',
+                'officeType',
+            ])->get(),
             'current' => $flatCurrent,
+
+            // 3. Centralized Filters (Helpful for the frontend to know all states)
             'filters' => [
-                'search' => $search,
-                'id' => $parentId,
+                'search' => $request->query('search'),
+                'id' => $request->query('id'),
+                'page' => $request->query('page', 1),
+                'move_id' => $request->query('move_id'),
+                'move_search' => $request->query('move_search'),
+                'move_page' => $request->query('move_page', 1),
             ],
+
+            // 4. LAZY LOADING FOR THE MODAL
+            'movePpaTree' => Inertia::lazy(
+                fn() => $this->getPpaQuery(
+                    $request,
+                    $userOfficeId,
+                    'move_id',
+                    'move_search',
+                )
+                    ->paginate(50, ['*'], 'move_page')
+                    ->withQueryString(),
+            ),
+
+            // 5. Breadcrumbs for the MODAL (also lazy)
+            'moveCurrent' => Inertia::lazy(function () use ($request) {
+                $moveId = $request->query('move_id');
+                if (!$moveId) {
+                    return [];
+                }
+                $movePpa = Ppa::with('ancestor.ancestor')->find($moveId);
+                return $movePpa ? $this->flattenAncestors($movePpa) : [];
+            }),
         ]);
+    }
+
+    private function getPpaQuery($request, $officeId, $idKey, $searchKey)
+    {
+        $id = $request->query($idKey);
+        $search = $request->query($searchKey);
+
+        return Ppa::where('office_id', $officeId)
+            ->when(
+                $id,
+                fn($q) => $q->where('parent_id', $id),
+                fn($q) => $q->whereNull('parent_id'),
+            )
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($inner) use ($search) {
+                    $inner
+                        ->where('name', 'like', "%$search%")
+                        ->orWhere('code_suffix', 'like', "%$search%");
+
+                    if (str_contains($search, '-')) {
+                        $lastSegment = end(explode('-', $search));
+                        if ($lastSegment) {
+                            $inner->orWhere(
+                                'code_suffix',
+                                'like',
+                                "%$lastSegment%",
+                            );
+                        }
+                    }
+                });
+            })
+            ->orderBy('sort_order', 'asc');
     }
 
     private function flattenAncestors($ppa)
@@ -178,110 +208,123 @@ class PpaController extends Controller
         $ppa->update($validated);
     }
 
-    /**
-     * Move a PPA to a different parent.
-     */
     public function move(Request $request, Ppa $ppa)
     {
         $request->validate([
-            'parent_id' => 'nullable|exists:ppas,id',
+            'target_id' => 'required|exists:ppas,id',
+            'direction' => 'required|in:top,bottom',
         ]);
 
-        $newParentId = $request->input('parent_id');
+        $target = Ppa::findOrFail($request->target_id);
+        $direction = $request->direction;
         $oldParentId = $ppa->parent_id;
 
-        // Set moving PPA to temporary code_suffix to avoid unique constraint conflicts
-        $tempCodeSuffix = '9' . str_pad($ppa->id % 999, 3, '0', STR_PAD_LEFT);
-        $ppa->code_suffix = $tempCodeSuffix;
-        $ppa->save();
+        // 1. Hierarchy Validation: Prevent illegal structures
+        $isParentTarget = $this->isParentLevel($target->type, $ppa->type);
+        $isSiblingTarget = $target->type === $ppa->type;
 
-        // Renumber siblings in the OLD parent (remove the item)
-        if ($oldParentId !== null) {
-            $this->renumberSiblings($oldParentId, $ppa->id);
+        if (!$isParentTarget && !$isSiblingTarget) {
+            return back()->withErrors([
+                'move' => "A {$ppa->type} cannot be placed there.",
+            ]);
         }
 
-        // Renumber siblings in the NEW parent (add the item at the end)
-        if ($newParentId !== null) {
-            $this->renumberSiblings($newParentId, $ppa->id);
+        // 2. Cycle Detection: Can't move a folder into its own sub-folder
+        if ($this->isDescendantOf($target, $ppa->id)) {
+            return back()->withErrors([
+                'move' => 'Cannot move a folder into its own sub-folder.',
+            ]);
         }
 
-        // Update the PPA with the new parent_id
-        $ppa->parent_id = $newParentId;
+        DB::transaction(function () use (
+            $ppa,
+            $target,
+            $direction,
+            $oldParentId,
+            $isParentTarget,
+        ) {
+            // MODE A: Into a Parent
+            if ($isParentTarget) {
+                $ppa->parent_id = $target->id;
+                $ppa->sort_order = $direction === 'top' ? -1 : 999999;
+            }
+            // MODE B: Relative to a Sibling
+            else {
+                $ppa->parent_id = $target->parent_id;
+                $ppa->sort_order =
+                    $direction === 'top'
+                        ? $target->sort_order - 0.5
+                        : $target->sort_order + 0.5;
+            }
 
-        // Set sort_order to be the last in the new parent's children
-        $maxSortOrder =
-            Ppa::where('parent_id', $newParentId)
-                ->where('id', '!=', $ppa->id)
-                ->max('sort_order') ?? -1;
-        $ppa->sort_order = $maxSortOrder + 1;
+            $ppa->save();
 
-        // Calculate the new code_suffix based on its position in the new parent
-        $siblingCount = Ppa::where('parent_id', $newParentId)
-            ->where('id', '!=', $ppa->id)
-            ->count();
-        $digitLength = $this->getCodeSuffixLength($ppa->type);
+            // 3. Re-index OLD home
+            $this->syncSiblingIndexes($oldParentId);
 
-        if ($digitLength === 0) {
-            // Dynamic formatting (Sub-Activity) - no padding
-            $ppa->code_suffix = (string) ($siblingCount + 1);
-        } else {
-            // Fixed length formatting with leading zeros
-            $ppa->code_suffix = str_pad(
-                $siblingCount + 1,
-                $digitLength,
-                '0',
-                STR_PAD_LEFT,
-            );
-        }
+            // 4. Re-index NEW home (if different)
+            if ($oldParentId !== $ppa->parent_id) {
+                $this->syncSiblingIndexes($ppa->parent_id);
+            }
+        });
 
-        $ppa->save();
+        return redirect()->back();
     }
 
-    /**
-     * Renumber siblings after a parent change.
-     */
-    private function renumberSiblings($parentId, $excludeId = null)
+    private function syncSiblingIndexes($parentId)
     {
-        $query = Ppa::where('parent_id', $parentId)->orderBy('sort_order');
-
-        if ($excludeId) {
-            $query->where('id', '!=', $excludeId);
+        // Handle both Root (null) and Child groups
+        $query = Ppa::orderBy('sort_order');
+        if ($parentId === null) {
+            $query->whereNull('parent_id');
+        } else {
+            $query->where('parent_id', $parentId);
         }
 
         $siblings = $query->get();
 
-        // First, set all siblings to temporary unique values to avoid unique constraint violation
+        // STEP 1: Temporary suffixes to avoid Unique Constraint violations
         foreach ($siblings as $sibling) {
-            $tempValue =
-                '9' . str_pad($sibling->id % 999, 3, '0', STR_PAD_LEFT);
-            $sibling->update([
-                'code_suffix' => $tempValue,
-            ]);
+            $tempSuffix = 't' . $sibling->id; // Use ID to ensure uniqueness
+            $sibling->update(['code_suffix' => $tempSuffix]);
         }
 
-        // Then, update all siblings to their final values with type-specific formatting
+        // STEP 2: Assign final sort_order and code_suffix
         foreach ($siblings as $index => $sibling) {
             $digitLength = $this->getCodeSuffixLength($sibling->type);
 
-            // Apply type-specific formatting
-            if ($digitLength === 0) {
-                // Dynamic formatting (Sub-Activity) - no padding
-                $codeSuffix = (string) ($index + 1);
-            } else {
-                // Fixed length formatting with leading zeros
-                $codeSuffix = str_pad(
-                    $index + 1,
-                    $digitLength,
-                    '0',
-                    STR_PAD_LEFT,
-                );
-            }
+            $newSuffix =
+                $digitLength === 0
+                    ? (string) ($index + 1)
+                    : str_pad($index + 1, $digitLength, '0', STR_PAD_LEFT);
 
             $sibling->update([
                 'sort_order' => $index,
-                'code_suffix' => $codeSuffix,
+                'code_suffix' => $newSuffix,
             ]);
         }
+    }
+
+    private function isParentLevel($typeA, $typeB)
+    {
+        return match ($typeB) {
+            'Project' => $typeA === 'Program',
+            'Activity' => $typeA === 'Project',
+            'Sub-Activity' => $typeA === 'Activity',
+            default => false,
+        };
+    }
+
+    private function isDescendantOf($target, $movingId)
+    {
+        $current = $target;
+        while ($current) {
+            if ($current->id == $movingId) {
+                return true;
+            }
+            $current = $current->ancestor; // Requires 'ancestor' relationship in Model
+        }
+        return false;
     }
 
     /**
@@ -340,62 +383,62 @@ class PpaController extends Controller
     }
 
     // reorder
-    public function reorder(Request $request)
-    {
-        $activeId = $request->active_id;
-        $overId = $request->over_id;
+    // public function reorder(Request $request)
+    // {
+    //     $activeId = $request->active_id;
+    //     $overId = $request->over_id;
 
-        // 1. Get the item being moved
-        $movingItem = Ppa::findOrFail($activeId);
+    //     // 1. Get the item being moved
+    //     $movingItem = Ppa::findOrFail($activeId);
 
-        // 2. Get all siblings in their current order
-        $siblings = Ppa::where('parent_id', $movingItem->parent_id)
-            ->orderBy('sort_order')
-            ->get();
+    //     // 2. Get all siblings in their current order
+    //     $siblings = Ppa::where('parent_id', $movingItem->parent_id)
+    //         ->orderBy('sort_order')
+    //         ->get();
 
-        $ids = $siblings->pluck('id')->toArray();
+    //     $ids = $siblings->pluck('id')->toArray();
 
-        // 3. Remove moving ID and find where to insert it
-        $oldIndex = array_search($activeId, $ids);
-        $newIndex = array_search($overId, $ids);
+    //     // 3. Remove moving ID and find where to insert it
+    //     $oldIndex = array_search($activeId, $ids);
+    //     $newIndex = array_search($overId, $ids);
 
-        array_splice($ids, $oldIndex, 1);
-        array_splice($ids, $newIndex, 0, $activeId);
+    //     array_splice($ids, $oldIndex, 1);
+    //     array_splice($ids, $newIndex, 0, $activeId);
 
-        // 4. First, set all siblings to temporary unique values to avoid unique constraint violation
-        // Use numeric values that fit within 4-character limit (last 3 digits + 9 prefix)
-        foreach ($ids as $id) {
-            $tempValue = '9' . str_pad($id % 999, 3, '0', STR_PAD_LEFT);
-            Ppa::where('id', $id)->update([
-                'code_suffix' => $tempValue,
-            ]);
-        }
+    //     // 4. First, set all siblings to temporary unique values to avoid unique constraint violation
+    //     // Use numeric values that fit within 4-character limit (last 3 digits + 9 prefix)
+    //     foreach ($ids as $id) {
+    //         $tempValue = '9' . str_pad($id % 999, 3, '0', STR_PAD_LEFT);
+    //         Ppa::where('id', $id)->update([
+    //             'code_suffix' => $tempValue,
+    //         ]);
+    //     }
 
-        // 5. Then, update all siblings to their final values with type-specific formatting
-        foreach ($ids as $index => $id) {
-            $ppa = Ppa::findOrFail($id);
-            $digitLength = $this->getCodeSuffixLength($ppa->type);
+    //     // 5. Then, update all siblings to their final values with type-specific formatting
+    //     foreach ($ids as $index => $id) {
+    //         $ppa = Ppa::findOrFail($id);
+    //         $digitLength = $this->getCodeSuffixLength($ppa->type);
 
-            // Apply type-specific formatting
-            if ($digitLength === 0) {
-                // Dynamic formatting (Sub-Activity) - no padding
-                $codeSuffix = (string) ($index + 1);
-            } else {
-                // Fixed length formatting with leading zeros
-                $codeSuffix = str_pad(
-                    $index + 1,
-                    $digitLength,
-                    '0',
-                    STR_PAD_LEFT,
-                );
-            }
+    //         // Apply type-specific formatting
+    //         if ($digitLength === 0) {
+    //             // Dynamic formatting (Sub-Activity) - no padding
+    //             $codeSuffix = (string) ($index + 1);
+    //         } else {
+    //             // Fixed length formatting with leading zeros
+    //             $codeSuffix = str_pad(
+    //                 $index + 1,
+    //                 $digitLength,
+    //                 '0',
+    //                 STR_PAD_LEFT,
+    //             );
+    //         }
 
-            $ppa->update([
-                'sort_order' => $index,
-                'code_suffix' => $codeSuffix,
-            ]);
-        }
+    //         $ppa->update([
+    //             'sort_order' => $index,
+    //             'code_suffix' => $codeSuffix,
+    //         ]);
+    //     }
 
-        // return response()->json(['status' => 'success']);
-    }
+    //     // return response()->json(['status' => 'success']);
+    // }
 }

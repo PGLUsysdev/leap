@@ -59,7 +59,7 @@ import {
 // needed for row & cell level scope DnD setup
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { PaginatedResponse } from '@/types/global';
+import type { PaginatedResponse, Filter } from '@/types/global';
 
 interface DataTableProps<TData extends { id: unknown }> {
     columns: ColumnDef<TData, any>[];
@@ -85,9 +85,13 @@ interface DataTableProps<TData extends { id: unknown }> {
     onMove?: (data: TData) => void;
     onShowChildren?: (data: TData) => void;
 
-    paginationObj?: PaginatedResponse<TData>;
+    paginationObj?: PaginatedResponse<TData> | [];
 
     meta?: any;
+    filters?: Filter;
+    onlyKeys?: { [key: string]: any };
+    searchKey?: string;
+    pageKey?: string;
 }
 
 const reorderTree = (data: any[], activeId: string, overId: string): any[] => {
@@ -134,49 +138,65 @@ export function DataTable<TData extends { id: unknown }>({
     meta,
     paginationObj,
     filters,
+    onlyKeys = [],
+    searchKey = 'search',
+    pageKey = 'page',
 }: DataTableProps<TData>) {
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // for global search
-    const [searchValue, setSearchValue] = useState(filters.search || '');
+    const [searchValue, setSearchValue] = useState(filters?.[searchKey] || '');
 
     // 2. Sync local state with props (if URL changes via browser back/forward)
     useEffect(() => {
-        setSearchValue(filters.search || '');
-    }, [filters.search]);
+        setSearchValue(filters?.[searchKey] || '');
+    }, [filters?.[searchKey], searchKey]);
 
     // 3. Debounce and Trigger Inertia
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            // Only trigger if the value is actually different from the URL state
-            if (searchValue !== (filters.search || '')) {
+            const currentFilterValue = filters?.[searchKey] || '';
+            // Trigger if value is different, or if we're clearing a search that exists in URL
+            if (searchValue !== currentFilterValue) {
                 router.get(
                     window.location.pathname,
                     {
                         ...filters, // preserve other filters (like category, date, etc)
-                        search: searchValue,
-                        page: 1,
+                        [searchKey]: searchValue || undefined, // Send undefined to clear empty search
+                        [pageKey]: 1,
                     },
                     {
                         preserveState: true,
                         replace: true,
                         preserveScroll: true, // Crucial for UX in tables
-                        only: ['ppaTree', 'filters'],
+                        only:
+                            onlyKeys &&
+                            Array.isArray(onlyKeys) &&
+                            onlyKeys.length > 0
+                                ? onlyKeys
+                                : undefined,
                     },
                 );
             }
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [searchValue]);
+    }, [
+        searchValue,
+        filters?.[searchKey],
+        filters,
+        searchKey,
+        pageKey,
+        onlyKeys,
+    ]);
 
     useEffect(() => {
         setLocalData(data);
     }, [data]);
 
-    const [globalFilter, setGlobalFilter] = useState('');
+    // const [globalFilter, setGlobalFilter] = useState('');
 
     // 1. Setup the ref for ScrollArea
     const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -205,7 +225,7 @@ export function DataTable<TData extends { id: unknown }>({
             onReorder,
             onMove,
             onShowChildren,
-            meta,
+            ...meta,
         } as any,
         getSubRows: (row: any) => row.children,
         getExpandedRowModel: getExpandedRowModel(),
@@ -218,10 +238,19 @@ export function DataTable<TData extends { id: unknown }>({
 
             // for pagination
             pagination: {
-                pageIndex: paginationObj?.current_page
-                    ? paginationObj.current_page - 1
-                    : 0,
-                pageSize: paginationObj?.per_page ?? 0,
+                pageIndex:
+                    paginationObj &&
+                    paginationObj !== undefined &&
+                    !Array.isArray(paginationObj) &&
+                    paginationObj.current_page
+                        ? paginationObj.current_page - 1
+                        : 0,
+                pageSize:
+                    paginationObj &&
+                    paginationObj !== undefined &&
+                    !Array.isArray(paginationObj)
+                        ? paginationObj.per_page
+                        : 0,
             },
         },
 
@@ -230,8 +259,15 @@ export function DataTable<TData extends { id: unknown }>({
 
         // for pagination
         manualPagination: true,
-        pageCount: paginationObj ? paginationObj.last_page : undefined,
+        pageCount:
+            paginationObj &&
+            paginationObj !== undefined &&
+            !Array.isArray(paginationObj)
+                ? paginationObj.last_page
+                : undefined,
     });
+
+    console.log(table.options.meta);
 
     const { rows } = table.getRowModel();
 
@@ -302,6 +338,22 @@ export function DataTable<TData extends { id: unknown }>({
             onReorder?.(activeId, overId);
         }
     }
+
+    const navigate = (url: string | null) => {
+        if (!url) return;
+        router.get(
+            url,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only:
+                    onlyKeys && Array.isArray(onlyKeys) && onlyKeys.length > 0
+                        ? onlyKeys
+                        : undefined, // Only refresh the specific data needed
+            },
+        );
+    };
 
     return (
         <>
@@ -473,57 +525,65 @@ export function DataTable<TData extends { id: unknown }>({
                     <ScrollBar orientation="vertical" className="z-30" />
                 </ScrollArea>
 
-                {paginationObj === undefined || (
-                    <div className="flex items-center gap-1">
-                        <Button
-                            size="icon"
-                            onClick={() =>
-                                router.get(paginationObj.first_page_url)
-                            }
-                            disabled={paginationObj?.current_page === 1}
-                        >
-                            <ChevronFirst />
-                        </Button>
-                        <Button
-                            size="icon"
-                            onClick={() =>
-                                router.get(paginationObj.prev_page_url ?? '')
-                            }
-                            disabled={paginationObj?.current_page === 1}
-                        >
-                            <ChevronLeft />
-                        </Button>
-                        <Input
-                            defaultValue={paginationObj?.current_page}
-                            disabled
-                            className="w-10 text-center"
-                        />
-                        <Button
-                            size="icon"
-                            onClick={() =>
-                                router.get(paginationObj.next_page_url ?? '')
-                            }
-                            disabled={
-                                paginationObj?.current_page ===
-                                paginationObj?.last_page
-                            }
-                        >
-                            <ChevronRight />
-                        </Button>
-                        <Button
-                            size="icon"
-                            onClick={() =>
-                                router.get(paginationObj.last_page_url)
-                            }
-                            disabled={
-                                paginationObj?.current_page ===
-                                paginationObj?.last_page
-                            }
-                        >
-                            <ChevronLast />
-                        </Button>
-                    </div>
-                )}
+                {paginationObj &&
+                    paginationObj !== undefined &&
+                    !Array.isArray(paginationObj) && (
+                        <div className="flex items-center gap-1">
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    navigate(paginationObj.first_page_url)
+                                }
+                                disabled={paginationObj.current_page === 1}
+                            >
+                                <ChevronFirst />
+                            </Button>
+
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    paginationObj.prev_page_url &&
+                                    navigate(paginationObj.prev_page_url)
+                                }
+                                disabled={paginationObj.current_page === 1}
+                            >
+                                <ChevronLeft />
+                            </Button>
+
+                            <Input
+                                value={paginationObj.current_page}
+                                disabled
+                                className="w-10 text-center"
+                            />
+
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    paginationObj.next_page_url &&
+                                    navigate(paginationObj.next_page_url)
+                                }
+                                disabled={
+                                    paginationObj.current_page ===
+                                    paginationObj.last_page
+                                }
+                            >
+                                <ChevronRight />
+                            </Button>
+
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    navigate(paginationObj.last_page_url)
+                                }
+                                disabled={
+                                    paginationObj.current_page ===
+                                    paginationObj.last_page
+                                }
+                            >
+                                <ChevronLast />
+                            </Button>
+                        </div>
+                    )}
             </div>
 
             <AlertErrorDialog

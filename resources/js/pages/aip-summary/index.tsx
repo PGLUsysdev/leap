@@ -82,7 +82,7 @@ export default function AipSummaryTable({
     aipEntries,
     fundingSources,
     offices,
-    masterPpas,
+    masterPpas = [],
 }: AipSummaryTableProp) {
     console.log(aipEntries);
     const { auth } = usePage<SharedData>().props;
