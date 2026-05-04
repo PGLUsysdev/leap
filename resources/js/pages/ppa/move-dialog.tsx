@@ -183,7 +183,8 @@ export default function PpaMoveDialog({
                 </Card>
 
                 <div className="flex min-h-0">
-                    <ScrollArea className="w-full pr-3">
+                    {/* <ScrollArea className="w-full pr-3"> */}
+                    <div className="w-full overflow-x-auto">
                         {!Array.isArray(movePpaTree) && (
                             <DataTable
                                 key={`move-table-${filters?.move_id}-${selectedTarget?.id ?? 'none'}`}
@@ -209,16 +210,17 @@ export default function PpaMoveDialog({
                                 }}
                             />
                         )}
-                    </ScrollArea>
+                    </div>
+                    {/* </ScrollArea> */}
                 </div>
 
                 <DialogFooter className="mt-4 flex items-center justify-between border-t bg-background pt-4">
                     <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground italic">
                         <Info className="h-4 w-4 text-primary/50" />
                         {selectedTarget ? (
-                            <span className="animate-in fade-in slide-in-from-left-2">
-                                Moving relative to:{' '}
-                                <strong className="text-foreground">
+                            <span className="flex animate-in gap-1 fade-in slide-in-from-left-2">
+                                <span>Moving relative to:</span>
+                                <strong className="block max-w-[400px] truncate text-foreground">
                                     {selectedTarget.name}
                                 </strong>
                             </span>

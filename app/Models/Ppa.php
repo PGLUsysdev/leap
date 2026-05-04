@@ -20,6 +20,7 @@ class Ppa extends Model
         'code_suffix',
         'is_active',
         'sort_order',
+        'fiscal_year_id',
     ];
 
     protected $appends = ['full_code'];

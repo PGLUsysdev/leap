@@ -97,6 +97,7 @@ class AipEntryController extends Controller
         $targetParentId = $libId ?: $libBoundaryId;
 
         $masterPpas = Ppa::whereIn('office_id', $officeIds)
+            ->where('fiscal_year_id', $yearId)
             ->where('parent_id', $targetParentId)
             ->when($libSearch, function ($query, $search) {
                 $query->where(function ($inner) use ($search) {

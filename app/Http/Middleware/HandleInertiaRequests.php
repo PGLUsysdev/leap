@@ -38,6 +38,28 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        // 1. Get the year from session, or find the latest 'active' one as default
+        $yearId = $request->session()->get('active_fiscal_year_id');
+
+        if (!$yearId) {
+            $yearId = \App\Models\FiscalYear::where('status', 'active')
+                ->orderBy('year', 'desc')
+                ->value('id');
+
+            // If no 'active' exists, fallback to the literal latest year record
+            if (!$yearId) {
+                $yearId = \App\Models\FiscalYear::orderBy(
+                    'year',
+                    'desc',
+                )->value('id');
+            }
+
+            // Optional: Save this to the session so it persists for the rest of the visit
+            if ($yearId) {
+                $request->session()->put('active_fiscal_year_id', $yearId);
+            }
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -56,6 +78,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'status' => $request->session()->get('status'),
             ],
+            'activeYear' => \App\Models\FiscalYear::find($yearId),
         ];
     }
 }

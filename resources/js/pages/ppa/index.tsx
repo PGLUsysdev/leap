@@ -11,6 +11,7 @@ import type {
 } from '@/types/global';
 import PpaFormDialog from '@/pages/ppa/form-dialog';
 import PpaMoveDialog from '@/pages/ppa/move-dialog';
+import PpaImportDialog from '@/pages/ppa/ppa-import-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router, usePage } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
@@ -84,6 +85,9 @@ export default function PpaPage({
     // Move Dialog States
     const [movePpa, setMovePpa] = useState<Ppa | null>(null);
     const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+
+    // Import Dialog States
+    const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
     const [isErrorOpen, setIsErrorOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -237,6 +241,12 @@ export default function PpaPage({
                     pageKey="page"
                 >
                     <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsImportDialogOpen(true)}
+                        >
+                            Import from Last Year
+                        </Button>
                         {(current.length === 0 ||
                             current[0].type !== 'Sub-Activity') && (
                             <Button onClick={handleAddNew}>
@@ -289,6 +299,12 @@ export default function PpaPage({
                 open={isErrorOpen}
                 onOpenChange={setIsErrorOpen}
                 error={errorMessage}
+            />
+
+            <PpaImportDialog
+                isOpen={isImportDialogOpen}
+                onClose={() => setIsImportDialogOpen(false)}
+                existingPpaIds={[]} // TODO: Get existing PPA IDs from backend
             />
         </AppLayout>
     );

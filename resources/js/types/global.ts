@@ -298,6 +298,7 @@ export type AuthData = {
 };
 export type SharedData = {
     auth: AuthData;
+    activeYear: FiscalYear;
 };
 
 export interface PaginationLink {

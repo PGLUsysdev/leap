@@ -23,7 +23,7 @@ class FiscalYearController extends Controller
         $isControlOffice = $user->office_id === 2 || $user->role === 'admin';
 
         return Inertia::render('aip/index', [
-            'fiscalYears' => FiscalYear::all(),
+            'fiscalYears' => FiscalYear::orderBy('year', 'asc')->get(),
             'offices' => $isControlOffice ? Office::get() : [],
             'app' => Inertia::optional(function () use (
                 $request,

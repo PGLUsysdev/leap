@@ -295,6 +295,16 @@ Route::get('ppa/move-index', [PpaController::class, 'moveIndex'])->name(
     'ppa.move-index',
 );
 
+// ppa import from previous year
+Route::get('ppa/previous-year', [
+    PpaController::class,
+    'getPreviousYearPpas',
+])->name('ppa.previous-year');
+Route::post('ppa/import-from-previous-year', [
+    PpaController::class,
+    'importFromPreviousYear',
+])->name('ppa.import-from-previous-year');
+
 Route::get('aip-entries', [AipEntryController::class, 'index']);
 
 Route::post('/aip-costing/{aipEntry}', [

@@ -88,6 +88,7 @@ export default function AipSummaryTable({
     libCurrent,
     filters,
 }: AipSummaryTableProp) {
+    console.log(fiscalYear);
     console.log(masterPpas);
     // console.log(aipEntries);
 
