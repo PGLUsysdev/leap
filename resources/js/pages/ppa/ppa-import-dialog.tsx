@@ -218,14 +218,13 @@ export default function PpaImportDialog({
                         return (
                             <div
                                 key={item.id}
-                                className="flex min-w-0 items-center gap-2" // Add min-w-0 here
+                                className="flex min-w-0 items-center gap-2"
                             >
-                                <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />{' '}
-                                {/* Add shrink-0 */}
+                                <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className={`block h-7 max-w-[300px] truncate px-2 ${isAncestor ? 'cursor-not-allowed opacity-50' : ''}`} // Add truncate, block, and a max-width
+                                    className={`block h-7 max-w-100 truncate px-2 ${isAncestor ? 'cursor-not-allowed opacity-50' : ''}`}
                                     onClick={() => handleNavigate(item.id)}
                                     disabled={
                                         !!isAncestor ||

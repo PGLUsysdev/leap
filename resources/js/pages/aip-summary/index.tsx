@@ -88,9 +88,15 @@ export default function AipSummaryTable({
     libCurrent,
     filters,
 }: AipSummaryTableProp) {
-    console.log(fiscalYear);
-    console.log(masterPpas);
-    // console.log(aipEntries);
+    console.log({
+        fiscalYear,
+        aipEntries,
+        fundingSources,
+        offices,
+        masterPpas,
+        libCurrent,
+        filters,
+    });
 
     const { auth } = usePage<SharedData>().props;
 

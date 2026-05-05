@@ -37,13 +37,16 @@ export function Breadcrumbs({
                                             </BreadcrumbLink>
                                         )} */}
                                         {isLast || !item.href ? ( // If it's the last one OR href is null
-                                            <BreadcrumbPage>
+                                            <BreadcrumbPage className="max-w-80 truncate">
                                                 {item.title}
                                             </BreadcrumbPage>
                                         ) : (
                                             <BreadcrumbLink asChild>
                                                 {/* Only render Link if item.href is a valid string */}
-                                                <Link href={item.href}>
+                                                <Link
+                                                    href={item.href}
+                                                    className="max-w-80 truncate"
+                                                >
                                                     {item.title}
                                                 </Link>
                                             </BreadcrumbLink>

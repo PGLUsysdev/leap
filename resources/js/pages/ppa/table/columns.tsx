@@ -8,6 +8,7 @@ import {
     GripVertical,
     Move,
     SquareArrowOutUpRight,
+    FolderOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -103,55 +104,49 @@ const columns = [
     columnHelper.display({
         id: 'action',
         size: 120,
-        cell: ({ row, table }) => (
-            <div className="flex items-center gap-1">
-                {/* <Button
-                    onClick={() => {
-                        let nextType: 'Project' | 'Activity' | 'Sub-Activity';
+        cell: ({ row, table }) => {
+            const childrenCount = row.original.children_count;
 
-                        if (row.original.type === 'Program')
-                            nextType = 'Project';
-                        else if (row.original.type === 'Project')
-                            nextType = 'Activity';
-                        else nextType = 'Sub-Activity';
+            return (
+                <div className="flex items-center gap-1">
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() =>
+                            table.options.meta?.onShowChildren?.(row.original)
+                        }
+                        disabled={row.original.type === 'Sub-Activity'}
+                        title="Open PPA"
+                        // className="gap-0.5"
+                    >
+                        {childrenCount}
+                        {/* <FolderOpen /> */}
+                    </Button>
 
-                        table.options.meta?.onAdd?.(row.original, nextType);
-                    }}
-                    size="icon"
-                    variant="outline"
-                    disabled={row.original.type === 'Sub-Activity'}
-                >
-                    <Plus className="h-4 w-4" />
-                </Button> */}
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() =>
+                            table.options.meta?.onEdit?.(row.original)
+                        }
+                        title="Edit PPA"
+                    >
+                        <Pencil />
+                    </Button>
 
-                <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() =>
-                        table.options.meta?.onShowChildren?.(row.original)
-                    }
-                    disabled={row.original.type === 'Sub-Activity'}
-                >
-                    <SquareArrowOutUpRight />
-                </Button>
-
-                <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => table.options.meta?.onEdit?.(row.original)}
-                >
-                    <Pencil />
-                </Button>
-
-                <Button
-                    size="icon"
-                    variant="destructive"
-                    onClick={() => table.options.meta?.onDelete?.(row.original)}
-                >
-                    <Trash />
-                </Button>
-            </div>
-        ),
+                    <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() =>
+                            table.options.meta?.onDelete?.(row.original)
+                        }
+                        title="Delete PPA"
+                    >
+                        <Trash />
+                    </Button>
+                </div>
+            );
+        },
     }),
 ];
 

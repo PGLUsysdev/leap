@@ -1,5 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { CheckCircle2, XCircle, SquareArrowOutUpRight } from 'lucide-react';
+import {
+    CheckCircle2,
+    XCircle,
+    SquareArrowOutUpRight,
+    FolderOpen,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types/global';
@@ -179,6 +184,7 @@ const columns = [
             const meta = table.options.meta as any;
             const source = meta.ppaToMove;
             const target = row.original;
+            const childrenCount = target.children_count;
 
             // Logic 1: Standard Sub-Activity check
             const isSubActivity = target.type === 'Sub-Activity';
@@ -194,15 +200,16 @@ const columns = [
             return (
                 <Button
                     size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
+                    variant="outline"
                     onClick={() => meta?.onShowChildren?.(target)}
                     // Disabled if: it's a sub-activity OR hierarchy says no OR it's the item itself
                     disabled={isSubActivity || !isNavigationAllowed || isSelf}
+                    // className="gap-0.5"
                 >
-                    <SquareArrowOutUpRight
-                        className={`h-4 w-4 ${!isNavigationAllowed && !isSubActivity ? 'opacity-20' : ''}`}
-                    />
+                    {childrenCount}
+                    {/* <FolderOpen
+                        className={`${!isNavigationAllowed && !isSubActivity ? 'opacity-20' : ''}`}
+                    /> */}
                 </Button>
             );
         },

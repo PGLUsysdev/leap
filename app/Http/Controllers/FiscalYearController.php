@@ -43,7 +43,7 @@ class FiscalYearController extends Controller
                 $query = Ppmp::with([
                     'ppmpPriceList.category',
                     'ppmpPriceList.chartOfAccount',
-                ])->whereHas('aipEntry', function ($query) use ($id) {
+                ])->whereHas('aipEntry.ppa', function ($query) use ($id) {
                     $query->where('fiscal_year_id', $id);
                 });
 

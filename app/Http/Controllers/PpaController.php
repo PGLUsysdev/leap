@@ -95,13 +95,11 @@ class PpaController extends Controller
     {
         $id = $request->query($idKey);
         $search = $request->query($searchKey);
-
         $fiscalYearId = session('active_fiscal_year_id');
-
-        // dd($fiscalYearId);
 
         return Ppa::where('office_id', $officeId)
             ->where('fiscal_year_id', $fiscalYearId)
+            ->withCount('children')
             ->when(
                 $id,
                 function ($q) use ($id) {
@@ -549,6 +547,7 @@ class PpaController extends Controller
             }
 
             $previousYearPpas = $query
+                ->withCount('children')
                 ->orderBy('sort_order')
                 ->paginate(50, ['*'], 'lib_page')
                 ->withQueryString();

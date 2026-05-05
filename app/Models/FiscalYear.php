@@ -16,8 +16,13 @@ class FiscalYear extends Model
         'status' => 'active',
     ];
 
-    // public function aipEntries()
-    // {
-    //     return $this->hasMany(AipEntry::class, 'fiscal_year_id');
-    // }
+    public function aipEntries()
+    {
+        return $this->hasManyThrough(
+            AipEntry::class,
+            Ppa::class,
+            'fiscal_year_id',
+            'ppa_id',
+        );
+    }
 }

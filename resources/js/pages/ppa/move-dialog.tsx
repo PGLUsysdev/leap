@@ -6,6 +6,8 @@ import {
     ArrowUpToLine,
     ArrowDownToLine,
     Info,
+    Home,
+    ChevronRight,
 } from 'lucide-react';
 import {
     Dialog,
@@ -122,8 +124,8 @@ export default function PpaMoveDialog({
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[95vh] flex-col border-none shadow-2xl sm:max-w-[85%]">
                 <DialogHeader>
-                    <DialogTitle className="text-xl">Move Entry</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle>Move PPA</DialogTitle>
+                    <DialogDescription className="sr-only">
                         Navigate the library to find a destination.
                     </DialogDescription>
                 </DialogHeader>
@@ -154,7 +156,7 @@ export default function PpaMoveDialog({
                     </CardContent>
                 </Card>
 
-                <Card className="flex items-center gap-2 bg-muted/30 p-2 text-xs">
+                {/* <Card className="flex items-center gap-2 bg-muted/30 p-2 text-xs">
                     <div className="flex w-full items-center justify-start gap-2">
                         <button
                             onClick={() => navigateToBreadcrumb(null)}
@@ -180,7 +182,36 @@ export default function PpaMoveDialog({
                             </div>
                         ))}
                     </div>
-                </Card>
+                </Card> */}
+
+                <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => navigateToBreadcrumb(null)}
+                    >
+                        <Home className="mr-1 h-4 w-4" /> Root
+                    </Button>
+
+                    {[...moveCurrent].reverse().map((item) => (
+                        <div
+                            key={item.id}
+                            className="flex min-w-0 items-center gap-2"
+                        >
+                            <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigateToBreadcrumb(item.id)}
+                                // className="max-w-[120px] truncate hover:text-primary"
+                                className={`block h-7 max-w-100 truncate px-2`}
+                            >
+                                {item.name}
+                            </Button>
+                        </div>
+                    ))}
+                </div>
 
                 <div className="flex min-h-0">
                     {/* <ScrollArea className="w-full pr-3"> */}

@@ -56,23 +56,15 @@ export interface FiscalYear {
 
 export interface AipEntry {
     id: number;
-    fiscal_year_id: number;
     ppa_id: number;
     start_date: string;
     end_date: string;
     expected_output: string;
-    ps_amount: string;
-    mooe_amount: string;
-    fe_amount: string;
-    co_amount: string;
-    // total_amount: string;
-    ccet_adaptation: string;
-    ccet_mitigation: string;
     created_at: string | null;
     updated_at: string | null;
 
-    ppa_funding_sources?: PpaFundingSource[];
     ppa?: Ppa;
+    ppa_funding_sources?: PpaFundingSource[];
 }
 
 export interface FundingSource {
@@ -106,10 +98,12 @@ export interface Ppa {
     id: number;
     office_id: number;
     parent_id: number | null;
+    fiscal_year_id: number;
     name: string;
     type: 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
     code_suffix: string;
     is_active: boolean;
+    sort_order: number;
     created_at: string | null;
     updated_at: string | null;
 
@@ -120,6 +114,7 @@ export interface Ppa {
 
     full_code: string;
     ancestor: Ppa;
+    children_count?: number;
 }
 
 export interface FlattenedPpa extends Ppa {

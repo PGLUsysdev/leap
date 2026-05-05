@@ -43,9 +43,9 @@ export default function PpaPage({
     movePpaTree,
     moveCurrent,
 }: PpaPageProps) {
-    // console.log(ppaTree);
-    console.log(movePpaTree);
-    console.log(moveCurrent);
+    console.log(ppaTree);
+    // console.log(movePpaTree);
+    // console.log(moveCurrent);
     // console.log(current);
 
     const breadcrumbs: BreadcrumbItem[] = [

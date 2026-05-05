@@ -30,17 +30,16 @@ class AipEntryController extends Controller
 
         $officeIds = $this->getOfficeHierarchyIds($officeId);
 
-        $yearFilter = fn($q) => $q->where('fiscal_year_id', $yearId);
-        $hasAipFilter = fn($q) => $q->whereHas('aipEntries', $yearFilter);
+        $hasAipFilter = fn($q) => $q->where('fiscal_year_id', $yearId);
 
         // 1. Fetch AIP Entries (Main Table)
         $aipEntries = Ppa::whereIn('office_id', $officeIds)
             ->whereNull('parent_id')
-            ->whereHas('aipEntries', $yearFilter)
+            ->where('fiscal_year_id', $yearId)
+            ->has('aipEntries')
             ->orderBy('sort_order')
             ->with([
-                'aipEntries' => function ($query) use ($yearFilter) {
-                    $yearFilter($query);
+                'aipEntries' => function ($query) {
                     $query->with('ppaFundingSources.fundingSource');
                 },
                 'office.sector',
@@ -50,8 +49,7 @@ class AipEntryController extends Controller
                 'children' => fn($q) => $hasAipFilter($q)->orderBy(
                     'sort_order',
                 ),
-                'children.aipEntries' => function ($query) use ($yearFilter) {
-                    $yearFilter($query);
+                'children.aipEntries' => function ($query) {
                     $query->with('ppaFundingSources.fundingSource');
                 },
                 'children.office.sector',
@@ -61,10 +59,7 @@ class AipEntryController extends Controller
                 'children.children' => fn($q) => $hasAipFilter($q)->orderBy(
                     'sort_order',
                 ),
-                'children.children.aipEntries' => function ($query) use (
-                    $yearFilter,
-                ) {
-                    $yearFilter($query);
+                'children.children.aipEntries' => function ($query) {
                     $query->with('ppaFundingSources.fundingSource');
                 },
                 'children.children.office.sector',
@@ -74,10 +69,7 @@ class AipEntryController extends Controller
                 'children.children.children' => fn($q) => $hasAipFilter(
                     $q,
                 )->orderBy('sort_order'),
-                'children.children.children.aipEntries' => function (
-                    $query,
-                ) use ($yearFilter) {
-                    $yearFilter($query);
+                'children.children.children.aipEntries' => function ($query) {
                     $query->with('ppaFundingSources.fundingSource');
                 },
                 'children.children.children.office.sector',
@@ -173,9 +165,8 @@ class AipEntryController extends Controller
         $validated = $request->validated();
 
         $newEntries = collect($validated['ppa_ids'])
-            ->map(function ($ppaId) use ($fiscal_year_id) {
+            ->map(function ($ppaId) {
                 return [
-                    'fiscal_year_id' => $fiscal_year_id,
                     'ppa_id' => $ppaId,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -197,11 +188,9 @@ class AipEntryController extends Controller
 
         DB::transaction(function () use ($validated, $fiscalYear) {
             foreach ($validated['ppa_ids'] as $ppaId) {
-                // Use -> to access the id property of the fiscalYear object
                 AipEntry::firstOrCreate(
                     [
                         'ppa_id' => $ppaId,
-                        'fiscal_year_id' => $fiscalYear->id, // Fixed here
                     ],
                     [
                         'start_date' => $fiscalYear->year . '-01-01',
@@ -322,8 +311,11 @@ class AipEntryController extends Controller
             DB::beginTransaction();
 
             // Capture the context of the deletion
-            $fiscalYearId = $aipEntry->fiscal_year_id;
             $targetPpaId = $aipEntry->ppa_id;
+
+            // Get fiscal year from the associated PPA
+            $ppa = Ppa::find($targetPpaId);
+            $fiscalYearId = $ppa ? $ppa->fiscal_year_id : null;
 
             // 1. Get all child PPA IDs recursively from the library
             // This ensures if we remove a "Program", all its "Activities" are also removed from this AIP year
@@ -333,11 +325,17 @@ class AipEntryController extends Controller
             );
 
             // 2. Identify all AIP Entry IDs for these PPAs within this specific Fiscal Year
-            $aipEntryIdsToDelete = AipEntry::where(
-                'fiscal_year_id',
-                $fiscalYearId,
+            $aipEntryIdsToDelete = AipEntry::whereIn(
+                'ppa_id',
+                $ppaIdsToRemoveFromAip,
             )
-                ->whereIn('ppa_id', $ppaIdsToRemoveFromAip)
+                ->when($fiscalYearId, function ($query) use ($fiscalYearId) {
+                    $query->whereHas('ppa', function ($subQuery) use (
+                        $fiscalYearId,
+                    ) {
+                        $subQuery->where('fiscal_year_id', $fiscalYearId);
+                    });
+                })
                 ->pluck('id')
                 ->toArray();
 

@@ -93,8 +93,8 @@ const columns = [
                                 variant="outline"
                                 className="h-4 px-1 text-[9px]"
                             >
-                                <CheckCircle2 className="mr-1 h-2 w-2" /> ALREADY
-                                IMPORTED
+                                <CheckCircle2 className="mr-1 h-2 w-2" />{' '}
+                                ALREADY IMPORTED
                             </Badge>
                         )}
                     </div>
@@ -113,15 +113,18 @@ const columns = [
             const meta = table.options.meta as any;
             const ppa = row.original;
             const canOpen = ppa.type !== 'Sub-Activity';
+            const childrenCount = ppa.children_count;
 
             return (
                 <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     disabled={!canOpen}
                     onClick={() => meta.onNavigate?.(ppa.id)}
+                    // className="gap-0.5"
                 >
-                    <FolderOpen className="h-4 w-4" />
+                    {childrenCount}
+                    {/* <FolderOpen /> */}
                 </Button>
             );
         },
