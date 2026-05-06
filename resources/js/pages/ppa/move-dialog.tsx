@@ -21,18 +21,10 @@ import type { Ppa, PaginatedResponse, Filter } from '@/types/global';
 import columns from './columns/move-columns';
 import { DataTable } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
-import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent } from '@/components/ui/card';
 import { index } from '@/routes/ppa';
 
 interface PpaMoveDialogProps {
@@ -71,6 +63,7 @@ export default function PpaMoveDialog({
                 dialog_page,
                 dialog_search,
                 is_dialog_open,
+                dialog_mode,
                 ...mainFilters
             } = filters;
 
@@ -143,6 +136,16 @@ export default function PpaMoveDialog({
         );
     }
 
+    const displayData = useMemo(() => {
+        if (!dialogPpaTree || Array.isArray(dialogPpaTree)) return [];
+
+        return dialogPpaTree.data.map((ppa) => ({
+            ...ppa,
+            // Inject the selection state into the object
+            _isSelected: selectedTarget?.id === ppa.id,
+        }));
+    }, [dialogPpaTree, selectedTarget]);
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[95vh] flex-col border-none shadow-2xl sm:max-w-[85%]">
@@ -201,8 +204,7 @@ export default function PpaMoveDialog({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => navigateToBreadcrumb(item.id)}
-                                // className="max-w-[120px] truncate hover:text-primary"
-                                className={`block h-7 max-w-100 truncate px-2`}
+                                className={`block h-7 flex-1 truncate px-2`}
                             >
                                 {item.name}
                             </Button>
@@ -211,13 +213,13 @@ export default function PpaMoveDialog({
                 </div>
 
                 <div className="flex min-h-0">
-                    {/* <ScrollArea className="w-full pr-3"> */}
-                    <div className="w-full overflow-x-auto">
+                    <ScrollArea className="w-full pr-3">
+                        {/* <div className="w-full overflow-x-auto"> */}
                         {!Array.isArray(dialogPpaTree) && (
                             <DataTable
-                                key={`move-table-${filters?.dialog_id}-${selectedTarget?.id ?? 'none'}`}
+                                key={`move-table-${filters?.dialog_id}`}
                                 columns={columns}
-                                data={dialogPpaTree.data}
+                                data={displayData}
                                 withSearch
                                 onShowChildren={handleShowChildren}
                                 paginationObj={dialogPpaTree}
@@ -239,8 +241,8 @@ export default function PpaMoveDialog({
                                 isDialog={true}
                             />
                         )}
-                    </div>
-                    {/* </ScrollArea> */}
+                        {/* </div> */}
+                    </ScrollArea>
                 </div>
 
                 <DialogFooter className="mt-4 flex items-center justify-between border-t bg-background pt-4">

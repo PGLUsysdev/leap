@@ -38,28 +38,6 @@ class PpaController extends Controller
         $userOfficeId = Auth::user()->office_id;
         $mode = $request->query('dialog_mode');
 
-        // $parentId = $request->query('id');
-        // $current = $parentId
-        //     ? Ppa::with('ancestor.ancestor')->find($parentId)
-        //     : null;
-        // $flatCurrent = $current ? $this->flattenAncestors($current) : [];
-
-        // filtersx
-        // $filters = [
-        //     'id' => $request->query('id'),
-        //     'page' => $request->query('page', 1),
-        //     'search' => $request->query('search'),
-        // ];
-
-        // if ($request->hasAny(['dialog_id', 'dialog_search', 'dialog_page'])) {
-        //     $filters = [
-        //         ...$filters,
-        //         'dialog_id' => $request->query('dialog_id'),
-        //         'dialog_page' => $request->query('dialog_page', 1),
-        //         'dialog_search' => $request->query('dialog_search'),
-        //     ];
-        // }
-
         return Inertia::render('ppa/index', [
             'ppaTree' => $this->getPpaQuery(
                 $request,
@@ -67,10 +45,9 @@ class PpaController extends Controller
                 'id',
                 'search',
             )
-                ->paginate(10)
+                ->paginate(100)
                 ->withQueryString(),
 
-            // 'current' => $flatCurrent,
             'current' => $request->query('id')
                 ? $this->flattenAncestors(
                     Ppa::with('ancestor.ancestor')->find($request->query('id')),
@@ -107,7 +84,7 @@ class PpaController extends Controller
                     'dialog_id',
                     'dialog_search',
                 )
-                    ->paginate(10, ['*'], 'dialog_page')
+                    ->paginate(100, ['*'], 'dialog_page')
                     ->withQueryString();
             }),
 
@@ -120,54 +97,6 @@ class PpaController extends Controller
                 $ppa = Ppa::with('ancestor.ancestor')->find($id);
                 return $ppa ? $this->flattenAncestors($ppa) : [];
             }),
-
-            // // move dialog
-            // 'movePpaTree' => Inertia::lazy(
-            //     fn() => $this->getPpaQuery(
-            //         $request,
-            //         $userOfficeId,
-            //         'dialog_id',
-            //         'dialog_search',
-            //     )
-            //         ->paginate(10, ['*'], 'dialog_page')
-            //         ->withQueryString(),
-            // ),
-            // 'moveCurrent' => Inertia::lazy(function () use ($request) {
-            //     $moveId = $request->query('dialog_id');
-            //     if (!$moveId) {
-            //         return [];
-            //     }
-            //     $movePpa = Ppa::with('ancestor.ancestor')->find($moveId);
-            //     return $movePpa ? $this->flattenAncestors($movePpa) : [];
-            // }),
-
-            // // import dialog
-            // 'prevYearPpa' => Inertia::lazy(
-            //     fn() => $this->getPreviousYearPpas($request, $userOfficeId),
-            // ),
-
-            // 'libCurrent' => Inertia::lazy(function () use ($request) {
-            //     $libId = $request->query('dialog_id');
-            //     if (!$libId) {
-            //         return [];
-            //     }
-
-            //     // Get previous year for import dialog
-            //     $currentFiscalYearId = session('active_fiscal_year_id');
-            //     $currentYear = FiscalYear::find($currentFiscalYearId);
-            //     $prevYear = FiscalYear::where(
-            //         'year',
-            //         $currentYear->year - 1,
-            //     )->first();
-            //     $prevYearId = $prevYear->id;
-
-            //     $libPpa = Ppa::where('id', $libId)
-            //         ->where('fiscal_year_id', $prevYearId)
-            //         ->with('ancestor.ancestor')
-            //         ->first();
-
-            //     return $libPpa ? $this->flattenAncestors($libPpa) : [];
-            // }),
         ]);
     }
 
@@ -210,6 +139,56 @@ class PpaController extends Controller
             })
             ->orderBy('sort_order', 'asc')
             ->withCount('children');
+    }
+
+    public function getPreviousYearPpas($request, $userOfficeId)
+    {
+        // $userOfficeId = Auth::user()->office_id;
+        $currentFiscalYearId = session('active_fiscal_year_id');
+
+        // get previous year
+        $currentYear = FiscalYear::find($currentFiscalYearId);
+        $prevYear = FiscalYear::where('year', $currentYear->year - 1)->first();
+        $prevYearId = $prevYear->id;
+
+        $id = $request->query('dialog_id');
+        $search = $request->query('dialog_search');
+
+        // get ppa null first
+        return Ppa::where('office_id', $userOfficeId)
+            ->where('fiscal_year_id', $prevYearId)
+            ->when(
+                $id,
+                function ($q) use ($id) {
+                    return $q->where('parent_id', $id);
+                },
+                function ($q) {
+                    return $q->whereNull('parent_id');
+                },
+            )
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($inner) use ($search) {
+                    $inner
+                        ->where('name', 'like', "%$search%")
+                        ->orWhere('code_suffix', 'like', "%$search%");
+
+                    if (str_contains($search, '-')) {
+                        $segments = explode('-', $search);
+                        $lastSegment = end($segments);
+                        if ($lastSegment) {
+                            $inner->orWhere(
+                                'code_suffix',
+                                'like',
+                                "%$lastSegment%",
+                            );
+                        }
+                    }
+                });
+            })
+            ->orderBy('sort_order', 'asc')
+            ->withCount('children')
+            ->paginate(100, ['*'], 'dialog_page')
+            ->withQueryString();
     }
 
     private function flattenAncestors($ppa)
@@ -513,6 +492,7 @@ class PpaController extends Controller
     {
         $children = DB::table('ppas')
             ->where('parent_id', $parentId)
+            ->where('office_id', Auth::user()->office_id)
             ->pluck('id')
             ->toArray();
 
@@ -525,59 +505,6 @@ class PpaController extends Controller
         }
 
         return $descendants;
-    }
-
-    /**
-     * Get PPAs from previous fiscal year for import functionality
-     */
-    public function getPreviousYearPpas($request, $userOfficeId)
-    {
-        // $userOfficeId = Auth::user()->office_id;
-        $currentFiscalYearId = session('active_fiscal_year_id');
-
-        // get previous year
-        $currentYear = FiscalYear::find($currentFiscalYearId);
-        $prevYear = FiscalYear::where('year', $currentYear->year - 1)->first();
-        $prevYearId = $prevYear->id;
-
-        $id = $request->query('dialog_id');
-        $search = $request->query('dialog_search');
-
-        // get ppa null first
-        return Ppa::where('office_id', $userOfficeId)
-            ->where('fiscal_year_id', $prevYearId)
-            ->when(
-                $id,
-                function ($q) use ($id) {
-                    return $q->where('parent_id', $id);
-                },
-                function ($q) {
-                    return $q->whereNull('parent_id');
-                },
-            )
-            ->when($search, function ($q) use ($search) {
-                $q->where(function ($inner) use ($search) {
-                    $inner
-                        ->where('name', 'like', "%$search%")
-                        ->orWhere('code_suffix', 'like', "%$search%");
-
-                    if (str_contains($search, '-')) {
-                        $segments = explode('-', $search);
-                        $lastSegment = end($segments);
-                        if ($lastSegment) {
-                            $inner->orWhere(
-                                'code_suffix',
-                                'like',
-                                "%$lastSegment%",
-                            );
-                        }
-                    }
-                });
-            })
-            ->orderBy('sort_order', 'asc')
-            ->withCount('children')
-            ->paginate(10, ['*'], 'dialog_page')
-            ->withQueryString();
     }
 
     /**
@@ -594,25 +521,17 @@ class PpaController extends Controller
         $currentFiscalYearId = session('active_fiscal_year_id');
 
         if (!$currentFiscalYearId) {
-            return response()->json(
-                [
-                    'success' => false,
-                    'message' => 'No active fiscal year set',
-                ],
-                400,
-            );
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'No active fiscal year set']);
         }
 
         // Get previous fiscal year by querying the database
         $currentFiscalYear = \App\Models\FiscalYear::find($currentFiscalYearId);
         if (!$currentFiscalYear) {
-            return response()->json(
-                [
-                    'success' => false,
-                    'message' => 'Current fiscal year not found',
-                ],
-                400,
-            );
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Current fiscal year not found']);
         }
 
         $previousFiscalYear = \App\Models\FiscalYear::where(
@@ -620,13 +539,9 @@ class PpaController extends Controller
             $currentFiscalYear->year - 1,
         )->first();
         if (!$previousFiscalYear) {
-            return response()->json(
-                [
-                    'success' => false,
-                    'message' => 'Previous fiscal year not found',
-                ],
-                400,
-            );
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Previous fiscal year not found']);
         }
 
         $previousFiscalYearId = $previousFiscalYear->id;
@@ -701,51 +616,51 @@ class PpaController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => "Successfully imported {$importedCount} PPAs.",
-            ]);
+            return redirect()
+                ->back()
+                ->with(
+                    'success',
+                    "Successfully imported {$importedCount} PPAs.",
+                );
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return response()->json(
-                [
-                    'success' => false,
-                    'message' => 'Error importing PPAs: ' . $e->getMessage(),
-                ],
-                500,
-            );
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'error' => 'Error importing PPAs: ' . $e->getMessage(),
+                ]);
         }
     }
 
     /**
      * Get breadcrumbs for PPA navigation
      */
-    private function getPpaBreadcrumbs($ppaId, $fiscalYearId = null)
-    {
-        $query = Ppa::with('parent.parent');
+    // private function getPpaBreadcrumbs($ppaId, $fiscalYearId = null)
+    // {
+    //     $query = Ppa::with('parent.parent');
 
-        if ($fiscalYearId) {
-            $query->where('fiscal_year_id', $fiscalYearId);
-        }
+    //     if ($fiscalYearId) {
+    //         $query->where('fiscal_year_id', $fiscalYearId);
+    //     }
 
-        $ppa = $query->find($ppaId);
+    //     $ppa = $query->find($ppaId);
 
-        if (!$ppa) {
-            return [];
-        }
+    //     if (!$ppa) {
+    //         return [];
+    //     }
 
-        $breadcrumbs = [];
-        $current = $ppa;
+    //     $breadcrumbs = [];
+    //     $current = $ppa;
 
-        while ($current) {
-            array_unshift($breadcrumbs, [
-                'id' => $current->id,
-                'name' => $current->name,
-            ]);
-            $current = $current->parent;
-        }
+    //     while ($current) {
+    //         array_unshift($breadcrumbs, [
+    //             'id' => $current->id,
+    //             'name' => $current->name,
+    //         ]);
+    //         $current = $current->parent;
+    //     }
 
-        return $breadcrumbs;
-    }
+    //     return $breadcrumbs;
+    // }
 }

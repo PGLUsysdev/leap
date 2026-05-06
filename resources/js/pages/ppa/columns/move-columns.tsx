@@ -1,10 +1,4 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import {
-    CheckCircle2,
-    XCircle,
-    SquareArrowOutUpRight,
-    FolderOpen,
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types/global';
@@ -54,7 +48,7 @@ const columns = [
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
             const source = meta.ppaToMove;
-            const target = row.original;
+            const target = row.original as any;
 
             if (!source)
                 return (
@@ -66,9 +60,7 @@ const columns = [
             const isSelf = String(target.id) === String(source.id);
             const isDisabled = (!isSibling && !isParent) || isSelf;
 
-            const isChecked =
-                meta.selectedId != null &&
-                String(meta.selectedId) === String(target.id);
+            const isChecked = !!target._isSelected;
 
             return (
                 <div className="flex items-center justify-center">
@@ -144,7 +136,7 @@ const columns = [
                     </div>
 
                     <span
-                        className={`text-sm leading-tight break-words whitespace-normal ${isSelf ? 'italic' : 'font-medium'}`}
+                        className={`text-sm leading-tight wrap-break-word whitespace-normal ${isSelf ? 'italic' : 'font-medium'}`}
                     >
                         {ppa.name}
                     </span>

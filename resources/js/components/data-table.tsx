@@ -156,7 +156,6 @@ export function DataTable<TData extends { id: unknown }>({
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // for global search
-    // const [searchValue, setSearchValue] = useState(filters?.[searchKey] || '');
     const [searchValue, setSearchValue] = useState('');
 
     // 2. Sync local state with props (if URL changes via browser back/forward)
@@ -195,25 +194,18 @@ export function DataTable<TData extends { id: unknown }>({
 
         return () => clearTimeout(delayDebounceFn);
     }, [
-        // searchValue,
-        // // filters?.[searchKey],
-        // filters,
-        // searchKey,
-        // pageKey,
-        // onlyKeys,
         isDialog,
         onlyKeys.length,
         searchKey,
         onlyKeys,
         filters,
         searchValue,
+        // pageKey,
     ]);
 
     useEffect(() => {
         setLocalData(data);
     }, [data]);
-
-    // const [globalFilter, setGlobalFilter] = useState('');
 
     // 1. Setup the ref for ScrollArea
     const tableContainerRef = useRef<HTMLDivElement>(null);
