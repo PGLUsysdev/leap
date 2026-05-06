@@ -98,17 +98,29 @@ const columns = [
                             </Badge>
                         )}
                     </div>
-                    <span className="text-sm leading-tight font-medium">
+                    <span className="text-sm leading-tight font-medium text-wrap">
                         {ppa.name}
                     </span>
                 </div>
             );
         },
     }),
+    // columnHelper.accessor('is_active', {
+    //     header: 'Status',
+    //     cell: ({ row }) => {
+    //         const status = row.original.is_active;
+
+    //         return status ? (
+    //             <Badge>Active</Badge>
+    //         ) : (
+    //             <Badge variant="destructive">Inactive</Badge>
+    //         );
+    //     },
+    // }),
     columnHelper.display({
         id: 'actions',
         size: 60,
-        header: 'Open',
+        // header: 'Open',
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
             const ppa = row.original;
@@ -120,7 +132,7 @@ const columns = [
                     variant="outline"
                     size="icon"
                     disabled={!canOpen}
-                    onClick={() => meta.onNavigate?.(ppa.id)}
+                    onClick={() => meta.onShowChildren?.(ppa)}
                     // className="gap-0.5"
                 >
                     {childrenCount}

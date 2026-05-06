@@ -13,83 +13,121 @@ import { DataTable } from '@/components/data-table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { ChevronRight, Home, Info, Download } from 'lucide-react';
-import columns from './ppa-import-table/columns';
+import columns from './columns/import-columns';
 import type { Ppa, PaginatedResponse, Filter } from '@/types/global';
+import { index, previousYear } from '@/routes/ppa';
 
 interface PpaImportDialogProps {
     isOpen: boolean;
     onClose: () => void;
     existingPpaIds: number[];
+    dialogPpaTree: PaginatedResponse<Ppa> | []; // Rename prevYearPpa
+    dialogCurrent: Ppa[];
 }
 
 export default function PpaImportDialog({
     isOpen,
+    onOpenChange,
+    filters,
+    dialogPpaTree,
+    dialogCurrent,
     onClose,
-    existingPpaIds = [],
 }: PpaImportDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
     );
     const [loading, setLoading] = useState(false);
-    const [previousYearPpas, setPreviousYearPpas] =
-        useState<PaginatedResponse<Ppa> | null>(null);
-    const [libCurrent, setLibCurrent] = useState<any[]>([]);
-    const [dialogFilters, setDialogFilters] = useState<Filter>({
-        lib_id: undefined,
-        lib_search: undefined,
-        lib_boundary_id: undefined,
-        lib_page: 1,
-    });
+    // const [previousYearPpas, setPreviousYearPpas] =
+    //     useState<PaginatedResponse<Ppa> | null>(null);
+    // const [libCurrent, setLibCurrent] = useState<any[]>([]);
+    // const [dialogFilters, setDialogFilters] = useState<Filter>({
+    //     lib_id: undefined,
+    //     lib_search: undefined,
+    //     lib_boundary_id: undefined,
+    //     lib_page: 1,
+    // });
+
+    const existingPpaIds: number[] = [];
 
     const existingIdsSet = useMemo(
         () => new Set(existingPpaIds),
         [existingPpaIds],
     );
 
-    const fetchPreviousYearPpas = useCallback(async () => {
-        try {
-            // Clean up the filters to remove undefined values
-            const cleanFilters = Object.fromEntries(
-                Object.entries(dialogFilters).filter(
-                    ([_, value]) =>
-                        value !== undefined &&
-                        value !== 'undefined' &&
-                        value !== '',
-                ),
-            );
+    // const fetchPreviousYearPpas = useCallback(async () => {
+    //     try {
+    //         // Clean up the filters to remove undefined values
+    //         const cleanFilters = Object.fromEntries(
+    //             Object.entries(dialogFilters).filter(
+    //                 ([_, value]) =>
+    //                     value !== undefined &&
+    //                     value !== 'undefined' &&
+    //                     value !== '',
+    //             ),
+    //         );
 
-            const queryString = new URLSearchParams(
-                cleanFilters as any,
-            ).toString();
-            const response = await fetch(`/ppa/previous-year?${queryString}`);
+    //         const queryString = new URLSearchParams(
+    //             cleanFilters as any,
+    //         ).toString();
+    //         const response = await fetch(`/ppa/previous-year?${queryString}`);
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API Error:', response.status, errorText);
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
+    //         if (!response.ok) {
+    //             const errorText = await response.text();
+    //             console.error('API Error:', response.status, errorText);
+    //             throw new Error(`HTTP ${response.status}: ${errorText}`);
+    //         }
 
-            const data = await response.json();
+    //         const data = await response.json();
 
-            if (data.error) {
-                throw new Error(data.error);
-            }
+    //         if (data.error) {
+    //             throw new Error(data.error);
+    //         }
 
-            setPreviousYearPpas(data.previousYearPpas);
-            setLibCurrent(data.libCurrent || []);
-        } catch (error) {
-            console.error('Error fetching previous year PPAs:', error);
-            // Set empty state to prevent infinite loading
-            setPreviousYearPpas(null);
-            setLibCurrent([]);
-        }
-    }, [dialogFilters]);
+    //         setPreviousYearPpas(data.previousYearPpas);
+    //         setLibCurrent(data.libCurrent || []);
+    //     } catch (error) {
+    //         console.error('Error fetching previous year PPAs:', error);
+    //         // Set empty state to prevent infinite loading
+    //         setPreviousYearPpas(null);
+    //         setLibCurrent([]);
+    //     }
+    // }, [dialogFilters]);
+
+    const openPreviousYearModal = async () => {
+        // const response = await fetch('/ppa/previous-year');
+        // const response = await fetch(previousYear().url);
+        // const data = await response.json();
+
+        // setPreviousYearPpas(data.prevYearPpa);
+        // setOpen(true);
+
+        // router.visit(previousYear().url, {
+        //     preserveState: true,
+        // });
+
+        router.reload({ only: ['dialogPpaTree'] });
+    };
 
     useEffect(() => {
         if (isOpen) {
-            void fetchPreviousYearPpas();
+            openPreviousYearModal();
         }
-    }, [isOpen, dialogFilters, fetchPreviousYearPpas]);
+        if (!isOpen) {
+            const {
+                dialog_id,
+                dialog_page,
+                dialog_search,
+                is_dialog_open,
+                ...mainFilters
+            } = filters;
+
+            router.visit(index({ query: mainFilters }), {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            });
+        }
+    }, [isOpen]);
 
     const handleToggle = (ppa: Ppa) => {
         setSelectedItems((prev) => {
@@ -100,23 +138,25 @@ export default function PpaImportDialog({
         });
     };
 
-    const handleNavigate = (id: number | null) => {
-        setDialogFilters((prev) => ({
-            ...prev,
-            lib_id: id || undefined,
-            lib_page: 1,
-            lib_boundary_id: prev.lib_boundary_id, // Always preserve the lock
-        }));
-    };
+    // const handleNavigate = (id: number | null) => {
+    //     setDialogFilters((prev) => ({
+    //         ...prev,
+    //         lib_id: id || undefined,
+    //         lib_page: 1,
+    //         lib_boundary_id: prev.lib_boundary_id, // Always preserve the lock
+    //     }));
+    // };
 
     const handleClose = () => {
         onClose();
-        setDialogFilters({
-            lib_id: undefined,
-            lib_search: undefined,
-            lib_boundary_id: undefined,
-            lib_page: 1,
-        });
+
+        // setDialogFilters({
+        //     lib_id: undefined,
+        //     lib_search: undefined,
+        //     lib_boundary_id: undefined,
+        //     lib_page: 1,
+        // });
+
         setSelectedItems(new Map());
     };
 
@@ -143,7 +183,6 @@ export default function PpaImportDialog({
                 },
                 onError: (errors) => {
                     console.error('Import failed:', errors);
-                    // Could show user-friendly error message here
                 },
                 onFinish: () => setLoading(false),
             },
@@ -151,16 +190,17 @@ export default function PpaImportDialog({
     };
 
     const displayData = useMemo(() => {
-        if (!previousYearPpas || Array.isArray(previousYearPpas)) return [];
+        if (!dialogPpaTree || Array.isArray(dialogPpaTree)) return [];
 
-        return previousYearPpas.data.map((ppa) => ({
+        return dialogPpaTree.data.map((ppa) => ({
             ...ppa,
             // We inject the state directly into the object
             // This ensures the DataTable's useEffect detects a change
             _isSelected: selectedItems.has(ppa.id),
             _isAdded: existingIdsSet.has(ppa.id),
         }));
-    }, [previousYearPpas, selectedItems, existingIdsSet]);
+    }, [selectedItems, existingIdsSet]);
+    // }, [previousYearPpas, selectedItems, existingIdsSet]);
 
     const handleToggleAll = (ppas: Ppa[], isChecked: boolean) => {
         setSelectedItems((prev) => {
@@ -176,8 +216,35 @@ export default function PpaImportDialog({
         });
     };
 
+    const handleShowChildren = (ppa: Ppa) => {
+        router.get(
+            'ppa',
+            {
+                ...filters,
+                dialog_mode: 'import',
+                dialog_id: ppa.id,
+                dialog_page: 1,
+            },
+            {
+                preserveState: true,
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+            },
+        );
+    };
+
+    function navigateToBreadcrumb(id: number | null) {
+        router.get(
+            'ppa',
+            { ...filters, dialog_id: id, dialog_page: 1 },
+            {
+                preserveState: true,
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+            },
+        );
+    }
+
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[95vh] flex-col sm:max-w-[85%]">
                 <DialogHeader>
                     <DialogTitle>Import from Previous Year</DialogTitle>
@@ -192,30 +259,14 @@ export default function PpaImportDialog({
                     <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-7 px-2 ${dialogFilters.lib_boundary_id ? 'cursor-not-allowed opacity-50' : ''}`}
-                        onClick={() => handleNavigate(null)}
-                        // DISABLE ROOT IF BOUNDARY EXISTS
-                        disabled={!!dialogFilters.lib_boundary_id}
+                        className="h-7 px-2"
+                        onClick={() => navigateToBreadcrumb(null)}
                     >
                         <Home className="mr-1 h-4 w-4" /> Root
                     </Button>
 
-                    {libCurrent.map((item) => {
-                        /**
-                         * DISABLE LOGIC:
-                         * If a boundary is set, we find its position in the breadcrumb path.
-                         * Anything "before" the boundary is an ancestor and should be disabled.
-                         */
-                        const boundaryId = Number(
-                            dialogFilters.lib_boundary_id,
-                        );
-                        const isAncestor =
-                            boundaryId &&
-                            item.id !== boundaryId &&
-                            libCurrent.findIndex((i) => i.id === boundaryId) >
-                                libCurrent.findIndex((i) => i.id === item.id);
-
-                        return (
+                    {dialogCurrent &&
+                        [...dialogCurrent].reverse().map((item) => (
                             <div
                                 key={item.id}
                                 className="flex min-w-0 items-center gap-2"
@@ -224,50 +275,46 @@ export default function PpaImportDialog({
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className={`block h-7 max-w-100 truncate px-2 ${isAncestor ? 'cursor-not-allowed opacity-50' : ''}`}
-                                    onClick={() => handleNavigate(item.id)}
-                                    disabled={
-                                        !!isAncestor ||
-                                        item.id === dialogFilters.lib_id
+                                    onClick={() =>
+                                        navigateToBreadcrumb(item.id)
                                     }
+                                    className={`block h-7 max-w-100 truncate px-2`}
                                 >
                                     {item.name}
                                 </Button>
                             </div>
-                        );
-                    })}
+                        ))}
                 </div>
 
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full pr-3">
-                        {previousYearPpas &&
-                            !Array.isArray(previousYearPpas) && (
-                                <DataTable
-                                    key={`import-table-${dialogFilters?.lib_id}`}
-                                    columns={columns}
-                                    data={displayData}
-                                    paginationObj={previousYearPpas}
-                                    withSearch
-                                    searchKey="lib_search"
-                                    pageKey="lib_page"
-                                    negativeHeight={24}
-                                    onlyKeys={[
-                                        'previousYearPpas',
-                                        'libCurrent',
-                                        'filters',
-                                    ]}
-                                    // DYNAMIC STATE PASSED HERE
-                                    meta={{
-                                        selectedIds: new Set(
-                                            selectedItems.keys(),
-                                        ),
-                                        existingIds: existingIdsSet,
-                                        onToggle: handleToggle,
-                                        onNavigate: handleNavigate,
-                                        onToggleAll: handleToggleAll,
-                                    }}
-                                />
-                            )}
+                        {dialogPpaTree && (
+                            // !Array.isArray(previousYearPpas) && (
+                            <DataTable
+                                key={`import-table-${filters?.dialog_id}`}
+                                columns={columns}
+                                data={displayData}
+                                paginationObj={dialogPpaTree}
+                                withSearch
+                                searchKey="dialog_search"
+                                pageKey="dialog_page"
+                                filters={filters}
+                                negativeHeight={24}
+                                onlyKeys={[
+                                    'dialogPpaTree',
+                                    'dialogCurrent',
+                                    'filters',
+                                ]}
+                                meta={{
+                                    selectedIds: new Set(selectedItems.keys()),
+                                    existingIds: existingIdsSet,
+                                    onToggle: handleToggle,
+                                    // onNavigate: handleNavigate,
+                                    onToggleAll: handleToggleAll,
+                                }}
+                                onShowChildren={handleShowChildren}
+                            />
+                        )}
                     </ScrollArea>
                 </div>
 

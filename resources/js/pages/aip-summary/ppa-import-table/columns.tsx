@@ -98,7 +98,7 @@ const columns = [
                             </Badge>
                         )}
                     </div>
-                    <span className="text-sm leading-tight font-medium">
+                    <span className="text-sm leading-tight font-medium text-wrap">
                         {ppa.name}
                     </span>
                 </div>
@@ -108,20 +108,22 @@ const columns = [
     columnHelper.display({
         id: 'actions',
         size: 60,
-        header: 'Open',
+        // header: 'Open',
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
             const ppa = row.original;
             const canOpen = ppa.type !== 'Sub-Activity';
+            const childrenCount = ppa.children_count;
 
             return (
                 <Button
-                    variant="ghost"
+                    variant="outline"
                     size="icon"
                     disabled={!canOpen}
                     onClick={() => meta.onNavigate?.(ppa.id)}
                 >
-                    <FolderOpen className="h-4 w-4" />
+                    {childrenCount}
+                    {/* <FolderOpen /> */}
                 </Button>
             );
         },

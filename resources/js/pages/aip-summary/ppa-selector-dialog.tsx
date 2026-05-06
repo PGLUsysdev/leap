@@ -136,7 +136,7 @@ export default function PpaSelectorDialog({
             <DialogContent className="flex max-h-[95vh] flex-col sm:max-w-[85%]">
                 <DialogHeader>
                     <DialogTitle>Library Navigator</DialogTitle>
-                    <DialogDescription>
+                    <DialogDescription className="sr-only">
                         Select items to import. Selections are preserved across
                         folders.
                     </DialogDescription>
@@ -185,7 +185,9 @@ export default function PpaSelectorDialog({
                                         item.id === filters.lib_id
                                     }
                                 >
-                                    {item.name}
+                                    <span className="max-w-90 truncate">
+                                        {item.name}
+                                    </span>
                                 </Button>
                             </div>
                         );

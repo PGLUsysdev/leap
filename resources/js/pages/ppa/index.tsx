@@ -1,7 +1,25 @@
 import { useState } from 'react';
-import { type BreadcrumbItem } from '@/types';
+import { router, usePage } from '@inertiajs/react';
+
+// Layouts & UI Components
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
+
+// Page-Specific Components
+import PpaFormDialog from '@/pages/ppa/form-dialog';
+import PpaMoveDialog from '@/pages/ppa/move-dialog';
+import PpaImportDialog from '@/pages/ppa/ppa-import-dialog';
+import columns from './columns/columns';
+
+// Routes & API
+import { index, reorder } from '@/routes/ppa';
+import { destroy } from '@/routes/ppas';
+
+// Types
+import { type BreadcrumbItem } from '@/types';
 import type {
     Ppa,
     Office,
@@ -9,64 +27,31 @@ import type {
     PaginatedResponse,
     Filter,
 } from '@/types/global';
-import PpaFormDialog from '@/pages/ppa/form-dialog';
-import PpaMoveDialog from '@/pages/ppa/move-dialog';
-import PpaImportDialog from '@/pages/ppa/ppa-import-dialog';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { router, usePage } from '@inertiajs/react';
-import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
-import { index } from '@/routes/ppa';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
 
 const NEXT_TYPE_MAP: Record<Ppa['type'], Ppa['type']> = {
     Program: 'Project',
     Project: 'Activity',
     Activity: 'Sub-Activity',
-    'Sub-Activity': 'Sub-Activity', // Should never be used as button will be hidden
+    'Sub-Activity': 'Sub-Activity',
 };
 
 interface PpaPageProps {
-    ppaTree: PaginatedResponse<Ppa>;
     offices: Office[];
+    ppaTree: PaginatedResponse<Ppa>;
     current: Ppa[];
     filters: Filter;
-    movePpaTree: PaginatedResponse<Ppa>;
-    moveCurrent: Ppa[];
+    dialogPpaTree: PaginatedResponse<Ppa>;
+    dialogCurrent: Ppa[];
 }
 
 export default function PpaPage({
-    ppaTree,
     offices,
+    ppaTree,
     current,
     filters,
-    movePpaTree,
-    moveCurrent,
+    dialogPpaTree,
+    dialogCurrent,
 }: PpaPageProps) {
-    console.log(ppaTree);
-    // console.log(movePpaTree);
-    // console.log(moveCurrent);
-    // console.log(current);
-
-    const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: 'PPA Master Library',
-            href: index().url,
-        },
-    ];
-
-    const dynamicItems =
-        current?.toReversed().map((item) => ({
-            title: item.name,
-            href: index({
-                query: {
-                    id: item.id,
-                },
-            }).url,
-        })) || [];
-
-    const finalBreadcrumbs = [...breadcrumbs, ...dynamicItems];
-
     const { auth } = usePage<SharedData>().props;
 
     // Form Dialog States
@@ -91,6 +76,26 @@ export default function PpaPage({
 
     const [isErrorOpen, setIsErrorOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // breadcrumbs
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'PPA Master Library',
+            href: index().url,
+        },
+    ];
+
+    const dynamicItems =
+        current?.toReversed().map((item) => ({
+            title: item.name,
+            href: index({
+                query: {
+                    id: item.id,
+                },
+            }).url,
+        })) || [];
+
+    const finalBreadcrumbs = [...breadcrumbs, ...dynamicItems];
 
     // Handlers
     function handleAddChild(parent: Ppa, childType: Ppa['type']) {
@@ -124,8 +129,8 @@ export default function PpaPage({
     function handleDelete() {
         if (!deletePpa) return;
 
-        router.delete(`/ppas/${deletePpa.id}`, {
-            preserveState: true, // Changed to true so we can see the error dialog
+        router.visit(destroy(deletePpa.id), {
+            preserveState: true,
             preserveScroll: true,
             onStart: () => setIsDeleting(true),
             onSuccess: () => {
@@ -133,7 +138,6 @@ export default function PpaPage({
                 setErrorMessage(null);
             },
             onError: (errors) => {
-                // Check if the backend sent an 'error' key
                 if (errors.error) {
                     setErrorMessage(errors.error);
                     setIsErrorOpen(true);
@@ -149,12 +153,13 @@ export default function PpaPage({
     }
 
     function handleReorder(activeId: string, overId: string) {
-        router.post(
-            '/ppas/reorder',
-            {
-                active_id: activeId,
-                over_id: overId,
-            },
+        router.visit(
+            reorder({
+                query: {
+                    active_id: activeId,
+                    over_id: overId,
+                },
+            }),
             {
                 preserveState: false,
                 preserveScroll: true,
@@ -163,41 +168,47 @@ export default function PpaPage({
     }
 
     function handleMoveOpen(ppa: Ppa) {
-        const currentBackgroundId = filters.id;
-
-        // router.reload({
-        //     only: ['movePpaTree', 'moveCurrent'],
-        //     onSuccess: () => {
-        //         setMovePpa(ppa);
-        //         setIsMoveDialogOpen(true);
-        //     },
-        // });
-
-        router.get(
-            'ppa',
-            {
-                ...filters, // Preserve background search/page
-                move_id: currentBackgroundId, // Default modal to the current background folder
-                move_page: 1,
-            },
+        router.visit(
+            index({
+                query: {
+                    ...filters,
+                    dialog_mode: 'move',
+                    dialog_id: filters.id,
+                    dialog_page: 1,
+                },
+            }),
             {
                 preserveState: true,
-                preserveScroll: true,
-                only: ['movePpaTree', 'moveCurrent'], // Lazy load modal data
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
-                    setMovePpa(ppa); // The item we are moving
-                    setIsMoveDialogOpen(true); // Open the modal
+                    setMovePpa(ppa);
+                    setIsMoveDialogOpen(true);
+                },
+            },
+        );
+    }
+
+    function handleImportOpen() {
+        router.visit(
+            index({
+                query: {
+                    ...filters,
+                    dialog_mode: 'import',
+                    dialog_page: 1,
+                },
+            }),
+            {
+                preserveState: true,
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                onSuccess: () => {
+                    setIsImportDialogOpen(true);
                 },
             },
         );
     }
 
     function handleShowChildren(ppa: Ppa) {
-        const url = 'ppa';
-        const data = { id: ppa.id };
-        const options = {};
-
-        router.get(url, data, options);
+        router.visit(index({ query: { id: ppa.id } }), {});
     }
 
     const nextType =
@@ -243,7 +254,7 @@ export default function PpaPage({
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
-                            onClick={() => setIsImportDialogOpen(true)}
+                            onClick={() => handleImportOpen()}
                         >
                             Import from Last Year
                         </Button>
@@ -268,6 +279,24 @@ export default function PpaPage({
                 auth={auth}
             />
 
+            <PpaMoveDialog
+                isOpen={isMoveDialogOpen}
+                onOpenChange={setIsMoveDialogOpen}
+                ppaToMove={movePpa}
+                dialogPpaTree={dialogPpaTree}
+                dialogCurrent={dialogCurrent}
+                filters={filters}
+            />
+
+            <PpaImportDialog
+                isOpen={isImportDialogOpen}
+                onOpenChange={setIsImportDialogOpen}
+                filters={filters}
+                dialogPpaTree={dialogPpaTree}
+                dialogCurrent={dialogCurrent}
+                onClose={() => setIsImportDialogOpen(false)}
+            />
+
             <DeleteDialog
                 isOpen={!!deletePpa}
                 onOpenChange={(open) => !open && setDeletePpa(null)}
@@ -286,25 +315,10 @@ export default function PpaPage({
                 isLoading={isDeleting}
             />
 
-            <PpaMoveDialog
-                isOpen={isMoveDialogOpen}
-                onOpenChange={setIsMoveDialogOpen}
-                ppaToMove={movePpa}
-                movePpaTree={movePpaTree}
-                moveCurrent={moveCurrent}
-                filters={filters}
-            />
-
             <AlertErrorDialog
                 open={isErrorOpen}
                 onOpenChange={setIsErrorOpen}
                 error={errorMessage}
-            />
-
-            <PpaImportDialog
-                isOpen={isImportDialogOpen}
-                onClose={() => setIsImportDialogOpen(false)}
-                existingPpaIds={[]} // TODO: Get existing PPA IDs from backend
             />
         </AppLayout>
     );

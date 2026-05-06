@@ -36,6 +36,7 @@ import {
     ChevronLast,
     ChevronLeft,
     ChevronRight,
+    SearchIcon,
 } from 'lucide-react';
 // needed for table body level scope DnD setup
 import {
@@ -55,6 +56,11 @@ import {
     SortableContext,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from '@/components/ui/input-group';
 
 // needed for row & cell level scope DnD setup
 import { useSortable } from '@dnd-kit/sortable';
@@ -92,6 +98,8 @@ interface DataTableProps<TData extends { id: unknown }> {
     onlyKeys?: { [key: string]: any };
     searchKey?: string;
     pageKey?: string;
+
+    isDialog?: boolean;
 }
 
 const reorderTree = (data: any[], activeId: string, overId: string): any[] => {
@@ -141,23 +149,26 @@ export function DataTable<TData extends { id: unknown }>({
     onlyKeys = [],
     searchKey = 'search',
     pageKey = 'page',
+    isDialog,
 }: DataTableProps<TData>) {
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // for global search
-    const [searchValue, setSearchValue] = useState(filters?.[searchKey] || '');
+    // const [searchValue, setSearchValue] = useState(filters?.[searchKey] || '');
+    const [searchValue, setSearchValue] = useState('');
 
     // 2. Sync local state with props (if URL changes via browser back/forward)
     useEffect(() => {
         setSearchValue(filters?.[searchKey] || '');
-    }, [filters?.[searchKey], searchKey]);
+    }, [filters, searchKey]);
 
     // 3. Debounce and Trigger Inertia
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
             const currentFilterValue = filters?.[searchKey] || '';
+
             // Trigger if value is different, or if we're clearing a search that exists in URL
             if (searchValue !== currentFilterValue) {
                 router.get(
@@ -184,12 +195,18 @@ export function DataTable<TData extends { id: unknown }>({
 
         return () => clearTimeout(delayDebounceFn);
     }, [
-        searchValue,
-        filters?.[searchKey],
-        filters,
+        // searchValue,
+        // // filters?.[searchKey],
+        // filters,
+        // searchKey,
+        // pageKey,
+        // onlyKeys,
+        isDialog,
+        onlyKeys.length,
         searchKey,
-        pageKey,
         onlyKeys,
+        filters,
+        searchValue,
     ]);
 
     useEffect(() => {
@@ -211,7 +228,6 @@ export function DataTable<TData extends { id: unknown }>({
 
         // SERVER-SIDE SEARCH CONFIG
         manualFiltering: true,
-        // onGlobalFilterChange: setSearchValue,
 
         getFilteredRowModel: withSearch ? getFilteredRowModel() : undefined,
         meta: {
@@ -267,7 +283,7 @@ export function DataTable<TData extends { id: unknown }>({
                 : undefined,
     });
 
-    console.log(table.options.meta);
+    // console.log(table.options.meta);
 
     const { rows } = table.getRowModel();
 
@@ -361,12 +377,18 @@ export function DataTable<TData extends { id: unknown }>({
                 {(withSearch || children) && (
                     <div className="flex items-center justify-between gap-4">
                         {withSearch ? (
-                            <Input
-                                placeholder="Filter..."
-                                value={searchValue}
-                                onChange={(e) => setSearchValue(e.target.value)}
-                                className="max-w-sm"
-                            />
+                            <InputGroup className="max-w-sm">
+                                <InputGroupInput
+                                    placeholder="Search..."
+                                    value={searchValue}
+                                    onChange={(e) =>
+                                        setSearchValue(e.target.value)
+                                    }
+                                />
+                                <InputGroupAddon>
+                                    <SearchIcon />
+                                </InputGroupAddon>
+                            </InputGroup>
                         ) : (
                             <div />
                         )}

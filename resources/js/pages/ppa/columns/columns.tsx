@@ -1,20 +1,8 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import {
-    CheckCircle2,
-    XCircle,
-    Pencil,
-    Trash,
-    Plus,
-    GripVertical,
-    Move,
-    SquareArrowOutUpRight,
-    FolderOpen,
-} from 'lucide-react';
+import { CheckCircle2, XCircle, Pencil, Trash, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types/global';
-// import { Separator } from '@/components/ui/separator';
-import { useSortable } from '@dnd-kit/sortable';
 
 const columnHelper = createColumnHelper<Ppa>();
 
@@ -26,15 +14,12 @@ const columns = [
         cell: ({ row, table }) => {
             return (
                 <div className="gap-1">
-                    {/* <RowDragHandleCell rowId={row.id} /> */}
-
                     <Button
                         size="icon"
                         variant="ghost"
                         onClick={() =>
                             (table.options.meta as any)?.onMove?.(row.original)
                         }
-                        // disabled={row.original.type === 'Program'}
                     >
                         <Move />
                     </Button>
@@ -112,15 +97,13 @@ const columns = [
                     <Button
                         size="icon"
                         variant="outline"
+                        title="Open PPA"
                         onClick={() =>
                             table.options.meta?.onShowChildren?.(row.original)
                         }
                         disabled={row.original.type === 'Sub-Activity'}
-                        title="Open PPA"
-                        // className="gap-0.5"
                     >
                         {childrenCount}
-                        {/* <FolderOpen /> */}
                     </Button>
 
                     <Button

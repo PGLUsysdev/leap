@@ -32,7 +32,6 @@ class AipEntryController extends Controller
 
         $hasAipFilter = fn($q) => $q->where('fiscal_year_id', $yearId);
 
-        // 1. Fetch AIP Entries (Main Table)
         $aipEntries = Ppa::whereIn('office_id', $officeIds)
             ->whereNull('parent_id')
             ->where('fiscal_year_id', $yearId)
@@ -81,7 +80,6 @@ class AipEntryController extends Controller
 
         $offices = Office::all();
 
-        // 2. Library Selector Logic
         $libId = $request->query('lib_id');
         $libSearch = $request->query('lib_search');
         $libBoundaryId = $request->query('lib_boundary_id');
@@ -93,12 +91,10 @@ class AipEntryController extends Controller
             ->where('parent_id', $targetParentId)
             ->when($libSearch, function ($query, $search) {
                 $query->where(function ($inner) use ($search) {
-                    // Use 'code_suffix' as it is the actual database column
                     $inner
                         ->where('name', 'like', "%$search%")
                         ->orWhere('code_suffix', 'like', "%$search%");
 
-                    // If searching for a full code like "100-01-001", extract the last part
                     if (str_contains($search, '-')) {
                         $segments = explode('-', $search);
                         $lastSegment = end($segments);
@@ -113,10 +109,10 @@ class AipEntryController extends Controller
                 });
             })
             ->orderBy('sort_order')
+            ->withCount('children')
             ->paginate(50, ['*'], 'lib_page')
             ->withQueryString();
 
-        // 3. Library Breadcrumbs
         $libCurrent = $targetParentId
             ? $this->getPpaBreadcrumbs($targetParentId)
             : [];

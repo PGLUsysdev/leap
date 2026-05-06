@@ -18,7 +18,7 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 import type { Ppa, PaginatedResponse, Filter } from '@/types/global';
-import columns from './table/move-columns';
+import columns from './columns/move-columns';
 import { DataTable } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -33,22 +33,23 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { index } from '@/routes/ppa';
 
 interface PpaMoveDialogProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     ppaToMove: Ppa | null;
-    movePpaTree: PaginatedResponse<Ppa> | [];
-    moveCurrent: Ppa[];
     filters: Filter;
+    dialogPpaTree: PaginatedResponse<Ppa> | [];
+    dialogCurrent: Ppa[];
 }
 
 export default function PpaMoveDialog({
     isOpen,
     onOpenChange,
     ppaToMove,
-    movePpaTree = [],
-    moveCurrent = [],
+    dialogPpaTree = [],
+    dialogCurrent = [],
     filters,
 }: PpaMoveDialogProps) {
     const [selectedTarget, setSelectedTarget] = useState<Ppa | null>(null);
@@ -57,11 +58,28 @@ export default function PpaMoveDialog({
     // Reset selection when folder changes
     useEffect(() => {
         setSelectedTarget(null);
-    }, [filters?.move_id]);
+    }, [filters?.dialog_id]);
 
-    // Cleanup on close
     useEffect(() => {
         if (!isOpen) setSelectedTarget(null);
+
+        if (!isOpen) {
+            setSelectedTarget(null);
+
+            const {
+                dialog_id,
+                dialog_page,
+                dialog_search,
+                is_dialog_open,
+                ...mainFilters
+            } = filters;
+
+            router.visit(index({ query: mainFilters }), {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            });
+        }
     }, [isOpen]);
 
     // RELATIONSHIP HELPER
@@ -101,10 +119,15 @@ export default function PpaMoveDialog({
     function handleShowChildren(ppa: Ppa) {
         router.get(
             'ppa',
-            { ...filters, move_id: ppa.id, move_page: 1 },
+            {
+                ...filters,
+                dialog_mode: 'move',
+                dialog_id: ppa.id,
+                dialog_page: 1,
+            },
             {
                 preserveState: true,
-                only: ['movePpaTree', 'moveCurrent', 'filters'],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
             },
         );
     }
@@ -112,10 +135,10 @@ export default function PpaMoveDialog({
     function navigateToBreadcrumb(id: number | null) {
         router.get(
             'ppa',
-            { ...filters, move_id: id, move_page: 1 },
+            { ...filters, dialog_id: id, dialog_page: 1 },
             {
                 preserveState: true,
-                only: ['movePpaTree', 'moveCurrent', 'filters'],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
             },
         );
     }
@@ -156,34 +179,7 @@ export default function PpaMoveDialog({
                     </CardContent>
                 </Card>
 
-                {/* <Card className="flex items-center gap-2 bg-muted/30 p-2 text-xs">
-                    <div className="flex w-full items-center justify-start gap-2">
-                        <button
-                            onClick={() => navigateToBreadcrumb(null)}
-                            className="font-medium hover:text-primary"
-                        >
-                            Root
-                        </button>
-
-                        {[...moveCurrent].reverse().map((item) => (
-                            <div
-                                key={item.id}
-                                className="flex items-center gap-2"
-                            >
-                                <span className="opacity-40">/</span>
-                                <button
-                                    onClick={() =>
-                                        navigateToBreadcrumb(item.id)
-                                    }
-                                    className="max-w-[120px] truncate hover:text-primary"
-                                >
-                                    {item.name}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </Card> */}
-
+                {/* breadcrumbs */}
                 <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
                     <Button
                         variant="ghost"
@@ -194,12 +190,13 @@ export default function PpaMoveDialog({
                         <Home className="mr-1 h-4 w-4" /> Root
                     </Button>
 
-                    {[...moveCurrent].reverse().map((item) => (
+                    {[...dialogCurrent].reverse().map((item) => (
                         <div
                             key={item.id}
                             className="flex min-w-0 items-center gap-2"
                         >
                             <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />
+
                             <Button
                                 variant="ghost"
                                 size="sm"
@@ -216,21 +213,21 @@ export default function PpaMoveDialog({
                 <div className="flex min-h-0">
                     {/* <ScrollArea className="w-full pr-3"> */}
                     <div className="w-full overflow-x-auto">
-                        {!Array.isArray(movePpaTree) && (
+                        {!Array.isArray(dialogPpaTree) && (
                             <DataTable
-                                key={`move-table-${filters?.move_id}-${selectedTarget?.id ?? 'none'}`}
+                                key={`move-table-${filters?.dialog_id}-${selectedTarget?.id ?? 'none'}`}
                                 columns={columns}
-                                data={movePpaTree.data}
+                                data={dialogPpaTree.data}
                                 withSearch
                                 onShowChildren={handleShowChildren}
-                                paginationObj={movePpaTree}
+                                paginationObj={dialogPpaTree}
                                 negativeHeight={30}
                                 filters={filters}
-                                searchKey="move_search"
-                                pageKey="move_page"
+                                searchKey="dialog_search"
+                                pageKey="dialog_page"
                                 onlyKeys={[
-                                    'movePpaTree',
-                                    'moveCurrent',
+                                    'dialogPpaTree',
+                                    'dialogCurrent',
                                     'filters',
                                 ]}
                                 meta={{
@@ -239,6 +236,7 @@ export default function PpaMoveDialog({
                                     onSelect: (ppa: Ppa | null) =>
                                         setSelectedTarget(ppa),
                                 }}
+                                isDialog={true}
                             />
                         )}
                     </div>

@@ -14,6 +14,7 @@ use App\Models\Office;
 use App\Models\Sector;
 use App\Models\LguLevel;
 use App\Models\OfficeType;
+use App\Models\FiscalYear;
 
 class PpaController extends Controller
 {
@@ -35,71 +36,150 @@ class PpaController extends Controller
     public function index(Request $request)
     {
         $userOfficeId = Auth::user()->office_id;
+        $mode = $request->query('dialog_mode');
 
-        // 1. Handle Main Table Data
-        $ppa = $this->getPpaQuery($request, $userOfficeId, 'id', 'search')
-            ->paginate(50)
-            ->withQueryString();
+        // $parentId = $request->query('id');
+        // $current = $parentId
+        //     ? Ppa::with('ancestor.ancestor')->find($parentId)
+        //     : null;
+        // $flatCurrent = $current ? $this->flattenAncestors($current) : [];
 
-        // 2. Handle Ancestors / Breadcrumbs for MAIN TABLE
-        $parentId = $request->query('id');
-        $current = $parentId
-            ? Ppa::with('ancestor.ancestor')->find($parentId)
-            : null;
-        $flatCurrent = $current ? $this->flattenAncestors($current) : [];
+        // filtersx
+        // $filters = [
+        //     'id' => $request->query('id'),
+        //     'page' => $request->query('page', 1),
+        //     'search' => $request->query('search'),
+        // ];
+
+        // if ($request->hasAny(['dialog_id', 'dialog_search', 'dialog_page'])) {
+        //     $filters = [
+        //         ...$filters,
+        //         'dialog_id' => $request->query('dialog_id'),
+        //         'dialog_page' => $request->query('dialog_page', 1),
+        //         'dialog_search' => $request->query('dialog_search'),
+        //     ];
+        // }
 
         return Inertia::render('ppa/index', [
-            'ppaTree' => $ppa,
+            'ppaTree' => $this->getPpaQuery(
+                $request,
+                $userOfficeId,
+                'id',
+                'search',
+            )
+                ->paginate(10)
+                ->withQueryString(),
+
+            // 'current' => $flatCurrent,
+            'current' => $request->query('id')
+                ? $this->flattenAncestors(
+                    Ppa::with('ancestor.ancestor')->find($request->query('id')),
+                )
+                : [],
+
             'offices' => Office::with([
                 'sector',
                 'lguLevel',
                 'officeType',
             ])->get(),
-            'current' => $flatCurrent,
 
-            // 3. Centralized Filters (Helpful for the frontend to know all states)
-            'filters' => [
-                'search' => $request->query('search'),
-                'id' => $request->query('id'),
-                'page' => $request->query('page', 1),
-                'move_id' => $request->query('move_id'),
-                'move_search' => $request->query('move_search'),
-                'move_page' => $request->query('move_page', 1),
-            ],
+            'filters' => $request->only([
+                'id',
+                'search',
+                'page',
+                'dialog_id',
+                'dialog_search',
+                'dialog_page',
+                'dialog_mode',
+            ]),
 
-            // 4. LAZY LOADING FOR THE MODAL
-            'movePpaTree' => Inertia::lazy(
-                fn() => $this->getPpaQuery(
+            'dialogPpaTree' => Inertia::lazy(function () use (
+                $request,
+                $userOfficeId,
+                $mode,
+            ) {
+                if ($mode === 'import') {
+                    return $this->getPreviousYearPpas($request, $userOfficeId);
+                }
+                return $this->getPpaQuery(
                     $request,
                     $userOfficeId,
-                    'move_id',
-                    'move_search',
+                    'dialog_id',
+                    'dialog_search',
                 )
-                    ->paginate(50, ['*'], 'move_page')
-                    ->withQueryString(),
-            ),
+                    ->paginate(10, ['*'], 'dialog_page')
+                    ->withQueryString();
+            }),
 
-            // 5. Breadcrumbs for the MODAL (also lazy)
-            'moveCurrent' => Inertia::lazy(function () use ($request) {
-                $moveId = $request->query('move_id');
-                if (!$moveId) {
+            'dialogCurrent' => Inertia::lazy(function () use ($request) {
+                $id = $request->query('dialog_id');
+                if (!$id) {
                     return [];
                 }
-                $movePpa = Ppa::with('ancestor.ancestor')->find($moveId);
-                return $movePpa ? $this->flattenAncestors($movePpa) : [];
+
+                $ppa = Ppa::with('ancestor.ancestor')->find($id);
+                return $ppa ? $this->flattenAncestors($ppa) : [];
             }),
+
+            // // move dialog
+            // 'movePpaTree' => Inertia::lazy(
+            //     fn() => $this->getPpaQuery(
+            //         $request,
+            //         $userOfficeId,
+            //         'dialog_id',
+            //         'dialog_search',
+            //     )
+            //         ->paginate(10, ['*'], 'dialog_page')
+            //         ->withQueryString(),
+            // ),
+            // 'moveCurrent' => Inertia::lazy(function () use ($request) {
+            //     $moveId = $request->query('dialog_id');
+            //     if (!$moveId) {
+            //         return [];
+            //     }
+            //     $movePpa = Ppa::with('ancestor.ancestor')->find($moveId);
+            //     return $movePpa ? $this->flattenAncestors($movePpa) : [];
+            // }),
+
+            // // import dialog
+            // 'prevYearPpa' => Inertia::lazy(
+            //     fn() => $this->getPreviousYearPpas($request, $userOfficeId),
+            // ),
+
+            // 'libCurrent' => Inertia::lazy(function () use ($request) {
+            //     $libId = $request->query('dialog_id');
+            //     if (!$libId) {
+            //         return [];
+            //     }
+
+            //     // Get previous year for import dialog
+            //     $currentFiscalYearId = session('active_fiscal_year_id');
+            //     $currentYear = FiscalYear::find($currentFiscalYearId);
+            //     $prevYear = FiscalYear::where(
+            //         'year',
+            //         $currentYear->year - 1,
+            //     )->first();
+            //     $prevYearId = $prevYear->id;
+
+            //     $libPpa = Ppa::where('id', $libId)
+            //         ->where('fiscal_year_id', $prevYearId)
+            //         ->with('ancestor.ancestor')
+            //         ->first();
+
+            //     return $libPpa ? $this->flattenAncestors($libPpa) : [];
+            // }),
         ]);
     }
 
     private function getPpaQuery($request, $officeId, $idKey, $searchKey)
     {
+        $fiscalYearId = session('active_fiscal_year_id');
+
         $id = $request->query($idKey);
         $search = $request->query($searchKey);
-        $fiscalYearId = session('active_fiscal_year_id');
 
         return Ppa::where('office_id', $officeId)
             ->where('fiscal_year_id', $fiscalYearId)
-            ->withCount('children')
             ->when(
                 $id,
                 function ($q) use ($id) {
@@ -128,7 +208,8 @@ class PpaController extends Controller
                     }
                 });
             })
-            ->orderBy('sort_order', 'asc');
+            ->orderBy('sort_order', 'asc')
+            ->withCount('children');
     }
 
     private function flattenAncestors($ppa)
@@ -449,91 +530,39 @@ class PpaController extends Controller
     /**
      * Get PPAs from previous fiscal year for import functionality
      */
-    public function getPreviousYearPpas(Request $request)
+    public function getPreviousYearPpas($request, $userOfficeId)
     {
-        try {
-            $userOfficeId = Auth::user()->office_id;
-            $currentFiscalYearId = session('active_fiscal_year_id');
+        // $userOfficeId = Auth::user()->office_id;
+        $currentFiscalYearId = session('active_fiscal_year_id');
 
-            if (!$currentFiscalYearId) {
-                return response()->json(
-                    [
-                        'error' => 'No active fiscal year set',
-                    ],
-                    400,
-                );
-            }
+        // get previous year
+        $currentYear = FiscalYear::find($currentFiscalYearId);
+        $prevYear = FiscalYear::where('year', $currentYear->year - 1)->first();
+        $prevYearId = $prevYear->id;
 
-            // Get previous fiscal year by querying the database
-            $currentFiscalYear = \App\Models\FiscalYear::find(
-                $currentFiscalYearId,
-            );
-            if (!$currentFiscalYear) {
-                return response()->json(
-                    [
-                        'error' => 'Current fiscal year not found',
-                    ],
-                    400,
-                );
-            }
+        $id = $request->query('dialog_id');
+        $search = $request->query('dialog_search');
 
-            $previousFiscalYear = \App\Models\FiscalYear::where(
-                'year',
-                $currentFiscalYear->year - 1,
-            )->first();
-            if (!$previousFiscalYear) {
-                return response()->json(
-                    [
-                        'error' => 'Previous fiscal year not found',
-                    ],
-                    400,
-                );
-            }
-
-            $previousFiscalYearId = $previousFiscalYear->id;
-
-            // Import dialog parameters
-            $libId = $request->query('lib_id');
-            $libSearch = $request->query('lib_search');
-            $libBoundaryId = $request->query('lib_boundary_id');
-
-            // Handle null/undefined values properly
-            $targetParentId = null;
-            if ($libId && $libId !== 'undefined') {
-                $targetParentId = $libId;
-            } elseif ($libBoundaryId && $libBoundaryId !== 'undefined') {
-                $targetParentId = $libBoundaryId;
-            }
-
-            // For now, return empty existing PPA IDs since we don't have original_id field
-            $existingPpaIds = [];
-
-            // Build the query for previous year's PPAs
-            $query = Ppa::where('office_id', $userOfficeId)->where(
-                'fiscal_year_id',
-                $previousFiscalYearId,
-            );
-
-            // Only add parent_id condition if we have a valid target
-            if ($targetParentId !== null) {
-                $query->where('parent_id', $targetParentId);
-            } else {
-                $query->whereNull('parent_id'); // Root level
-            }
-
-            // Add search condition if provided
-            if (
-                $libSearch &&
-                $libSearch !== 'undefined' &&
-                !empty($libSearch)
-            ) {
-                $query->where(function ($inner) use ($libSearch) {
+        // get ppa null first
+        return Ppa::where('office_id', $userOfficeId)
+            ->where('fiscal_year_id', $prevYearId)
+            ->when(
+                $id,
+                function ($q) use ($id) {
+                    return $q->where('parent_id', $id);
+                },
+                function ($q) {
+                    return $q->whereNull('parent_id');
+                },
+            )
+            ->when($search, function ($q) use ($search) {
+                $q->where(function ($inner) use ($search) {
                     $inner
-                        ->where('name', 'like', "%$libSearch%")
-                        ->orWhere('code_suffix', 'like', "%$libSearch%");
+                        ->where('name', 'like', "%$search%")
+                        ->orWhere('code_suffix', 'like', "%$search%");
 
-                    if (str_contains($libSearch, '-')) {
-                        $segments = explode('-', $libSearch);
+                    if (str_contains($search, '-')) {
+                        $segments = explode('-', $search);
                         $lastSegment = end($segments);
                         if ($lastSegment) {
                             $inner->orWhere(
@@ -544,38 +573,11 @@ class PpaController extends Controller
                         }
                     }
                 });
-            }
-
-            $previousYearPpas = $query
-                ->withCount('children')
-                ->orderBy('sort_order')
-                ->paginate(50, ['*'], 'lib_page')
-                ->withQueryString();
-
-            // Get breadcrumbs for navigation
-            $libCurrent = $targetParentId
-                ? $this->getPpaBreadcrumbs(
-                    $targetParentId,
-                    $previousFiscalYearId,
-                )
-                : [];
-
-            return response()->json([
-                'previousYearPpas' => $previousYearPpas,
-                'libCurrent' => $libCurrent,
-                'existingPpaIds' => $existingPpaIds,
-                'previousFiscalYearId' => $previousFiscalYearId,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(
-                [
-                    'error' =>
-                        'Failed to fetch previous year PPAs: ' .
-                        $e->getMessage(),
-                ],
-                500,
-            );
-        }
+            })
+            ->orderBy('sort_order', 'asc')
+            ->withCount('children')
+            ->paginate(10, ['*'], 'dialog_page')
+            ->withQueryString();
     }
 
     /**
@@ -699,18 +701,20 @@ class PpaController extends Controller
 
             DB::commit();
 
-            return redirect()
-                ->back()
-                ->with(
-                    'success',
-                    "Successfully imported {$importedCount} PPAs.",
-                );
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully imported {$importedCount} PPAs.",
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return redirect()
-                ->back()
-                ->with('error', 'Error importing PPAs: ' . $e->getMessage());
+            return response()->json(
+                [
+                    'success' => false,
+                    'message' => 'Error importing PPAs: ' . $e->getMessage(),
+                ],
+                500,
+            );
         }
     }
 
