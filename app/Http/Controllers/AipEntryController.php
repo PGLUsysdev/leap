@@ -4,19 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\AipEntry;
 use App\Models\FundingSource;
-use App\Models\Aip;
 use App\Models\FiscalYear;
 use App\Models\Ppa;
+use App\Models\Office;
+
 use App\Http\Requests\StoreAipEntryRequest;
 use App\Http\Requests\UpdateAipEntryRequest;
-use App\Models\ChartOfAccount;
-use App\Models\Office;
-use App\Models\PpmpPriceList;
-use App\Models\Ppmp;
-use Inertia\Inertia;
+
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
+
+use Inertia\Inertia;
 
 class AipEntryController extends Controller
 {
@@ -26,11 +24,15 @@ class AipEntryController extends Controller
     public function index(Request $request, FiscalYear $fiscalYear)
     {
         $officeId = auth()->user()->office_id;
+        $officeIds = $this->getOfficeHierarchyIds($officeId);
         $yearId = $fiscalYear->id;
 
-        $officeIds = $this->getOfficeHierarchyIds($officeId);
-
-        $hasAipFilter = fn($q) => $q->where('fiscal_year_id', $yearId);
+        $onlyAipItems = function ($query) use ($yearId) {
+            $query
+                ->where('fiscal_year_id', $yearId)
+                ->whereHas('aipEntries')
+                ->orderBy('sort_order');
+        };
 
         $aipEntries = Ppa::whereIn('office_id', $officeIds)
             ->whereNull('parent_id')
@@ -38,93 +40,68 @@ class AipEntryController extends Controller
             ->has('aipEntries')
             ->orderBy('sort_order')
             ->with([
-                'aipEntries' => function ($query) {
-                    $query->with('ppaFundingSources.fundingSource');
-                },
-                'office.sector',
-                'office.lguLevel',
-                'office.officeType',
-                'office.parent',
-                'children' => fn($q) => $hasAipFilter($q)->orderBy(
-                    'sort_order',
-                ),
-                'children.aipEntries' => function ($query) {
-                    $query->with('ppaFundingSources.fundingSource');
-                },
-                'children.office.sector',
-                'children.office.lguLevel',
-                'children.office.officeType',
-                'children.office.parent',
-                'children.children' => fn($q) => $hasAipFilter($q)->orderBy(
-                    'sort_order',
-                ),
-                'children.children.aipEntries' => function ($query) {
-                    $query->with('ppaFundingSources.fundingSource');
-                },
-                'children.children.office.sector',
-                'children.children.office.lguLevel',
-                'children.children.office.officeType',
-                'children.children.office.parent',
-                'children.children.children' => fn($q) => $hasAipFilter(
-                    $q,
-                )->orderBy('sort_order'),
-                'children.children.children.aipEntries' => function ($query) {
-                    $query->with('ppaFundingSources.fundingSource');
-                },
-                'children.children.children.office.sector',
-                'children.children.children.office.lguLevel',
-                'children.children.children.office.officeType',
-                'children.children.children.office.parent',
+                'aipEntries.ppaFundingSources.fundingSource',
+                'office',
+                'children' => $onlyAipItems,
+                'children.aipEntries.ppaFundingSources.fundingSource',
+
+                'children.children' => $onlyAipItems,
+                'children.children.aipEntries.ppaFundingSources.fundingSource',
+
+                'children.children.children' => $onlyAipItems,
+                'children.children.children.aipEntries.ppaFundingSources.fundingSource',
             ])
             ->get();
-
-        $offices = Office::all();
-
-        $libId = $request->query('lib_id');
-        $libSearch = $request->query('lib_search');
-        $libBoundaryId = $request->query('lib_boundary_id');
-
-        $targetParentId = $libId ?: $libBoundaryId;
-
-        $masterPpas = Ppa::whereIn('office_id', $officeIds)
-            ->where('fiscal_year_id', $yearId)
-            ->where('parent_id', $targetParentId)
-            ->when($libSearch, function ($query, $search) {
-                $query->where(function ($inner) use ($search) {
-                    $inner
-                        ->where('name', 'like', "%$search%")
-                        ->orWhere('code_suffix', 'like', "%$search%");
-
-                    if (str_contains($search, '-')) {
-                        $segments = explode('-', $search);
-                        $lastSegment = end($segments);
-                        if ($lastSegment) {
-                            $inner->orWhere(
-                                'code_suffix',
-                                'like',
-                                "%$lastSegment%",
-                            );
-                        }
-                    }
-                });
-            })
-            ->orderBy('sort_order')
-            ->withCount('children')
-            ->paginate(50, ['*'], 'lib_page')
-            ->withQueryString();
-
-        $libCurrent = $targetParentId
-            ? $this->getPpaBreadcrumbs($targetParentId)
-            : [];
 
         return Inertia::render('aip-summary/index', [
             'fiscalYear' => $fiscalYear,
             'aipEntries' => $aipEntries,
             'fundingSources' => FundingSource::all(),
-            'offices' => $offices,
-            'masterPpas' => $masterPpas,
-            'libCurrent' => $libCurrent,
+            'offices' => Office::all(),
             'filters' => $request->all(),
+
+            'dialogPpaTree' => Inertia::lazy(function () use (
+                $request,
+                $officeIds,
+                $yearId,
+            ) {
+                $id = $request->query('dialog_id');
+                $search = $request->query('dialog_search');
+                $boundaryId = $request->query('dialog_boundary_id');
+
+                $targetParentId = $id ?: $boundaryId;
+
+                return Ppa::whereIn('office_id', $officeIds)
+                    ->where('fiscal_year_id', $yearId)
+                    ->where('parent_id', $targetParentId)
+                    ->when($search, function ($query, $search) {
+                        $query->where(function ($inner) use ($search) {
+                            $inner
+                                ->where('name', 'like', "%$search%")
+                                ->orWhere('code_suffix', 'like', "%$search%");
+
+                            if (str_contains($search, '-')) {
+                                $lastSegment = last(explode('-', $search));
+                                $inner->orWhere(
+                                    'code_suffix',
+                                    'like',
+                                    "%$lastSegment%",
+                                );
+                            }
+                        });
+                    })
+                    ->orderBy('sort_order')
+                    ->withCount('children')
+                    ->paginate(50, ['*'], 'dialog_page')
+                    ->withQueryString();
+            }),
+
+            'dialogCurrent' => Inertia::lazy(function () use ($request) {
+                $id =
+                    $request->query('dialog_id') ?:
+                    $request->query('dialog_boundary_id');
+                return $id ? $this->getPpaBreadcrumbs($id) : [];
+            }),
         ]);
     }
 

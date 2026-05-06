@@ -20,6 +20,8 @@ import type {
     Office,
     FlattenedPpa,
     SharedData,
+    Filter,
+    PaginatedResponse,
 } from '@/types/global';
 import { type BreadcrumbItem } from '@/types';
 import { router, usePage } from '@inertiajs/react';
@@ -27,14 +29,14 @@ import { DataTable } from '@/components/data-table';
 import columns from './table/columns';
 import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
 
-interface AipSummaryTableProp {
+interface AipSummaryTableProps {
     fiscalYear: FiscalYear;
     aipEntries: Ppa[];
     fundingSources: FundingSource[];
     offices: Office[];
-    masterPpas: PaginatedResponse<Ppa> | []; // Change from Ppa[]
-    libCurrent: any[];
     filters: Filter;
+    dialogPpaTree: PaginatedResponse<Ppa> | [];
+    dialogCurrent: Ppa[];
 }
 
 const existingPpaIds = (aipEntries: Ppa[]) => {
@@ -84,19 +86,11 @@ export default function AipSummaryTable({
     aipEntries,
     fundingSources,
     offices,
-    masterPpas,
-    libCurrent,
     filters,
-}: AipSummaryTableProp) {
-    console.log({
-        fiscalYear,
-        aipEntries,
-        fundingSources,
-        offices,
-        masterPpas,
-        libCurrent,
-        filters,
-    });
+    dialogPpaTree,
+    dialogCurrent,
+}: AipSummaryTableProps) {
+    console.log(dialogCurrent);
 
     const { auth } = usePage<SharedData>().props;
 
@@ -113,8 +107,6 @@ export default function AipSummaryTable({
     });
     const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
 
-    console.log(selectedEntry);
-
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
         { title: `AIP Summary FY ${fiscalYear.year}`, href: '#' },
@@ -125,13 +117,13 @@ export default function AipSummaryTable({
             window.location.pathname,
             {
                 ...filters,
-                lib_id: null, // Start at Root
-                lib_boundary_id: null, // No boundary (Full access)
-                lib_page: 1,
+                dialog_id: null,
+                dialog_boundary_id: null,
+                dialog_page: 1,
             },
             {
                 preserveState: true,
-                only: ['masterPpas', 'libCurrent', 'filters'],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
                     setSelectorState({
                         isOpen: true,
@@ -150,14 +142,14 @@ export default function AipSummaryTable({
                 window.location.pathname,
                 {
                     ...filters,
-                    lib_id: entry.id, // Drill into this item
-                    lib_boundary_id: entry.id, // Lock navigation to this branch
-                    lib_page: 1,
+                    dialog_id: entry.id,
+                    dialog_boundary_id: entry.id,
+                    dialog_page: 1,
                 },
                 {
                     preserveState: true,
                     preserveScroll: true,
-                    only: ['masterPpas', 'libCurrent', 'filters'],
+                    only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                     onSuccess: () => {
                         setSelectorState({
                             isOpen: true,
@@ -259,8 +251,6 @@ export default function AipSummaryTable({
         });
     };
 
-    console.log(expandPpaByFundingSource(aipEntries));
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
@@ -333,9 +323,9 @@ export default function AipSummaryTable({
                 onClose={() =>
                     setSelectorState((prev) => ({ ...prev, isOpen: false }))
                 }
-                masterPpas={masterPpas} // Passing the paginated data
-                libCurrent={libCurrent} // Passing the breadcrumbs
-                filters={filters} // Passing the search/page filters
+                dialogPpaTree={dialogPpaTree}
+                dialogCurrent={dialogCurrent}
+                filters={filters}
                 fiscalYearId={fiscalYear.id}
                 existingPpaIds={Array.from(existingPpaIds(aipEntries))}
             />

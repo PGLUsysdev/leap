@@ -15,11 +15,12 @@ import { Spinner } from '@/components/ui/spinner';
 import { ChevronRight, Home, Info } from 'lucide-react';
 import columns from './ppa-import-table/columns';
 import type { Ppa, PaginatedResponse, Filter } from '@/types/global';
+
 interface PpaSelectorDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    masterPpas: PaginatedResponse<Ppa> | [];
-    libCurrent: any[];
+    dialogPpaTree: PaginatedResponse<Ppa> | [];
+    dialogCurrent: Ppa[];
     fiscalYearId: number;
     existingPpaIds: number[];
     filters: Filter;
@@ -28,11 +29,11 @@ interface PpaSelectorDialogProps {
 export default function PpaSelectorDialog({
     isOpen,
     onClose,
-    masterPpas,
-    libCurrent = [],
+    dialogPpaTree,
+    dialogCurrent = [],
+    filters,
     fiscalYearId,
     existingPpaIds = [],
-    filters,
 }: PpaSelectorDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
@@ -44,11 +45,89 @@ export default function PpaSelectorDialog({
         [existingPpaIds],
     );
 
+    useEffect(() => {
+        // Only run cleanup when the dialog is CLOSED
+        if (!isOpen) {
+            setSelectedItems(new Map()); // Reset local selection
+
+            const {
+                dialog_id,
+                dialog_page,
+                dialog_search,
+                dialog_boundary_id,
+                ...mainFilters
+            } = filters;
+
+            // Navigate back to the clean URL
+            router.visit(window.location.pathname, {
+                data: mainFilters,
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            });
+        }
+    }, [isOpen]);
+
     const handleToggle = (ppa: Ppa) => {
         setSelectedItems((prev) => {
             const next = new Map(prev);
-            if (next.has(ppa.id)) next.delete(ppa.id);
-            else next.set(ppa.id, ppa);
+
+            if (next.has(ppa.id)) {
+                // --- DOWNWARD UNSELECT (Recursive) ---
+                const idsToRemove = new Set<number>([ppa.id]);
+                const findDescendants = (parentId: number) => {
+                    next.forEach((item, id) => {
+                        if (item.parent_id === parentId) {
+                            idsToRemove.add(id);
+                            findDescendants(id);
+                        }
+                    });
+                };
+                findDescendants(ppa.id);
+                idsToRemove.forEach((id) => next.delete(id));
+            } else {
+                // --- UPWARD SELECT (Recursive) ---
+                next.set(ppa.id, ppa);
+                if (dialogCurrent && dialogCurrent.length > 0) {
+                    dialogCurrent.forEach((ancestor) => {
+                        if (!existingIdsSet.has(ancestor.id)) {
+                            next.set(ancestor.id, ancestor);
+                        }
+                    });
+                }
+            }
+            return next;
+        });
+    };
+
+    const handleToggleAll = (ppas: Ppa[], isChecked: boolean) => {
+        setSelectedItems((prev) => {
+            const next = new Map(prev);
+            ppas.forEach((ppa) => {
+                if (isChecked) {
+                    next.set(ppa.id, ppa);
+                    // Add ancestors for each
+                    if (dialogCurrent) {
+                        dialogCurrent.forEach((anc) => {
+                            if (!existingIdsSet.has(anc.id))
+                                next.set(anc.id, anc);
+                        });
+                    }
+                } else {
+                    // Downward unselect recursion
+                    const idsToRemove = new Set<number>([ppa.id]);
+                    const findDescendants = (parentId: number) => {
+                        next.forEach((item, id) => {
+                            if (item.parent_id === parentId) {
+                                idsToRemove.add(id);
+                                findDescendants(id);
+                            }
+                        });
+                    };
+                    findDescendants(ppa.id);
+                    idsToRemove.forEach((id) => next.delete(id));
+                }
+            });
             return next;
         });
     };
@@ -58,33 +137,14 @@ export default function PpaSelectorDialog({
             window.location.pathname,
             {
                 ...filters,
-                lib_id: id,
-                lib_page: 1,
-                lib_boundary_id: filters.lib_boundary_id, // Always preserve the lock
+                dialog_id: id,
+                dialog_page: 1,
+                dialog_boundary_id: filters.dialog_boundary_id,
             },
             {
                 preserveState: true,
                 preserveScroll: true,
-                only: ['masterPpas', 'libCurrent', 'filters'],
-            },
-        );
-    };
-
-    const handleClose = () => {
-        onClose();
-        // Scrub the URL of library parameters
-        router.get(
-            window.location.pathname,
-            {
-                ...filters,
-                lib_id: undefined,
-                lib_boundary_id: undefined,
-                lib_page: undefined,
-                lib_search: undefined,
-            },
-            {
-                preserveState: true,
-                only: ['masterPpas', 'libCurrent', 'filters'],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
             },
         );
     };
@@ -106,30 +166,16 @@ export default function PpaSelectorDialog({
     };
 
     const displayData = useMemo(() => {
-        if (Array.isArray(masterPpas)) return [];
+        if (Array.isArray(dialogPpaTree) || !dialogPpaTree) return [];
 
-        return masterPpas.data.map((ppa) => ({
+        return dialogPpaTree.data.map((ppa) => ({
             ...ppa,
             // We inject the state directly into the object
             // This ensures the DataTable's useEffect detects a change
             _isSelected: selectedItems.has(ppa.id),
             _isAdded: existingIdsSet.has(ppa.id),
         }));
-    }, [masterPpas, selectedItems, existingIdsSet]);
-
-    const handleToggleAll = (ppas: Ppa[], isChecked: boolean) => {
-        setSelectedItems((prev) => {
-            const next = new Map(prev);
-            ppas.forEach((ppa) => {
-                if (isChecked) {
-                    next.set(ppa.id, ppa);
-                } else {
-                    next.delete(ppa.id);
-                }
-            });
-            return next;
-        });
-    };
+    }, [dialogPpaTree, selectedItems, existingIdsSet]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -142,52 +188,48 @@ export default function PpaSelectorDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* Breadcrumbs */}
+                {/* breadcrumbs */}
                 <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
                     <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-7 px-2 ${filters.lib_boundary_id ? 'cursor-not-allowed opacity-50' : ''}`}
+                        className={`h-7 px-2 ${filters.dialog_boundary_id ? 'cursor-not-allowed opacity-50' : ''}`}
                         onClick={() => handleNavigate(null)}
-                        // DISABLE ROOT IF BOUNDARY EXISTS
-                        disabled={!!filters.lib_boundary_id}
+                        disabled={!!filters.dialog_boundary_id}
                     >
                         <Home className="mr-1 h-4 w-4" /> Root
                     </Button>
 
-                    {libCurrent.map((item) => {
-                        /**
-                         * DISABLE LOGIC:
-                         * If a boundary is set, we find its position in the breadcrumb path.
-                         * Anything "before" the boundary is an ancestor and should be disabled.
-                         */
-                        const boundaryId = Number(filters.lib_boundary_id);
+                    {dialogCurrent.map((item) => {
+                        const boundaryId = Number(filters.dialog_boundary_id);
                         const isAncestor =
                             boundaryId &&
                             item.id !== boundaryId &&
-                            libCurrent.findIndex((i) => i.id === boundaryId) >
-                                libCurrent.findIndex((i) => i.id === item.id);
+                            dialogCurrent.findIndex(
+                                (i) => i.id === boundaryId,
+                            ) >
+                                dialogCurrent.findIndex(
+                                    (i) => i.id === item.id,
+                                );
 
                         return (
                             <div
                                 key={item.id}
-                                className="flex items-center gap-2"
+                                className="flex min-w-0 items-center gap-2"
                             >
                                 <ChevronRight className="h-4 w-4 opacity-30" />
+
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className={`h-7 px-2 ${isAncestor ? 'cursor-not-allowed opacity-50' : ''}`}
+                                    className={`block h-7 flex-1 truncate px-2 ${isAncestor ? 'cursor-not-allowed opacity-50' : ''}`}
                                     onClick={() => handleNavigate(item.id)}
-                                    // DISABLE IF IT'S AN ANCESTOR
                                     disabled={
                                         !!isAncestor ||
-                                        item.id === filters.lib_id
+                                        item.id === filters.dialog_id
                                     }
                                 >
-                                    <span className="max-w-90 truncate">
-                                        {item.name}
-                                    </span>
+                                    {item.name}
                                 </Button>
                             </div>
                         );
@@ -196,24 +238,22 @@ export default function PpaSelectorDialog({
 
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full pr-3">
-                        {!Array.isArray(masterPpas) && (
+                        {!Array.isArray(dialogPpaTree) && (
                             <DataTable
-                                key={`lib-table-${filters?.lib_id}`}
+                                key={`lib-table-${filters?.dialog_id}`}
                                 columns={columns}
-                                // data={masterPpas.data}
                                 data={displayData}
-                                paginationObj={masterPpas}
+                                paginationObj={dialogPpaTree}
                                 withSearch
-                                searchKey="lib_search"
-                                pageKey="lib_page"
+                                searchKey="dialog_search"
+                                pageKey="dialog_page"
                                 negativeHeight={24}
                                 filters={filters}
                                 onlyKeys={[
-                                    'masterPpas',
-                                    'libCurrent',
+                                    'dialogPpaTree',
+                                    'dialogCurrent',
                                     'filters',
                                 ]}
-                                // DYNAMIC STATE PASSED HERE
                                 meta={{
                                     selectedIds: new Set(selectedItems.keys()),
                                     existingIds: existingIdsSet,
