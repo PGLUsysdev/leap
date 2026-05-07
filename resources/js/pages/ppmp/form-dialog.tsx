@@ -113,30 +113,6 @@ export default function PpmpFormDialog({
         }
     }, [open, selectedEntry, form]);
 
-    // Clear procurement item when expense account changes
-    useEffect(() => {
-        const currentPriceListId = form.getValues('ppmp_price_list_id');
-        if (currentPriceListId && !isCustomItem) {
-            form.setValue('ppmp_price_list_id', null);
-            form.setValue('itemNo', null);
-            form.setValue('description', null);
-            form.setValue('unitOfMeasurement', null);
-            form.setValue('price', null);
-        }
-    }, [selectedExpenseAccount, form, isCustomItem]);
-
-    // Clear procurement item when category changes
-    useEffect(() => {
-        const currentPriceListId = form.getValues('ppmp_price_list_id');
-        if (currentPriceListId && !isCustomItem) {
-            form.setValue('ppmp_price_list_id', null);
-            form.setValue('itemNo', null);
-            form.setValue('description', null);
-            form.setValue('unitOfMeasurement', null);
-            form.setValue('price', null);
-        }
-    }, [selectedCategory, form, isCustomItem]);
-
     // Get the chart of accounts associated with the selected category
     const selectedCategoryData = ppmpCategories.find(
         (cat) => cat.id === selectedCategory,
@@ -410,9 +386,39 @@ export default function PpmpFormDialog({
                                                                                         }
                                                                                         value={`${account.account_number} ${account.account_title}`}
                                                                                         onSelect={() => {
-                                                                                            field.onChange(
-                                                                                                account.id,
-                                                                                            );
+                                                                                            // Only clear if the value actually changes manually
+                                                                                            if (
+                                                                                                field.value !==
+                                                                                                account.id
+                                                                                            ) {
+                                                                                                field.onChange(
+                                                                                                    account.id,
+                                                                                                );
+                                                                                                if (
+                                                                                                    !isCustomItem
+                                                                                                ) {
+                                                                                                    form.setValue(
+                                                                                                        'ppmp_price_list_id',
+                                                                                                        null,
+                                                                                                    );
+                                                                                                    form.setValue(
+                                                                                                        'description',
+                                                                                                        null,
+                                                                                                    );
+                                                                                                    form.setValue(
+                                                                                                        'itemNo',
+                                                                                                        null,
+                                                                                                    );
+                                                                                                    form.setValue(
+                                                                                                        'price',
+                                                                                                        null,
+                                                                                                    );
+                                                                                                    form.setValue(
+                                                                                                        'unitOfMeasurement',
+                                                                                                        null,
+                                                                                                    );
+                                                                                                }
+                                                                                            }
                                                                                             setOpenExpenseCommand(
                                                                                                 false,
                                                                                             );
@@ -569,10 +575,39 @@ export default function PpmpFormDialog({
                                                                                         category.name
                                                                                     }
                                                                                     onSelect={() => {
-                                                                                        field.onChange(
-                                                                                            category.id,
-                                                                                        );
-
+                                                                                        // Only clear if the value actually changes manually
+                                                                                        if (
+                                                                                            field.value !==
+                                                                                            category.id
+                                                                                        ) {
+                                                                                            field.onChange(
+                                                                                                category.id,
+                                                                                            );
+                                                                                            if (
+                                                                                                !isCustomItem
+                                                                                            ) {
+                                                                                                form.setValue(
+                                                                                                    'ppmp_price_list_id',
+                                                                                                    null,
+                                                                                                );
+                                                                                                form.setValue(
+                                                                                                    'description',
+                                                                                                    null,
+                                                                                                );
+                                                                                                form.setValue(
+                                                                                                    'itemNo',
+                                                                                                    null,
+                                                                                                );
+                                                                                                form.setValue(
+                                                                                                    'price',
+                                                                                                    null,
+                                                                                                );
+                                                                                                form.setValue(
+                                                                                                    'unitOfMeasurement',
+                                                                                                    null,
+                                                                                                );
+                                                                                            }
+                                                                                        }
                                                                                         setOpenCategoryCommand(
                                                                                             false,
                                                                                         );

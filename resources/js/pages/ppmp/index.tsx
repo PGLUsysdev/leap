@@ -160,13 +160,27 @@ export default function PpmpPage({
               );
 
     const processedData = useMemo(() => {
-        return filteredPpmpItems.map((item) => ({
-            ...item,
-            priceListDescription:
-                priceLists?.find((pl) => pl.id === item.ppmp_price_list_id)
-                    ?.description || '',
-        }));
-    }, [filteredPpmpItems, priceLists]);
+        return filteredPpmpItems.map((item) => {
+            const priceList = priceLists?.find(
+                (pl) => pl.id === item.ppmp_price_list_id,
+            );
+            const chartOfAccount = chartOfAccounts?.find(
+                (coa) => coa.id === priceList?.chart_of_account_id,
+            );
+            const fundingSource = fundingSources?.find(
+                (fs) => fs.id === item.funding_source_id,
+            );
+
+            return {
+                ...item,
+                priceListDescription: priceList?.description || '',
+                // Add these for the columns to work properly
+                priceList: priceList,
+                chartOfAccount: chartOfAccount,
+                fundingSource: fundingSource,
+            };
+        });
+    }, [filteredPpmpItems, priceLists, chartOfAccounts, fundingSources]);
 
     function handleDeleteDialogOpen(source: Ppmp) {
         setSelectedSource(source);

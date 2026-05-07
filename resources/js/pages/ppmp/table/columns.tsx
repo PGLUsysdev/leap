@@ -126,67 +126,41 @@ const columnHelper = createColumnHelper<Ppmp>();
 const columns = [
     columnHelper.accessor('funding_source_id', {
         header: () => <div>Funding Source</div>,
-        cell: ({ getValue, table }) => {
-            const fundingSources = table.options.meta?.meta?.fundingSources;
-            const fundingSource = fundingSources?.find(
-                (fs) => fs.id === getValue(),
-            );
-
-            return <span className="text-wrap">{fundingSource?.code}</span>;
-        },
+        cell: ({ row }) => (
+            <span className="text-wrap">
+                {row.original.fundingSource?.code}
+            </span>
+        ),
     }),
     columnHelper.display({
         id: 'expense_class',
         header: () => <div>Expense Class</div>,
-        cell: ({ row, table }) => {
-            const meta = table.options.meta?.meta;
-            const priceList = meta?.priceLists?.find(
-                (pl) => pl.id === row.original.ppmp_price_list_id,
-            );
-            const chartOfAccount = meta?.chartOfAccounts?.find(
-                (coa) => coa.id === priceList?.chart_of_account_id,
-            );
-
-            return (
-                <span className="font-medium text-wrap">
-                    {chartOfAccount?.expense_class}
-                </span>
-            );
-        },
+        cell: ({ row }) => (
+            <span className="font-medium text-wrap">
+                {row.original.chartOfAccount?.expense_class}
+            </span>
+        ),
     }),
-    columnHelper.accessor('ppmp_price_list_id', {
+    columnHelper.display({
         id: 'expense_account',
         size: 300,
         header: () => <div>Expense Account</div>,
-        cell: ({ getValue, table }) => {
-            const meta = table.options.meta?.meta;
-            const priceList = meta?.priceLists?.find(
-                (pl) => pl.id === getValue(),
-            );
-            const chartOfAccount = meta?.chartOfAccounts?.find(
-                (coa) => coa.id === priceList?.chart_of_account_id,
-            );
-
-            return (
-                <div className="text-wrap">{chartOfAccount?.account_title}</div>
-            );
-        },
+        cell: ({ row }) => (
+            <div className="text-wrap">
+                {row.original.chartOfAccount?.account_title}
+            </div>
+        ),
     }),
-
     // priceList
-    columnHelper.accessor('ppmp_price_list_id', {
+    columnHelper.display({
         id: 'item_number',
         size: 150,
         header: () => <div className="pr-20 text-right">Item No.</div>,
-        cell: ({ getValue, table }) => {
-            const meta = table.options.meta?.meta;
-            const priceLists = meta?.priceLists;
-            const priceList = priceLists?.find((pl) => pl.id === getValue());
-
-            return (
-                <div className="pr-20 text-right">{priceList?.item_number}</div>
-            );
-        },
+        cell: ({ row }) => (
+            <div className="pr-20 text-right">
+                {row.original.priceList?.item_number}
+            </div>
+        ),
     }),
     columnHelper.accessor('priceListDescription', {
         header: () => <div>Description</div>,
