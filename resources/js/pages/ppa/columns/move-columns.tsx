@@ -3,6 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types/global';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+    ButtonGroupText,
+} from '@/components/ui/button-group';
+import { FolderOpen } from 'lucide-react';
 
 const columnHelper = createColumnHelper<Ppa>();
 
@@ -171,7 +177,7 @@ const columns = [
     }),
     columnHelper.display({
         id: 'action',
-        size: 50,
+        size: 74,
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
             const source = meta.ppaToMove;
@@ -190,19 +196,35 @@ const columns = [
             const isSelf = source && String(target.id) === String(source.id);
 
             return (
-                <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => meta?.onShowChildren?.(target)}
-                    // Disabled if: it's a sub-activity OR hierarchy says no OR it's the item itself
-                    disabled={isSubActivity || !isNavigationAllowed || isSelf}
-                    // className="gap-0.5"
-                >
-                    {childrenCount}
-                    {/* <FolderOpen
-                        className={`${!isNavigationAllowed && !isSubActivity ? 'opacity-20' : ''}`}
-                    /> */}
-                </Button>
+                // <Button
+                //     size="icon"
+                //     variant="outline"
+                //     onClick={() => meta?.onShowChildren?.(target)}
+                //     disabled={isSubActivity || !isNavigationAllowed || isSelf}
+                // >
+                //     {childrenCount}
+                // </Button>
+
+                <ButtonGroup>
+                    <Button
+                        variant="outline"
+                        className="w-7 shrink overflow-hidden px-0"
+                        disabled
+                    >
+                        {childrenCount}
+                    </Button>
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        title="Open PPA"
+                        onClick={() => meta?.onShowChildren?.(target)}
+                        disabled={
+                            isSubActivity || !isNavigationAllowed || isSelf
+                        }
+                    >
+                        <FolderOpen />
+                    </Button>
+                </ButtonGroup>
             );
         },
     }),

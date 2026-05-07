@@ -1,8 +1,20 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { CheckCircle2, XCircle, Pencil, Trash, Move } from 'lucide-react';
+import {
+    CheckCircle2,
+    XCircle,
+    Pencil,
+    Trash,
+    Move,
+    FolderOpen,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types/global';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+    ButtonGroupText,
+} from '@/components/ui/button-group';
 
 const columnHelper = createColumnHelper<Ppa>();
 
@@ -88,13 +100,13 @@ const columns = [
     }),
     columnHelper.display({
         id: 'action',
-        size: 120,
+        size: 146,
         cell: ({ row, table }) => {
             const childrenCount = row.original.children_count;
 
             return (
                 <div className="flex items-center gap-1">
-                    <Button
+                    {/* <Button
                         size="icon"
                         variant="outline"
                         title="Open PPA"
@@ -102,9 +114,32 @@ const columns = [
                             table.options.meta?.onShowChildren?.(row.original)
                         }
                         disabled={row.original.type === 'Sub-Activity'}
-                    >
-                        {childrenCount}
-                    </Button>
+                    > */}
+                    {/* {childrenCount}
+                        <FolderOpen /> */}
+                    <ButtonGroup>
+                        <Button
+                            variant="outline"
+                            className="w-7 shrink overflow-hidden px-0"
+                            disabled
+                        >
+                            {childrenCount}
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            title="Open PPA"
+                            onClick={() =>
+                                table.options.meta?.onShowChildren?.(
+                                    row.original,
+                                )
+                            }
+                            disabled={row.original.type === 'Sub-Activity'}
+                        >
+                            <FolderOpen />
+                        </Button>
+                    </ButtonGroup>
+                    {/* </Button> */}
 
                     <Button
                         size="icon"

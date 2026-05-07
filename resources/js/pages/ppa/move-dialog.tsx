@@ -36,6 +36,13 @@ interface PpaMoveDialogProps {
     dialogCurrent: Ppa[];
 }
 
+const isValidParentType = (targetType: string, sourceType: string): boolean => {
+    if (sourceType === 'Project') return targetType === 'Program';
+    if (sourceType === 'Activity') return targetType === 'Project';
+    if (sourceType === 'Sub-Activity') return targetType === 'Activity';
+    return false;
+};
+
 export default function PpaMoveDialog({
     isOpen,
     onOpenChange,
@@ -75,31 +82,101 @@ export default function PpaMoveDialog({
         }
     }, [isOpen]);
 
-    // RELATIONSHIP HELPER
     const buttonLabels = useMemo(() => {
-        if (!selectedTarget || !ppaToMove)
-            return { top: 'Move to Top', bottom: 'Move to Bottom' };
+        const currentFolder =
+            dialogCurrent.length > 0 ? dialogCurrent[0] : null;
+        const isProgram = ppaToMove?.type === 'Program';
+        const isSameFolder =
+            ppaToMove &&
+            currentFolder &&
+            ppaToMove.parent_id === currentFolder.id;
 
-        const isSibling = selectedTarget.type === ppaToMove.type;
-        if (isSibling) {
+        const defaultState = {
+            showSiblingButtons: false,
+            siblingEnabled: false,
+            showMoveHereButton: true,
+            moveHereEnabled: false,
+            moveHereLabel: 'Select a destination',
+            moveHereIcon: <Info className="mr-2 h-4 w-4" />,
+            targetId: null as number | null,
+        };
+
+        if (!ppaToMove) return defaultState;
+
+        // RULE 1: ROOT PROGRAMS OR MOVING WITHIN THE SAME FOLDER
+        // Must ONLY allow "Move Above / Below" sibling actions, kept disabled until selected
+        if (isProgram || isSameFolder) {
+            const isSelectedSibling =
+                selectedTarget && selectedTarget.type === ppaToMove.type;
             return {
-                top: 'Move Above Sibling',
-                bottom: 'Move Below Sibling',
-                icon: <Move className="mr-2 h-4 w-4" />,
+                showSiblingButtons: true,
+                siblingEnabled: !!isSelectedSibling,
+                showMoveHereButton: false,
+                moveHereEnabled: false,
+                moveHereLabel: '',
+                moveHereIcon: null,
+                targetId: isSelectedSibling ? selectedTarget.id : null,
             };
         }
-        return {
-            top: 'Move to Start of Folder',
-            bottom: 'Move to End of Folder',
-            icon: <FolderOpen className="mr-2 h-4 w-4" />,
-        };
-    }, [selectedTarget, ppaToMove]);
 
-    const handleMove = (direction: 'top' | 'bottom') => {
-        if (!selectedTarget || !ppaToMove) return;
+        // RULE 2: ROW IN TABLE IS MANUALLY SELECTED
+        if (selectedTarget) {
+            const isSibling = selectedTarget.type === ppaToMove.type;
+            if (isSibling) {
+                return {
+                    showSiblingButtons: true,
+                    siblingEnabled: true,
+                    showMoveHereButton: false,
+                    moveHereEnabled: false,
+                    moveHereLabel: '',
+                    moveHereIcon: null,
+                    targetId: selectedTarget.id,
+                };
+            } else {
+                // Checked row is a parent folder (e.g. checked a Program row while moving a Project)
+                return {
+                    showSiblingButtons: false,
+                    siblingEnabled: false,
+                    showMoveHereButton: true,
+                    moveHereEnabled: true,
+                    moveHereLabel: 'Move Into Folder',
+                    moveHereIcon: <FolderOpen className="mr-2 h-4 w-4" />,
+                    targetId: selectedTarget.id,
+                };
+            }
+        }
+
+        // RULE 3: EMPTY SELECTION, INSIDE ANOTHER FOLDER
+        if (currentFolder) {
+            const canMoveHere = isValidParentType(
+                currentFolder.type,
+                ppaToMove.type,
+            );
+            return {
+                showSiblingButtons: false,
+                siblingEnabled: false,
+                showMoveHereButton: true,
+                moveHereEnabled: canMoveHere,
+                moveHereLabel: canMoveHere ? 'Move Here' : 'Cannot place here',
+                moveHereIcon: canMoveHere ? (
+                    <ArrowDownToLine className="mr-2 h-4 w-4" />
+                ) : (
+                    <Info className="mr-2 h-4 w-4" />
+                ),
+                targetId: canMoveHere ? currentFolder.id : null,
+            };
+        }
+
+        return defaultState;
+    }, [selectedTarget, ppaToMove, dialogCurrent]);
+
+    const handleMove = (direction: 'top' | 'bottom' | 'into') => {
+        const finalTargetId = buttonLabels.targetId;
+        if (!finalTargetId || !ppaToMove) return;
+
         router.post(
             `/ppas/${ppaToMove.id}/move`,
-            { target_id: selectedTarget.id, direction },
+            { target_id: finalTargetId, direction },
             {
                 preserveState: true,
                 onStart: () => setLoading(true),
@@ -269,30 +346,50 @@ export default function PpaMoveDialog({
                             Cancel
                         </Button>
 
-                        <Button
-                            variant="outline"
-                            onClick={() => handleMove('top')}
-                            disabled={!selectedTarget || loading}
-                            className="gap-2"
-                        >
-                            <ArrowUpToLine className="h-4 w-4" />
-                            {buttonLabels.top}
-                        </Button>
+                        {/* CONDITION A: Show "Move Above / Move Below Sibling" buttons */}
+                        {buttonLabels.showSiblingButtons && (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleMove('top')}
+                                    disabled={
+                                        !buttonLabels.siblingEnabled || loading
+                                    }
+                                >
+                                    <ArrowUpToLine className="mr-2 h-4 w-4" />{' '}
+                                    Move Above Sibling
+                                </Button>
+                                <Button
+                                    onClick={() => handleMove('bottom')}
+                                    disabled={
+                                        !buttonLabels.siblingEnabled || loading
+                                    }
+                                >
+                                    <ArrowDownToLine className="mr-2 h-4 w-4" />{' '}
+                                    Move Below Sibling
+                                </Button>
+                            </>
+                        )}
 
-                        <Button
-                            onClick={() => handleMove('bottom')}
-                            disabled={!selectedTarget || loading}
-                            className="gap-2"
-                        >
-                            {loading ? (
-                                <Spinner />
-                            ) : (
-                                <>
-                                    <ArrowDownToLine className="h-4 w-4" />{' '}
-                                    {buttonLabels.bottom}
-                                </>
-                            )}
-                        </Button>
+                        {/* CONDITION B: Show single dynamic "Move Here" / "Move Into Folder" action button */}
+                        {buttonLabels.showMoveHereButton && (
+                            <Button
+                                onClick={() => handleMove('into')}
+                                disabled={
+                                    !buttonLabels.moveHereEnabled || loading
+                                }
+                                className="gap-2"
+                            >
+                                {loading ? (
+                                    <Spinner />
+                                ) : (
+                                    <>
+                                        {buttonLabels.moveHereIcon}
+                                        {buttonLabels.moveHereLabel}
+                                    </>
+                                )}
+                            </Button>
+                        )}
                     </div>
                 </DialogFooter>
             </DialogContent>

@@ -26,7 +26,7 @@ import type {
 import { type BreadcrumbItem } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
+import columns from './columns/columns';
 import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
 
 interface AipSummaryTableProps {

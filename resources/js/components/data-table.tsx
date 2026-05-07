@@ -151,12 +151,19 @@ export function DataTable<TData extends { id: unknown }>({
     pageKey = 'page',
     isDialog,
 }: DataTableProps<TData>) {
+    console.log(paginationObj);
+
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // for global search
     const [searchValue, setSearchValue] = useState('');
+
+    // logic for server-side filtering ex. search
+    const isServerSide = useMemo(() => {
+        return paginationObj && !Array.isArray(paginationObj);
+    }, [paginationObj]);
 
     // 2. Sync local state with props (if URL changes via browser back/forward)
     useEffect(() => {
@@ -165,6 +172,8 @@ export function DataTable<TData extends { id: unknown }>({
 
     // 3. Debounce and Trigger Inertia
     useEffect(() => {
+        if (!isServerSide) return;
+
         const delayDebounceFn = setTimeout(() => {
             const currentFilterValue = filters?.[searchKey] || '';
 
@@ -200,6 +209,7 @@ export function DataTable<TData extends { id: unknown }>({
         onlyKeys,
         filters,
         searchValue,
+        isServerSide,
         // pageKey,
     ]);
 
@@ -214,14 +224,16 @@ export function DataTable<TData extends { id: unknown }>({
         data: localData,
         columns,
         getCoreRowModel: getCoreRowModel(),
+
         initialState: {
             columnPinning: { right: ['action'] },
         },
 
         // SERVER-SIDE SEARCH CONFIG
-        manualFiltering: true,
+        manualFiltering: isServerSide,
 
-        getFilteredRowModel: withSearch ? getFilteredRowModel() : undefined,
+        // getFilteredRowModel: withSearch ? getFilteredRowModel() : undefined,
+        getFilteredRowModel: getFilteredRowModel(),
         meta: {
             onAdd,
             onEdit,
@@ -266,7 +278,7 @@ export function DataTable<TData extends { id: unknown }>({
         getRowId: (row) => row.id?.toString() ?? '',
 
         // for pagination
-        manualPagination: true,
+        manualPagination: isServerSide,
         pageCount:
             paginationObj &&
             paginationObj !== undefined &&

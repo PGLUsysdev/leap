@@ -4,6 +4,11 @@ import { Badge } from '@/components/ui/badge';
 import { FolderOpen, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Ppa } from '@/types/global';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+    ButtonGroupText,
+} from '@/components/ui/button-group';
 
 type SelectablePpa = Ppa & { _isSelected?: boolean; _isAdded?: boolean };
 
@@ -106,8 +111,8 @@ const columns = [
         },
     }),
     columnHelper.display({
-        id: 'actions',
-        size: 60,
+        id: 'action',
+        size: 74,
         // header: 'Open',
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
@@ -116,15 +121,33 @@ const columns = [
             const childrenCount = ppa.children_count;
 
             return (
-                <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={!canOpen}
-                    onClick={() => meta.onNavigate?.(ppa.id)}
-                >
-                    {childrenCount}
-                    {/* <FolderOpen /> */}
-                </Button>
+                // <Button
+                //     variant="outline"
+                //     size="icon"
+                //     disabled={!canOpen}
+                //     onClick={() => meta.onNavigate?.(ppa.id)}
+                // >
+                //     {childrenCount}
+                // </Button>
+
+                <ButtonGroup>
+                    <Button
+                        variant="outline"
+                        className="w-7 shrink overflow-hidden px-0"
+                        disabled
+                    >
+                        {childrenCount}
+                    </Button>
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        title="Open PPA"
+                        disabled={!canOpen}
+                        onClick={() => meta.onNavigate?.(ppa.id)}
+                    >
+                        <FolderOpen />
+                    </Button>
+                </ButtonGroup>
             );
         },
     }),

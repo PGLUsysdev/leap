@@ -13,7 +13,7 @@ import { DataTable } from '@/components/data-table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { ChevronRight, Home, Info } from 'lucide-react';
-import columns from './ppa-import-table/columns';
+import columns from './columns/import-columns';
 import type { Ppa, PaginatedResponse, Filter } from '@/types/global';
 
 interface PpaSelectorDialogProps {

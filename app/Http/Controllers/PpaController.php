@@ -282,77 +282,74 @@ class PpaController extends Controller
 
     public function move(Request $request, Ppa $ppa)
     {
-        $request->validate([
-            'target_id' => 'required|exists:ppas,id',
-            'direction' => 'required|in:top,bottom',
-        ]);
-
         $target = Ppa::findOrFail($request->target_id);
         $direction = $request->direction;
+
+        $officeId = $ppa->office_id;
+        $fiscalYearId = $ppa->fiscal_year_id; // Scope by the record's year
         $oldParentId = $ppa->parent_id;
 
-        // 1. Hierarchy Validation: Prevent illegal structures
-        $isParentTarget = $this->isParentLevel($target->type, $ppa->type);
-        $isSiblingTarget = $target->type === $ppa->type;
-
-        if (!$isParentTarget && !$isSiblingTarget) {
-            return back()->withErrors([
-                'move' => "A {$ppa->type} cannot be placed there.",
-            ]);
-        }
-
-        // 2. Cycle Detection: Can't move a folder into its own sub-folder
-        if ($this->isDescendantOf($target, $ppa->id)) {
-            return back()->withErrors([
-                'move' => 'Cannot move a folder into its own sub-folder.',
-            ]);
-        }
+        $isSibling = $target->type === $ppa->type;
+        $newParentId = $isSibling ? $target->parent_id : $target->id;
 
         DB::transaction(function () use (
             $ppa,
             $target,
             $direction,
+            $isSibling,
             $oldParentId,
-            $isParentTarget,
+            $newParentId,
+            $officeId,
+            $fiscalYearId,
         ) {
-            // MODE A: Into a Parent
-            if ($isParentTarget) {
-                $ppa->parent_id = $target->id;
-                $ppa->sort_order = $direction === 'top' ? -1 : 999999;
-            }
-            // MODE B: Relative to a Sibling
-            else {
-                $ppa->parent_id = $target->parent_id;
-                $ppa->sort_order =
-                    $direction === 'top'
+            // 1. Move to new parent with a globally unique temp suffix
+            $ppa->update([
+                'parent_id' => $newParentId,
+                'code_suffix' => 'MOVING_' . $ppa->id,
+                'sort_order' => $isSibling
+                    ? ($direction === 'top'
                         ? $target->sort_order - 0.5
-                        : $target->sort_order + 0.5;
-            }
+                        : $target->sort_order + 0.5)
+                    : ($direction === 'top'
+                        ? -1
+                        : 999999),
+            ]);
 
-            $ppa->save();
+            // 2. Re-index target folder (filtered by year)
+            $this->syncSiblingIndexes(
+                $newParentId,
+                $officeId,
+                $ppa->type,
+                $fiscalYearId,
+            );
 
-            // 3. Re-index OLD home
-            $this->syncSiblingIndexes($oldParentId, $ppa->office_id);
-
-            // 4. Re-index NEW home (if different)
-            if ($oldParentId !== $ppa->parent_id) {
-                $this->syncSiblingIndexes($ppa->parent_id, $ppa->office_id);
+            // 3. Re-index source folder (if different)
+            if ($oldParentId !== $newParentId) {
+                $this->syncSiblingIndexes(
+                    $oldParentId,
+                    $officeId,
+                    $ppa->type,
+                    $fiscalYearId,
+                );
             }
         });
 
-        return redirect()->back();
+        return back();
     }
 
-    private function syncSiblingIndexes($parentId, $officeId)
-    {
-        $fiscalYearId = session('active_fiscal_year_id');
-
-        // Handle both Root (null) and Child groups
+    protected function syncSiblingIndexes(
+        $parentId,
+        $officeId,
+        $type,
+        $fiscalYearId,
+    ) {
+        // Filter strictly by Office AND Year AND Type
         $query = Ppa::where('office_id', $officeId)
             ->where('fiscal_year_id', $fiscalYearId)
-            ->orderBy('sort_order', 'asc');
+            ->where('type', $type)
+            ->orderBy('sort_order');
 
-        if ($parentId === null) {
+        if (is_null($parentId)) {
             $query->whereNull('parent_id');
         } else {
             $query->where('parent_id', $parentId);
@@ -360,24 +357,17 @@ class PpaController extends Controller
 
         $siblings = $query->get();
 
-        // STEP 1: Temporary suffixes to avoid Unique Constraint violations
+        // Pass 1: Set temporary values to avoid collision with other years/items
         foreach ($siblings as $sibling) {
-            $tempSuffix = 't' . $sibling->id; // Use ID to ensure uniqueness
-            $sibling->update(['code_suffix' => $tempSuffix]);
+            $sibling->update(['code_suffix' => 'TEMP_' . $sibling->id]);
         }
 
-        // STEP 2: Assign final sort_order and code_suffix
+        // Pass 2: Final sequential numbering (01, 02, 03...)
         foreach ($siblings as $index => $sibling) {
-            $digitLength = $this->getCodeSuffixLength($sibling->type);
-
-            $newSuffix =
-                $digitLength === 0
-                    ? (string) ($index + 1)
-                    : str_pad($index + 1, $digitLength, '0', STR_PAD_LEFT);
-
+            $newPos = $index + 1;
             $sibling->update([
-                'sort_order' => $index,
-                'code_suffix' => $newSuffix,
+                'sort_order' => (float) $newPos,
+                'code_suffix' => str_pad($newPos, 3, '0', STR_PAD_LEFT),
             ]);
         }
     }
@@ -392,14 +382,14 @@ class PpaController extends Controller
         };
     }
 
-    private function isDescendantOf($target, $movingId)
+    protected function isDescendantOf($target, $sourceId)
     {
         $current = $target;
         while ($current) {
-            if ($current->id == $movingId) {
+            if ($current->id == $sourceId) {
                 return true;
             }
-            $current = $current->ancestor; // Requires 'ancestor' relationship in Model
+            $current = $current->parent;
         }
         return false;
     }
@@ -409,83 +399,30 @@ class PpaController extends Controller
      */
     public function destroy(Ppa $ppa)
     {
-        // 1. Identify the branch
-        $descendantIds = $this->getDescendantPpaIds($ppa->id);
-        $allBranchIds = array_merge([$ppa->id], $descendantIds);
-
-        // 2. CHECK: Is ANY part of this branch used in the AIP Summary?
-        $usedInAip = \App\Models\AipEntry::whereIn(
-            'ppa_id',
-            $allBranchIds,
-        )->exists();
-
-        if ($usedInAip) {
-            return redirect()
-                ->back()
-                ->withErrors([
-                    'error' =>
-                        'Cannot delete: This entry (or one of its sub-items) is currently used in an AIP Summary.',
-                ]);
-        }
-
         $parentId = $ppa->parent_id;
         $officeId = $ppa->office_id;
-        // $deletedSortOrder = $ppa->sort_order;
+        $type = $ppa->type;
+        $fiscalYearId = $ppa->fiscal_year_id;
 
-        try {
-            DB::beginTransaction();
-
-            // 3. Delete the PPA
+        DB::transaction(function () use (
+            $ppa,
+            $parentId,
+            $officeId,
+            $type,
+            $fiscalYearId,
+        ) {
             $ppa->delete();
 
-            $this->syncSiblingIndexes($parentId, $officeId);
+            // Close the gap only for this office and this year
+            $this->syncSiblingIndexes(
+                $parentId,
+                $officeId,
+                $type,
+                $fiscalYearId,
+            );
+        });
 
-            // // 4. RE-SEQUENCE SIBLINGS
-            // $siblings = Ppa::where('parent_id', $parentId)
-            //     ->where('office_id', $officeId)
-            //     ->where('sort_order', '>', $deletedSortOrder)
-            //     ->orderBy('sort_order', 'asc')
-            //     ->get();
-
-            // foreach ($siblings as $sibling) {
-            //     // newOrder is for the Database (0, 1, 2...)
-            //     $newOrder = (int) $sibling->sort_order - 1;
-
-            //     // namingIndex is for the Code Suffix (1, 2, 3...)
-            //     // This prevents the "000" issue.
-            //     $namingIndex = $newOrder + 1;
-
-            //     $digitLength = $this->getCodeSuffixLength($sibling->type);
-
-            //     $newSuffix =
-            //         $digitLength === 0
-            //             ? (string) $namingIndex
-            //             : str_pad(
-            //                 $namingIndex,
-            //                 $digitLength,
-            //                 '0',
-            //                 STR_PAD_LEFT,
-            //             );
-
-            //     // Force update to DB
-            //     DB::table('ppas')
-            //         ->where('id', $sibling->id)
-            //         ->update([
-            //             'sort_order' => $newOrder,
-            //             'code_suffix' => $newSuffix,
-            //             'updated_at' => now(),
-            //         ]);
-            // }
-
-            DB::commit();
-
-            return redirect()->back()->with('success', 'Entry removed.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()
-                ->back()
-                ->withErrors(['error' => $e->getMessage()]);
-        }
+        return back();
     }
 
     private function getDescendantPpaIds($parentId)
