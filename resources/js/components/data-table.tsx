@@ -151,7 +151,8 @@ export function DataTable<TData extends { id: unknown }>({
     pageKey = 'page',
     isDialog,
 }: DataTableProps<TData>) {
-    console.log(paginationObj);
+    // console.log(paginationObj);
+    // console.log(filters);
 
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
@@ -159,6 +160,8 @@ export function DataTable<TData extends { id: unknown }>({
 
     // for global search
     const [searchValue, setSearchValue] = useState('');
+
+    // console.log(searchValue);
 
     // logic for server-side filtering ex. search
     const isServerSide = useMemo(() => {
@@ -177,8 +180,12 @@ export function DataTable<TData extends { id: unknown }>({
         const delayDebounceFn = setTimeout(() => {
             const currentFilterValue = filters?.[searchKey] || '';
 
+            // console.log({ searchValue, currentFilterValue });
+
             // Trigger if value is different, or if we're clearing a search that exists in URL
             if (searchValue !== currentFilterValue) {
+                // console.log(searchValue);
+
                 router.get(
                     window.location.pathname,
                     {
@@ -370,7 +377,7 @@ export function DataTable<TData extends { id: unknown }>({
                 only:
                     onlyKeys && Array.isArray(onlyKeys) && onlyKeys.length > 0
                         ? onlyKeys
-                        : undefined, // Only refresh the specific data needed
+                        : undefined,
             },
         );
     };
@@ -385,9 +392,10 @@ export function DataTable<TData extends { id: unknown }>({
                                 <InputGroupInput
                                     placeholder="Search..."
                                     value={searchValue}
-                                    onChange={(e) =>
-                                        setSearchValue(e.target.value)
-                                    }
+                                    onChange={(e) => {
+                                        console.log(e.target.value);
+                                        setSearchValue(e.target.value);
+                                    }}
                                 />
                                 <InputGroupAddon>
                                     <SearchIcon />

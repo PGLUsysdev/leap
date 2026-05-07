@@ -1,43 +1,65 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, Trash, GripVertical } from 'lucide-react';
+import {
+    Pencil,
+    Trash,
+    Move,
+    // GripVertical
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PriceList } from '@/types/global';
-import { useSortable } from '@dnd-kit/sortable';
+// import { useSortable } from '@dnd-kit/sortable';
 
 const columnHelper = createColumnHelper<PriceList>();
 
-const RowDragHandleCell = ({ rowId }: { rowId: string }) => {
-    const { attributes, listeners, setActivatorNodeRef } = useSortable({
-        id: rowId,
-    });
+// const RowDragHandleCell = ({ rowId }: { rowId: string }) => {
+//     const { attributes, listeners, setActivatorNodeRef } = useSortable({
+//         id: rowId,
+//     });
 
-    return (
-        <Button
-            size="icon"
-            variant="ghost"
-            ref={setActivatorNodeRef}
-            {...attributes}
-            {...listeners}
-            className="cursor-grab rounded active:cursor-grabbing"
-        >
-            <GripVertical />
-        </Button>
-    );
-};
+//     return (
+//         <Button
+//             size="icon"
+//             variant="ghost"
+//             ref={setActivatorNodeRef}
+//             {...attributes}
+//             {...listeners}
+//             className="cursor-grab rounded active:cursor-grabbing"
+//         >
+//             <GripVertical />
+//         </Button>
+//     );
+// };
 
 const columns = [
+    // columnHelper.display({
+    //     id: 'drag-handle',
+    //     size: 50,
+    //     cell: ({ row }) => {
+    //         return <RowDragHandleCell rowId={row.id} />;
+    //     },
+    // }),
     columnHelper.display({
-        id: 'drag-handle',
+        id: 'move-handle',
         size: 50,
-        cell: ({ row }) => {
-            return <RowDragHandleCell rowId={row.id} />;
+        cell: ({ row, table }) => {
+            return (
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => {
+                        table.options.meta?.onMove(row.original);
+                    }}
+                >
+                    <Move />
+                </Button>
+            );
         },
     }),
     columnHelper.accessor('item_number', {
         header: 'Item Number',
         size: 80,
         cell: (value) => (
-            <div className="break-words whitespace-normal">
+            <div className="wrap-break-words whitespace-normal">
                 {value.getValue()}
             </div>
         ),
@@ -46,7 +68,7 @@ const columns = [
         header: 'Description',
         size: 300, // Increased size for better wrapping space
         cell: (value) => (
-            <div className="py-1 leading-tight font-medium break-words whitespace-normal">
+            <div className="wrap-break-words py-1 leading-tight font-medium whitespace-normal">
                 {value.getValue()}
             </div>
         ),
@@ -86,7 +108,7 @@ const columns = [
         header: 'Expense Account',
         size: 250,
         cell: (value) => (
-            <div className="text-xs leading-tight break-words whitespace-normal text-muted-foreground">
+            <div className="wrap-break-words text-xs leading-tight whitespace-normal text-muted-foreground">
                 {value.getValue()}
             </div>
         ),

@@ -38,6 +38,7 @@ declare module '@tanstack/react-table' {
         onOpenPpmpSummary?: (data: TData) => void;
         onReorder?: (activeId: string, overId: string) => void;
         onShowChildren?: (data: TData) => void;
+        onMove?: (data: TData) => void;
         meta?: {
             priceLists?: PriceList[];
             chartOfAccounts?: ChartOfAccount[];

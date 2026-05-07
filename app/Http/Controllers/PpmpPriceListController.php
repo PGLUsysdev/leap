@@ -18,14 +18,36 @@ class PpmpPriceListController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $priceList = PpmpPriceList::with(
-            'chartOfAccount:id,account_title',
-            'category:id,name',
-        )
-            ->orderBy('sort_order')
-            ->get();
+        $query = PpmpPriceList::query()
+            ->with('chartOfAccount', 'category')
+            ->orderBy('sort_order');
+
+        if ($request->has('search')) {
+            $searchTerm = $request->query('search');
+            $query = $query
+                ->where('unit_of_measurement', 'like', '%' . $searchTerm . '%')
+                ->orWhere('description', 'like', '%' . $searchTerm . '%')
+                ->orWhere('item_number', 'like', '%' . $searchTerm . '%')
+                ->orWhere('price', 'like', '%' . $searchTerm . '%')
+                ->orWhereHas('category', function ($subQuery) use (
+                    $searchTerm,
+                ) {
+                    $subQuery->where('name', 'like', '%' . $searchTerm . '%');
+                })
+                ->orWhereHas('chartOfAccount', function ($subQuery) use (
+                    $searchTerm,
+                ) {
+                    $subQuery->where(
+                        'account_title',
+                        'like',
+                        '' . $searchTerm . '',
+                    );
+                });
+        }
+
+        $priceList = $query->paginate(100)->withQueryString();
 
         $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
             'MOOE',
@@ -37,9 +59,18 @@ class PpmpPriceListController extends Controller
         )->get();
 
         return Inertia::render('price-list/index', [
-            'priceList' => $priceList,
+            'paginatedPriceList' => $priceList,
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategory' => $ppmpCategory,
+            'filters' => $request->only([
+                'id',
+                'search',
+                'page',
+                // 'dialog_id',
+                // 'dialog_search',
+                // 'dialog_page',
+                // 'dialog_mode',
+            ]),
         ]);
     }
 

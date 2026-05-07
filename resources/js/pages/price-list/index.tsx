@@ -2,30 +2,37 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
-import type { PriceList, ChartOfAccount, PpmpCategory } from '@/types/global';
 import FormDialog from '@/pages/price-list/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import { router } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
+import columns from './columns/columns';
+import type {
+    PriceList,
+    ChartOfAccount,
+    PpmpCategory,
+    PaginatedResponse,
+    Filter,
+} from '@/types/global';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Price Lists', href: '#' }];
 
 interface PriceListPageProps {
-    priceList: PriceList[];
+    // paginatedPriceList: PriceList[];
+    paginatedPriceList: PaginatedResponse<PriceList>;
     chartOfAccounts: ChartOfAccount[];
     ppmpCategory: PpmpCategory[];
+    filters: Filter;
 }
 
 export default function PriceListPage({
-    priceList,
+    paginatedPriceList,
     chartOfAccounts,
     ppmpCategory,
+    filters,
 }: PriceListPageProps) {
-    // console.log(priceList);
-    console.log(chartOfAccounts);
-    console.log(ppmpCategory);
+    // console.log(paginatedPriceList);
 
     const [openEdit, setOpenEdit] = useState(false);
     const [selectedPriceList, setSelectedPriceList] =
@@ -95,16 +102,25 @@ export default function PriceListPage({
         );
     }
 
+    function handleMove(data: PriceList) {
+        console.log(data);
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="p-4">
                 <DataTable
                     columns={columns}
-                    data={priceList}
+                    data={paginatedPriceList.data}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                     onReorder={handleReorder}
+                    onMove={handleMove}
+                    paginationObj={paginatedPriceList}
+                    negativeHeight={11}
+                    onlyKeys={['paginatedPriceList']}
+                    filters={filters}
                 >
                     <Button onClick={handleAdd}>Add Price List</Button>
                 </DataTable>
