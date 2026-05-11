@@ -1,13 +1,5 @@
+import { type ReactElement, useState, useRef, useMemo, useEffect } from 'react';
 import {
-    type ReactElement,
-    type CSSProperties,
-    useState,
-    useRef,
-    useMemo,
-    useEffect,
-} from 'react';
-import {
-    type Row,
     type ColumnDef,
     flexRender,
     getCoreRowModel,
@@ -38,33 +30,11 @@ import {
     ChevronRight,
     SearchIcon,
 } from 'lucide-react';
-// needed for table body level scope DnD setup
-import {
-    DndContext,
-    KeyboardSensor,
-    MouseSensor,
-    TouchSensor,
-    closestCenter,
-    type DragEndEvent,
-    type UniqueIdentifier,
-    useSensor,
-    useSensors,
-} from '@dnd-kit/core';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import {
-    arrayMove,
-    SortableContext,
-    verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
 import {
     InputGroup,
     InputGroupAddon,
     InputGroupInput,
 } from '@/components/ui/input-group';
-
-// needed for row & cell level scope DnD setup
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type { PaginatedResponse, Filter } from '@/types/global';
 
 interface DataTableProps<TData extends { id: unknown }> {
@@ -75,7 +45,6 @@ interface DataTableProps<TData extends { id: unknown }> {
     children?: ReactElement;
     withRowSpan?: boolean;
     withFooter?: boolean;
-
     onEdit?: (data: TData) => void;
     onDelete?: (data: TData) => void;
     onAdd?: (parent: TData, childType: any) => void;
@@ -91,44 +60,22 @@ interface DataTableProps<TData extends { id: unknown }> {
     onMove?: (data: TData) => void;
     onShowChildren?: (data: TData) => void;
     onSelect?: (data: TData) => void;
-
     paginationObj?: PaginatedResponse<TData> | [];
-
     meta?: any;
     filters?: Filter;
     onlyKeys?: { [key: string]: any };
     searchKey?: string;
     pageKey?: string;
-
     isDialog?: boolean;
 }
-
-const reorderTree = (data: any[], activeId: string, overId: string): any[] => {
-    // 1. Check if the items are in the current level
-    const activeIndex = data.findIndex(
-        (item) => item.id.toString() === activeId,
-    );
-    const overIndex = data.findIndex((item) => item.id.toString() === overId);
-
-    if (activeIndex !== -1 && overIndex !== -1) {
-        return arrayMove(data, activeIndex, overIndex);
-    }
-
-    // 2. If not found, recurse into children
-    return data.map((item) => {
-        if (item.children && item.children.length > 0) {
-            return {
-                ...item,
-                children: reorderTree(item.children, activeId, overId),
-            };
-        }
-        return item;
-    });
-};
 
 export function DataTable<TData extends { id: unknown }>({
     columns,
     data,
+    children,
+    paginationObj,
+    filters,
+    isDialog,
     onAdd,
     onEdit,
     onDelete,
@@ -137,25 +84,18 @@ export function DataTable<TData extends { id: unknown }>({
     onGeneratePdf,
     onOpenPpmpSummary,
     onSelect,
-    children,
+    onReorder,
+    onMove,
+    onShowChildren,
     withSearch = false,
     withRowSpan = false,
     withFooter = false,
     negativeHeight = 8,
-    onReorder,
-    onMove,
-    onShowChildren,
-    meta,
-    paginationObj,
-    filters,
     onlyKeys = [],
     searchKey = 'search',
     pageKey = 'page',
-    isDialog,
+    meta,
 }: DataTableProps<TData>) {
-    // console.log(paginationObj);
-    // console.log(filters);
-
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -163,14 +103,8 @@ export function DataTable<TData extends { id: unknown }>({
     // row selection
     const [rowSelection, setRowSelection] = useState({});
 
-    useEffect(() => {
-        console.log('Global Selection State:', rowSelection);
-    }, [rowSelection]);
-
     // for global search
     const [searchValue, setSearchValue] = useState('');
-
-    // console.log(searchValue);
 
     // logic for server-side filtering ex. search
     const isServerSide = useMemo(() => {
@@ -198,14 +132,14 @@ export function DataTable<TData extends { id: unknown }>({
                 router.get(
                     window.location.pathname,
                     {
-                        ...filters, // preserve other filters (like category, date, etc)
-                        [searchKey]: searchValue || undefined, // Send undefined to clear empty search
+                        ...filters,
+                        [searchKey]: searchValue || undefined,
                         [pageKey]: 1,
                     },
                     {
                         preserveState: true,
                         replace: true,
-                        preserveScroll: true, // Crucial for UX in tables
+                        preserveScroll: true,
                         only:
                             onlyKeys &&
                             Array.isArray(onlyKeys) &&
@@ -233,7 +167,6 @@ export function DataTable<TData extends { id: unknown }>({
         setLocalData(data);
     }, [data]);
 
-    // 1. Setup the ref for ScrollArea
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
     const table = useReactTable({
@@ -248,7 +181,6 @@ export function DataTable<TData extends { id: unknown }>({
         // SERVER-SIDE SEARCH CONFIG
         manualFiltering: isServerSide,
 
-        // getFilteredRowModel: withSearch ? getFilteredRowModel() : undefined,
         getFilteredRowModel: getFilteredRowModel(),
         meta: {
             onAdd,
@@ -311,24 +243,15 @@ export function DataTable<TData extends { id: unknown }>({
         onRowSelectionChange: setRowSelection,
     });
 
-    // console.log(table.options.meta);
-
     const { rows } = table.getRowModel();
 
-    const dataIds = useMemo<UniqueIdentifier[]>(
-        () => rows.map((row) => row.id?.toString() ?? ''),
-        [rows],
-    );
-
-    // 2. Setup Virtualizer
     const rowVirtualizer = useVirtualizer({
         count: rows.length,
-        // This is the "magic" line that finds the actual scrolling div inside ScrollArea
         getScrollElement: () =>
             tableContainerRef.current?.querySelector(
                 '[data-radix-scroll-area-viewport]',
             ) as HTMLElement,
-        estimateSize: () => 50, // Match your typical row height
+        estimateSize: () => 50,
         overscan: 10,
         getItemKey: (index) => rows[index]?.id,
         measureElement: (el) => el.getBoundingClientRect().height,
@@ -337,51 +260,12 @@ export function DataTable<TData extends { id: unknown }>({
     const virtualRows = rowVirtualizer.getVirtualItems();
     const totalSize = rowVirtualizer.getTotalSize();
 
-    // 3. Spacing calculations
     const paddingTop =
         virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
     const paddingBottom =
         virtualRows.length > 0
             ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0)
             : 0;
-
-    const sensors = useSensors(
-        useSensor(MouseSensor, {}),
-        useSensor(TouchSensor, {}),
-        useSensor(KeyboardSensor, {}),
-    );
-
-    function handleDragEnd(event: DragEndEvent) {
-        const { active, over } = event;
-
-        if (active && over && active.id !== over.id) {
-            const activeId = active.id.toString();
-            const overId = over.id.toString();
-
-            // Find the objects in your flat 'rows' list
-            const activeRow = rows.find((r) => r.id === active.id);
-            const overRow = rows.find((r) => r.id === over.id);
-
-            if (!activeRow || !overRow) return;
-
-            // LOGIC CHECK: Are they siblings?
-            // In your PPA data, siblings share the same parent_id
-            if (
-                (activeRow.original as any).parent_id !==
-                (overRow.original as any).parent_id
-            ) {
-                setErrorMessage('Moving between levels is not supported');
-                setErrorDialogOpen(true);
-                return;
-            }
-
-            const updatedData = reorderTree([...localData], activeId, overId);
-            setLocalData(updatedData);
-
-            // Call the backend
-            onReorder?.(activeId, overId);
-        }
-    }
 
     const navigate = (url: string | null) => {
         if (!url) return;
@@ -410,7 +294,6 @@ export function DataTable<TData extends { id: unknown }>({
                                     placeholder="Search..."
                                     value={searchValue}
                                     onChange={(e) => {
-                                        console.log(e.target.value);
                                         setSearchValue(e.target.value);
                                     }}
                                 />
@@ -431,146 +314,183 @@ export function DataTable<TData extends { id: unknown }>({
                     style={{ height: `calc(100vh - ${negativeHeight}rem)` }}
                     className="rounded-md border"
                 >
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        modifiers={[restrictToVerticalAxis]}
-                        onDragEnd={handleDragEnd} // We'll write this in Phase 3
+                    <Table
+                        style={{
+                            tableLayout: 'fixed',
+                            minWidth: `${table.getCenterTotalSize()}px`,
+                            width: '100%',
+                        }}
                     >
-                        <Table
-                            style={{
-                                tableLayout: 'fixed',
-                                minWidth: `${table.getCenterTotalSize()}px`,
-                                width: '100%',
-                            }}
-                        >
-                            <TableHeader className="sticky top-0 z-20 bg-background">
-                                {table.getHeaderGroups().map((headerGroup) => (
-                                    <TableRow key={headerGroup.id}>
-                                        {headerGroup.headers.map((header) => (
-                                            <TableHead
-                                                key={header.id}
-                                                colSpan={header.colSpan}
-                                                className="border-b-0 bg-primary text-primary-foreground"
-                                                style={{
-                                                    width: `${header.getSize()}px`,
-                                                    ...getCommonPinningStyles(
-                                                        header.column,
-                                                        table,
-                                                        false,
-                                                        true,
-                                                    ),
-                                                }}
-                                            >
-                                                {header.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                          header.column
-                                                              .columnDef.header,
-                                                          header.getContext(),
-                                                      )}
-                                            </TableHead>
-                                        ))}
-                                    </TableRow>
-                                ))}
-                            </TableHeader>
-
-                            <TableBody>
-                                {paddingTop > 0 && (
-                                    <TableRow>
-                                        <TableCell
+                        <TableHeader className="sticky top-0 z-20 bg-background">
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
+                                        <TableHead
+                                            key={header.id}
+                                            colSpan={header.colSpan}
+                                            className="border-b-0 bg-primary text-primary-foreground"
                                             style={{
-                                                height: `${paddingTop}px`,
+                                                width: `${header.getSize()}px`,
+                                                ...getCommonPinningStyles(
+                                                    header.column,
+                                                    table,
+                                                    false,
+                                                    true,
+                                                ),
                                             }}
-                                            colSpan={columns.length}
-                                        />
-                                    </TableRow>
-                                )}
+                                        >
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef
+                                                          .header,
+                                                      header.getContext(),
+                                                  )}
+                                        </TableHead>
+                                    ))}
+                                </TableRow>
+                            ))}
+                        </TableHeader>
 
-                                <SortableContext
-                                    items={dataIds}
-                                    strategy={verticalListSortingStrategy}
-                                >
-                                    {virtualRows.length > 0 ? (
-                                        virtualRows.map((virtualRow) => {
-                                            const row = rows[virtualRow.index];
-
-                                            return (
-                                                <DraggableRow
-                                                    // key={row.id}
-                                                    key={
-                                                        (row.original as any)
-                                                            .current_fs?.id
-                                                            ? `${row.id}-${(row.original as any).current_fs.id}`
-                                                            : `${row.id}-${row.index}`
-                                                    }
-                                                    row={row}
-                                                    table={table}
-                                                    withRowSpan={withRowSpan}
-                                                    rowVirtualizer={
-                                                        rowVirtualizer
-                                                    }
-                                                />
-                                            );
-                                        })
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell
-                                                colSpan={columns.length}
-                                                className="h-24 text-center"
-                                            >
-                                                No results.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </SortableContext>
-
-                                {paddingBottom > 0 && (
-                                    <TableRow>
-                                        <TableCell
-                                            style={{
-                                                height: `${paddingBottom}px`,
-                                            }}
-                                            colSpan={columns.length}
-                                        />
-                                    </TableRow>
-                                )}
-                            </TableBody>
-
-                            {withFooter && (
-                                <TableFooter className="sticky bottom-0 z-20 shadow-[inset_0_1px_0_0_var(--muted)]">
-                                    <TableRow>
-                                        {table
-                                            .getAllLeafColumns()
-                                            .map((column) => (
-                                                <TableCell
-                                                    key={column.id}
-                                                    style={{
-                                                        width: `${column.getSize()}px`,
-                                                        ...getCommonPinningStyles(
-                                                            column,
-                                                            table,
-                                                            true,
-                                                        ),
-                                                    }}
-                                                >
-                                                    {column.columnDef.footer
-                                                        ? flexRender(
-                                                              column.columnDef
-                                                                  .footer,
-                                                              {
-                                                                  column,
-                                                                  table,
-                                                              } as any,
-                                                          )
-                                                        : null}
-                                                </TableCell>
-                                            ))}
-                                    </TableRow>
-                                </TableFooter>
+                        <TableBody>
+                            {paddingTop > 0 && (
+                                <TableRow>
+                                    <TableCell
+                                        style={{
+                                            height: `${paddingTop}px`,
+                                        }}
+                                        colSpan={columns.length}
+                                    />
+                                </TableRow>
                             )}
-                        </Table>
-                    </DndContext>
+
+                            {virtualRows.length > 0 ? (
+                                virtualRows.map((virtualRow) => {
+                                    const row = rows[virtualRow.index];
+                                    const rowData = row.original as any;
+
+                                    return (
+                                        <TableRow
+                                            key={`${row.id}-${virtualRow.index}`}
+                                            data-index={virtualRow.index}
+                                            ref={(node) =>
+                                                rowVirtualizer.measureElement(
+                                                    node,
+                                                )
+                                            }
+                                            data-state={
+                                                row.getIsSelected() &&
+                                                'selected'
+                                            }
+                                            className="group transition-colors data-[state=selected]:bg-muted"
+                                        >
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => {
+                                                    const columnMeta = cell
+                                                        .column.columnDef
+                                                        .meta as any;
+                                                    const isSpannedCol =
+                                                        withRowSpan &&
+                                                        columnMeta?.rowSpan;
+                                                    const hasSpanningData =
+                                                        typeof rowData.isFirstInGroup !==
+                                                        'undefined';
+                                                    const activeSpan =
+                                                        isSpannedCol &&
+                                                        hasSpanningData;
+
+                                                    if (
+                                                        activeSpan &&
+                                                        !rowData.isFirstInGroup
+                                                    ) {
+                                                        return null;
+                                                    }
+
+                                                    return (
+                                                        <TableCell
+                                                            key={cell.id}
+                                                            rowSpan={
+                                                                activeSpan
+                                                                    ? rowData.groupSize
+                                                                    : 1
+                                                            }
+                                                            style={{
+                                                                width: `${cell.column.getSize()}px`,
+                                                                ...getCommonPinningStyles(
+                                                                    cell.column,
+                                                                    table,
+                                                                    false,
+                                                                    false,
+                                                                ),
+                                                            }}
+                                                            className="py-2"
+                                                        >
+                                                            {flexRender(
+                                                                cell.column
+                                                                    .columnDef
+                                                                    .cell,
+                                                                cell.getContext(),
+                                                            )}
+                                                        </TableCell>
+                                                    );
+                                                })}
+                                        </TableRow>
+                                    );
+                                })
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center"
+                                    >
+                                        No results.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+
+                            {paddingBottom > 0 && (
+                                <TableRow>
+                                    <TableCell
+                                        style={{
+                                            height: `${paddingBottom}px`,
+                                        }}
+                                        colSpan={columns.length}
+                                    />
+                                </TableRow>
+                            )}
+                        </TableBody>
+
+                        {withFooter && (
+                            <TableFooter className="sticky bottom-0 z-20 shadow-[inset_0_1px_0_0_var(--muted)]">
+                                <TableRow>
+                                    {table.getAllLeafColumns().map((column) => (
+                                        <TableCell
+                                            key={column.id}
+                                            style={{
+                                                width: `${column.getSize()}px`,
+                                                ...getCommonPinningStyles(
+                                                    column,
+                                                    table,
+                                                    true,
+                                                ),
+                                            }}
+                                        >
+                                            {column.columnDef.footer
+                                                ? flexRender(
+                                                      column.columnDef.footer,
+                                                      {
+                                                          column,
+                                                          table,
+                                                      } as any,
+                                                  )
+                                                : null}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            </TableFooter>
+                        )}
+                    </Table>
 
                     <ScrollBar orientation="horizontal" className="z-30" />
                     <ScrollBar orientation="vertical" className="z-30" />
@@ -645,84 +565,3 @@ export function DataTable<TData extends { id: unknown }>({
         </>
     );
 }
-
-interface DraggableRowProps<TData> {
-    row: Row<TData>;
-    table: any;
-    withRowSpan?: boolean;
-    rowVirtualizer: any;
-}
-
-const DraggableRow = <TData,>({
-    row,
-    withRowSpan,
-    table,
-    rowVirtualizer,
-}: DraggableRowProps<TData>) => {
-    const { transform, transition, setNodeRef, isDragging } = useSortable({
-        id: row.id,
-    });
-
-    const style: CSSProperties = {
-        transform: CSS.Translate.toString(transform), //let dnd-kit do its thing
-        transition: transition,
-        opacity: isDragging ? 0.4 : 1,
-        // zIndex: isDragging ? 10 : 0,
-        position: 'relative',
-        minHeight: '50px', // LOCK: Must match estimateSize exactly
-    };
-
-    return (
-        <TableRow
-            // key={row.id}
-            ref={(node) => {
-                setNodeRef(node); // Connect dnd-kit
-                if (node) {
-                    rowVirtualizer.measureElement(node); // Connect virtualizer measurement
-                }
-            }}
-            // style={style}
-            style={style}
-            data-state={row.getIsSelected() && 'selected'}
-            data-index={row.index}
-            className="group transition-colors data-[state=selected]:bg-muted"
-        >
-            {row.getVisibleCells().map((cell) => {
-                const columnMeta = cell.column.columnDef.meta as any;
-                const isSpannedCol = withRowSpan && columnMeta?.rowSpan;
-                const rowData = row.original as any;
-                const hasSpanningData =
-                    typeof rowData.isFirstInGroup !== 'undefined';
-                const activeSpan = isSpannedCol && hasSpanningData;
-
-                if (activeSpan && !rowData.isFirstInGroup) {
-                    return null;
-                }
-
-                return (
-                    <TableCell
-                        key={cell.id}
-                        rowSpan={activeSpan ? rowData.groupSize : 1}
-                        style={{
-                            width: `${cell.column.getSize()}px`,
-                            ...getCommonPinningStyles(
-                                cell.column,
-                                table,
-                                false,
-                                false,
-                            ),
-                        }}
-                        className="py-2"
-                    >
-                        {/* <div className="flex h-[50px] items-center truncate overflow-hidden whitespace-nowrap"> */}
-                        {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                        )}
-                        {/* </div> */}
-                    </TableCell>
-                );
-            })}
-        </TableRow>
-    );
-};
