@@ -52,6 +52,8 @@ export default function PpaPage({
     dialogPpaTree,
     dialogCurrent,
 }: PpaPageProps) {
+    console.log(ppaTree);
+
     const { auth } = usePage<SharedData>().props;
 
     // Form Dialog States

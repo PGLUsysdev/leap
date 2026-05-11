@@ -123,6 +123,7 @@ export default function AipSummaryTable({
             },
             {
                 preserveState: true,
+                preserveScroll: true,
                 only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
                     setSelectorState({

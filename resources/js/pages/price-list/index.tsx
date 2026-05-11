@@ -36,8 +36,6 @@ export default function PriceListPage({
     filters,
     paginatedDialogPriceList,
 }: PriceListPageProps) {
-    // console.log(paginatedPriceList);
-
     const [openEdit, setOpenEdit] = useState(false);
     const [selectedPriceList, setSelectedPriceList] =
         useState<PriceList | null>(null);
@@ -46,6 +44,7 @@ export default function PriceListPage({
     const [error, setError] = useState<string | null>(null);
     const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
     const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<PriceList | null>(null);
 
     function handleAdd() {
         setSelectedPriceList(null);
@@ -108,12 +107,13 @@ export default function PriceListPage({
     }
 
     function handleMove(data: PriceList) {
-        console.log(data);
-
         router.visit(index(), {
             only: ['paginatedDialogPriceList'],
             preserveState: true,
-            onSuccess: () => setIsMoveDialogOpen(true),
+            onSuccess: () => {
+                setSelectedItem(data);
+                setIsMoveDialogOpen(true);
+            },
         });
     }
 
@@ -130,7 +130,7 @@ export default function PriceListPage({
                     onMove={handleMove}
                     paginationObj={paginatedPriceList}
                     negativeHeight={11}
-                    onlyKeys={['paginatedPriceList']}
+                    onlyKeys={['paginatedPriceList', 'filters']}
                     filters={filters}
                 >
                     <Button onClick={handleAdd}>Add Price List</Button>
@@ -150,6 +150,7 @@ export default function PriceListPage({
                 onOpenChange={setIsMoveDialogOpen}
                 paginatedDialogPriceList={paginatedDialogPriceList}
                 filters={filters}
+                selectedItemToMove={selectedItem}
             />
 
             <DeleteDialog

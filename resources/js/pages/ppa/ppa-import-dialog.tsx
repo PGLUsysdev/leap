@@ -165,7 +165,7 @@ export default function PpaImportDialog({
                 onStart: () => setLoading(true),
                 onSuccess: () => {
                     handleClose();
-                    router.reload();
+                    // router.reload();
                 },
                 onFinish: () => setLoading(false),
             },

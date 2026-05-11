@@ -1,14 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
-import { router } from '@inertiajs/react';
-import {
-    Move,
-    FolderOpen,
-    ArrowUpToLine,
-    ArrowDownToLine,
-    Info,
-    Home,
-    ChevronRight,
-} from 'lucide-react';
+import { useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -17,21 +7,28 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
-import type { Ppa, PaginatedResponse, Filter, PriceList } from '@/types/global';
+import type { PaginatedResponse, Filter, PriceList } from '@/types/global';
 import columns from './columns/move-columns';
 import { DataTable } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { router } from '@inertiajs/react';
+import { reorder } from '@/routes/price-lists';
 import { Spinner } from '@/components/ui/spinner';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { index } from '@/routes/ppa';
+import {
+    Item,
+    ItemActions,
+    ItemContent,
+    ItemDescription,
+    ItemMedia,
+    ItemTitle,
+} from '@/components/ui/item';
 
 interface MoveDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     paginatedDialogPriceList: PaginatedResponse<PriceList>;
     filters: Filter;
+    selectedItemToMove: PriceList;
 }
 
 export default function MoveDialog({
@@ -39,21 +36,57 @@ export default function MoveDialog({
     onOpenChange,
     paginatedDialogPriceList,
     filters,
+    selectedItemToMove,
 }: MoveDialogProps) {
-    console.log(paginatedDialogPriceList);
+    const [selectedItem, setSelectedItem] = useState<PriceList | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    function handleSelect(e) {
-        console.log(e);
+    console.log(selectedItemToMove);
+    console.log(selectedItem);
+
+    function handleSelect(item: PriceList, boolean: boolean) {
+        if (boolean) {
+            setSelectedItem(item);
+        } else {
+            setSelectedItem(null);
+        }
+    }
+
+    function handleMoveItem(
+        item: PriceList,
+        moveTo: PriceList | null,
+        position: 'up' | 'down',
+    ) {
+        if (!moveTo) return;
+
+        router.visit(
+            reorder({
+                query: {
+                    active_id: item.id,
+                    over_id: moveTo.id,
+                    position: position,
+                },
+            }),
+            {
+                preserveScroll: true,
+                onStart: () => setIsLoading(true),
+                onSuccess: () => onOpenChange(false),
+                onError: (error) => console.error(error),
+                onFinish: () => setIsLoading(false),
+            },
+        );
     }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[95vh] flex-col border-none shadow-2xl sm:max-w-[85%]">
+            <DialogContent
+                className="flex max-h-[95vh] flex-col border-none shadow-2xl sm:max-w-[85%]"
+                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
+                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle>Move PPA</DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Navigate the library to find a destination.
-                    </DialogDescription>
+                    <DialogDescription className="sr-only"></DialogDescription>
                 </DialogHeader>
 
                 {/*<Card>
@@ -82,17 +115,34 @@ export default function MoveDialog({
                     </CardContent>
                 </Card>*/}
 
+                {/*<div>
+                    <span>Item to Move:</span>{' '}
+                    <span className="font-bold">
+                        {selectedItemToMove?.description}
+                    </span>
+                </div>*/}
+
+                <Item variant="outline">
+                    {/*<ItemMedia variant="icon">
+                        <InboxIcon />
+                    </ItemMedia>*/}
+                    <ItemContent>
+                        <ItemTitle>Item to Move:</ItemTitle>
+                        <ItemDescription>
+                            {selectedItemToMove?.description}
+                        </ItemDescription>
+                    </ItemContent>
+                </Item>
+
                 <div className="flex min-h-0">
                     <div className="w-full pr-3">
                         {!Array.isArray(paginatedDialogPriceList) && (
                             <DataTable
-                                // key={`move-table-${filters?.dialog_id}`}
                                 columns={columns}
                                 data={paginatedDialogPriceList?.data}
                                 withSearch
-                                // onShowChildren={handleShowChildren}
                                 paginationObj={paginatedDialogPriceList}
-                                negativeHeight={18}
+                                negativeHeight={22}
                                 filters={filters}
                                 searchKey="dialog_search"
                                 pageKey="dialog_page"
@@ -100,90 +150,64 @@ export default function MoveDialog({
                                     'paginatedDialogPriceList',
                                     'filters',
                                 ]}
-                                // meta={{
-                                //     ppaToMove: ppaToMove,
-                                //     selectedId: selectedTarget?.id,
-                                //     onSelect: (ppa: Ppa | null) =>
-                                //         setSelectedTarget(ppa),
-                                // }}
                                 isDialog={true}
-                                onSelect={(e) => handleSelect(e)}
+                                onSelect={(item, boolean) =>
+                                    handleSelect(item, boolean)
+                                }
+                                selectedItemToMove={selectedItemToMove}
                             />
                         )}
                     </div>
                 </div>
 
-                <DialogFooter className="flex items-center justify-between border-t bg-background pt-4">
-                    {/*<div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground italic">
-                        <Info className="h-4 w-4 text-primary/50" />
-                        {selectedTarget ? (
-                            <span className="flex animate-in gap-1 fade-in slide-in-from-left-2">
-                                <span>Moving relative to:</span>
-                                <strong className="block max-w-[400px] truncate text-foreground">
-                                    {selectedTarget.name}
-                                </strong>
-                            </span>
-                        ) : (
-                            <span>Select a folder or sibling above</span>
-                        )}
-                    </div>
+                <DialogFooter>
+                    <div className="flex w-full items-center justify-between">
+                        <div>Relative to Item: {selectedItem?.description}</div>
 
-                    <div className="flex gap-2">
-                        <Button
-                            variant="ghost"
-                            onClick={() => onOpenChange(false)}
-                            disabled={loading}
-                        >
-                            Cancel
-                        </Button>
-
-                        {buttonLabels.showSiblingButtons && (
-                            <>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleMove('top')}
-                                    disabled={
-                                        !buttonLabels.siblingEnabled || loading
-                                    }
-                                >
-                                    <ArrowUpToLine className="mr-2 h-4 w-4" />{' '}
-                                    Move Above Sibling
-                                </Button>
-                                <Button
-                                    onClick={() => handleMove('bottom')}
-                                    disabled={
-                                        !buttonLabels.siblingEnabled || loading
-                                    }
-                                >
-                                    <ArrowDownToLine className="mr-2 h-4 w-4" />{' '}
-                                    Move Below Sibling
-                                </Button>
-                            </>
-                        )}
-
-                        {buttonLabels.showMoveHereButton && (
-                            <Button
-                                onClick={() => handleMove('into')}
-                                disabled={
-                                    !buttonLabels.moveHereEnabled || loading
-                                }
-                                className="gap-2"
-                            >
-                                {loading ? (
-                                    <Spinner />
-                                ) : (
-                                    <>
-                                        {buttonLabels.moveHereIcon}
-                                        {buttonLabels.moveHereLabel}
-                                    </>
-                                )}
+                        <div className="flex gap-2">
+                            <Button variant="outline" disabled={isLoading}>
+                                Cancel
                             </Button>
-                        )}
-                    </div>*/}
 
-                    <Button variant="outline">Cancel</Button>
-                    <Button disabled>Move Up</Button>
-                    <Button disabled>Move Down</Button>
+                            {isLoading ? (
+                                <Button disabled>
+                                    <div className="flex items-center gap-1">
+                                        <Spinner /> Moving
+                                    </div>
+                                </Button>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <Button
+                                        onClick={() =>
+                                            handleMoveItem(
+                                                selectedItemToMove,
+                                                selectedItem,
+                                                'up',
+                                            )
+                                        }
+                                        disabled={!selectedItem}
+                                    >
+                                        Move Up
+                                    </Button>
+
+                                    <Button
+                                        onClick={() =>
+                                            handleMoveItem(
+                                                selectedItemToMove,
+                                                selectedItem,
+                                                'down',
+                                            )
+                                        }
+                                        disabled={!selectedItem}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            Move Down
+                                        </div>
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

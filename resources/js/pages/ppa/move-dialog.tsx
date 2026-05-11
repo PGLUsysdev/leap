@@ -59,29 +59,6 @@ export default function PpaMoveDialog({
         setSelectedTarget(null);
     }, [filters?.dialog_id]);
 
-    useEffect(() => {
-        if (!isOpen) setSelectedTarget(null);
-
-        if (!isOpen) {
-            setSelectedTarget(null);
-
-            const {
-                dialog_id,
-                dialog_page,
-                dialog_search,
-                is_dialog_open,
-                dialog_mode,
-                ...mainFilters
-            } = filters;
-
-            router.visit(index({ query: mainFilters }), {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
-        }
-    }, [isOpen]);
-
     const buttonLabels = useMemo(() => {
         const currentFolder =
             dialogCurrent.length > 0 ? dialogCurrent[0] : null;
@@ -179,6 +156,7 @@ export default function PpaMoveDialog({
             { target_id: finalTargetId, direction },
             {
                 preserveState: true,
+                preserveScroll: true,
                 onStart: () => setLoading(true),
                 onSuccess: () => onOpenChange(false),
                 onFinish: () => setLoading(false),
@@ -223,8 +201,37 @@ export default function PpaMoveDialog({
         }));
     }, [dialogPpaTree, selectedTarget]);
 
+    const handleOpenChange = (open: boolean) => {
+        // If the dialog is closing (open is false)
+        if (!open) {
+            setSelectedTarget(null);
+
+            const {
+                dialog_id,
+                dialog_page,
+                dialog_search,
+                is_dialog_open,
+                dialog_mode,
+                ...mainFilters
+            } = filters;
+
+            // Use router.visit with 'only: []' to update the URL
+            // without triggering a data fetch from the server.
+            router.visit(window.location.pathname, {
+                data: mainFilters,
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                only: [], // Tells Inertia NOT to fetch any props
+            });
+        }
+
+        // Call the parent's handler to actually close the dialog
+        onOpenChange(open);
+    };
+
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent className="flex max-h-[95vh] flex-col border-none shadow-2xl sm:max-w-[85%]">
                 <DialogHeader>
                     <DialogTitle>Move PPA</DialogTitle>
@@ -294,7 +301,7 @@ export default function PpaMoveDialog({
                         {/* <div className="w-full overflow-x-auto"> */}
                         {!Array.isArray(dialogPpaTree) && (
                             <DataTable
-                                key={`move-table-${filters?.dialog_id}`}
+                                // key={`move-table-${filters?.dialog_id}`}
                                 columns={columns}
                                 data={displayData}
                                 withSearch

@@ -334,7 +334,7 @@ class PpaController extends Controller
             }
         });
 
-        return back();
+        return to_route('ppa.index', $request->query());
     }
 
     protected function syncSiblingIndexes(
@@ -385,12 +385,14 @@ class PpaController extends Controller
     protected function isDescendantOf($target, $sourceId)
     {
         $current = $target;
+
         while ($current) {
             if ($current->id == $sourceId) {
                 return true;
             }
             $current = $current->parent;
         }
+
         return false;
     }
 
@@ -422,7 +424,7 @@ class PpaController extends Controller
             );
         });
 
-        return back();
+        // return back();
     }
 
     private function getDescendantPpaIds($parentId)
@@ -475,6 +477,7 @@ class PpaController extends Controller
             'year',
             $currentFiscalYear->year - 1,
         )->first();
+
         if (!$previousFiscalYear) {
             return redirect()
                 ->back()

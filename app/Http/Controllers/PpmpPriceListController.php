@@ -73,6 +73,7 @@ class PpmpPriceListController extends Controller
                 'dialog_page',
                 'dialog_mode',
             ]),
+            // 'filters' => $request->all(),
             'paginatedDialogPriceList' => Inertia::lazy(function () use (
                 $request,
             ) {
@@ -224,43 +225,63 @@ class PpmpPriceListController extends Controller
      */
     public function reorder(Request $request)
     {
-        $activeId = (int) $request->active_id;
-        $overId = (int) $request->over_id;
+        $request->validate([
+            'active_id' => 'required|exists:ppmp_price_lists,id',
+            'over_id' => 'required|exists:ppmp_price_lists,id',
+            'position' => 'required|in:up,down',
+        ]);
 
-        DB::transaction(function () use ($activeId, $overId) {
-            $movingItem = PpmpPriceList::findOrFail($activeId);
-            $targetItem = PpmpPriceList::findOrFail($overId);
+        DB::transaction(function () use ($request) {
+            $movingItem = PpmpPriceList::findOrFail($request->active_id);
+            $targetItem = PpmpPriceList::findOrFail($request->over_id);
 
             $oldOrder = $movingItem->sort_order;
-            $newOrder = $targetItem->sort_order;
+            $targetOrder = $targetItem->sort_order;
 
-            if ($oldOrder < $newOrder) {
-                // Moving Down: Decrease sort_order of everything in between
+            // 1. Calculate the final target position
+            // If 'up', it takes the target's current spot (others shift down)
+            // If 'down', it takes the target's spot + 1
+            $newOrder =
+                $request->position === 'up' ? $targetOrder : $targetOrder + 1;
+
+            // 2. Temporarily move the item out of the way to a "safe" index
+            // to avoid unique constraint issues if you have them.
+            // We use 0 as a temporary placeholder.
+            $movingItem->update(['sort_order' => 0]);
+
+            // 3. Re-shift the remaining items
+            if ($oldOrder < $targetOrder) {
+                // Moving down: shift items between old and new up by -1
                 PpmpPriceList::whereBetween('sort_order', [
                     $oldOrder + 1,
-                    $newOrder,
+                    $request->position === 'down'
+                        ? $targetOrder
+                        : $targetOrder - 1,
                 ])->decrement('sort_order');
-                PpmpPriceList::whereBetween('item_number', [
-                    $oldOrder + 1,
-                    $newOrder,
-                ])->decrement('item_number');
-            } elseif ($oldOrder > $newOrder) {
-                // Moving Up: Increase sort_order of everything in between
+            } else {
+                // Moving up: shift items between new and old down by +1
                 PpmpPriceList::whereBetween('sort_order', [
-                    $newOrder,
+                    $request->position === 'up'
+                        ? $targetOrder
+                        : $targetOrder + 1,
                     $oldOrder - 1,
                 ])->increment('sort_order');
-                PpmpPriceList::whereBetween('item_number', [
-                    $newOrder,
-                    $oldOrder - 1,
-                ])->increment('item_number');
             }
 
-            // Set the moving item to its new position
-            $movingItem->update([
-                'sort_order' => $newOrder,
-                'item_number' => $newOrder,
-            ]);
+            // 4. Assign the final position
+            $movingItem->update(['sort_order' => $newOrder]);
+
+            // 5. Cleanup: Ensure order is perfectly sequential 1, 2, 3...
+            // This fixes any "gaps" created by the increment/decrement logic
+            $all = PpmpPriceList::orderBy('sort_order')->get();
+            foreach ($all as $index => $item) {
+                $item->update([
+                    'sort_order' => $index + 1,
+                    'item_number' => $index + 1,
+                ]);
+            }
         });
+
+        return redirect()->back()->with('success', 'Reordered successfully.');
     }
 }

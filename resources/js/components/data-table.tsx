@@ -59,7 +59,7 @@ interface DataTableProps<TData extends { id: unknown }> {
     onReorder?: (activeId: string, overId: string) => void;
     onMove?: (data: TData) => void;
     onShowChildren?: (data: TData) => void;
-    onSelect?: (data: TData) => void;
+    onSelect?: (data: TData, boolean: boolean) => void;
     paginationObj?: PaginatedResponse<TData> | [];
     meta?: any;
     filters?: Filter;
@@ -67,6 +67,7 @@ interface DataTableProps<TData extends { id: unknown }> {
     searchKey?: string;
     pageKey?: string;
     isDialog?: boolean;
+    selectedItemToMove?: TData;
 }
 
 export function DataTable<TData extends { id: unknown }>({
@@ -76,6 +77,7 @@ export function DataTable<TData extends { id: unknown }>({
     paginationObj,
     filters,
     isDialog,
+    selectedItemToMove,
     onAdd,
     onEdit,
     onDelete,
@@ -96,7 +98,6 @@ export function DataTable<TData extends { id: unknown }>({
     pageKey = 'page',
     meta,
 }: DataTableProps<TData>) {
-    const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -111,24 +112,23 @@ export function DataTable<TData extends { id: unknown }>({
         return paginationObj && !Array.isArray(paginationObj);
     }, [paginationObj]);
 
-    // 2. Sync local state with props (if URL changes via browser back/forward)
+    // sync local state with props when url changes via browser back/forward
     useEffect(() => {
-        setSearchValue(filters?.[searchKey] || '');
-    }, [filters, searchKey]);
+        const urlSearchValue = filters?.[searchKey] || '';
 
-    // 3. Debounce and Trigger Inertia
+        if (searchValue !== urlSearchValue) {
+            setSearchValue(urlSearchValue);
+        }
+    }, [filters?.[searchKey], searchKey]);
+
+    // Debounce and Trigger Inertia
     useEffect(() => {
         if (!isServerSide) return;
 
         const delayDebounceFn = setTimeout(() => {
             const currentFilterValue = filters?.[searchKey] || '';
 
-            // console.log({ searchValue, currentFilterValue });
-
-            // Trigger if value is different, or if we're clearing a search that exists in URL
             if (searchValue !== currentFilterValue) {
-                // console.log(searchValue);
-
                 router.get(
                     window.location.pathname,
                     {
@@ -152,25 +152,12 @@ export function DataTable<TData extends { id: unknown }>({
         }, 500);
 
         return () => clearTimeout(delayDebounceFn);
-    }, [
-        isDialog,
-        onlyKeys.length,
-        searchKey,
-        onlyKeys,
-        filters,
-        searchValue,
-        isServerSide,
-        // pageKey,
-    ]);
-
-    useEffect(() => {
-        setLocalData(data);
-    }, [data]);
+    }, [searchValue]);
 
     const tableContainerRef = useRef<HTMLDivElement>(null);
 
     const table = useReactTable({
-        data: localData,
+        data,
         columns,
         getCoreRowModel: getCoreRowModel(),
 
@@ -178,11 +165,13 @@ export function DataTable<TData extends { id: unknown }>({
             columnPinning: { right: ['action'] },
         },
 
-        // SERVER-SIDE SEARCH CONFIG
+        // server-side search
         manualFiltering: isServerSide,
 
         getFilteredRowModel: getFilteredRowModel(),
+
         meta: {
+            selectedItemToMove,
             onAdd,
             onEdit,
             onDelete,
@@ -196,6 +185,7 @@ export function DataTable<TData extends { id: unknown }>({
             onSelect,
             ...meta,
         } as any,
+
         getSubRows: (row: any) => row.children,
         getExpandedRowModel: getExpandedRowModel(),
         filterFromLeafRows: true,
@@ -222,11 +212,9 @@ export function DataTable<TData extends { id: unknown }>({
                         : 0,
             },
 
+            // for select
             rowSelection,
         },
-
-        // for dnd
-        getRowId: (row) => row.id?.toString() ?? '',
 
         // for pagination
         manualPagination: isServerSide,
@@ -382,7 +370,12 @@ export function DataTable<TData extends { id: unknown }>({
                                                 row.getIsSelected() &&
                                                 'selected'
                                             }
-                                            className="group transition-colors data-[state=selected]:bg-muted"
+                                            className={
+                                                row.original.id ===
+                                                selectedItemToMove?.id
+                                                    ? 'group text-muted transition-colors data-[state=selected]:bg-muted'
+                                                    : 'group transition-colors data-[state=selected]:bg-muted'
+                                            }
                                         >
                                             {row
                                                 .getVisibleCells()

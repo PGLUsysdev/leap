@@ -39,12 +39,13 @@ declare module '@tanstack/react-table' {
         onReorder?: (activeId: string, overId: string) => void;
         onShowChildren?: (data: TData) => void;
         onMove?: (data: TData) => void;
-        onSelect?: (data: TData) => void;
+        onSelect?: (data: TData, boolean: boolean) => void;
         meta?: {
             priceLists?: PriceList[];
             chartOfAccounts?: ChartOfAccount[];
             fundingSources?: FundingSource[];
         };
+        selectedItemToMove: TData;
     }
 }
 

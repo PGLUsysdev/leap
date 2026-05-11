@@ -35,6 +35,8 @@ export default function PpaSelectorDialog({
     fiscalYearId,
     existingPpaIds = [],
 }: PpaSelectorDialogProps) {
+    console.log(isOpen);
+
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
     );
@@ -45,28 +47,51 @@ export default function PpaSelectorDialog({
         [existingPpaIds],
     );
 
-    useEffect(() => {
-        // Only run cleanup when the dialog is CLOSED
-        if (!isOpen) {
-            setSelectedItems(new Map()); // Reset local selection
+    // useEffect(() => {
+    //     if (!isOpen) {
+    //         console.log(isOpen);
 
-            const {
-                dialog_id,
-                dialog_page,
-                dialog_search,
-                dialog_boundary_id,
-                ...mainFilters
-            } = filters;
+    //         setSelectedItems(new Map()); // Reset local selection
 
-            // Navigate back to the clean URL
-            router.visit(window.location.pathname, {
-                data: mainFilters,
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
-        }
-    }, [isOpen]);
+    //         const {
+    //             dialog_id,
+    //             dialog_page,
+    //             dialog_search,
+    //             dialog_boundary_id,
+    //             ...mainFilters
+    //         } = filters;
+
+    //         // Navigate back to the clean URL
+    //         // router.visit(window.location.pathname, {
+    //         //     data: mainFilters,
+    //         //     preserveState: true,
+    //         //     preserveScroll: true,
+    //         //     replace: true,
+    //         // });
+    //     }
+    // }, [isOpen]);
+
+    const handleClose = () => {
+        // 1. Reset your local state
+        setSelectedItems(new Map());
+
+        // 2. Perform your navigation/cleanup logic
+        const {
+            dialog_id,
+            dialog_page,
+            dialog_search,
+            dialog_boundary_id,
+            ...mainFilters
+        } = filters;
+
+        router.get(window.location.pathname, mainFilters, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+
+        onClose();
+    };
 
     const handleToggle = (ppa: Ppa) => {
         setSelectedItems((prev) => {
@@ -178,7 +203,7 @@ export default function PpaSelectorDialog({
     }, [dialogPpaTree, selectedItems, existingIdsSet]);
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="flex max-h-[95vh] flex-col sm:max-w-[85%]">
                 <DialogHeader>
                     <DialogTitle>Library Navigator</DialogTitle>
