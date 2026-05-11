@@ -12,7 +12,7 @@ import type {
 import { router, usePage } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
+import columns from './columns/columns';
 import PdfPreviewDialog from './pdf-preview-dialog';
 import { index } from '@/routes/ppmp-summaries';
 

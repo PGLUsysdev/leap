@@ -7,7 +7,7 @@ import FormDialog from '@/pages/chart-of-account/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
+import columns from './columns/columns';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Chart of Accounts', href: '#' },

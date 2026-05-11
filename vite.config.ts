@@ -28,7 +28,7 @@ export default defineConfig({
         react(),
         babel({
             presets: [reactCompilerPreset()],
-            include: /\.[jt]sx?$/, 
+            include: /\.[jt]sx?$/,
             exclude: /node_modules/
         }),
         tailwindcss(),

@@ -31,7 +31,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
+import columns from './columns/columns';
 
 import { type BreadcrumbItem } from '@/types';
 import type {

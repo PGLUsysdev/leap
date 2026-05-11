@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import type { User } from '@/types/global';
 import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
+import columns from './columns/columns';
 import FormDialog from './form-dialog';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: '#' }];

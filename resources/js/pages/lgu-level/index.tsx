@@ -7,7 +7,7 @@ import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
 import type { LguLevel } from '@/types/global';
 import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
+import columns from './columns/columns';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'LGU Levels', href: '#' }];
 

@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { DataTable } from '@/components/data-table';
-import { getPriceListColumns } from './table/columns';
+import { getPriceListColumns } from './columns/columns';
 import { useMemo } from 'react';
 import { index } from '@/routes/aip';
 

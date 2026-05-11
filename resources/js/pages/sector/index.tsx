@@ -7,7 +7,7 @@ import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
 import type { Sector } from '@/types/global';
 import { DataTable } from '@/components/data-table';
-import columns from '@/pages/sector/table/columns';
+import columns from './columns/columns';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Sectors', href: '#' }];
 

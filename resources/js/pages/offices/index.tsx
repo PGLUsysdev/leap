@@ -13,7 +13,7 @@ import type {
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router, usePage } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
-import columns from './table/columns';
+import columns from './columns/columns';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Offices', href: '#' }];
 
