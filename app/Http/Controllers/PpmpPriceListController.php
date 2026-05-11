@@ -20,6 +20,8 @@ class PpmpPriceListController extends Controller
      */
     public function index(Request $request)
     {
+        $mode = $request->query('dialog_mode');
+
         $query = PpmpPriceList::query()
             ->with('chartOfAccount', 'category')
             ->orderBy('sort_order');
@@ -66,11 +68,59 @@ class PpmpPriceListController extends Controller
                 'id',
                 'search',
                 'page',
-                // 'dialog_id',
-                // 'dialog_search',
-                // 'dialog_page',
-                // 'dialog_mode',
+                'dialog_id',
+                'dialog_search',
+                'dialog_page',
+                'dialog_mode',
             ]),
+            'paginatedDialogPriceList' => Inertia::lazy(function () use (
+                $request,
+            ) {
+                $query = PpmpPriceList::query()
+                    ->with('chartOfAccount', 'category')
+                    ->orderBy('sort_order');
+
+                if ($request->has('dialog_search')) {
+                    $searchTerm = $request->query('dialog_search');
+                    $query = $query
+                        ->where(
+                            'unit_of_measurement',
+                            'like',
+                            '%' . $searchTerm . '%',
+                        )
+                        ->orWhere(
+                            'description',
+                            'like',
+                            '%' . $searchTerm . '%',
+                        )
+                        ->orWhere(
+                            'item_number',
+                            'like',
+                            '%' . $searchTerm . '%',
+                        )
+                        ->orWhere('price', 'like', '%' . $searchTerm . '%')
+                        ->orWhereHas('category', function ($subQuery) use (
+                            $searchTerm,
+                        ) {
+                            $subQuery->where(
+                                'name',
+                                'like',
+                                '%' . $searchTerm . '%',
+                            );
+                        })
+                        ->orWhereHas('chartOfAccount', function (
+                            $subQuery,
+                        ) use ($searchTerm) {
+                            $subQuery->where(
+                                'account_title',
+                                'like',
+                                '' . $searchTerm . '',
+                            );
+                        });
+                }
+
+                return $query->paginate(100);
+            }),
         ]);
     }
 

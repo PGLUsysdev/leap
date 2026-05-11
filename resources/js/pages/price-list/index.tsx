@@ -4,6 +4,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import FormDialog from '@/pages/price-list/form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
+import MoveDialog from './move-dialog';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import { router } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
@@ -15,6 +16,7 @@ import type {
     PaginatedResponse,
     Filter,
 } from '@/types/global';
+import { index } from '@/routes/price-lists';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Price Lists', href: '#' }];
 
@@ -24,6 +26,7 @@ interface PriceListPageProps {
     chartOfAccounts: ChartOfAccount[];
     ppmpCategory: PpmpCategory[];
     filters: Filter;
+    paginatedDialogPriceList: PaginatedResponse<PriceList>;
 }
 
 export default function PriceListPage({
@@ -31,6 +34,7 @@ export default function PriceListPage({
     chartOfAccounts,
     ppmpCategory,
     filters,
+    paginatedDialogPriceList,
 }: PriceListPageProps) {
     // console.log(paginatedPriceList);
 
@@ -41,6 +45,7 @@ export default function PriceListPage({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
+    const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
 
     function handleAdd() {
         setSelectedPriceList(null);
@@ -104,6 +109,12 @@ export default function PriceListPage({
 
     function handleMove(data: PriceList) {
         console.log(data);
+
+        router.visit(index(), {
+            only: ['paginatedDialogPriceList'],
+            preserveState: true,
+            onSuccess: () => setIsMoveDialogOpen(true),
+        });
     }
 
     return (
@@ -132,6 +143,13 @@ export default function PriceListPage({
                 chartOfAccounts={chartOfAccounts}
                 ppmpCategories={ppmpCategory}
                 selectedPriceList={selectedPriceList}
+            />
+
+            <MoveDialog
+                open={isMoveDialogOpen}
+                onOpenChange={setIsMoveDialogOpen}
+                paginatedDialogPriceList={paginatedDialogPriceList}
+                filters={filters}
             />
 
             <DeleteDialog

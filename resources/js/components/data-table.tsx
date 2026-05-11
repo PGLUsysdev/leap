@@ -90,6 +90,7 @@ interface DataTableProps<TData extends { id: unknown }> {
     onReorder?: (activeId: string, overId: string) => void;
     onMove?: (data: TData) => void;
     onShowChildren?: (data: TData) => void;
+    onSelect?: (data: TData) => void;
 
     paginationObj?: PaginatedResponse<TData> | [];
 
@@ -135,6 +136,7 @@ export function DataTable<TData extends { id: unknown }>({
     onOpen,
     onGeneratePdf,
     onOpenPpmpSummary,
+    onSelect,
     children,
     withSearch = false,
     withRowSpan = false,
@@ -157,6 +159,13 @@ export function DataTable<TData extends { id: unknown }>({
     const [localData, setLocalData] = useState(data);
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // row selection
+    const [rowSelection, setRowSelection] = useState({});
+
+    useEffect(() => {
+        console.log('Global Selection State:', rowSelection);
+    }, [rowSelection]);
 
     // for global search
     const [searchValue, setSearchValue] = useState('');
@@ -252,6 +261,7 @@ export function DataTable<TData extends { id: unknown }>({
             onReorder,
             onMove,
             onShowChildren,
+            onSelect,
             ...meta,
         } as any,
         getSubRows: (row: any) => row.children,
@@ -279,6 +289,8 @@ export function DataTable<TData extends { id: unknown }>({
                         ? paginationObj.per_page
                         : 0,
             },
+
+            rowSelection,
         },
 
         // for dnd
@@ -292,6 +304,11 @@ export function DataTable<TData extends { id: unknown }>({
             !Array.isArray(paginationObj)
                 ? paginationObj.last_page
                 : undefined,
+
+        // row selection
+        enableRowSelection: true,
+        enableMultiRowSelection: false,
+        onRowSelectionChange: setRowSelection,
     });
 
     // console.log(table.options.meta);
