@@ -21,7 +21,6 @@ import { index } from '@/routes/price-lists';
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Price Lists', href: '#' }];
 
 interface PriceListPageProps {
-    // paginatedPriceList: PriceList[];
     paginatedPriceList: PaginatedResponse<PriceList>;
     chartOfAccounts: ChartOfAccount[];
     ppmpCategory: PpmpCategory[];

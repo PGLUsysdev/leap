@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { router } from '@inertiajs/react';
 import { reorder } from '@/routes/price-lists';
 import { Spinner } from '@/components/ui/spinner';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Item,
     ItemActions,
@@ -80,47 +81,14 @@ export default function MoveDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="flex max-h-[95vh] flex-col border-none shadow-2xl sm:max-w-[85%]"
-                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
+                className="flex max-h-[90vh] flex-col sm:max-w-[85%]"
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
+                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
             >
                 <DialogHeader>
                     <DialogTitle>Move PPA</DialogTitle>
                     <DialogDescription className="sr-only"></DialogDescription>
                 </DialogHeader>
-
-                {/*<Card>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="rounded-md bg-primary p-2 text-primary-foreground shadow-sm">
-                                    <Move />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-bold tracking-wider text-primary/70 uppercase">
-                                        Currently Moving
-                                    </p>
-                                    <p className="max-w-[400px] truncate text-sm font-bold">
-                                        {ppaToMove?.name}
-                                    </p>
-                                    <p className="font-mono text-[10px] opacity-60">
-                                        {ppaToMove?.full_code}
-                                    </p>
-                                </div>
-                            </div>
-                            <Badge variant="outline" className="bg-background">
-                                {ppaToMove?.type}
-                            </Badge>
-                        </div>
-                    </CardContent>
-                </Card>*/}
-
-                {/*<div>
-                    <span>Item to Move:</span>{' '}
-                    <span className="font-bold">
-                        {selectedItemToMove?.description}
-                    </span>
-                </div>*/}
 
                 <Item variant="outline">
                     {/*<ItemMedia variant="icon">
@@ -135,6 +103,7 @@ export default function MoveDialog({
                 </Item>
 
                 <div className="flex min-h-0">
+                    {/*<ScrollArea className="w-full">*/}
                     <div className="w-full pr-3">
                         {!Array.isArray(paginatedDialogPriceList) && (
                             <DataTable
@@ -142,7 +111,7 @@ export default function MoveDialog({
                                 data={paginatedDialogPriceList?.data}
                                 withSearch
                                 paginationObj={paginatedDialogPriceList}
-                                negativeHeight={22}
+                                negativeHeight={25}
                                 filters={filters}
                                 searchKey="dialog_search"
                                 pageKey="dialog_page"
@@ -158,6 +127,7 @@ export default function MoveDialog({
                             />
                         )}
                     </div>
+                    {/*</ScrollArea>*/}
                 </div>
 
                 <DialogFooter>

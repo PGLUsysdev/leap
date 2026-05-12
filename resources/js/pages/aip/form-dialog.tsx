@@ -76,8 +76,8 @@ export default function FormDialog({ open, setOpen }: FormDialogProps) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
                 className="flex max-h-[90vh] flex-col sm:max-w-sm"
-                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
+                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
             >
                 <DialogHeader>
                     <DialogTitle>

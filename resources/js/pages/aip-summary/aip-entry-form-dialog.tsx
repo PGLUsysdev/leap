@@ -252,14 +252,11 @@ export default function AipEntryFormDialog({
     }
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={(val) => !isLoading && onOpenChange(val)}
-        >
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 className="flex max-h-[90vh] flex-col sm:max-w-[80%]"
-                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
+                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
             >
                 <DialogHeader>
                     <DialogTitle>
