@@ -286,18 +286,18 @@ For each form dialog implementation, verify the following:
 
 The following form dialog files need to be updated to comply with this checklist:
 
-- [ ] `resources/js/pages/aip/form-dialog.tsx`
-- [ ] `resources/js/pages/aip-summary/aip-entry-form-dialog.tsx`
-- [ ] `resources/js/pages/ppa/form-dialog.tsx`
-- [ ] `resources/js/pages/offices/form-dialog.tsx`
-- [ ] `resources/js/pages/sector/form-dialog.tsx`
-- [ ] `resources/js/pages/lgu-level/form-dialog.tsx`
-- [ ] `resources/js/pages/office-type/form-dialog.tsx`
+- [x] `resources/js/pages/aip/form-dialog.tsx`
+- [x] `resources/js/pages/aip-summary/aip-entry-form-dialog.tsx`
+- [x] `resources/js/pages/ppmp/form-dialog.tsx`
+- [x] `resources/js/pages/ppa/form-dialog.tsx`
+- [x] `resources/js/pages/offices/form-dialog.tsx`
+- [x] `resources/js/pages/sector/form-dialog.tsx`
+- [x] `resources/js/pages/lgu-level/form-dialog.tsx`
+- [x] `resources/js/pages/office-type/form-dialog.tsx`
 - [x] `resources/js/pages/price-list/form-dialog.tsx` (✅ Already compliant)
-- [ ] `resources/js/pages/ppmp-category/form-dialog.tsx`
-- [ ] `resources/js/pages/chart-of-account/form-dialog.tsx`
-- [ ] `resources/js/pages/funding-source/form-dialog.tsx`
-- [ ] `resources/js/pages/ppmp/form-dialog.tsx`
+- [x] `resources/js/pages/ppmp-category/form-dialog.tsx`
+- [x] `resources/js/pages/chart-of-account/form-dialog.tsx`
+- [x] `resources/js/pages/funding-source/form-dialog.tsx`
 
 ## Notes
 

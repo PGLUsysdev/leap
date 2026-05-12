@@ -1,18 +1,8 @@
 import { useEffect, useState } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-    DialogClose,
-} from '@/components/ui/dialog';
 import type { LguLevel } from '@/types/global';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
 import {
     Field,
     FieldError,
@@ -21,9 +11,9 @@ import {
     FieldContent,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { router } from '@inertiajs/react';
+import { FormDialogShell } from '@/components/form-dialog-shell';
 
 interface FormDialogProps {
     open: boolean;
@@ -91,144 +81,104 @@ export default function FormDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent
-                className="flex max-h-[90vh] flex-col sm:max-w-sm"
-                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
-                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
-            >
-                <DialogHeader>
-                    <DialogTitle>
-                        {isEditing ? 'Edit Lgu Level' : 'Add New Lgu Level'}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {isEditing
-                            ? 'Modify the details of the existing Lgu level below.'
-                            : 'Fill in the information to create a new LGU level record.'}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="flex min-h-0">
-                    <ScrollArea className="w-full">
-                        <form
-                            id="lgu-level-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
-                            <FieldGroup className="pb-4">
-                                <Controller
-                                    name="code"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Code
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Input
-                                                    {...field}
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    placeholder="Code..."
-                                                    autoComplete="off"
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="name"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Title
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Input
-                                                    {...field}
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    placeholder="Title..."
-                                                    autoComplete="off"
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-                            </FieldGroup>
-                        </form>
-                    </ScrollArea>
-                </div>
-
-                <DialogFooter>
-                    <DialogClose disabled={isLoading} asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-
-                    <Button
-                        type="submit"
-                        form="lgu-level-form"
-                        disabled={isLoading}
+        <FormDialogShell
+            open={open}
+            onOpenChange={setOpen}
+            title={isEditing ? 'Edit Lgu Level' : 'Add New Lgu Level'}
+            description={
+                isEditing
+                    ? 'Modify the details of the existing Lgu level below.'
+                    : 'Fill in the information to create a new LGU level record.'
+            }
+            isLoading={isLoading}
+            formId="lgu-level-form"
+            onCancel={() => setOpen(false)}
+            submitLabel={isEditing ? 'Save Changes' : 'Create Level'}
+            submittingLabel={isEditing ? 'Saving Changes' : 'Creating Level'}
+            className="sm:max-w-sm"
+        >
+            <div className="flex min-h-0">
+                <ScrollArea className="w-full">
+                    <form
+                        id="lgu-level-form"
+                        onSubmit={form.handleSubmit(onSubmit)}
                     >
-                        {isEditing ? (
-                            isLoading ? (
-                                <span className="flex items-center gap-1">
-                                    <Spinner />
-                                    Saving Changes
-                                </span>
-                            ) : (
-                                'Save Changes'
-                            )
-                        ) : isLoading ? (
-                            <span className="flex items-center gap-1">
-                                <Spinner />
-                                Creating Source
-                            </span>
-                        ) : (
-                            'Create Source'
-                        )}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                        <FieldGroup className="pb-4">
+                            <Controller
+                                name="code"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
+                                                Code
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+
+                                            <Input
+                                                {...field}
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                placeholder="Code..."
+                                                autoComplete="off"
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="name"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
+                                                Title
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+
+                                            <Input
+                                                {...field}
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                placeholder="Title..."
+                                                autoComplete="off"
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+                        </FieldGroup>
+                    </form>
+                </ScrollArea>
+            </div>
+        </FormDialogShell>
     );
 }

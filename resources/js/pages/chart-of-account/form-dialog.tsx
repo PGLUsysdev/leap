@@ -1,27 +1,17 @@
 import { useEffect, useState } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-    DialogDescription,
-} from '@/components/ui/dialog';
+
 import type { ChartOfAccount } from '@/types/global';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
 import {
     Field,
     FieldError,
-    FieldGroup,
     FieldLabel,
     FieldContent,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { router } from '@inertiajs/react';
@@ -32,6 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { FormDialogShell } from '@/components/form-dialog-shell';
 
 interface FormDialogProps {
     open: boolean;
@@ -135,436 +126,364 @@ export default function FormDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogDescription></DialogDescription>
-            <DialogContent
-                className="flex max-h-[90vh] flex-col sm:max-w-sm"
-                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
-                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
-            >
-                <DialogHeader>
-                    <DialogTitle>
-                        {isEditing ? 'Edit' : 'Add New'} Chart of Account
-                    </DialogTitle>
-                </DialogHeader>
-
-                <div className="flex min-h-0">
-                    <ScrollArea className="w-full">
-                        <form
-                            id="chart-of-account-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
-                            <div className="flex flex-col gap-6">
-                                <Controller
-                                    name="account_number"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Account Number{' '}
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Input
-                                                    {...field}
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    placeholder="e.g., 5-02-03-010"
-                                                    autoComplete="off"
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="account_title"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Account Title{' '}
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Input
-                                                    {...field}
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    placeholder="e.g., Office Supplies"
-                                                    autoComplete="off"
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="account_type"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Account Type{' '}
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Select
-                                                    value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                >
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-
-                                                    <SelectContent>
-                                                        {[
-                                                            'ASSET',
-                                                            'LIABILITY',
-                                                            'EQUITY',
-                                                            'REVENUE',
-                                                            'EXPENSE',
-                                                        ].map((v) => (
-                                                            <SelectItem
-                                                                key={v}
-                                                                value={v}
-                                                            >
-                                                                {v}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="expense_class"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Expense Class
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Select
-                                                    value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                >
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-
-                                                    <SelectContent>
-                                                        {[
-                                                            'PS',
-                                                            'MOOE',
-                                                            'FE',
-                                                            'CO',
-                                                        ].map((v) => (
-                                                            <SelectItem
-                                                                key={v}
-                                                                value={v}
-                                                            >
-                                                                {v}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="account_series"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
-                                                    Account Series
-                                                </FieldLabel>
-
-                                                <Input
-                                                    {...field}
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    value={field.value ?? ''}
-                                                    autoComplete="off"
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="normal_balance"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Normal Balance
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Select
-                                                    value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                >
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-
-                                                    <SelectContent>
-                                                        <SelectItem value="DEBIT">
-                                                            DEBIT
-                                                        </SelectItem>
-
-                                                        <SelectItem value="CREDIT">
-                                                            CREDIT
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="description"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
-                                                    Description
-                                                </FieldLabel>
-
-                                                <Textarea
-                                                    {...field}
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    value={field.value ?? ''}
-                                                    autoComplete="off"
-                                                    className="min-h-15"
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="is_postable"
-                                    control={form.control}
-                                    render={({ field }) => (
-                                        <Field>
-                                            <FieldContent>
-                                                <div className="mt-2 flex items-center gap-2 rounded-md border p-2">
-                                                    <Checkbox
-                                                        id={field.name}
-                                                        checked={field.value}
-                                                        onCheckedChange={
-                                                            field.onChange
-                                                        }
-                                                    />
-
-                                                    <FieldLabel
-                                                        htmlFor={field.name}
-                                                        className="text-sm"
-                                                    >
-                                                        Is Postable
-                                                    </FieldLabel>
-                                                </div>
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="is_active"
-                                    control={form.control}
-                                    render={({ field }) => (
-                                        <Field>
-                                            <FieldContent>
-                                                <div className="mt-2 flex items-center gap-2 rounded-md border p-2">
-                                                    <Checkbox
-                                                        id={field.name}
-                                                        checked={field.value}
-                                                        onCheckedChange={
-                                                            field.onChange
-                                                        }
-                                                    />
-                                                    <FieldLabel
-                                                        htmlFor={field.name}
-                                                        className="text-sm"
-                                                    >
-                                                        Is Active
-                                                    </FieldLabel>
-                                                </div>
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-                            </div>
-                        </form>
-                    </ScrollArea>
-                </div>
-
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => setOpen(false)}
-                        disabled={isLoading}
+        <FormDialogShell
+            open={open}
+            onOpenChange={setOpen}
+            title={
+                isEditing ? 'Edit Chart of Account' : 'Add New Chart of Account'
+            }
+            description="Modify or create chart of account details."
+            isLoading={isLoading}
+            formId="chart-of-account-form"
+            onCancel={() => setOpen(false)}
+            submitLabel={isEditing ? 'Save Changes' : 'Create Account'}
+            submittingLabel={isEditing ? 'Saving Changes' : 'Creating Account'}
+            className="sm:max-w-sm"
+        >
+            <div className="flex min-h-0">
+                <ScrollArea className="w-full">
+                    <form
+                        id="chart-of-account-form"
+                        onSubmit={form.handleSubmit(onSubmit)}
                     >
-                        Cancel
-                    </Button>
+                        <div className="flex flex-col gap-6">
+                            <Controller
+                                name="account_number"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
+                                                Account Number{' '}
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
 
-                    <Button
-                        type="submit"
-                        form="chart-of-account-form"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            isEditing ? (
-                                <span className="flex items-center gap-1">
-                                    <Spinner />
-                                    Saving Changes
-                                </span>
-                            ) : (
-                                <span className="flex items-center gap-1">
-                                    <Spinner />
-                                    Creating Account
-                                </span>
-                            )
-                        ) : isEditing ? (
-                            'Save Changes'
-                        ) : (
-                            'Create Account'
-                        )}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                                            <Input
+                                                {...field}
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                placeholder="e.g., 5-02-03-010"
+                                                autoComplete="off"
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="account_title"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
+                                                Account Title{' '}
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+
+                                            <Input
+                                                {...field}
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                placeholder="e.g., Office Supplies"
+                                                autoComplete="off"
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="account_type"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
+                                                Account Type{' '}
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    {[
+                                                        'ASSET',
+                                                        'LIABILITY',
+                                                        'EQUITY',
+                                                        'REVENUE',
+                                                        'EXPENSE',
+                                                    ].map((v) => (
+                                                        <SelectItem
+                                                            key={v}
+                                                            value={v}
+                                                        >
+                                                            {v}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="expense_class"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
+                                                Expense Class
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    {[
+                                                        'PS',
+                                                        'MOOE',
+                                                        'FE',
+                                                        'CO',
+                                                    ].map((v) => (
+                                                        <SelectItem
+                                                            key={v}
+                                                            value={v}
+                                                        >
+                                                            {v}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="account_series"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel htmlFor={field.name}>
+                                                Account Series
+                                            </FieldLabel>
+
+                                            <Input
+                                                {...field}
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                value={field.value ?? ''}
+                                                autoComplete="off"
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="normal_balance"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
+                                                Normal Balance
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+
+                                            <Select
+                                                value={field.value}
+                                                onValueChange={field.onChange}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    <SelectItem value="DEBIT">
+                                                        DEBIT
+                                                    </SelectItem>
+
+                                                    <SelectItem value="CREDIT">
+                                                        CREDIT
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="description"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field data-invalid={fieldState.invalid}>
+                                        <FieldContent>
+                                            <FieldLabel htmlFor={field.name}>
+                                                Description
+                                            </FieldLabel>
+
+                                            <Textarea
+                                                {...field}
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                value={field.value ?? ''}
+                                                autoComplete="off"
+                                                className="min-h-15"
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="is_postable"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <Field>
+                                        <FieldContent>
+                                            <div className="mt-2 flex items-center gap-2 rounded-md border p-2">
+                                                <Checkbox
+                                                    id={field.name}
+                                                    checked={field.value}
+                                                    onCheckedChange={
+                                                        field.onChange
+                                                    }
+                                                />
+
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                    className="text-sm"
+                                                >
+                                                    Is Postable
+                                                </FieldLabel>
+                                            </div>
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="is_active"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <Field>
+                                        <FieldContent>
+                                            <div className="mt-2 flex items-center gap-2 rounded-md border p-2">
+                                                <Checkbox
+                                                    id={field.name}
+                                                    checked={field.value}
+                                                    onCheckedChange={
+                                                        field.onChange
+                                                    }
+                                                />
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                    className="text-sm"
+                                                >
+                                                    Is Active
+                                                </FieldLabel>
+                                            </div>
+                                        </FieldContent>
+                                    </Field>
+                                )}
+                            />
+                        </div>
+                    </form>
+                </ScrollArea>
+            </div>
+        </FormDialogShell>
     );
 }

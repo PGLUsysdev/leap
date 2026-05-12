@@ -35,6 +35,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FormDialogShell } from '@/components/form-dialog-shell';
 
 interface FormDialogProps {
     open: boolean;
@@ -180,40 +181,40 @@ export default function FormDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent
-                className="flex max-h-[90vh] flex-col sm:max-w-sm"
-                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
-                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
+            <FormDialogShell
+                open={open}
+                onOpenChange={onOpenChange}
+                title={
+                    isEditing
+                        ? initialData?.parent_id
+                            ? 'Edit Sub Unit'
+                            : 'Edit Office'
+                        : isAddingChild
+                          ? 'Create New Sub Unit'
+                          : 'Create New Office'
+                }
+                description={
+                    isEditing
+                        ? initialData?.parent_id
+                            ? 'Modify the details of the existing sub unit below.'
+                            : 'Modify the details of the existing office below.'
+                        : isAddingChild
+                          ? 'Fill in the information to create a new sub unit record.'
+                          : 'Fill in the information to create a new office record.'
+                }
+                isLoading={isLoading}
+                formId="office-form"
+                onCancel={() => onOpenChange(false)}
+                submitLabel={
+                    isEditing
+                        ? 'Save Changes'
+                        : isAddingChild
+                          ? 'Create Sub Unit'
+                          : 'Create Office'
+                }
+                submittingLabel={isEditing ? 'Saving Changes' : 'Creating...'}
+                className="sm:max-w-sm"
             >
-                <DialogHeader>
-                    <DialogTitle>
-                        {isEditing
-                            ? isEditing && initialData?.parent_id
-                                ? 'Edit Sub Unit'
-                                : 'Edit Office'
-                            : isAddingChild
-                              ? 'Create New Sub Unit'
-                              : 'Create New Office'}
-                    </DialogTitle>
-
-                    <DialogDescription>
-                        {isEditing
-                            ? isEditing && initialData?.parent_id
-                                ? 'Modify the details of the existing sub unit below.'
-                                : 'Modify the details of the existing office below.'
-                            : isAddingChild
-                              ? 'Fill in the information to create a new sub unit record.'
-                              : 'Fill in the information to create a new office record.'}
-                    </DialogDescription>
-
-                    {/* what is this error section? */}
-                    {error && (
-                        <div className="mt-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                            {error}
-                        </div>
-                    )}
-                </DialogHeader>
-
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
                         <form
@@ -806,43 +807,7 @@ export default function FormDialog({
                         </form>
                     </ScrollArea>
                 </div>
-
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline" disabled={isLoading}>
-                            Cancel
-                        </Button>
-                    </DialogClose>
-
-                    <Button
-                        type="submit"
-                        form="office-form"
-                        disabled={isLoading}
-                    >
-                        {isEditing ? (
-                            isLoading ? (
-                                <span className="flex items-center gap-1">
-                                    <Spinner />
-                                    Saving Changes
-                                </span>
-                            ) : (
-                                'Save Changes'
-                            )
-                        ) : isLoading ? (
-                            <span className="flex items-center gap-1">
-                                <Spinner />
-                                {isAddingChild
-                                    ? 'Creating Sub Unit'
-                                    : 'Creating Office'}
-                            </span>
-                        ) : isAddingChild ? (
-                            'Create Sub Unit'
-                        ) : (
-                            'Create Office'
-                        )}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
+            </FormDialogShell>
         </Dialog>
     );
 }

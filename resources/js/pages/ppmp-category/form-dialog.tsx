@@ -13,20 +13,17 @@ import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
+import { FormDialogShell } from '@/components/form-dialog-shell';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { router } from '@inertiajs/react';
 import {
     Field,
     FieldContent,
-    // FieldDescription,
     FieldError,
     FieldGroup,
     FieldLabel,
     FieldLegend,
-    // FieldSeparator,
     FieldSet,
-    // FieldTitle,
 } from '@/components/ui/field';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -162,75 +159,236 @@ export default function FormDialog({
 
     return (
         <>
-            <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent
-                    className="flex max-h-[90vh] flex-col sm:max-w-2xl"
-                    onPointerDownOutside={(e) => {
-                        if (isLoading) e.preventDefault();
-                        if (hasUnsavedChanges) {
-                            e.preventDefault();
-                            setShowUnsavedDialog(true);
-                            setPendingClose(true);
-                        }
-                    }}
-                    onEscapeKeyDown={(e) => {
-                        if (isLoading) e.preventDefault();
-                        if (hasUnsavedChanges) {
-                            e.preventDefault();
-                            setShowUnsavedDialog(true);
-                            setPendingClose(true);
-                        }
-                    }}
-                >
-                    <DialogHeader>
-                        <DialogTitle>
-                            {isEditing
-                                ? 'Edit PPMP Category'
-                                : 'Add New PPMP Category'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            {isEditing
-                                ? 'Modify the details of the existing PPMP category below.'
-                                : 'Fill in the information to create a new PPMP category record.'}
-                        </DialogDescription>
-                    </DialogHeader>
+            <FormDialogShell
+                open={open}
+                onOpenChange={handleOpenChange}
+                title={
+                    isEditing ? 'Edit PPMP Category' : 'Add New PPMP Category'
+                }
+                description={
+                    isEditing
+                        ? 'Modify the details of the existing PPMP category below.'
+                        : 'Fill in the information to create a new PPMP category record.'
+                }
+                isLoading={isLoading}
+                formId="ppmp-category-form"
+                onCancel={() => setOpen(false)}
+                submitLabel={isEditing ? 'Save Changes' : 'Create Category'}
+                submittingLabel={
+                    isEditing ? 'Saving Changes' : 'Creating Category'
+                }
+                className="sm:max-w-2xl"
+            >
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
+                        <form
+                            id="ppmp-category-form"
+                            onSubmit={form.handleSubmit(onSubmit)}
+                        >
+                            <FieldGroup className="pb-4">
+                                <Controller
+                                    name="name"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                    className="gap-1"
+                                                >
+                                                    Name
+                                                    <span className="text-red-500">
+                                                        *
+                                                    </span>
+                                                </FieldLabel>
 
-                    <div className="flex min-h-0">
-                        <ScrollArea className="w-full">
-                            <form
-                                id="ppmp-category-form"
-                                onSubmit={form.handleSubmit(onSubmit)}
-                            >
-                                <FieldGroup className="pb-4">
-                                    <Controller
-                                        name="name"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => (
-                                            <Field
-                                                data-invalid={
-                                                    fieldState.invalid
-                                                }
-                                            >
-                                                <FieldContent>
-                                                    <FieldLabel
-                                                        htmlFor={field.name}
-                                                        className="gap-1"
-                                                    >
-                                                        Name
-                                                        <span className="text-red-500">
-                                                            *
-                                                        </span>
-                                                    </FieldLabel>
+                                                <Input
+                                                    {...field}
+                                                    id={field.name}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    placeholder="Category name..."
+                                                    autoComplete="off"
+                                                />
 
-                                                    <Input
-                                                        {...field}
-                                                        id={field.name}
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                        placeholder="Category name..."
-                                                        autoComplete="off"
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
                                                     />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
+
+                                <Controller
+                                    name="chart_of_accounts"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => {
+                                        // console.log(field.value);
+                                        return (
+                                            <FieldSet>
+                                                <FieldContent>
+                                                    <FieldLegend variant="label">
+                                                        Chart of Accounts
+                                                    </FieldLegend>
+
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setOpenCoaCommand(
+                                                                true,
+                                                            )
+                                                        }
+                                                    >
+                                                        Add Chart of Account
+                                                    </Button>
+
+                                                    <ul className="list-disc pl-5">
+                                                        {field.value
+                                                            ?.map((id) =>
+                                                                chartOfAccounts.find(
+                                                                    (coa) =>
+                                                                        coa.id ===
+                                                                        id,
+                                                                ),
+                                                            )
+                                                            .filter(
+                                                                (
+                                                                    coa,
+                                                                ): coa is ChartOfAccount =>
+                                                                    Boolean(
+                                                                        coa,
+                                                                    ),
+                                                            )
+                                                            .map((coa) => (
+                                                                <li
+                                                                    key={coa.id}
+                                                                    className="flex items-center justify-between gap-2"
+                                                                >
+                                                                    <span>
+                                                                        {
+                                                                            coa.account_title
+                                                                        }
+                                                                    </span>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            const newValue =
+                                                                                field.value?.filter(
+                                                                                    (
+                                                                                        id,
+                                                                                    ) =>
+                                                                                        id !==
+                                                                                        coa.id,
+                                                                                ) ||
+                                                                                [];
+                                                                            field.onChange(
+                                                                                newValue,
+                                                                            );
+                                                                        }}
+                                                                    >
+                                                                        ×
+                                                                    </Button>
+                                                                </li>
+                                                            ))}
+                                                    </ul>
+
+                                                    <CommandDialog
+                                                        open={openCoaCommand}
+                                                        onOpenChange={
+                                                            setOpenCoaCommand
+                                                        }
+                                                        className="flex max-h-[90vh] flex-col"
+                                                    >
+                                                        <Command>
+                                                            <CommandInput placeholder="Search chart of account..." />
+                                                            <CommandList className="max-h-none flex-1">
+                                                                <CommandEmpty>
+                                                                    No chart of
+                                                                    account
+                                                                    found.
+                                                                </CommandEmpty>
+                                                                <CommandGroup heading="Chart of Accounts">
+                                                                    {chartOfAccounts.map(
+                                                                        (
+                                                                            coa,
+                                                                        ) => (
+                                                                            <CommandItem
+                                                                                key={
+                                                                                    coa.id
+                                                                                }
+                                                                                value={`${coa.account_number} ${coa.account_title}`}
+                                                                                className="items-center gap-4"
+                                                                            >
+                                                                                <Checkbox
+                                                                                    checked={
+                                                                                        field.value?.includes(
+                                                                                            coa.id,
+                                                                                        ) ||
+                                                                                        false
+                                                                                    }
+                                                                                    onCheckedChange={(
+                                                                                        checked,
+                                                                                    ) => {
+                                                                                        const newValue =
+                                                                                            checked
+                                                                                                ? [
+                                                                                                      ...(field.value ||
+                                                                                                          []),
+                                                                                                      coa.id,
+                                                                                                  ]
+                                                                                                : field.value?.filter(
+                                                                                                      (
+                                                                                                          id,
+                                                                                                      ) =>
+                                                                                                          id !==
+                                                                                                          coa.id,
+                                                                                                  ) ||
+                                                                                                  [];
+                                                                                        field.onChange(
+                                                                                            newValue,
+                                                                                        );
+                                                                                    }}
+                                                                                />
+                                                                                <div className="grid w-full grid-cols-6 gap-4">
+                                                                                    <span className="col-span-2">
+                                                                                        {coa.account_number ??
+                                                                                            '-'}
+                                                                                    </span>
+                                                                                    <span className="col-span-4 whitespace-normal">
+                                                                                        {
+                                                                                            coa.account_title
+                                                                                        }
+                                                                                    </span>
+                                                                                </div>
+                                                                            </CommandItem>
+                                                                        ),
+                                                                    )}
+                                                                </CommandGroup>
+                                                            </CommandList>
+                                                        </Command>
+                                                        <div className="border-t p-4">
+                                                            <Button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setOpenCoaCommand(
+                                                                        false,
+                                                                    )
+                                                                }
+                                                                className="w-full"
+                                                            >
+                                                                Save Selected
+                                                            </Button>
+                                                        </div>
+                                                    </CommandDialog>
 
                                                     {fieldState.invalid && (
                                                         <FieldError
@@ -240,291 +398,72 @@ export default function FormDialog({
                                                         />
                                                     )}
                                                 </FieldContent>
-                                            </Field>
-                                        )}
-                                    />
+                                            </FieldSet>
+                                        );
+                                    }}
+                                />
 
-                                    <Controller
-                                        name="chart_of_accounts"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => {
-                                            // console.log(field.value);
-                                            return (
-                                                <FieldSet>
-                                                    <FieldContent>
-                                                        <FieldLegend variant="label">
-                                                            Chart of Accounts
-                                                        </FieldLegend>
+                                <Controller
+                                    name="is_non_procurement"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => {
+                                        console.log(field.value);
 
-                                                        <Button
-                                                            type="button"
-                                                            onClick={() =>
-                                                                setOpenCoaCommand(
-                                                                    true,
-                                                                )
+                                        return (
+                                            <FieldSet>
+                                                <FieldContent>
+                                                    <FieldLegend variant="label">
+                                                        Procurement Type
+                                                    </FieldLegend>
+
+                                                    <FieldGroup>
+                                                        <Field
+                                                            orientation="horizontal"
+                                                            data-invalid={
+                                                                fieldState.invalid
                                                             }
                                                         >
-                                                            Add Chart of Account
-                                                        </Button>
-
-                                                        <ul className="list-disc pl-5">
-                                                            {field.value
-                                                                ?.map((id) =>
-                                                                    chartOfAccounts.find(
-                                                                        (coa) =>
-                                                                            coa.id ===
-                                                                            id,
-                                                                    ),
-                                                                )
-                                                                .filter(
-                                                                    (
-                                                                        coa,
-                                                                    ): coa is ChartOfAccount =>
-                                                                        Boolean(
-                                                                            coa,
-                                                                        ),
-                                                                )
-                                                                .map((coa) => (
-                                                                    <li
-                                                                        key={
-                                                                            coa.id
-                                                                        }
-                                                                        className="flex items-center justify-between gap-2"
-                                                                    >
-                                                                        <span>
-                                                                            {
-                                                                                coa.account_title
-                                                                            }
-                                                                        </span>
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            onClick={() => {
-                                                                                const newValue =
-                                                                                    field.value?.filter(
-                                                                                        (
-                                                                                            id,
-                                                                                        ) =>
-                                                                                            id !==
-                                                                                            coa.id,
-                                                                                    ) ||
-                                                                                    [];
-                                                                                field.onChange(
-                                                                                    newValue,
-                                                                                );
-                                                                            }}
-                                                                        >
-                                                                            ×
-                                                                        </Button>
-                                                                    </li>
-                                                                ))}
-                                                        </ul>
-
-                                                        <CommandDialog
-                                                            open={
-                                                                openCoaCommand
-                                                            }
-                                                            onOpenChange={
-                                                                setOpenCoaCommand
-                                                            }
-                                                            className="flex max-h-[90vh] flex-col"
-                                                        >
-                                                            <Command>
-                                                                <CommandInput placeholder="Search chart of account..." />
-                                                                <CommandList className="max-h-none flex-1">
-                                                                    <CommandEmpty>
-                                                                        No chart
-                                                                        of
-                                                                        account
-                                                                        found.
-                                                                    </CommandEmpty>
-                                                                    <CommandGroup heading="Chart of Accounts">
-                                                                        {chartOfAccounts.map(
-                                                                            (
-                                                                                coa,
-                                                                            ) => (
-                                                                                <CommandItem
-                                                                                    key={
-                                                                                        coa.id
-                                                                                    }
-                                                                                    value={`${coa.account_number} ${coa.account_title}`}
-                                                                                    className="items-center gap-4"
-                                                                                >
-                                                                                    <Checkbox
-                                                                                        checked={
-                                                                                            field.value?.includes(
-                                                                                                coa.id,
-                                                                                            ) ||
-                                                                                            false
-                                                                                        }
-                                                                                        onCheckedChange={(
-                                                                                            checked,
-                                                                                        ) => {
-                                                                                            const newValue =
-                                                                                                checked
-                                                                                                    ? [
-                                                                                                          ...(field.value ||
-                                                                                                              []),
-                                                                                                          coa.id,
-                                                                                                      ]
-                                                                                                    : field.value?.filter(
-                                                                                                          (
-                                                                                                              id,
-                                                                                                          ) =>
-                                                                                                              id !==
-                                                                                                              coa.id,
-                                                                                                      ) ||
-                                                                                                      [];
-                                                                                            field.onChange(
-                                                                                                newValue,
-                                                                                            );
-                                                                                        }}
-                                                                                    />
-                                                                                    <div className="grid w-full grid-cols-6 gap-4">
-                                                                                        <span className="col-span-2">
-                                                                                            {coa.account_number ??
-                                                                                                '-'}
-                                                                                        </span>
-                                                                                        <span className="col-span-4 whitespace-normal">
-                                                                                            {
-                                                                                                coa.account_title
-                                                                                            }
-                                                                                        </span>
-                                                                                    </div>
-                                                                                </CommandItem>
-                                                                            ),
-                                                                        )}
-                                                                    </CommandGroup>
-                                                                </CommandList>
-                                                            </Command>
-                                                            <div className="border-t p-4">
-                                                                <Button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        setOpenCoaCommand(
-                                                                            false,
-                                                                        )
-                                                                    }
-                                                                    className="w-full"
-                                                                >
-                                                                    Save
-                                                                    Selected
-                                                                </Button>
-                                                            </div>
-                                                        </CommandDialog>
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
-                                                            />
-                                                        )}
-                                                    </FieldContent>
-                                                </FieldSet>
-                                            );
-                                        }}
-                                    />
-
-                                    <Controller
-                                        name="is_non_procurement"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => {
-                                            console.log(field.value);
-
-                                            return (
-                                                <FieldSet>
-                                                    <FieldContent>
-                                                        <FieldLegend variant="label">
-                                                            Procurement Type
-                                                        </FieldLegend>
-
-                                                        <FieldGroup>
-                                                            <Field
-                                                                orientation="horizontal"
-                                                                data-invalid={
+                                                            <Checkbox
+                                                                id={field.name}
+                                                                aria-invalid={
                                                                     fieldState.invalid
                                                                 }
-                                                            >
-                                                                <Checkbox
-                                                                    id={
-                                                                        field.name
-                                                                    }
-                                                                    aria-invalid={
-                                                                        fieldState.invalid
-                                                                    }
-                                                                    checked={
-                                                                        field.value
-                                                                    }
-                                                                    onCheckedChange={
-                                                                        field.onChange
-                                                                    }
-                                                                />
-
-                                                                <FieldLabel
-                                                                    htmlFor={
-                                                                        field.name
-                                                                    }
-                                                                    className="font-normal"
-                                                                >
-                                                                    Non-Procurement
-                                                                </FieldLabel>
-                                                            </Field>
-                                                        </FieldGroup>
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
+                                                                checked={
+                                                                    field.value
+                                                                }
+                                                                onCheckedChange={
+                                                                    field.onChange
+                                                                }
                                                             />
-                                                        )}
-                                                    </FieldContent>
-                                                </FieldSet>
-                                            );
-                                        }}
-                                    />
-                                </FieldGroup>
-                            </form>
-                        </ScrollArea>
-                    </div>
 
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setOpen(false)}
-                            disabled={isLoading}
-                        >
-                            Cancel
-                        </Button>
+                                                            <FieldLabel
+                                                                htmlFor={
+                                                                    field.name
+                                                                }
+                                                                className="font-normal"
+                                                            >
+                                                                Non-Procurement
+                                                            </FieldLabel>
+                                                        </Field>
+                                                    </FieldGroup>
 
-                        <Button
-                            type="submit"
-                            form="ppmp-category-form"
-                            disabled={isLoading}
-                        >
-                            {isEditing ? (
-                                isLoading ? (
-                                    <span className="flex items-center gap-1">
-                                        <Spinner />
-                                        Saving Changes
-                                    </span>
-                                ) : (
-                                    'Save Changes'
-                                )
-                            ) : isLoading ? (
-                                <span className="flex items-center gap-1">
-                                    <Spinner />
-                                    Creating Category
-                                </span>
-                            ) : (
-                                'Create Category'
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </FieldContent>
+                                            </FieldSet>
+                                        );
+                                    }}
+                                />
+                            </FieldGroup>
+                        </form>
+                    </ScrollArea>
+                </div>
+            </FormDialogShell>
 
             <Dialog
                 open={showUnsavedDialog}
