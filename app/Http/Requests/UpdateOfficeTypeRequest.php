@@ -21,9 +21,18 @@ class UpdateOfficeTypeRequest extends FormRequest
      */
     public function rules(): array
     {
+        $officeType = $this->route('officeType');
+
         return [
-            'code' => ['required', 'string', 'max:2'],
-            'name' => ['required', 'string', 'max:20'],
+            'code' => [
+                'required',
+                'string',
+                'max:2',
+                // Ignore current ID so validation doesn't fail on the record being edited
+                'unique:office_types,code,' .
+                ($officeType ? $officeType->id : 'NULL'),
+            ],
+            'name' => ['required', 'string', 'max:50'],
         ];
     }
 }

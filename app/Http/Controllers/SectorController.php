@@ -68,6 +68,13 @@ class SectorController extends Controller
      */
     public function destroy(Sector $sector)
     {
+        if ($sector->offices()->exists()) {
+            return back()->withErrors([
+                'message' =>
+                    'Cannot delete this sector because it is currently assigned to one or more offices.',
+            ]);
+        }
+
         $sector->delete();
     }
 }

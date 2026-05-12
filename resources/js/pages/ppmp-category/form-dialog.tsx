@@ -123,6 +123,7 @@ export default function FormDialog({
                     setHasUnsavedChanges(false);
                     setOpen(false);
                 },
+                onError: (error) => console.error(error),
                 onFinish: () => setIsLoading(false),
             });
         } else {
@@ -131,6 +132,7 @@ export default function FormDialog({
                 preserveState: true,
                 onStart: () => setIsLoading(true),
                 onSuccess: () => setOpen(false),
+                onError: (error) => console.error(error),
                 onFinish: () => setIsLoading(false),
             });
         }

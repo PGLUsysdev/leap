@@ -70,6 +70,13 @@ class OfficeTypeController extends Controller
      */
     public function destroy(OfficeType $officeType)
     {
+        if ($officeType->offices()->exists()) {
+            return back()->withErrors([
+                'message' =>
+                    'Cannot delete this sector because it is currently assigned to one or more offices.',
+            ]);
+        }
+
         $officeType->delete();
     }
 }

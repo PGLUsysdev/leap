@@ -22,7 +22,13 @@ class UpdateSectorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:4'],
+            'code' => [
+                'required',
+                'string',
+                'numeric',
+                'digits_between:1,4',
+                'unique:sectors,code,' . $this->route('sector')->id,
+            ],
             'name' => ['required', 'string', 'max:50'],
         ];
     }

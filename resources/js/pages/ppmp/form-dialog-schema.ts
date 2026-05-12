@@ -57,7 +57,6 @@ export const formSchema = z.object({
         .refine((val) => val !== null && val !== 0, {
             message: 'Funding source is required',
         }),
-    isCustomItem: z.boolean(),
 });
 
 export type FormSchemaType = z.infer<typeof formSchema>;

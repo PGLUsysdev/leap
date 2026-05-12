@@ -22,8 +22,13 @@ class StoreLguLevelRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'size:1'],
-            'name' => ['required', 'string', 'max:20'],
+            'code' => [
+                'required',
+                'string',
+                'digits:1',
+                'unique:lgu_levels,code',
+            ],
+            'name' => ['required', 'string', 'max:50'],
         ];
     }
 }

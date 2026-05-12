@@ -11,4 +11,9 @@ class OfficeType extends Model
     use HasFactory;
 
     protected $fillable = ['code', 'name'];
+
+    public function offices()
+    {
+        return $this->hasMany(Office::class);
+    }
 }

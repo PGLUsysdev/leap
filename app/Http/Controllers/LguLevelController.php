@@ -68,6 +68,13 @@ class LguLevelController extends Controller
      */
     public function destroy(LguLevel $lguLevel)
     {
+        if ($lguLevel->offices()->exists()) {
+            return back()->withErrors([
+                'message' =>
+                    'Cannot delete this sector because it is currently assigned to one or more offices.',
+            ]);
+        }
+
         $lguLevel->delete();
     }
 }

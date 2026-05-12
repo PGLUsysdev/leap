@@ -22,7 +22,13 @@ class StoreSectorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:4'],
+            'code' => [
+                'required',
+                'string',
+                'numeric', // Ensures the string only contains numbers
+                'digits_between:1,4', // Ensures length is between 1 and 4 digits
+                'unique:sectors,code',
+            ],
             'name' => ['required', 'string', 'max:50'],
         ];
     }

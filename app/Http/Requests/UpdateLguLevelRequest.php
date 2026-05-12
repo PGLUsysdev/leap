@@ -21,9 +21,17 @@ class UpdateLguLevelRequest extends FormRequest
      */
     public function rules(): array
     {
+        $lguLevel = $this->route('lguLevel') ?? $this->route('lgu_level');
+
         return [
-            'code' => ['required', 'string', 'size:1'],
-            'name' => ['required', 'string', 'max:20'],
+            'code' => [
+                'required',
+                'string',
+                'digits:1',
+                'unique:lgu_levels,code,' .
+                ($lguLevel ? $lguLevel->id : 'NULL'),
+            ],
+            'name' => ['required', 'string', 'max:50'],
         ];
     }
 }

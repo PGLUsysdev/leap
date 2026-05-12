@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import {
     Field,
     FieldError,
@@ -8,25 +7,15 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { InputGroup, InputGroupTextarea } from '@/components/ui/input-group';
-import {
-    Command,
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { ChartOfAccount, PpmpCategory, PriceList } from '@/types/global';
 import { router } from '@inertiajs/react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FormDialogShell } from '@/components/form-dialog-shell';
+import { CommandSelect } from '@/components/command-select';
 
 interface FormDialogProps {
     open: boolean;
@@ -36,38 +25,21 @@ interface FormDialogProps {
     selectedPriceList: PriceList | null;
 }
 
-const formSchema = z
-    .object({
-        expenseAccount: z
-            .number()
-            .refine((val) => val !== undefined && val !== null && val !== 0, {
-                message: 'Expense account is required',
-            }),
-        category: z.number().optional(),
-        customCategory: z.string().optional(),
-        description: z.string().min(1, 'Description is required.'),
-        unitOfMeasurement: z
-            .string()
-            .min(1, 'Unit of measurement is required.'),
-        price: z.string().min(1, 'Price is required.'),
-        isCustomCategory: z.boolean().optional(),
-    })
-    .refine(
-        (data) => {
-            if (data.isCustomCategory) {
-                return (
-                    !!data.customCategory &&
-                    data.customCategory.trim().length > 0
-                );
-            } else {
-                return !!data.category && data.category !== 0;
-            }
-        },
-        {
+const formSchema = z.object({
+    expenseAccount: z
+        .number()
+        .refine((val) => val !== undefined && val !== null && val !== 0, {
+            message: 'Expense account is required',
+        }),
+    category: z
+        .number()
+        .refine((val) => val !== undefined && val !== null && val !== 0, {
             message: 'Category is required',
-            path: ['category'],
-        },
-    );
+        }),
+    description: z.string().min(1, 'Description is required.'),
+    unitOfMeasurement: z.string().min(1, 'Unit of measurement is required.'),
+    price: z.string().min(1, 'Price is required.'),
+});
 
 export default function FormDialog({
     open,
@@ -76,8 +48,6 @@ export default function FormDialog({
     ppmpCategories,
     selectedPriceList,
 }: FormDialogProps) {
-    const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
-    const [openCategoryCommand, setOpenCategoryCommand] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
@@ -85,28 +55,18 @@ export default function FormDialog({
     const form = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            expenseAccount: undefined,
-            category: undefined,
-            customCategory: '',
+            expenseAccount: undefined as number | undefined,
+            category: undefined as number | undefined,
             description: '',
             unitOfMeasurement: '',
             price: '',
-            isCustomCategory: false,
         },
     });
-
-    const isCustomCategory = form.watch('isCustomCategory');
-
-    useEffect(() => {
-        form.setValue('category', undefined);
-        form.setValue('customCategory', '');
-    }, [isCustomCategory, form]);
 
     useEffect(() => {
         if (selectedPriceList) {
             form.reset({
                 expenseAccount: selectedPriceList.chart_of_account?.id,
-                customCategory: undefined,
                 category: selectedPriceList.category?.id,
                 description: selectedPriceList.description,
                 unitOfMeasurement: selectedPriceList.unit_of_measurement,
@@ -114,12 +74,11 @@ export default function FormDialog({
             });
         } else {
             form.reset({
-                expenseAccount: 0,
-                customCategory: undefined,
+                expenseAccount: undefined,
                 category: undefined,
                 description: '',
                 unitOfMeasurement: '',
-                price: undefined,
+                price: '',
             });
         }
     }, [selectedPriceList, form]);
@@ -139,9 +98,6 @@ export default function FormDialog({
                     setError(errorMessage);
                     setIsErrorDialogOpen(true);
                 },
-                // onInvalid: (response) => {
-                //     console.error('Patch Server Error:', response);
-                // },
                 onFinish: () => setIsLoading(false),
             });
         } else {
@@ -158,8 +114,6 @@ export default function FormDialog({
                     setError(errorMessage);
                     setIsErrorDialogOpen(true);
                 },
-                // onInvalid: (response) => {
-                //     console.error('Post Server Error:', response);
                 onFinish: () => setIsLoading(false),
             });
         }
@@ -192,8 +146,7 @@ export default function FormDialog({
 
     function handleReset() {
         form.reset({
-            expenseAccount: 0,
-            customCategory: undefined,
+            expenseAccount: undefined,
             category: undefined,
             description: '',
             unitOfMeasurement: '',
@@ -206,11 +159,9 @@ export default function FormDialog({
             form.reset({
                 expenseAccount: undefined,
                 category: undefined,
-                customCategory: '',
                 description: '',
                 unitOfMeasurement: '',
                 price: '',
-                isCustomCategory: false,
             });
         }
     }, [open, form]);
@@ -223,7 +174,7 @@ export default function FormDialog({
                 title={selectedPriceList ? 'Edit PPMP Item' : 'Add PPMP Item'}
                 description={
                     selectedPriceList
-                        ? 'Editing the item to the PPMP list'
+                        ? 'Editing the item in the PPMP list'
                         : 'Add a new item to the PPMP list'
                 }
                 isLoading={isLoading}
@@ -242,301 +193,138 @@ export default function FormDialog({
                             onSubmit={form.handleSubmit(onSubmit)}
                         >
                             <div className="grid gap-4 md:grid-cols-2">
-                                <div className="md:col-span-2">
-                                    <Controller
-                                        name="expenseAccount"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => {
-                                            const selectedAccount =
-                                                chartOfAccounts.find(
-                                                    (acc) =>
-                                                        acc.id === field.value,
-                                                );
-
-                                            return (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                <Controller
+                                    name="expenseAccount"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            className="md:col-span-2"
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
                                                 >
-                                                    <FieldContent>
-                                                        <FieldLabel
-                                                            htmlFor={field.name}
-                                                            className="gap-1"
-                                                        >
-                                                            Expense Account
-                                                        </FieldLabel>
-                                                        <>
-                                                            <Button
-                                                                id={field.name}
-                                                                type="button"
-                                                                variant="outline"
-                                                                role="combobox"
-                                                                aria-expanded={
-                                                                    openExpenseCommand
+                                                    Expense Account
+                                                </FieldLabel>
+
+                                                <CommandSelect
+                                                    value={field.value ?? null}
+                                                    onChange={(val) =>
+                                                        field.onChange(
+                                                            val ?? undefined,
+                                                        )
+                                                    }
+                                                    options={
+                                                        filteredExpenseAccounts
+                                                    }
+                                                    getOptionValue={(acc) =>
+                                                        acc.id
+                                                    }
+                                                    getOptionSearchText={(
+                                                        acc,
+                                                    ) =>
+                                                        `${acc.account_number} ${acc.account_title}`
+                                                    }
+                                                    placeholder="Select expense account"
+                                                    searchPlaceholder="Search account number or title..."
+                                                    heading="Chart of Accounts"
+                                                    showClear={false}
+                                                    renderTrigger={(acc) => (
+                                                        <span className="truncate">
+                                                            <code className="mr-2 rounded bg-muted p-0.5 text-xs">
+                                                                {
+                                                                    acc.account_number
                                                                 }
-                                                                className={cn(
-                                                                    'w-full justify-between px-3 text-left font-normal',
-                                                                    !field.value &&
-                                                                        'text-muted-foreground',
-                                                                    fieldState.invalid &&
-                                                                        'border-destructive ring-destructive',
-                                                                )}
-                                                                onClick={() =>
-                                                                    setOpenExpenseCommand(
-                                                                        true,
-                                                                    )
+                                                            </code>
+                                                            {acc.account_title}
+                                                        </span>
+                                                    )}
+                                                    renderOption={(acc) => (
+                                                        <div>
+                                                            <code className="mr-2 rounded bg-muted p-1 text-xs">
+                                                                {
+                                                                    acc.account_number
                                                                 }
-                                                            >
-                                                                {selectedAccount ? (
-                                                                    <span className="truncate">
-                                                                        <code className="mr-2 rounded bg-muted p-0.5 text-xs">
-                                                                            {
-                                                                                selectedAccount.account_number
-                                                                            }
-                                                                        </code>
-                                                                        {
-                                                                            selectedAccount.account_title
-                                                                        }
-                                                                    </span>
-                                                                ) : (
-                                                                    'Select expense account'
-                                                                )}
+                                                            </code>
+                                                            {acc.account_title}
+                                                        </div>
+                                                    )}
+                                                />
 
-                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                            </Button>
-
-                                                            <CommandDialog
-                                                                open={
-                                                                    openExpenseCommand
-                                                                }
-                                                                onOpenChange={
-                                                                    setOpenExpenseCommand
-                                                                }
-                                                                className="sm:max-w-[600px]"
-                                                            >
-                                                                <Command>
-                                                                    <CommandInput placeholder="Search account number or title..." />
-
-                                                                    <CommandList>
-                                                                        <CommandEmpty>
-                                                                            No
-                                                                            account
-                                                                            found.
-                                                                        </CommandEmpty>
-
-                                                                        <CommandGroup heading="Chart of Accounts">
-                                                                            {filteredExpenseAccounts.map(
-                                                                                (
-                                                                                    account,
-                                                                                ) => (
-                                                                                    <CommandItem
-                                                                                        key={
-                                                                                            account.id
-                                                                                        }
-                                                                                        value={`${account.account_number} ${account.account_title}`}
-                                                                                        onSelect={() => {
-                                                                                            field.onChange(
-                                                                                                account.id,
-                                                                                            );
-
-                                                                                            setOpenExpenseCommand(
-                                                                                                false,
-                                                                                            );
-                                                                                        }}
-                                                                                    >
-                                                                                        <div className="flex w-full items-center justify-between">
-                                                                                            <div>
-                                                                                                <code className="mr-2 rounded bg-muted p-1 text-xs">
-                                                                                                    {
-                                                                                                        account.account_number
-                                                                                                    }
-                                                                                                </code>
-                                                                                                {
-                                                                                                    account.account_title
-                                                                                                }
-                                                                                            </div>
-
-                                                                                            {field.value ===
-                                                                                                account.id && (
-                                                                                                <Check className="ml-2 h-4 w-4 opacity-100" />
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </CommandItem>
-                                                                                ),
-                                                                            )}
-                                                                        </CommandGroup>
-                                                                    </CommandList>
-                                                                </Command>
-                                                            </CommandDialog>
-                                                        </>
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
-                                                            />
-                                                        )}
-                                                    </FieldContent>
-                                                </Field>
-                                            );
-                                        }}
-                                    />
-                                </div>
-
-                                <Field className="md:col-span-2">
-                                    <FieldContent>
-                                        <FieldLabel htmlFor="category-select">
-                                            Category
-                                        </FieldLabel>
-
-                                        {isCustomCategory ? (
-                                            <Controller
-                                                name="customCategory"
-                                                control={form.control}
-                                                render={({
-                                                    field,
-                                                    fieldState,
-                                                }) => (
-                                                    <>
-                                                        <Input
-                                                            {...field}
-                                                            placeholder="Enter custom category"
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
-                                                        />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
-                                                            />
-                                                        )}
-                                                    </>
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
-                                            />
-                                        ) : (
-                                            <Controller
-                                                name="category"
-                                                control={form.control}
-                                                render={({
-                                                    field,
-                                                    fieldState,
-                                                }) => {
-                                                    const selectedCat =
-                                                        ppmpCategories.find(
-                                                            (c) =>
-                                                                c.id ===
-                                                                field.value,
-                                                        );
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
 
-                                                    return (
-                                                        <>
-                                                            <>
-                                                                <Button
-                                                                    // id={form.control}
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    role="combobox"
-                                                                    aria-expanded={
-                                                                        openCategoryCommand
-                                                                    }
-                                                                    className={cn(
-                                                                        'w-full justify-between px-3 text-left font-normal',
-                                                                        !field.value &&
-                                                                            'text-muted-foreground',
-                                                                        fieldState.invalid &&
-                                                                            'border-destructive ring-destructive',
-                                                                    )}
-                                                                    onClick={() =>
-                                                                        setOpenCategoryCommand(
-                                                                            true,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {selectedCat
-                                                                        ? selectedCat.name
-                                                                        : 'Select category'}
+                                <Controller
+                                    name="category"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            className="md:col-span-2"
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel htmlFor="category-select">
+                                                    Category
+                                                </FieldLabel>
 
-                                                                    <ChevronsUpDown className="ml-2 opacity-50" />
-                                                                </Button>
+                                                <>
+                                                    <CommandSelect
+                                                        value={
+                                                            field.value ?? null
+                                                        }
+                                                        onChange={(val) =>
+                                                            field.onChange(
+                                                                val ??
+                                                                    undefined,
+                                                            )
+                                                        }
+                                                        options={
+                                                            filteredCategories
+                                                        }
+                                                        getOptionValue={(cat) =>
+                                                            cat.id
+                                                        }
+                                                        getOptionSearchText={(
+                                                            cat,
+                                                        ) => cat.name}
+                                                        placeholder="Select category"
+                                                        searchPlaceholder="Search category..."
+                                                        heading="Categories"
+                                                        showClear={false}
+                                                        renderTrigger={(
+                                                            cat,
+                                                        ) => (
+                                                            <span className="truncate">
+                                                                {cat.name}
+                                                            </span>
+                                                        )}
+                                                        renderOption={(cat) =>
+                                                            cat.name
+                                                        }
+                                                    />
 
-                                                                <CommandDialog
-                                                                    open={
-                                                                        openCategoryCommand
-                                                                    }
-                                                                    onOpenChange={
-                                                                        setOpenCategoryCommand
-                                                                    }
-                                                                    className="sm:max-w-[600px]"
-                                                                >
-                                                                    <Command>
-                                                                        <CommandInput placeholder="Search category..." />
-
-                                                                        <CommandList>
-                                                                            <CommandEmpty>
-                                                                                No
-                                                                                category
-                                                                                found.
-                                                                            </CommandEmpty>
-
-                                                                            <CommandGroup heading="Categories">
-                                                                                {filteredCategories.map(
-                                                                                    (
-                                                                                        category,
-                                                                                    ) => (
-                                                                                        <CommandItem
-                                                                                            key={
-                                                                                                category.id
-                                                                                            }
-                                                                                            value={
-                                                                                                category.name
-                                                                                            }
-                                                                                            onSelect={() => {
-                                                                                                field.onChange(
-                                                                                                    category.id,
-                                                                                                );
-                                                                                                setOpenCategoryCommand(
-                                                                                                    false,
-                                                                                                );
-                                                                                            }}
-                                                                                        >
-                                                                                            <div className="flex w-full items-center justify-between">
-                                                                                                {
-                                                                                                    category.name
-                                                                                                }
-
-                                                                                                {field.value ===
-                                                                                                    category.id && (
-                                                                                                    <Check className="ml-2 h-4 w-4 opacity-100" />
-                                                                                                )}
-                                                                                            </div>
-                                                                                        </CommandItem>
-                                                                                    ),
-                                                                                )}
-                                                                            </CommandGroup>
-                                                                        </CommandList>
-                                                                    </Command>
-                                                                </CommandDialog>
-                                                            </>
-
-                                                            {fieldState.invalid && (
-                                                                <FieldError
-                                                                    errors={[
-                                                                        fieldState.error,
-                                                                    ]}
-                                                                />
-                                                            )}
-                                                        </>
-                                                    );
-                                                }}
-                                            />
-                                        )}
-                                    </FieldContent>
-                                </Field>
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </>
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
 
                                 <div className="md:col-span-2">
                                     <Controller
@@ -555,7 +343,6 @@ export default function FormDialog({
                                                     >
                                                         Procurement Item
                                                     </FieldLabel>
-
                                                     <InputGroup>
                                                         <InputGroupTextarea
                                                             {...field}
@@ -568,7 +355,6 @@ export default function FormDialog({
                                                             }
                                                         />
                                                     </InputGroup>
-
                                                     {fieldState.invalid && (
                                                         <FieldError
                                                             errors={[
@@ -599,7 +385,6 @@ export default function FormDialog({
                                                     >
                                                         Unit of Measurement
                                                     </FieldLabel>
-
                                                     <Input
                                                         {...field}
                                                         id={field.name}
@@ -609,7 +394,6 @@ export default function FormDialog({
                                                         placeholder="Enter unit of measurement"
                                                         autoComplete="off"
                                                     />
-
                                                     {fieldState.invalid && (
                                                         <FieldError
                                                             errors={[
@@ -640,7 +424,6 @@ export default function FormDialog({
                                                     >
                                                         Price
                                                     </FieldLabel>
-
                                                     <Input
                                                         {...field}
                                                         id={field.name}
@@ -652,7 +435,6 @@ export default function FormDialog({
                                                         placeholder="0.00"
                                                         autoComplete="off"
                                                     />
-
                                                     {fieldState.invalid && (
                                                         <FieldError
                                                             errors={[

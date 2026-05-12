@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class StorePpmpPriceListRequest extends FormRequest
 {
@@ -24,9 +23,7 @@ class StorePpmpPriceListRequest extends FormRequest
     {
         return [
             'expenseAccount' => 'required|integer|exists:chart_of_accounts,id',
-            'category' => 'required_without:customCategory|nullable|integer',
-            'customCategory' =>
-                'required_without:category|nullable|string|max:255',
+            'category' => 'required|integer|exists:ppmp_categories,id',
             'description' => 'required|string|max:255',
             'unitOfMeasurement' => 'required|string|max:50',
             'price' => 'required|numeric|min:0',

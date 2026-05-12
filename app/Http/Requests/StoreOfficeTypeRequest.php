@@ -22,8 +22,13 @@ class StoreOfficeTypeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:2'],
-            'name' => ['required', 'string', 'max:20'],
+            'code' => [
+                'required',
+                'string',
+                'max:2',
+                'unique:office_types,code',
+            ],
+            'name' => ['required', 'string', 'max:50'],
         ];
     }
 }
