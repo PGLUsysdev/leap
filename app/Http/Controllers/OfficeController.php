@@ -113,14 +113,52 @@ class OfficeController extends Controller
      */
     public function destroy(Office $office)
     {
+        // 1. Get the hierarchy
+        $allOffices = $office->children()->get()->push($office);
+        // Or if you prefer using your helper:
         $descendantIds = $this->getAllDescendantIds($office);
+        $allOffices = \App\Models\Office::whereIn(
+            'id',
+            array_merge([$office->id], $descendantIds),
+        )->get();
 
-        DB::transaction(function () use ($office, $descendantIds) {
-            // Delete all descendants first
-            Office::whereIn('id', $descendantIds)->delete();
-            // Then delete the parent
-            $office->delete();
-        });
+        // 2. Iterate through each office to find the blocker
+        foreach ($allOffices as $o) {
+            $hasUsers = \App\Models\User::where('office_id', $o->id)->exists();
+            $hasPPAs = \App\Models\Ppa::where('office_id', $o->id)->exists();
+
+            if ($hasUsers || $hasPPAs) {
+                $type =
+                    $o->id === $office->id
+                        ? 'the main office'
+                        : "sub-unit '{$o->name}'";
+                $dependency = $hasUsers ? 'users' : 'PPAs';
+
+                return redirect()
+                    ->back()
+                    ->withErrors([
+                        'office_delete' => "Cannot delete: {$type} has active {$dependency} assigned.",
+                    ]);
+            }
+        }
+
+        // 3. Proceed with deletion...
+        try {
+            DB::transaction(function () use ($office) {
+                Office::whereIn(
+                    'id',
+                    $this->getAllDescendantIds($office),
+                )->delete();
+                $office->delete();
+            });
+            return redirect()->back()->with('success', 'Deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'office_delete' => 'An unexpected error occurred.',
+                ]);
+        }
     }
 
     /**

@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import type { Sector, LguLevel, OfficeType } from '@/types/global';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import {
     Select,
@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FormDialogShell } from '@/components/form-dialog-shell';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
 
 interface FormDialogProps {
     open: boolean;
@@ -78,6 +79,11 @@ export default function FormDialog({
     const [error, setError] = useState<string | null>(null);
     const isEditing = !!initialData;
     const isAddingChild = !isEditing && !!parentOffice;
+
+    const { errors } = usePage().props;
+    console.log(usePage());
+    const [errorDialogOpen, setErrorDialogOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -140,6 +146,14 @@ export default function FormDialog({
         }
     }, [initialData, parentOffice, open, form]);
 
+    useEffect(() => {
+        // Check if the specific key exists in the errors object
+        if (errors && (errors as any).office_delete) {
+            setErrorMessage((errors as any).office_delete);
+            setErrorDialogOpen(true);
+        }
+    }, [errors]); // This triggers when errors object changes
+
     function onSubmit(data: FormValues) {
         const paddedCode = data.code.padStart(3, '0');
         const payload = {
@@ -180,7 +194,8 @@ export default function FormDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        // <Dialog open={open} onOpenChange={onOpenChange}>
+        <>
             <FormDialogShell
                 open={open}
                 onOpenChange={onOpenChange}
@@ -808,6 +823,14 @@ export default function FormDialog({
                     </ScrollArea>
                 </div>
             </FormDialogShell>
-        </Dialog>
+
+            <AlertErrorDialog
+                open={errorDialogOpen}
+                onOpenChange={setErrorDialogOpen}
+                error={errorMessage}
+            />
+        </>
+
+        // </Dialog>
     );
 }
