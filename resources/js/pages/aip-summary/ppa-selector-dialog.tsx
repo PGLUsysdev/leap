@@ -19,8 +19,8 @@ import type { Ppa, PaginatedResponse, Filter } from '@/types/global';
 interface PpaSelectorDialogProps {
     isOpen: boolean;
     onClose: () => void;
-    dialogPpaTree: PaginatedResponse<Ppa> | [];
-    dialogCurrent: Ppa[];
+    dialogPpaTree?: PaginatedResponse<Ppa>;
+    dialogCurrent?: Ppa[];
     fiscalYearId: number;
     existingPpaIds: number[];
     filters: Filter;
@@ -35,8 +35,6 @@ export default function PpaSelectorDialog({
     fiscalYearId,
     existingPpaIds = [],
 }: PpaSelectorDialogProps) {
-    console.log(isOpen);
-
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
     );

@@ -24,7 +24,7 @@ export interface OfficeType {
 
 export interface Office {
     id: number;
-    sector_id: number | null;
+    sector_id: number;
     lgu_level_id: number;
     office_type_id: number;
     parent_id: number | null;
@@ -40,6 +40,8 @@ export interface Office {
     lgu_level?: LguLevel;
     office_type?: OfficeType;
     sector?: Sector;
+
+    // verify if being used
     parent?: Office;
     children?: Office[];
 }
@@ -73,7 +75,6 @@ export interface FundingSource {
     code: string;
     title: string;
     description: string | null;
-    allow_typhoon: boolean;
     created_at: string | null;
     updated_at: string | null;
 }
@@ -94,13 +95,15 @@ export interface PpaFundingSource {
     funding_source?: FundingSource;
 }
 
+export type PpaTye = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
+
 export interface Ppa {
     id: number;
     office_id: number;
     parent_id: number | null;
     fiscal_year_id: number;
     name: string;
-    type: 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
+    type: PpaTye;
     code_suffix: string;
     is_active: boolean;
     sort_order: number;
@@ -110,25 +113,19 @@ export interface Ppa {
     aip_entries?: AipEntry[];
     children?: Ppa[];
     office?: Office;
-    // ppa_funding_sources?: PpaFundingSource[];
 
     full_code: string;
-    ancestor: Ppa;
     children_count?: number;
 }
 
 export interface FlattenedPpa extends Ppa {
-    // Overwrite children to be an array of the flattened version
     children?: FlattenedPpa[];
-
-    // The specific funding source for this row
     current_fs: PpaFundingSource | null;
-
-    // Metadata for row spanning and UI logic
     isFirstInGroup: boolean;
     isLastInGroup: boolean;
     groupSize: number;
-    depth: number; // No longer optional since your function always provides it
+    depth: number;
+    aip_entry: AipEntry | null;
 }
 
 // --- not checked
@@ -252,19 +249,21 @@ export interface AipSummary {
 
 export interface User {
     id: number;
+    office_id: number | null;
     name: string;
     email: string;
     email_verified_at: string | null;
-    password?: string;
-    remember_token?: string;
+    password: string;
+    two_factor_secret: string | null;
+    two_factor_recovery_codes: string | null;
+    two_factor_confirmed_at: string | null;
+    status: string;
+    role: string;
+    remember_token: string | null;
     created_at: string | null;
     updated_at: string | null;
-    status: string;
 
     office?: Office;
-
-    office_id: number;
-    role: string;
 }
 
 // not a table in the database
@@ -286,10 +285,10 @@ export interface App {
 }
 
 export type AuthData = {
-    user: User;
     can: {
         manage_users: boolean;
     };
+    user: User;
 };
 export type SharedData = {
     auth: AuthData;
@@ -297,10 +296,10 @@ export type SharedData = {
 };
 
 export interface PaginationLink {
-    url: string | null;
-    label: string;
     active: boolean;
+    label: string;
     page: number | null;
+    url: string | null;
 }
 
 export interface PaginatedResponse<T> {
@@ -320,11 +319,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface Filter {
-    search?: string;
-    id?: string | number;
-    move_search?: string;
-    move_id?: string | number;
-    move_page?: number;
-    page?: number;
-    [key: string]: any;
+    dialog_boundary_id?: string | null;
+    dialog_id?: string | null;
+    dialog_page?: string | null;
 }

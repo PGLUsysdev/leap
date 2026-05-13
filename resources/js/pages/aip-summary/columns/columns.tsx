@@ -65,8 +65,6 @@ const columns = [
         cell: ({ row }) => {
             const ppa = row.original;
 
-            console.log(ppa);
-
             return (
                 <div
                     style={{ paddingLeft: `${ppa.depth * 20}px` }}

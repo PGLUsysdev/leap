@@ -35,8 +35,8 @@ interface AipSummaryTableProps {
     fundingSources: FundingSource[];
     offices: Office[];
     filters: Filter;
-    dialogPpaTree: PaginatedResponse<Ppa> | [];
-    dialogCurrent: Ppa[];
+    dialogPpaTree?: PaginatedResponse<Ppa>;
+    dialogCurrent?: Ppa[];
 }
 
 const existingPpaIds = (aipEntries: Ppa[]) => {
@@ -61,26 +61,6 @@ const existingPpaIds = (aipEntries: Ppa[]) => {
     return ppaIds;
 };
 
-const findPpaInTree = (ppas: Ppa[], targetId: number) => {
-    const ppasList = [...ppas];
-
-    while (ppasList.length > 0) {
-        const item = ppasList.pop();
-
-        if (!item) continue;
-
-        if (item.id === targetId) return item;
-
-        if (item.children && item.children.length > 0) {
-            ppasList.push(...item.children);
-        }
-
-        if (ppasList.length === 0) break;
-    }
-
-    return null;
-};
-
 export default function AipSummaryTable({
     fiscalYear,
     aipEntries,
@@ -90,7 +70,17 @@ export default function AipSummaryTable({
     dialogPpaTree,
     dialogCurrent,
 }: AipSummaryTableProps) {
-    console.log(dialogCurrent);
+    // console.log({
+    //     fiscalYear,
+    //     aipEntries,
+    //     fundingSources,
+    //     offices,
+    //     filters,
+    //     dialogPpaTree,
+    //     dialogCurrent,
+    // });
+
+    // console.log(usePage().props);
 
     const { auth } = usePage<SharedData>().props;
 
@@ -206,24 +196,19 @@ export default function AipSummaryTable({
 
     const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): any[] => {
         return ppas.flatMap((ppa): FlattenedPpa[] => {
-            // 1. Recursively process children
             const expandedChildren = ppa.children
                 ? expandPpaByFundingSource(ppa.children, depth + 1)
                 : [];
 
-            // 2. NEW SCHEMA NAVIGATION:
-            // Find the AIP Entry for this year, then get its funding sources.
-            // We assume 'aip_entries' is pre-filtered by your Laravel controller.
             const activeAip = ppa.aip_entries?.[0] || null;
             const sources = activeAip?.ppa_funding_sources || [];
 
-            // 3. If no funding sources or no AIP entry, return the PPA once with its children
             if (sources.length === 0) {
                 return [
                     {
                         ...ppa,
                         current_fs: null,
-                        aip_entry: activeAip, // Helpful for the frontend to see dates/outputs
+                        aip_entry: activeAip,
                         children: expandedChildren,
                         isFirstInGroup: true,
                         isLastInGroup: true,
@@ -233,7 +218,6 @@ export default function AipSummaryTable({
                 ];
             }
 
-            // 4. Duplicate PPA for each funding source found in the AIP Entry
             return sources.map((fs, index) => {
                 const isLast = index === sources.length - 1;
 
@@ -241,7 +225,6 @@ export default function AipSummaryTable({
                     ...ppa,
                     current_fs: fs,
                     aip_entry: activeAip,
-                    // Only the last row in the duplicate group carries the nested children
                     children: isLast ? expandedChildren : [],
                     isFirstInGroup: index === 0,
                     isLastInGroup: isLast,
@@ -275,7 +258,7 @@ export default function AipSummaryTable({
 
                             <DropdownMenuContent
                                 align="end"
-                                className="w-max min-w-[max-content]"
+                                className="w-max min-w-max"
                             >
                                 <DropdownMenuItem onClick={handlePrintPreview}>
                                     <div className="flex items-center">
@@ -356,7 +339,8 @@ export default function AipSummaryTable({
                             selectedEntry.children.length > 0 && (
                                 <span className="mt-2 block font-semibold text-destructive italic">
                                     Warning: This will also remove all nested
-                                    sub-projects and activities.
+                                    sub-projects and activities including all
+                                    their PPMPS.
                                 </span>
                             )}
                     </>

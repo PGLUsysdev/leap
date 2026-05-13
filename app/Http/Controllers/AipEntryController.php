@@ -7,6 +7,7 @@ use App\Models\FundingSource;
 use App\Models\FiscalYear;
 use App\Models\Ppa;
 use App\Models\Office;
+use App\Models\Ppmp;
 
 use App\Http\Requests\StoreAipEntryRequest;
 use App\Http\Requests\UpdateAipEntryRequest;
@@ -25,6 +26,7 @@ class AipEntryController extends Controller
     {
         $officeId = auth()->user()->office_id;
         $officeIds = $this->getOfficeHierarchyIds($officeId);
+
         $yearId = $fiscalYear->id;
 
         $onlyAipItems = function ($query) use ($yearId) {
@@ -206,15 +208,12 @@ class AipEntryController extends Controller
     public function update(UpdateAipEntryRequest $request, AipEntry $aipEntry)
     {
         $validated = $request->validated();
-
-        // 1. Get the PPA associated with this entry
         $ppa = $aipEntry->ppa;
 
         if (!$ppa) {
             abort(404, 'Associated PPA not found.');
         }
 
-        // 2. Identify removed funding sources (Using CamelCase method with parentheses)
         $currentFundingSourceIds = $aipEntry
             ->ppaFundingSources()
             ->pluck('funding_source_id')
@@ -229,56 +228,63 @@ class AipEntryController extends Controller
             $newFundingSourceIds,
         );
 
-        // 3. PPMP Usage Check
         if (!empty($idsToRemove)) {
-            $isUsedInPpmp = \App\Models\Ppmp::where(
-                'aip_entry_id',
-                $aipEntry->id,
-            )
-                ->whereIn('funding_source_id', $idsToRemove)
-                ->exists();
+            $isUsedInPpmp = Ppmp::whereHas('ppaFundingSource', function (
+                $query,
+            ) use ($aipEntry, $idsToRemove) {
+                $query
+                    ->where('aip_entry_id', $aipEntry->id)
+                    ->whereIn('funding_source_id', $idsToRemove);
+            })->exists();
 
             if ($isUsedInPpmp) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
                     'ppa_funding_sources' =>
-                        'Cannot remove a funding source that is already being used by PPMP items for this project.',
+                        'Cannot remove a funding source that is already being used by PPMP items.',
                 ]);
             }
         }
 
         // 4. Execute Update Transaction
-        \DB::transaction(function () use ($validated, $aipEntry, $ppa) {
-            // Update AIP Entry Metadata
+        \DB::transaction(function () use (
+            $validated,
+            $aipEntry,
+            $ppa,
+            $idsToRemove,
+        ) {
             $aipEntry->update([
                 'expected_output' => $validated['expected_output'],
                 'start_date' => $validated['start_date'],
                 'end_date' => $validated['end_date'],
             ]);
 
-            // Update PPA Office (Since you made it editable)
-            $ppa->update([
-                'office_id' => $validated['office_id'],
-            ]);
+            $ppa->update(['office_id' => $validated['office_id']]);
 
-            // Sync PPA Funding Sources: Delete old, Create new
-            $aipEntry->ppaFundingSources()->delete();
+            // Remove only the ones that aren't in the new list (and passed the usage check)
+            $aipEntry
+                ->ppaFundingSources()
+                ->whereIn('funding_source_id', $idsToRemove)
+                ->delete();
 
+            // Update existing or create new ones
             foreach ($validated['ppa_funding_sources'] as $source) {
-                $aipEntry->ppaFundingSources()->create([
-                    'funding_source_id' => $source['funding_source_id'],
-                    'ps_amount' => $source['ps_amount'],
-                    'mooe_amount' => $source['mooe_amount'],
-                    'fe_amount' => $source['fe_amount'],
-                    'co_amount' => $source['co_amount'],
-                    'ccet_adaptation' => $source['ccet_adaptation'] ?? 0,
-                    'ccet_mitigation' => $source['ccet_mitigation'] ?? 0,
-                    // 'cc_typology_code' => $source['cc_typology_code'] ?? null,
-                ]);
+                $aipEntry->ppaFundingSources()->updateOrCreate(
+                    ['funding_source_id' => $source['funding_source_id']], // Match on this
+                    [
+                        'ps_amount' => $source['ps_amount'],
+                        'mooe_amount' => $source['mooe_amount'],
+                        'fe_amount' => $source['fe_amount'],
+                        'co_amount' => $source['co_amount'],
+                        'ccet_adaptation' => $source['ccet_adaptation'] ?? 0,
+                        'ccet_mitigation' => $source['ccet_mitigation'] ?? 0,
+                    ],
+                );
             }
         });
 
         return back()->with('success', 'AIP Entry updated successfully.');
     }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -287,21 +293,15 @@ class AipEntryController extends Controller
         try {
             DB::beginTransaction();
 
-            // Capture the context of the deletion
             $targetPpaId = $aipEntry->ppa_id;
-
-            // Get fiscal year from the associated PPA
             $ppa = Ppa::find($targetPpaId);
             $fiscalYearId = $ppa ? $ppa->fiscal_year_id : null;
 
-            // 1. Get all child PPA IDs recursively from the library
-            // This ensures if we remove a "Program", all its "Activities" are also removed from this AIP year
             $ppaIdsToRemoveFromAip = array_merge(
                 [$targetPpaId],
                 $this->getDescendantPpaIds($targetPpaId),
             );
 
-            // 2. Identify all AIP Entry IDs for these PPAs within this specific Fiscal Year
             $aipEntryIdsToDelete = AipEntry::whereIn(
                 'ppa_id',
                 $ppaIdsToRemoveFromAip,
@@ -317,24 +317,24 @@ class AipEntryController extends Controller
                 ->toArray();
 
             if (!empty($aipEntryIdsToDelete)) {
-                // 3. Delete dependent PPMP records first to satisfy foreign key constraints
-                \App\Models\Ppmp::whereIn(
-                    'aip_entry_id',
+                // 1. REFACTORED: Delete PPMP records
+                // We find PPMPs that belong to the PpaFundingSources linked to these AipEntries
+                Ppmp::whereHas('ppaFundingSource', function ($query) use (
                     $aipEntryIdsToDelete,
-                )->delete();
+                ) {
+                    $query->whereIn('aip_entry_id', $aipEntryIdsToDelete);
+                })->delete();
 
-                // 2. NEW: Delete Funding Sources records
-                // This is the missing piece causing your SQLSTATE[23000] error
+                // 2. Delete the Funding Source bridge records
                 DB::table('ppa_funding_sources')
                     ->whereIn('aip_entry_id', $aipEntryIdsToDelete)
                     ->delete();
 
-                // 4. Delete the AIP entries themselves
+                // 3. Delete the AIP entries
                 AipEntry::whereIn('id', $aipEntryIdsToDelete)->delete();
             }
 
             DB::commit();
-
             return back()->with(
                 'success',
                 'Successfully removed from AIP summary.',
@@ -342,7 +342,7 @@ class AipEntryController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors([
-                'error' => 'Failed to remove entry: ' . $e->getMessage(),
+                'error' => 'Failed: ' . $e->getMessage(),
             ]);
         }
     }

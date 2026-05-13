@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     Field,
     FieldError,
@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { ChartOfAccount, FundingSource } from '@/types/global';
+import type { ChartOfAccount, FundingSource, AipEntry } from '@/types/global';
 import { router } from '@inertiajs/react';
 import { formSchema, type FormSchemaType } from './form-dialog-schema';
 import { FormDialogShell } from '@/components/form-dialog-shell';
@@ -21,10 +21,12 @@ interface PpmpFormDialogProps {
     chartOfAccounts: ChartOfAccount[];
     priceLists: any[];
     ppmpCategories: any[];
-    selectedEntry: { id: number } | null;
+    selectedEntry: AipEntry | null;
     fundingSources: FundingSource[];
     selectedExpenseClass: string;
     selectedFundingSourceId: number;
+    // NEW: The ID of the bridge record linking the Activity and the Fund
+    ppaFundingSourceId: number | undefined;
 }
 
 export default function PpmpFormDialog({
@@ -37,18 +39,14 @@ export default function PpmpFormDialog({
     fundingSources,
     selectedExpenseClass,
     selectedFundingSourceId,
+    ppaFundingSourceId, // Receives the ID from the parent
 }: PpmpFormDialogProps) {
-    // const [openExpenseCommand, setOpenExpenseCommand] = useState(false);
-    // const [openFundingSourceCommand, setOpenFundingSourceCommand] =
-    //     useState(false);
-    // const [openCategoryCommand, setOpenCategoryCommand] = useState(false);
-    // const [openDescriptionCommand, setOpenDescriptionCommand] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<FormSchemaType>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            aip_entry_id: selectedEntry?.id || null,
+            ppa_funding_source_id: ppaFundingSourceId || null,
             ppmp_price_list_id: null,
             expenseAccount: null,
             category: null,
@@ -56,7 +54,7 @@ export default function PpmpFormDialog({
             description: null,
             unitOfMeasurement: null,
             price: null,
-            fundingSource: null,
+            fundingSource: selectedFundingSourceId || null,
         },
     });
 
@@ -64,15 +62,16 @@ export default function PpmpFormDialog({
     const selectedCategory = form.watch('category');
 
     useEffect(() => {
-        if (open && selectedFundingSourceId && selectedFundingSourceId !== 0) {
-            form.setValue('fundingSource', selectedFundingSourceId);
+        if (open) {
+            form.setValue('ppa_funding_source_id', ppaFundingSourceId || null);
+            form.setValue('fundingSource', selectedFundingSourceId || null);
         }
-    }, [open, selectedFundingSourceId, form]);
+    }, [open, ppaFundingSourceId, selectedFundingSourceId, form]);
 
     useEffect(() => {
         if (!open) {
             form.reset({
-                aip_entry_id: selectedEntry?.id || null,
+                ppa_funding_source_id: null,
                 ppmp_price_list_id: null,
                 expenseAccount: null,
                 category: null,
@@ -80,40 +79,35 @@ export default function PpmpFormDialog({
                 description: null,
                 unitOfMeasurement: null,
                 price: null,
+                fundingSource: null,
             });
         }
-    }, [open, selectedEntry, form]);
+    }, [open, form]);
 
-    // Get the chart of accounts associated with the selected category
     const selectedCategoryData = ppmpCategories.find(
         (cat) => cat.id === selectedCategory,
     );
-
     const categoryExpenseAccountIds =
         selectedCategoryData?.chart_of_accounts?.map((coa: any) => coa.id) ||
         [];
-
-    // Filter expense accounts based on selected category
     const filteredChartOfAccounts = selectedCategory
         ? chartOfAccounts.filter((coa) =>
               categoryExpenseAccountIds.includes(coa.id),
           )
         : chartOfAccounts;
 
-    // Filter categories based on selected expense account
     const filteredPpmpCategories = selectedExpenseAccount
-        ? ppmpCategories.filter((pc) => {
-              return pc.chart_of_accounts?.some(
+        ? ppmpCategories.filter((pc) =>
+              pc.chart_of_accounts?.some(
                   (coa: any) => coa.id === selectedExpenseAccount,
-              );
-          })
+              ),
+          )
         : ppmpCategories;
 
     const allPriceLists = priceLists.map((priceList) => {
         const account = chartOfAccounts.find(
             (acc) => acc.id === priceList.chart_of_account_id,
         );
-
         return {
             ...priceList,
             account_title: account?.account_title,
@@ -125,36 +119,33 @@ export default function PpmpFormDialog({
         const matchesAccount = selectedExpenseAccount
             ? priceList.chart_of_account_id === selectedExpenseAccount
             : true;
-
         const matchesCategory = selectedCategory
             ? priceList.ppmp_category_id === selectedCategory
             : true;
-
         return matchesAccount && matchesCategory;
     });
 
-    function handleReset() {
-        form.reset({
-            aip_entry_id: selectedEntry?.id || null,
-            ppmp_price_list_id: null,
-            expenseAccount: null,
-            category: null,
-            itemNo: null,
-            description: null,
-            unitOfMeasurement: null,
-            price: null,
-            // fundingSource: null,
-        });
-    }
+    const handleReset = () => {
+        form.reset();
+        form.setValue('ppa_funding_source_id', ppaFundingSourceId);
+        form.setValue('fundingSource', selectedFundingSourceId);
+    };
 
     function onSubmit(data: FormSchemaType) {
-        router.post('/ppmp', data, {
+        // We only send the foreign keys required by the 'ppmps' table
+        const payload = {
+            ppa_funding_source_id: data.ppa_funding_source_id,
+            ppmp_price_list_id: data.ppmp_price_list_id,
+        };
+
+        router.post('/ppmp', payload, {
             onStart: () => setIsLoading(true),
             onFinish: () => setIsLoading(false),
-            onSuccess: () => onOpenChange(false),
-            onError: (errors) =>
-                console.error('Error creating PPMP item:', errors),
-            preserveState: false,
+            onSuccess: () => {
+                onOpenChange(false);
+                form.reset();
+            },
+            preserveState: true,
         });
     }
 

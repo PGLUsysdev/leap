@@ -12,6 +12,7 @@ class FundingSource extends Model
 
     protected $fillable = ['fund_type', 'code', 'title', 'description'];
 
+    //belongs
     public function ppaFundingSources()
     {
         return $this->hasMany(PpaFundingSource::class, 'funding_source_id');

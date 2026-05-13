@@ -171,12 +171,16 @@ export default function AipEntryFormDialog({
         );
     };
 
-    const handleGoToPpmp = (fundId: string, choice: 'MOOE' | 'CO') => {
+    const handleGoToPpmp = (
+        ppaFundingSourceId: number,
+        choice: 'MOOE' | 'CO',
+    ) => {
         if (!isEdit || !entry) return;
 
+        // Send the bridge ID (the ID from the ppa_funding_sources table)
         router.get(`/aip/${fiscalYear.id}/summary/${entry.id}/ppmp`, {
             choice: choice,
-            fund: fundId,
+            ppa_funding_source_id: ppaFundingSourceId, // Use the bridge ID
         });
     };
 
@@ -800,7 +804,7 @@ export default function AipEntryFormDialog({
                                                                                     watchedSources[
                                                                                         index
                                                                                     ]
-                                                                                        .funding_source_id,
+                                                                                        .id,
                                                                                     'MOOE',
                                                                                 )
                                                                             }
@@ -817,7 +821,7 @@ export default function AipEntryFormDialog({
                                                                                     watchedSources[
                                                                                         index
                                                                                     ]
-                                                                                        .funding_source_id,
+                                                                                        .id,
                                                                                     'CO',
                                                                                 )
                                                                             }

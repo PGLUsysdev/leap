@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\FundingSource;
+use App\Models\Ppmp;
 
 class PpaFundingSource extends Model
 {
@@ -12,7 +13,6 @@ class PpaFundingSource extends Model
     use HasFactory;
 
     protected $fillable = [
-        // 'ppa_id',
         'aip_entry_id',
         'funding_source_id',
         'ps_amount',
@@ -21,8 +21,19 @@ class PpaFundingSource extends Model
         'co_amount',
         'ccet_adaptation',
         'ccet_mitigation',
-        // 'cc_typology_code',
     ];
+
+    // has
+    public function ppmps()
+    {
+        return $this->hasMany(Ppmp::class, 'ppa_funding_source_id');
+    }
+
+    // belong
+    public function aipEntry()
+    {
+        return $this->belongsTo(AipEntry::class, 'aip_entry_id');
+    }
 
     public function fundingSource()
     {

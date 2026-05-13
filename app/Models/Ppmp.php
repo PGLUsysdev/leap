@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Ppmp extends Model
 {
@@ -11,9 +12,8 @@ class Ppmp extends Model
     use HasFactory;
 
     protected $fillable = [
-        'aip_entry_id',
+        'ppa_funding_source_id',
         'ppmp_price_list_id',
-        'funding_source_id',
         'jan_qty',
         'jan_amount',
         'feb_qty',
@@ -67,67 +67,17 @@ class Ppmp extends Model
         'dec_amount' => 'decimal:2',
     ];
 
-    // protected $appends = [
-    //     'total_amount',
-    //     'item_description',
-    //     'unit',
-    //     'unit_price',
-    //     'expense_account_id',
-    // ];
-
-    public function aipEntry()
+    // belongs
+    public function ppaFundingSource(): BelongsTo
     {
-        return $this->belongsTo(AipEntry::class);
+        return $this->belongsTo(
+            PpaFundingSource::class,
+            'ppa_funding_source_id',
+        );
     }
 
-    public function ppmpPriceList()
+    public function ppmpPriceList(): BelongsTo
     {
-        return $this->belongsTo(PpmpPriceList::class);
+        return $this->belongsTo(PpmpPriceList::class, 'ppmp_price_list_id');
     }
-
-    public function fundingSource()
-    {
-        return $this->belongsTo(FundingSource::class);
-    }
-
-    // // Accessor for item description from price list
-    // public function getItemDescriptionAttribute()
-    // {
-    //     return $this->ppmpPriceList?->description ?? 'Custom Item';
-    // }
-
-    // // Accessor for unit from price list
-    // public function getUnitAttribute()
-    // {
-    //     return $this->ppmpPriceList?->unit_of_measurement ?? 'unit';
-    // }
-
-    // // Accessor for unit price from price list
-    // public function getUnitPriceAttribute()
-    // {
-    //     return $this->ppmpPriceList?->price ?? 0;
-    // }
-
-    // // Accessor for total amount - sum of all monthly amounts
-    // public function getTotalAmountAttribute()
-    // {
-    //     return (float) $this->jan_amount +
-    //            (float) $this->feb_amount +
-    //            (float) $this->mar_amount +
-    //            (float) $this->apr_amount +
-    //            (float) $this->may_amount +
-    //            (float) $this->jun_amount +
-    //            (float) $this->jul_amount +
-    //            (float) $this->aug_amount +
-    //            (float) $this->sep_amount +
-    //            (float) $this->oct_amount +
-    //            (float) $this->nov_amount +
-    //            (float) $this->dec_amount;
-    // }
-
-    // // Accessor for chart of account from price list
-    // public function getExpenseAccountIdAttribute()
-    // {
-    //     return $this->ppmpPriceList?->chart_of_account_id;
-    // }
 }

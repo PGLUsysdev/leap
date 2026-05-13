@@ -22,9 +22,8 @@ class StorePpmpRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'aip_entry_id' => 'required|exists:aip_entries,id',
+            'ppa_funding_source_id' => 'required|exists:ppa_funding_sources,id',
             'ppmp_price_list_id' => 'required|exists:ppmp_price_lists,id',
-            'fundingSource' => 'required|integer|exists:funding_sources,id',
         ];
     }
 }
