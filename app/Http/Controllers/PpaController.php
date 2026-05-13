@@ -401,6 +401,28 @@ class PpaController extends Controller
      */
     public function destroy(Ppa $ppa)
     {
+        // 1. Load the PPA with all its recursive children to check for dependencies
+        $ppa->load('allDescendants');
+
+        // 2. Get a flat array of all IDs in this branch (Parent + all children)
+        $allIds = $this->getAllDescendantIds($ppa);
+
+        // 3. Check for AIP Entry dependencies across the entire branch
+        $hasDependencies = \App\Models\AipEntry::whereIn(
+            'ppa_id',
+            $allIds,
+        )->exists();
+
+        if ($hasDependencies) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'error' =>
+                        'Cannot delete: This PPA or its sub-items are linked to existing AIP entries.',
+                ]);
+        }
+
+        // 4. Proceed with deletion
         $parentId = $ppa->parent_id;
         $officeId = $ppa->office_id;
         $type = $ppa->type;
@@ -413,9 +435,10 @@ class PpaController extends Controller
             $type,
             $fiscalYearId,
         ) {
+            // Since you have ON DELETE CASCADE, this deletes the PPA AND all its children
             $ppa->delete();
 
-            // Close the gap only for this office and this year
+            // Re-index the remaining siblings
             $this->syncSiblingIndexes(
                 $parentId,
                 $officeId,
@@ -424,7 +447,17 @@ class PpaController extends Controller
             );
         });
 
-        // return back();
+        return redirect()
+            ->back()
+            ->with('success', 'PPA and all sub-items deleted successfully.');
+    }
+    private function getAllDescendantIds($ppa, &$ids = [])
+    {
+        $ids[] = $ppa->id;
+        foreach ($ppa->children as $child) {
+            $this->getAllDescendantIds($child, $ids);
+        }
+        return $ids;
     }
 
     private function getDescendantPpaIds($parentId)

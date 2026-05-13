@@ -304,13 +304,19 @@ export default function PpaPage({
                 onOpenChange={(open) => !open && setDeletePpa(null)}
                 title="Delete PPA?"
                 description={
-                    <>
-                        Are you sure you want to remove{' '}
-                        <span className="font-bold text-foreground">
-                            "{deletePpa?.name}"
+                    <span className="grid gap-2">
+                        {/* Fixed: span is valid inside <p> */}
+                        <span>
+                            Are you sure you want to remove{' '}
+                            <span className="font-bold text-foreground">
+                                "{deletePpa?.name}"
+                            </span>
+                            ?
                         </span>
-                        ?
-                    </>
+                        <span className="text-destructive">
+                            This will also delete all Sub-PPAs.
+                        </span>
+                    </span>
                 }
                 onConfirm={handleDelete}
                 onCancel={() => setDeletePpa(null)}

@@ -40,15 +40,19 @@ class AipEntryController extends Controller
             ->has('aipEntries')
             ->orderBy('sort_order')
             ->with([
-                'aipEntries.ppaFundingSources.fundingSource',
                 'office',
+                'aipEntries.ppaFundingSources.fundingSource',
+
                 'children' => $onlyAipItems,
+                'children.office',
                 'children.aipEntries.ppaFundingSources.fundingSource',
 
                 'children.children' => $onlyAipItems,
+                'children.children.office',
                 'children.children.aipEntries.ppaFundingSources.fundingSource',
 
                 'children.children.children' => $onlyAipItems,
+                'children.children.children.office',
                 'children.children.children.aipEntries.ppaFundingSources.fundingSource',
             ])
             ->get();

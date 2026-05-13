@@ -47,6 +47,7 @@ export default function OfficesPage({
 
     function handleCreate() {
         setSelectedOffice(null);
+        setSelectedParentOffice(null);
         setIsDialogOpen(true);
     }
 
@@ -58,7 +59,10 @@ export default function OfficesPage({
 
     function handleDialogOpenChange(isOpen: boolean) {
         setIsDialogOpen(isOpen);
-        if (!isOpen) setSelectedOffice(null);
+        if (!isOpen) {
+            setSelectedOffice(null);
+            setSelectedParentOffice(null);
+        }
     }
 
     function handleEdit(value: Office) {

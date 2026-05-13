@@ -113,52 +113,53 @@ class OfficeController extends Controller
      */
     public function destroy(Office $office)
     {
-        // 1. Get the hierarchy
-        $allOffices = $office->children()->get()->push($office);
-        // Or if you prefer using your helper:
-        $descendantIds = $this->getAllDescendantIds($office);
-        $allOffices = \App\Models\Office::whereIn(
-            'id',
-            array_merge([$office->id], $descendantIds),
-        )->get();
+        $officeName = $office->name;
+        $blockers = [];
 
-        // 2. Iterate through each office to find the blocker
-        foreach ($allOffices as $o) {
-            $hasUsers = \App\Models\User::where('office_id', $o->id)->exists();
-            $hasPPAs = \App\Models\Ppa::where('office_id', $o->id)->exists();
-
-            if ($hasUsers || $hasPPAs) {
-                $type =
-                    $o->id === $office->id
-                        ? 'the main office'
-                        : "sub-unit '{$o->name}'";
-                $dependency = $hasUsers ? 'users' : 'PPAs';
-
-                return redirect()
-                    ->back()
-                    ->withErrors([
-                        'office_delete' => "Cannot delete: {$type} has active {$dependency} assigned.",
-                    ]);
-            }
+        // 1. Check direct dependencies (Users/PPAs on the parent office itself)
+        if ($office->users()->exists()) {
+            $blockers[] = 'active users';
+        }
+        if ($office->ppas()->exists()) {
+            $blockers[] = 'assigned PPAs';
         }
 
-        // 3. Proceed with deletion...
-        try {
-            DB::transaction(function () use ($office) {
-                Office::whereIn(
-                    'id',
-                    $this->getAllDescendantIds($office),
-                )->delete();
-                $office->delete();
-            });
-            return redirect()->back()->with('success', 'Deleted successfully.');
-        } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->withErrors([
-                    'office_delete' => 'An unexpected error occurred.',
-                ]);
+        // 2. Check ONLY for sub-units that are "dirty" (have users or PPAs)
+        // We ignore sub-units that are empty.
+        $hasDirtySubUnits = $office
+            ->children()
+            ->where(function ($query) {
+                $query->whereHas('users')->orWhereHas('ppas');
+            })
+            ->exists();
+
+        if ($hasDirtySubUnits) {
+            $blockers[] = 'sub-units with active data';
         }
+
+        // 3. Construct the message
+        if (!empty($blockers)) {
+            $reason =
+                count($blockers) > 1
+                    ? implode(', ', array_slice($blockers, 0, -1)) .
+                        ' and ' .
+                        end($blockers)
+                    : $blockers[0];
+
+            $message = "Cannot delete '{$officeName}' because it has {$reason} depending on it.";
+
+            return back()->withErrors(['office_delete' => $message]);
+        }
+
+        // 4. Success: Delete the office and its empty sub-units
+        // Note: You must delete the children first to avoid foreign key constraint errors
+        $office->children()->delete();
+        $office->delete();
+
+        return back()->with(
+            'success',
+            'Office and its empty sub-units deleted.',
+        );
     }
 
     /**

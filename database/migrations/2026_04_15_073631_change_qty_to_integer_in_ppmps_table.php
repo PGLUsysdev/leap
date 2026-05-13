@@ -43,29 +43,27 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('ppmps', function (Blueprint $table) {
-            Schema::table('ppmps', function (Blueprint $table) {
-                $months = [
-                    'jan',
-                    'feb',
-                    'mar',
-                    'apr',
-                    'may',
-                    'jun',
-                    'jul',
-                    'aug',
-                    'sep',
-                    'oct',
-                    'nov',
-                    'dec',
-                ];
+            $months = [
+                'jan',
+                'feb',
+                'mar',
+                'apr',
+                'may',
+                'jun',
+                'jul',
+                'aug',
+                'sep',
+                'oct',
+                'nov',
+                'dec',
+            ];
 
-                foreach ($months as $month) {
-                    $table
-                        ->decimal("{$month}_qty", 19, 2)
-                        ->default(0)
-                        ->change();
-                }
-            });
+            foreach ($months as $month) {
+                $table
+                    ->decimal("{$month}_qty", 19, 2)
+                    ->default(0)
+                    ->change();
+            }
         });
     }
 };

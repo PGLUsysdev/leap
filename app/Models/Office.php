@@ -38,6 +38,26 @@ class Office extends Model
         );
     }
 
+    public function children()
+    {
+        return $this->hasMany(Office::class, 'parent_id');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Office::class, 'parent_id');
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class, 'office_id');
+    }
+
+    public function ppas()
+    {
+        return $this->hasMany(Ppa::class, 'office_id');
+    }
+
     public function sector()
     {
         return $this->belongsTo(Sector::class, 'sector_id');
@@ -53,17 +73,8 @@ class Office extends Model
         return $this->belongsTo(OfficeType::class, 'office_type_id');
     }
 
-    public function parent()
-    {
-        return $this->belongsTo(Office::class, 'parent_id');
-    }
+    //
 
-    public function children()
-    {
-        return $this->hasMany(Office::class, 'parent_id');
-    }
-
-    // Add this for infinite nesting
     public function childrenRecursive()
     {
         return $this->children()->with([
@@ -72,10 +83,5 @@ class Office extends Model
             'lguLevel',
             'officeType',
         ]);
-    }
-
-    public function users()
-    {
-        return $this->hasMany(User::class);
     }
 }
