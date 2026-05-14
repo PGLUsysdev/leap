@@ -39,6 +39,10 @@ interface AipSummaryTableProps {
     dialogCurrent?: Ppa[];
 }
 
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Annual Investment Programs', href: '/aip' },
+];
+
 const existingPpaIds = (aipEntries: Ppa[]) => {
     const ppaIds: Set<number> = new Set();
 
@@ -70,37 +74,105 @@ export default function AipSummaryTable({
     dialogPpaTree,
     dialogCurrent,
 }: AipSummaryTableProps) {
-    // console.log({
-    //     fiscalYear,
-    //     aipEntries,
-    //     fundingSources,
-    //     offices,
-    //     filters,
-    //     dialogPpaTree,
-    //     dialogCurrent,
-    // });
+    console.log({
+        fiscalYear,
+        aipEntries,
+        fundingSources,
+        offices,
+        filters,
+        dialogPpaTree,
+        dialogCurrent,
+    });
 
     // console.log(usePage().props);
 
     const { auth } = usePage<SharedData>().props;
 
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState<Ppa | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+
+    const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isExportOpen, setIsExportOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [selectorState, setSelectorState] = useState({
-        isOpen: false,
-        data: [] as Ppa[],
-        title: '',
-        description: '',
-    });
-    const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
 
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Annual Investment Programs', href: '/aip' },
+    const updatedBreadcrumbs = [
+        ...breadcrumbs,
         { title: `AIP Summary FY ${fiscalYear.year}`, href: '#' },
     ];
+
+    const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): any[] => {
+        return ppas.flatMap((ppa): FlattenedPpa[] => {
+            const expandedChildren = ppa.children
+                ? expandPpaByFundingSource(ppa.children, depth + 1)
+                : [];
+
+            const activeAip = ppa.aip_entries?.[0] || null;
+            const sources = activeAip?.ppa_funding_sources || [];
+
+            if (sources.length === 0) {
+                return [
+                    {
+                        ...ppa,
+                        current_fs: null,
+                        aip_entry: activeAip,
+                        children: expandedChildren,
+                        isFirstInGroup: true,
+                        isLastInGroup: true,
+                        groupSize: 1,
+                        depth,
+                    },
+                ];
+            }
+
+            return sources.map((fs, index) => {
+                return {
+                    ...ppa,
+                    current_fs: fs,
+                    aip_entry: activeAip,
+                    children: expandedChildren,
+                    isFirstInGroup: index === 0,
+                    isLastInGroup: index === sources.length - 1,
+                    groupSize: sources.length,
+                    depth,
+                };
+            });
+        });
+    };
+
+    const customGetSubRows = useCallback((row: any) => {
+        return row.isLastInGroup ? row.children : [];
+    }, []);
+
+    // Custom Filter logic specific to the PPA Flat-Tree
+    const customGlobalFilterFn = useCallback(
+        (row: any, columnId: string, filterValue: any) => {
+            const searchStr = String(filterValue).toLowerCase();
+
+            // Standard check
+            const cellValue = row.getValue(columnId);
+            if (
+                cellValue != null &&
+                String(cellValue).toLowerCase().includes(searchStr)
+            ) {
+                return true;
+            }
+
+            // Deep child check for PPA preservation
+            const original = row.original as any;
+            if (original.children && original.children.length > 0) {
+                const childrenText = JSON.stringify(
+                    original.children,
+                ).toLowerCase();
+                if (childrenText.includes(searchStr)) {
+                    return true;
+                }
+            }
+            return false;
+        },
+        [],
+    );
 
     const handleImportLibrary = () => {
         router.get(
@@ -116,12 +188,7 @@ export default function AipSummaryTable({
                 preserveScroll: true,
                 only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
-                    setSelectorState({
-                        isOpen: true,
-                        title: 'Import from Library',
-                        description:
-                            'Navigate the full library to import entries.',
-                    });
+                    setIsSelectorOpen(true);
                 },
             },
         );
@@ -142,11 +209,7 @@ export default function AipSummaryTable({
                     preserveScroll: true,
                     only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                     onSuccess: () => {
-                        setSelectorState({
-                            isOpen: true,
-                            title: `Add Sub-entries to: ${entry.name}`,
-                            description: `Select items from the library to add under this ${entry.type}.`,
-                        });
+                        setIsSelectorOpen(true);
                     },
                 },
             );
@@ -194,49 +257,8 @@ export default function AipSummaryTable({
         });
     }
 
-    const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): any[] => {
-        return ppas.flatMap((ppa): FlattenedPpa[] => {
-            const expandedChildren = ppa.children
-                ? expandPpaByFundingSource(ppa.children, depth + 1)
-                : [];
-
-            const activeAip = ppa.aip_entries?.[0] || null;
-            const sources = activeAip?.ppa_funding_sources || [];
-
-            if (sources.length === 0) {
-                return [
-                    {
-                        ...ppa,
-                        current_fs: null,
-                        aip_entry: activeAip,
-                        children: expandedChildren,
-                        isFirstInGroup: true,
-                        isLastInGroup: true,
-                        groupSize: 1,
-                        depth,
-                    },
-                ];
-            }
-
-            return sources.map((fs, index) => {
-                const isLast = index === sources.length - 1;
-
-                return {
-                    ...ppa,
-                    current_fs: fs,
-                    aip_entry: activeAip,
-                    children: isLast ? expandedChildren : [],
-                    isFirstInGroup: index === 0,
-                    isLastInGroup: isLast,
-                    groupSize: sources.length,
-                    depth,
-                };
-            });
-        });
-    };
-
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={updatedBreadcrumbs}>
             <div className="flex flex-col gap-4 p-4">
                 <DataTable
                     columns={columns}
@@ -247,6 +269,8 @@ export default function AipSummaryTable({
                     onEdit={handleEditDialogOpen}
                     onDelete={handleDeleteDialogOpen}
                     withFooter={true}
+                    getSubRows={customGetSubRows}
+                    globalFilterFn={customGlobalFilterFn}
                 >
                     <div className="flex gap-2">
                         <DropdownMenu>
@@ -303,10 +327,8 @@ export default function AipSummaryTable({
             </div>
 
             <PpaSelectorDialog
-                isOpen={selectorState.isOpen}
-                onClose={() =>
-                    setSelectorState((prev) => ({ ...prev, isOpen: false }))
-                }
+                isOpen={isSelectorOpen}
+                onClose={() => setIsSelectorOpen(false)}
                 dialogPpaTree={dialogPpaTree}
                 dialogCurrent={dialogCurrent}
                 filters={filters}

@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Decimal } from 'decimal.js';
-import type { Ppa, FlattenedPpa } from '@/types/global';
+import type { FlattenedPpa } from '@/types/global';
 
 export const formatNumber = (val: string | null) => {
     if (!val) return '-';
@@ -81,7 +81,7 @@ const columns = [
                             {ppa.type}
                         </span>
                         <span
-                            className={`leading-tight break-words whitespace-normal ${
+                            className={`wrap-break-words leading-tight whitespace-normal ${
                                 ppa.depth === 0 ? 'font-bold' : 'font-medium'
                             }`}
                         >

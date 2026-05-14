@@ -68,6 +68,8 @@ interface DataTableProps<TData extends { id: unknown }> {
     pageKey?: string;
     isDialog?: boolean;
     selectedItemToMove?: TData;
+    getSubRows?: (row: TData) => TData[] | undefined | null;
+    globalFilterFn?: any;
 }
 
 export function DataTable<TData extends { id: unknown }>({
@@ -78,6 +80,8 @@ export function DataTable<TData extends { id: unknown }>({
     filters,
     isDialog,
     selectedItemToMove,
+    getSubRows, // <--- add this
+    globalFilterFn,
     onAdd,
     onEdit,
     onDelete,
@@ -186,9 +190,42 @@ export function DataTable<TData extends { id: unknown }>({
             ...meta,
         } as any,
 
-        getSubRows: (row: any) => row.children,
+        // getSubRows: (row: any) => row.children,
+        // getSubRows: (row: any) => (row.isLastInGroup ? row.children : []),
+        getSubRows: getSubRows || ((row: any) => row.children),
+
         getExpandedRowModel: getExpandedRowModel(),
         filterFromLeafRows: true,
+        // globalFilterFn: (row, columnId, filterValue) => {
+        //     const searchStr = String(filterValue).toLowerCase();
+
+        //     // 1. Standard Check: Does this specific cell match?
+        //     const cellValue = row.getValue(columnId);
+        //     if (
+        //         cellValue != null &&
+        //         String(cellValue).toLowerCase().includes(searchStr)
+        //     ) {
+        //         return true;
+        //     }
+
+        //     // 2. Descendant Check: Does ANY child deeply nested below this row match?
+        //     // Because EVERY funding source row has the exact same children array,
+        //     // if we find the search term in the children, ALL funding source rows will survive!
+        //     const original = row.original as any;
+        //     if (original.children && original.children.length > 0) {
+        //         // Stringifying the children array instantly checks the whole nested tree below this row
+        //         const childrenText = JSON.stringify(
+        //             original.children,
+        //         ).toLowerCase();
+        //         if (childrenText.includes(searchStr)) {
+        //             return true;
+        //         }
+        //     }
+
+        //     return false;
+        // },
+        globalFilterFn: globalFilterFn,
+
         state: {
             expanded: true,
 
@@ -270,6 +307,41 @@ export function DataTable<TData extends { id: unknown }>({
             },
         );
     };
+
+    // const { rows } = table.getRowModel();
+
+    const spanningMap = useMemo(() => {
+        const firstIndexes: Record<string, number> = {};
+        const counts: Record<string, number> = {};
+
+        rows.forEach((row, index) => {
+            const id = (row.original as any).id;
+            if (firstIndexes[id] === undefined) {
+                firstIndexes[id] = index;
+            }
+            counts[id] = (counts[id] || 0) + 1;
+        });
+
+        return { firstIndexes, counts };
+    }, [rows]);
+
+    const visibleSpans = useMemo(() => {
+        const firstVisibleIdx: Record<string, number> = {};
+        const visibleCounts: Record<string, number> = {};
+
+        rows.forEach((row, index) => {
+            const id = (row.original as any).id;
+
+            // Track the first time this PPA ID appears in the current visible list
+            if (firstVisibleIdx[id] === undefined) {
+                firstVisibleIdx[id] = index;
+            }
+            // Count how many funding source rows for this PPA are currently visible
+            visibleCounts[id] = (visibleCounts[id] || 0) + 1;
+        });
+
+        return { firstVisibleIdx, visibleCounts };
+    }, [rows]);
 
     return (
         <>
@@ -386,26 +458,43 @@ export function DataTable<TData extends { id: unknown }>({
                                                     const isSpannedCol =
                                                         withRowSpan &&
                                                         columnMeta?.rowSpan;
-                                                    const hasSpanningData =
-                                                        typeof rowData.isFirstInGroup !==
-                                                        'undefined';
-                                                    const activeSpan =
-                                                        isSpannedCol &&
-                                                        hasSpanningData;
 
-                                                    if (
-                                                        activeSpan &&
-                                                        !rowData.isFirstInGroup
-                                                    ) {
-                                                        return null;
+                                                    // const hasSpanningData =
+                                                    //     typeof rowData.isFirstInGroup !==
+                                                    //     'undefined';
+                                                    // const activeSpan =
+                                                    //     isSpannedCol &&
+                                                    //     hasSpanningData;
+
+                                                    const rowData =
+                                                        row.original as any;
+                                                    const ppaId = rowData.id;
+
+                                                    // Use our map to figure out if THIS specific row is the first visible one for this PPA
+                                                    const isFirstVisible =
+                                                        visibleSpans
+                                                            .firstVisibleIdx[
+                                                            ppaId
+                                                        ] === virtualRow.index;
+                                                    const spanSize =
+                                                        visibleSpans
+                                                            .visibleCounts[
+                                                            ppaId
+                                                        ];
+
+                                                    if (isSpannedCol) {
+                                                        // If it's a spanned column (like AIP Code) but not the first visible row, don't draw it
+                                                        if (!isFirstVisible) {
+                                                            return null;
+                                                        }
                                                     }
 
                                                     return (
                                                         <TableCell
                                                             key={cell.id}
                                                             rowSpan={
-                                                                activeSpan
-                                                                    ? rowData.groupSize
+                                                                isSpannedCol
+                                                                    ? spanSize
                                                                     : 1
                                                             }
                                                             style={{

@@ -88,6 +88,7 @@ class AipEntryController extends Controller
 
                             if (str_contains($search, '-')) {
                                 $lastSegment = last(explode('-', $search));
+
                                 $inner->orWhere(
                                     'code_suffix',
                                     'like',
@@ -106,6 +107,7 @@ class AipEntryController extends Controller
                 $id =
                     $request->query('dialog_id') ?:
                     $request->query('dialog_boundary_id');
+
                 return $id ? $this->getPpaBreadcrumbs($id) : [];
             }),
         ]);
@@ -122,6 +124,7 @@ class AipEntryController extends Controller
                 'name' => $current->name,
                 'type' => $current->type,
             ];
+
             $current = $current->parent;
         }
 

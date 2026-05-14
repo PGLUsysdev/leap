@@ -3,13 +3,8 @@ import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, parseISO } from 'date-fns';
-import {
-    CalendarIcon,
-    Plus,
-    Trash2,
-    ListPlus,
-    ChevronsUpDown,
-} from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, ListPlus } from 'lucide-react';
+import { router } from '@inertiajs/react';
 import { Form } from '@/components/ui/form';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Calendar } from '@/components/ui/calendar';
@@ -21,13 +16,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import {
     Table,
     TableBody,
     TableCell,
@@ -35,7 +23,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -46,19 +33,21 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    Command,
-    CommandDialog,
-    CommandGroup,
-    CommandInput,
-    CommandList,
-} from '@/components/ui/command';
-import {
     Field,
     FieldContent,
     FieldError,
     FieldLabel,
 } from '@/components/ui/field';
-import { cn } from '@/lib/utils';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { FormDialogShell } from '@/components/form-dialog-shell';
+import { CommandSelect } from '@/components/command-select';
 import type {
     FiscalYear,
     Ppa,
@@ -66,12 +55,21 @@ import type {
     Office,
     AuthData,
 } from '@/types/global';
-import { FormDialogShell } from '@/components/form-dialog-shell';
+
+interface AipEntryFormDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    data: Ppa | null;
+    fiscalYear: FiscalYear;
+    fundingSources: FundingSource[];
+    offices: Office[];
+    auth: AuthData;
+}
 
 const amountSchema = z.string();
 
 const formSchema = z.object({
-    office_id: z.string().min(1, 'Office is required'), // Added this
+    office_id: z.string().min(1, 'Office is required'),
     expected_output: z.string().min(1, 'Required'),
     start_date: z.string().min(1, 'Required'),
     end_date: z.string().min(1, 'Required'),
@@ -92,15 +90,14 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface Props {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    data: Ppa | null;
-    fiscalYear: FiscalYear;
-    fundingSources: FundingSource[];
-    offices: Office[];
-    auth: AuthData;
-}
+const calculateRowTotal = (row: any) => {
+    return (
+        parseFloat(row.ps_amount || '0') +
+        parseFloat(row.mooe_amount || '0') +
+        parseFloat(row.fe_amount || '0') +
+        parseFloat(row.co_amount || '0')
+    );
+};
 
 export default function AipEntryFormDialog({
     open,
@@ -110,25 +107,25 @@ export default function AipEntryFormDialog({
     fundingSources,
     offices,
     auth,
-}: Props) {
+}: AipEntryFormDialogProps) {
     const userOfficeId = auth?.user?.office_id;
+    const [isLoading, setIsLoading] = useState(false);
+    const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
-    // Filter offices to show only user's office and its children
+    const entry = data?.aip_entries?.[0];
+    const isEdit = !!entry;
+
     const filteredOffices = useMemo(() => {
         if (!userOfficeId) return offices;
 
         const userOffice = offices.find((o) => o.id === userOfficeId);
         if (!userOffice) return offices;
 
-        // Get user's office and all its children
         const userOfficeChildren = offices.filter(
             (o) => o.parent_id === userOfficeId,
         );
         return [userOffice, ...userOfficeChildren];
     }, [offices, userOfficeId]);
-
-    const [openOfficeComamnd, setOpenOfficeComamnd] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -140,6 +137,8 @@ export default function AipEntryFormDialog({
             ppa_funding_sources: [],
         },
     });
+
+    const { isDirty } = form.formState;
 
     const { fields, append, remove } = useFieldArray({
         control: form.control,
@@ -157,18 +156,21 @@ export default function AipEntryFormDialog({
             .filter((id) => id !== '' && id !== undefined);
     }, [watchedSources]);
 
-    // Check if any added row is missing a funding source ID
-    const isFundingIncomplete = watchedSources?.some(
-        (fs) => !fs.funding_source_id || fs.funding_source_id === '',
-    );
+    const handleOpenChange = (newOpen: boolean) => {
+        if (!newOpen && isDirty) {
+            setShowCloseConfirm(true);
+            return;
+        }
+        onOpenChange(newOpen);
+    };
 
-    const calculateRowTotal = (row: any) => {
-        return (
-            parseFloat(row.ps_amount || '0') +
-            parseFloat(row.mooe_amount || '0') +
-            parseFloat(row.fe_amount || '0') +
-            parseFloat(row.co_amount || '0')
-        );
+    const handleConfirmClose = () => {
+        setShowCloseConfirm(false);
+        onOpenChange(false);
+    };
+
+    const handleCancelClose = () => {
+        setShowCloseConfirm(false);
     };
 
     const handleGoToPpmp = (
@@ -177,40 +179,11 @@ export default function AipEntryFormDialog({
     ) => {
         if (!isEdit || !entry) return;
 
-        // Send the bridge ID (the ID from the ppa_funding_sources table)
         router.get(`/aip/${fiscalYear.id}/summary/${entry.id}/ppmp`, {
             choice: choice,
             ppa_funding_source_id: ppaFundingSourceId, // Use the bridge ID
         });
     };
-
-    useEffect(() => {
-        if (open && data) {
-            const entry = data.aip_entries?.[0];
-
-            form.reset({
-                office_id: data.office_id?.toString() || '',
-                expected_output: entry?.expected_output || '',
-                start_date: entry?.start_date || '',
-                end_date: entry?.end_date || '',
-                ppa_funding_sources:
-                    entry?.ppa_funding_sources?.map((fs) => ({
-                        id: fs.id,
-                        funding_source_id: fs.funding_source_id.toString(),
-                        ps_amount: fs.ps_amount,
-                        mooe_amount: fs.mooe_amount,
-                        fe_amount: fs.fe_amount,
-                        co_amount: fs.co_amount,
-                        ccet_adaptation: fs.ccet_adaptation,
-                        ccet_mitigation: fs.ccet_mitigation,
-                        // cc_typology_code: fs.cc_typology_code || null,
-                    })) || [],
-            });
-        }
-    }, [data, open, form]);
-
-    const entry = data?.aip_entries?.[0];
-    const isEdit = !!entry;
 
     function onSubmit(values: FormValues) {
         const payload = {
@@ -240,629 +213,686 @@ export default function AipEntryFormDialog({
         }
     }
 
+    useEffect(() => {
+        if (open && data) {
+            const entry = data.aip_entries?.[0];
+
+            form.reset({
+                office_id: data.office_id?.toString() || '',
+                expected_output: entry?.expected_output || '',
+                start_date: entry?.start_date || '',
+                end_date: entry?.end_date || '',
+                ppa_funding_sources:
+                    entry?.ppa_funding_sources?.map((fs) => ({
+                        id: fs.id,
+                        funding_source_id: fs.funding_source_id.toString(),
+                        ps_amount: fs.ps_amount,
+                        mooe_amount: fs.mooe_amount,
+                        fe_amount: fs.fe_amount,
+                        co_amount: fs.co_amount,
+                        ccet_adaptation: fs.ccet_adaptation,
+                        ccet_mitigation: fs.ccet_mitigation,
+                        // cc_typology_code: fs.cc_typology_code || null,
+                    })) || [],
+            });
+        }
+    }, [data, open, form]);
+
     return (
-        <FormDialogShell
-            open={open}
-            onOpenChange={onOpenChange}
-            title={isEdit ? 'Edit AIP Entry' : 'Add to AIP Summary'}
-            description={
-                <>
-                    Manage implementation details and budget allocation for
-                    <span className="mx-1 font-semibold text-foreground italic">
-                        "{data?.name}"
-                    </span>
-                    for the Fiscal Year {fiscalYear.year}.
-                </>
-            }
-            isLoading={isLoading}
-            formId="aip-form"
-            onCancel={() => onOpenChange(false)}
-            submitLabel={isEdit ? 'Save Changes' : 'Add Entry'}
-            submittingLabel="Saving..."
-            className="sm:max-w-[80%]"
-        >
-            <div className="flex min-h-0">
-                <ScrollArea className="w-full">
-                    <Form {...form}>
-                        <form
-                            id="aip-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                            className="flex flex-1 flex-col overflow-hidden"
-                        >
-                            <div className="space-y-4 p-4">
-                                {/* Top Metadata */}
-                                <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-                                    <Field className="col-span-1">
-                                        <FieldLabel>
-                                            AIP Reference Code
-                                        </FieldLabel>
+        <>
+            <FormDialogShell
+                open={open}
+                onOpenChange={handleOpenChange}
+                title={isEdit ? 'Edit PPA' : 'Add to AIP Summary'}
+                description={
+                    <>
+                        Manage implementation details and budget allocation for
+                        <span className="mx-1 font-semibold text-foreground italic">
+                            "{data?.name}"
+                        </span>
+                        for the Fiscal Year {fiscalYear.year}.
+                    </>
+                }
+                isLoading={isLoading}
+                formId="aip-form"
+                onCancel={() => onOpenChange(false)}
+                submitLabel={isEdit ? 'Save Changes' : 'Add Entry'}
+                submittingLabel="Saving..."
+                className="sm:max-w-[80%]"
+            >
+                <div className="flex min-h-0">
+                    <ScrollArea className="w-full">
+                        <Form {...form}>
+                            <form
+                                id="aip-form"
+                                onSubmit={form.handleSubmit(onSubmit)}
+                                className="flex flex-1 flex-col overflow-hidden"
+                            >
+                                <div className="space-y-4 px-4">
+                                    <div className="grid grid-cols-5 gap-6">
+                                        <Field className="col-span-1">
+                                            <FieldContent>
+                                                <FieldLabel>
+                                                    AIP Reference Code
+                                                </FieldLabel>
 
-                                        <Input
-                                            value={data?.full_code}
-                                            readOnly
-                                            disabled
-                                            placeholder="AUTO-GENERATED"
-                                        />
-                                    </Field>
+                                                <Input
+                                                    value={data?.full_code}
+                                                    readOnly
+                                                    disabled
+                                                    placeholder="AUTO-GENERATED"
+                                                />
+                                            </FieldContent>
+                                        </Field>
 
-                                    <Field className="col-span-2">
-                                        <FieldLabel>PPA Title</FieldLabel>
+                                        <Field className="col-span-2">
+                                            <FieldContent>
+                                                <FieldLabel>
+                                                    PPA Title
+                                                </FieldLabel>
 
-                                        <Input
-                                            value={data?.name || ''}
-                                            readOnly
-                                            disabled
-                                        />
-                                    </Field>
+                                                <Input
+                                                    value={data?.name || ''}
+                                                    readOnly
+                                                    disabled
+                                                />
+                                            </FieldContent>
+                                        </Field>
 
-                                    <div className="col-span-2">
-                                        <Controller
-                                            name="office_id"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
-                                                    <FieldContent>
-                                                        <FieldLabel
-                                                            htmlFor={field.name}
-                                                            className="gap-1"
-                                                        >
-                                                            Office
-                                                            <span className="text-destructive">
-                                                                *
-                                                            </span>
-                                                        </FieldLabel>
-
-                                                        <>
-                                                            <Button
-                                                                id={field.name}
-                                                                type="button"
-                                                                variant="outline"
-                                                                aria-invalid={
-                                                                    fieldState.invalid
+                                        <div className="col-span-2">
+                                            <Controller
+                                                name="office_id"
+                                                control={form.control}
+                                                render={({
+                                                    field,
+                                                    fieldState,
+                                                }) => (
+                                                    <Field
+                                                        data-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    >
+                                                        <FieldContent>
+                                                            <FieldLabel
+                                                                htmlFor={
+                                                                    field.name
                                                                 }
-                                                                className={cn(
-                                                                    'justify-between',
-                                                                    !field.value &&
-                                                                        'text-muted-foreground',
-                                                                )}
-                                                                onClick={() =>
-                                                                    setOpenOfficeComamnd(
-                                                                        true,
+                                                            >
+                                                                Office
+                                                            </FieldLabel>
+
+                                                            <CommandSelect
+                                                                options={
+                                                                    filteredOffices
+                                                                }
+                                                                value={
+                                                                    field.value
+                                                                }
+                                                                onChange={(
+                                                                    val,
+                                                                ) =>
+                                                                    field.onChange(
+                                                                        String(
+                                                                            val,
+                                                                        ),
                                                                     )
                                                                 }
-                                                            >
-                                                                {field.value ? (
+                                                                showClear={
+                                                                    false
+                                                                }
+                                                                placeholder="Select implementing office..."
+                                                                searchPlaceholder="Type to search..."
+                                                                getOptionValue={(
+                                                                    office,
+                                                                ) =>
+                                                                    String(
+                                                                        office.id,
+                                                                    )
+                                                                }
+                                                                getOptionSearchText={(
+                                                                    office,
+                                                                ) =>
+                                                                    `${office.acronym} ${office.name}`
+                                                                }
+                                                                renderTrigger={(
+                                                                    office,
+                                                                ) => (
                                                                     <span className="truncate">
                                                                         {
-                                                                            filteredOffices.find(
-                                                                                (
-                                                                                    o,
-                                                                                ) =>
-                                                                                    o.id.toString() ===
-                                                                                    field.value,
-                                                                            )
-                                                                                ?.name
+                                                                            office.name
                                                                         }
                                                                     </span>
-                                                                ) : (
-                                                                    'Select implementing office...'
                                                                 )}
+                                                                renderOption={(
+                                                                    office,
+                                                                ) => (
+                                                                    <div className="grid w-full grid-cols-[80px_1fr] items-center gap-4 py-1 text-sm">
+                                                                        <span className="font-bold text-muted-foreground uppercase">
+                                                                            {office.acronym ||
+                                                                                '-'}
+                                                                        </span>
+                                                                        <span className="truncate">
+                                                                            {office.name ||
+                                                                                '-'}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            />
 
-                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                            </Button>
-
-                                                            <CommandDialog
-                                                                open={
-                                                                    openOfficeComamnd
-                                                                }
-                                                                onOpenChange={
-                                                                    setOpenOfficeComamnd
-                                                                }
-                                                            >
-                                                                <Command>
-                                                                    <CommandInput placeholder="Type to search..." />
-                                                                    <CommandList>
-                                                                        <CommandGroup>
-                                                                            <Table>
-                                                                                <TableHeader>
-                                                                                    <TableRow>
-                                                                                        <TableHead className="text-xs opacity-50">
-                                                                                            Acronym
-                                                                                        </TableHead>
-                                                                                        <TableHead className="text-xs opacity-50">
-                                                                                            Office
-                                                                                            Name
-                                                                                        </TableHead>
-                                                                                    </TableRow>
-                                                                                </TableHeader>
-
-                                                                                <TableBody>
-                                                                                    {filteredOffices.map(
-                                                                                        (
-                                                                                            office,
-                                                                                        ) => (
-                                                                                            <TableRow
-                                                                                                key={
-                                                                                                    office.id
-                                                                                                }
-                                                                                                onClick={() => {
-                                                                                                    field.onChange(
-                                                                                                        String(
-                                                                                                            office.id,
-                                                                                                        ),
-                                                                                                    );
-
-                                                                                                    setOpenOfficeComamnd(
-                                                                                                        false,
-                                                                                                    );
-                                                                                                }}
-                                                                                                className="cursor-pointer"
-                                                                                            >
-                                                                                                <TableCell className="font-medium">
-                                                                                                    {office.acronym ||
-                                                                                                        '-'}
-                                                                                                </TableCell>
-                                                                                                <TableCell>
-                                                                                                    <div className="text-wrap">
-                                                                                                        {office?.name ||
-                                                                                                            '-'}
-                                                                                                    </div>
-                                                                                                </TableCell>
-                                                                                            </TableRow>
-                                                                                        ),
-                                                                                    )}
-                                                                                </TableBody>
-                                                                            </Table>
-                                                                        </CommandGroup>
-                                                                    </CommandList>
-                                                                </Command>
-                                                            </CommandDialog>
-                                                        </>
-
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
-                                                    </FieldContent>
-                                                </Field>
-                                            )}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Implementation Details */}
-                                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                                    <div className="md:col-span-2">
-                                        <Controller
-                                            name="expected_output"
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
-                                                    <FieldLabel>
-                                                        Expected Output
-                                                    </FieldLabel>
-                                                    <Textarea
-                                                        {...field}
-                                                        className="min-h-25"
-                                                    />
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                </Field>
-                                            )}
-                                        />
+                                                            <FieldError
+                                                                errors={[
+                                                                    fieldState.error,
+                                                                ]}
+                                                            />
+                                                        </FieldContent>
+                                                    </Field>
+                                                )}
+                                            />
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        {['start_date', 'end_date'].map(
-                                            (key) => (
-                                                <Controller
-                                                    key={key}
-                                                    name={key as any}
-                                                    control={form.control}
-                                                    render={({ field }) => (
-                                                        <Field>
-                                                            <FieldLabel className="capitalize">
-                                                                {key.replace(
-                                                                    '_',
-                                                                    ' ',
-                                                                )}
+                                    {/* Implementation Details */}
+                                    <div className="grid grid-cols-5 gap-6">
+                                        <div className="col-span-3">
+                                            <Controller
+                                                name="expected_output"
+                                                control={form.control}
+                                                render={({
+                                                    field,
+                                                    fieldState,
+                                                }) => (
+                                                    <Field
+                                                        data-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    >
+                                                        <FieldContent>
+                                                            <FieldLabel>
+                                                                Expected Output
                                                             </FieldLabel>
-                                                            <Popover>
-                                                                <PopoverTrigger
-                                                                    asChild
-                                                                >
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        className="w-full justify-start text-left"
-                                                                    >
-                                                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                                                        {field.value
-                                                                            ? format(
-                                                                                  parseISO(
-                                                                                      field.value,
-                                                                                  ),
-                                                                                  'PPP',
-                                                                              )
-                                                                            : 'Select date'}
-                                                                    </Button>
-                                                                </PopoverTrigger>
-                                                                <PopoverContent className="w-auto p-0">
-                                                                    <Calendar
-                                                                        mode="single"
-                                                                        selected={
-                                                                            field.value
-                                                                                ? parseISO(
-                                                                                      field.value,
-                                                                                  )
-                                                                                : undefined
-                                                                        }
-                                                                        onSelect={(
-                                                                            d,
-                                                                        ) =>
-                                                                            field.onChange(
-                                                                                d
+
+                                                            <Textarea
+                                                                {...field}
+                                                                className="min-h-25"
+                                                            />
+
+                                                            <FieldError
+                                                                errors={[
+                                                                    fieldState.error,
+                                                                ]}
+                                                            />
+                                                        </FieldContent>
+                                                    </Field>
+                                                )}
+                                            />
+                                        </div>
+
+                                        <div className="col-span-2 space-y-4">
+                                            {['start_date', 'end_date'].map(
+                                                (key) => (
+                                                    <Controller
+                                                        key={key}
+                                                        name={key as any}
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <Field>
+                                                                <FieldContent>
+                                                                    <FieldLabel className="capitalize">
+                                                                        {key.replace(
+                                                                            '_',
+                                                                            ' ',
+                                                                        )}
+                                                                    </FieldLabel>
+
+                                                                    <Popover>
+                                                                        <PopoverTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="outline"
+                                                                                className="w-full justify-start text-left"
+                                                                            >
+                                                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                                                {field.value
                                                                                     ? format(
-                                                                                          d,
-                                                                                          'yyyy-MM-dd',
+                                                                                          parseISO(
+                                                                                              field.value,
+                                                                                          ),
+                                                                                          'PPP',
                                                                                       )
-                                                                                    : '',
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                </PopoverContent>
-                                                            </Popover>
-                                                        </Field>
-                                                    )}
-                                                />
-                                            ),
-                                        )}
-                                    </div>
-                                </div>
+                                                                                    : 'Select date'}
+                                                                            </Button>
+                                                                        </PopoverTrigger>
 
-                                {/* Funding Table */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-sm font-semibold">
-                                            Funding Distribution
-                                        </h3>
-
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                append({
-                                                    funding_source_id: '',
-                                                    ps_amount: '0.00',
-                                                    mooe_amount: '0.00',
-                                                    fe_amount: '0.00',
-                                                    co_amount: '0.00',
-                                                    ccet_adaptation: '0.00',
-                                                    ccet_mitigation: '0.00',
-                                                    cc_typology_code: null,
-                                                })
-                                            }
-                                        >
-                                            <Plus className="mr-2 h-4 w-4" />{' '}
-                                            Add Fund Source
-                                        </Button>
+                                                                        <PopoverContent className="w-auto p-0">
+                                                                            <Calendar
+                                                                                mode="single"
+                                                                                selected={
+                                                                                    field.value
+                                                                                        ? parseISO(
+                                                                                              field.value,
+                                                                                          )
+                                                                                        : undefined
+                                                                                }
+                                                                                onSelect={(
+                                                                                    d,
+                                                                                ) =>
+                                                                                    field.onChange(
+                                                                                        d
+                                                                                            ? format(
+                                                                                                  d,
+                                                                                                  'yyyy-MM-dd',
+                                                                                              )
+                                                                                            : '',
+                                                                                    )
+                                                                                }
+                                                                            />
+                                                                        </PopoverContent>
+                                                                    </Popover>
+                                                                </FieldContent>
+                                                            </Field>
+                                                        )}
+                                                    />
+                                                ),
+                                            )}
+                                        </div>
                                     </div>
 
-                                    <div className="rounded-md border">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-[180px]">
-                                                        Funding Source
-                                                    </TableHead>
-                                                    <TableHead className="text-right">
-                                                        PS
-                                                    </TableHead>
-                                                    <TableHead className="text-right">
-                                                        MOOE
-                                                    </TableHead>
-                                                    <TableHead className="text-right">
-                                                        FE
-                                                    </TableHead>
-                                                    <TableHead className="text-right">
-                                                        CO
-                                                    </TableHead>
-                                                    <TableHead className="bg-muted/30 text-right font-bold">
-                                                        Total
-                                                    </TableHead>
-                                                    <TableHead className="text-right">
-                                                        Adaptation
-                                                    </TableHead>
-                                                    <TableHead className="text-right">
-                                                        Mitigation
-                                                    </TableHead>
-                                                    <TableHead className="w-5 text-left">
-                                                        CC Typology Code
-                                                    </TableHead>
-                                                    <TableHead className="w-[50px]"></TableHead>
-                                                </TableRow>
-                                            </TableHeader>
+                                    {/* Funding Table */}
+                                    <Field>
+                                        <FieldContent>
+                                            <div className="flex items-end justify-between">
+                                                <FieldLabel>
+                                                    Funding Distribution
+                                                </FieldLabel>
 
-                                            <TableBody>
-                                                {fields.map((field, index) => (
-                                                    <TableRow key={field.id}>
-                                                        <TableCell>
-                                                            <Controller
-                                                                name={`ppa_funding_sources.${index}.funding_source_id`}
-                                                                control={
-                                                                    form.control
-                                                                }
-                                                                render={({
-                                                                    field: ctrl,
-                                                                }) => (
-                                                                    <Select
-                                                                        onValueChange={
-                                                                            ctrl.onChange
-                                                                        }
-                                                                        value={
-                                                                            ctrl.value
+                                                <div className="pb-1">
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger
+                                                            asChild
+                                                        >
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                size="sm"
+                                                            >
+                                                                <Plus className="mr-2 h-4 w-4" />
+                                                                Add Fund Source
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent
+                                                            align="end"
+                                                            className="w-50"
+                                                        >
+                                                            <DropdownMenuLabel>
+                                                                Select Source to
+                                                                Add
+                                                            </DropdownMenuLabel>
+                                                            <DropdownMenuSeparator />
+
+                                                            {fundingSources.filter(
+                                                                (fs) =>
+                                                                    !selectedSourceIds.includes(
+                                                                        fs.id.toString(),
+                                                                    ),
+                                                            ).length === 0 ? (
+                                                                <div className="p-2 text-center text-sm text-muted-foreground">
+                                                                    All sources
+                                                                    added
+                                                                </div>
+                                                            ) : (
+                                                                fundingSources
+                                                                    .filter(
+                                                                        (fs) =>
+                                                                            !selectedSourceIds.includes(
+                                                                                fs.id.toString(),
+                                                                            ),
+                                                                    )
+                                                                    .map(
+                                                                        (
+                                                                            fs,
+                                                                        ) => (
+                                                                            <DropdownMenuItem
+                                                                                key={
+                                                                                    fs.id
+                                                                                }
+                                                                                className="cursor-pointer font-medium"
+                                                                                onClick={() =>
+                                                                                    append(
+                                                                                        {
+                                                                                            funding_source_id:
+                                                                                                fs.id.toString(),
+                                                                                            ps_amount:
+                                                                                                '0.00',
+                                                                                            mooe_amount:
+                                                                                                '0.00',
+                                                                                            fe_amount:
+                                                                                                '0.00',
+                                                                                            co_amount:
+                                                                                                '0.00',
+                                                                                            ccet_adaptation:
+                                                                                                '0.00',
+                                                                                            ccet_mitigation:
+                                                                                                '0.00',
+                                                                                            cc_typology_code:
+                                                                                                null,
+                                                                                        },
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                {
+                                                                                    fs.code
+                                                                                }
+                                                                            </DropdownMenuItem>
+                                                                        ),
+                                                                    )
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-md border">
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead className="w-45">
+                                                                Funding Source
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
+                                                                PS
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
+                                                                MOOE
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
+                                                                FE
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
+                                                                CO
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
+                                                                Total
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
+                                                                Adaptation
+                                                            </TableHead>
+                                                            <TableHead className="text-right">
+                                                                Mitigation
+                                                            </TableHead>
+                                                            <TableHead className="text-left">
+                                                                CC Typology Code
+                                                            </TableHead>
+                                                            <TableHead className="w-0"></TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+
+                                                    <TableBody>
+                                                        {fields.length === 0 ? (
+                                                            <TableRow>
+                                                                <TableCell
+                                                                    colSpan={10} // Matches number of columns: Funding Source, PS, MOOE, FE, CO, Total, Adaptation, Mitigation, CC Typology Code, Actions
+                                                                    className="h-13 text-center text-muted-foreground"
+                                                                >
+                                                                    No funding
+                                                                    sources
+                                                                    added yet.
+                                                                    Click "Add
+                                                                    Fund Source"
+                                                                    to begin.
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ) : (
+                                                            fields.map(
+                                                                (
+                                                                    field,
+                                                                    index,
+                                                                ) => (
+                                                                    <TableRow
+                                                                        key={
+                                                                            field.id
                                                                         }
                                                                     >
-                                                                        <SelectTrigger>
-                                                                            <SelectValue placeholder="Source" />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            {fundingSources.map(
-                                                                                (
-                                                                                    fs,
-                                                                                ) => {
-                                                                                    const fsIdStr =
-                                                                                        fs.id.toString();
+                                                                        <input
+                                                                            type="hidden"
+                                                                            {...form.register(
+                                                                                `ppa_funding_sources.${index}.funding_source_id`,
+                                                                            )}
+                                                                        />
 
-                                                                                    const isAlreadySelected =
-                                                                                        selectedSourceIds.includes(
-                                                                                            fsIdStr,
-                                                                                        );
+                                                                        <TableCell>
+                                                                            <div className="flex h-9 w-full items-center rounded-md border border-transparent bg-muted/30 px-3 py-1 text-sm font-medium text-foreground">
+                                                                                {fundingSources.find(
+                                                                                    (
+                                                                                        fs,
+                                                                                    ) =>
+                                                                                        fs.id.toString() ===
+                                                                                        watchedSources?.[
+                                                                                            index
+                                                                                        ]
+                                                                                            ?.funding_source_id,
+                                                                                )
+                                                                                    ?.code ||
+                                                                                    '---'}
+                                                                            </div>
+                                                                        </TableCell>
 
-                                                                                    const isSelectedInThisRow =
-                                                                                        ctrl.value ===
-                                                                                        fsIdStr;
+                                                                        {[
+                                                                            'ps_amount',
+                                                                            'mooe_amount',
+                                                                            'fe_amount',
+                                                                            'co_amount',
+                                                                        ].map(
+                                                                            (
+                                                                                amt,
+                                                                            ) => (
+                                                                                <TableCell
+                                                                                    key={
+                                                                                        amt
+                                                                                    }
+                                                                                    className="text-right"
+                                                                                >
+                                                                                    {parseFloat(
+                                                                                        watchedSources?.[
+                                                                                            index
+                                                                                        ]?.[
+                                                                                            amt
+                                                                                        ] ||
+                                                                                            '0',
+                                                                                    ).toLocaleString(
+                                                                                        undefined,
+                                                                                        {
+                                                                                            minimumFractionDigits: 2,
+                                                                                            maximumFractionDigits: 2,
+                                                                                        },
+                                                                                    )}
+                                                                                </TableCell>
+                                                                            ),
+                                                                        )}
 
-                                                                                    return (
-                                                                                        <SelectItem
-                                                                                            key={
-                                                                                                fs.id
-                                                                                            }
-                                                                                            value={
-                                                                                                fsIdStr
-                                                                                            }
-                                                                                            disabled={
-                                                                                                isAlreadySelected &&
-                                                                                                !isSelectedInThisRow
-                                                                                            }
-                                                                                        >
-                                                                                            <div className="flex flex-col">
-                                                                                                <span>
-                                                                                                    {
-                                                                                                        fs.code
-                                                                                                    }
-                                                                                                </span>
-                                                                                                {isAlreadySelected &&
-                                                                                                    !isSelectedInThisRow && (
-                                                                                                        <span className="text-[10px] text-muted-foreground italic">
-                                                                                                            Already
-                                                                                                            added
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                            </div>
-                                                                                        </SelectItem>
-                                                                                    );
+                                                                        {/* Total */}
+                                                                        <TableCell className="text-right font-bold">
+                                                                            {calculateRowTotal(
+                                                                                watchedSources?.[
+                                                                                    index
+                                                                                ] ||
+                                                                                    {},
+                                                                            ).toLocaleString(
+                                                                                undefined,
+                                                                                {
+                                                                                    minimumFractionDigits: 2,
+                                                                                    maximumFractionDigits: 2,
                                                                                 },
                                                                             )}
-                                                                        </SelectContent>
-                                                                    </Select>
-                                                                )}
-                                                            />
-                                                        </TableCell>
+                                                                        </TableCell>
 
-                                                        {(
-                                                            [
-                                                                'ps_amount',
-                                                                'mooe_amount',
-                                                                'fe_amount',
-                                                                'co_amount',
-                                                            ] as const
-                                                        ).map((amt) => (
-                                                            <TableCell
-                                                                key={amt}
-                                                            >
-                                                                <Input
-                                                                    value={
-                                                                        watchedSources?.[
-                                                                            index
-                                                                        ]?.[
-                                                                            amt
-                                                                        ] ||
-                                                                        '0.00'
-                                                                    }
-                                                                    readOnly
-                                                                    className="pointer-events-none border-none text-right shadow-none"
-                                                                />
-                                                            </TableCell>
-                                                        ))}
-                                                        <TableCell className="bg-muted/30">
-                                                            <Input
-                                                                value={calculateRowTotal(
-                                                                    watchedSources?.[
-                                                                        index
-                                                                    ] || {},
-                                                                ).toLocaleString(
-                                                                    undefined,
-                                                                    {
-                                                                        minimumFractionDigits: 2,
-                                                                    },
-                                                                )}
-                                                                readOnly
-                                                                className="border-none text-right font-bold shadow-none"
-                                                            />
-                                                        </TableCell>
-                                                        {(
-                                                            [
-                                                                'ccet_adaptation',
-                                                                'ccet_mitigation',
-                                                            ] as const
-                                                        ).map((amt) => (
-                                                            <TableCell
-                                                                key={amt}
-                                                            >
-                                                                <Input
-                                                                    value={
-                                                                        watchedSources?.[
-                                                                            index
-                                                                        ]?.[
-                                                                            amt
-                                                                        ] ||
-                                                                        '0.00'
-                                                                    }
-                                                                    readOnly
-                                                                    className="border-none text-right shadow-none"
-                                                                />
-                                                            </TableCell>
-                                                        ))}
+                                                                        {[
+                                                                            'ccet_adaptation',
+                                                                            'ccet_mitigation',
+                                                                        ].map(
+                                                                            (
+                                                                                amt,
+                                                                            ) => (
+                                                                                <TableCell
+                                                                                    key={
+                                                                                        amt
+                                                                                    }
+                                                                                    className="text-right"
+                                                                                >
+                                                                                    {parseFloat(
+                                                                                        watchedSources?.[
+                                                                                            index
+                                                                                        ]?.[
+                                                                                            amt
+                                                                                        ] ||
+                                                                                            '0',
+                                                                                    ).toLocaleString(
+                                                                                        undefined,
+                                                                                        {
+                                                                                            minimumFractionDigits: 2,
+                                                                                            maximumFractionDigits: 2,
+                                                                                        },
+                                                                                    )}
+                                                                                </TableCell>
+                                                                            ),
+                                                                        )}
 
-                                                        <TableCell>
-                                                            <Controller
-                                                                name={`ppa_funding_sources.${index}.cc_typology_code`}
-                                                                control={
-                                                                    form.control
-                                                                }
-                                                                render={({
-                                                                    field: ctrl,
-                                                                }) => (
-                                                                    <Input
-                                                                        {...ctrl}
-                                                                        value={
-                                                                            ctrl.value ||
-                                                                            ''
-                                                                        }
-                                                                        readOnly
-                                                                        placeholder="---"
-                                                                        className="pointer-events-none min-w-5 border-none text-left shadow-none"
-                                                                    />
-                                                                )}
-                                                            />
-                                                        </TableCell>
+                                                                        <TableCell className="text-left">
+                                                                            {watchedSources?.[
+                                                                                index
+                                                                            ]
+                                                                                ?.cc_typology_code ||
+                                                                                '—'}
+                                                                        </TableCell>
 
-                                                        <TableCell>
-                                                            <div className="flex gap-1">
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger
-                                                                        asChild
-                                                                    >
-                                                                        <Button
-                                                                            variant="outline"
-                                                                            size="icon"
-                                                                            title="Manage PPMP Items"
-                                                                            disabled={
-                                                                                !isEdit ||
-                                                                                !watchedSources?.[
-                                                                                    index
-                                                                                ]
-                                                                                    ?.funding_source_id ||
-                                                                                !watchedSources?.[
-                                                                                    index
-                                                                                ]
-                                                                                    ?.id
-                                                                            }
-                                                                        >
-                                                                            <ListPlus />
-                                                                        </Button>
-                                                                    </DropdownMenuTrigger>
+                                                                        <TableCell>
+                                                                            <div className="flex gap-1">
+                                                                                <DropdownMenu>
+                                                                                    <DropdownMenuTrigger
+                                                                                        asChild
+                                                                                    >
+                                                                                        <Button
+                                                                                            variant="outline"
+                                                                                            size="icon"
+                                                                                            title="Manage PPMP Items"
+                                                                                            disabled={
+                                                                                                !isEdit ||
+                                                                                                !watchedSources?.[
+                                                                                                    index
+                                                                                                ]
+                                                                                                    ?.funding_source_id ||
+                                                                                                !watchedSources?.[
+                                                                                                    index
+                                                                                                ]
+                                                                                                    ?.id
+                                                                                            }
+                                                                                        >
+                                                                                            <ListPlus />
+                                                                                        </Button>
+                                                                                    </DropdownMenuTrigger>
+                                                                                    <DropdownMenuContent
+                                                                                        align="end"
+                                                                                        className="w-auto min-w-max"
+                                                                                    >
+                                                                                        <DropdownMenuLabel className="whitespace-nowrap">
+                                                                                            Project
+                                                                                            Procurement
+                                                                                        </DropdownMenuLabel>
+                                                                                        <DropdownMenuSeparator />
+                                                                                        <DropdownMenuItem
+                                                                                            onClick={() =>
+                                                                                                handleGoToPpmp(
+                                                                                                    watchedSources[
+                                                                                                        index
+                                                                                                    ]
+                                                                                                        .id,
+                                                                                                    'MOOE',
+                                                                                                )
+                                                                                            }
+                                                                                            className="whitespace-nowrap"
+                                                                                        >
+                                                                                            Manage
+                                                                                            MOOE
+                                                                                            Items
+                                                                                        </DropdownMenuItem>
+                                                                                        <DropdownMenuItem
+                                                                                            onClick={() =>
+                                                                                                handleGoToPpmp(
+                                                                                                    watchedSources[
+                                                                                                        index
+                                                                                                    ]
+                                                                                                        .id,
+                                                                                                    'CO',
+                                                                                                )
+                                                                                            }
+                                                                                            className="whitespace-nowrap"
+                                                                                        >
+                                                                                            Manage
+                                                                                            Capital
+                                                                                            Outlay
+                                                                                        </DropdownMenuItem>
+                                                                                    </DropdownMenuContent>
+                                                                                </DropdownMenu>
 
-                                                                    <DropdownMenuContent
-                                                                        align="end"
-                                                                        className="w-auto min-w-max"
-                                                                    >
-                                                                        <DropdownMenuLabel className="whitespace-nowrap">
-                                                                            Project
-                                                                            Procurement
-                                                                        </DropdownMenuLabel>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    size="icon"
+                                                                                    variant="destructive"
+                                                                                    onClick={() =>
+                                                                                        remove(
+                                                                                            index,
+                                                                                        )
+                                                                                    }
+                                                                                    title="Remove Funding Source"
+                                                                                >
+                                                                                    <Trash2 />
+                                                                                </Button>
+                                                                            </div>
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                ),
+                                                            )
+                                                        )}
+                                                    </TableBody>
+                                                </Table>
 
-                                                                        <DropdownMenuSeparator />
-
-                                                                        {/* <div className="flex gap-4"> */}
-                                                                        <DropdownMenuItem
-                                                                            onClick={() =>
-                                                                                handleGoToPpmp(
-                                                                                    watchedSources[
-                                                                                        index
-                                                                                    ]
-                                                                                        .id,
-                                                                                    'MOOE',
-                                                                                )
-                                                                            }
-                                                                            className="whitespace-nowrap"
-                                                                        >
-                                                                            Manage
-                                                                            MOOE
-                                                                            Items
-                                                                        </DropdownMenuItem>
-
-                                                                        <DropdownMenuItem
-                                                                            onClick={() =>
-                                                                                handleGoToPpmp(
-                                                                                    watchedSources[
-                                                                                        index
-                                                                                    ]
-                                                                                        .id,
-                                                                                    'CO',
-                                                                                )
-                                                                            }
-                                                                            className="whitespace-nowrap"
-                                                                        >
-                                                                            Manage
-                                                                            Capital
-                                                                            Outlay
-                                                                        </DropdownMenuItem>
-                                                                        {/* </div> */}
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-
-                                                                <Button
-                                                                    type="button"
-                                                                    size="icon"
-                                                                    variant="destructive"
-                                                                    onClick={() =>
-                                                                        remove(
-                                                                            index,
-                                                                        )
-                                                                    }
-                                                                    title="Remove Funding Source"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-
-                                        <ScrollBar orientation="horizontal" />
-                                    </div>
+                                                <ScrollBar orientation="horizontal" />
+                                            </div>
+                                        </FieldContent>
+                                    </Field>
                                 </div>
-                            </div>
-                        </form>
-                    </Form>
-                </ScrollArea>
-            </div>
-        </FormDialogShell>
+                            </form>
+                        </Form>
+                    </ScrollArea>
+                </div>
+            </FormDialogShell>
+
+            <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Unsaved Changes</DialogTitle>
+
+                        <DialogDescription>
+                            You have unsaved changes to funding sources or other
+                            fields. Are you sure you want to close? All unsaved
+                            data will be lost.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={handleCancelClose}>
+                            Cancel
+                        </Button>
+
+                        <Button
+                            variant="destructive"
+                            onClick={handleConfirmClose}
+                        >
+                            Continue
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
