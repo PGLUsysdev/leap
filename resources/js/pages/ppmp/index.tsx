@@ -76,11 +76,15 @@ export default function PpmpPage({
     initialPpaFundingSourceId,
 }: PpmpPageProps) {
     console.log({
+        fiscalYear,
+        aipEntry,
         ppmps,
         priceLists,
         chartOfAccounts,
         ppmpCategories,
         fundingSources,
+        initialChoice,
+        initialPpaFundingSourceId,
     });
 
     const { auth } = usePage<SharedData>().props;
@@ -92,16 +96,16 @@ export default function PpmpPage({
         return bridge?.funding_source_id || 0;
     }, [aipEntry, initialPpaFundingSourceId]);
 
+    const [selectedExpenseClass, setSelectedExpenseClass] =
+        useState(initialChoice);
+    const [selectedFundingSourceId, setSelectedFundingSourceId] =
+        useState(initialFsId);
+
     const [open, setOpen] = useState(false);
     const [openAlert, setOpenAlert] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedFundingSourceId, setSelectedFundingSourceId] =
-        useState(initialFsId);
-    const [selectedExpenseClass, setSelectedExpenseClass] = useState<string>(
-        initialChoice || 'ALL',
-    );
     const [
         openExpenseAccountSummaryDialog,
         setOpenExpenseAccountSummaryDialog,
@@ -116,91 +120,7 @@ export default function PpmpPage({
         { title: `PPMP Management`, href: `#` },
     ];
 
-    const ppmpCategoriesWithAccounts = ppmpCategories.map((category) => ({
-        ...category,
-        chart_of_accounts:
-            category.chart_of_account_pivot
-                ?.map((pivot) =>
-                    chartOfAccounts.find(
-                        (coa) => coa.id === pivot.chart_of_account_id,
-                    ),
-                )
-                .filter((coa): coa is ChartOfAccount => coa !== undefined) ||
-            [],
-    }));
-
-    console.log(ppmpCategoriesWithAccounts);
-
-    // ---
-
-    function handleFundingSourceSelect(value: string) {
-        const id = Number(value);
-        setSelectedFundingSourceId(id);
-    }
-
-    const filteredPpmpItems = useMemo(() => {
-        return ppmps.filter((ppmp) => {
-            // Check the bridge relationship (eager loaded by controller)
-            const bridge = ppmp.ppa_funding_source;
-            const matchesFunding =
-                selectedFundingSourceId === 0 ||
-                bridge?.funding_source_id === selectedFundingSourceId;
-
-            const chartOfAccount = ppmp.ppmp_price_list?.chart_of_account;
-            const matchesExpenseClass =
-                selectedExpenseClass === 'ALL' ||
-                chartOfAccount?.expense_class === selectedExpenseClass;
-
-            return matchesFunding && matchesExpenseClass;
-        });
-    }, [ppmps, selectedFundingSourceId, selectedExpenseClass]);
-
-    const filteredChartOfAccounts =
-        selectedExpenseClass === 'ALL'
-            ? chartOfAccounts
-            : chartOfAccounts.filter(
-                  (acc) => acc.expense_class === selectedExpenseClass,
-              );
-
-    const processedData = useMemo(() => {
-        return filteredPpmpItems.map((item) => {
-            const priceList = item.ppmp_price_list;
-            const bridge = item.ppa_funding_source;
-            // Find funding source details for the table display
-            const fundingSource = fundingSources?.find(
-                (fs) => fs.id === bridge?.funding_source_id,
-            );
-            const chartOfAccount = priceList?.chart_of_account;
-
-            return {
-                ...item,
-                priceListDescription: priceList?.description || '',
-                priceList: priceList,
-                chartOfAccount: chartOfAccount,
-                fundingSource: fundingSource,
-            };
-        });
-    }, [filteredPpmpItems, fundingSources]);
-
-    function handleDeleteDialogOpen(source: Ppmp) {
-        setSelectedSource(source);
-        setIsDeleteDialogOpen(true);
-    }
-
-    function handleDelete() {
-        router.delete(`/ppmp/${selectedSource?.id}`, {
-            preserveState: true,
-            preserveScroll: true,
-            onStart: () => setIsLoading(true),
-            onSuccess: () => {
-                setIsDeleteDialogOpen(false);
-                setSelectedSource(null);
-            },
-            onFinish: () => setIsLoading(false),
-        });
-    }
-
-    const handleExpenseClassChange = (value: string) => {
+    const handleExpenseClassChange = (value: 'MOOE' | 'CO') => {
         setSelectedExpenseClass(value);
 
         router.get(
@@ -220,7 +140,6 @@ export default function PpmpPage({
         const fsId = Number(value);
         setSelectedFundingSourceId(fsId);
 
-        // Find the bridge ID for this selection
         const bridgeId = aipEntry.ppa_funding_sources?.find(
             (pfs) => pfs.funding_source_id === fsId,
         )?.id;
@@ -229,7 +148,7 @@ export default function PpmpPage({
             window.location.pathname,
             {
                 choice: selectedExpenseClass,
-                ppa_funding_source_id: bridgeId, // Use the bridge ID in the URL
+                ppa_funding_source_id: bridgeId,
             },
             {
                 preserveState: true,
@@ -238,88 +157,46 @@ export default function PpmpPage({
         );
     };
 
-    type PpmpWithFundingSource = Ppmp & FundingSource;
-    type PpmpWithFundingSourceAndPriceList = PpmpWithFundingSource & PriceList;
-    type PpmpWithFundingSourceAndPriceListAndCoa =
-        PpmpWithFundingSourceAndPriceList & ChartOfAccount;
+    const filteredPpmpItems = ppmps.filter((ppmp) => {
+        const matchesFunding =
+            ppmp.ppa_funding_source?.funding_source_id ===
+            selectedFundingSourceId;
 
-    const flatPpmpWithFs = filteredPpmpItems.map((ppmp) => {
-        // Look inside the bridge relationship for the ID
-        const fsId = ppmp.ppa_funding_source?.funding_source_id;
-        const fundingSource = fundingSources.find((fs) => fs.id === fsId);
+        const matchesExpenseClass =
+            ppmp.ppmp_price_list?.chart_of_account?.expense_class ===
+            selectedExpenseClass;
 
-        return { ...ppmp, ...fundingSource };
+        return matchesFunding && matchesExpenseClass;
     });
 
-    // 2. Map to include the Price List
-    const flatPpmpWithFsWithPl = flatPpmpWithFs.map((ppmp) => {
-        // ppmp_price_list was eager loaded by the controller
-        const priceList = priceLists.find(
-            (pl) => pl.id === ppmp.ppmp_price_list_id,
+    function handleDeleteDialogOpen(source: Ppmp) {
+        setSelectedSource(source);
+        setIsDeleteDialogOpen(true);
+    }
+
+    function handleDelete() {
+        router.delete(`/ppmp/${selectedSource?.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setIsDeleteDialogOpen(false);
+                setSelectedSource(null);
+            },
+            onFinish: () => setIsLoading(false),
+        });
+    }
+
+    // console.log(ppmpCategories);
+    // console.log(priceLists);
+
+    const filteredChartOfAccounts = useMemo(() => {
+        return chartOfAccounts.filter(
+            (coa) => coa.expense_class === selectedExpenseClass,
         );
-        return { ...ppmp, ...priceList };
-    });
+    }, [chartOfAccounts, selectedExpenseClass]);
 
-    // 3. Map to include the Chart of Account
-    const flatPpmpWithFsWithPlWithCoa = flatPpmpWithFsWithPl.map((ppmp) => {
-        // chart_of_account_id is inside the priceList
-        const coaId = ppmp.chart_of_account_id;
-        const chartOfAccount = chartOfAccounts.find((coa) => coa.id === coaId);
-
-        return {
-            ...ppmp,
-            ...chartOfAccount,
-            // Ensure description doesn't conflict with price list description
-            coa_description: chartOfAccount?.description ?? '',
-        };
-    });
-
-    const groupedData: Record<
-        number,
-        PpmpWithFundingSourceAndPriceListAndCoa[]
-    > = flatPpmpWithFsWithPlWithCoa.reduce(
-        (acc, current) => {
-            const key = current.chart_of_account_id;
-
-            if (!acc[key]) {
-                acc[key] = [];
-            }
-
-            acc[key].push(current);
-
-            return acc;
-        },
-        {} as Record<number, PpmpWithFundingSourceAndPriceListAndCoa[]>,
-    );
-
-    const coaWithPriceLists = ppmps.reduce(
-        (
-            acc: (ChartOfAccount & { price_lists: (PriceList & Ppmp)[] })[],
-            item,
-        ) => {
-            const priceList = priceLists.find(
-                (pl) => pl.id === item.ppmp_price_list_id,
-            );
-            const coa = chartOfAccounts.find(
-                (coa) => coa.id === priceList?.chart_of_account_id,
-            );
-
-            if (coa && priceList) {
-                const existingCoa = acc.find((c) => c.id === coa.id);
-                if (existingCoa) {
-                    existingCoa.price_lists.push({ ...priceList, ...item });
-                } else {
-                    acc.push({
-                        ...coa,
-                        price_lists: [{ ...priceList, ...item }],
-                    });
-                }
-            }
-
-            return acc;
-        },
-        [],
-    );
+    // ---
 
     const coaWithPriceListsByExpenseClass = useMemo(() => {
         return filteredPpmpItems.reduce((acc: any, item) => {
@@ -352,86 +229,6 @@ export default function PpmpPage({
         return fs.id === selectedFundingSourceId;
     });
 
-    const priceListsWithCategory = priceLists.map((pl) => {
-        const category = ppmpCategories.find(
-            (cat) => cat.id === pl.ppmp_category_id,
-        );
-
-        if (!category) {
-            throw new Error(`PPMP category not found for price list ${pl.id}`);
-        }
-
-        return { ...pl, ...category };
-    });
-
-    // const ppmpCategoriesWithCoa = ppmpCategories
-    //     .map((cat) => {
-    //         const coa = filteredChartOfAccounts.find((acc) =>
-    //             cat.chart_of_accounts.some((c) => c.id === acc.id),
-    //         );
-
-    //         if (!coa) {
-    //             return null;
-    //         }
-
-    //         const {
-    //             id: coaId,
-    //             description: coaDescription,
-    //             account_number: coaAccountNumber,
-    //             account_title: coaAccountTitle,
-    //             account_type: coaAccountType,
-    //             expense_class: coaExpenseClass,
-    //             ...restCoa
-    //         } = coa;
-
-    //         return {
-    //             ...cat,
-    //             ...restCoa,
-    //             coa_id: coaId,
-    //             coa_description: coaDescription,
-    //             coa_account_number: coaAccountNumber,
-    //             coa_account_title: coaAccountTitle,
-    //             coa_account_type: coaAccountType,
-    //             coa_expense_class: coaExpenseClass,
-    //         };
-    //     })
-    //     .filter((cat): cat is NonNullable<typeof cat> => cat !== null);
-
-    const priceListsWithCoa = priceLists
-        .map((pl) => {
-            const coa = filteredChartOfAccounts.find(
-                (acc) => acc.id === pl.chart_of_account_id,
-            );
-
-            if (!coa) {
-                return null;
-            }
-
-            const {
-                id: coaId,
-                description: coaDescription,
-                account_number: coaAccountNumber,
-                account_title: coaAccountTitle,
-                account_type: coaAccountType,
-                expense_class: coaExpenseClass,
-                ...restCoa
-            } = coa;
-
-            return {
-                ...pl,
-                ...restCoa,
-                coa_id: coaId,
-                coa_description: coaDescription,
-                coa_account_number: coaAccountNumber,
-                coa_account_title: coaAccountTitle,
-                coa_account_type: coaAccountType,
-                coa_expense_class: coaExpenseClass,
-            };
-        })
-        .filter((pl): pl is NonNullable<typeof pl> => pl !== null);
-
-    console.log(processedData);
-
     const currentPpaFundingSourceId = useMemo(() => {
         // Look for the record in the pivot/bridge table
         const bridge = aipEntry.ppa_funding_sources?.find(
@@ -449,16 +246,16 @@ export default function PpmpPage({
 
                 <DataTable
                     columns={columns}
-                    data={processedData}
+                    data={filteredPpmpItems}
                     withSearch={true}
-                    onDelete={handleDeleteDialogOpen}
                     withFooter={true}
                     negativeHeight={9.9}
-                    meta={{
-                        priceLists: priceLists,
-                        chartOfAccounts: chartOfAccounts,
-                        fundingSources: fundingSources,
-                    }}
+                    onDelete={handleDeleteDialogOpen}
+                    // meta={{
+                    //     priceLists: priceLists,
+                    //     chartOfAccounts: chartOfAccounts,
+                    //     fundingSources: fundingSources,
+                    // }}
                 >
                     <div className="flex gap-2">
                         <Select
@@ -472,7 +269,6 @@ export default function PpmpPage({
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Expense Class</SelectLabel>
-
                                     <SelectItem value="MOOE">MOOE</SelectItem>
                                     <SelectItem value="CO">CO</SelectItem>
                                 </SelectGroup>
@@ -612,14 +408,13 @@ export default function PpmpPage({
             <PpmpFormDialog
                 open={open}
                 onOpenChange={setOpen}
-                chartOfAccounts={chartOfAccounts}
-                priceLists={priceLists}
+                chartOfAccounts={filteredChartOfAccounts}
                 ppmpCategories={ppmpCategories}
+                priceLists={priceLists}
                 selectedEntry={aipEntry}
                 fundingSources={fundingSources}
                 selectedExpenseClass={selectedExpenseClass}
                 selectedFundingSourceId={selectedFundingSourceId}
-                // Now you HAVE this variable:
                 ppaFundingSourceId={currentPpaFundingSourceId}
             />
 

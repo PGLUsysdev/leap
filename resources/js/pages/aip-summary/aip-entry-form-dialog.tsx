@@ -55,6 +55,7 @@ import type {
     Office,
     AuthData,
 } from '@/types/global';
+import { index } from '@/routes/aip/summary/ppmp';
 
 interface AipEntryFormDialogProps {
     open: boolean;
@@ -174,15 +175,25 @@ export default function AipEntryFormDialog({
     };
 
     const handleGoToPpmp = (
-        ppaFundingSourceId: number,
+        ppaFundingSourceId: number | undefined,
         choice: 'MOOE' | 'CO',
     ) => {
         if (!isEdit || !entry) return;
 
-        router.get(`/aip/${fiscalYear.id}/summary/${entry.id}/ppmp`, {
-            choice: choice,
-            ppa_funding_source_id: ppaFundingSourceId, // Use the bridge ID
-        });
+        router.visit(
+            index(
+                {
+                    fiscalYear: fiscalYear.id,
+                    aipEntry: entry.id,
+                },
+                {
+                    query: {
+                        choice: choice,
+                        ppa_funding_source_id: ppaFundingSourceId,
+                    },
+                },
+            ),
+        );
     };
 
     function onSubmit(values: FormValues) {
@@ -693,12 +704,14 @@ export default function AipEntryFormDialog({
                                                                                     className="text-right"
                                                                                 >
                                                                                     {parseFloat(
-                                                                                        watchedSources?.[
-                                                                                            index
-                                                                                        ]?.[
-                                                                                            amt
-                                                                                        ] ||
-                                                                                            '0',
+                                                                                        String(
+                                                                                            watchedSources?.[
+                                                                                                index
+                                                                                            ]?.[
+                                                                                                amt as keyof (typeof watchedSources)[0]
+                                                                                            ] ||
+                                                                                                '0',
+                                                                                        ),
                                                                                     ).toLocaleString(
                                                                                         undefined,
                                                                                         {
@@ -740,12 +753,14 @@ export default function AipEntryFormDialog({
                                                                                     className="text-right"
                                                                                 >
                                                                                     {parseFloat(
-                                                                                        watchedSources?.[
-                                                                                            index
-                                                                                        ]?.[
-                                                                                            amt
-                                                                                        ] ||
-                                                                                            '0',
+                                                                                        String(
+                                                                                            watchedSources?.[
+                                                                                                index
+                                                                                            ]?.[
+                                                                                                amt as keyof (typeof watchedSources)[0]
+                                                                                            ] ||
+                                                                                                '0',
+                                                                                        ),
                                                                                     ).toLocaleString(
                                                                                         undefined,
                                                                                         {
@@ -790,6 +805,7 @@ export default function AipEntryFormDialog({
                                                                                             <ListPlus />
                                                                                         </Button>
                                                                                     </DropdownMenuTrigger>
+
                                                                                     <DropdownMenuContent
                                                                                         align="end"
                                                                                         className="w-auto min-w-max"
@@ -798,7 +814,9 @@ export default function AipEntryFormDialog({
                                                                                             Project
                                                                                             Procurement
                                                                                         </DropdownMenuLabel>
+
                                                                                         <DropdownMenuSeparator />
+
                                                                                         <DropdownMenuItem
                                                                                             onClick={() =>
                                                                                                 handleGoToPpmp(
@@ -813,8 +831,8 @@ export default function AipEntryFormDialog({
                                                                                         >
                                                                                             Manage
                                                                                             MOOE
-                                                                                            Items
                                                                                         </DropdownMenuItem>
+
                                                                                         <DropdownMenuItem
                                                                                             onClick={() =>
                                                                                                 handleGoToPpmp(

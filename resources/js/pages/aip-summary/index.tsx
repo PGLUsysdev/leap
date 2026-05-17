@@ -361,8 +361,8 @@ export default function AipSummaryTable({
                             selectedEntry.children.length > 0 && (
                                 <span className="mt-2 block font-semibold text-destructive italic">
                                     Warning: This will also remove all nested
-                                    sub-projects and activities including all
-                                    their PPMPS.
+                                    sub-PPAs and activities including all their
+                                    PPMPs.
                                 </span>
                             )}
                     </>

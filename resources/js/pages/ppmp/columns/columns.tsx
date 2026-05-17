@@ -40,33 +40,25 @@ const EditableCell: React.FC<EditableCellProps> = ({
     row,
     column,
 }) => {
-    const initialValue = getValue(); // Current value from the database/Inertia props
-
-    // localValue holds what the user sees/types
+    const initialValue = getValue();
     const [localValue, setLocalValue] = useState<string>(
         formatInteger(initialValue),
     );
     const [isUpdating, setIsUpdating] = useState(false);
 
-    // CRITICAL: Sync local state when the server data changes (initialValue changes)
-    // This ensures that after the router.put finishes and the page props refresh,
-    // the input displays the new "source of truth".
     useEffect(() => {
         setLocalValue(formatInteger(initialValue));
     }, [initialValue]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
-            e.currentTarget.blur(); // Triggers handleBlur
+            e.currentTarget.blur();
         }
     };
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-        // Remove commas on focus so the user can type a normal number
         const rawValue = localValue.replace(/,/g, '');
         setLocalValue(rawValue);
-
-        // Use timeout to ensure selection happens after value update
         setTimeout(() => e.target.select(), 0);
     };
 
@@ -74,13 +66,11 @@ const EditableCell: React.FC<EditableCellProps> = ({
         const cleanValue = localValue.replace(/,/g, '');
         const cleanInitial = String(initialValue || '0').replace(/,/g, '');
 
-        // 1. If the value hasn't actually changed, just put the commas back
         if (cleanValue === cleanInitial) {
             setLocalValue(formatInteger(cleanValue));
             return;
         }
 
-        // 2. If it has changed, send to server
         setIsUpdating(true);
 
         router.put(
@@ -92,12 +82,9 @@ const EditableCell: React.FC<EditableCellProps> = ({
             {
                 preserveScroll: true,
                 preserveState: true,
-                only: ['ppmps'], // Tells Inertia to only refresh the table data
-                onSuccess: () => {
-                    // Success: The useEffect above will handle updating localValue
-                },
+                only: ['ppmps'],
+                onSuccess: () => {},
                 onError: () => {
-                    // Fail: Revert to the old database value
                     setLocalValue(formatInteger(initialValue));
                 },
                 onFinish: () => {
@@ -124,11 +111,12 @@ const EditableCell: React.FC<EditableCellProps> = ({
 const columnHelper = createColumnHelper<Ppmp>();
 
 const columns = [
-    columnHelper.accessor('funding_source_id', {
+    columnHelper.display({
+        id: 'funding_source',
         header: () => <div>Funding Source</div>,
         cell: ({ row }) => (
             <span className="text-wrap">
-                {row.original.fundingSource?.code}
+                {row.original.ppa_funding_source?.funding_source?.code}
             </span>
         ),
     }),
@@ -137,7 +125,7 @@ const columns = [
         header: () => <div>Expense Class</div>,
         cell: ({ row }) => (
             <span className="font-medium text-wrap">
-                {row.original.chartOfAccount?.expense_class}
+                {row.original.ppmp_price_list?.chart_of_account?.expense_class}
             </span>
         ),
     }),
@@ -147,61 +135,51 @@ const columns = [
         header: () => <div>Expense Account</div>,
         cell: ({ row }) => (
             <div className="text-wrap">
-                {row.original.chartOfAccount?.account_title}
+                {row.original.ppmp_price_list?.chart_of_account?.account_title}
             </div>
         ),
     }),
-    // priceList
     columnHelper.display({
         id: 'item_number',
         size: 150,
         header: () => <div className="pr-20 text-right">Item No.</div>,
         cell: ({ row }) => (
             <div className="pr-20 text-right">
-                {row.original.priceList?.item_number}
+                {row.original.ppmp_price_list?.item_number}
             </div>
         ),
     }),
-    columnHelper.accessor('priceListDescription', {
+    columnHelper.display({
+        id: 'description',
         header: () => <div>Description</div>,
         size: 300,
         enableGlobalFilter: true,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+        cell: ({ row }) => (
+            <div className="text-wrap">
+                {row.original.ppmp_price_list?.description}
+            </div>
+        ),
     }),
-    columnHelper.accessor('ppmp_price_list_id', {
+    columnHelper.display({
         id: 'unit_of_measurement',
         size: 150,
         header: () => <div>Unit of Measurement</div>,
-        cell: ({ getValue, table }) => {
-            const meta = table.options.meta?.meta;
-            const priceLists = meta?.priceLists;
-            const priceList = priceLists?.find((pl) => pl.id === getValue());
-
-            return (
-                <div className="text-wrap">
-                    {priceList?.unit_of_measurement}
-                </div>
-            );
-        },
+        cell: ({ row }) => (
+            <div className="text-wrap">
+                {row.original.ppmp_price_list?.unit_of_measurement}
+            </div>
+        ),
     }),
-    columnHelper.accessor('ppmp_price_list_id', {
+    columnHelper.display({
         id: 'price',
         size: 150,
         header: () => <div className="text-right">PRICELIST</div>,
-        cell: ({ getValue, table }) => {
-            const meta = table.options.meta?.meta;
-            const priceLists = meta?.priceLists;
-            const priceList = priceLists?.find((pl) => pl.id === getValue());
-
-            return (
-                <div className="text-right">
-                    {formatNumber(priceList?.price ?? 0)}
-                </div>
-            );
-        },
+        cell: ({ row }) => (
+            <div className="text-right">
+                {formatNumber(row.original.ppmp_price_list?.price ?? 0)}
+            </div>
+        ),
     }),
-
-    // ppmps
     columnHelper.display({
         id: 'cy_qty',
         size: 150,

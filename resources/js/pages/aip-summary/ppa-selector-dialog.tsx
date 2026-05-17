@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { router } from '@inertiajs/react';
 import {
     Dialog,
@@ -82,11 +82,11 @@ export default function PpaSelectorDialog({
             ...mainFilters
         } = filters;
 
-        router.get(window.location.pathname, mainFilters, {
-            preserveState: true,
-            preserveScroll: true,
-            replace: true,
-        });
+        // router.get(window.location.pathname, mainFilters, {
+        //     preserveState: true,
+        //     preserveScroll: true,
+        //     replace: true,
+        // });
 
         onClose();
     };
@@ -309,7 +309,7 @@ export default function PpaSelectorDialog({
                                 onClick={handleImport}
                                 disabled={loading || selectedItems.size === 0}
                             >
-                                {loading && <Spinner className="mr-2" />}
+                                {loading && <Spinner />}
                                 Import Selected
                             </Button>
                         </div>

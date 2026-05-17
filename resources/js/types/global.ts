@@ -24,16 +24,17 @@ export interface OfficeType {
 
 export interface Office {
     id: number;
-    sector_id: number;
-    lgu_level_id: number;
-    office_type_id: number;
-    parent_id: number | null;
     code: string;
     name: string;
     acronym: string | null;
     is_lee: boolean;
     created_at: string | null;
     updated_at: string | null;
+
+    sector_id: number;
+    lgu_level_id: number;
+    office_type_id: number;
+    parent_id: number | null;
 
     full_code: string;
 
@@ -58,12 +59,13 @@ export interface FiscalYear {
 
 export interface AipEntry {
     id: number;
-    ppa_id: number;
-    start_date: string;
-    end_date: string;
-    expected_output: string;
+    start_date: string | null;
+    end_date: string | null;
+    expected_output: string | null;
     created_at: string | null;
     updated_at: string | null;
+
+    ppa_id: number;
 
     ppa?: Ppa;
     ppa_funding_sources?: PpaFundingSource[];
@@ -81,8 +83,6 @@ export interface FundingSource {
 
 export interface PpaFundingSource {
     id: number;
-    ppa_id: number;
-    funding_source_id: number;
     ps_amount: string;
     mooe_amount: string;
     fe_amount: string;
@@ -92,6 +92,9 @@ export interface PpaFundingSource {
     created_at: string | null;
     updated_at: string | null;
 
+    ppa_id: number;
+    funding_source_id: number;
+
     funding_source?: FundingSource;
 }
 
@@ -99,9 +102,6 @@ export type PpaTye = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
 
 export interface Ppa {
     id: number;
-    office_id: number;
-    parent_id: number | null;
-    fiscal_year_id: number;
     name: string;
     type: PpaTye;
     code_suffix: string;
@@ -109,6 +109,10 @@ export interface Ppa {
     sort_order: number;
     created_at: string | null;
     updated_at: string | null;
+
+    office_id: number;
+    parent_id: number | null;
+    fiscal_year_id: number;
 
     aip_entries?: AipEntry[];
     children?: Ppa[];
@@ -140,10 +144,10 @@ export interface ChartOfAccount {
     level: number;
     is_postable: boolean;
     is_active: boolean;
-    normal_balance: string;
+    normal_balance: 'DEBIT' | 'CREDIT';
     description: string | null;
-    created_at: string;
-    updated_at: string;
+    created_at: string | null;
+    updated_at: string | null;
 
     parent_id: number | null;
 
@@ -179,12 +183,12 @@ export interface Ppmp {
     created_at: string | null;
     updated_at: string | null;
 
-    aip_entry_id: number;
-    funding_source_id: number;
+    ppmp_funding_source_id: number;
     ppmp_price_list_id: number | null;
 
+    ppa_funding_source?: PpaFundingSource;
     ppmp_price_list?: PriceList;
-    funding_source: FundingSource;
+    // funding_source: FundingSource;
 }
 
 export interface PriceList {
@@ -217,17 +221,17 @@ export interface PpmpCategory {
 
 export interface ChartOfAccountPpmpCategory {
     id: number;
-    ppmp_category_id: number;
-    chart_of_account_id: number;
     created_at: string | null;
     updated_at: string | null;
+
+    ppmp_category_id: number;
+    chart_of_account_id: number;
 }
 
 export interface AipSummary {
     id: string | number;
     full_code: string;
     title: string;
-    ppa_id: number;
     funding_source?: string;
     cc_typology_code?: string;
     office: {
@@ -245,11 +249,12 @@ export interface AipSummary {
         ccet_adaptation: string | null;
         ccet_mitigation: string | null;
     };
+
+    ppa_id: number;
 }
 
 export interface User {
     id: number;
-    office_id: number | null;
     name: string;
     email: string;
     email_verified_at: string | null;
@@ -262,6 +267,8 @@ export interface User {
     remember_token: string | null;
     created_at: string | null;
     updated_at: string | null;
+
+    office_id: number | null;
 
     office?: Office;
 }

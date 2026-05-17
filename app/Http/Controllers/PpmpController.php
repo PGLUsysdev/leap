@@ -20,32 +20,34 @@ class PpmpController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(FiscalYear $fiscalYear, AipEntry $aipEntry)
-    {
-        // 1. Eager load ppaFundingSources so the frontend can map Bridge IDs to Funding Source IDs
+    public function index(
+        Request $request,
+        FiscalYear $fiscalYear,
+        AipEntry $aipEntry,
+    ) {
         $selectedAipEntry = AipEntry::with(['ppa', 'ppaFundingSources'])->find(
             $aipEntry->id,
         );
 
-        // 2. Load PPMPS with the bridge relationship
         $ppmps = Ppmp::whereHas('ppaFundingSource', function ($query) use (
             $aipEntry,
         ) {
             $query->where('aip_entry_id', $aipEntry->id);
         })
-            ->with(['ppaFundingSource', 'ppmpPriceList.chartOfAccount'])
+            ->with([
+                'ppaFundingSource.fundingSource',
+                'ppmpPriceList.chartOfAccount',
+            ])
             ->get();
 
-        $priceLists = PpmpPriceList::all();
+        $priceLists = PpmpPriceList::with('chartOfAccount', 'category')->get();
 
         $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
             'MOOE',
             'CO',
         ])->get();
 
-        $ppmpCategories = PpmpCategory::with(
-            'chartOfAccounts:id,account_title,account_number',
-        )->get();
+        $ppmpCategories = PpmpCategory::with('chartOfAccounts')->get();
 
         $fundingSources = FundingSource::whereHas(
             'ppaFundingSources',
@@ -62,8 +64,8 @@ class PpmpController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'fundingSources' => $fundingSources,
-            'initialChoice' => request()->query('choice'),
-            'initialPpaFundingSourceId' => request()->query(
+            'initialChoice' => $request->query('choice'),
+            'initialPpaFundingSourceId' => $request->query(
                 'ppa_funding_source_id',
             ),
         ]);
