@@ -55,6 +55,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('unified_ppmp_items');
+        Schema::dropIfExists('ppmps');
     }
 };
