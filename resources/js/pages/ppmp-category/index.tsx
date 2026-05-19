@@ -26,7 +26,7 @@ export default function PpmpCategoryPage({
     const categoriesWithAccounts = ppmpCategories.map((category) => ({
         ...category,
         chart_of_accounts:
-            category.chart_of_account_pivot
+            category.chart_of_account_ppmp_categories
                 ?.map((pivot) =>
                     chartOfAccounts.find(
                         (coa) => coa.id === pivot.chart_of_account_id,

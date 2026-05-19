@@ -127,7 +127,7 @@ export default function PpmpPage({
             window.location.pathname,
             {
                 choice: value,
-                fund: selectedFundingSourceId,
+                ppa_funding_source_id: currentPpaFundingSourceId,
             },
             {
                 preserveState: true,
@@ -163,11 +163,13 @@ export default function PpmpPage({
             selectedFundingSourceId;
 
         const matchesExpenseClass =
-            ppmp.ppmp_price_list?.chart_of_account?.expense_class ===
-            selectedExpenseClass;
+            ppmp.ppmp_price_list?.chart_of_account_ppmp_category
+                ?.chart_of_account?.expense_class === selectedExpenseClass;
 
         return matchesFunding && matchesExpenseClass;
     });
+
+    console.log(filteredPpmpItems);
 
     function handleDeleteDialogOpen(source: Ppmp) {
         setSelectedSource(source);
@@ -202,7 +204,8 @@ export default function PpmpPage({
         return filteredPpmpItems.reduce((acc: any, item) => {
             // Correctly navigate the relationship: PPMP -> PriceList -> COA
             const priceList = item.ppmp_price_list;
-            const coa = priceList?.chart_of_account;
+            const coa =
+                priceList?.chart_of_account_ppmp_category?.chart_of_account;
 
             if (coa && priceList) {
                 const expenseClass = coa.expense_class;
@@ -236,6 +239,15 @@ export default function PpmpPage({
         );
         return bridge?.id; // This is the primary key of ppa_funding_sources
     }, [aipEntry.ppa_funding_sources, selectedFundingSourceId]);
+
+    const allPpmpItemsForFundingSource = useMemo(() => {
+        if (!selectedFundingSourceId) return [];
+        return ppmps.filter(
+            (ppmp) =>
+                ppmp.ppa_funding_source?.funding_source_id ===
+                selectedFundingSourceId,
+        );
+    }, [ppmps, selectedFundingSourceId]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -443,9 +455,7 @@ export default function PpmpPage({
             <ExpenseAccountSummaryDialog
                 open={openExpenseAccountSummaryDialog}
                 onOpenChange={setOpenExpenseAccountSummaryDialog}
-                coaWithPriceListsByExpenseClass={
-                    coaWithPriceListsByExpenseClass
-                }
+                ppmps={allPpmpItemsForFundingSource}
                 aipEntry={aipEntry}
                 fundingSource={selectedFundingSource}
                 auth={auth}

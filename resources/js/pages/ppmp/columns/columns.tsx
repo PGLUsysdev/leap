@@ -108,75 +108,161 @@ const EditableCell: React.FC<EditableCellProps> = ({
     );
 };
 
+// Define keys to safely access dynamic month properties on the object
+type MonthKey =
+    | 'jan'
+    | 'feb'
+    | 'mar'
+    | 'apr'
+    | 'may'
+    | 'jun'
+    | 'jul'
+    | 'aug'
+    | 'sep'
+    | 'oct'
+    | 'nov'
+    | 'dec';
+
+interface MonthConfig {
+    qtyKey: `${MonthKey}_qty`;
+    amountKey: `${MonthKey}_amount`;
+    qtyHeader: string;
+    amountHeader: string;
+}
+
+// 12 Months Configuration Array
+const MONTHS: MonthConfig[] = [
+    {
+        qtyKey: 'jan_qty',
+        amountKey: 'jan_amount',
+        qtyHeader: 'JAN-QTY',
+        amountHeader: 'JAN',
+    },
+    {
+        qtyKey: 'feb_qty',
+        amountKey: 'feb_amount',
+        qtyHeader: 'FEB-QTY',
+        amountHeader: 'FEB',
+    },
+    {
+        qtyKey: 'mar_qty',
+        amountKey: 'mar_amount',
+        qtyHeader: 'MAR-QTY',
+        amountHeader: 'MAR',
+    },
+    {
+        qtyKey: 'apr_qty',
+        amountKey: 'apr_amount',
+        qtyHeader: 'APR-QTY',
+        amountHeader: 'APR',
+    },
+    {
+        qtyKey: 'may_qty',
+        amountKey: 'may_amount',
+        qtyHeader: 'MAY-QTY',
+        amountHeader: 'MAY',
+    },
+    {
+        qtyKey: 'jun_qty',
+        amountKey: 'jun_amount',
+        qtyHeader: 'JUN-QTY',
+        amountHeader: 'JUNE',
+    },
+    {
+        qtyKey: 'jul_qty',
+        amountKey: 'jul_amount',
+        qtyHeader: 'JUL-QTY',
+        amountHeader: 'JULY',
+    },
+    {
+        qtyKey: 'aug_qty',
+        amountKey: 'aug_amount',
+        qtyHeader: 'AUG-QTY',
+        amountHeader: 'AUG',
+    },
+    {
+        qtyKey: 'sep_qty',
+        amountKey: 'sep_amount',
+        qtyHeader: 'SEP-QTY',
+        amountHeader: 'SEP',
+    },
+    {
+        qtyKey: 'oct_qty',
+        amountKey: 'oct_amount',
+        qtyHeader: 'OCT-QTY',
+        amountHeader: 'OCT',
+    },
+    {
+        qtyKey: 'nov_qty',
+        amountKey: 'nov_amount',
+        qtyHeader: 'NOV-QTY',
+        amountHeader: 'NOV',
+    },
+    {
+        qtyKey: 'dec_qty',
+        amountKey: 'dec_amount',
+        qtyHeader: 'DEC-QTY',
+        amountHeader: 'DEC',
+    },
+];
+
 const columnHelper = createColumnHelper<Ppmp>();
 
 const columns = [
-    columnHelper.display({
-        id: 'funding_source',
+    columnHelper.accessor('ppa_funding_source.funding_source.code', {
+        // id: 'funding_source',
         header: () => <div>Funding Source</div>,
-        cell: ({ row }) => (
-            <span className="text-wrap">
-                {row.original.ppa_funding_source?.funding_source?.code}
-            </span>
-        ),
+        cell: ({ getValue }) => <span className="text-wrap">{getValue()}</span>,
     }),
-    columnHelper.display({
-        id: 'expense_class',
-        header: () => <div>Expense Class</div>,
-        cell: ({ row }) => (
-            <span className="font-medium text-wrap">
-                {row.original.ppmp_price_list?.chart_of_account?.expense_class}
-            </span>
-        ),
-    }),
-    columnHelper.display({
-        id: 'expense_account',
-        size: 300,
-        header: () => <div>Expense Account</div>,
-        cell: ({ row }) => (
-            <div className="text-wrap">
-                {row.original.ppmp_price_list?.chart_of_account?.account_title}
-            </div>
-        ),
-    }),
-    columnHelper.display({
-        id: 'item_number',
+    columnHelper.accessor(
+        'ppmp_price_list.chart_of_account_ppmp_category.chart_of_account.expense_class',
+        {
+            // id: 'expense_class',
+            header: () => <div>Expense Class</div>,
+            cell: ({ getValue }) => (
+                <span className="font-medium text-wrap">{getValue()}</span>
+            ),
+        },
+    ),
+    columnHelper.accessor(
+        'ppmp_price_list.chart_of_account_ppmp_category.chart_of_account.account_title',
+        {
+            // id: 'expense_account',
+            size: 300,
+            header: () => <div>Expense Account</div>,
+            cell: ({ getValue }) => (
+                <div className="text-wrap">{getValue()}</div>
+            ),
+        },
+    ),
+    columnHelper.accessor('ppmp_price_list.item_number', {
+        // id: 'item_number',
         size: 150,
         header: () => <div className="pr-20 text-right">Item No.</div>,
-        cell: ({ row }) => (
-            <div className="pr-20 text-right">
-                {row.original.ppmp_price_list?.item_number}
-            </div>
+        cell: ({ getValue }) => (
+            <div className="pr-20 text-right">{getValue()}</div>
         ),
     }),
-    columnHelper.display({
-        id: 'description',
+    columnHelper.accessor('ppmp_price_list.description', {
+        // id: 'description',
         header: () => <div>Description</div>,
         size: 300,
         enableGlobalFilter: true,
-        cell: ({ row }) => (
-            <div className="text-wrap">
-                {row.original.ppmp_price_list?.description}
-            </div>
-        ),
+        cell: ({ getValue }) => <div className="text-wrap">{getValue()}</div>,
     }),
-    columnHelper.display({
-        id: 'unit_of_measurement',
+    columnHelper.accessor('ppmp_price_list.unit_of_measurement', {
+        // id: 'unit_of_measurement',
         size: 150,
         header: () => <div>Unit of Measurement</div>,
-        cell: ({ row }) => (
-            <div className="text-wrap">
-                {row.original.ppmp_price_list?.unit_of_measurement}
-            </div>
-        ),
+        cell: ({ getValue }) => <div className="text-wrap">{getValue()}</div>,
     }),
-    columnHelper.display({
-        id: 'price',
+    columnHelper.accessor('ppmp_price_list.price', {
+        // id: 'price',
         size: 150,
         header: () => <div className="text-right">PRICELIST</div>,
-        cell: ({ row }) => (
+        cell: ({ getValue }) => (
             <div className="text-right">
-                {formatNumber(row.original.ppmp_price_list?.price ?? 0)}
+                {formatNumber(Number(getValue()) || 0)}
             </div>
         ),
     }),
@@ -186,20 +272,10 @@ const columns = [
         header: () => <div className="text-right">CY 2026-QTY</div>,
         cell: ({ row }) => {
             const ppmp = row.original;
-            const totalQty =
-                (ppmp.jan_qty || 0) +
-                (ppmp.feb_qty || 0) +
-                (ppmp.mar_qty || 0) +
-                (ppmp.apr_qty || 0) +
-                (ppmp.may_qty || 0) +
-                (ppmp.jun_qty || 0) +
-                (ppmp.jul_qty || 0) +
-                (ppmp.aug_qty || 0) +
-                (ppmp.sep_qty || 0) +
-                (ppmp.oct_qty || 0) +
-                (ppmp.nov_qty || 0) +
-                (ppmp.dec_qty || 0);
-
+            const totalQty = MONTHS.reduce(
+                (sum, month) => sum + (Number(ppmp[month.qtyKey]) || 0),
+                0,
+            );
             return (
                 <div className="text-right">
                     {formatInteger(totalQty.toString())}
@@ -208,21 +284,11 @@ const columns = [
         },
     }),
     columnHelper.accessor(
-        (row) => {
-            return new Decimal(row.jan_amount || 0)
-                .plus(row.feb_amount || 0)
-                .plus(row.mar_amount || 0)
-                .plus(row.apr_amount || 0)
-                .plus(row.may_amount || 0)
-                .plus(row.jun_amount || 0)
-                .plus(row.jul_amount || 0)
-                .plus(row.aug_amount || 0)
-                .plus(row.sep_amount || 0)
-                .plus(row.oct_amount || 0)
-                .plus(row.nov_amount || 0)
-                .plus(row.dec_amount || 0)
-                .toNumber();
-        },
+        (row) =>
+            MONTHS.reduce(
+                (acc, m) => acc.plus(new Decimal(row[m.amountKey] || 0)),
+                new Decimal(0),
+            ).toNumber(),
         {
             id: 'total_amount',
             size: 150,
@@ -235,11 +301,11 @@ const columns = [
             footer: ({ table }) => {
                 const sum = table
                     .getFilteredRowModel()
-                    .rows.reduce((acc, row) => {
-                        const val = row.getValue<number>('total_amount');
-                        return acc.plus(val || 0);
-                    }, new Decimal(0));
-
+                    .rows.reduce(
+                        (acc, row) =>
+                            acc.plus(row.getValue<number>('total_amount') || 0),
+                        new Decimal(0),
+                    );
                 return (
                     <div className="text-right">
                         {formatNumber(sum.toString())}
@@ -249,305 +315,39 @@ const columns = [
         },
     ),
 
-    // JANUARY
-    columnHelper.accessor('jan_qty', {
-        size: 150,
-        header: () => <div className="text-right">JAN-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('jan_amount', {
-        size: 150,
-        header: () => <div className="text-right">JAN</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('jan_amount') || 0));
-            }, new Decimal(0));
+    ...MONTHS.flatMap((month) => [
+        columnHelper.accessor(month.qtyKey, {
+            size: 150,
+            header: () => <div className="text-right">{month.qtyHeader}</div>,
+            cell: EditableCell,
+        }),
+        columnHelper.accessor(month.amountKey, {
+            size: 150,
+            header: () => (
+                <div className="text-right">{month.amountHeader}</div>
+            ),
+            cell: ({ getValue }) => (
+                <div className="text-right">
+                    {formatNumber(String(getValue() ?? 0))}
+                </div>
+            ),
+            footer: ({ table }) => {
+                const sum = table
+                    .getFilteredRowModel()
+                    .rows.reduce((acc, row) => {
+                        return acc.plus(
+                            new Decimal(row.getValue(month.amountKey) || 0),
+                        );
+                    }, new Decimal(0));
 
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // FEBRUARY
-    columnHelper.accessor('feb_qty', {
-        size: 150,
-        header: () => <div className="text-right">FEB-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('feb_amount', {
-        size: 150,
-        header: () => <div className="text-right">FEB</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('feb_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // MARCH
-    columnHelper.accessor('mar_qty', {
-        size: 150,
-        header: () => <div className="text-right">MAR-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('mar_amount', {
-        size: 150,
-        header: () => <div className="text-right">MAR</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('mar_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // APRIL
-    columnHelper.accessor('apr_qty', {
-        size: 150,
-        header: () => <div className="text-right">APR-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('apr_amount', {
-        size: 150,
-        header: () => <div className="text-right">APR</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('apr_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // MAY
-    columnHelper.accessor('may_qty', {
-        size: 150,
-        header: () => <div className="text-right">MAY-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('may_amount', {
-        size: 150,
-        header: () => <div className="text-right">MAY</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('may_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // JUNE
-    columnHelper.accessor('jun_qty', {
-        size: 150,
-        header: () => <div className="text-right">JUN-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('jun_amount', {
-        size: 150,
-        header: () => <div className="text-right">JUNE</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('jun_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // JULY
-    columnHelper.accessor('jul_qty', {
-        size: 150,
-        header: () => <div className="text-right">JUL-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('jul_amount', {
-        size: 150,
-        header: () => <div className="text-right">JULY</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('jul_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // AUGUST
-    columnHelper.accessor('aug_qty', {
-        size: 150,
-        header: () => <div className="text-right">AUG-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('aug_amount', {
-        size: 150,
-        header: () => <div className="text-right">AUG</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('aug_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // SEPTEMBER
-    columnHelper.accessor('sep_qty', {
-        size: 150,
-        header: () => <div className="text-right">SEP-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('sep_amount', {
-        size: 150,
-        header: () => <div className="text-right">SEP</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('sep_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // OCTOBER
-    columnHelper.accessor('oct_qty', {
-        size: 150,
-        header: () => <div className="text-right">OCT-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('oct_amount', {
-        size: 150,
-        header: () => <div className="text-right">OCT</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('oct_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // NOVEMBER
-    columnHelper.accessor('nov_qty', {
-        size: 150,
-        header: () => <div className="text-right">NOV-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('nov_amount', {
-        size: 150,
-        header: () => <div className="text-right">NOV</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('nov_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
-
-    // DECEMBER
-    columnHelper.accessor('dec_qty', {
-        size: 150,
-        header: () => <div className="text-right">DEC-QTY</div>,
-        cell: EditableCell,
-    }),
-    columnHelper.accessor('dec_amount', {
-        size: 150,
-        header: () => <div className="text-right">DEC</div>,
-        cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(String(getValue() ?? 0))}
-            </div>
-        ),
-        footer: ({ table }) => {
-            const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
-                return acc.plus(new Decimal(row.getValue('dec_amount') || 0));
-            }, new Decimal(0));
-
-            return (
-                <div className="text-right">{formatNumber(sum.toString())}</div>
-            );
-        },
-    }),
+                return (
+                    <div className="text-right">
+                        {formatNumber(sum.toString())}
+                    </div>
+                );
+            },
+        }),
+    ]),
 
     // action
     columnHelper.display({

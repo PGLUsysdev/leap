@@ -5,13 +5,14 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import type { AipEntry, FundingSource } from '@/types/global';
+import type { AipEntry, FundingSource, Ppmp } from '@/types/global';
 import { Page, Text, View, Document, PDFViewer } from '@react-pdf/renderer';
+import { useMemo } from 'react';
 
 interface ExpenseAccountSummaryDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    coaWithPriceListsByExpenseClass: any;
+    ppmps: Ppmp[]; // already filtered by funding source (array, not grouped)
     aipEntry: AipEntry;
     fundingSource: FundingSource | undefined;
     auth: any;
@@ -36,8 +37,41 @@ const sumMonths = (priceLists: any[], months: string[]) => {
     }, 0);
 };
 
-// reusable single row component
-function ReusableRow({
+// Helper to group PPMPs by ChartOfAccount under each expense class
+const groupByChartOfAccount = (ppmps: Ppmp[]) => {
+    const mooeMap: Record<string, any> = {};
+    const coMap: Record<string, any> = {};
+
+    for (const ppmp of ppmps) {
+        const coa =
+            ppmp.ppmp_price_list?.chart_of_account_ppmp_category
+                ?.chart_of_account;
+        if (!coa) continue;
+        const expenseClass = coa.expense_class;
+        if (expenseClass !== 'MOOE' && expenseClass !== 'CO') continue; // only MOOE and CO
+
+        const targetMap = expenseClass === 'MOOE' ? mooeMap : coMap;
+        const coaId = coa.id;
+        if (!targetMap[coaId]) {
+            targetMap[coaId] = {
+                ...coa,
+                price_lists: [],
+            };
+        }
+        targetMap[coaId].price_lists.push({
+            ...ppmp.ppmp_price_list,
+            ...ppmp,
+        });
+    }
+
+    return {
+        mooe: Object.values(mooeMap),
+        co: Object.values(coMap),
+    };
+};
+
+// Reusable row component for section headers and empty rows
+function SectionHeader({
     columnData,
     displayText,
     height,
@@ -83,15 +117,12 @@ function ReusableRow({
 export default function ExpenseAccountSummaryDialog({
     open,
     onOpenChange,
-    coaWithPriceListsByExpenseClass,
+    ppmps,
     aipEntry,
     fundingSource,
     auth,
 }: ExpenseAccountSummaryDialogProps) {
-    // const styles = StyleSheet.create({});
-
-    const mooePpmps = coaWithPriceListsByExpenseClass.MOOE ?? [];
-    const coPpmps = coaWithPriceListsByExpenseClass.CO ?? [];
+    const { mooe, co } = useMemo(() => groupByChartOfAccount(ppmps), [ppmps]);
 
     const columns = [
         {
@@ -99,9 +130,7 @@ export default function ExpenseAccountSummaryDialog({
             size: 33.33,
             key: 'account_title',
             alignHeader: 'center',
-            footer: () => {
-                return 'Sub-total';
-            },
+            footer: () => 'Sub-total',
         },
         {
             header: 'ACCOUNT CODE',
@@ -113,10 +142,9 @@ export default function ExpenseAccountSummaryDialog({
         {
             header: 'TOTAL (IN PPMP)',
             size: 11.11,
-            key: 'principal',
             align: 'right',
             alignHeader: 'center',
-            cell: (row) =>
+            cell: (row: any) =>
                 formatCurrency(
                     sumMonths(row.price_lists, [
                         'jan',
@@ -133,8 +161,8 @@ export default function ExpenseAccountSummaryDialog({
                         'dec',
                     ]),
                 ),
-            footer: (data) => {
-                return formatCurrency(
+            footer: (data: any[]) =>
+                formatCurrency(
                     data.reduce(
                         (acc, row) =>
                             acc +
@@ -154,20 +182,18 @@ export default function ExpenseAccountSummaryDialog({
                             ]),
                         0,
                     ),
-                );
-            },
+                ),
         },
         {
             header: '1ST QTR',
             size: 11.11,
-            key: 'interest',
             align: 'right',
             alignHeader: 'center',
-            cell: (row) =>
+            cell: (row: any) =>
                 formatCurrency(
                     sumMonths(row.price_lists, ['jan', 'feb', 'mar']),
                 ),
-            footer: (data) =>
+            footer: (data: any[]) =>
                 formatCurrency(
                     data.reduce(
                         (acc, row) =>
@@ -180,14 +206,13 @@ export default function ExpenseAccountSummaryDialog({
         {
             header: '2ND QTR',
             size: 11.11,
-            key: 'balance',
             align: 'right',
             alignHeader: 'center',
-            cell: (row) =>
+            cell: (row: any) =>
                 formatCurrency(
                     sumMonths(row.price_lists, ['apr', 'may', 'jun']),
                 ),
-            footer: (data) =>
+            footer: (data: any[]) =>
                 formatCurrency(
                     data.reduce(
                         (acc, row) =>
@@ -200,14 +225,13 @@ export default function ExpenseAccountSummaryDialog({
         {
             header: '3RD QTR',
             size: 11.11,
-            key: 'total',
             align: 'right',
             alignHeader: 'center',
-            cell: (row) =>
+            cell: (row: any) =>
                 formatCurrency(
                     sumMonths(row.price_lists, ['jul', 'aug', 'sep']),
                 ),
-            footer: (data) =>
+            footer: (data: any[]) =>
                 formatCurrency(
                     data.reduce(
                         (acc, row) =>
@@ -220,14 +244,13 @@ export default function ExpenseAccountSummaryDialog({
         {
             header: '4TH QTR',
             size: 11.11,
-            key: 'total',
             align: 'right',
             alignHeader: 'center',
-            cell: (row) =>
+            cell: (row: any) =>
                 formatCurrency(
                     sumMonths(row.price_lists, ['oct', 'nov', 'dec']),
                 ),
-            footer: (data) =>
+            footer: (data: any[]) =>
                 formatCurrency(
                     data.reduce(
                         (acc, row) =>
@@ -259,15 +282,12 @@ export default function ExpenseAccountSummaryDialog({
                         <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
                             {auth.user.name}
                         </Text>
-
                         <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
                             {fundingSource?.title.toUpperCase()}
                         </Text>
-
                         <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
                             {aipEntry.ppa?.full_code}
                         </Text>
-
                         <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
                             {aipEntry.ppa?.name}
                         </Text>
@@ -310,16 +330,14 @@ export default function ExpenseAccountSummaryDialog({
                             ))}
                         </View>
 
-                        {/* mooe */}
-                        <ReusableRow
+                        {/* MOOE Section */}
+                        <SectionHeader
                             columnData={columns}
                             displayText="Maintenance and Other Operating Expenses"
                         />
-
-                        {/* body */}
-                        {mooePpmps.map((row, rowIndex) => (
+                        {mooe.map((row, rowIndex) => (
                             <View
-                                key={rowIndex}
+                                key={`mooe-${rowIndex}`}
                                 style={{ flexDirection: 'row' }}
                                 wrap={false}
                             >
@@ -351,18 +369,11 @@ export default function ExpenseAccountSummaryDialog({
                                 ))}
                             </View>
                         ))}
-
-                        {/* footer */}
-                        {coPpmps.length > 0 && (
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                }}
-                                wrap={false}
-                            >
+                        {mooe.length > 0 && (
+                            <View style={{ flexDirection: 'row' }} wrap={false}>
                                 {columns.map((col, colIndex) => (
                                     <View
-                                        key={`footer-${colIndex}`}
+                                        key={`mooe-footer-${colIndex}`}
                                         style={{
                                             width: `${col.size}%`,
                                             borderBottom: '1pt solid black',
@@ -382,7 +393,7 @@ export default function ExpenseAccountSummaryDialog({
                                             }}
                                         >
                                             {typeof col.footer === 'function'
-                                                ? col.footer(mooePpmps)
+                                                ? col.footer(mooe)
                                                 : ''}
                                         </Text>
                                     </View>
@@ -390,23 +401,21 @@ export default function ExpenseAccountSummaryDialog({
                             </View>
                         )}
 
-                        {/* blank row */}
-                        <ReusableRow
+                        {/* blank row spacer */}
+                        <SectionHeader
                             columnData={columns}
                             displayText=""
                             height={16}
                         />
 
-                        {/* co */}
-                        <ReusableRow
+                        {/* CO Section */}
+                        <SectionHeader
                             columnData={columns}
                             displayText="Capital Outlay"
                         />
-
-                        {/* body */}
-                        {coPpmps.map((row, rowIndex) => (
+                        {co.map((row, rowIndex) => (
                             <View
-                                key={rowIndex}
+                                key={`co-${rowIndex}`}
                                 style={{ flexDirection: 'row' }}
                                 wrap={false}
                             >
@@ -438,18 +447,11 @@ export default function ExpenseAccountSummaryDialog({
                                 ))}
                             </View>
                         ))}
-
-                        {/* footer */}
-                        {coPpmps.length > 0 && (
-                            <View
-                                style={{
-                                    flexDirection: 'row',
-                                }}
-                                wrap={false}
-                            >
+                        {co.length > 0 && (
+                            <View style={{ flexDirection: 'row' }} wrap={false}>
                                 {columns.map((col, colIndex) => (
                                     <View
-                                        key={`footer-${colIndex}`}
+                                        key={`co-footer-${colIndex}`}
                                         style={{
                                             width: `${col.size}%`,
                                             borderBottom: '1pt solid black',
@@ -469,7 +471,7 @@ export default function ExpenseAccountSummaryDialog({
                                             }}
                                         >
                                             {typeof col.footer === 'function'
-                                                ? col.footer(coPpmps)
+                                                ? col.footer(co)
                                                 : ''}
                                         </Text>
                                     </View>
@@ -477,36 +479,18 @@ export default function ExpenseAccountSummaryDialog({
                             </View>
                         )}
 
-                        {/* blank row */}
-                        <ReusableRow
-                            columnData={columns}
-                            displayText=""
-                            height={16}
-                        />
-
-                        {/* fe */}
-                        <ReusableRow
-                            columnData={columns}
-                            displayText="Financial Expense"
-                        />
-
-                        {/* blank row */}
-                        <ReusableRow
+                        {/* blank row spacer */}
+                        <SectionHeader
                             columnData={columns}
                             displayText=""
                             height={16}
                         />
 
                         {/* TOTAL FOR THE PPA */}
-                        <View
-                            style={{
-                                flexDirection: 'row',
-                            }}
-                            wrap={false}
-                        >
+                        <View style={{ flexDirection: 'row' }} wrap={false}>
                             {columns.map((col, index) => (
                                 <View
-                                    key={`${index}`}
+                                    key={`total-${index}`}
                                     style={{
                                         width: `${col.size}%`,
                                         borderBottom: '1pt solid #000',
@@ -529,10 +513,7 @@ export default function ExpenseAccountSummaryDialog({
                                         {index === 0
                                             ? 'TOTAL FOR THE PPA'
                                             : typeof col.footer === 'function'
-                                              ? col.footer([
-                                                    ...mooePpmps,
-                                                    ...coPpmps,
-                                                ])
+                                              ? col.footer([...mooe, ...co])
                                               : ''}
                                     </Text>
                                 </View>
@@ -549,12 +530,10 @@ export default function ExpenseAccountSummaryDialog({
             <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
                 <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b p-4">
                     <DialogTitle>Expense Account Summary</DialogTitle>
-
                     <DialogDescription className="sr-only" />
                 </DialogHeader>
-
                 <div className="h-full w-full">
-                    <PDFViewer height={'100%'} width={'100%'}>
+                    <PDFViewer height="100%" width="100%">
                         <MyDocument />
                     </PDFViewer>
                 </div>

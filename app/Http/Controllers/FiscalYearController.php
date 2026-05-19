@@ -41,9 +41,11 @@ class FiscalYearController extends Controller
                     : $user->office_id;
 
                 $query = Ppmp::with([
-                    'ppmpPriceList.category',
-                    'ppmpPriceList.chartOfAccount',
-                ])->whereHas('aipEntry.ppa', function ($query) use ($id) {
+                    'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
+                    'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory',
+                ])->whereHas('ppaFundingSource.aipEntry.ppa', function (
+                    $query,
+                ) use ($id) {
                     $query->where('fiscal_year_id', $id);
                 });
 
@@ -52,9 +54,9 @@ class FiscalYearController extends Controller
                     ->pluck('id');
 
                 if ($targetOfficeId !== 'all') {
-                    $query->whereHas('aipEntry.ppa', function ($q) use (
-                        $officeIds,
-                    ) {
+                    $query->whereHas('ppaFundingSource.aipEntry.ppa', function (
+                        $q,
+                    ) use ($officeIds) {
                         $q->whereIn('office_id', $officeIds);
                     });
                 }
@@ -131,12 +133,13 @@ class FiscalYearController extends Controller
                         return $item;
                     })
                     ->groupBy(function ($item) {
-                        return $item->ppmpPriceList->category->name ??
-                            'Uncategorized';
+                        return $item->ppmpPriceList->chartOfAccountPpmpCategory
+                            ->ppmpCategory->name ?? 'Uncategorized';
                     })
                     ->map(function ($categoryGroup) {
                         return $categoryGroup->groupBy(function ($item) {
-                            return $item->ppmpPriceList->chartOfAccount
+                            return $item->ppmpPriceList
+                                ->chartOfAccountPpmpCategory->chartOfAccount
                                 ->account_title ?? 'General Account';
                         });
                     });

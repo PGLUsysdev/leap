@@ -1,9 +1,7 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
 import type {
     Ppmp,
     PriceList,
@@ -14,6 +12,8 @@ import type {
     FiscalYear,
     AuthData,
 } from '@/types/global';
+import { centuryGothicBase64 } from '@/fonts/CenturyGothic';
+import { centuryGothicBoldBase64 } from '@/fonts/CenturyGothicBold';
 
 interface ExportToExcelProps {
     filteredPpmpItems: Ppmp[];
@@ -29,9 +29,9 @@ interface ExportToExcelProps {
 
 export async function exportToExcel({
     filteredPpmpItems,
-    priceLists,
-    ppmpCategories,
-    chartOfAccounts,
+    priceLists: _priceLists,
+    ppmpCategories: _ppmpCategories,
+    chartOfAccounts: _chartOfAccounts,
     aipEntry,
     fundingSources,
     selectedFundingSourceId,
@@ -40,10 +40,9 @@ export async function exportToExcel({
 }: ExportToExcelProps) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('PPMP');
-    const initailRowCount = worksheet.rowCount + 5; // returns the number of the very first row
-    const headerRowCount = initailRowCount + 1; // returns the number where the header row is
-    const firstRowCount = headerRowCount + 1; // returns the number where the header row is
-    // const headerRow = worksheet.getRow(headerRowCount); // returns the header row data
+    const initailRowCount = worksheet.rowCount + 5;
+    const headerRowCount = initailRowCount + 1;
+    const firstRowCount = headerRowCount + 1;
 
     worksheet.columns = [
         { header: 'EXPENSE ACCOUNT', key: 'expenseAccount', width: 15 },
@@ -80,7 +79,6 @@ export async function exportToExcel({
     ];
 
     worksheet.spliceRows(1, 0, [], [], [], [], []);
-
     [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30].forEach((columnNumber) => {
         const column = worksheet.getColumn(columnNumber);
         column.fill = {
@@ -92,24 +90,21 @@ export async function exportToExcel({
 
     let currentRow = firstRowCount;
 
-    // --- DATA PREPARATION ---
-    // Join filteredPpmpItems with priceLists and ppmpCategories to get is_non_procurement
+    // --- DATA PREPARATION using eager-loaded relations ---
     const itemsWithCategory = filteredPpmpItems.map((item) => {
-        const priceList = priceLists.find(
-            (pl) => pl.id === item.ppmp_price_list_id,
-        );
-        const category = priceList
-            ? ppmpCategories.find((c) => c.id === priceList.ppmp_category_id)
-            : null;
+        const priceList = item.ppmp_price_list;
+        const coaPivot = priceList?.chart_of_account_ppmp_category;
+        const coa = coaPivot?.chart_of_account;
+        const category = coaPivot?.ppmp_category;
         return {
             ...item,
             priceList,
+            coa,
             category,
             is_non_procurement: category?.is_non_procurement ?? false,
         };
     });
 
-    // Group by is_non_procurement first
     const groupedByProcurementType = itemsWithCategory.reduce(
         (acc, item) => {
             const key = item.is_non_procurement ? 'true' : 'false';
@@ -130,7 +125,6 @@ export async function exportToExcel({
         categoryTotalRows: number[];
     }[] = [];
 
-    // Process each procurement type
     Object.entries(groupedByProcurementType).forEach(
         ([isNonProcurement, items]: [string, typeof itemsWithCategory]) => {
             const procurementType =
@@ -138,10 +132,7 @@ export async function exportToExcel({
                     ? 'NON-PROCUREMENT ITEMS'
                     : 'PROCUREMENT ITEMS';
 
-            // Procurement Type Header Row
-            worksheet.addRow({
-                description: procurementType,
-            });
+            worksheet.addRow({ description: procurementType });
             const procurementTypeHeaderRow = worksheet.getRow(currentRow);
             procurementTypeHeaderRow.font = {
                 bold: true,
@@ -158,7 +149,6 @@ export async function exportToExcel({
             const procurementTypeStartRow = currentRow;
             const categoryTotalRows: number[] = [];
 
-            // Group by category within procurement type
             const groupedByCategory = items.reduce((acc: any, item) => {
                 const key = item.category?.id?.toString() || 'undefined';
                 if (!acc[key]) acc[key] = [];
@@ -176,228 +166,148 @@ export async function exportToExcel({
                     const subGrouped = value.reduce(
                         (
                             acc: Record<string, typeof itemsWithCategory>,
-                            item: (typeof itemsWithCategory)[number],
+                            item,
                         ) => {
                             const subKey =
-                                item.priceList?.chart_of_account_id?.toString() ||
-                                'undefined';
-                            if (!acc[subKey]) {
-                                acc[subKey] = [];
-                            }
+                                item.coa?.id?.toString() || 'undefined';
+                            if (!acc[subKey]) acc[subKey] = [];
                             acc[subKey].push(item);
                             return acc;
                         },
                         {} as Record<string, typeof itemsWithCategory>,
                     );
-
                     return [key, subGrouped];
                 }),
             );
 
-            // Process each category
             Object.entries(groupedByExpenseAccount).forEach(
                 ([categoryId, accounts]) => {
-                    const categoryName = ppmpCategories.find(
-                        (category) => category.id === Number(categoryId),
-                    )?.name;
+                    const categoryName =
+                        items.find((i) => i.category?.id === Number(categoryId))
+                            ?.category?.name || 'Unknown';
 
-                    worksheet.addRow({
-                        description: categoryName,
-                    }).fill = {
+                    worksheet.addRow({ description: categoryName }).fill = {
                         type: 'pattern',
                         pattern: 'solid',
                         fgColor: { argb: 'd0cece' },
                     };
-
                     currentRow++;
                     const itemRows: number[] = [];
 
                     Object.entries(accounts).forEach(
-                        ([accountId, items]: [
+                        ([accountId, accountItems]: [
                             string,
                             typeof itemsWithCategory,
                         ]) => {
+                            const accountTitle =
+                                accountItems[0]?.coa?.account_title ||
+                                'Unknown';
                             worksheet.addRow({
-                                description: chartOfAccounts.find(
-                                    (account) =>
-                                        account.id === Number(accountId),
-                                )?.account_title,
+                                description: accountTitle,
                             }).fill = {
                                 type: 'pattern',
                                 pattern: 'solid',
                                 fgColor: { argb: 'fbe4d5' },
                             };
-
                             currentRow++;
 
-                            items.forEach(
-                                (item: (typeof itemsWithCategory)[number]) => {
-                                    itemRows.push(currentRow);
-                                    const priceList = item.priceList;
-                                    worksheet.addRow({
-                                        expenseAccount: chartOfAccounts.find(
-                                            (account) => {
-                                                return (
-                                                    account.id ===
-                                                    priceList?.chart_of_account_id
-                                                );
-                                            },
-                                        )?.account_title,
-                                        itemNo: priceList?.item_number,
-                                        description: priceList?.description,
-                                        unitOfMeasurement:
-                                            priceList?.unit_of_measurement,
-                                        price: Number(priceList?.price),
-                                        totalQuantity: {
-                                            formula: `SUM(H${currentRow}, J${currentRow}, L${currentRow}, N${currentRow}, P${currentRow}, R${currentRow}, T${currentRow}, V${currentRow}, X${currentRow}, Z${currentRow}, AB${currentRow}, AD${currentRow})`,
-                                        },
-                                        totalAmount: {
-                                            formula: `PRODUCT(E${currentRow}, F${currentRow})`,
-                                        },
-                                        janQuantity: Number(item.jan_qty),
-                                        janAmount: Number(item.jan_amount),
-                                        febQuantity: Number(item.feb_qty),
-                                        febAmount: Number(item.feb_amount),
-                                        marQuantity: Number(item.mar_qty),
-                                        marAmount: Number(item.mar_amount),
-                                        aprQuantity: Number(item.apr_qty),
-                                        aprAmount: Number(item.apr_amount),
-                                        mayQuantity: Number(item.may_qty),
-                                        mayAmount: Number(item.may_amount),
-                                        junQuantity: Number(item.jun_qty),
-                                        junAmount: Number(item.jun_amount),
-                                        julQuantity: Number(item.jul_qty),
-                                        julAmount: Number(item.jul_amount),
-                                        augQuantity: Number(item.aug_qty),
-                                        augAmount: Number(item.aug_amount),
-                                        sepQuantity: Number(item.sep_qty),
-                                        sepAmount: Number(item.sep_amount),
-                                        octQuantity: Number(item.oct_qty),
-                                        octAmount: Number(item.oct_amount),
-                                        novQuantity: Number(item.nov_qty),
-                                        novAmount: Number(item.nov_amount),
-                                        decQuantity: Number(item.dec_qty),
-                                        decAmount: Number(item.dec_amount),
-                                    });
-
-                                    worksheet.getRow(currentRow).height = 30;
-
-                                    // Format price column to show 2 decimal places
-                                    const priceCell = worksheet.getCell(
-                                        `E${currentRow}`,
-                                    );
-                                    priceCell.numFmt = '0.00';
-
-                                    currentRow++;
-                                },
-                            );
+                            accountItems.forEach((item) => {
+                                itemRows.push(currentRow);
+                                const priceList = item.priceList;
+                                worksheet.addRow({
+                                    expenseAccount: item.coa?.account_title,
+                                    itemNo: priceList?.item_number,
+                                    description: priceList?.description,
+                                    unitOfMeasurement:
+                                        priceList?.unit_of_measurement,
+                                    price: Number(priceList?.price),
+                                    totalQuantity: {
+                                        formula: `SUM(H${currentRow}, J${currentRow}, L${currentRow}, N${currentRow}, P${currentRow}, R${currentRow}, T${currentRow}, V${currentRow}, X${currentRow}, Z${currentRow}, AB${currentRow}, AD${currentRow})`,
+                                    },
+                                    totalAmount: {
+                                        formula: `PRODUCT(E${currentRow}, F${currentRow})`,
+                                    },
+                                    janQuantity: Number(item.jan_qty),
+                                    janAmount: Number(item.jan_amount),
+                                    febQuantity: Number(item.feb_qty),
+                                    febAmount: Number(item.feb_amount),
+                                    marQuantity: Number(item.mar_qty),
+                                    marAmount: Number(item.mar_amount),
+                                    aprQuantity: Number(item.apr_qty),
+                                    aprAmount: Number(item.apr_amount),
+                                    mayQuantity: Number(item.may_qty),
+                                    mayAmount: Number(item.may_amount),
+                                    junQuantity: Number(item.jun_qty),
+                                    junAmount: Number(item.jun_amount),
+                                    julQuantity: Number(item.jul_qty),
+                                    julAmount: Number(item.jul_amount),
+                                    augQuantity: Number(item.aug_qty),
+                                    augAmount: Number(item.aug_amount),
+                                    sepQuantity: Number(item.sep_qty),
+                                    sepAmount: Number(item.sep_amount),
+                                    octQuantity: Number(item.oct_qty),
+                                    octAmount: Number(item.oct_amount),
+                                    novQuantity: Number(item.nov_qty),
+                                    novAmount: Number(item.nov_amount),
+                                    decQuantity: Number(item.dec_qty),
+                                    decAmount: Number(item.dec_amount),
+                                });
+                                worksheet.getRow(currentRow).height = 30;
+                                const priceCell = worksheet.getCell(
+                                    `E${currentRow}`,
+                                );
+                                priceCell.numFmt = '0.00';
+                                currentRow++;
+                            });
                         },
                     );
 
                     const categoryTotalRow = currentRow;
                     categoryTotalRows.push(categoryTotalRow);
-
                     const buildCategoryFormula = (column: string) =>
                         `SUM(${itemRows.map((row) => `${column}${row}`).join(',')})`;
-
                     worksheet.addRow({
                         description: `${categoryName} - TOTAL`,
-                        totalAmount: {
-                            formula: buildCategoryFormula('G'),
-                        },
-                        janAmount: {
-                            formula: buildCategoryFormula('I'),
-                        },
-                        febAmount: {
-                            formula: buildCategoryFormula('K'),
-                        },
-                        marAmount: {
-                            formula: buildCategoryFormula('M'),
-                        },
-                        aprAmount: {
-                            formula: buildCategoryFormula('O'),
-                        },
-                        mayAmount: {
-                            formula: buildCategoryFormula('Q'),
-                        },
-                        junAmount: {
-                            formula: buildCategoryFormula('S'),
-                        },
-                        julAmount: {
-                            formula: buildCategoryFormula('U'),
-                        },
-                        augAmount: {
-                            formula: buildCategoryFormula('W'),
-                        },
-                        sepAmount: {
-                            formula: buildCategoryFormula('Y'),
-                        },
-                        octAmount: {
-                            formula: buildCategoryFormula('AA'),
-                        },
-                        novAmount: {
-                            formula: buildCategoryFormula('AC'),
-                        },
-                        decAmount: {
-                            formula: buildCategoryFormula('AE'),
-                        },
+                        totalAmount: { formula: buildCategoryFormula('G') },
+                        janAmount: { formula: buildCategoryFormula('I') },
+                        febAmount: { formula: buildCategoryFormula('K') },
+                        marAmount: { formula: buildCategoryFormula('M') },
+                        aprAmount: { formula: buildCategoryFormula('O') },
+                        mayAmount: { formula: buildCategoryFormula('Q') },
+                        junAmount: { formula: buildCategoryFormula('S') },
+                        julAmount: { formula: buildCategoryFormula('U') },
+                        augAmount: { formula: buildCategoryFormula('W') },
+                        sepAmount: { formula: buildCategoryFormula('Y') },
+                        octAmount: { formula: buildCategoryFormula('AA') },
+                        novAmount: { formula: buildCategoryFormula('AC') },
+                        decAmount: { formula: buildCategoryFormula('AE') },
                     }).fill = {
                         type: 'pattern',
                         pattern: 'solid',
                         fgColor: { argb: 'fef2cb' },
                     };
-
                     currentRow++;
                 },
             );
 
             const procurementTypeEndRow = currentRow - 1;
-
-            // Procurement Type Total Row - Only sum category total rows
             const buildProcurementTypeFormula = (column: string) =>
                 `SUM(${categoryTotalRows.map((row) => `${column}${row}`).join(',')})`;
-
             worksheet.addRow({
                 description: `TOTAL - FOR ${procurementType}`,
-                totalAmount: {
-                    formula: buildProcurementTypeFormula('G'),
-                },
-                janAmount: {
-                    formula: buildProcurementTypeFormula('I'),
-                },
-                febAmount: {
-                    formula: buildProcurementTypeFormula('K'),
-                },
-                marAmount: {
-                    formula: buildProcurementTypeFormula('M'),
-                },
-                aprAmount: {
-                    formula: buildProcurementTypeFormula('O'),
-                },
-                mayAmount: {
-                    formula: buildProcurementTypeFormula('Q'),
-                },
-                junAmount: {
-                    formula: buildProcurementTypeFormula('S'),
-                },
-                julAmount: {
-                    formula: buildProcurementTypeFormula('U'),
-                },
-                augAmount: {
-                    formula: buildProcurementTypeFormula('W'),
-                },
-                sepAmount: {
-                    formula: buildProcurementTypeFormula('Y'),
-                },
-                octAmount: {
-                    formula: buildProcurementTypeFormula('AA'),
-                },
-                novAmount: {
-                    formula: buildProcurementTypeFormula('AC'),
-                },
-                decAmount: {
-                    formula: buildProcurementTypeFormula('AE'),
-                },
+                totalAmount: { formula: buildProcurementTypeFormula('G') },
+                janAmount: { formula: buildProcurementTypeFormula('I') },
+                febAmount: { formula: buildProcurementTypeFormula('K') },
+                marAmount: { formula: buildProcurementTypeFormula('M') },
+                aprAmount: { formula: buildProcurementTypeFormula('O') },
+                mayAmount: { formula: buildProcurementTypeFormula('Q') },
+                junAmount: { formula: buildProcurementTypeFormula('S') },
+                julAmount: { formula: buildProcurementTypeFormula('U') },
+                augAmount: { formula: buildProcurementTypeFormula('W') },
+                sepAmount: { formula: buildProcurementTypeFormula('Y') },
+                octAmount: { formula: buildProcurementTypeFormula('AA') },
+                novAmount: { formula: buildProcurementTypeFormula('AC') },
+                decAmount: { formula: buildProcurementTypeFormula('AE') },
             }).fill = {
                 type: 'pattern',
                 pattern: 'solid',
@@ -410,22 +320,19 @@ export async function exportToExcel({
                 size: 8,
             };
 
-            // Save procurement type totals for grand total
             allProcurementTypeTotals.push({
                 type: procurementType,
-                totalAmount: 0, // Will be calculated by formula
-                monthlyTotals: Array(12).fill(0), // Will be calculated by formula
+                totalAmount: 0,
+                monthlyTotals: Array(12).fill(0),
                 startRow: procurementTypeStartRow,
                 endRow: procurementTypeEndRow,
                 totalRow: currentRow,
                 categoryTotalRows: [...categoryTotalRows],
             });
-
             currentRow++;
         },
     );
 
-    // GRAND TOTAL Row - Only sum procurement type total rows
     const procurementTypeTotalRows = allProcurementTypeTotals.map(
         (pt) => pt.totalRow,
     );
@@ -433,71 +340,31 @@ export async function exportToExcel({
         `SUM(${procurementTypeTotalRows.map((row) => `${column}${row}`).join(',')})`;
     worksheet.addRow({
         description: 'GRAND TOTAL - FOR THE AIP/PPA',
-        totalAmount: {
-            formula: buildFormula('G'),
-        },
-        janAmount: {
-            formula: buildFormula('I'),
-        },
-        febAmount: {
-            formula: buildFormula('K'),
-        },
-        marAmount: {
-            formula: buildFormula('M'),
-        },
-        aprAmount: {
-            formula: buildFormula('O'),
-        },
-        mayAmount: {
-            formula: buildFormula('Q'),
-        },
-        junAmount: {
-            formula: buildFormula('S'),
-        },
-        julAmount: {
-            formula: buildFormula('U'),
-        },
-        augAmount: {
-            formula: buildFormula('W'),
-        },
-        sepAmount: {
-            formula: buildFormula('Y'),
-        },
-        octAmount: {
-            formula: buildFormula('AA'),
-        },
-        novAmount: {
-            formula: buildFormula('AC'),
-        },
-        decAmount: {
-            formula: buildFormula('AE'),
-        },
+        totalAmount: { formula: buildFormula('G') },
+        janAmount: { formula: buildFormula('I') },
+        febAmount: { formula: buildFormula('K') },
+        marAmount: { formula: buildFormula('M') },
+        aprAmount: { formula: buildFormula('O') },
+        mayAmount: { formula: buildFormula('Q') },
+        junAmount: { formula: buildFormula('S') },
+        julAmount: { formula: buildFormula('U') },
+        augAmount: { formula: buildFormula('W') },
+        sepAmount: { formula: buildFormula('Y') },
+        octAmount: { formula: buildFormula('AA') },
+        novAmount: { formula: buildFormula('AC') },
+        decAmount: { formula: buildFormula('AE') },
     }).fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: '00b050' },
     };
     const grandTotalRow = worksheet.getRow(currentRow);
-    grandTotalRow.font = {
-        bold: true,
-        name: 'Century Gothic',
-        size: 8,
-    };
-    grandTotalRow.alignment = {
-        horizontal: 'center',
-    };
+    grandTotalRow.font = { bold: true, name: 'Century Gothic', size: 8 };
+    grandTotalRow.alignment = { horizontal: 'center' };
 
-    // first is by column styles
-    // set all cols font and size
     worksheet.columns.forEach((column) => {
-        column.font = {
-            name: 'Century Gothic',
-            size: 8,
-        };
-        column.alignment = {
-            vertical: 'middle',
-            wrapText: true,
-        };
+        column.font = { name: 'Century Gothic', size: 8 };
+        column.alignment = { vertical: 'middle', wrapText: true };
         column.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -506,22 +373,15 @@ export async function exportToExcel({
         };
     });
 
-    // set certain rows to font size 5
     [1, 2, 3, 4, 5].forEach((rowNumber) => {
         const column = worksheet.getColumn(rowNumber);
-        column.font = {
-            size: 5,
-        };
+        column.font = { size: 5 };
     });
 
-    // center certain fields
     [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30].forEach(
         (columnNumber) => {
             const column = worksheet.getColumn(columnNumber);
-            column.alignment = {
-                ...column.alignment,
-                horizontal: 'center',
-            };
+            column.alignment = { ...column.alignment, horizontal: 'center' };
         },
     );
 
@@ -532,7 +392,6 @@ export async function exportToExcel({
         },
     );
 
-    // Set integer format (no decimals) for quantity columns
     [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32].forEach(
         (columnNumber) => {
             const column = worksheet.getColumn(columnNumber);
@@ -541,12 +400,7 @@ export async function exportToExcel({
     );
 
     const headerRow = worksheet.getRow(headerRowCount);
-
-    headerRow.font = {
-        bold: true,
-        name: 'Century Gothic',
-        size: 8,
-    };
+    headerRow.font = { bold: true, name: 'Century Gothic', size: 8 };
     headerRow.alignment = {
         horizontal: 'center',
         vertical: 'middle',
@@ -561,8 +415,6 @@ export async function exportToExcel({
 
     [1, 2, 3, 4, 5].forEach((rowNumber) => {
         const row = worksheet.getRow(rowNumber);
-
-        // Setting border to an empty object removes all borders
         row.border = {};
         row.fill = {
             type: 'pattern',
@@ -580,15 +432,15 @@ export async function exportToExcel({
     worksheet.mergeCells('H4:AE5');
 
     const officeName = worksheet.getCell('B1');
-    const fundingSource = worksheet.getCell('B3'); // not the final name and is dynamic
+    const fundingSourceCell = worksheet.getCell('B3');
     const aipRefCode = worksheet.getCell('B4');
     const ppaDesc = worksheet.getCell('B5');
     const headerTitle = worksheet.getCell('H1');
     const headerSubTitle = worksheet.getCell('H4');
 
     const fundingSourceSpacer = worksheet.getCell(
-        fundingSource.row,
-        String(Number(fundingSource.col) - 1),
+        fundingSourceCell.row,
+        String(Number(fundingSourceCell.col) - 1),
     );
     const aipRefCodeSpacer = worksheet.getCell(
         aipRefCode.row,
@@ -599,79 +451,56 @@ export async function exportToExcel({
         String(Number(ppaDesc.col) - 1),
     );
 
-    // officeName.value = auth.user.name;
     officeName.value = auth.user.office?.acronym || auth.user.office?.name;
     officeName.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: 'ffff00' },
     };
-    officeName.font = {
-        bold: true,
-        size: 12,
-        name: 'Century Gothic',
-    };
-    officeName.alignment = {
-        vertical: 'middle',
-    };
+    officeName.font = { bold: true, size: 12, name: 'Century Gothic' };
+    officeName.alignment = { vertical: 'middle' };
 
     const selectedFunding = fundingSources.find(
         (fs) => fs.id === selectedFundingSourceId,
     );
-    fundingSource.value = `${selectedFunding?.code || 'N/A'}`;
+    fundingSourceCell.value = `${selectedFunding?.code || 'N/A'}`;
     aipRefCode.value = `${aipEntry?.ppa?.full_code || 'N/A'}`;
     ppaDesc.value = `${aipEntry?.ppa?.name || 'N/A'}`;
     headerTitle.value = 'PROVINCIAL GOVERNMENT OF LA UNION';
     headerSubTitle.value = `PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY ${fiscalYear.year}`;
 
     [
-        fundingSource,
+        fundingSourceCell,
         aipRefCode,
         ppaDesc,
         fundingSourceSpacer,
         aipRefCodeSpacer,
         ppaDescSpacer,
-    ].map(
-        (cell) => (
-            (cell.fill = {
-                type: 'pattern',
-                pattern: 'solid',
-                fgColor: { argb: '92d050' },
-            }),
-            (cell.font = {
-                bold: true,
-                size: 8,
-                name: 'Century Gothic',
-                underline: true,
-            })
-        ),
-    );
+    ].forEach((cell) => {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: '92d050' },
+        };
+        cell.font = {
+            bold: true,
+            size: 8,
+            name: 'Century Gothic',
+            underline: true,
+        };
+    });
 
-    headerTitle.alignment = {
-        vertical: 'bottom',
-        horizontal: 'center',
-    };
-    headerTitle.font = { bold: true, size: 30, name: 'Century Gothic' };
-
-    headerSubTitle.alignment = {
-        vertical: 'top',
-        horizontal: 'center',
-    };
+    headerTitle.alignment = { vertical: 'bottom', horizontal: 'center' };
+    headerTitle.font = { bold: true, size: 27, name: 'Century Gothic' };
+    headerSubTitle.alignment = { vertical: 'top', horizontal: 'center' };
     headerSubTitle.font = { bold: true, size: 20, name: 'Century Gothic' };
 
     const buf = await workbook.xlsx.writeBuffer();
-
     saveAs(new Blob([buf]), 'PPMP_Export.xlsx');
 }
 
-import { centuryGothicBase64 } from '@/fonts/CenturyGothic';
-import { centuryGothicBoldBase64 } from '@/fonts/CenturyGothicBold';
-
 export async function exportToPrint({
     filteredPpmpItems,
-    priceLists,
-    ppmpCategories,
-    chartOfAccounts,
     aipEntry,
     fundingSources,
     selectedFundingSourceId,
@@ -679,43 +508,36 @@ export async function exportToPrint({
     fiscalYear,
 }: ExportToExcelProps) {
     const longBondPaper = [8.5, 13];
-    const convertInchToMm = (inch) => inch.map((value) => value * 25.4);
-
-    // 1. Setup Document (Landscape, Long Bond Paper / 13 inches wide)
+    const convertInchToMm = (inch: number[]) =>
+        inch.map((value) => value * 25.4);
     const doc = new jsPDF('l', 'mm', convertInchToMm(longBondPaper));
 
-    // 2. Register Custom Fonts (Regular and Bold)
     doc.addFileToVFS('CenturyGothic.ttf', centuryGothicBase64);
     doc.addFont('CenturyGothic.ttf', 'CenturyGothic', 'normal');
     doc.addFileToVFS('CenturyGothic-Bold.ttf', centuryGothicBoldBase64);
     doc.addFont('CenturyGothic-Bold.ttf', 'CenturyGothic', 'bold');
-
     doc.setFont('CenturyGothic');
 
     const selectedFunding = fundingSources.find(
         (fs) => fs.id === selectedFundingSourceId,
     );
+    const tableBody: any[] = [];
 
-    const tableBody = [];
-
-    // --- DATA PREPARATION ---
-    // Join filteredPpmpItems with priceLists and ppmpCategories to get is_non_procurement
+    // --- DATA PREPARATION using eager-loaded relations ---
     const itemsWithCategory = filteredPpmpItems.map((item) => {
-        const priceList = priceLists.find(
-            (pl) => pl.id === item.ppmp_price_list_id,
-        );
-        const category = priceList
-            ? ppmpCategories.find((c) => c.id === priceList.ppmp_category_id)
-            : null;
+        const priceList = item.ppmp_price_list;
+        const coaPivot = priceList?.chart_of_account_ppmp_category;
+        const coa = coaPivot?.chart_of_account;
+        const category = coaPivot?.ppmp_category;
         return {
             ...item,
             priceList,
+            coa,
             category,
             is_non_procurement: category?.is_non_procurement ?? false,
         };
     });
 
-    // Group by is_non_procurement first
     const groupedByProcurementType = itemsWithCategory.reduce(
         (acc, item) => {
             const key = item.is_non_procurement ? 'true' : 'false';
@@ -733,17 +555,14 @@ export async function exportToPrint({
     }[] = [];
 
     Object.entries(groupedByProcurementType).forEach(
-        ([isNonProcurement, items]: [string, typeof itemsWithCategory]) => {
+        ([isNonProcurement, items]) => {
             const procurementType =
                 isNonProcurement === 'true'
                     ? 'NON-PROCUREMENT ITEMS'
                     : 'PROCUREMENT ITEMS';
-
-            // Initialize procurement type totals
             let procurementTypeTotalAmount = 0;
             let procurementTypeMonthlyTotals = Array(12).fill(0);
 
-            // Procurement Type Header Row
             tableBody.push({
                 isProcurementType: true,
                 data: Array(31)
@@ -751,7 +570,6 @@ export async function exportToPrint({
                     .map((_, i) => (i === 2 ? procurementType : '')),
             });
 
-            // Group by category within procurement type
             const groupedByCategory = items.reduce((acc: any, item) => {
                 const key = item.category?.id?.toString() || 'undefined';
                 if (!acc[key]) acc[key] = [];
@@ -760,12 +578,9 @@ export async function exportToPrint({
             }, {});
 
             Object.entries(groupedByCategory).forEach(
-                ([categoryId, items]: [string, any]) => {
+                ([categoryId, categoryItems]: [string, any]) => {
                     const categoryName =
-                        ppmpCategories.find((c) => c.id === Number(categoryId))
-                            ?.name || 'Unknown';
-
-                    // Category Row (Gray)
+                        categoryItems[0]?.category?.name || 'Unknown';
                     tableBody.push({
                         isCategory: true,
                         data: Array(31)
@@ -773,28 +588,25 @@ export async function exportToPrint({
                             .map((_, i) => (i === 2 ? categoryName : '')),
                     });
 
-                    // Initialize category-level totals
                     let categoryTotalAmount = 0;
                     const categoryMonthlyTotals = Array(12).fill(0);
                     let categoryTotalPrice = 0;
 
-                    const accounts = items.reduce((acc: any, item: any) => {
-                        const key =
-                            item.priceList?.chart_of_account_id?.toString() ||
-                            'undefined';
-                        if (!acc[key]) acc[key] = [];
-                        acc[key].push(item);
-                        return acc;
-                    }, {});
+                    const groupedByAccount = categoryItems.reduce(
+                        (acc: any, item: any) => {
+                            const key = item.coa?.id?.toString() || 'undefined';
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(item);
+                            return acc;
+                        },
+                        {},
+                    );
 
-                    Object.entries(accounts).forEach(
-                        ([accountId, accountItems]) => {
+                    Object.entries(groupedByAccount).forEach(
+                        ([accountId, accountItems]: [string, any]) => {
                             const accountTitle =
-                                chartOfAccounts.find(
-                                    (a) => a.id === Number(accountId),
-                                )?.account_title || 'Unknown';
-
-                            // Account Row (Peach)
+                                accountItems[0]?.coa?.account_title ||
+                                'Unknown';
                             tableBody.push({
                                 isAccount: true,
                                 data: Array(31)
@@ -804,14 +616,12 @@ export async function exportToPrint({
                                     ),
                             });
 
-                            accountItems.forEach((item) => {
+                            accountItems.forEach((item: any) => {
                                 const price = Number(
                                     item.priceList?.price || 0,
                                 );
-
                                 categoryTotalPrice += price;
 
-                                // Array of monthly amounts to accumulate
                                 const monthlyAmts = [
                                     item.jan_amount,
                                     item.feb_amount,
@@ -826,7 +636,6 @@ export async function exportToPrint({
                                     item.nov_amount,
                                     item.dec_amount,
                                 ];
-
                                 const totalQty = [
                                     item.jan_qty,
                                     item.feb_qty,
@@ -841,11 +650,8 @@ export async function exportToPrint({
                                     item.nov_qty,
                                     item.dec_qty,
                                 ].reduce((a, b) => a + Number(b || 0), 0);
-
                                 const totalAmt = price * totalQty;
                                 categoryTotalAmount += totalAmt;
-
-                                // Sum up monthly amounts
                                 monthlyAmts.forEach((amt, idx) => {
                                     categoryMonthlyTotals[idx] += Number(
                                         amt || 0,
@@ -898,16 +704,13 @@ export async function exportToPrint({
                         },
                     );
 
-                    // Category Total Row (Yellow) - Includes Monthly Column Totals
                     tableBody.push({
                         isTotal: true,
                         data: Array(31)
                             .fill('')
                             .map((_, i) => {
-                                // Label
                                 if (i === 2) return `${categoryName} - TOTAL`;
-
-                                if (i === 4) {
+                                if (i === 4)
                                     return categoryTotalPrice.toLocaleString(
                                         undefined,
                                         {
@@ -915,10 +718,7 @@ export async function exportToPrint({
                                             maximumFractionDigits: 2,
                                         },
                                     );
-                                }
-
-                                // Category Total
-                                if (i === 6) {
+                                if (i === 6)
                                     return categoryTotalAmount.toLocaleString(
                                         undefined,
                                         {
@@ -926,9 +726,6 @@ export async function exportToPrint({
                                             maximumFractionDigits: 2,
                                         },
                                     );
-                                }
-
-                                // Monthly Amount Columns
                                 const monthAmtCols = [
                                     8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
                                     30,
@@ -937,18 +734,15 @@ export async function exportToPrint({
                                     const monthIdx = (i - 8) / 2;
                                     const value =
                                         categoryMonthlyTotals[monthIdx] || 0;
-
                                     return value.toLocaleString(undefined, {
                                         minimumFractionDigits: 2,
                                         maximumFractionDigits: 2,
                                     });
                                 }
-
                                 return '';
                             }),
                     });
 
-                    // Accumulate category totals into procurement type totals
                     procurementTypeTotalAmount += categoryTotalAmount;
                     categoryMonthlyTotals.forEach((amt, idx) => {
                         procurementTypeMonthlyTotals[idx] += amt;
@@ -956,15 +750,13 @@ export async function exportToPrint({
                 },
             );
 
-            // Procurement Type Total Row
             tableBody.push({
                 isProcurementTypeTotal: true,
                 data: Array(31)
                     .fill('')
                     .map((_, i) => {
                         if (i === 2) return `TOTAL - FOR ${procurementType}`;
-
-                        if (i === 6) {
+                        if (i === 6)
                             return procurementTypeTotalAmount.toLocaleString(
                                 undefined,
                                 {
@@ -972,9 +764,6 @@ export async function exportToPrint({
                                     maximumFractionDigits: 2,
                                 },
                             );
-                        }
-
-                        // Monthly Amount Columns
                         const monthAmtCols = [
                             8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
                         ];
@@ -987,12 +776,10 @@ export async function exportToPrint({
                                 maximumFractionDigits: 2,
                             });
                         }
-
                         return '';
                     }),
             });
 
-            // Save procurement type totals for grand total
             allProcurementTypeTotals.push({
                 type: procurementType,
                 totalAmount: procurementTypeTotalAmount,
@@ -1001,7 +788,6 @@ export async function exportToPrint({
         },
     );
 
-    // GRAND TOTAL Row
     const grandTotalAmount = allProcurementTypeTotals.reduce(
         (sum, pt) => sum + pt.totalAmount,
         0,
@@ -1012,22 +798,17 @@ export async function exportToPrint({
             grandMonthlyTotals[idx] += amt;
         });
     });
-
     tableBody.push({
         isGrandTotal: true,
         data: Array(31)
             .fill('')
             .map((_, i) => {
                 if (i === 2) return 'GRAND TOTAL - FOR THE AIP/PPA';
-
-                if (i === 6) {
+                if (i === 6)
                     return grandTotalAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     });
-                }
-
-                // Monthly Amount Columns
                 const monthAmtCols = [
                     8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
                 ];
@@ -1039,16 +820,14 @@ export async function exportToPrint({
                         maximumFractionDigits: 2,
                     });
                 }
-
                 return '';
             }),
     });
 
-    // --- TABLE GENERATION ---
     autoTable(doc, {
         startY: 5,
         margin: { left: 5, right: 5, top: 5, bottom: 5 },
-        showHead: 'firstPage' as any, // TypeScript bypass
+        showHead: 'firstPage' as any,
         head: [
             [
                 { content: '', styles: { fillColor: [255, 255, 255] } },
@@ -1071,7 +850,7 @@ export async function exportToPrint({
                     styles: {
                         halign: 'center',
                         valign: 'bottom',
-                        fontSize: 28,
+                        fontSize: 27,
                         fontStyle: 'bold',
                     },
                 },
@@ -1185,30 +964,22 @@ export async function exportToPrint({
             3: { cellWidth: 10 },
         },
         didParseCell: (data) => {
-            // Hide Borders for Top Header rows
             if (data.section === 'head' && data.row.index <= 4) {
                 data.cell.styles.lineWidth = 0;
             }
-
-            // Row 5 Header (Bold Column names)
             if (data.section === 'head' && data.row.index === 5) {
                 data.cell.styles.fontSize = 5;
                 data.cell.styles.fontStyle = 'bold';
                 data.cell.styles.fillColor = [222, 234, 246];
             }
-
             if (data.section === 'body') {
-                const rowMeta: any = tableBody[data.row.index];
-
-                // Highlight Quantity Columns (Green)
+                const rowMeta = tableBody[data.row.index];
                 const greenCols = [
                     5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29,
                 ];
                 if (greenCols.includes(data.column.index)) {
                     data.cell.styles.fillColor = [146, 208, 80];
                 }
-
-                // Metadata Styling (Bold Categorization)
                 if (rowMeta?.isProcurementType) {
                     data.cell.styles.fillColor = [255, 255, 255];
                     data.cell.styles.fontStyle = 'bold';
@@ -1241,7 +1012,6 @@ export async function exportToPrint({
         },
     });
 
-    // 4. Final Output and Print
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
     const iframe = document.createElement('iframe');
@@ -1255,9 +1025,6 @@ export async function exportToPrint({
 
 export async function exportToPDF({
     filteredPpmpItems,
-    priceLists,
-    ppmpCategories,
-    chartOfAccounts,
     aipEntry,
     fundingSources,
     selectedFundingSourceId,
@@ -1265,43 +1032,36 @@ export async function exportToPDF({
     fiscalYear,
 }: ExportToExcelProps) {
     const longBondPaper = [8.5, 13];
-    const convertInchToMm = (inch) => inch.map((value) => value * 25.4);
-
-    // 1. Setup Document (Landscape, Long Bond Paper / 13 inches wide)
+    const convertInchToMm = (inch: number[]) =>
+        inch.map((value) => value * 25.4);
     const doc = new jsPDF('l', 'mm', convertInchToMm(longBondPaper));
 
-    // 2. Register Custom Fonts (Regular and Bold)
     doc.addFileToVFS('CenturyGothic.ttf', centuryGothicBase64);
     doc.addFont('CenturyGothic.ttf', 'CenturyGothic', 'normal');
     doc.addFileToVFS('CenturyGothic-Bold.ttf', centuryGothicBoldBase64);
     doc.addFont('CenturyGothic-Bold.ttf', 'CenturyGothic', 'bold');
-
     doc.setFont('CenturyGothic');
 
     const selectedFunding = fundingSources.find(
         (fs) => fs.id === selectedFundingSourceId,
     );
+    const tableBody: any[] = [];
 
-    const tableBody = [];
-
-    // --- DATA PREPARATION ---
-    // Join filteredPpmpItems with priceLists and ppmpCategories to get is_non_procurement
+    // Same data preparation as exportToPrint
     const itemsWithCategory = filteredPpmpItems.map((item) => {
-        const priceList = priceLists.find(
-            (pl) => pl.id === item.ppmp_price_list_id,
-        );
-        const category = priceList
-            ? ppmpCategories.find((c) => c.id === priceList.ppmp_category_id)
-            : null;
+        const priceList = item.ppmp_price_list;
+        const coaPivot = priceList?.chart_of_account_ppmp_category;
+        const coa = coaPivot?.chart_of_account;
+        const category = coaPivot?.ppmp_category;
         return {
             ...item,
             priceList,
+            coa,
             category,
             is_non_procurement: category?.is_non_procurement ?? false,
         };
     });
 
-    // Group by is_non_procurement first
     const groupedByProcurementType = itemsWithCategory.reduce(
         (acc, item) => {
             const key = item.is_non_procurement ? 'true' : 'false';
@@ -1319,17 +1079,14 @@ export async function exportToPDF({
     }[] = [];
 
     Object.entries(groupedByProcurementType).forEach(
-        ([isNonProcurement, items]: [string, typeof itemsWithCategory]) => {
+        ([isNonProcurement, items]) => {
             const procurementType =
                 isNonProcurement === 'true'
                     ? 'NON-PROCUREMENT ITEMS'
                     : 'PROCUREMENT ITEMS';
-
-            // Initialize procurement type totals
             let procurementTypeTotalAmount = 0;
             let procurementTypeMonthlyTotals = Array(12).fill(0);
 
-            // Procurement Type Header Row
             tableBody.push({
                 isProcurementType: true,
                 data: Array(31)
@@ -1337,7 +1094,6 @@ export async function exportToPDF({
                     .map((_, i) => (i === 2 ? procurementType : '')),
             });
 
-            // Group by category within procurement type
             const groupedByCategory = items.reduce((acc: any, item) => {
                 const key = item.category?.id?.toString() || 'undefined';
                 if (!acc[key]) acc[key] = [];
@@ -1345,208 +1101,186 @@ export async function exportToPDF({
                 return acc;
             }, {});
 
-            Object.entries(groupedByCategory).forEach(([categoryId, items]) => {
-                const categoryName =
-                    ppmpCategories.find((c) => c.id === Number(categoryId))
-                        ?.name || 'Unknown';
+            Object.entries(groupedByCategory).forEach(
+                ([categoryId, categoryItems]: [string, any]) => {
+                    const categoryName =
+                        categoryItems[0]?.category?.name || 'Unknown';
+                    tableBody.push({
+                        isCategory: true,
+                        data: Array(31)
+                            .fill('')
+                            .map((_, i) => (i === 2 ? categoryName : '')),
+                    });
 
-                // Category Row (Gray)
-                tableBody.push({
-                    isCategory: true,
-                    data: Array(31)
-                        .fill('')
-                        .map((_, i) => (i === 2 ? categoryName : '')),
-                });
+                    let categoryTotalAmount = 0;
+                    const categoryMonthlyTotals = Array(12).fill(0);
+                    let categoryTotalPrice = 0;
 
-                // Initialize category-level totals
-                let categoryTotalAmount = 0;
-                const categoryMonthlyTotals = Array(12).fill(0);
-                let categoryTotalPrice = 0;
-
-                const accounts = items.reduce((acc, item) => {
-                    const priceList = priceLists.find(
-                        (pl) => pl.id === item.ppmp_price_list_id,
+                    const groupedByAccount = categoryItems.reduce(
+                        (acc: any, item: any) => {
+                            const key = item.coa?.id?.toString() || 'undefined';
+                            if (!acc[key]) acc[key] = [];
+                            acc[key].push(item);
+                            return acc;
+                        },
+                        {},
                     );
-                    const key =
-                        priceList?.chart_of_account_id?.toString() ||
-                        'undefined';
-                    if (!acc[key]) acc[key] = [];
-                    acc[key].push(item);
-                    return acc;
-                }, {});
 
-                Object.entries(accounts).forEach(
-                    ([accountId, accountItems]) => {
-                        const accountTitle =
-                            chartOfAccounts.find(
-                                (a) => a.id === Number(accountId),
-                            )?.account_title || 'Unknown';
-
-                        // Account Row (Peach)
-                        tableBody.push({
-                            isAccount: true,
-                            data: Array(31)
-                                .fill('')
-                                .map((_, i) => (i === 2 ? accountTitle : '')),
-                        });
-
-                        accountItems.forEach((item) => {
-                            const priceList = priceLists.find(
-                                (pl) => pl.id === item.ppmp_price_list_id,
-                            );
-                            const price = Number(priceList?.price || 0);
-                            categoryTotalPrice += price;
-
-                            // Array of monthly amounts to accumulate
-                            const monthlyAmts = [
-                                item.jan_amount,
-                                item.feb_amount,
-                                item.mar_amount,
-                                item.apr_amount,
-                                item.may_amount,
-                                item.jun_amount,
-                                item.jul_amount,
-                                item.aug_amount,
-                                item.sep_amount,
-                                item.oct_amount,
-                                item.nov_amount,
-                                item.dec_amount,
-                            ];
-
-                            const totalQty = [
-                                item.jan_qty,
-                                item.feb_qty,
-                                item.mar_qty,
-                                item.apr_qty,
-                                item.may_qty,
-                                item.jun_qty,
-                                item.jul_qty,
-                                item.aug_qty,
-                                item.sep_qty,
-                                item.oct_qty,
-                                item.nov_qty,
-                                item.dec_qty,
-                            ].reduce((a, b) => a + Number(b || 0), 0);
-
-                            const totalAmt = price * totalQty;
-                            categoryTotalAmount += totalAmt;
-
-                            // Sum up monthly amounts
-                            monthlyAmts.forEach((amt, idx) => {
-                                categoryMonthlyTotals[idx] += Number(amt || 0);
-                            });
-
+                    Object.entries(groupedByAccount).forEach(
+                        ([accountId, accountItems]: [string, any]) => {
+                            const accountTitle =
+                                accountItems[0]?.coa?.account_title ||
+                                'Unknown';
                             tableBody.push({
-                                isItem: true,
-                                data: [
-                                    accountTitle,
-                                    priceList?.item_number,
-                                    priceList?.description,
-                                    priceList?.unit_of_measurement,
-                                    price.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    }),
-                                    totalQty,
-                                    totalAmt.toLocaleString(undefined, {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    }),
-                                    item.jan_qty,
-                                    item.jan_amount?.toLocaleString(),
-                                    item.feb_qty,
-                                    item.feb_amount?.toLocaleString(),
-                                    item.mar_qty,
-                                    item.mar_amount?.toLocaleString(),
-                                    item.apr_qty,
-                                    item.apr_amount?.toLocaleString(),
-                                    item.may_qty,
-                                    item.may_amount?.toLocaleString(),
-                                    item.jun_qty,
-                                    item.jun_amount?.toLocaleString(),
-                                    item.jul_qty,
-                                    item.jul_amount?.toLocaleString(),
-                                    item.aug_qty,
-                                    item.aug_amount?.toLocaleString(),
-                                    item.sep_qty,
-                                    item.sep_amount?.toLocaleString(),
-                                    item.oct_qty,
-                                    item.oct_amount?.toLocaleString(),
-                                    item.nov_qty,
-                                    item.nov_amount?.toLocaleString(),
-                                    item.dec_qty,
-                                    item.dec_amount?.toLocaleString(),
-                                ],
+                                isAccount: true,
+                                data: Array(31)
+                                    .fill('')
+                                    .map((_, i) =>
+                                        i === 2 ? accountTitle : '',
+                                    ),
                             });
-                        });
-                    },
-                );
 
-                // Category Total Row (Yellow) - Includes Monthly Column Totals
-                tableBody.push({
-                    isTotal: true,
-                    data: Array(31)
-                        .fill('')
-                        .map((_, i) => {
-                            // Label
-                            if (i === 2) return `${categoryName} - TOTAL`;
-
-                            if (i === 4) {
-                                return categoryTotalPrice.toLocaleString(
-                                    undefined,
-                                    {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    },
+                            accountItems.forEach((item: any) => {
+                                const price = Number(
+                                    item.priceList?.price || 0,
                                 );
-                            }
+                                categoryTotalPrice += price;
 
-                            // Category Total
-                            if (i === 6) {
-                                return categoryTotalAmount.toLocaleString(
-                                    undefined,
-                                    {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    },
-                                );
-                            }
-
-                            // Monthly Amount Columns
-                            const monthAmtCols = [
-                                8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
-                            ];
-                            if (monthAmtCols.includes(i)) {
-                                const monthIdx = (i - 8) / 2;
-                                const value =
-                                    categoryMonthlyTotals[monthIdx] || 0;
-
-                                return value.toLocaleString(undefined, {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
+                                const monthlyAmts = [
+                                    item.jan_amount,
+                                    item.feb_amount,
+                                    item.mar_amount,
+                                    item.apr_amount,
+                                    item.may_amount,
+                                    item.jun_amount,
+                                    item.jul_amount,
+                                    item.aug_amount,
+                                    item.sep_amount,
+                                    item.oct_amount,
+                                    item.nov_amount,
+                                    item.dec_amount,
+                                ];
+                                const totalQty = [
+                                    item.jan_qty,
+                                    item.feb_qty,
+                                    item.mar_qty,
+                                    item.apr_qty,
+                                    item.may_qty,
+                                    item.jun_qty,
+                                    item.jul_qty,
+                                    item.aug_qty,
+                                    item.sep_qty,
+                                    item.oct_qty,
+                                    item.nov_qty,
+                                    item.dec_qty,
+                                ].reduce((a, b) => a + Number(b || 0), 0);
+                                const totalAmt = price * totalQty;
+                                categoryTotalAmount += totalAmt;
+                                monthlyAmts.forEach((amt, idx) => {
+                                    categoryMonthlyTotals[idx] += Number(
+                                        amt || 0,
+                                    );
                                 });
-                            }
 
-                            return '';
-                        }),
-                });
+                                tableBody.push({
+                                    isItem: true,
+                                    data: [
+                                        accountTitle,
+                                        item.priceList?.item_number,
+                                        item.priceList?.description,
+                                        item.priceList?.unit_of_measurement,
+                                        price.toLocaleString(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        }),
+                                        totalQty,
+                                        totalAmt.toLocaleString(undefined, {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        }),
+                                        item.jan_qty,
+                                        item.jan_amount?.toLocaleString(),
+                                        item.feb_qty,
+                                        item.feb_amount?.toLocaleString(),
+                                        item.mar_qty,
+                                        item.mar_amount?.toLocaleString(),
+                                        item.apr_qty,
+                                        item.apr_amount?.toLocaleString(),
+                                        item.may_qty,
+                                        item.may_amount?.toLocaleString(),
+                                        item.jun_qty,
+                                        item.jun_amount?.toLocaleString(),
+                                        item.jul_qty,
+                                        item.jul_amount?.toLocaleString(),
+                                        item.aug_qty,
+                                        item.aug_amount?.toLocaleString(),
+                                        item.sep_qty,
+                                        item.sep_amount?.toLocaleString(),
+                                        item.oct_qty,
+                                        item.oct_amount?.toLocaleString(),
+                                        item.nov_qty,
+                                        item.nov_amount?.toLocaleString(),
+                                        item.dec_qty,
+                                        item.dec_amount?.toLocaleString(),
+                                    ],
+                                });
+                            });
+                        },
+                    );
 
-                // Accumulate category totals into procurement type totals
-                procurementTypeTotalAmount += categoryTotalAmount;
-                categoryMonthlyTotals.forEach((amt, idx) => {
-                    procurementTypeMonthlyTotals[idx] += amt;
-                });
-            });
+                    tableBody.push({
+                        isTotal: true,
+                        data: Array(31)
+                            .fill('')
+                            .map((_, i) => {
+                                if (i === 2) return `${categoryName} - TOTAL`;
+                                if (i === 4)
+                                    return categoryTotalPrice.toLocaleString(
+                                        undefined,
+                                        {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        },
+                                    );
+                                if (i === 6)
+                                    return categoryTotalAmount.toLocaleString(
+                                        undefined,
+                                        {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        },
+                                    );
+                                const monthAmtCols = [
+                                    8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28,
+                                    30,
+                                ];
+                                if (monthAmtCols.includes(i)) {
+                                    const monthIdx = (i - 8) / 2;
+                                    const value =
+                                        categoryMonthlyTotals[monthIdx] || 0;
+                                    return value.toLocaleString(undefined, {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                    });
+                                }
+                                return '';
+                            }),
+                    });
 
-            // Procurement Type Total Row
+                    procurementTypeTotalAmount += categoryTotalAmount;
+                    categoryMonthlyTotals.forEach((amt, idx) => {
+                        procurementTypeMonthlyTotals[idx] += amt;
+                    });
+                },
+            );
+
             tableBody.push({
                 isProcurementTypeTotal: true,
                 data: Array(31)
                     .fill('')
                     .map((_, i) => {
                         if (i === 2) return `TOTAL - FOR ${procurementType}`;
-
-                        if (i === 6) {
+                        if (i === 6)
                             return procurementTypeTotalAmount.toLocaleString(
                                 undefined,
                                 {
@@ -1554,9 +1288,6 @@ export async function exportToPDF({
                                     maximumFractionDigits: 2,
                                 },
                             );
-                        }
-
-                        // Monthly Amount Columns
                         const monthAmtCols = [
                             8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
                         ];
@@ -1569,12 +1300,10 @@ export async function exportToPDF({
                                 maximumFractionDigits: 2,
                             });
                         }
-
                         return '';
                     }),
             });
 
-            // Save procurement type totals for grand total
             allProcurementTypeTotals.push({
                 type: procurementType,
                 totalAmount: procurementTypeTotalAmount,
@@ -1583,7 +1312,6 @@ export async function exportToPDF({
         },
     );
 
-    // GRAND TOTAL Row
     const grandTotalAmount = allProcurementTypeTotals.reduce(
         (sum, pt) => sum + pt.totalAmount,
         0,
@@ -1594,22 +1322,17 @@ export async function exportToPDF({
             grandMonthlyTotals[idx] += amt;
         });
     });
-
     tableBody.push({
         isGrandTotal: true,
         data: Array(31)
             .fill('')
             .map((_, i) => {
                 if (i === 2) return 'GRAND TOTAL - FOR THE AIP/PPA';
-
-                if (i === 6) {
+                if (i === 6)
                     return grandTotalAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     });
-                }
-
-                // Monthly Amount Columns
                 const monthAmtCols = [
                     8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
                 ];
@@ -1621,16 +1344,14 @@ export async function exportToPDF({
                         maximumFractionDigits: 2,
                     });
                 }
-
                 return '';
             }),
     });
 
-    // --- TABLE GENERATION ---
     autoTable(doc, {
         startY: 5,
         margin: { left: 5, right: 5, top: 5, bottom: 5 },
-        showHead: 'firstPage' as any, // TypeScript bypass
+        showHead: 'firstPage' as any,
         head: [
             [
                 { content: '', styles: { fillColor: [255, 255, 255] } },
@@ -1653,7 +1374,7 @@ export async function exportToPDF({
                     styles: {
                         halign: 'center',
                         valign: 'bottom',
-                        fontSize: 28,
+                        fontSize: 27,
                         fontStyle: 'bold',
                     },
                 },
@@ -1767,30 +1488,22 @@ export async function exportToPDF({
             3: { cellWidth: 10 },
         },
         didParseCell: (data) => {
-            // Hide Borders for Top Header rows
             if (data.section === 'head' && data.row.index <= 4) {
                 data.cell.styles.lineWidth = 0;
             }
-
-            // Row 5 Header (Bold Column names)
             if (data.section === 'head' && data.row.index === 5) {
                 data.cell.styles.fontSize = 5;
                 data.cell.styles.fontStyle = 'bold';
                 data.cell.styles.fillColor = [222, 234, 246];
             }
-
             if (data.section === 'body') {
                 const rowMeta = tableBody[data.row.index];
-
-                // Highlight Quantity Columns (Green)
                 const greenCols = [
                     5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29,
                 ];
                 if (greenCols.includes(data.column.index)) {
                     data.cell.styles.fillColor = [146, 208, 80];
                 }
-
-                // Metadata Styling (Bold Categorization)
                 if (rowMeta?.isProcurementType) {
                     data.cell.styles.fillColor = [255, 255, 255];
                     data.cell.styles.fontStyle = 'bold';

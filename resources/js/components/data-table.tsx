@@ -196,35 +196,9 @@ export function DataTable<TData extends { id: unknown }>({
 
         getExpandedRowModel: getExpandedRowModel(),
         filterFromLeafRows: true,
-        // globalFilterFn: (row, columnId, filterValue) => {
-        //     const searchStr = String(filterValue).toLowerCase();
-
-        //     // 1. Standard Check: Does this specific cell match?
-        //     const cellValue = row.getValue(columnId);
-        //     if (
-        //         cellValue != null &&
-        //         String(cellValue).toLowerCase().includes(searchStr)
-        //     ) {
-        //         return true;
-        //     }
-
-        //     // 2. Descendant Check: Does ANY child deeply nested below this row match?
-        //     // Because EVERY funding source row has the exact same children array,
-        //     // if we find the search term in the children, ALL funding source rows will survive!
-        //     const original = row.original as any;
-        //     if (original.children && original.children.length > 0) {
-        //         // Stringifying the children array instantly checks the whole nested tree below this row
-        //         const childrenText = JSON.stringify(
-        //             original.children,
-        //         ).toLowerCase();
-        //         if (childrenText.includes(searchStr)) {
-        //             return true;
-        //         }
-        //     }
-
-        //     return false;
-        // },
-        globalFilterFn: globalFilterFn,
+        // globalFilterFn: globalFilterFn,
+        ...(globalFilterFn && { globalFilterFn }),
+        enableGlobalFilter: true,
 
         state: {
             expanded: true,

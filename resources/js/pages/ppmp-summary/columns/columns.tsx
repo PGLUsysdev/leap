@@ -6,11 +6,18 @@ interface PriceListRow {
     description: string;
     unit_of_measurement: string;
     price: string;
-    category: { id: number; name: string };
-    chart_of_account: {
-        id: number;
-        account_number: string;
-        account_title: string;
+    chart_of_account_ppmp_category?: {
+        chart_of_account_id: number;
+        ppmp_category_id: number;
+        chart_of_account?: {
+            id: number;
+            account_number: string;
+            account_title: string;
+        };
+        ppmp_category?: {
+            id: number;
+            name: string;
+        };
     };
     ppmps: Array<{
         id: number;
@@ -24,10 +31,12 @@ interface PriceListRow {
         q4_amount: string | number;
         total_qty: number;
         total_amount: string | number;
-        aip_entry: {
-            ppa: {
-                id: number;
-                title: string;
+        ppa_funding_source: {
+            aip_entry: {
+                ppa: {
+                    id: number;
+                    name: string;
+                };
             };
         };
     }>;
@@ -39,7 +48,10 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
     const uniquePPAs = Array.from(
         new Map(
             data.flatMap((row) =>
-                row.ppmps.map((p) => [p.aip_entry.ppa.id, p.aip_entry.ppa]),
+                row.ppmps.map((p) => [
+                    p.ppa_funding_source.aip_entry.ppa.id,
+                    p.ppa_funding_source.aip_entry.ppa,
+                ]),
             ),
         ).values(),
     );
@@ -130,7 +142,8 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                     cell: ({ row }) => {
                                         const entry = row.original.ppmps.find(
                                             (p) =>
-                                                p.aip_entry.ppa.id === ppa.id,
+                                                p.ppa_funding_source.aip_entry
+                                                    .ppa.id === ppa.id,
                                         );
                                         return entry
                                             ? (entry as any)[`q${q}_qty`]
@@ -143,7 +156,8 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                     cell: ({ row }) => {
                                         const entry = row.original.ppmps.find(
                                             (p) =>
-                                                p.aip_entry.ppa.id === ppa.id,
+                                                p.ppa_funding_source.aip_entry
+                                                    .ppa.id === ppa.id,
                                         );
                                         const amount = entry
                                             ? (entry as any)[`q${q}_amount`]
@@ -158,8 +172,9 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                             (sum, row) => {
                                                 const entry = row.ppmps.find(
                                                     (p) =>
-                                                        p.aip_entry.ppa.id ===
-                                                        ppa.id,
+                                                        p.ppa_funding_source
+                                                            .aip_entry.ppa
+                                                            .id === ppa.id,
                                                 );
                                                 return (
                                                     sum +

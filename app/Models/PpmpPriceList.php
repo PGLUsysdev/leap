@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\PpmpCategory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PpmpPriceList extends Model
@@ -18,33 +17,23 @@ class PpmpPriceList extends Model
         'description',
         'unit_of_measurement',
         'price',
-        'ppmp_category_id',
-        'chart_of_account_id',
+        'chart_of_account_ppmp_category_id',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
     ];
 
-    // has
     public function ppmps()
     {
         return $this->hasMany(Ppmp::class, 'ppmp_price_list_id');
     }
 
-    // belongs
-    public function chartOfAccount(): BelongsTo
+    public function chartOfAccountPpmpCategory(): BelongsTo
     {
-        return $this->belongsTo(ChartOfAccount::class);
+        return $this->belongsTo(
+            ChartOfAccountPpmpCategory::class,
+            'chart_of_account_ppmp_category_id',
+        );
     }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(PpmpCategory::class, 'ppmp_category_id');
-    }
-
-    // public function fundingSource()
-    // {
-    //     return $this->belongsTo(FundingSource::class);
-    // }
 }

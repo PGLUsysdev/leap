@@ -66,8 +66,12 @@ export default function FormDialog({
     useEffect(() => {
         if (selectedPriceList) {
             form.reset({
-                expenseAccount: selectedPriceList.chart_of_account?.id,
-                category: selectedPriceList.category?.id,
+                expenseAccount:
+                    selectedPriceList.chart_of_account_ppmp_category
+                        ?.chart_of_account_id,
+                category:
+                    selectedPriceList.chart_of_account_ppmp_category
+                        ?.ppmp_category_id,
                 description: selectedPriceList.description,
                 unitOfMeasurement: selectedPriceList.unit_of_measurement,
                 price: selectedPriceList.price,

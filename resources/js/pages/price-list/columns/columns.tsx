@@ -63,7 +63,7 @@ const columns = [
             </div>
         ),
     }),
-    columnHelper.accessor('category.name', {
+    columnHelper.accessor('chart_of_account_ppmp_category.ppmp_category.name', {
         header: 'PPMP Category',
         size: 180,
         cell: (value) => (
@@ -72,15 +72,18 @@ const columns = [
             </div>
         ),
     }),
-    columnHelper.accessor('chart_of_account.account_title', {
-        header: 'Expense Account',
-        size: 250,
-        cell: (value) => (
-            <div className="wrap-break-words text-xs leading-tight whitespace-normal text-muted-foreground">
-                {value.getValue()}
-            </div>
-        ),
-    }),
+    columnHelper.accessor(
+        'chart_of_account_ppmp_category.chart_of_account.account_title',
+        {
+            header: 'Expense Account',
+            size: 250,
+            cell: (value) => (
+                <div className="wrap-break-words text-xs leading-tight whitespace-normal text-muted-foreground">
+                    {value.getValue()}
+                </div>
+            ),
+        },
+    ),
     columnHelper.display({
         id: 'action',
         size: 82,

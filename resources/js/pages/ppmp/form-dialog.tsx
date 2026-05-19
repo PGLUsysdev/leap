@@ -90,11 +90,14 @@ export default function PpmpFormDialog({
     const categoryExpenseAccountIds =
         selectedCategoryData?.chart_of_accounts?.map((coa: any) => coa.id) ||
         [];
-    const filteredChartOfAccounts = selectedCategory
-        ? chartOfAccounts.filter((coa) =>
-              categoryExpenseAccountIds.includes(coa.id),
-          )
-        : chartOfAccounts;
+
+    const filteredChartOfAccounts = chartOfAccounts.filter((coa) => {
+        const matchesCategory = selectedCategory
+            ? categoryExpenseAccountIds.includes(coa.id)
+            : true;
+        const matchesExpenseClass = coa.expense_class === selectedExpenseClass;
+        return matchesCategory && matchesExpenseClass;
+    });
 
     const filteredPpmpCategories = selectedExpenseAccount
         ? ppmpCategories.filter((pc) =>
@@ -105,17 +108,21 @@ export default function PpmpFormDialog({
         : ppmpCategories;
 
     const allPriceLists = priceLists.map((priceList) => {
-        const account = chartOfAccounts.find(
-            (acc) => acc.id === priceList.chart_of_account_id,
-        );
+        const pivot = priceList.chart_of_account_ppmp_category;
         return {
             ...priceList,
-            account_title: account?.account_title,
-            account_number: account?.account_number,
+            chart_of_account_id: pivot?.chart_of_account_id,
+            ppmp_category_id: pivot?.ppmp_category_id,
+            account_title: pivot?.chart_of_account?.account_title,
+            account_number: pivot?.chart_of_account?.account_number,
+            expense_class: pivot?.chart_of_account?.expense_class,
         };
     });
 
     const filteredPriceLists = allPriceLists.filter((priceList) => {
+        // ✅ Only keep price lists with the correct expense class
+        if (priceList.expense_class !== selectedExpenseClass) return false;
+
         const matchesAccount = selectedExpenseAccount
             ? priceList.chart_of_account_id === selectedExpenseAccount
             : true;
@@ -349,25 +356,34 @@ export default function PpmpFormDialog({
                                                         priceList,
                                                     ) => {
                                                         field.onChange(val);
+
+                                                        const pivot =
+                                                            priceList.chart_of_account_ppmp_category;
+
                                                         form.setValue(
                                                             'ppmp_price_list_id',
                                                             priceList.id,
                                                         );
+
                                                         form.setValue(
                                                             'expenseAccount',
-                                                            priceList.chart_of_account_id,
+                                                            pivot?.chart_of_account_id,
                                                             {
+                                                                // was priceList.chart_of_account_id
                                                                 shouldValidate: true,
                                                             },
                                                         );
+
                                                         form.setValue(
                                                             'category',
-                                                            priceList.ppmp_category_id ||
+                                                            pivot?.ppmp_category_id ||
                                                                 null,
                                                             {
+                                                                // was priceList.ppmp_category_id
                                                                 shouldValidate: true,
                                                             },
                                                         );
+
                                                         form.setValue(
                                                             'itemNo',
                                                             priceList.item_number,
@@ -375,6 +391,7 @@ export default function PpmpFormDialog({
                                                                 shouldValidate: true,
                                                             },
                                                         );
+
                                                         form.setValue(
                                                             'price',
                                                             priceList.price,
@@ -382,6 +399,7 @@ export default function PpmpFormDialog({
                                                                 shouldValidate: true,
                                                             },
                                                         );
+
                                                         form.setValue(
                                                             'unitOfMeasurement',
                                                             priceList.unit_of_measurement,

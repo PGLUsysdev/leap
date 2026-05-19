@@ -16,7 +16,7 @@ class PpmpCategory extends Model
         'is_non_procurement' => 'boolean',
     ];
 
-    public function chartOfAccountPivot()
+    public function chartOfAccountPpmpCategories()
     {
         return $this->hasMany(
             ChartOfAccountPpmpCategory::class,
@@ -28,9 +28,9 @@ class PpmpCategory extends Model
     {
         return $this->belongsToMany(
             ChartOfAccount::class,
-            'chart_of_account_ppmp_categories',
-            'ppmp_category_id',
-            'chart_of_account_id',
-        );
+            'chart_of_account_ppmp_categories', // pivot table name
+            'ppmp_category_id', // foreign key on pivot → this model
+            'chart_of_account_id', // related key on pivot
+        )->withTimestamps();
     }
 }

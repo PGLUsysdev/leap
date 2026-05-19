@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PpmpPriceList;
 use App\Models\ChartOfAccount;
 use App\Models\PpmpCategory;
+use App\Models\ChartOfAccountPpmpCategory;
 use App\Http\Requests\StorePpmpPriceListRequest;
 use App\Http\Requests\UpdatePpmpPriceListRequest;
 use Illuminate\Http\Request;
@@ -23,7 +24,10 @@ class PpmpPriceListController extends Controller
         $mode = $request->query('dialog_mode');
 
         $query = PpmpPriceList::query()
-            ->with('chartOfAccount', 'category')
+            ->with(
+                'chartOfAccountPpmpCategory.chartOfAccount',
+                'chartOfAccountPpmpCategory.ppmpCategory',
+            )
             ->orderBy('sort_order');
 
         if ($request->has('search')) {
@@ -33,20 +37,26 @@ class PpmpPriceListController extends Controller
                 ->orWhere('description', 'like', '%' . $searchTerm . '%')
                 ->orWhere('item_number', 'like', '%' . $searchTerm . '%')
                 ->orWhere('price', 'like', '%' . $searchTerm . '%')
-                ->orWhereHas('category', function ($subQuery) use (
-                    $searchTerm,
-                ) {
-                    $subQuery->where('name', 'like', '%' . $searchTerm . '%');
-                })
-                ->orWhereHas('chartOfAccount', function ($subQuery) use (
-                    $searchTerm,
-                ) {
-                    $subQuery->where(
-                        'account_title',
-                        'like',
-                        '' . $searchTerm . '',
-                    );
-                });
+                ->orWhereHas(
+                    'chartOfAccountPpmpCategory.ppmpCategory',
+                    function ($subQuery) use ($searchTerm) {
+                        $subQuery->where(
+                            'name',
+                            'like',
+                            '%' . $searchTerm . '%',
+                        );
+                    },
+                )
+                ->orWhereHas(
+                    'chartOfAccountPpmpCategory.chartOfAccount',
+                    function ($subQuery) use ($searchTerm) {
+                        $subQuery->where(
+                            'account_title',
+                            'like',
+                            '' . $searchTerm . '',
+                        );
+                    },
+                );
         }
 
         $priceList = $query->paginate(100)->withQueryString();
@@ -78,7 +88,10 @@ class PpmpPriceListController extends Controller
                 $request,
             ) {
                 $query = PpmpPriceList::query()
-                    ->with('chartOfAccount', 'category')
+                    ->with(
+                        'chartOfAccountPpmpCategory.chartOfAccount',
+                        'chartOfAccountPpmpCategory.ppmpCategory',
+                    )
                     ->orderBy('sort_order');
 
                 if ($request->has('dialog_search')) {
@@ -100,24 +113,26 @@ class PpmpPriceListController extends Controller
                             '%' . $searchTerm . '%',
                         )
                         ->orWhere('price', 'like', '%' . $searchTerm . '%')
-                        ->orWhereHas('category', function ($subQuery) use (
-                            $searchTerm,
-                        ) {
-                            $subQuery->where(
-                                'name',
-                                'like',
-                                '%' . $searchTerm . '%',
-                            );
-                        })
-                        ->orWhereHas('chartOfAccount', function (
-                            $subQuery,
-                        ) use ($searchTerm) {
-                            $subQuery->where(
-                                'account_title',
-                                'like',
-                                '' . $searchTerm . '',
-                            );
-                        });
+                        ->orWhereHas(
+                            'chartOfAccountPpmpCategory.ppmpCategory',
+                            function ($subQuery) use ($searchTerm) {
+                                $subQuery->where(
+                                    'name',
+                                    'like',
+                                    '%' . $searchTerm . '%',
+                                );
+                            },
+                        )
+                        ->orWhereHas(
+                            'chartOfAccountPpmpCategory.chartOfAccount',
+                            function ($subQuery) use ($searchTerm) {
+                                $subQuery->where(
+                                    'account_title',
+                                    'like',
+                                    '' . $searchTerm . '',
+                                );
+                            },
+                        );
                 }
 
                 return $query->paginate(100);
@@ -144,17 +159,19 @@ class PpmpPriceListController extends Controller
         $maxSortOrder = PpmpPriceList::max('sort_order') ?? 0;
         $nextSortOrder = $maxSortOrder + 1;
 
-        $validatedMapped = [
+        $junction = ChartOfAccountPpmpCategory::firstOrCreate([
             'chart_of_account_id' => $validated['expenseAccount'],
             'ppmp_category_id' => $validated['category'],
+        ]);
+
+        PpmpPriceList::create([
+            'chart_of_account_ppmp_category_id' => $junction->id,
             'sort_order' => $nextSortOrder,
             'item_number' => $nextSortOrder,
             'description' => $validated['description'],
             'unit_of_measurement' => $validated['unitOfMeasurement'],
             'price' => $validated['price'],
-        ];
-
-        PpmpPriceList::create($validatedMapped);
+        ]);
     }
 
     /**
@@ -182,15 +199,17 @@ class PpmpPriceListController extends Controller
     ) {
         $validated = $request->validated();
 
-        $validatedMapped = [
+        $junction = ChartOfAccountPpmpCategory::firstOrCreate([
             'chart_of_account_id' => $validated['expenseAccount'],
             'ppmp_category_id' => $validated['category'],
+        ]);
+
+        $ppmpPriceList->update([
+            'chart_of_account_ppmp_category_id' => $junction->id,
             'description' => $validated['description'],
             'unit_of_measurement' => $validated['unitOfMeasurement'],
             'price' => $validated['price'],
-        ];
-
-        $ppmpPriceList->update($validatedMapped);
+        ]);
     }
 
     /**

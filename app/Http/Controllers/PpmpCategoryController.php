@@ -15,7 +15,9 @@ class PpmpCategoryController extends Controller
      */
     public function index()
     {
-        $ppmpCategories = PpmpCategory::with('chartOfAccountPivot')->get();
+        $ppmpCategories = PpmpCategory::with(
+            'chartOfAccountPpmpCategories',
+        )->get();
 
         return Inertia::render('ppmp-category/index', [
             'ppmpCategories' => $ppmpCategories,

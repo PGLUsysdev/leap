@@ -15,22 +15,25 @@ class PpmpSummaryController extends Controller
     public function index(FiscalYear $fiscalYear)
     {
         $priceLists = PpmpPriceList::query()
-            ->whereHas('ppmps.aipEntry.ppa', function ($query) use (
-                $fiscalYear,
-            ) {
+            ->whereHas('ppmps.ppaFundingSource.aipEntry.ppa', function (
+                $query,
+            ) use ($fiscalYear) {
                 $query->where('fiscal_year_id', $fiscalYear->id);
             })
             ->with([
-                'category',
-                'chartOfAccount',
+                'chartOfAccountPpmpCategory.chartOfAccount',
+                'chartOfAccountPpmpCategory.ppmpCategory',
                 'ppmps' => function ($query) use ($fiscalYear) {
                     $query
-                        ->whereHas('aipEntry.ppa', function ($q) use (
-                            $fiscalYear,
-                        ) {
+                        ->whereHas('ppaFundingSource.aipEntry.ppa', function (
+                            $q,
+                        ) use ($fiscalYear) {
                             $q->where('fiscal_year_id', $fiscalYear->id);
                         })
-                        ->with(['aipEntry.ppa.office', 'fundingSource']);
+                        ->with([
+                            'ppaFundingSource.aipEntry.ppa.office',
+                            'ppaFundingSource.fundingSource',
+                        ]);
                 },
             ])
             ->get()

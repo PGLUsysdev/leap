@@ -35,18 +35,60 @@ class PpmpController extends Controller
             $query->where('aip_entry_id', $aipEntry->id);
         })
             ->with([
-                'ppaFundingSource.fundingSource',
-                'ppmpPriceList.chartOfAccount',
+                'ppaFundingSource' => function ($query) {
+                    $query->select('id', 'funding_source_id');
+                },
+                'ppaFundingSource.fundingSource' => function ($query) {
+                    $query->select('id', 'code'); // only 'code' is needed for display
+                },
+                'ppmpPriceList' => function ($query) {
+                    $query->select(
+                        'id',
+                        'item_number',
+                        'description',
+                        'unit_of_measurement',
+                        'price',
+                        'chart_of_account_ppmp_category_id',
+                    );
+                },
+                'ppmpPriceList.chartOfAccountPpmpCategory' => function (
+                    $query,
+                ) {
+                    $query->select(
+                        'id',
+                        'chart_of_account_id',
+                        'ppmp_category_id',
+                    );
+                },
+                'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount' => function (
+                    $query,
+                ) {
+                    $query->select(
+                        'id',
+                        'account_number',
+                        'account_title',
+                        'expense_class',
+                    );
+                },
+                'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory' => function (
+                    $query,
+                ) {
+                    $query->select('id', 'name', 'is_non_procurement');
+                },
             ])
             ->get();
 
-        $priceLists = PpmpPriceList::with('chartOfAccount', 'category')->get();
+        $priceLists = PpmpPriceList::with(
+            'chartOfAccountPpmpCategory.chartOfAccount',
+            'chartOfAccountPpmpCategory.ppmpCategory',
+        )->get();
 
         $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
             'MOOE',
             'CO',
         ])->get();
 
+        // $ppmpCategories = PpmpCategory::with('chartOfAccounts')->get();
         $ppmpCategories = PpmpCategory::with('chartOfAccounts')->get();
 
         $fundingSources = FundingSource::whereHas(
@@ -64,7 +106,7 @@ class PpmpController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'fundingSources' => $fundingSources,
-            'initialChoice' => $request->query('choice'),
+            'initialChoice' => $request->query('choice', 'MOOE'),
             'initialPpaFundingSourceId' => $request->query(
                 'ppa_funding_source_id',
             ),
@@ -87,7 +129,7 @@ class PpmpController extends Controller
         $validated = $request->validated();
 
         // Save using the normalized bridge ID
-        $ppmp = Ppmp::create([
+        $ppmp = Ppmp::firstOrCreate([
             'ppa_funding_source_id' => $validated['ppa_funding_source_id'],
             'ppmp_price_list_id' => $validated['ppmp_price_list_id'],
             // quantities default to 0 via DB schema
@@ -96,7 +138,8 @@ class PpmpController extends Controller
         // Sync the total back to the ppa_funding_sources table
         $this->updatePpaFundingSourceTotals(
             $ppmp->ppaFundingSource,
-            $ppmp->ppmpPriceList->chartOfAccount->expense_class,
+            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
+                ->expense_class,
         );
     }
 
@@ -120,7 +163,8 @@ class PpmpController extends Controller
 
         $this->updatePpaFundingSourceTotals(
             $ppmp->ppaFundingSource,
-            $ppmp->ppmpPriceList->chartOfAccount->expense_class,
+            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
+                ->expense_class,
         );
 
         return back();
@@ -148,7 +192,9 @@ class PpmpController extends Controller
     public function destroy(Ppmp $ppmp)
     {
         $bridge = $ppmp->ppaFundingSource;
-        $expenseClass = $ppmp->ppmpPriceList->chartOfAccount->expense_class;
+        $expenseClass =
+            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
+                ->expense_class;
 
         $ppmp->delete();
 
@@ -176,11 +222,12 @@ class PpmpController extends Controller
         // Sum every month for this specific Bridge Record
         $totalAmount =
             Ppmp::where('ppa_funding_source_id', $bridge->id)
-                ->whereHas('ppmpPriceList.chartOfAccount', function (
-                    $query,
-                ) use ($expenseClass) {
-                    $query->where('expense_class', $expenseClass);
-                })
+                ->whereHas(
+                    'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
+                    function ($query) use ($expenseClass) {
+                        $query->where('expense_class', $expenseClass);
+                    },
+                )
                 ->selectRaw(
                     'SUM(jan_amount + feb_amount + mar_amount + apr_amount + may_amount + jun_amount + jul_amount + aug_amount + sep_amount + oct_amount + nov_amount + dec_amount) as total',
                 )
