@@ -140,28 +140,45 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                     id: `ppa_${ppa.id}_q${q}_qty`,
                                     header: 'Qty',
                                     cell: ({ row }) => {
-                                        const entry = row.original.ppmps.find(
-                                            (p) =>
-                                                p.ppa_funding_source.aip_entry
-                                                    .ppa.id === ppa.id,
+                                        const entries =
+                                            row.original.ppmps.filter(
+                                                (p) =>
+                                                    p.ppa_funding_source
+                                                        .aip_entry.ppa.id ===
+                                                    ppa.id,
+                                            );
+                                        return entries.reduce(
+                                            (sum, e) =>
+                                                sum +
+                                                Number(
+                                                    (e as any)[`q${q}_qty`] ||
+                                                        0,
+                                                ),
+                                            0,
                                         );
-                                        return entry
-                                            ? (entry as any)[`q${q}_qty`]
-                                            : 0;
                                     },
                                 }),
                                 columnHelper.display({
                                     id: `ppa_${ppa.id}_q${q}_cost`,
                                     header: 'Cost',
                                     cell: ({ row }) => {
-                                        const entry = row.original.ppmps.find(
-                                            (p) =>
-                                                p.ppa_funding_source.aip_entry
-                                                    .ppa.id === ppa.id,
+                                        const entries =
+                                            row.original.ppmps.filter(
+                                                (p) =>
+                                                    p.ppa_funding_source
+                                                        .aip_entry.ppa.id ===
+                                                    ppa.id,
+                                            );
+                                        const amount = entries.reduce(
+                                            (sum, e) =>
+                                                sum +
+                                                Number(
+                                                    (e as any)[
+                                                        `q${q}_amount`
+                                                    ] || 0,
+                                                ),
+                                            0,
                                         );
-                                        const amount = entry
-                                            ? (entry as any)[`q${q}_amount`]
-                                            : 0;
                                         return Number(amount).toLocaleString(
                                             undefined,
                                             { minimumFractionDigits: 2 },
@@ -170,20 +187,24 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                     footer: () => {
                                         const quarterTotal = data.reduce(
                                             (sum, row) => {
-                                                const entry = row.ppmps.find(
-                                                    (p) =>
-                                                        p.ppa_funding_source
-                                                            .aip_entry.ppa
-                                                            .id === ppa.id,
-                                                );
+                                                const entries =
+                                                    row.ppmps.filter(
+                                                        (p) =>
+                                                            p.ppa_funding_source
+                                                                .aip_entry.ppa
+                                                                .id === ppa.id,
+                                                    );
                                                 return (
                                                     sum +
-                                                    Number(
-                                                        entry
-                                                            ? (entry as any)[
-                                                                  `q${q}_amount`
-                                                              ]
-                                                            : 0,
+                                                    entries.reduce(
+                                                        (rowSum, e) =>
+                                                            rowSum +
+                                                            Number(
+                                                                (e as any)[
+                                                                    `q${q}_amount`
+                                                                ] || 0,
+                                                            ),
+                                                        0,
                                                     )
                                                 );
                                             },

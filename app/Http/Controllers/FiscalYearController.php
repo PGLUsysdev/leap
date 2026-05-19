@@ -63,34 +63,30 @@ class FiscalYearController extends Controller
 
                 $items = $query->get();
 
-                if ($targetOfficeId === 'all') {
-                    $items = $items
-                        ->groupBy('ppmp_price_list_id')
-                        ->map(function ($group) {
-                            $item = clone $group->first();
-                            $months = [
-                                'jan',
-                                'feb',
-                                'mar',
-                                'apr',
-                                'may',
-                                'jun',
-                                'jul',
-                                'aug',
-                                'sep',
-                                'oct',
-                                'nov',
-                                'dec',
-                            ];
-                            foreach ($months as $m) {
-                                $item->{"{$m}_qty"} = $group->sum("{$m}_qty");
-                                $item->{"{$m}_amount"} = $group->sum(
-                                    "{$m}_amount",
-                                );
-                            }
-                            return $item;
-                        });
-                }
+                $items = $items
+                    ->groupBy('ppmp_price_list_id')
+                    ->map(function ($group) {
+                        $item = clone $group->first();
+                        $months = [
+                            'jan',
+                            'feb',
+                            'mar',
+                            'apr',
+                            'may',
+                            'jun',
+                            'jul',
+                            'aug',
+                            'sep',
+                            'oct',
+                            'nov',
+                            'dec',
+                        ];
+                        foreach ($months as $m) {
+                            $item->{"{$m}_qty"} = $group->sum("{$m}_qty");
+                            $item->{"{$m}_amount"} = $group->sum("{$m}_amount");
+                        }
+                        return $item;
+                    });
 
                 return $items
                     ->map(function ($item) {
