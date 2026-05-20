@@ -21,6 +21,8 @@ class Ppa extends Model
         'is_active',
         'sort_order',
         'fiscal_year_id',
+        'supplemental_aip_id',
+        'is_supplemental',
     ];
 
     protected $appends = ['full_code'];
@@ -58,6 +60,11 @@ class Ppa extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Ppa::class, 'parent_id');
+    }
+
+    public function supplementalAip(): BelongsTo
+    {
+        return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
     }
 
     public function ancestor()

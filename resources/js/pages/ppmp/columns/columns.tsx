@@ -1,6 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import type { Ppmp } from '@/types/global';
 import { Decimal } from 'decimal.js';
 import { Trash } from 'lucide-react';
@@ -11,6 +12,7 @@ interface EditableCellProps {
     getValue: () => any;
     row: any;
     column: any;
+    table: any;
 }
 
 const formatNumber = (val: string | number) => {
@@ -39,6 +41,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
     getValue,
     row,
     column,
+    table,
 }) => {
     const initialValue = getValue();
     const [localValue, setLocalValue] = useState<string>(
@@ -94,6 +97,8 @@ const EditableCell: React.FC<EditableCellProps> = ({
         );
     };
 
+    const isReadOnly = table.options.meta?.readOnly;
+
     return (
         <Input
             type="text"
@@ -102,7 +107,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
             onBlur={handleBlur}
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
-            disabled={isUpdating}
+            disabled={isUpdating || isReadOnly}
             className="w-full rounded border bg-transparent px-2 py-1 text-right focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
         />
     );
@@ -248,7 +253,33 @@ const columns = [
         header: () => <div>Description</div>,
         size: 300,
         enableGlobalFilter: true,
-        cell: ({ getValue }) => <div className="text-wrap">{getValue()}</div>,
+        cell: ({ row, getValue }) => {
+            const ppmp = row.original;
+            return (
+                <div className="flex flex-col py-1">
+                    <span className="text-wrap font-medium">{getValue()}</span>
+                    {ppmp.isCombined ? (
+                        <div className="mt-1">
+                            <Badge variant="outline" className="border-indigo-300 bg-indigo-50/50 text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/20 dark:text-indigo-400 text-[9px] py-0 px-1.5 h-4 font-semibold uppercase tracking-wider">
+                                Combined
+                            </Badge>
+                        </div>
+                    ) : ppmp.ppa_funding_source?.supplemental_aip_id ? (
+                        <div className="mt-1">
+                            <Badge variant="outline" className="border-sky-300 bg-sky-50/50 text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-400 text-[9px] py-0 px-1.5 h-4 font-semibold uppercase tracking-wider">
+                                Supplemental
+                            </Badge>
+                        </div>
+                    ) : (
+                        <div className="mt-1">
+                            <Badge variant="secondary" className="text-[9px] py-0 px-1.5 h-4 font-semibold uppercase tracking-wider">
+                                Original
+                            </Badge>
+                        </div>
+                    )}
+                </div>
+            );
+        },
     }),
     columnHelper.accessor('ppmp_price_list.unit_of_measurement', {
         // id: 'unit_of_measurement',
@@ -353,17 +384,21 @@ const columns = [
     columnHelper.display({
         id: 'action',
         size: 52,
-        cell: ({ row, table }) => (
-            <div className="flex justify-center">
-                <Button
-                    size="icon"
-                    variant="destructive"
-                    onClick={() => table.options.meta?.onDelete?.(row.original)}
-                >
-                    <Trash />
-                </Button>
-            </div>
-        ),
+        cell: ({ row, table }) => {
+            const isReadOnly = table.options.meta?.readOnly;
+            if (isReadOnly) return null;
+            return (
+                <div className="flex justify-center">
+                    <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => table.options.meta?.onDelete?.(row.original)}
+                    >
+                        <Trash />
+                    </Button>
+                </div>
+            );
+        },
     }),
 ];
 

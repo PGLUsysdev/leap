@@ -29,6 +29,8 @@ class StorePpaRequest extends FormRequest
             'type' => 'required|in:Program,Project,Activity,Sub-Activity',
             'code_suffix' => 'nullable|string|max:10', // Increased to accommodate dynamic Sub-Activity
             'is_active' => 'boolean',
+            'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
+            'is_supplemental' => 'boolean',
         ];
     }
 }

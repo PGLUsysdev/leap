@@ -21,6 +21,8 @@ class PpaFundingSource extends Model
         'co_amount',
         'ccet_adaptation',
         'ccet_mitigation',
+        'supplemental_aip_id',
+        'is_supplemental',
     ];
 
     // has
@@ -38,5 +40,10 @@ class PpaFundingSource extends Model
     public function fundingSource()
     {
         return $this->belongsTo(FundingSource::class, 'funding_source_id');
+    }
+
+    public function supplementalAip()
+    {
+        return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
     }
 }

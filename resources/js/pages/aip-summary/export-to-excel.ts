@@ -7,26 +7,78 @@ interface ExportToExcelProps {
     aipEntries: Ppa[];
     fiscalYear: FiscalYear;
     officeName: string;
+    currentScope?: any;
 }
 
 // Helper to expand PPA by funding source (same logic as in index.tsx)
-const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): FlattenedPpa[] => {
+const expandPpaByFundingSource = (ppas: Ppa[], depth = 0, currentScope?: any): FlattenedPpa[] => {
     return ppas.flatMap((ppa): FlattenedPpa[] => {
         // 1. Recursively process children
         const expandedChildren = ppa.children
-            ? expandPpaByFundingSource(ppa.children, depth + 1)
+            ? expandPpaByFundingSource(ppa.children, depth + 1, currentScope)
             : [];
 
-        // 2. Find the AIP Entry for this year, then get its funding sources
-        const activeAip = ppa.aip_entries?.[0] || null;
-        const sources = activeAip?.ppa_funding_sources || [];
+        // 2. Find the AIP Entries for this year, then get their funding sources
+        const activeAips = ppa.aip_entries || [];
+        let sources = activeAips.flatMap(aip => aip.ppa_funding_sources || []);
 
-        // 3. If no funding sources or no AIP entry, return the PPA once with its children
+        if (currentScope?.scope === 'combined') {
+            // Group sources by funding_source_id
+            const grouped = new Map<number, typeof sources>();
+            sources.forEach(src => {
+                const list = grouped.get(src.funding_source_id) || [];
+                list.push(src);
+                grouped.set(src.funding_source_id, list);
+            });
+
+            // Merge groups
+            sources = Array.from(grouped.entries()).map(([fsId, list]) => {
+                const base = { ...list[0] };
+                let ps = 0, mooe = 0, co = 0, fe = 0, ccet_ad = 0, ccet_mit = 0;
+                list.forEach(item => {
+                    ps += parseFloat(item.ps_amount || '0');
+                    mooe += parseFloat(item.mooe_amount || '0');
+                    co += parseFloat(item.co_amount || '0');
+                    fe += parseFloat(item.fe_amount || '0');
+                    ccet_ad += parseFloat(item.ccet_adaptation || '0');
+                    ccet_mit += parseFloat(item.ccet_mitigation || '0');
+                });
+                base.ps_amount = ps.toString();
+                base.mooe_amount = mooe.toString();
+                base.co_amount = co.toString();
+                base.fe_amount = fe.toString();
+                base.ccet_adaptation = ccet_ad.toString();
+                base.ccet_mitigation = ccet_mit.toString();
+                // Point to the latest SAIP entry so non-numeric fields
+                // (office, dates, expected output) resolve correctly
+                const entryIds = [...new Set(list.map((s) => s.aip_entry_id))];
+                const latestEntry = entryIds
+                    .map((id) => activeAips.find((a) => a.id === id))
+                    .filter(Boolean)
+                    .sort(
+                        (a: any, b: any) =>
+                            (b.supplemental_aip_id ?? -1) -
+                            (a.supplemental_aip_id ?? -1),
+                    )[0];
+                if (latestEntry) {
+                    base.aip_entry_id = latestEntry.id;
+                }
+                return base;
+            });
+        }
+
+        // 3. If no funding sources or no AIP entries, return the PPA once with its children
         if (sources.length === 0) {
+            const latestAip = [...activeAips].sort(
+                (a: any, b: any) =>
+                    (b.supplemental_aip_id ?? -1) -
+                    (a.supplemental_aip_id ?? -1),
+            )[0];
             return [
                 {
                     ...ppa,
                     current_fs: null,
+                    aip_entry: latestAip || null,
                     children: expandedChildren,
                     isFirstInGroup: true,
                     isLastInGroup: true,
@@ -36,13 +88,15 @@ const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): FlattenedPpa[] => {
             ];
         }
 
-        // 4. Duplicate PPA for each funding source found in the AIP Entry
+        // 4. Duplicate PPA for each funding source found in the AIP Entries
         return sources.map((fs, index) => {
             const isLast = index === sources.length - 1;
+            const parentAip = activeAips.find(aip => aip.id === fs.aip_entry_id) || null;
 
             return {
                 ...ppa,
                 current_fs: fs,
+                aip_entry: parentAip,
                 // Only the last row in the duplicate group carries the nested children
                 children: isLast ? expandedChildren : [],
                 isFirstInGroup: index === 0,
@@ -94,6 +148,7 @@ export async function exportToExcel({
     aipEntries,
     fiscalYear,
     officeName,
+    currentScope,
 }: ExportToExcelProps) {
     const office = officeName.toUpperCase() || '';
 
@@ -127,7 +182,9 @@ export async function exportToExcel({
     // Add title rows
     worksheet.mergeCells('A1:O1');
     const titleCell = worksheet.getCell('A1');
-    titleCell.value = `CY ${fiscalYear.year} Annual Investment Program (AIP)`;
+    titleCell.value = currentScope?.scope === 'supplemental'
+        ? `CY ${fiscalYear.year} Supplemental Annual Investment Program (SAIP)`
+        : `CY ${fiscalYear.year} Annual Investment Program (AIP)`;
     titleCell.font = { bold: true, size: 14, name: 'Century Gothic' };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
@@ -183,7 +240,7 @@ export async function exportToExcel({
     };
 
     // Expand data by funding source
-    const expandedData = expandPpaByFundingSource(aipEntries);
+    const expandedData = expandPpaByFundingSource(aipEntries, 0, currentScope);
 
     // Track totals
     let totalPs = 0;
@@ -216,7 +273,7 @@ export async function exportToExcel({
             displayTitle = `${outlineString}${suffix} ${displayTitle}`;
         }
 
-        const aipEntry = item.aip_entries?.[0];
+        const aipEntry = item.aip_entry;
         const fs = item.current_fs;
 
         // Calculate total for this row

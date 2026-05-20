@@ -25,4 +25,9 @@ class FiscalYear extends Model
             'ppa_id',
         );
     }
+
+    public function supplementalAips()
+    {
+        return $this->hasMany(SupplementalAip::class);
+    }
 }

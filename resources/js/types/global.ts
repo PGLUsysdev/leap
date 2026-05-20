@@ -57,6 +57,15 @@ export interface FiscalYear {
     updated_at: string | null;
 }
 
+export interface SupplementalAip {
+    id: number;
+    fiscal_year_id: number;
+    office_id: number | null;
+    name: string;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
 export interface AipEntry {
     id: number;
     start_date: string | null;
@@ -66,9 +75,11 @@ export interface AipEntry {
     updated_at: string | null;
 
     ppa_id: number;
+    supplemental_aip_id: number | null;
 
     ppa?: Ppa;
     ppa_funding_sources?: PpaFundingSource[];
+    supplemental_aip?: SupplementalAip;
 }
 
 export interface FundingSource {
@@ -94,6 +105,8 @@ export interface PpaFundingSource {
 
     ppa_id: number;
     funding_source_id: number;
+    aip_entry_id: number;
+    supplemental_aip_id?: number | null;
 
     funding_source?: FundingSource;
 }
@@ -188,7 +201,7 @@ export interface Ppmp {
 
     ppa_funding_source?: PpaFundingSource;
     ppmp_price_list?: PriceList;
-    // funding_source: FundingSource;
+    isCombined?: boolean;
 }
 
 export interface PriceList {
@@ -330,4 +343,10 @@ export interface Filter {
     dialog_boundary_id?: string | null;
     dialog_id?: string | null;
     dialog_page?: string | null;
+    scope?: string | null;
+    supplemental_aip_id?: number | null;
+    dialog_search?: string | null;
+    is_dialog_open?: boolean | null;
+    dialog_mode?: string | null;
+    id?: number | null;
 }

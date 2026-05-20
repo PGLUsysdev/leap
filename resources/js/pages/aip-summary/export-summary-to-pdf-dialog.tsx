@@ -28,9 +28,10 @@ const collectAllFundingSources = (ppas: Ppa[]) => {
 
     const traverse = (items: Ppa[]) => {
         for (const ppa of items) {
-            const aip = ppa.aip_entries?.[0];
-            if (aip?.ppa_funding_sources) {
-                sources.push(...aip.ppa_funding_sources);
+            for (const aip of ppa.aip_entries || []) {
+                if (aip.ppa_funding_sources) {
+                    sources.push(...aip.ppa_funding_sources);
+                }
             }
             if (ppa.children) traverse(ppa.children);
         }

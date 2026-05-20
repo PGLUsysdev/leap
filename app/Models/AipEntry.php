@@ -18,6 +18,8 @@ class AipEntry extends Model
         'start_date',
         'end_date',
         'expected_output',
+        'supplemental_aip_id',
+        'is_supplemental',
     ];
 
     // has
@@ -30,5 +32,10 @@ class AipEntry extends Model
     public function ppa(): BelongsTo
     {
         return $this->belongsTo(Ppa::class, 'ppa_id');
+    }
+
+    public function supplementalAip(): BelongsTo
+    {
+        return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
     }
 }

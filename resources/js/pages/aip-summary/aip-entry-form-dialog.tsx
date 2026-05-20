@@ -65,6 +65,7 @@ interface AipEntryFormDialogProps {
     fundingSources: FundingSource[];
     offices: Office[];
     auth: AuthData;
+    supplementalAipId?: number | null;
 }
 
 const amountSchema = z.string();
@@ -108,13 +109,16 @@ export default function AipEntryFormDialog({
     fundingSources,
     offices,
     auth,
+    supplementalAipId = null,
 }: AipEntryFormDialogProps) {
     const userOfficeId = auth?.user?.office_id;
     const [isLoading, setIsLoading] = useState(false);
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
-    const entry = data?.aip_entries?.[0];
-    const isEdit = !!entry;
+    const entry = data?.aip_entries?.find(e => e.supplemental_aip_id === (supplementalAipId || null))
+               || data?.aip_entries?.[0]
+               || null;
+    const isEdit = !!(entry && entry.supplemental_aip_id === (supplementalAipId || null));
 
     const filteredOffices = useMemo(() => {
         if (!userOfficeId) return offices;
@@ -201,6 +205,7 @@ export default function AipEntryFormDialog({
             ...values,
             ppa_id: data?.id,
             fiscal_year_id: fiscalYear.id,
+            supplemental_aip_id: supplementalAipId,
         };
 
         const options = {
@@ -217,7 +222,7 @@ export default function AipEntryFormDialog({
             onFinish: () => setIsLoading(false),
         };
 
-        if (isEdit) {
+        if (isEdit && entry) {
             router.put(`/aip-entries/${entry.id}`, payload, options);
         } else {
             router.post(`/aip-entries`, payload, options);
@@ -226,15 +231,21 @@ export default function AipEntryFormDialog({
 
     useEffect(() => {
         if (open && data) {
-            const entry = data.aip_entries?.[0];
+            const currentEntry = data.aip_entries?.find(e => e.supplemental_aip_id === (supplementalAipId || null))
+                       || data.aip_entries?.[0]
+                       || null;
+
+            const currentSources = currentEntry && currentEntry.supplemental_aip_id === (supplementalAipId || null)
+                ? currentEntry.ppa_funding_sources || []
+                : [];
 
             form.reset({
                 office_id: data.office_id?.toString() || '',
-                expected_output: entry?.expected_output || '',
-                start_date: entry?.start_date || '',
-                end_date: entry?.end_date || '',
+                expected_output: currentEntry?.expected_output || '',
+                start_date: currentEntry?.start_date || '',
+                end_date: currentEntry?.end_date || '',
                 ppa_funding_sources:
-                    entry?.ppa_funding_sources?.map((fs) => ({
+                    currentSources.map((fs) => ({
                         id: fs.id,
                         funding_source_id: fs.funding_source_id.toString(),
                         ps_amount: fs.ps_amount,
@@ -243,11 +254,10 @@ export default function AipEntryFormDialog({
                         co_amount: fs.co_amount,
                         ccet_adaptation: fs.ccet_adaptation,
                         ccet_mitigation: fs.ccet_mitigation,
-                        // cc_typology_code: fs.cc_typology_code || null,
                     })) || [],
             });
         }
-    }, [data, open, form]);
+    }, [data, open, form, supplementalAipId]);
 
     return (
         <>

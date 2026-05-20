@@ -134,11 +134,13 @@ export default function PpmpFormDialog({
 
     const handleReset = () => {
         form.reset();
-        form.setValue('ppa_funding_source_id', ppaFundingSourceId);
+        form.setValue('ppa_funding_source_id', ppaFundingSourceId || null);
         form.setValue('fundingSource', selectedFundingSourceId);
     };
 
     function onSubmit(data: FormSchemaType) {
+        console.log('submit');
+
         // We only send the foreign keys required by the 'ppmps' table
         const payload = {
             ppa_funding_source_id: data.ppa_funding_source_id,

@@ -29,33 +29,66 @@ class AipEntryController extends Controller
 
         $yearId = $fiscalYear->id;
 
-        $onlyAipItems = function ($query) use ($yearId) {
+        $scope = $request->query('scope', 'original');
+        $saipId = $request->query('supplemental_aip_id');
+
+        $fundingSourceFilter = function ($query) use ($scope, $saipId) {
+            $query->with('fundingSource');
+            if ($scope === 'original') {
+                $query->whereNull('supplemental_aip_id');
+            } elseif ($scope === 'supplemental' && $saipId) {
+                $query->where('supplemental_aip_id', $saipId);
+            }
+        };
+
+        $aipEntryFilter = function ($query) use ($scope, $saipId, $fundingSourceFilter) {
+            if ($scope === 'original') {
+                $query->whereNull('supplemental_aip_id');
+            } elseif ($scope === 'supplemental' && $saipId) {
+                $query->where('supplemental_aip_id', $saipId);
+            }
+            $query->with(['ppaFundingSources' => $fundingSourceFilter]);
+        };
+
+        $onlyAipItems = function ($query) use ($yearId, $scope, $saipId) {
             $query
                 ->where('fiscal_year_id', $yearId)
-                ->whereHas('aipEntries')
+                ->whereHas('aipEntries', function ($q) use ($scope, $saipId) {
+                    if ($scope === 'original') {
+                        $q->whereNull('supplemental_aip_id');
+                    } elseif ($scope === 'supplemental' && $saipId) {
+                        $q->where('supplemental_aip_id', $saipId);
+                    }
+                })
                 ->orderBy('sort_order');
         };
 
         $aipEntries = Ppa::whereIn('office_id', $officeIds)
             ->whereNull('parent_id')
             ->where('fiscal_year_id', $yearId)
-            ->has('aipEntries')
+            ->whereHas('aipEntries', function ($q) use ($scope, $saipId) {
+                if ($scope === 'original') {
+                    $q->whereNull('supplemental_aip_id');
+                } elseif ($scope === 'supplemental' && $saipId) {
+                    $q->where('supplemental_aip_id', $saipId);
+                }
+            })
             ->orderBy('sort_order')
             ->with([
                 'office',
-                'aipEntries.ppaFundingSources.fundingSource',
+                'aipEntries' => $aipEntryFilter,
 
                 'children' => $onlyAipItems,
                 'children.office',
-                'children.aipEntries.ppaFundingSources.fundingSource',
+                'children.aipEntries' => $aipEntryFilter,
 
                 'children.children' => $onlyAipItems,
                 'children.children.office',
-                'children.children.aipEntries.ppaFundingSources.fundingSource',
+                'children.children.aipEntries' => $aipEntryFilter,
 
                 'children.children.children' => $onlyAipItems,
                 'children.children.children.office',
-                'children.children.children.aipEntries.ppaFundingSources.fundingSource',
+                'children.children.children.aipEntries' => $aipEntryFilter,
             ])
             ->get();
 
@@ -65,11 +98,20 @@ class AipEntryController extends Controller
             'fundingSources' => FundingSource::all(),
             'offices' => Office::all(),
             'filters' => $request->all(),
+            'supplementalAips' => \App\Models\SupplementalAip::where('fiscal_year_id', $yearId)
+                ->where('office_id', $officeId)
+                ->get(),
+            'currentScope' => [
+                'scope' => $scope,
+                'supplemental_aip_id' => $saipId ? (int)$saipId : null,
+            ],
 
             'dialogPpaTree' => Inertia::lazy(function () use (
                 $request,
                 $officeIds,
                 $yearId,
+                $scope,
+                $saipId,
             ) {
                 $id = $request->query('dialog_id');
                 $search = $request->query('dialog_search');
@@ -80,6 +122,14 @@ class AipEntryController extends Controller
                 return Ppa::whereIn('office_id', $officeIds)
                     ->where('fiscal_year_id', $yearId)
                     ->where('parent_id', $targetParentId)
+                    ->where(function ($q) use ($scope, $saipId) {
+                        if ($scope === 'original') {
+                            $q->whereNull('supplemental_aip_id');
+                        } elseif ($scope === 'supplemental' && $saipId) {
+                            $q->whereNull('supplemental_aip_id')
+                              ->orWhere('supplemental_aip_id', $saipId);
+                        }
+                    })
                     ->when($search, function ($query, $search) {
                         $query->where(function ($inner) use ($search) {
                             $inner
@@ -166,18 +216,23 @@ class AipEntryController extends Controller
         $validated = $request->validate([
             'ppa_ids' => 'required|array',
             'ppa_ids.*' => 'exists:ppas,id',
+            'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
         ]);
 
-        DB::transaction(function () use ($validated, $fiscalYear) {
+        $saipId = $validated['supplemental_aip_id'] ?? null;
+
+        DB::transaction(function () use ($validated, $fiscalYear, $saipId) {
             foreach ($validated['ppa_ids'] as $ppaId) {
                 AipEntry::firstOrCreate(
                     [
                         'ppa_id' => $ppaId,
+                        'supplemental_aip_id' => $saipId ?: null,
                     ],
                     [
                         'start_date' => $fiscalYear->year . '-01-01',
                         'end_date' => $fiscalYear->year . '-12-31',
                         'expected_output' => 'To be defined.',
+                        'is_supplemental' => (bool)$saipId,
                     ],
                 );
             }
@@ -217,12 +272,20 @@ class AipEntryController extends Controller
             abort(404, 'Associated PPA not found.');
         }
 
-        $currentFundingSourceIds = $aipEntry
-            ->ppaFundingSources()
+        $saipId = $validated['supplemental_aip_id'] ?? null;
+
+        $currentFundingSourceQuery = $aipEntry->ppaFundingSources();
+        if ($saipId) {
+            $currentFundingSourceQuery->where('supplemental_aip_id', $saipId);
+        } else {
+            $currentFundingSourceQuery->whereNull('supplemental_aip_id');
+        }
+
+        $currentFundingSourceIds = $currentFundingSourceQuery
             ->pluck('funding_source_id')
             ->toArray();
 
-        $newFundingSourceIds = collect($validated['ppa_funding_sources'])
+        $newFundingSourceIds = collect($validated['ppa_funding_sources'] ?? [])
             ->pluck('funding_source_id')
             ->toArray();
 
@@ -234,10 +297,15 @@ class AipEntryController extends Controller
         if (!empty($idsToRemove)) {
             $isUsedInPpmp = Ppmp::whereHas('ppaFundingSource', function (
                 $query,
-            ) use ($aipEntry, $idsToRemove) {
+            ) use ($aipEntry, $idsToRemove, $saipId) {
                 $query
                     ->where('aip_entry_id', $aipEntry->id)
                     ->whereIn('funding_source_id', $idsToRemove);
+                if ($saipId) {
+                    $query->where('supplemental_aip_id', $saipId);
+                } else {
+                    $query->whereNull('supplemental_aip_id');
+                }
             })->exists();
 
             if ($isUsedInPpmp) {
@@ -254,6 +322,7 @@ class AipEntryController extends Controller
             $aipEntry,
             $ppa,
             $idsToRemove,
+            $saipId,
         ) {
             $aipEntry->update([
                 'expected_output' => $validated['expected_output'],
@@ -264,15 +333,21 @@ class AipEntryController extends Controller
             $ppa->update(['office_id' => $validated['office_id']]);
 
             // Remove only the ones that aren't in the new list (and passed the usage check)
-            $aipEntry
-                ->ppaFundingSources()
-                ->whereIn('funding_source_id', $idsToRemove)
-                ->delete();
+            $deleteQuery = $aipEntry->ppaFundingSources()->whereIn('funding_source_id', $idsToRemove);
+            if ($saipId) {
+                $deleteQuery->where('supplemental_aip_id', $saipId);
+            } else {
+                $deleteQuery->whereNull('supplemental_aip_id');
+            }
+            $deleteQuery->delete();
 
             // Update existing or create new ones
-            foreach ($validated['ppa_funding_sources'] as $source) {
+            foreach ($validated['ppa_funding_sources'] ?? [] as $source) {
                 $aipEntry->ppaFundingSources()->updateOrCreate(
-                    ['funding_source_id' => $source['funding_source_id']], // Match on this
+                    [
+                        'funding_source_id' => $source['funding_source_id'],
+                        'supplemental_aip_id' => $saipId ?: null,
+                    ],
                     [
                         'ps_amount' => $source['ps_amount'],
                         'mooe_amount' => $source['mooe_amount'],
@@ -280,6 +355,7 @@ class AipEntryController extends Controller
                         'co_amount' => $source['co_amount'],
                         'ccet_adaptation' => $source['ccet_adaptation'] ?? 0,
                         'ccet_mitigation' => $source['ccet_mitigation'] ?? 0,
+                        'is_supplemental' => (bool)$saipId,
                     ],
                 );
             }
@@ -309,6 +385,7 @@ class AipEntryController extends Controller
                 'ppa_id',
                 $ppaIdsToRemoveFromAip,
             )
+                ->where('supplemental_aip_id', $aipEntry->supplemental_aip_id)
                 ->when($fiscalYearId, function ($query) use ($fiscalYearId) {
                     $query->whereHas('ppa', function ($subQuery) use (
                         $fiscalYearId,

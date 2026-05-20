@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AipCostingController;
 use App\Http\Controllers\AipEntryController;
+use App\Http\Controllers\SupplementalAipController;
 use App\Http\Controllers\AipRefCodeController;
 use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\FiscalYearController;
@@ -85,6 +86,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         AipEntryController::class,
         'destroy',
     ]);
+
+    // --- Supplemental AIPs ---
+    Route::post('/supplemental-aips', [SupplementalAipController::class, 'store'])->name('supplemental-aips.store');
+    Route::delete('/supplemental-aips/{supplementalAip}', [SupplementalAipController::class, 'destroy'])->name('supplemental-aips.destroy');
 
     // --- AIP Costing ---
     Route::post('/aip-costing/{aipEntry}', [

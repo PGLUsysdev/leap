@@ -35,7 +35,7 @@ export const formatDate = (dateString: string) => {
     return `${months[Number(dateSplit[1]) - 1]}-${dateSplit[2]}`;
 };
 
-const sumField = (rows: any[], field: keyof FlattenedPpa['current_fs']) => {
+const sumField = (rows: any[], field: keyof PpaFundingSource) => {
     return rows.reduce((sum, row) => {
         const value = row.original.current_fs?.[field];
         const num =
@@ -110,33 +110,33 @@ const columns = [
         id: 'schedule',
         header: () => <div className="text-left">Schedule</div>,
         columns: [
-            columnHelper.accessor('aip_entries', {
+            columnHelper.accessor('aip_entry', {
                 id: 'start_date',
                 header: () => <div className="text-left">Start</div>,
                 cell: (info) =>
-                    info.getValue()?.[0]
-                        ? formatDate(info.getValue()[0].start_date)
+                    info.getValue()
+                        ? formatDate(info.getValue()?.start_date)
                         : '—',
                 meta: { rowSpan: true },
             }),
-            columnHelper.accessor('aip_entries', {
+            columnHelper.accessor('aip_entry', {
                 id: 'end_date',
                 header: () => <div className="text-left">End</div>,
                 cell: (info) =>
-                    info.getValue()?.[0]
-                        ? formatDate(info.getValue()[0].end_date)
+                    info.getValue()
+                        ? formatDate(info.getValue()?.end_date)
                         : '—',
                 meta: { rowSpan: true },
             }),
         ],
     }),
-    columnHelper.accessor('aip_entries', {
+    columnHelper.accessor('aip_entry', {
         id: 'expected_output',
         header: () => <div className="text-left">Expected Outputs</div>,
         size: 400,
         cell: (info) => (
             <div className="text-wrap">
-                {info.getValue()?.[0]?.expected_output || '—'}
+                {info.getValue()?.expected_output || '—'}
             </div>
         ),
         meta: { rowSpan: true },
@@ -325,34 +325,40 @@ const columns = [
     columnHelper.display({
         id: 'action',
         size: 120,
-        cell: ({ row, table }) => (
-            <div className="flex items-center gap-1">
-                <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => table.options.meta?.onAdd?.(row.original)}
-                    disabled={row.original.type === 'Sub-Activity'}
-                >
-                    <Plus />
-                </Button>
+        cell: ({ row, table }) => {
+            const isReadOnly = (table.options.meta as any)?.readOnly;
+            if (isReadOnly) {
+                return <div className="text-center text-muted-foreground">-</div>;
+            }
+            return (
+                <div className="flex items-center gap-1">
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => table.options.meta?.onAdd?.(row.original)}
+                        disabled={row.original.type === 'Sub-Activity'}
+                    >
+                        <Plus />
+                    </Button>
 
-                <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => table.options.meta?.onEdit?.(row.original)}
-                >
-                    <Pencil />
-                </Button>
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => table.options.meta?.onEdit?.(row.original)}
+                    >
+                        <Pencil />
+                    </Button>
 
-                <Button
-                    size="icon"
-                    variant="destructive"
-                    onClick={() => table.options.meta?.onDelete?.(row.original)}
-                >
-                    <Trash />
-                </Button>
-            </div>
-        ),
+                    <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => table.options.meta?.onDelete?.(row.original)}
+                    >
+                        <Trash />
+                    </Button>
+                </div>
+            );
+        },
         meta: { rowSpan: true },
     }),
 ];

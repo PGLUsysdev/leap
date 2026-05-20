@@ -29,17 +29,26 @@ class PpmpController extends Controller
             $aipEntry->id,
         );
 
+        $isSupplemental = !is_null($selectedAipEntry->supplemental_aip_id);
+
+        // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
+        $allAipEntries = AipEntry::where('ppa_id', $selectedAipEntry->ppa_id)
+            ->with(['supplementalAip', 'ppaFundingSources', 'ppa'])
+            ->get();
+
+        $aipEntryIds = $allAipEntries->pluck('id');
+
         $ppmps = Ppmp::whereHas('ppaFundingSource', function ($query) use (
-            $aipEntry,
+            $aipEntryIds,
         ) {
-            $query->where('aip_entry_id', $aipEntry->id);
+            $query->whereIn('aip_entry_id', $aipEntryIds);
         })
             ->with([
                 'ppaFundingSource' => function ($query) {
-                    $query->select('id', 'funding_source_id');
+                    $query->select('id', 'funding_source_id', 'supplemental_aip_id', 'aip_entry_id');
                 },
                 'ppaFundingSource.fundingSource' => function ($query) {
-                    $query->select('id', 'code'); // only 'code' is needed for display
+                    $query->select('id', 'code', 'title'); // only 'code' is needed for display
                 },
                 'ppmpPriceList' => function ($query) {
                     $query->select(
@@ -88,20 +97,21 @@ class PpmpController extends Controller
             'CO',
         ])->get();
 
-        // $ppmpCategories = PpmpCategory::with('chartOfAccounts')->get();
         $ppmpCategories = PpmpCategory::with('chartOfAccounts')->get();
 
         $fundingSources = FundingSource::whereHas(
             'ppaFundingSources',
-            function ($query) use ($aipEntry) {
-                $query->where('aip_entry_id', $aipEntry->id);
+            function ($query) use ($aipEntryIds) {
+                $query->whereIn('aip_entry_id', $aipEntryIds);
             },
         )->get();
 
         return Inertia::render('ppmp/index', [
             'fiscalYear' => $fiscalYear,
             'aipEntry' => $selectedAipEntry,
+            'allAipEntries' => $allAipEntries,
             'ppmps' => $ppmps,
+            'isSupplemental' => $isSupplemental,
             'priceLists' => $priceLists,
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,

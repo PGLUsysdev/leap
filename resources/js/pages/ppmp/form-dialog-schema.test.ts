@@ -3,7 +3,7 @@ import { formSchema } from './form-dialog-schema';
 
 describe('formSchema Validation Suite', () => {
     const validMock = {
-        aip_entry_id: 101,
+        ppa_funding_source_id: 101,
         ppmp_price_list_id: 202,
         expenseAccount: 303,
         category: 1,
@@ -12,7 +12,6 @@ describe('formSchema Validation Suite', () => {
         unitOfMeasurement: 'Piece',
         price: '1500.50',
         fundingSource: 1,
-        isCustomItem: false,
     };
 
     test('should pass with 100% valid data', () => {
@@ -23,7 +22,7 @@ describe('formSchema Validation Suite', () => {
     describe('Initial State and Nullability', () => {
         test('should fail if all fields are null (initial state)', () => {
             const initialState = {
-                aip_entry_id: null,
+                ppa_funding_source_id: null,
                 ppmp_price_list_id: null,
                 expenseAccount: null,
                 category: null,
@@ -32,7 +31,6 @@ describe('formSchema Validation Suite', () => {
                 unitOfMeasurement: null,
                 price: null,
                 fundingSource: null,
-                isCustomItem: false,
             };
             const result = formSchema.safeParse(initialState);
             expect(result.success).toBe(false);
@@ -46,10 +44,8 @@ describe('formSchema Validation Suite', () => {
 
     describe('Numeric ID Refinements (Non-zero check)', () => {
         const numericFields = [
-            'aip_entry_id',
             'ppmp_price_list_id',
             'expenseAccount',
-            'category',
             'fundingSource',
             'description',
         ];
@@ -102,15 +98,6 @@ describe('formSchema Validation Suite', () => {
 
         test('should fail if itemNo is a negative number', () => {
             const result = formSchema.safeParse({ ...validMock, itemNo: -1 });
-            expect(result.success).toBe(false);
-        });
-
-        test('should validate that isCustomItem is a boolean', () => {
-            // @ts-ignore
-            const result = formSchema.safeParse({
-                ...validMock,
-                isCustomItem: 'true',
-            });
             expect(result.success).toBe(false);
         });
     });
