@@ -69,7 +69,7 @@ export default function ChartOfAccountPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="py-4">
                 <DataTable
                     columns={columns}
                     data={chartOfAccounts}

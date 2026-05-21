@@ -14,14 +14,11 @@ import { index } from '@/routes/aip';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
-    // BanknoteArrowUp,
     Briefcase,
     Building2,
     Calculator,
     ClipboardList,
-    // FileText,
     FolderTree,
-    // Gem,
     Landmark,
     Layers,
     LayoutGrid,
@@ -32,6 +29,7 @@ import {
 } from 'lucide-react';
 import AppLogo from './app-logo';
 import { usePage } from '@inertiajs/react';
+import type { SharedData } from '@/types/global';
 
 const mainNavItems: NavItem[] = [
     {
@@ -113,7 +111,7 @@ const mainNavItems: NavItem[] = [
 // ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const { auth } = usePage<SharedData>().props;
 
     const filteredNavItems = mainNavItems.filter((item) => {
         // If the item is 'Users', check the permission we shared in Middleware
@@ -126,11 +124,11 @@ export function AppSidebar() {
     });
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="inset" className="border-r">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton size="lg" asChild className="p-2 group-data-[collapsible=icon]:px-2 h-12 group-data-[collapsible=icon]:h-12!">
                             <Link href={dashboard()} prefetch>
                                 <AppLogo />
                             </Link>
@@ -140,7 +138,6 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                {/* <NavMain items={mainNavItems} /> */}
                 <NavMain items={filteredNavItems} />
             </SidebarContent>
 

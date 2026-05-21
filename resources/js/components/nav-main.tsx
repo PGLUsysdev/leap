@@ -8,20 +8,21 @@ import {
 import { resolveUrl } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { Separator } from '@/components/ui/separator';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const page = usePage();
     return (
-        <SidebarGroup className="px-2 py-0">
+        <SidebarGroup className="px-0 py-0">
             <SidebarGroupLabel>Platform</SidebarGroupLabel>
-            <SidebarMenu className="gap-1">
+
+            <SidebarMenu className="gap-0">
                 {items.map((item, index) => {
                     if (item.type === 'separator') {
                         return (
-                            <div key={`sep-${index}`} className="py-0">
-                                <Separator />
-                            </div>
+                            // <div key={`sep-${index}`} className="py-0">
+                            //     <Separator />
+                            // </div>
+                            <span className="px-4">--</span>
                         );
                     }
 
@@ -33,6 +34,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     resolveUrl(item.href),
                                 )}
                                 tooltip={{ children: item.title }}
+                                className="h-12 p-4 group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:px-4"
                             >
                                 <Link href={item.href} prefetch>
                                     {item.icon && <item.icon />}

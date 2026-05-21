@@ -167,7 +167,9 @@ export default function AipSummaryTable({
                     base.ccet_mitigation = ccet_mit.toString();
                     // Point to the latest SAIP entry so non-numeric fields
                     // (office, dates, expected output) resolve correctly
-                    const entryIds = [...new Set(list.map((s) => s.aip_entry_id))];
+                    const entryIds = [
+                        ...new Set(list.map((s) => s.aip_entry_id)),
+                    ];
                     const latestEntry = entryIds
                         .map((id) => activeAips.find((a) => a.id === id))
                         .filter(Boolean)
@@ -298,16 +300,19 @@ export default function AipSummaryTable({
     const handleDeleteSaipConfirm = () => {
         if (!currentScope.supplemental_aip_id) return;
         setIsLoading(true);
-        router.delete(`/supplemental-aips/${currentScope.supplemental_aip_id}`, {
-            preserveScroll: true,
-            onSuccess: () => {
-                handleScopeChange('original');
+        router.delete(
+            `/supplemental-aips/${currentScope.supplemental_aip_id}`,
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    handleScopeChange('original');
+                },
+                onFinish: () => {
+                    setIsLoading(false);
+                    setIsDeleteSaipDialogOpen(false);
+                },
             },
-            onFinish: () => {
-                setIsLoading(false);
-                setIsDeleteSaipDialogOpen(false);
-            },
-        });
+        );
     };
 
     const handleImportLibrary = () => {
@@ -407,8 +412,8 @@ export default function AipSummaryTable({
 
     return (
         <AppLayout breadcrumbs={updatedBreadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 pt-4">
+                <div className="flex flex-col px-4 sm:flex-row sm:items-center sm:justify-between">
                     <Tabs
                         value={activeTabValue}
                         onValueChange={(val) => {
@@ -484,6 +489,7 @@ export default function AipSummaryTable({
                     withFooter={true}
                     getSubRows={customGetSubRows}
                     globalFilterFn={customGlobalFilterFn}
+                    negativeHeight={9.98}
                     meta={{
                         readOnly: currentScope.scope === 'combined',
                     }}
@@ -611,12 +617,19 @@ export default function AipSummaryTable({
                 fiscalYear={fiscalYear}
             />
 
-            <AlertDialog open={isCreateSaipDialogOpen} onOpenChange={setIsCreateSaipDialogOpen}>
+            <AlertDialog
+                open={isCreateSaipDialogOpen}
+                onOpenChange={setIsCreateSaipDialogOpen}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Create Supplemental AIP?</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            Create Supplemental AIP?
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to create a new Supplemental Annual Investment Program (SAIP) for this office and fiscal year?
+                            Are you sure you want to create a new Supplemental
+                            Annual Investment Program (SAIP) for this office and
+                            fiscal year?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -637,12 +650,20 @@ export default function AipSummaryTable({
                 </AlertDialogContent>
             </AlertDialog>
 
-            <AlertDialog open={isDeleteSaipDialogOpen} onOpenChange={setIsDeleteSaipDialogOpen}>
+            <AlertDialog
+                open={isDeleteSaipDialogOpen}
+                onOpenChange={setIsDeleteSaipDialogOpen}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-destructive">Delete Supplemental AIP?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-destructive">
+                            Delete Supplemental AIP?
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete this Supplemental AIP and all of its associated PPAs, funding allocations, and Supplemental PPMP items. This action cannot be undone.
+                            This will permanently delete this Supplemental AIP
+                            and all of its associated PPAs, funding allocations,
+                            and Supplemental PPMP items. This action cannot be
+                            undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

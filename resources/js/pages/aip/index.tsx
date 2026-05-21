@@ -73,7 +73,7 @@ export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="p-4">
+            <div className="py-4">
                 <DataTable
                     columns={columns}
                     data={fiscalYears}

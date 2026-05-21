@@ -197,7 +197,9 @@ export default function PpmpPage({
 
     const hasSupplementalEntries = useMemo(() => {
         return allAipEntries.some(
-            (e) => e.supplemental_aip_id && (e.ppa_funding_sources?.length ?? 0) > 0,
+            (e) =>
+                e.supplemental_aip_id &&
+                (e.ppa_funding_sources?.length ?? 0) > 0,
         );
     }, [allAipEntries]);
 
@@ -205,7 +207,10 @@ export default function PpmpPage({
         const list: { value: string; label: string }[] = [];
         list.push({ value: 'original', label: 'Original' });
         allAipEntries.forEach((entry) => {
-            if (entry.supplemental_aip_id && (entry.ppa_funding_sources?.length ?? 0) > 0) {
+            if (
+                entry.supplemental_aip_id &&
+                (entry.ppa_funding_sources?.length ?? 0) > 0
+            ) {
                 const name = entry.supplemental_aip?.name || 'Supplemental';
                 list.push({
                     value: `supplemental_${entry.id}`,
@@ -410,10 +415,10 @@ export default function PpmpPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col gap-4 py-4">
                 <div
                     // className="flex flex-wrap items-center justify-between gap-4"
-                    className="flex flex-col gap-2"
+                    className="flex flex-col gap-2 px-4"
                 >
                     <small className="text-sm leading-none font-medium">
                         Viewing: {aipEntry?.ppa?.name}
@@ -424,12 +429,16 @@ export default function PpmpPage({
                             value={currentTab}
                             onValueChange={(val: any) => {
                                 setCurrentTab(val);
-                                router.get(window.location.pathname, { tab: val }, {
-                                    preserveState: true,
-                                    preserveScroll: true,
-                                    replace: true,
-                                    only: [],
-                                });
+                                router.get(
+                                    window.location.pathname,
+                                    { tab: val },
+                                    {
+                                        preserveState: true,
+                                        preserveScroll: true,
+                                        replace: true,
+                                        only: [],
+                                    },
+                                );
                             }}
                             className="w-auto"
                         >

@@ -28,7 +28,10 @@ export default function PpmpSummaryPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div
+                // className="flex flex-col gap-4 p-4"
+                className="pt-4"
+            >
                 <DataTable
                     columns={columns}
                     data={priceLists}

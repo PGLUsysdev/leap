@@ -126,7 +126,7 @@ export default function PriceListPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="p-4">
+            <div className="pt-4">
                 <DataTable
                     columns={columns}
                     data={paginatedPriceList.data}
@@ -136,7 +136,7 @@ export default function PriceListPage({
                     onReorder={handleReorder}
                     onMove={handleMove}
                     paginationObj={paginatedPriceList}
-                    negativeHeight={11}
+                    negativeHeight={10.7}
                     onlyKeys={['paginatedPriceList', 'filters']}
                     filters={filters}
                 >

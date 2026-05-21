@@ -58,7 +58,7 @@ export default function SectorPage({ sectors }: SectorPageProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="py-4">
                 <DataTable
                     columns={columns}
                     data={sectors}

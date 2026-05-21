@@ -91,7 +91,7 @@ export default function OfficesPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="w-full px-4 pt-4 pb-4">
+            <div className="py-4">
                 <DataTable
                     columns={columns}
                     data={offices}
