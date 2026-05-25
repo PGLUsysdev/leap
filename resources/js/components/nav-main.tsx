@@ -22,7 +22,9 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                             // <div key={`sep-${index}`} className="py-0">
                             //     <Separator />
                             // </div>
-                            <span className="px-4">--</span>
+                            <span key={`sep-${index}`} className="px-4">
+                                --
+                            </span>
                         );
                     }
 

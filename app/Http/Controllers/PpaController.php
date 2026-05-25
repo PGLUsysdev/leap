@@ -50,7 +50,7 @@ class PpaController extends Controller
 
             'current' => $request->query('id')
                 ? $this->flattenAncestors(
-                    Ppa::with('ancestor.ancestor')->find($request->query('id')),
+                    Ppa::with('parent.parent')->find($request->query('id')),
                 )
                 : [],
 
@@ -94,7 +94,7 @@ class PpaController extends Controller
                     return [];
                 }
 
-                $ppa = Ppa::with('ancestor.ancestor')->find($id);
+                $ppa = Ppa::with('parent.parent')->find($id);
                 return $ppa ? $this->flattenAncestors($ppa) : [];
             }),
         ]);
@@ -197,13 +197,13 @@ class PpaController extends Controller
         $current = $ppa;
 
         while ($current) {
-            // Create a copy without the ancestor relation
+            // Create a copy without the parent relation to keep output flat
             $item = $current->toArray();
-            unset($item['ancestor']);
+            unset($item['parent']);
             $result[] = $item;
 
             // Move to the next level up
-            $current = $current->ancestor;
+            $current = $current->parent;
         }
 
         return $result;
@@ -401,10 +401,7 @@ class PpaController extends Controller
      */
     public function destroy(Ppa $ppa)
     {
-        // 1. Load the PPA with all its recursive children to check for dependencies
-        $ppa->load('allDescendants');
-
-        // 2. Get a flat array of all IDs in this branch (Parent + all children)
+        // Get a flat array of all IDs in this branch (Parent + all children)
         $allIds = $this->getAllDescendantIds($ppa);
 
         // 3. Check for AIP Entry dependencies across the entire branch

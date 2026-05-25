@@ -6,6 +6,7 @@ use App\Models\PpmpCategory;
 use App\Http\Requests\StorePpmpCategoryRequest;
 use App\Http\Requests\UpdatePpmpCategoryRequest;
 use App\Models\ChartOfAccount;
+use App\Models\ChartOfAccountPpmpCategory;
 use Inertia\Inertia;
 
 class PpmpCategoryController extends Controller
@@ -45,7 +46,12 @@ class PpmpCategoryController extends Controller
             'is_non_procurement' => $validated['is_non_procurement'],
         ]);
 
-        $ppmpCategory->chartOfAccounts()->sync($validated['chart_of_accounts']);
+        foreach ($validated['chart_of_accounts'] ?? [] as $coaId) {
+            ChartOfAccountPpmpCategory::create([
+                'chart_of_account_id' => $coaId,
+                'ppmp_category_id' => $ppmpCategory->id,
+            ]);
+        }
     }
 
     /**
@@ -78,7 +84,13 @@ class PpmpCategoryController extends Controller
             'is_non_procurement' => $validated['is_non_procurement'],
         ]);
 
-        $ppmpCategory->chartOfAccounts()->sync($validated['chart_of_accounts']);
+        $ppmpCategory->chartOfAccountPpmpCategories()->delete();
+        foreach ($validated['chart_of_accounts'] ?? [] as $coaId) {
+            ChartOfAccountPpmpCategory::create([
+                'chart_of_account_id' => $coaId,
+                'ppmp_category_id' => $ppmpCategory->id,
+            ]);
+        }
     }
 
     /**
@@ -86,7 +98,7 @@ class PpmpCategoryController extends Controller
      */
     public function destroy(PpmpCategory $ppmpCategory)
     {
-        $ppmpCategory->chartOfAccounts()->detach();
+        $ppmpCategory->chartOfAccountPpmpCategories()->delete();
         $ppmpCategory->delete();
     }
 }

@@ -88,8 +88,9 @@ export default function PpmpFormDialog({
         (cat) => cat.id === selectedCategory,
     );
     const categoryExpenseAccountIds =
-        selectedCategoryData?.chart_of_accounts?.map((coa: any) => coa.id) ||
-        [];
+        selectedCategoryData?.chart_of_account_ppmp_categories?.map(
+            (cac: any) => cac.chart_of_account?.id,
+        ).filter((id: any): id is number => id != null) || [];
 
     const filteredChartOfAccounts = chartOfAccounts.filter((coa) => {
         const matchesCategory = selectedCategory
@@ -101,8 +102,8 @@ export default function PpmpFormDialog({
 
     const filteredPpmpCategories = selectedExpenseAccount
         ? ppmpCategories.filter((pc) =>
-              pc.chart_of_accounts?.some(
-                  (coa: any) => coa.id === selectedExpenseAccount,
+              pc.chart_of_account_ppmp_categories?.some(
+                  (cac: any) => cac.chart_of_account?.id === selectedExpenseAccount,
               ),
           )
         : ppmpCategories;

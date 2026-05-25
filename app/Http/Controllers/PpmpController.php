@@ -97,7 +97,7 @@ class PpmpController extends Controller
             'CO',
         ])->get();
 
-        $ppmpCategories = PpmpCategory::with('chartOfAccounts')->get();
+        $ppmpCategories = PpmpCategory::with('chartOfAccountPpmpCategories.chartOfAccount')->get();
 
         $fundingSources = FundingSource::whereHas(
             'ppaFundingSources',

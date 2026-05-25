@@ -66,8 +66,11 @@ class PpmpPriceListController extends Controller
             'CO',
         ])->get();
 
+        // $ppmpCategory = PpmpCategory::with(
+        //     'chartOfAccounts:id,account_title,account_number',
+        // )->get();
         $ppmpCategory = PpmpCategory::with(
-            'chartOfAccounts:id,account_title,account_number',
+            'chartOfAccountPpmpCategories.chartOfAccount:id,account_title,account_number',
         )->get();
 
         return Inertia::render('price-list/index', [

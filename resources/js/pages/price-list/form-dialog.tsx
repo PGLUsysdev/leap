@@ -130,9 +130,11 @@ export default function FormDialog({
     const selectedCategoryData = ppmpCategories.find(
         (cat) => cat.id === selectedCategory,
     );
+
     const categoryExpenseAccountIds =
-        selectedCategoryData?.chart_of_accounts?.map((coa: any) => coa.id) ||
-        [];
+        selectedCategoryData?.chart_of_account_ppmp_categories
+            ?.map((cac) => cac.chart_of_account?.id)
+            .filter((id): id is number => id != null) || [];
 
     const filteredExpenseAccounts = selectedCategory
         ? chartOfAccounts.filter((coa) =>
@@ -140,10 +142,17 @@ export default function FormDialog({
           )
         : chartOfAccounts;
 
+    // const filteredCategories = selectedExpenseAccount
+    //     ? ppmpCategories.filter((pc) => {
+    //           return pc.chart_of_accounts?.some(
+    //               (coa: any) => coa.id === selectedExpenseAccount,
+    //           );
+    //       })
+    //     : ppmpCategories;
     const filteredCategories = selectedExpenseAccount
         ? ppmpCategories.filter((pc) => {
-              return pc.chart_of_accounts?.some(
-                  (coa: any) => coa.id === selectedExpenseAccount,
+              return pc.chart_of_account_ppmp_categories?.some(
+                  (cac) => cac.chart_of_account?.id === selectedExpenseAccount,
               );
           })
         : ppmpCategories;

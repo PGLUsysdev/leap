@@ -15,7 +15,6 @@ import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 import PdfPreviewDialog from './pdf-preview-dialog';
 import { index } from '@/routes/ppmp-summaries';
-// import {} from '@/routes/s';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -31,6 +30,12 @@ interface AipProps {
 }
 
 export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
+    console.log({
+        fiscalYears,
+        app,
+        offices,
+    });
+
     const { auth } = usePage<SharedData>().props;
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
