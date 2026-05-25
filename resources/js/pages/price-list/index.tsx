@@ -35,13 +35,13 @@ export default function PriceListPage({
     filters,
     paginatedDialogPriceList,
 }: PriceListPageProps) {
-    console.log({
-        paginatedPriceList,
-        chartOfAccounts,
-        ppmpCategory,
-        filters,
-        paginatedDialogPriceList,
-    });
+    // console.log({
+    //     paginatedPriceList,
+    //     chartOfAccounts,
+    //     ppmpCategory,
+    //     filters,
+    //     paginatedDialogPriceList,
+    // });
 
     const [openEdit, setOpenEdit] = useState(false);
     const [selectedPriceList, setSelectedPriceList] =

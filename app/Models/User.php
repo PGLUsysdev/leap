@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class User extends Authenticatable
@@ -18,7 +19,14 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = ['name', 'email', 'password', 'status'];
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'status',
+        'role',
+        'office_id',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -46,7 +54,8 @@ class User extends Authenticatable
         ];
     }
 
-    public function office()
+    // belongsTo
+    public function office(): BelongsTo
     {
         return $this->belongsTo(Office::class, 'office_id');
     }

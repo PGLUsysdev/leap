@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FundingSource extends Model
 {
@@ -12,8 +13,8 @@ class FundingSource extends Model
 
     protected $fillable = ['fund_type', 'code', 'title', 'description'];
 
-    //belongs
-    public function ppaFundingSources()
+    // hasMany
+    public function ppaFundingSources(): HasMany
     {
         return $this->hasMany(PpaFundingSource::class, 'funding_source_id');
     }

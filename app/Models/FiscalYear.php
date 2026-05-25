@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FiscalYear extends Model
 {
@@ -16,18 +17,14 @@ class FiscalYear extends Model
         'status' => 'active',
     ];
 
-    public function aipEntries()
+    // hasMany
+    public function ppas(): HasMany
     {
-        return $this->hasManyThrough(
-            AipEntry::class,
-            Ppa::class,
-            'fiscal_year_id',
-            'ppa_id',
-        );
+        return $this->hasMany(Ppa::class, 'fiscal_year_id');
     }
 
-    public function supplementalAips()
+    public function supplementalAips(): HasMany
     {
-        return $this->hasMany(SupplementalAip::class);
+        return $this->hasMany(SupplementalAip::class, 'fiscal_year_id');
     }
 }

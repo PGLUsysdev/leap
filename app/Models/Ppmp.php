@@ -67,7 +67,7 @@ class Ppmp extends Model
         'dec_amount' => 'decimal:2',
     ];
 
-    // belongs
+    // belongsTo
     public function ppaFundingSource(): BelongsTo
     {
         return $this->belongsTo(

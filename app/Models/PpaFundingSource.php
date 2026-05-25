@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\FundingSource;
 use App\Models\Ppmp;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PpaFundingSource extends Model
 {
@@ -25,24 +27,24 @@ class PpaFundingSource extends Model
         'is_supplemental',
     ];
 
-    // has
-    public function ppmps()
+    // hasMany
+    public function ppmps(): HasMany
     {
         return $this->hasMany(Ppmp::class, 'ppa_funding_source_id');
     }
 
-    // belong
-    public function aipEntry()
-    {
-        return $this->belongsTo(AipEntry::class, 'aip_entry_id');
-    }
-
-    public function fundingSource()
+    // belongsTo
+    public function fundingSource(): BelongsTo
     {
         return $this->belongsTo(FundingSource::class, 'funding_source_id');
     }
 
-    public function supplementalAip()
+    public function aipEntry(): BelongsTo
+    {
+        return $this->belongsTo(AipEntry::class, 'aip_entry_id');
+    }
+
+    public function supplementalAip(): BelongsTo
     {
         return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
     }
