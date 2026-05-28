@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\AipEntry;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Log;
 
 class AipEntryPolicy
 {
@@ -13,7 +14,16 @@ class AipEntryPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        /** @var \App\Models\User $user */
+        $user = $user->loadMissing('role.permissionRoles.permission');
+
+        // Log::info($user);
+
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        // Log::info($permissions);
+
+        return $permissions->contains('aip-summary.view');
     }
 
     /**

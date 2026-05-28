@@ -20,7 +20,8 @@ class FiscalYearController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $isControlOffice = $user->office_id === 2 || $user->role === 'admin';
+        // $isControlOffice = $user->office_id === 2 || $user->role === 'admin';
+        $isControlOffice = $user->office_id === 2;
 
         return Inertia::render('aip/index', [
             'fiscalYears' => FiscalYear::orderBy('year', 'asc')->get(),

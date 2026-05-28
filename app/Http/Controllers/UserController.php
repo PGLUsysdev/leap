@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Request;
 
 class UserController extends Controller
 {
@@ -14,6 +15,8 @@ class UserController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', User::class);
+
         return Inertia::render('users/index', [
             'users' => User::with('office')->get(),
         ]);
@@ -56,6 +59,8 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
+        $this->authorize('update', $user);
+
         // The UpdateUserRequest should contain validation for 'status'
         // but we can also handle it directly here if the request class is empty
         $user->update($request->validated());

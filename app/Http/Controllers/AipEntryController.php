@@ -24,6 +24,8 @@ class AipEntryController extends Controller
      */
     public function index(Request $request, FiscalYear $fiscalYear)
     {
+        $this->authorize('viewAny', AipEntry::class);
+
         $officeId = auth()->user()->office_id;
         $officeIds = $this->getOfficeHierarchyIds($officeId);
 
@@ -41,7 +43,11 @@ class AipEntryController extends Controller
             }
         };
 
-        $aipEntryFilter = function ($query) use ($scope, $saipId, $fundingSourceFilter) {
+        $aipEntryFilter = function ($query) use (
+            $scope,
+            $saipId,
+            $fundingSourceFilter,
+        ) {
             if ($scope === 'original') {
                 $query->whereNull('supplemental_aip_id');
             } elseif ($scope === 'supplemental' && $saipId) {
@@ -98,12 +104,15 @@ class AipEntryController extends Controller
             'fundingSources' => FundingSource::all(),
             'offices' => Office::all(),
             'filters' => $request->all(),
-            'supplementalAips' => \App\Models\SupplementalAip::where('fiscal_year_id', $yearId)
+            'supplementalAips' => \App\Models\SupplementalAip::where(
+                'fiscal_year_id',
+                $yearId,
+            )
                 ->where('office_id', $officeId)
                 ->get(),
             'currentScope' => [
                 'scope' => $scope,
-                'supplemental_aip_id' => $saipId ? (int)$saipId : null,
+                'supplemental_aip_id' => $saipId ? (int) $saipId : null,
             ],
 
             'dialogPpaTree' => Inertia::lazy(function () use (
@@ -126,8 +135,10 @@ class AipEntryController extends Controller
                         if ($scope === 'original') {
                             $q->whereNull('supplemental_aip_id');
                         } elseif ($scope === 'supplemental' && $saipId) {
-                            $q->whereNull('supplemental_aip_id')
-                              ->orWhere('supplemental_aip_id', $saipId);
+                            $q->whereNull('supplemental_aip_id')->orWhere(
+                                'supplemental_aip_id',
+                                $saipId,
+                            );
                         }
                     })
                     ->when($search, function ($query, $search) {
@@ -232,7 +243,7 @@ class AipEntryController extends Controller
                         'start_date' => $fiscalYear->year . '-01-01',
                         'end_date' => $fiscalYear->year . '-12-31',
                         'expected_output' => 'To be defined.',
-                        'is_supplemental' => (bool)$saipId,
+                        'is_supplemental' => (bool) $saipId,
                     ],
                 );
             }
@@ -333,7 +344,9 @@ class AipEntryController extends Controller
             $ppa->update(['office_id' => $validated['office_id']]);
 
             // Remove only the ones that aren't in the new list (and passed the usage check)
-            $deleteQuery = $aipEntry->ppaFundingSources()->whereIn('funding_source_id', $idsToRemove);
+            $deleteQuery = $aipEntry
+                ->ppaFundingSources()
+                ->whereIn('funding_source_id', $idsToRemove);
             if ($saipId) {
                 $deleteQuery->where('supplemental_aip_id', $saipId);
             } else {
@@ -355,7 +368,7 @@ class AipEntryController extends Controller
                         'co_amount' => $source['co_amount'],
                         'ccet_adaptation' => $source['ccet_adaptation'] ?? 0,
                         'ccet_mitigation' => $source['ccet_mitigation'] ?? 0,
-                        'is_supplemental' => (bool)$saipId,
+                        'is_supplemental' => (bool) $saipId,
                     ],
                 );
             }

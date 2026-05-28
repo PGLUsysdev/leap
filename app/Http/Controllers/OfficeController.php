@@ -28,7 +28,8 @@ class OfficeController extends Controller
             'children',
         ]);
 
-        if ($user->role === 'admin' || !$user->office_id) {
+        // if ($user->role === 'admin' || !$user->office_id) {
+        if (!$user->office_id) {
             // Only get the Top-Level parents; children are nested inside them
             $offices = $query->whereNull('parent_id')->get();
         } else {

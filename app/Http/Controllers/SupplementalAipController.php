@@ -19,12 +19,18 @@ class SupplementalAipController extends Controller
         $officeId = $user->office_id;
 
         // If admin or control office, allow overriding the office_id
-        if (($user->role === 'admin' || $user->office_id === 2) && isset($validated['office_id'])) {
+        // if (($user->role === 'admin' || $user->office_id === 2) && isset($validated['office_id'])) {
+        //     $officeId = $validated['office_id'];
+        // }
+        if ($user->office_id === 2 && isset($validated['office_id'])) {
             $officeId = $validated['office_id'];
         }
 
         // Generate sequential name: Supplemental AIP No. X
-        $count = SupplementalAip::where('fiscal_year_id', $validated['fiscal_year_id'])
+        $count = SupplementalAip::where(
+            'fiscal_year_id',
+            $validated['fiscal_year_id'],
+        )
             ->where('office_id', $officeId)
             ->count();
 
@@ -43,8 +49,13 @@ class SupplementalAipController extends Controller
     {
         DB::transaction(function () use ($supplementalAip) {
             // Delete PPMPs linked to the funding sources of this SAIP
-            $fundingSourceIds = $supplementalAip->ppaFundingSources()->pluck('id');
-            \App\Models\Ppmp::whereIn('ppa_funding_source_id', $fundingSourceIds)->delete();
+            $fundingSourceIds = $supplementalAip
+                ->ppaFundingSources()
+                ->pluck('id');
+            \App\Models\Ppmp::whereIn(
+                'ppa_funding_source_id',
+                $fundingSourceIds,
+            )->delete();
 
             // Delete funding sources
             $supplementalAip->ppaFundingSources()->delete();
@@ -59,6 +70,9 @@ class SupplementalAipController extends Controller
             $supplementalAip->delete();
         });
 
-        return back()->with('success', 'Supplemental AIP deleted successfully.');
+        return back()->with(
+            'success',
+            'Supplemental AIP deleted successfully.',
+        );
     }
 }

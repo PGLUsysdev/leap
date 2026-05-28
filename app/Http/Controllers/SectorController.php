@@ -14,6 +14,8 @@ class SectorController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', Sector::class);
+
         return Inertia::render('sector/index', [
             'sectors' => Sector::all(),
         ]);
@@ -32,6 +34,8 @@ class SectorController extends Controller
      */
     public function store(StoreSectorRequest $request)
     {
+        $this->authorize('create', Sector::class);
+
         $validated = $request->validated();
 
         Sector::create($validated);
@@ -58,6 +62,8 @@ class SectorController extends Controller
      */
     public function update(UpdateSectorRequest $request, Sector $sector)
     {
+        $this->authorize('update', $sector);
+
         $validated = $request->validated();
 
         $sector->update($validated);
@@ -68,6 +74,8 @@ class SectorController extends Controller
      */
     public function destroy(Sector $sector)
     {
+        $this->authorize('delete', $sector);
+
         if ($sector->offices()->exists()) {
             return back()->withErrors([
                 'message' =>

@@ -24,8 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
-        'role',
         'office_id',
+        'role_id',
     ];
 
     /**
@@ -59,4 +59,25 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Office::class, 'office_id');
     }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    //
+    // public function isAdmin(): bool
+    // {
+    //     return $this->role === 'admin';
+    // }
+
+    // public function isUser(): bool
+    // {
+    //     return $this->role === 'user';
+    // }
+
+    // public function isViewer(): bool
+    // {
+    //     return $this->role === 'viewer';
+    // }
 }

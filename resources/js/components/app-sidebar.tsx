@@ -128,7 +128,11 @@ export function AppSidebar() {
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="p-2 group-data-[collapsible=icon]:px-2 h-12 group-data-[collapsible=icon]:h-12!">
+                        <SidebarMenuButton
+                            size="lg"
+                            asChild
+                            className="h-12 p-2 group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:px-2"
+                        >
                             <Link href={dashboard()} prefetch>
                                 <AppLogo />
                             </Link>
@@ -138,7 +142,8 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={filteredNavItems} />
+                {/*<NavMain items={filteredNavItems} />*/}
+                <NavMain items={mainNavItems} />
             </SidebarContent>
 
             <SidebarFooter>

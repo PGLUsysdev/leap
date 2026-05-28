@@ -308,6 +308,7 @@ export interface App {
 export type AuthData = {
     can: {
         manage_users: boolean;
+        manage_sectors: boolean;
     };
     user: User;
 };

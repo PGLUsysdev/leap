@@ -5,6 +5,8 @@ namespace App\Http\Middleware;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use App\Models\Sector;
+use App\Models\User;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -69,7 +71,10 @@ class HandleInertiaRequests extends Middleware
                 'can' => [
                     'manage_users' => $request
                         ->user()
-                        ?->can('viewAny', \App\Models\User::class),
+                        ?->can('viewAny', User::class),
+                    'manage_sectors' => $request
+                        ->user()
+                        ?->can('create', Sector::class),
                 ],
             ],
             'sidebarOpen' =>

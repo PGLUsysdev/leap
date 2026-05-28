@@ -13,7 +13,7 @@ class SectorPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,7 +21,7 @@ class SectorPolicy
      */
     public function view(User $user, Sector $sector): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -29,6 +29,7 @@ class SectorPolicy
      */
     public function create(User $user): bool
     {
+        // return $user->role !== 'viewer';
         return false;
     }
 
@@ -37,6 +38,7 @@ class SectorPolicy
      */
     public function update(User $user, Sector $sector): bool
     {
+        // return $user->role !== 'viewer';
         return false;
     }
 
@@ -45,6 +47,7 @@ class SectorPolicy
      */
     public function delete(User $user, Sector $sector): bool
     {
+        // return $user->role !== 'viewer';
         return false;
     }
 

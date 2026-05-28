@@ -38,7 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('test-combobox', fn() => Inertia::render('test-combobox'));
 });
 
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     // User Status Management
     Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::patch('users/{user}/status', [
@@ -88,8 +88,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ]);
 
     // --- Supplemental AIPs ---
-    Route::post('/supplemental-aips', [SupplementalAipController::class, 'store'])->name('supplemental-aips.store');
-    Route::delete('/supplemental-aips/{supplementalAip}', [SupplementalAipController::class, 'destroy'])->name('supplemental-aips.destroy');
+    Route::post('/supplemental-aips', [
+        SupplementalAipController::class,
+        'store',
+    ])->name('supplemental-aips.store');
+    Route::delete('/supplemental-aips/{supplementalAip}', [
+        SupplementalAipController::class,
+        'destroy',
+    ])->name('supplemental-aips.destroy');
 
     // --- AIP Costing ---
     Route::post('/aip-costing/{aipEntry}', [
