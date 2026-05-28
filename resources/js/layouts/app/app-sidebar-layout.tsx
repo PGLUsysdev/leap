@@ -12,46 +12,27 @@ export default function AppSidebarLayout({
     return (
         <AppShell variant="sidebar">
             <div className="relative flex min-h-screen w-full overflow-hidden">
-                <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                    <div
-                        className="absolute h-300 w-100 rounded-full opacity-50"
-                        style={{
-                            top: '60%',
-                            left: '-5%',
-                            background:
-                                'radial-gradient(circle, rgba(59, 130, 246, 1) 0%, rgba(59, 130, 246, 0) 70%)',
-                            filter: 'blur(200px)',
-                        }}
-                    />
-
-                    <div
-                        className="absolute h-100 w-400 rounded-full opacity-50"
-                        style={{
-                            top: '110%',
-                            left: '10%',
-                            background:
-                                'radial-gradient(circle, rgba(234, 179, 8, 1) 0%, rgba(234, 179, 8, 0) 70%)',
-                            filter: 'blur(300px)',
-                        }}
-                    />
-
-                    <div
-                        className="absolute h-150 w-100 rounded-full opacity-60"
-                        style={{
-                            top: '50%',
-                            left: '95%',
-                            background:
-                                'radial-gradient(circle, rgba(239, 68, 68, 1) 0%, rgba(239, 68, 68, 0) 70%)',
-                            filter: 'blur(200px)',
-                        }}
-                    />
-                </div>
+                {/* Custom Height Bottom-Anchored Gradient Box */}
+                <div
+                    className="pointer-events-none absolute right-0 bottom-0 left-0 opacity-50"
+                    style={{
+                        // Change '25rem' or '30vh' to whatever height you want this effect to occupy
+                        height: '20vh',
+                        backgroundImage: `
+                            radial-gradient(circle at 0% 130%, rgba(59, 130, 246, 0.6) 0%, transparent 50%),
+                            radial-gradient(circle at 50% 90%, rgba(234, 179, 8, 0.5) 0%, transparent 40%),
+                            radial-gradient(circle at 90% 90%, rgba(239, 68, 68, 0.6) 0%, transparent 30%)
+                        `,
+                        filter: 'blur(200px)',
+                    }}
+                />
 
                 <AppSidebar />
 
                 <AppContent
                     variant="sidebar"
                     className="relative flex-1 overflow-x-hidden bg-transparent"
+                    // className="relative flex-1 overflow-x-hidden"
                 >
                     <AppSidebarHeader breadcrumbs={breadcrumbs} />
                     {/* <div className="m-4 rounded bg-sidebar-foreground"> */}
