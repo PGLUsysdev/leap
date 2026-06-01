@@ -14,6 +14,8 @@ class LguLevelController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', LguLevel::class);
+
         return Inertia::render('lgu-level/index', [
             'lguLevels' => LguLevel::all(),
         ]);
@@ -32,6 +34,8 @@ class LguLevelController extends Controller
      */
     public function store(StoreLguLevelRequest $request)
     {
+        $this->authorize('viewAny', LguLevel::class);
+
         $validated = $request->validated();
 
         LguLevel::create($validated);
@@ -58,6 +62,8 @@ class LguLevelController extends Controller
      */
     public function update(UpdateLguLevelRequest $request, LguLevel $lguLevel)
     {
+        $this->authorize('viewAny', $lguLevel);
+
         $validated = $request->validated();
 
         $lguLevel->update($validated);
@@ -68,6 +74,8 @@ class LguLevelController extends Controller
      */
     public function destroy(LguLevel $lguLevel)
     {
+        $this->authorize('viewAny', $lguLevel);
+
         if ($lguLevel->offices()->exists()) {
             return back()->withErrors([
                 'message' =>

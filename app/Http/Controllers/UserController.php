@@ -61,8 +61,6 @@ class UserController extends Controller
     {
         $this->authorize('update', $user);
 
-        // The UpdateUserRequest should contain validation for 'status'
-        // but we can also handle it directly here if the request class is empty
         $user->update($request->validated());
 
         return back()->with('status', 'User updated successfully.');

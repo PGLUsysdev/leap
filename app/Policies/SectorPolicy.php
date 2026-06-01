@@ -13,7 +13,9 @@ class SectorPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('sector.view');
     }
 
     /**
@@ -29,8 +31,9 @@ class SectorPolicy
      */
     public function create(User $user): bool
     {
-        // return $user->role !== 'viewer';
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('sector.view');
     }
 
     /**
@@ -38,8 +41,9 @@ class SectorPolicy
      */
     public function update(User $user, Sector $sector): bool
     {
-        // return $user->role !== 'viewer';
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('sector.view');
     }
 
     /**
@@ -47,8 +51,9 @@ class SectorPolicy
      */
     public function delete(User $user, Sector $sector): bool
     {
-        // return $user->role !== 'viewer';
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('sector.view');
     }
 
     /**

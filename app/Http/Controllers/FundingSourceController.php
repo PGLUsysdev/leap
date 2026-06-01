@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FundingSource;
+use Inertia\Inertia;
 use App\Http\Requests\StoreFundingSourceRequest;
 use App\Http\Requests\UpdateFundingSourceRequest;
-use Inertia\Inertia;
+
+use App\Models\FundingSource;
+use App\Models\User;
 
 class FundingSourceController extends Controller
 {
@@ -14,6 +16,8 @@ class FundingSourceController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', FundingSource::class);
+
         return Inertia::render('funding-source/index', [
             'fundingSources' => FundingSource::all(),
         ]);
@@ -32,6 +36,8 @@ class FundingSourceController extends Controller
      */
     public function store(StoreFundingSourceRequest $request)
     {
+        $this->authorize('create', FundingSource::class);
+
         $validated = $request->validated();
 
         FundingSource::create($validated);
@@ -60,6 +66,8 @@ class FundingSourceController extends Controller
         UpdateFundingSourceRequest $request,
         FundingSource $fundingSource,
     ) {
+        $this->authorize('update', $fundingSource);
+
         $validated = $request->validated();
 
         $fundingSource->update($validated);
@@ -70,6 +78,8 @@ class FundingSourceController extends Controller
      */
     public function destroy(FundingSource $fundingSource)
     {
+        $this->authorize('delete', $fundingSource);
+
         $fundingSource->delete();
     }
 }

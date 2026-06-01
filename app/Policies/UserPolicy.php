@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Log;
 
 class UserPolicy
 {
@@ -12,8 +13,9 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        // return $user->role === 'admin';
-        return false;
+        $user->loadmissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('user.view');
     }
 
     /**
@@ -38,8 +40,9 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        // return $user->role === 'admin';
-        return false;
+        $user->loadmissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('user.edit');
     }
 
     /**

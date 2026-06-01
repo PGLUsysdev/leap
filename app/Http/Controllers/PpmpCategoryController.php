@@ -16,6 +16,8 @@ class PpmpCategoryController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', PpmpCategory::class);
+
         $ppmpCategories = PpmpCategory::with(
             'chartOfAccountPpmpCategories',
         )->get();
@@ -39,6 +41,8 @@ class PpmpCategoryController extends Controller
      */
     public function store(StorePpmpCategoryRequest $request)
     {
+        $this->authorize('create', PpmpCategory::class);
+
         $validated = $request->validated();
 
         $ppmpCategory = PpmpCategory::create([
@@ -77,6 +81,8 @@ class PpmpCategoryController extends Controller
         UpdatePpmpCategoryRequest $request,
         PpmpCategory $ppmpCategory,
     ) {
+        $this->authorize('update', $ppmpCategory);
+
         $validated = $request->validated();
 
         $ppmpCategory->update([
@@ -98,6 +104,8 @@ class PpmpCategoryController extends Controller
      */
     public function destroy(PpmpCategory $ppmpCategory)
     {
+        $this->authorize('delete', $ppmpCategory);
+
         $ppmpCategory->chartOfAccountPpmpCategories()->delete();
         $ppmpCategory->delete();
     }

@@ -75,6 +75,9 @@ class HandleInertiaRequests extends Middleware
                     'manage_sectors' => $request
                         ->user()
                         ?->can('create', Sector::class),
+                    'approve_users' => $request
+                        ->user()
+                        ?->can('update', $request->user()),
                 ],
             ],
             'sidebarOpen' =>

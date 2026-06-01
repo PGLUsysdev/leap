@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { User } from '@/types/global';
+import type { SharedData, User } from '@/types/global';
 import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 import FormDialog from './form-dialog';
+import { usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: '#' }];
 
@@ -13,25 +14,30 @@ interface UsersIndexProps {
 }
 
 export default function UsersIndex({ users }: UsersIndexProps) {
-    console.log(users);
+    const { auth } = usePage<SharedData>().props;
+
+    // console.log(users);
+    console.log(auth);
 
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [openFormDialog, setOpenFormDialog] = useState(false);
 
-    console.log(selectedUser);
+    // console.log(selectedUser);
 
     function handleOpenFormDialog(data: User) {
-        console.log(data);
+        // console.log(data);
 
         setSelectedUser(data);
         setOpenFormDialog(true);
     }
 
+    const cols = columns(auth.can?.manage_users ?? false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="pt-4">
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={users ?? []}
                     withSearch={true}
                     onEdit={handleOpenFormDialog}

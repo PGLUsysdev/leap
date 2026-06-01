@@ -13,7 +13,9 @@ class PpmpCategoryPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('chart-of-account.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class PpmpCategoryPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('chart-of-account.add');
     }
 
     /**
@@ -37,7 +41,9 @@ class PpmpCategoryPolicy
      */
     public function update(User $user, PpmpCategory $ppmpCategory): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('chart-of-account.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class PpmpCategoryPolicy
      */
     public function delete(User $user, PpmpCategory $ppmpCategory): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('chart-of-account.delete');
     }
 
     /**

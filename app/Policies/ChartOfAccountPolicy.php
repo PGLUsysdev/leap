@@ -13,7 +13,9 @@ class ChartOfAccountPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('chart-of-account.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class ChartOfAccountPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('chart-of-account.add');
     }
 
     /**
@@ -37,7 +41,9 @@ class ChartOfAccountPolicy
      */
     public function update(User $user, ChartOfAccount $chartOfAccount): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('chart-of-account.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class ChartOfAccountPolicy
      */
     public function delete(User $user, ChartOfAccount $chartOfAccount): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('chart-of-account.delete');
     }
 
     /**
@@ -59,8 +67,10 @@ class ChartOfAccountPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, ChartOfAccount $chartOfAccount): bool
-    {
+    public function forceDelete(
+        User $user,
+        ChartOfAccount $chartOfAccount,
+    ): bool {
         return false;
     }
 }
