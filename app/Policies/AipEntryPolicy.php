@@ -3,6 +3,8 @@
 namespace App\Policies;
 
 use App\Models\AipEntry;
+use App\Models\Office;
+use App\Models\Ppa;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\Log;
@@ -14,15 +16,8 @@ class AipEntryPolicy
      */
     public function viewAny(User $user): bool
     {
-        /** @var \App\Models\User $user */
         $user = $user->loadMissing('role.permissionRoles.permission');
-
-        // Log::info($user);
-
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-
-        // Log::info($permissions);
-
         return $permissions->contains('aip-summary.view');
     }
 
@@ -47,7 +42,10 @@ class AipEntryPolicy
      */
     public function update(User $user, AipEntry $aipEntry): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('aip-summary.edit') &&
+            $user->office_id === $aipEntry->ppa->office_id;
     }
 
     /**
@@ -55,7 +53,26 @@ class AipEntryPolicy
      */
     public function delete(User $user, AipEntry $aipEntry): bool
     {
-        return true;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('aip-summary.delete') &&
+            $user->office_id === $aipEntry->ppa->office_id;
+    }
+
+    public function import(User $user, array $ppaIds): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        if (!$permissions->contains('aip-summary.import')) {
+            return false;
+        }
+
+        $allowedOfficeIds = $this->getOfficeHierarchyIds($user->office_id);
+
+        return !Ppa::whereIn('id', $ppaIds)
+            ->whereNotIn('office_id', $allowedOfficeIds)
+            ->exists();
     }
 
     /**
@@ -72,5 +89,32 @@ class AipEntryPolicy
     public function forceDelete(User $user, AipEntry $aipEntry): bool
     {
         return false;
+    }
+
+    private function getOfficeHierarchyIds($officeId)
+    {
+        $officeIds = [$officeId];
+
+        $childOfficeIds = $this->getChildOfficeIds($officeId);
+        $officeIds = array_merge($officeIds, $childOfficeIds);
+
+        return $officeIds;
+    }
+
+    private function getChildOfficeIds($parentId)
+    {
+        $children = Office::where('parent_id', $parentId)
+            ->pluck('id')
+            ->toArray();
+
+        $descendants = $children;
+        foreach ($children as $childId) {
+            $descendants = array_merge(
+                $descendants,
+                $this->getChildOfficeIds($childId),
+            );
+        }
+
+        return $descendants;
     }
 }

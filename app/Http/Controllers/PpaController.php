@@ -35,6 +35,8 @@ class PpaController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('viewAny', Ppa::class);
+
         $userOfficeId = Auth::user()->office_id;
         $mode = $request->query('dialog_mode');
 
@@ -107,7 +109,7 @@ class PpaController extends Controller
         $id = $request->query($idKey);
         $search = $request->query($searchKey);
 
-        return Ppa::where('office_id', $officeId)
+        return Ppa::where('office_id', $officeId) // uncomment to toggle scoped ppa by office
             ->where('fiscal_year_id', $fiscalYearId)
             ->when(
                 $id,
@@ -276,12 +278,16 @@ class PpaController extends Controller
      */
     public function update(UpdatePpaRequest $request, Ppa $ppa)
     {
+        $this->authorize('update', $ppa);
+
         $validated = $request->validated();
         $ppa->update($validated);
     }
 
     public function move(Request $request, Ppa $ppa)
     {
+        $this->authorize('move', $ppa);
+
         $target = Ppa::findOrFail($request->target_id);
         $direction = $request->direction;
 
@@ -401,6 +407,8 @@ class PpaController extends Controller
      */
     public function destroy(Ppa $ppa)
     {
+        $this->authorize('delete', $ppa);
+
         // Get a flat array of all IDs in this branch (Parent + all children)
         $allIds = $this->getAllDescendantIds($ppa);
 
@@ -481,6 +489,8 @@ class PpaController extends Controller
      */
     public function importFromPreviousYear(Request $request)
     {
+        $this->authorize('importLastYearPpa', Ppa::class);
+
         $request->validate([
             'ppa_ids' => 'required|array',
             'ppa_ids.*' => 'integer',
@@ -602,35 +612,4 @@ class PpaController extends Controller
                 ]);
         }
     }
-
-    /**
-     * Get breadcrumbs for PPA navigation
-     */
-    // private function getPpaBreadcrumbs($ppaId, $fiscalYearId = null)
-    // {
-    //     $query = Ppa::with('parent.parent');
-
-    //     if ($fiscalYearId) {
-    //         $query->where('fiscal_year_id', $fiscalYearId);
-    //     }
-
-    //     $ppa = $query->find($ppaId);
-
-    //     if (!$ppa) {
-    //         return [];
-    //     }
-
-    //     $breadcrumbs = [];
-    //     $current = $ppa;
-
-    //     while ($current) {
-    //         array_unshift($breadcrumbs, [
-    //             'id' => $current->id,
-    //             'name' => $current->name,
-    //         ]);
-    //         $current = $current->parent;
-    //     }
-
-    //     return $breadcrumbs;
-    // }
 }

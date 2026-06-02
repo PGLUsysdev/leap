@@ -28,8 +28,8 @@ import {
     Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
-import { usePage } from '@inertiajs/react';
-import type { SharedData } from '@/types/global';
+// import { usePage } from '@inertiajs/react';
+// import type { SharedData } from '@/types/global';
 
 const mainNavItems: NavItem[] = [
     {
@@ -111,17 +111,17 @@ const mainNavItems: NavItem[] = [
 // ];
 
 export function AppSidebar() {
-    const { auth } = usePage<SharedData>().props;
+    // const { auth } = usePage<SharedData>().props;
 
-    const filteredNavItems = mainNavItems.filter((item) => {
-        // If the item is 'Users', check the permission we shared in Middleware
-        if (item.title === 'Users') {
-            return auth.can?.manage_users;
-        }
+    // const filteredNavItems = mainNavItems.filter((item) => {
+    //     // If the item is 'Users', check the permission we shared in Middleware
+    //     if (item.title === 'Users') {
+    //         return auth.can?.manage_users;
+    //     }
 
-        // Return all other items as usual
-        return true;
-    });
+    //     // Return all other items as usual
+    //     return true;
+    // });
 
     return (
         <Sidebar collapsible="icon" variant="inset" className="border-r">

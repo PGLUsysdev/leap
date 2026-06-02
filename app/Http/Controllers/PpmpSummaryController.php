@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Ppmp;
 use App\Models\FiscalYear;
+use App\Models\PpmpSummary;
 use App\Models\PpmpPriceList;
 use Inertia\Inertia;
 
@@ -14,6 +15,8 @@ class PpmpSummaryController extends Controller
      */
     public function index(FiscalYear $fiscalYear)
     {
+        $this->authorize('viewAny', PpmpSummary::class);
+
         $priceLists = PpmpPriceList::query()
             ->whereHas('ppmps.ppaFundingSource.aipEntry.ppa', function (
                 $query,

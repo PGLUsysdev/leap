@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Ppa;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\Log;
 
 class PpaPolicy
 {
@@ -13,7 +14,9 @@ class PpaPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppa.view');
     }
 
     /**
@@ -29,7 +32,9 @@ class PpaPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppa.create');
     }
 
     /**
@@ -37,7 +42,10 @@ class PpaPolicy
      */
     public function update(User $user, Ppa $ppa): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppa.edit') &&
+            $user->office_id === $ppa->office_id;
     }
 
     /**
@@ -45,7 +53,10 @@ class PpaPolicy
      */
     public function delete(User $user, Ppa $ppa): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppa.delete') &&
+            $user->office_id === $ppa->office_id;
     }
 
     /**
@@ -62,5 +73,21 @@ class PpaPolicy
     public function forceDelete(User $user, Ppa $ppa): bool
     {
         return false;
+    }
+
+    public function move(User $user, Ppa $ppa): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppa.move') &&
+            $user->office_id === $ppa->office_id;
+    }
+
+    public function importLastYearPpa(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        // Log::info($permissions);
+        return $permissions->contains('ppa.import');
     }
 }

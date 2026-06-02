@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Office;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OfficePolicy
 {
@@ -13,7 +14,9 @@ class OfficePolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office.view');
     }
 
     /**
@@ -27,25 +30,58 @@ class OfficePolicy
     /**
      * Determine whether the user can create models.
      */
-    public function create(User $user): bool
+    public function createOffice(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office.create.office');
+    }
+
+    public function createSubUnit(User $user, Office $parentOffice): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office.create.sub-unit') &&
+            $user->office_id === $parentOffice->id;
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Office $office): bool
+    public function updateOffice(User $user, Office $office): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office.edit.office') &&
+            $user->office_id === $office->id;
+    }
+
+    public function updateSubUnit(User $user, Office $parentOffice): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        // need to get this sub-unit's main office or get all office's sub-units
+        return $permissions->contains('office.edit.sub-unit') &&
+            $user->office_id === $parentOffice->id;
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Office $office): bool
+    public function deleteOffice(User $user, Office $office): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office.delete.office');
+    }
+
+    public function deleteSubUnit(User $user, Office $parentOffice): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office.delete.sub-unit') &&
+            $user->office_id === $parentOffice->id;
     }
 
     /**

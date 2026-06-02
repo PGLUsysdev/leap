@@ -14,24 +14,15 @@ interface UsersIndexProps {
 }
 
 export default function UsersIndex({ users }: UsersIndexProps) {
-    const { auth } = usePage<SharedData>().props;
-
-    // console.log(users);
-    console.log(auth);
-
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [openFormDialog, setOpenFormDialog] = useState(false);
 
-    // console.log(selectedUser);
-
     function handleOpenFormDialog(data: User) {
-        // console.log(data);
-
         setSelectedUser(data);
         setOpenFormDialog(true);
     }
 
-    const cols = columns(auth.can?.manage_users ?? false);
+    const cols = columns(true);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

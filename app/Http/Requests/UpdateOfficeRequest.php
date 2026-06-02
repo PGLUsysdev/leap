@@ -27,16 +27,16 @@ class UpdateOfficeRequest extends FormRequest
         $officeId = $office ? $office->id : null;
 
         // Debug: Log the office ID and input values
-        \Log::info('UpdateOfficeRequest - Office ID: ' . $officeId);
-        \Log::info(
-            'UpdateOfficeRequest - LGU Level ID: ' .
-                $this->input('lgu_level_id'),
-        );
-        \Log::info(
-            'UpdateOfficeRequest - Office Type ID: ' .
-                $this->input('office_type_id'),
-        );
-        \Log::info('UpdateOfficeRequest - Code: ' . $this->input('code'));
+        // \Log::info('UpdateOfficeRequest - Office ID: ' . $officeId);
+        // \Log::info(
+        //     'UpdateOfficeRequest - LGU Level ID: ' .
+        //         $this->input('lgu_level_id'),
+        // );
+        // \Log::info(
+        //     'UpdateOfficeRequest - Office Type ID: ' .
+        //         $this->input('office_type_id'),
+        // );
+        // \Log::info('UpdateOfficeRequest - Code: ' . $this->input('code'));
 
         return [
             'parent_id' => 'nullable|exists:offices,id',

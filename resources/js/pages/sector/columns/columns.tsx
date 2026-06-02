@@ -19,29 +19,25 @@ const columns = [
         size: 82,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">
-                {table.options.meta?.canEdit && (
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() =>
-                            table.options.meta?.onEdit?.(row.original)
-                        }
-                    >
-                        <Pencil />
-                    </Button>
-                )}
+                {/*{table.options.meta?.canEdit && (*/}
+                <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => table.options.meta?.onEdit?.(row.original)}
+                >
+                    <Pencil />
+                </Button>
+                {/*)}*/}
 
-                {table.options.meta?.canDelete && (
-                    <Button
-                        size="icon"
-                        variant="destructive"
-                        onClick={() =>
-                            table.options.meta?.onDelete?.(row.original)
-                        }
-                    >
-                        <Trash />
-                    </Button>
-                )}
+                {/*{table.options.meta?.canDelete && (*/}
+                <Button
+                    size="icon"
+                    variant="destructive"
+                    onClick={() => table.options.meta?.onDelete?.(row.original)}
+                >
+                    <Trash />
+                </Button>
+                {/*)}*/}
             </div>
         ),
     }),

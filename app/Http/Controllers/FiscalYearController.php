@@ -19,6 +19,8 @@ class FiscalYearController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', FiscalYear::class);
+
         $user = $request->user();
         // $isControlOffice = $user->office_id === 2 || $user->role === 'admin';
         $isControlOffice = $user->office_id === 2;
@@ -157,6 +159,8 @@ class FiscalYearController extends Controller
      */
     public function store(StoreFiscalYearRequest $request)
     {
+        $this->authorize('create', FiscalYear::class);
+
         FiscalYear::create($request->validated());
     }
 
@@ -189,6 +193,8 @@ class FiscalYearController extends Controller
     // update fiscal year status
     public function updateStatus(Request $request, FiscalYear $fiscalYear)
     {
+        $this->authorize('updateStatus', $fiscalYear);
+
         $validated = $request->validate([
             'status' => 'required|string|in:active,inactive,closed',
         ]);

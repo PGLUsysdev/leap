@@ -13,7 +13,9 @@ class PpmpSummaryPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppmp-summary.view');
     }
 
     /**

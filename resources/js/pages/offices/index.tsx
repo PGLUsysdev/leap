@@ -30,8 +30,8 @@ export default function OfficesPage({
     lguLevels,
     officeTypes,
 }: OfficesPageProps) {
-    const { auth } = usePage<SharedData>().props;
-    const userRole = auth.user.role;
+    // const { auth } = usePage<SharedData>().props;
+    // const userRole = auth.user.role;
 
     console.log(offices);
 
@@ -100,9 +100,9 @@ export default function OfficesPage({
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    {userRole === 'admin' ? (
-                        <Button onClick={handleCreate}>Add Office</Button>
-                    ) : undefined}
+                    {/*{userRole === 'admin' ? (*/}
+                    <Button onClick={handleCreate}>Add Office</Button>
+                    {/*) : undefined}*/}
                 </DataTable>
             </div>
 

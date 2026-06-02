@@ -13,7 +13,9 @@ class FiscalYearPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('fiscal-year.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class FiscalYearPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('fiscal-year.create');
     }
 
     /**
@@ -37,7 +41,9 @@ class FiscalYearPolicy
      */
     public function update(User $user, FiscalYear $fiscalYear): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('fiscal-year.edit');
     }
 
     /**
@@ -47,6 +53,27 @@ class FiscalYearPolicy
     {
         return false;
     }
+
+    public function updateStatus(User $user, FiscalYear $fiscalYear): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('fiscal-year.edit.status');
+    }
+
+    // public function openAipSummary(User $user): bool
+    // {
+    //     $user->loadMissing('role.permissionRoles.permission');
+    //     $permissions = $user->role->permissionRoles->pluck('permission.name');
+    //     return $permissions->contains('fiscal-year.aip-summary');
+    // }
+
+    // public function generatePpa(User $user): bool
+    // {
+    //     $user->loadMissing('role.permissionRoles.permission');
+    //     $permissions = $user->role->permissionRoles->pluck('permission.name');
+    //     return $permissions->contains('fiscal-year.generate-ppa');
+    // }
 
     /**
      * Determine whether the user can restore the model.

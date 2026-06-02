@@ -11,6 +11,7 @@ use App\Http\Requests\UpdateOfficeRequest;
 use Inertia\Inertia;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OfficeController extends Controller
 {
@@ -19,6 +20,8 @@ class OfficeController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', Office::class);
+
         $user = auth()->user();
         $query = Office::with([
             'sector',
@@ -28,12 +31,9 @@ class OfficeController extends Controller
             'children',
         ]);
 
-        // if ($user->role === 'admin' || !$user->office_id) {
         if (!$user->office_id) {
-            // Only get the Top-Level parents; children are nested inside them
             $offices = $query->whereNull('parent_id')->get();
         } else {
-            // Only get the User's specific office; children are nested inside it
             $offices = $query->where('id', $user->office_id)->get();
         }
 
@@ -60,6 +60,17 @@ class OfficeController extends Controller
     {
         $validated = $request->validated();
 
+        if (!empty($validated['parent_id'])) {
+            // Find the target parent office they want to add a sub-unit to
+            $parentOffice = Office::findOrFail($validated['parent_id']);
+
+            // Authorize using the parent office instance
+            $this->authorize('createSubUnit', $parentOffice);
+        } else {
+            // No parent_id means it's a main office. Authorize against the class globally.
+            $this->authorize('createOffice', Office::class);
+        }
+
         Office::create($validated);
     }
 
@@ -85,6 +96,20 @@ class OfficeController extends Controller
     public function update(UpdateOfficeRequest $request, Office $office)
     {
         $validated = $request->validated();
+
+        Log::info($validated);
+
+        // checks if its an office or sub-unit then applies different authorizations
+        if (!empty($validated['parent_id'])) {
+            // sub-unit
+            // find the main office of this sub-unit
+            $parentOffice = Office::findOrFail($validated['parent_id']);
+
+            $this->authorize('updateSubUnit', $parentOffice);
+        } else {
+            // office
+            $this->authorize('updateOffice', $office);
+        }
 
         // Check if account code fields have changed
         $codeFieldsChanged =
@@ -114,6 +139,15 @@ class OfficeController extends Controller
      */
     public function destroy(Office $office)
     {
+        // Log::info($office);
+
+        if (!empty($office['parent_id'])) {
+            $parentOffice = Office::findOrFail($office['parent_id']);
+            $this->authorize('deleteSubUnit', $parentOffice);
+        } else {
+            $this->authorize('deleteOffice', $office);
+        }
+
         $officeName = $office->name;
         $blockers = [];
 

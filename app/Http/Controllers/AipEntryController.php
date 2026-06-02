@@ -69,8 +69,9 @@ class AipEntryController extends Controller
                 ->orderBy('sort_order');
         };
 
-        $aipEntries = Ppa::whereIn('office_id', $officeIds)
-            ->whereNull('parent_id')
+        $aipEntries = Ppa
+            // whereIn('office_id', $officeIds)->
+            ::whereNull('parent_id')
             ->where('fiscal_year_id', $yearId)
             ->whereHas('aipEntries', function ($q) use ($scope, $saipId) {
                 if ($scope === 'original') {
@@ -128,8 +129,9 @@ class AipEntryController extends Controller
 
                 $targetParentId = $id ?: $boundaryId;
 
-                return Ppa::whereIn('office_id', $officeIds)
-                    ->where('fiscal_year_id', $yearId)
+                return Ppa
+                    // whereIn('office_id', $officeIds)->
+                    ::where('fiscal_year_id', $yearId)
                     ->where('parent_id', $targetParentId)
                     ->where(function ($q) use ($scope, $saipId) {
                         if ($scope === 'original') {
@@ -230,6 +232,8 @@ class AipEntryController extends Controller
             'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
         ]);
 
+        $this->authorize('import', [AipEntry::class, $validated['ppa_ids']]);
+
         $saipId = $validated['supplemental_aip_id'] ?? null;
 
         DB::transaction(function () use ($validated, $fiscalYear, $saipId) {
@@ -276,6 +280,8 @@ class AipEntryController extends Controller
      */
     public function update(UpdateAipEntryRequest $request, AipEntry $aipEntry)
     {
+        $this->authorize('update', $aipEntry);
+
         $validated = $request->validated();
         $ppa = $aipEntry->ppa;
 
@@ -382,6 +388,8 @@ class AipEntryController extends Controller
      */
     public function destroy(AipEntry $aipEntry)
     {
+        $this->authorize('delete', $aipEntry);
+
         try {
             DB::beginTransaction();
 
@@ -461,24 +469,16 @@ class AipEntryController extends Controller
         return $descendants;
     }
 
-    /**
-     * Get all office IDs in the user's office hierarchy (user's office + all child offices).
-     */
     private function getOfficeHierarchyIds($officeId)
     {
-        // Start with the user's office
         $officeIds = [$officeId];
 
-        // Get all child offices recursively
         $childOfficeIds = $this->getChildOfficeIds($officeId);
         $officeIds = array_merge($officeIds, $childOfficeIds);
 
         return $officeIds;
     }
 
-    /**
-     * Recursively find all child office IDs.
-     */
     private function getChildOfficeIds($parentId)
     {
         $children = Office::where('parent_id', $parentId)

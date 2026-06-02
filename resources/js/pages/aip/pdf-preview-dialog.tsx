@@ -1699,7 +1699,7 @@ export default function PdfPreviewDialog({
     const [isReloading, setIsReloading] = useState(false);
     const [selectedOfficeId, setSelectedOfficeId] = useState<string>('all');
 
-    const isBACSU = auth.user.office_id === 2 || auth.user.role === 'admin';
+    const isBACSU = true;
 
     const handleOfficeChange = (officeId: string) => {
         if (!fiscalYear) return;

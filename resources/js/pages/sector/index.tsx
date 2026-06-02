@@ -69,16 +69,16 @@ export default function SectorPage({ sectors }: SectorPageProps) {
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
-                    meta={{
-                        canEdit: auth.can?.manage_sectors,
-                        canDelete: auth.can?.manage_sectors,
-                    }}
+                    // meta={{
+                    //     canEdit: auth.can?.manage_sectors,
+                    //     canDelete: auth.can?.manage_sectors,
+                    // }}
                 >
-                    {auth.can?.manage_sectors && (
-                        <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add Sector</Button>
-                        </div>
-                    )}
+                    {/*{auth.can?.manage_sectors && (*/}
+                    <div className="flex justify-end">
+                        <Button onClick={handleAdd}>Add Sector</Button>
+                    </div>
+                    {/* )} */}
                 </DataTable>
             </div>
 
