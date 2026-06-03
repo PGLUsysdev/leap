@@ -22,10 +22,10 @@ class UpdateAipEntryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'office_id' => 'required|exists:offices,id',
-            'expected_output' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date',
+            'office_id' => 'sometimes|required|exists:offices,id',
+            'expected_output' => 'sometimes|required|string',
+            'start_date' => 'sometimes|required|date',
+            'end_date' => 'sometimes|required|date',
             'ppa_funding_sources' => 'nullable|array',
             'ppa_funding_sources.*.funding_source_id' =>
                 'required|exists:funding_sources,id',

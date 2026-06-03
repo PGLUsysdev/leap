@@ -10,6 +10,8 @@ class SupplementalAipController extends Controller
 {
     public function store(Request $request)
     {
+        $this->authorize('create', SupplementalAip::class);
+
         $validated = $request->validate([
             'fiscal_year_id' => 'required|exists:fiscal_years,id',
             'office_id' => 'nullable|exists:offices,id',
@@ -47,6 +49,8 @@ class SupplementalAipController extends Controller
 
     public function destroy(SupplementalAip $supplementalAip)
     {
+        $this->authorize('delete', $supplementalAip);
+
         DB::transaction(function () use ($supplementalAip) {
             // Delete PPMPs linked to the funding sources of this SAIP
             $fundingSourceIds = $supplementalAip

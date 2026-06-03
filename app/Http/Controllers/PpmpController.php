@@ -25,6 +25,8 @@ class PpmpController extends Controller
         FiscalYear $fiscalYear,
         AipEntry $aipEntry,
     ) {
+        $this->authorize('viewAny', [Ppmp::class, $aipEntry]);
+
         $selectedAipEntry = AipEntry::with(['ppa', 'ppaFundingSources'])->find(
             $aipEntry->id,
         );
@@ -45,7 +47,12 @@ class PpmpController extends Controller
         })
             ->with([
                 'ppaFundingSource' => function ($query) {
-                    $query->select('id', 'funding_source_id', 'supplemental_aip_id', 'aip_entry_id');
+                    $query->select(
+                        'id',
+                        'funding_source_id',
+                        'supplemental_aip_id',
+                        'aip_entry_id',
+                    );
                 },
                 'ppaFundingSource.fundingSource' => function ($query) {
                     $query->select('id', 'code', 'title'); // only 'code' is needed for display
@@ -97,7 +104,9 @@ class PpmpController extends Controller
             'CO',
         ])->get();
 
-        $ppmpCategories = PpmpCategory::with('chartOfAccountPpmpCategories.chartOfAccount')->get();
+        $ppmpCategories = PpmpCategory::with(
+            'chartOfAccountPpmpCategories.chartOfAccount',
+        )->get();
 
         $fundingSources = FundingSource::whereHas(
             'ppaFundingSources',

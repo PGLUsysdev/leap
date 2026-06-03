@@ -59,6 +59,14 @@ class AipEntryPolicy
             $user->office_id === $aipEntry->ppa->office_id;
     }
 
+    public function editFundingSources(User $user, AipEntry $aipEntry): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('aip-summary.edit.funding-source') &&
+            $user->office_id === $aipEntry->ppa->office_id;
+    }
+
     public function import(User $user, array $ppaIds): bool
     {
         $user->loadMissing('role.permissionRoles.permission');

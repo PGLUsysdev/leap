@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Models\AipEntry;
+use App\Models\Office;
 use App\Models\Ppmp;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
@@ -11,9 +13,25 @@ class PpmpPolicy
     /**
      * Determine whether the user can view any models.
      */
-    public function viewAny(User $user): bool
+    public function viewAny(User $user, ?AipEntry $aipEntry = null): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        if (!$permissions->contains('ppmp.view')) {
+            return false;
+        }
+
+        if (!$aipEntry) {
+            return true;
+        }
+
+        $office = $aipEntry->ppa->office;
+        if ($office->parent_id) {
+            $office = $office->parent;
+        }
+
+        return $user->office_id === $office->id;
     }
 
     /**

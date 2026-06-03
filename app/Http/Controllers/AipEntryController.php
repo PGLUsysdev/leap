@@ -34,6 +34,11 @@ class AipEntryController extends Controller
         $scope = $request->query('scope', 'original');
         $saipId = $request->query('supplemental_aip_id');
 
+        if ($scope === 'supplemental' && $saipId) {
+            $saip = \App\Models\SupplementalAip::findOrFail($saipId);
+            $this->authorize('view', $saip);
+        }
+
         $fundingSourceFilter = function ($query) use ($scope, $saipId) {
             $query->with('fundingSource');
             if ($scope === 'original') {
@@ -280,8 +285,7 @@ class AipEntryController extends Controller
      */
     public function update(UpdateAipEntryRequest $request, AipEntry $aipEntry)
     {
-        $this->authorize('update', $aipEntry);
-
+        $user = auth()->user();
         $validated = $request->validated();
         $ppa = $aipEntry->ppa;
 
@@ -289,7 +293,33 @@ class AipEntryController extends Controller
             abort(404, 'Associated PPA not found.');
         }
 
+        $canEdit = $user->can('update', $aipEntry);
+        $canEditFunding = $user->can('editFundingSources', $aipEntry);
+
         $saipId = $validated['supplemental_aip_id'] ?? null;
+
+        $detailsChanged = $validated['expected_output'] !== $aipEntry->expected_output
+            || $validated['start_date'] !== $aipEntry->start_date
+            || $validated['end_date'] !== $aipEntry->end_date
+            || (int) $validated['office_id'] !== $ppa->office_id;
+
+        $fundingChanged = $this->fundingSourcesChanged(
+            $validated['ppa_funding_sources'] ?? [],
+            $aipEntry,
+            $saipId,
+        );
+
+        if ($detailsChanged && !$canEdit) {
+            abort(403, 'You do not have permission to edit AIP entry details.');
+        }
+
+        if ($fundingChanged && !$canEditFunding) {
+            abort(403, 'You do not have permission to edit funding sources.');
+        }
+
+        if (!$detailsChanged && !$fundingChanged) {
+            abort(403, 'No changes detected.');
+        }
 
         $currentFundingSourceQuery = $aipEntry->ppaFundingSources();
         if ($saipId) {
@@ -333,54 +363,84 @@ class AipEntryController extends Controller
             }
         }
 
-        // 4. Execute Update Transaction
         \DB::transaction(function () use (
             $validated,
             $aipEntry,
             $ppa,
             $idsToRemove,
             $saipId,
+            $canEdit,
+            $canEditFunding,
         ) {
-            $aipEntry->update([
-                'expected_output' => $validated['expected_output'],
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'],
-            ]);
+            if ($canEdit) {
+                $aipEntry->update([
+                    'expected_output' => $validated['expected_output'],
+                    'start_date' => $validated['start_date'],
+                    'end_date' => $validated['end_date'],
+                ]);
 
-            $ppa->update(['office_id' => $validated['office_id']]);
-
-            // Remove only the ones that aren't in the new list (and passed the usage check)
-            $deleteQuery = $aipEntry
-                ->ppaFundingSources()
-                ->whereIn('funding_source_id', $idsToRemove);
-            if ($saipId) {
-                $deleteQuery->where('supplemental_aip_id', $saipId);
-            } else {
-                $deleteQuery->whereNull('supplemental_aip_id');
+                $ppa->update(['office_id' => $validated['office_id']]);
             }
-            $deleteQuery->delete();
 
-            // Update existing or create new ones
-            foreach ($validated['ppa_funding_sources'] ?? [] as $source) {
-                $aipEntry->ppaFundingSources()->updateOrCreate(
-                    [
-                        'funding_source_id' => $source['funding_source_id'],
-                        'supplemental_aip_id' => $saipId ?: null,
-                    ],
-                    [
-                        'ps_amount' => $source['ps_amount'],
-                        'mooe_amount' => $source['mooe_amount'],
-                        'fe_amount' => $source['fe_amount'],
-                        'co_amount' => $source['co_amount'],
-                        'ccet_adaptation' => $source['ccet_adaptation'] ?? 0,
-                        'ccet_mitigation' => $source['ccet_mitigation'] ?? 0,
-                        'is_supplemental' => (bool) $saipId,
-                    ],
-                );
+            if ($canEditFunding) {
+                $deleteQuery = $aipEntry
+                    ->ppaFundingSources()
+                    ->whereIn('funding_source_id', $idsToRemove);
+                if ($saipId) {
+                    $deleteQuery->where('supplemental_aip_id', $saipId);
+                } else {
+                    $deleteQuery->whereNull('supplemental_aip_id');
+                }
+                $deleteQuery->delete();
+
+                foreach ($validated['ppa_funding_sources'] ?? [] as $source) {
+                    $aipEntry->ppaFundingSources()->updateOrCreate(
+                        [
+                            'funding_source_id' => $source['funding_source_id'],
+                            'supplemental_aip_id' => $saipId ?: null,
+                        ],
+                        [
+                            'ps_amount' => $source['ps_amount'],
+                            'mooe_amount' => $source['mooe_amount'],
+                            'fe_amount' => $source['fe_amount'],
+                            'co_amount' => $source['co_amount'],
+                            'ccet_adaptation' => $source['ccet_adaptation'] ?? 0,
+                            'ccet_mitigation' => $source['ccet_mitigation'] ?? 0,
+                            'is_supplemental' => (bool) $saipId,
+                        ],
+                    );
+                }
             }
         });
 
         return back()->with('success', 'AIP Entry updated successfully.');
+    }
+
+    private function fundingSourcesChanged(array $submittedSources, AipEntry $aipEntry, $saipId): bool
+    {
+        $current = $aipEntry->ppaFundingSources()
+            ->when($saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+            ->when(!$saipId, fn($q) => $q->whereNull('supplemental_aip_id'))
+            ->get();
+
+        if ($current->count() !== count($submittedSources)) {
+            return true;
+        }
+
+        foreach ($submittedSources as $source) {
+            $match = $current->firstWhere('funding_source_id', $source['funding_source_id']);
+            if (!$match) {
+                return true;
+            }
+            if ((float) $match->ps_amount !== (float) $source['ps_amount']) return true;
+            if ((float) $match->mooe_amount !== (float) $source['mooe_amount']) return true;
+            if ((float) $match->fe_amount !== (float) $source['fe_amount']) return true;
+            if ((float) $match->co_amount !== (float) $source['co_amount']) return true;
+            if ((float) $match->ccet_adaptation !== (float) ($source['ccet_adaptation'] ?? 0)) return true;
+            if ((float) $match->ccet_mitigation !== (float) ($source['ccet_mitigation'] ?? 0)) return true;
+        }
+
+        return false;
     }
 
     /**
