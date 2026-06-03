@@ -18,6 +18,17 @@ class ChartOfAccountController extends Controller
 
         return Inertia::render('chart-of-account/index', [
             'chartOfAccounts' => ChartOfAccount::all(),
+            'can' => [
+                'add' => request()
+                    ->user()
+                    ->can('create', ChartOfAccount::class),
+                'edit' => request()
+                    ->user()
+                    ->can('update', new ChartOfAccount()),
+                'delete' => request()
+                    ->user()
+                    ->can('delete', new ChartOfAccount()),
+            ],
         ]);
     }
 

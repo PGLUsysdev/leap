@@ -22,9 +22,7 @@ class FundingSourceController extends Controller
             'can' => [
                 'add' => request()->user()->can('create', FundingSource::class),
                 'edit' => request()->user()->can('update', new FundingSource()),
-                'delete' => request()
-                    ->user()
-                    ->can('delete', new FundingSource()),
+                'delete' => request()->user()->can('delete', new FundingSource()),
             ],
         ]);
     }
