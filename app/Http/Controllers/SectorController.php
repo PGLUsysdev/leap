@@ -18,6 +18,11 @@ class SectorController extends Controller
 
         return Inertia::render('sector/index', [
             'sectors' => Sector::all(),
+            'can' => [
+                'add' => request()->user()->can('create', Sector::class),
+                'edit' => request()->user()->can('update', new Sector()),
+                'delete' => request()->user()->can('delete', new Sector()),
+            ],
         ]);
     }
 

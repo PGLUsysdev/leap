@@ -28,6 +28,10 @@ class FiscalYearController extends Controller
         return Inertia::render('aip/index', [
             'fiscalYears' => FiscalYear::orderBy('year', 'asc')->get(),
             'offices' => $isControlOffice ? Office::get() : [],
+            'can' => [
+                'add' => request()->user()->can('create', FiscalYear::class),
+                'updateStatus' => request()->user()->can('updateStatus', new FiscalYear()),
+            ],
             'app' => Inertia::optional(function () use (
                 $request,
                 $user,

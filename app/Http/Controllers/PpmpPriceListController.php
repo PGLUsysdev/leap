@@ -79,6 +79,14 @@ class PpmpPriceListController extends Controller
             'paginatedPriceList' => $priceList,
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategory' => $ppmpCategory,
+            'can' => [
+                'add' => request()->user()->can('create', PpmpPriceList::class),
+                'edit' => request()->user()->can('update', new PpmpPriceList()),
+                'delete' => request()
+                    ->user()
+                    ->can('delete', new PpmpPriceList()),
+                'move' => request()->user()->can('move', PpmpPriceList::class),
+            ],
             'filters' => $request->only([
                 'id',
                 'search',

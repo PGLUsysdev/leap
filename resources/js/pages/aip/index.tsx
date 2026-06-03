@@ -27,15 +27,13 @@ interface AipProps {
     fiscalYears: FiscalYear[];
     app: App[];
     offices: Office[];
+    can?: {
+        add: boolean;
+        updateStatus: boolean;
+    };
 }
 
-export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
-    console.log({
-        fiscalYears,
-        app,
-        offices,
-    });
-
+export default function AipPage({ fiscalYears, app, offices = [], can }: AipProps) {
     const { auth } = usePage<SharedData>().props;
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
@@ -80,7 +78,7 @@ export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={columns(can?.updateStatus ?? false)}
                     data={fiscalYears}
                     onUpdateStatus={onUpdateStatus}
                     onOpen={handleOpenAipSummary}
@@ -88,9 +86,11 @@ export default function AipPage({ fiscalYears, app, offices = [] }: AipProps) {
                     onOpenPpmpSummary={handleOpenPpmpSummary}
                     withSearch={true}
                 >
-                    <Button onClick={handleOpenFormDialog}>
-                        Initialize AIP
-                    </Button>
+                    {can?.add && (
+                        <Button onClick={handleOpenFormDialog}>
+                            Initialize AIP
+                        </Button>
+                    )}
                 </DataTable>
             </div>
 

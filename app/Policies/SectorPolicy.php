@@ -33,7 +33,7 @@ class SectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('sector.view');
+        return $permissions->contains('sector.add');
     }
 
     /**
@@ -43,7 +43,7 @@ class SectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('sector.view');
+        return $permissions->contains('sector.edit');
     }
 
     /**
@@ -53,7 +53,7 @@ class SectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('sector.view');
+        return $permissions->contains('sector.delete');
     }
 
     /**

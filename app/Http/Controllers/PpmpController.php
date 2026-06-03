@@ -33,16 +33,38 @@ class PpmpController extends Controller
 
         $tab = $request->query('tab');
 
-        if ($tab && str_starts_with($tab, 'supplemental_')) {
-            $this->authorize('viewSupplemental', Ppmp::class);
-        }
-
         $isSupplemental = !is_null($selectedAipEntry->supplemental_aip_id);
 
         // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
         $allAipEntries = AipEntry::where('ppa_id', $selectedAipEntry->ppa_id)
             ->with(['supplementalAip', 'ppaFundingSources', 'ppa'])
             ->get();
+
+        // Check viewSupplemental whenever supplemental entries exist
+        $hasSupplementalAipEntries = $allAipEntries->contains(
+            fn($entry) => !is_null($entry->supplemental_aip_id),
+        );
+
+        $canViewSupplemental = request()->user()->can(
+            'viewSupplemental',
+            Ppmp::class,
+        );
+
+        if ($tab && str_starts_with($tab, 'supplemental_') && !$canViewSupplemental) {
+            abort(403);
+        }
+
+        // Filter to original-only if user can't view supplemental
+        if (!$canViewSupplemental && $hasSupplementalAipEntries) {
+            $allAipEntries = $allAipEntries->filter(
+                fn($entry) => is_null($entry->supplemental_aip_id),
+            )->values();
+
+            // Force tab to original
+            if (!$tab || str_starts_with($tab, 'supplemental_')) {
+                $tab = 'original';
+            }
+        }
 
         $aipEntryIds = $allAipEntries->pluck('id');
 
@@ -122,6 +144,14 @@ class PpmpController extends Controller
         )->get();
 
         return Inertia::render('ppmp/index', [
+            'can' => [
+                'addPriceList' => request()->user()->can('addPriceList', Ppmp::class),
+                'editPriceListQuantity' => request()->user()->can('editPriceListQuantity', Ppmp::class),
+                'deletePriceList' => request()->user()->can('deletePriceList', Ppmp::class),
+                'viewSupplemental' => $canViewSupplemental,
+                'export' => request()->user()->can('export', Ppmp::class),
+                'generateSummary' => request()->user()->can('generateSummary', Ppmp::class),
+            ],
             'fiscalYear' => $fiscalYear,
             'aipEntry' => $selectedAipEntry,
             'allAipEntries' => $allAipEntries,

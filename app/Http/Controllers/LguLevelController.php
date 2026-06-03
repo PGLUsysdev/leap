@@ -18,6 +18,11 @@ class LguLevelController extends Controller
 
         return Inertia::render('lgu-level/index', [
             'lguLevels' => LguLevel::all(),
+            'can' => [
+                'add' => request()->user()->can('create', LguLevel::class),
+                'edit' => request()->user()->can('update', new LguLevel()),
+                'delete' => request()->user()->can('delete', new LguLevel()),
+            ],
         ]);
     }
 

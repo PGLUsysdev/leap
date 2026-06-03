@@ -42,6 +42,14 @@ class OfficeController extends Controller
             'sectors' => Sector::all(),
             'lguLevels' => LguLevel::all(),
             'officeTypes' => OfficeType::all(),
+            'can' => [
+                'addOffice' => request()->user()->can('createOffice', Office::class),
+                'addSubUnit' => request()->user()->can('createSubUnit', new Office()),
+                'editOffice' => request()->user()->can('updateOffice', new Office()),
+                'editSubUnit' => request()->user()->can('updateSubUnit', new Office()),
+                'deleteOffice' => request()->user()->can('deleteOffice', new Office()),
+                'deleteSubUnit' => request()->user()->can('deleteSubUnit', new Office()),
+            ],
         ]);
     }
 

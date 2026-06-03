@@ -8,10 +8,9 @@ import type {
     Sector,
     LguLevel,
     OfficeType,
-    SharedData,
 } from '@/types/global';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 
@@ -22,6 +21,14 @@ interface OfficesPageProps {
     sectors: Sector[];
     lguLevels: LguLevel[];
     officeTypes: OfficeType[];
+    can?: {
+        addOffice: boolean;
+        addSubUnit: boolean;
+        editOffice: boolean;
+        editSubUnit: boolean;
+        deleteOffice: boolean;
+        deleteSubUnit: boolean;
+    };
 }
 
 export default function OfficesPage({
@@ -29,21 +36,14 @@ export default function OfficesPage({
     sectors,
     lguLevels,
     officeTypes,
+    can,
 }: OfficesPageProps) {
-    // const { auth } = usePage<SharedData>().props;
-    // const userRole = auth.user.role;
-
-    console.log(offices);
-
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
     const [selectedParentOffice, setSelectedParentOffice] =
         useState<Office | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    console.log('office:', selectedOffice);
-    console.log('parentOffice', selectedParentOffice);
 
     function handleCreate() {
         setSelectedOffice(null);
@@ -89,20 +89,24 @@ export default function OfficesPage({
         });
     }
 
+    const canEdit = !!(can?.editOffice || can?.editSubUnit);
+    const canDelete = !!(can?.deleteOffice || can?.deleteSubUnit);
+    const cols = columns(can?.addSubUnit ?? false, canEdit, canDelete);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={offices}
                     withSearch={true}
                     onAdd={handleCreateChild}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    {/*{userRole === 'admin' ? (*/}
-                    <Button onClick={handleCreate}>Add Office</Button>
-                    {/*) : undefined}*/}
+                    {can?.addOffice && (
+                        <Button onClick={handleCreate}>Add Office</Button>
+                    )}
                 </DataTable>
             </div>
 

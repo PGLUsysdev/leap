@@ -8,24 +8,23 @@ import { router } from '@inertiajs/react';
 import type { Sector } from '@/types/global';
 import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
-import { usePage } from '@inertiajs/react';
-import type { SharedData } from '@/types/global';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Sectors', href: '#' }];
 
 interface SectorPageProps {
     sectors: Sector[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
-export default function SectorPage({ sectors }: SectorPageProps) {
-    const { auth } = usePage<SharedData>().props;
-
+export default function SectorPage({ sectors, can }: SectorPageProps) {
     const [open, setOpen] = useState(false);
     const [selectedSector, setSelectedSector] = useState<Sector | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    console.log(selectedSector);
 
     function handleAdd() {
         setSelectedSector(null);
@@ -60,25 +59,23 @@ export default function SectorPage({ sectors }: SectorPageProps) {
         });
     }
 
+    const cols = columns(can?.edit ?? false, can?.delete ?? false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={sectors}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
-                    // meta={{
-                    //     canEdit: auth.can?.manage_sectors,
-                    //     canDelete: auth.can?.manage_sectors,
-                    // }}
                 >
-                    {/*{auth.can?.manage_sectors && (*/}
-                    <div className="flex justify-end">
-                        <Button onClick={handleAdd}>Add Sector</Button>
-                    </div>
-                    {/* )} */}
+                    {can?.add && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>Add Sector</Button>
+                        </div>
+                    )}
                 </DataTable>
             </div>
 

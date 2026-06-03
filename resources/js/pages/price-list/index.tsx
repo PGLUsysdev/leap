@@ -26,6 +26,12 @@ interface PriceListPageProps {
     ppmpCategory: PpmpCategory[];
     filters: Filter;
     paginatedDialogPriceList: PaginatedResponse<PriceList>;
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+        move: boolean;
+    };
 }
 
 export default function PriceListPage({
@@ -34,15 +40,8 @@ export default function PriceListPage({
     ppmpCategory,
     filters,
     paginatedDialogPriceList,
+    can,
 }: PriceListPageProps) {
-    console.log({
-        paginatedPriceList,
-        chartOfAccounts,
-        ppmpCategory,
-        filters,
-        paginatedDialogPriceList,
-    });
-
     const [openEdit, setOpenEdit] = useState(false);
     const [selectedPriceList, setSelectedPriceList] =
         useState<PriceList | null>(null);
@@ -128,7 +127,11 @@ export default function PriceListPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="pt-4">
                 <DataTable
-                    columns={columns}
+                    columns={columns(
+                        can?.edit ?? false,
+                        can?.delete ?? false,
+                        can?.move ?? false,
+                    )}
                     data={paginatedPriceList.data}
                     withSearch={true}
                     onEdit={handleEdit}
@@ -140,7 +143,9 @@ export default function PriceListPage({
                     onlyKeys={['paginatedPriceList', 'filters']}
                     filters={filters}
                 >
-                    <Button onClick={handleAdd}>Add Price List</Button>
+                    {can?.add && (
+                        <Button onClick={handleAdd}>Add Price List</Button>
+                    )}
                 </DataTable>
             </div>
 

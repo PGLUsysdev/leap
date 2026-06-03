@@ -385,8 +385,8 @@ const columns = [
         id: 'action',
         size: 52,
         cell: ({ row, table }) => {
-            const isReadOnly = table.options.meta?.readOnly;
-            if (isReadOnly) return null;
+            const canDelete = table.options.meta?.canDelete;
+            if (!canDelete) return null;
             return (
                 <div className="flex justify-center">
                     <Button

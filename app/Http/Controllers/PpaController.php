@@ -41,6 +41,13 @@ class PpaController extends Controller
         $mode = $request->query('dialog_mode');
 
         return Inertia::render('ppa/index', [
+            'can' => [
+                'add' => request()->user()->can('create', Ppa::class),
+                'edit' => request()->user()->can('update', new Ppa()),
+                'delete' => request()->user()->can('delete', new Ppa()),
+                'move' => request()->user()->can('move', new Ppa()),
+                'import' => request()->user()->can('importLastYearPpa', Ppa::class),
+            ],
             'ppaTree' => $this->getPpaQuery(
                 $request,
                 $userOfficeId,

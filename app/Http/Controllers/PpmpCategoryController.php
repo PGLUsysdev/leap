@@ -25,6 +25,13 @@ class PpmpCategoryController extends Controller
         return Inertia::render('ppmp-category/index', [
             'ppmpCategories' => $ppmpCategories,
             'chartOfAccounts' => ChartOfAccount::all(),
+            'can' => [
+                'add' => request()->user()->can('create', PpmpCategory::class),
+                'edit' => request()->user()->can('update', new PpmpCategory()),
+                'delete' => request()
+                    ->user()
+                    ->can('delete', new PpmpCategory()),
+            ],
         ]);
     }
 

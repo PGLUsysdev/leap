@@ -18,6 +18,11 @@ class OfficeTypeController extends Controller
 
         return Inertia::render('office-type/index', [
             'officeTypes' => OfficeType::all(),
+            'can' => [
+                'add' => request()->user()->can('create', OfficeType::class),
+                'edit' => request()->user()->can('update', new OfficeType()),
+                'delete' => request()->user()->can('delete', new OfficeType()),
+            ],
         ]);
     }
 

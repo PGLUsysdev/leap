@@ -33,7 +33,7 @@ class LguLevelPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('lgu-level.view');
+        return $permissions->contains('lgu-level.add');
     }
 
     /**
@@ -43,7 +43,7 @@ class LguLevelPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('lgu-level.view');
+        return $permissions->contains('lgu-level.edit');
     }
 
     /**
@@ -53,7 +53,7 @@ class LguLevelPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('lgu-level.view');
+        return $permissions->contains('lgu-level.delete');
     }
 
     /**

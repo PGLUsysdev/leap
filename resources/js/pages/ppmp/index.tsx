@@ -67,6 +67,14 @@ interface PpmpPageProps {
     currentTab: string;
     initialChoice: 'MOOE' | 'CO';
     initialPpaFundingSourceId: number;
+    can?: {
+        addPriceList: boolean;
+        editPriceListQuantity: boolean;
+        deletePriceList: boolean;
+        viewSupplemental: boolean;
+        export: boolean;
+        generateSummary: boolean;
+    };
 }
 
 export default function PpmpPage({
@@ -82,6 +90,7 @@ export default function PpmpPage({
     initialChoice,
     initialPpaFundingSourceId,
     currentTab,
+    can,
 }: PpmpPageProps) {
     console.log({
         fiscalYear,
@@ -189,12 +198,13 @@ export default function PpmpPage({
     ]);
 
     const hasSupplementalEntries = useMemo(() => {
+        if (!can?.viewSupplemental) return false;
         return allAipEntries.some(
             (e) =>
                 e.supplemental_aip_id &&
                 (e.ppa_funding_sources?.length ?? 0) > 0,
         );
-    }, [allAipEntries]);
+    }, [allAipEntries, can?.viewSupplemental]);
 
     const tabsList = useMemo(() => {
         const list: { value: string; label: string }[] = [];
@@ -460,7 +470,8 @@ export default function PpmpPage({
                     negativeHeight={9.9}
                     onDelete={handleDeleteDialogOpen}
                     meta={{
-                        readOnly: !isActiveTab,
+                        readOnly: !isActiveTab || !can?.editPriceListQuantity,
+                        canDelete: can?.deletePriceList,
                     }}
                 >
                     <div className="flex gap-2">
@@ -524,6 +535,7 @@ export default function PpmpPage({
                             </SelectContent>
                         </Select>
 
+                        {can?.export && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline">
@@ -604,7 +616,9 @@ export default function PpmpPage({
                                 </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        )}
 
+                        {can?.generateSummary && (
                         <Button
                             onClick={() =>
                                 setOpenExpenseAccountSummaryDialog(true)
@@ -612,8 +626,9 @@ export default function PpmpPage({
                         >
                             Expense Account Summary per PPMP
                         </Button>
+                        )}
 
-                        {isActiveTab && (
+                        {isActiveTab && can?.addPriceList && (
                             <Button onClick={() => setOpen(true)}>
                                 <Plus /> Add Item
                             </Button>

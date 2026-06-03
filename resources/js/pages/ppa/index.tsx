@@ -42,6 +42,13 @@ interface PpaPageProps {
     filters: Filter;
     dialogPpaTree: PaginatedResponse<Ppa>;
     dialogCurrent: Ppa[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+        move: boolean;
+        import: boolean;
+    };
 }
 
 export default function PpaPage({
@@ -51,9 +58,8 @@ export default function PpaPage({
     filters,
     dialogPpaTree,
     dialogCurrent,
+    can,
 }: PpaPageProps) {
-    console.log(ppaTree);
-
     const { auth } = usePage<SharedData>().props;
 
     // Form Dialog States
@@ -237,7 +243,7 @@ export default function PpaPage({
         <AppLayout breadcrumbs={finalBreadcrumbs}>
             <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={columns(can?.edit ?? false, can?.delete ?? false, can?.move ?? false)}
                     data={ppaTree.data}
                     withSearch={true}
                     onAdd={handleAddChild}
@@ -254,13 +260,15 @@ export default function PpaPage({
                     pageKey="page"
                 >
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => handleImportOpen()}
-                        >
-                            Import from Last Year
-                        </Button>
-                        {(current.length === 0 ||
+                        {can?.import && (
+                            <Button
+                                variant="outline"
+                                onClick={() => handleImportOpen()}
+                            >
+                                Import from Last Year
+                            </Button>
+                        )}
+                        {can?.add && (current.length === 0 ||
                             current[0].type !== 'Sub-Activity') && (
                             <Button onClick={handleAddNew}>
                                 New {nextType}
