@@ -18,11 +18,6 @@ interface OfficesPageProps {
     officeTypes: OfficeType[];
     can?: {
         addOffice: boolean;
-        addSubUnit: boolean;
-        editOffice: boolean;
-        editSubUnit: boolean;
-        deleteOffice: boolean;
-        deleteSubUnit: boolean;
     };
 }
 
@@ -33,7 +28,7 @@ export default function OfficesPage({
     officeTypes,
     can,
 }: OfficesPageProps) {
-    console.log(can);
+    console.log({ offices, can });
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
@@ -86,9 +81,7 @@ export default function OfficesPage({
         });
     }
 
-    const canEdit = !!(can?.editOffice || can?.editSubUnit);
-    const canDelete = !!(can?.deleteOffice || can?.deleteSubUnit);
-    const cols = columns(can?.addSubUnit ?? false, canEdit, canDelete);
+    const cols = columns();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

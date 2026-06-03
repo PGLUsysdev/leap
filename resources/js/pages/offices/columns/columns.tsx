@@ -6,7 +6,7 @@ import { Pencil, Trash, Plus } from 'lucide-react';
 
 const columnHelper = createColumnHelper<Office>();
 
-const columns = (canAddSubUnit: boolean, canEdit: boolean, canDelete: boolean) => {
+const columns = () => {
     const cols = [
         columnHelper.accessor('full_code', {
             header: 'Office Account Code',
@@ -55,48 +55,59 @@ const columns = (canAddSubUnit: boolean, canEdit: boolean, canDelete: boolean) =
         }),
     ];
 
-    if (canAddSubUnit || canEdit || canDelete) {
-        cols.push(
-            columnHelper.display({
-                id: 'action',
-                size: canAddSubUnit && canEdit && canDelete ? 120 : canAddSubUnit ? 120 : 82,
-                cell: ({ row, table }) => (
+    cols.push(
+        columnHelper.display({
+            id: 'action',
+            size: 120,
+            cell: ({ row, table }) => {
+                const canAddSubUnit =
+                    !row.original.parent_id && row.original.can?.addSubUnit;
+                const canEdit = row.original.parent_id
+                    ? row.original.can?.editSubUnit
+                    : row.original.can?.editOffice;
+                const canDelete = row.original.parent_id
+                    ? row.original.can?.deleteSubUnit
+                    : row.original.can?.deleteOffice;
+
+                return (
                     <div className="flex items-center gap-1">
-                        {canAddSubUnit && (
-                            <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() => table.options.meta?.onAdd?.(row.original)}
-                                disabled={!!row.original.parent_id}
-                            >
-                                <Plus />
-                            </Button>
-                        )}
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            disabled={!canAddSubUnit}
+                            onClick={() =>
+                                table.options.meta?.onAdd?.(row.original)
+                            }
+                        >
+                            <Plus />
+                        </Button>
 
-                        {canEdit && (
-                            <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() => table.options.meta?.onEdit?.(row.original)}
-                            >
-                                <Pencil />
-                            </Button>
-                        )}
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            disabled={!canEdit}
+                            onClick={() =>
+                                table.options.meta?.onEdit?.(row.original)
+                            }
+                        >
+                            <Pencil />
+                        </Button>
 
-                        {canDelete && (
-                            <Button
-                                size="icon"
-                                variant="destructive"
-                                onClick={() => table.options.meta?.onDelete?.(row.original)}
-                            >
-                                <Trash />
-                            </Button>
-                        )}
+                        <Button
+                            size="icon"
+                            variant="destructive"
+                            disabled={!canDelete}
+                            onClick={() =>
+                                table.options.meta?.onDelete?.(row.original)
+                            }
+                        >
+                            <Trash />
+                        </Button>
                     </div>
-                ),
-            }),
-        );
-    }
+                );
+            },
+        }),
+    );
 
     return cols;
 };

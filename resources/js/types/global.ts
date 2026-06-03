@@ -42,9 +42,16 @@ export interface Office {
     office_type?: OfficeType;
     sector?: Sector;
 
-    // verify if being used
     parent?: Office;
     children?: Office[];
+
+    can?: {
+        addSubUnit: boolean;
+        editOffice: boolean;
+        editSubUnit: boolean;
+        deleteOffice: boolean;
+        deleteSubUnit: boolean;
+    };
 }
 
 export type FiscalYearStatus = 'active' | 'inactive' | 'closed';

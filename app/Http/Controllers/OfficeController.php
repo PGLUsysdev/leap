@@ -20,14 +20,6 @@ class OfficeController extends Controller
      */
     public function index()
     {
-        $user = request()->user();
-        $user->loadMissing('role.permissionRoles.permission');
-        $permissions = $user->role->permissionRoles->pluck('permission.name');
-
-        $filtered = $permissions
-            ->filter(fn($p) => str_contains($p, 'office.edit'))
-            ->values();
-
         $this->authorize('viewAny', Office::class);
 
         $user = auth()->user();
@@ -45,30 +37,40 @@ class OfficeController extends Controller
             $offices = $query->where('id', $user->office_id)->get();
         }
 
+        $mapOffice = function ($office) use ($user, &$mapOffice) {
+            return [
+                'id' => $office->id,
+                'code' => $office->code,
+                'name' => $office->name,
+                'acronym' => $office->acronym,
+                'is_lee' => $office->is_lee,
+                'parent_id' => $office->parent_id,
+                'sector_id' => $office->sector_id,
+                'lgu_level_id' => $office->lgu_level_id,
+                'office_type_id' => $office->office_type_id,
+                'full_code' => $office->full_code,
+                'sector' => $office->sector,
+                'lguLevel' => $office->lguLevel,
+                'officeType' => $office->officeType,
+                'parent' => $office->parent,
+                'children' => $office->children->map($mapOffice),
+                'can' => [
+                    'addSubUnit' => $user->can('createSubUnit', $office),
+                    'editOffice' => $user->can('updateOffice', $office),
+                    'editSubUnit' => $user->can('updateSubUnit', $office->parent ?? $office),
+                    'deleteOffice' => $user->can('deleteOffice', $office),
+                    'deleteSubUnit' => $user->can('deleteSubUnit', $office->parent ?? $office),
+                ],
+            ];
+        };
+
         return Inertia::render('offices/index', [
-            'offices' => $offices,
+            'offices' => $offices->map($mapOffice),
             'sectors' => Sector::all(),
             'lguLevels' => LguLevel::all(),
             'officeTypes' => OfficeType::all(),
             'can' => [
-                'addOffice' => request()
-                    ->user()
-                    ->can('createOffice', Office::class),
-                'addSubUnit' => request()
-                    ->user()
-                    ->can('createSubUnit', new Office()),
-                'editOffice' => request()
-                    ->user()
-                    ->can('updateOffice', new Office()),
-                'editSubUnit' => request()
-                    ->user()
-                    ->can('updateSubUnit', new Office()),
-                'deleteOffice' => request()
-                    ->user()
-                    ->can('deleteOffice', new Office()),
-                'deleteSubUnit' => request()
-                    ->user()
-                    ->can('deleteSubUnit', new Office()),
+                'addOffice' => $user->can('createOffice', Office::class),
             ],
         ]);
     }
