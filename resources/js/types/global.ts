@@ -140,6 +140,12 @@ export interface Ppa {
 
     full_code: string;
     children_count?: number;
+
+    can?: {
+        edit: boolean;
+        delete: boolean;
+        move: boolean;
+    };
 }
 
 export interface FlattenedPpa extends Ppa {

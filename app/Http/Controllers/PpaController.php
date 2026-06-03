@@ -37,16 +37,14 @@ class PpaController extends Controller
     {
         $this->authorize('viewAny', Ppa::class);
 
-        $userOfficeId = Auth::user()->office_id;
+        $user = request()->user();
+        $userOfficeId = $user->office_id;
         $mode = $request->query('dialog_mode');
 
         return Inertia::render('ppa/index', [
             'can' => [
-                'add' => request()->user()->can('create', Ppa::class),
-                'edit' => request()->user()->can('update', new Ppa()),
-                'delete' => request()->user()->can('delete', new Ppa()),
-                'move' => request()->user()->can('move', new Ppa()),
-                'import' => request()->user()->can('importLastYearPpa', Ppa::class),
+                'add' => $user->can('create', Ppa::class),
+                'import' => $user->can('importLastYearPpa', Ppa::class),
             ],
             'ppaTree' => $this->getPpaQuery(
                 $request,
@@ -55,7 +53,15 @@ class PpaController extends Controller
                 'search',
             )
                 ->paginate(100)
-                ->withQueryString(),
+                ->withQueryString()
+                ->through(function ($ppa) use ($user) {
+                    $ppa->can = [
+                        'edit' => $user->can('update', $ppa),
+                        'delete' => $user->can('delete', $ppa),
+                        'move' => $user->can('move', $ppa),
+                    ];
+                    return $ppa;
+                }),
 
             'current' => $request->query('id')
                 ? $this->flattenAncestors(
@@ -82,6 +88,7 @@ class PpaController extends Controller
             'dialogPpaTree' => Inertia::lazy(function () use (
                 $request,
                 $userOfficeId,
+                $user,
                 $mode,
             ) {
                 if ($mode === 'import') {
@@ -94,7 +101,15 @@ class PpaController extends Controller
                     'dialog_search',
                 )
                     ->paginate(100, ['*'], 'dialog_page')
-                    ->withQueryString();
+                    ->withQueryString()
+                    ->through(function ($ppa) use ($user) {
+                        $ppa->can = [
+                            'edit' => $user->can('update', $ppa),
+                            'delete' => $user->can('delete', $ppa),
+                            'move' => $user->can('move', $ppa),
+                        ];
+                        return $ppa;
+                    });
             }),
 
             'dialogCurrent' => Inertia::lazy(function () use ($request) {
@@ -116,7 +131,7 @@ class PpaController extends Controller
         $id = $request->query($idKey);
         $search = $request->query($searchKey);
 
-        return Ppa::where('office_id', $officeId) // uncomment to toggle scoped ppa by office
+        return Ppa::where('office_id', $officeId)
             ->where('fiscal_year_id', $fiscalYearId)
             ->when(
                 $id,
@@ -231,11 +246,20 @@ class PpaController extends Controller
      */
     public function store(StorePpaRequest $request)
     {
+        $this->authorize('create', Ppa::class);
+
         $validated = $request->validated();
         $parentId = $validated['parent_id'] ?? null;
         $type = $validated['type'];
-        $officeId = Auth::user()->office_id;
         $fiscalYearId = session('active_fiscal_year_id');
+
+        if ($parentId) {
+            $parent = Ppa::findOrFail($parentId);
+            abort_if($parent->office_id !== Auth::user()->office_id, 403);
+            $officeId = $parent->office_id;
+        } else {
+            $officeId = Auth::user()->office_id;
+        }
 
         // ONE query to get both count and max order
         $stats = Ppa::where('office_id', $officeId)

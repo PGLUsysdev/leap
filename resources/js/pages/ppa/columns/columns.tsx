@@ -18,29 +18,42 @@ import {
 
 const columnHelper = createColumnHelper<Ppa>();
 
-const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
-    const cols = [
-        columnHelper.display({
-            id: 'drag-handle',
-            size: 100,
-            cell: ({ row, table }) => {
-                return (
-                    <div className="gap-1">
-                        {canMove && (
-                            <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() =>
-                                    (table.options.meta as any)?.onMove?.(row.original)
-                                }
-                            >
-                                <Move />
-                            </Button>
-                        )}
-                    </div>
-                );
-            },
-        }),
+const columns = (ppaData: Ppa[]) => {
+    const cols: any[] = [];
+
+    const hasMove = ppaData.some((p) => p.can?.move);
+    const hasEdit = ppaData.some((p) => p.can?.edit);
+    const hasDelete = ppaData.some((p) => p.can?.delete);
+    const actionSize = hasEdit && hasDelete ? 146 : hasEdit || hasDelete ? 112 : 78;
+
+    if (hasMove) {
+        cols.push(
+            columnHelper.display({
+                id: 'drag-handle',
+                size: 100,
+                cell: ({ row, table }) => {
+                    return (
+                        <div className="gap-1">
+                            {row.original.can?.move && (
+                                <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() =>
+                                        (table.options.meta as any)?.onMove?.(
+                                            row.original,
+                                        )
+                                    }
+                                >
+                                    <Move />
+                                </Button>
+                            )}
+                        </div>
+                    );
+                },
+            }),
+        );
+    }
+    cols.push(
         columnHelper.accessor('full_code', {
             header: 'AIP Reference Code',
             size: 200,
@@ -102,9 +115,11 @@ const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
         }),
         columnHelper.display({
             id: 'action',
-            size: canEdit && canDelete ? 146 : 48,
+            size: actionSize,
             cell: ({ row, table }) => {
                 const childrenCount = row.original.children_count;
+                const canEdit = row.original.can?.edit;
+                const canDelete = row.original.can?.delete;
 
                 return (
                     <div className="flex items-center gap-1">
@@ -160,7 +175,7 @@ const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
                 );
             },
         }),
-    ];
+    );
 
     return cols;
 };

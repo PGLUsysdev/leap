@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Ppa;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PpaPolicy
@@ -44,8 +45,13 @@ class PpaPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        $mainOfficeId = DB::table('offices')
+            ->where('id', $ppa->office_id)
+            ->value(DB::raw('COALESCE(parent_id, id)'));
+
         return $permissions->contains('ppa.edit') &&
-            $user->office_id === $ppa->office_id;
+            $user->office_id === $mainOfficeId;
     }
 
     /**
@@ -55,8 +61,13 @@ class PpaPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        $mainOfficeId = DB::table('offices')
+            ->where('id', $ppa->office_id)
+            ->value(DB::raw('COALESCE(parent_id, id)'));
+
         return $permissions->contains('ppa.delete') &&
-            $user->office_id === $ppa->office_id;
+            $user->office_id === $mainOfficeId;
     }
 
     /**
@@ -79,8 +90,13 @@ class PpaPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        $mainOfficeId = DB::table('offices')
+            ->where('id', $ppa->office_id)
+            ->value(DB::raw('COALESCE(parent_id, id)'));
+
         return $permissions->contains('ppa.move') &&
-            $user->office_id === $ppa->office_id;
+            $user->office_id === $mainOfficeId;
     }
 
     public function importLastYearPpa(User $user): bool

@@ -44,9 +44,6 @@ interface PpaPageProps {
     dialogCurrent: Ppa[];
     can?: {
         add: boolean;
-        edit: boolean;
-        delete: boolean;
-        move: boolean;
         import: boolean;
     };
 }
@@ -243,7 +240,7 @@ export default function PpaPage({
         <AppLayout breadcrumbs={finalBreadcrumbs}>
             <div className="py-4">
                 <DataTable
-                    columns={columns(can?.edit ?? false, can?.delete ?? false, can?.move ?? false)}
+                    columns={columns(ppaTree.data)}
                     data={ppaTree.data}
                     withSearch={true}
                     onAdd={handleAddChild}

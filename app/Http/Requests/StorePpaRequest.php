@@ -23,7 +23,6 @@ class StorePpaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'office_id' => 'required|exists:offices,id',
             'parent_id' => 'nullable|exists:ppas,id',
             'name' => 'required|string',
             'type' => 'required|in:Program,Project,Activity,Sub-Activity',
