@@ -64,6 +64,7 @@ interface PpmpPageProps {
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
     fundingSources: FundingSource[];
+    currentTab: string;
     initialChoice: 'MOOE' | 'CO';
     initialPpaFundingSourceId: number;
 }
@@ -80,6 +81,7 @@ export default function PpmpPage({
     fundingSources,
     initialChoice,
     initialPpaFundingSourceId,
+    currentTab,
 }: PpmpPageProps) {
     console.log({
         fiscalYear,
@@ -108,15 +110,6 @@ export default function PpmpPage({
         useState(initialChoice);
     const [selectedFundingSourceId, setSelectedFundingSourceId] =
         useState(initialFsId);
-
-    const getInitialTab = () => {
-        const params = new URLSearchParams(window.location.search);
-        const urlTab = params.get('tab');
-        if (urlTab) return urlTab;
-        return isSupplemental ? `supplemental_${aipEntry.id}` : 'original';
-    };
-
-    const [currentTab, setCurrentTab] = useState<string>(getInitialTab);
 
     const [open, setOpen] = useState(false);
     const [openAlert, setOpenAlert] = useState(false);
@@ -428,7 +421,6 @@ export default function PpmpPage({
                         <Tabs
                             value={currentTab}
                             onValueChange={(val: any) => {
-                                setCurrentTab(val);
                                 router.get(
                                     window.location.pathname,
                                     { tab: val },
@@ -436,7 +428,6 @@ export default function PpmpPage({
                                         preserveState: true,
                                         preserveScroll: true,
                                         replace: true,
-                                        only: [],
                                     },
                                 );
                             }}

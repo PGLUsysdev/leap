@@ -49,10 +49,12 @@ class SupplementalAipController extends Controller
 
     public function destroy(SupplementalAip $supplementalAip)
     {
+        $fiscalYearId = $supplementalAip->fiscal_year_id;
+        $officeId = $supplementalAip->office_id;
+
         $this->authorize('delete', $supplementalAip);
 
         DB::transaction(function () use ($supplementalAip) {
-            // Delete PPMPs linked to the funding sources of this SAIP
             $fundingSourceIds = $supplementalAip
                 ->ppaFundingSources()
                 ->pluck('id');
@@ -61,22 +63,27 @@ class SupplementalAipController extends Controller
                 $fundingSourceIds,
             )->delete();
 
-            // Delete funding sources
             $supplementalAip->ppaFundingSources()->delete();
-
-            // Delete AIP entries
             $supplementalAip->aipEntries()->delete();
-
-            // Delete PPAs
             $supplementalAip->ppas()->delete();
-
-            // Delete the SAIP itself
             $supplementalAip->delete();
         });
 
-        return back()->with(
-            'success',
-            'Supplemental AIP deleted successfully.',
-        );
+        $latestSaip = SupplementalAip::where('fiscal_year_id', $fiscalYearId)
+            ->where('office_id', $officeId)
+            ->latest('id')
+            ->first();
+
+        if ($latestSaip) {
+            return redirect()->route('aip.summary', [
+                'fiscalYear' => $fiscalYearId,
+                'scope' => 'supplemental',
+                'supplemental_aip_id' => $latestSaip->id,
+            ])->with('success', 'Supplemental AIP deleted successfully.');
+        }
+
+        return redirect()->route('aip.summary', [
+            'fiscalYear' => $fiscalYearId,
+        ])->with('success', 'Supplemental AIP deleted successfully.');
     }
 }

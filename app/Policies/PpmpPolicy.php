@@ -34,6 +34,48 @@ class PpmpPolicy
         return $user->office_id === $office->id;
     }
 
+    public function viewSupplemental(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppmp.view.supplemental');
+    }
+
+    public function export(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppmp.export');
+    }
+
+    public function generateSummary(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppmp.generate-summary');
+    }
+
+    public function addPriceList(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppmp.add.price-list');
+    }
+
+    public function editPriceListQuantity(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppmp.edit.price-list-quantity');
+    }
+
+    public function deletePriceList(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppmp.delete.price-list');
+    }
+
     /**
      * Determine whether the user can view the model.
      */

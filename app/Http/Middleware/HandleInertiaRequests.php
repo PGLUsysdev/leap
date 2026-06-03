@@ -5,8 +5,6 @@ namespace App\Http\Middleware;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
-use App\Models\Sector;
-use App\Models\User;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -68,17 +66,6 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user()?->load('office'),
-                'can' => [
-                    'manage_users' => $request
-                        ->user()
-                        ?->can('viewAny', User::class),
-                    'manage_sectors' => $request
-                        ->user()
-                        ?->can('create', Sector::class),
-                    'approve_users' => $request
-                        ->user()
-                        ?->can('update', $request->user()),
-                ],
             ],
             'sidebarOpen' =>
                 !$request->hasCookie('sidebar_state') ||

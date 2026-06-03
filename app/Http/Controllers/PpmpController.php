@@ -31,6 +31,12 @@ class PpmpController extends Controller
             $aipEntry->id,
         );
 
+        $tab = $request->query('tab');
+
+        if ($tab && str_starts_with($tab, 'supplemental_')) {
+            $this->authorize('viewSupplemental', Ppmp::class);
+        }
+
         $isSupplemental = !is_null($selectedAipEntry->supplemental_aip_id);
 
         // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
@@ -125,6 +131,7 @@ class PpmpController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'fundingSources' => $fundingSources,
+            'currentTab' => $tab ?: ($selectedAipEntry->supplemental_aip_id ? "supplemental_{$selectedAipEntry->id}" : 'original'),
             'initialChoice' => $request->query('choice', 'MOOE'),
             'initialPpaFundingSourceId' => $request->query(
                 'ppa_funding_source_id',
@@ -145,6 +152,8 @@ class PpmpController extends Controller
      */
     public function store(StorePpmpRequest $request)
     {
+        $this->authorize('addPriceList', Ppmp::class);
+
         $validated = $request->validated();
 
         // Save using the normalized bridge ID
@@ -164,6 +173,8 @@ class PpmpController extends Controller
 
     public function updateMonthlyQuantity(Request $request, Ppmp $ppmp)
     {
+        $this->authorize('editPriceListQuantity', $ppmp);
+
         $validated = $request->validate([
             'month' => 'required|string',
             'quantity' => 'required|numeric|min:0',
@@ -210,6 +221,8 @@ class PpmpController extends Controller
      */
     public function destroy(Ppmp $ppmp)
     {
+        $this->authorize('deletePriceList', $ppmp);
+
         $bridge = $ppmp->ppaFundingSource;
         $expenseClass =
             $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
