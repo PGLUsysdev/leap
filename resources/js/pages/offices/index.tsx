@@ -3,12 +3,7 @@ import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import FormDialog from './form-dialog';
-import type {
-    Office,
-    Sector,
-    LguLevel,
-    OfficeType,
-} from '@/types/global';
+import type { Office, Sector, LguLevel, OfficeType } from '@/types/global';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { router } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
@@ -38,6 +33,8 @@ export default function OfficesPage({
     officeTypes,
     can,
 }: OfficesPageProps) {
+    console.log(can);
+
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
     const [selectedParentOffice, setSelectedParentOffice] =

@@ -20,6 +20,14 @@ class OfficeController extends Controller
      */
     public function index()
     {
+        $user = request()->user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        $filtered = $permissions
+            ->filter(fn($p) => str_contains($p, 'office.edit'))
+            ->values();
+
         $this->authorize('viewAny', Office::class);
 
         $user = auth()->user();
@@ -43,12 +51,24 @@ class OfficeController extends Controller
             'lguLevels' => LguLevel::all(),
             'officeTypes' => OfficeType::all(),
             'can' => [
-                'addOffice' => request()->user()->can('createOffice', Office::class),
-                'addSubUnit' => request()->user()->can('createSubUnit', new Office()),
-                'editOffice' => request()->user()->can('updateOffice', new Office()),
-                'editSubUnit' => request()->user()->can('updateSubUnit', new Office()),
-                'deleteOffice' => request()->user()->can('deleteOffice', new Office()),
-                'deleteSubUnit' => request()->user()->can('deleteSubUnit', new Office()),
+                'addOffice' => request()
+                    ->user()
+                    ->can('createOffice', Office::class),
+                'addSubUnit' => request()
+                    ->user()
+                    ->can('createSubUnit', new Office()),
+                'editOffice' => request()
+                    ->user()
+                    ->can('updateOffice', new Office()),
+                'editSubUnit' => request()
+                    ->user()
+                    ->can('updateSubUnit', new Office()),
+                'deleteOffice' => request()
+                    ->user()
+                    ->can('deleteOffice', new Office()),
+                'deleteSubUnit' => request()
+                    ->user()
+                    ->can('deleteSubUnit', new Office()),
             ],
         ]);
     }
