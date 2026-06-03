@@ -5,7 +5,7 @@ import { Pencil } from 'lucide-react';
 
 const columnHelper = createColumnHelper<User>();
 
-const columns = (_canEdit: boolean) => {
+const columns = (canEdit: boolean) => {
     const cols = [
         columnHelper.accessor('name', {
             header: 'Name',
@@ -35,28 +35,28 @@ const columns = (_canEdit: boolean) => {
         }),
     ];
 
-    // if (canEdit) {
-    cols.push(
-        columnHelper.display({
-            id: 'action',
-            size: 48,
-            cell: ({ row, table }) => {
-                return (
-                    <div>
-                        <Button
-                            size="icon"
-                            onClick={() =>
-                                table.options.meta?.onEdit?.(row.original)
-                            }
-                        >
-                            <Pencil />
-                        </Button>
-                    </div>
-                );
-            },
-        }),
-    );
-    // }
+    if (canEdit) {
+        cols.push(
+            columnHelper.display({
+                id: 'action',
+                size: 48,
+                cell: ({ row, table }) => {
+                    return (
+                        <div>
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    table.options.meta?.onEdit?.(row.original)
+                                }
+                            >
+                                <Pencil />
+                            </Button>
+                        </div>
+                    );
+                },
+            }),
+        );
+    }
 
     return cols;
 };

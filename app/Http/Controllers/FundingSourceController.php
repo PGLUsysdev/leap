@@ -7,7 +7,6 @@ use App\Http\Requests\StoreFundingSourceRequest;
 use App\Http\Requests\UpdateFundingSourceRequest;
 
 use App\Models\FundingSource;
-use App\Models\User;
 
 class FundingSourceController extends Controller
 {
@@ -20,6 +19,13 @@ class FundingSourceController extends Controller
 
         return Inertia::render('funding-source/index', [
             'fundingSources' => FundingSource::all(),
+            'can' => [
+                'add' => request()->user()->can('create', FundingSource::class),
+                'edit' => request()->user()->can('update', new FundingSource()),
+                'delete' => request()
+                    ->user()
+                    ->can('delete', new FundingSource()),
+            ],
         ]);
     }
 

@@ -38,10 +38,14 @@ class UserPolicy
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, User $model): bool
+    // public function update(User $user, User $model): bool
+    public function update(User $user, ?User $targetUser = null): bool
     {
-        $user->loadmissing('role.permissionRoles.permission');
+        $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        Log::info($permissions);
+
         return $permissions->contains('user.edit');
     }
 

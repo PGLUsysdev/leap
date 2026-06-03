@@ -13,10 +13,16 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Funding Source', href: '#' }];
 
 interface FundingSourcePageProps {
     fundingSources: FundingSource[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export default function FundingSourcePage({
     fundingSources,
+    can,
 }: FundingSourcePageProps) {
     const [open, setOpen] = useState(false);
     const [selectedSource, setSelectedSource] = useState<FundingSource | null>(
@@ -65,19 +71,23 @@ export default function FundingSourcePage({
         });
     }
 
+    const cols = columns(can?.edit ?? false, can?.delete ?? false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={fundingSources}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    <div className="flex justify-end">
-                        <Button onClick={handleAdd}>Add Funding Source</Button>
-                    </div>
+                    {can?.add && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>Add Funding Source</Button>
+                        </div>
+                    )}
                 </DataTable>
             </div>
 

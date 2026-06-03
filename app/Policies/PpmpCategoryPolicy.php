@@ -15,7 +15,7 @@ class PpmpCategoryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('chart-of-account.view');
+        return $permissions->contains('ppmp-category.view');
     }
 
     /**
@@ -33,7 +33,7 @@ class PpmpCategoryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('chart-of-account.add');
+        return $permissions->contains('ppmp-category.add');
     }
 
     /**
@@ -43,7 +43,7 @@ class PpmpCategoryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('chart-of-account.edit');
+        return $permissions->contains('ppmp-category.edit');
     }
 
     /**
@@ -53,7 +53,7 @@ class PpmpCategoryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('chart-of-account.delete');
+        return $permissions->contains('ppmp-category.delete');
     }
 
     /**

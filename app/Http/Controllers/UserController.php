@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use Illuminate\Support\Facades\Request;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Request;
+
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -19,6 +22,9 @@ class UserController extends Controller
 
         return Inertia::render('users/index', [
             'users' => User::where('office_id', 18)->with('office')->get(),
+            'can' => [
+                'edit' => Auth::user()->can('update', User::class),
+            ],
         ]);
     }
 

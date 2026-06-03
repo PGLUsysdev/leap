@@ -11,9 +11,14 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: '#' }];
 
 interface UsersIndexProps {
     users: User[] | null;
+    can?: {
+        edit: boolean;
+    };
 }
 
-export default function UsersIndex({ users }: UsersIndexProps) {
+export default function UsersIndex({ users, can }: UsersIndexProps) {
+    console.log({ users, can });
+
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [openFormDialog, setOpenFormDialog] = useState(false);
 
@@ -22,7 +27,7 @@ export default function UsersIndex({ users }: UsersIndexProps) {
         setOpenFormDialog(true);
     }
 
-    const cols = columns(true);
+    const cols = columns(can?.edit);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
