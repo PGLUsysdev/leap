@@ -35,12 +35,14 @@ import type {
 import { type BreadcrumbItem } from '@/types';
 import { router, usePage } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
+// import columns from './columns/columns';
 import columns from './columns/columns';
 import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
 
 interface AipSummaryTableProps {
     fiscalYear: FiscalYear;
     aipEntries: Ppa[];
+    can: { export: boolean; import: boolean; createSaip: boolean };
     fundingSources: FundingSource[];
     offices: Office[];
     filters: Filter;
@@ -82,6 +84,7 @@ const existingPpaIds = (aipEntries: Ppa[]) => {
 export default function AipSummaryTable({
     fiscalYear,
     aipEntries,
+    can,
     fundingSources,
     offices,
     filters,
@@ -93,6 +96,7 @@ export default function AipSummaryTable({
     console.log({
         fiscalYear,
         aipEntries,
+        can,
         fundingSources,
         offices,
         filters,
@@ -116,6 +120,11 @@ export default function AipSummaryTable({
     const [isLoading, setIsLoading] = useState(false);
     const [isCreateSaipDialogOpen, setIsCreateSaipDialogOpen] = useState(false);
     const [isDeleteSaipDialogOpen, setIsDeleteSaipDialogOpen] = useState(false);
+
+    const currentSaip = currentScope?.scope === 'supplemental' && currentScope.supplemental_aip_id
+        ? supplementalAips.find((s: any) => s.id === currentScope.supplemental_aip_id)
+        : null;
+    const canDeleteSaip = currentSaip?.can?.deleteSaip ?? false;
 
     const updatedBreadcrumbs = [
         ...breadcrumbs,
@@ -410,6 +419,8 @@ export default function AipSummaryTable({
             ? `saip-${currentScope.supplemental_aip_id}`
             : currentScope.scope;
 
+    const cols = columns();
+
     return (
         <AppLayout breadcrumbs={updatedBreadcrumbs}>
             <div className="flex flex-col gap-4 pt-4">
@@ -440,7 +451,7 @@ export default function AipSummaryTable({
                                 <TabsTrigger
                                     key={saip.id}
                                     value={`saip-${saip.id}`}
-                                    // className="px-4 py-2"
+                                    disabled={!saip?.can?.viewSaip}
                                 >
                                     {saip.name}
                                 </TabsTrigger>
@@ -456,7 +467,7 @@ export default function AipSummaryTable({
                     </Tabs>
 
                     <div className="flex items-center gap-2">
-                        {currentScope.scope === 'supplemental' && (
+                        {currentScope.scope === 'supplemental' && canDeleteSaip && (
                             <Button
                                 variant="destructive"
                                 size="sm"
@@ -465,21 +476,24 @@ export default function AipSummaryTable({
                                 Delete Plan
                             </Button>
                         )}
-                        <Button
-                            variant="outline"
-                            // size="sm"
-                            onClick={handleCreateSaip}
-                        >
-                            <Plus
-                            // className="mr-1 h-4 w-4"
-                            />
-                            Create Supplemental AIP
-                        </Button>
+
+                        {can.createSaip && (
+                            <Button
+                                variant="outline"
+                                // size="sm"
+                                onClick={handleCreateSaip}
+                            >
+                                <Plus
+                                // className="mr-1 h-4 w-4"
+                                />
+                                Create Supplemental AIP
+                            </Button>
+                        )}
                     </div>
                 </div>
 
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={expandPpaByFundingSource(aipEntries)}
                     withSearch={true}
                     withRowSpan={true}
@@ -495,52 +509,61 @@ export default function AipSummaryTable({
                     }}
                 >
                     <div className="flex gap-2">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline">
-                                    <FileDown className="mr-2 h-4 w-4" /> Export
-                                </Button>
-                            </DropdownMenuTrigger>
+                        {can.export && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <FileDown className="mr-2 h-4 w-4" />{' '}
+                                        Export
+                                    </Button>
+                                </DropdownMenuTrigger>
 
-                            <DropdownMenuContent
-                                align="end"
-                                className="w-max min-w-max"
-                            >
-                                <DropdownMenuItem onClick={handlePrintPreview}>
-                                    <div className="flex items-center">
-                                        <FileText className="mr-2 h-4 w-4" />
-
-                                        <span className="whitespace-nowrap">
-                                            Print Preview
-                                        </span>
-                                    </div>
-                                </DropdownMenuItem>
-
-                                <DropdownMenuItem onClick={handleExportToExcel}>
-                                    <div className="flex items-center">
-                                        <FileDown className="mr-2 h-4 w-4" />
-
-                                        <span className="whitespace-nowrap">
-                                            Export to Excel
-                                        </span>
-                                    </div>
-                                </DropdownMenuItem>
-
-                                <DropdownMenuItem
-                                    onClick={() => setIsSummaryExportOpen(true)}
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-max min-w-max"
                                 >
-                                    <div className="flex items-center">
-                                        <FileText className="mr-2 h-4 w-4" />
+                                    <DropdownMenuItem
+                                        onClick={handlePrintPreview}
+                                    >
+                                        <div className="flex items-center">
+                                            <FileText className="mr-2 h-4 w-4" />
 
-                                        <span className="whitespace-nowrap">
-                                            Export Summary (Totals)
-                                        </span>
-                                    </div>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                            <span className="whitespace-nowrap">
+                                                Print Preview
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
 
-                        {currentScope.scope !== 'combined' && (
+                                    <DropdownMenuItem
+                                        onClick={handleExportToExcel}
+                                    >
+                                        <div className="flex items-center">
+                                            <FileDown className="mr-2 h-4 w-4" />
+
+                                            <span className="whitespace-nowrap">
+                                                Export to Excel
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            setIsSummaryExportOpen(true)
+                                        }
+                                    >
+                                        <div className="flex items-center">
+                                            <FileText className="mr-2 h-4 w-4" />
+
+                                            <span className="whitespace-nowrap">
+                                                Export Summary (Totals)
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+
+                        {can.import && currentScope.scope !== 'combined' && (
                             <Button onClick={handleImportLibrary}>
                                 <Library className="mr-2 h-4 w-4" /> Import from
                                 Library

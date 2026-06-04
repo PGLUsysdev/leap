@@ -46,321 +46,358 @@ const sumField = (rows: any[], field: keyof PpaFundingSource) => {
 
 const columnHelper = createColumnHelper<FlattenedPpa>();
 
-const columns = [
-    columnHelper.accessor('full_code', {
-        id: 'full_code',
-        header: () => <div className="text-left">AIP Reference Code</div>,
-        size: 200,
-        cell: (info) => <code>{info.getValue()}</code>,
-        meta: { rowSpan: true },
-    }),
-    columnHelper.accessor('name', {
-        id: 'name',
-        header: () => (
-            <div className="text-left">
-                Program/Project/Activity Description
-            </div>
-        ),
-        size: 400,
-        cell: ({ row }) => {
-            const ppa = row.original;
-
-            return (
-                <div
-                    style={{ paddingLeft: `${ppa.depth * 20}px` }}
-                    className="flex gap-2"
-                >
-                    {row.original.depth > 0 && (
-                        <span className="text-muted-foreground opacity-50">
-                            ↳
-                        </span>
-                    )}
-
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
-                            {ppa.type}
-                        </span>
-                        <span
-                            className={`wrap-break-words leading-tight whitespace-normal ${
-                                ppa.depth === 0 ? 'font-bold' : 'font-medium'
-                            }`}
-                        >
-                            {ppa.name}
-                        </span>
-                    </div>
+const columns = () => {
+    const cols = [
+        columnHelper.accessor('full_code', {
+            id: 'full_code',
+            header: () => <div className="text-left">AIP Reference Code</div>,
+            size: 200,
+            cell: (info) => <code>{info.getValue()}</code>,
+            meta: { rowSpan: true },
+        }),
+        columnHelper.accessor('name', {
+            id: 'name',
+            header: () => (
+                <div className="text-left">
+                    Program/Project/Activity Description
                 </div>
-            );
-        },
-        meta: { rowSpan: true },
-    }),
-    columnHelper.accessor('office.acronym', {
-        id: 'office_acronym',
-        header: () => <div className="text-left">Implementing Office</div>,
-        size: 150,
-        cell: ({ row }) => {
-            const office = row.original.office;
-            if (office?.parent?.acronym && office?.acronym) {
-                return `${office.parent.acronym}/${office.acronym}`;
-            }
-            return office?.acronym || '-';
-        },
-        meta: { rowSpan: true },
-    }),
-    columnHelper.group({
-        id: 'schedule',
-        header: () => <div className="text-left">Schedule</div>,
-        columns: [
-            columnHelper.accessor('aip_entry', {
-                id: 'start_date',
-                header: () => <div className="text-left">Start</div>,
-                cell: (info) =>
-                    info.getValue()
-                        ? formatDate(info.getValue()?.start_date)
-                        : '—',
-                meta: { rowSpan: true },
-            }),
-            columnHelper.accessor('aip_entry', {
-                id: 'end_date',
-                header: () => <div className="text-left">End</div>,
-                cell: (info) =>
-                    info.getValue()
-                        ? formatDate(info.getValue()?.end_date)
-                        : '—',
-                meta: { rowSpan: true },
-            }),
-        ],
-    }),
-    columnHelper.accessor('aip_entry', {
-        id: 'expected_output',
-        header: () => <div className="text-left">Expected Outputs</div>,
-        size: 400,
-        cell: (info) => (
-            <div className="text-wrap">
-                {info.getValue()?.expected_output || '—'}
-            </div>
-        ),
-        meta: { rowSpan: true },
-    }),
-    // columnHelper.accessor('current_fs.funding_source.code', {
-    columnHelper.accessor('current_fs.funding_source.code', {
-        id: 'funding_sources',
-        header: () => <div className="text-left">Funding Source</div>,
-        size: 250,
-        cell: (info) =>
-            info.getValue() ? <Badge>{info.getValue()}</Badge> : '-',
-    }),
+            ),
+            size: 400,
+            cell: ({ row }) => {
+                const ppa = row.original;
 
-    // --- GROUPED AMOUNTS ---
-    columnHelper.group({
-        id: 'amount',
-        header: () => (
-            <div className="text-left">Amount (in thousand pesos)</div>
-        ),
-        size: 400,
-        columns: [
-            columnHelper.accessor('current_fs.ps_amount', {
-                id: 'ps_amount',
-                header: () => <div className="text-right">PS</div>,
-                cell: (info) => (
-                    <div className="text-right">
-                        {formatNumber(info.getValue())}
-                    </div>
-                ),
-                footer: ({ table }) => {
-                    const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'ps_amount');
-                    return (
-                        <div className="text-right font-bold">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
-                },
-            }),
-            columnHelper.accessor('current_fs.mooe_amount', {
-                id: 'mooe_amount',
-                header: () => <div className="text-right">MOOE</div>,
-                cell: (info) => (
-                    <div className="text-right">
-                        {formatNumber(info.getValue())}
-                    </div>
-                ),
-                footer: ({ table }) => {
-                    const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'mooe_amount');
+                return (
+                    <div
+                        style={{ paddingLeft: `${ppa.depth * 20}px` }}
+                        className="flex gap-2"
+                    >
+                        {row.original.depth > 0 && (
+                            <span className="text-muted-foreground opacity-50">
+                                ↳
+                            </span>
+                        )}
 
-                    return (
-                        <div className="text-right font-bold">
-                            {formatNumber(total.toString())}
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                                {ppa.type}
+                            </span>
+                            <span
+                                className={`wrap-break-words leading-tight whitespace-normal ${
+                                    ppa.depth === 0
+                                        ? 'font-bold'
+                                        : 'font-medium'
+                                }`}
+                            >
+                                {ppa.name}
+                            </span>
                         </div>
-                    );
-                },
-            }),
-            columnHelper.accessor('current_fs.fe_amount', {
-                id: 'fe_amount',
-                header: () => <div className="text-right">FE</div>,
-                cell: (info) => (
-                    <div className="text-right">
-                        {formatNumber(info.getValue())}
                     </div>
-                ),
-                footer: ({ table }) => {
-                    const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'fe_amount');
-                    return (
-                        <div className="text-right font-bold">
-                            {formatNumber(total.toString())}
+                );
+            },
+            meta: { rowSpan: true },
+        }),
+        columnHelper.accessor('office.acronym', {
+            id: 'office_acronym',
+            header: () => <div className="text-left">Implementing Office</div>,
+            size: 150,
+            cell: ({ row }) => {
+                const office = row.original.office;
+                if (office?.parent?.acronym && office?.acronym) {
+                    return `${office.parent.acronym}/${office.acronym}`;
+                }
+                return office?.acronym || '-';
+            },
+            meta: { rowSpan: true },
+        }),
+        columnHelper.group({
+            id: 'schedule',
+            header: () => <div className="text-left">Schedule</div>,
+            columns: [
+                columnHelper.accessor('aip_entry', {
+                    id: 'start_date',
+                    header: () => <div className="text-left">Start</div>,
+                    cell: (info) =>
+                        info.getValue()
+                            ? formatDate(info.getValue()?.start_date)
+                            : '—',
+                    meta: { rowSpan: true },
+                }),
+                columnHelper.accessor('aip_entry', {
+                    id: 'end_date',
+                    header: () => <div className="text-left">End</div>,
+                    cell: (info) =>
+                        info.getValue()
+                            ? formatDate(info.getValue()?.end_date)
+                            : '—',
+                    meta: { rowSpan: true },
+                }),
+            ],
+        }),
+        columnHelper.accessor('aip_entry', {
+            id: 'expected_output',
+            header: () => <div className="text-left">Expected Outputs</div>,
+            size: 400,
+            cell: (info) => (
+                <div className="text-wrap">
+                    {info.getValue()?.expected_output || '—'}
+                </div>
+            ),
+            meta: { rowSpan: true },
+        }),
+        // columnHelper.accessor('current_fs.funding_source.code', {
+        columnHelper.accessor('current_fs.funding_source.code', {
+            id: 'funding_sources',
+            header: () => <div className="text-left">Funding Source</div>,
+            size: 250,
+            cell: (info) =>
+                info.getValue() ? <Badge>{info.getValue()}</Badge> : '-',
+        }),
+
+        // --- GROUPED AMOUNTS ---
+        columnHelper.group({
+            id: 'amount',
+            header: () => (
+                <div className="text-left">Amount (in thousand pesos)</div>
+            ),
+            size: 400,
+            columns: [
+                columnHelper.accessor('current_fs.ps_amount', {
+                    id: 'ps_amount',
+                    header: () => <div className="text-right">PS</div>,
+                    cell: (info) => (
+                        <div className="text-right">
+                            {formatNumber(info.getValue())}
                         </div>
-                    );
-                },
-            }),
-            columnHelper.accessor('current_fs.co_amount', {
-                id: 'co_amount',
-                header: () => <div className="text-right">CO</div>,
-                cell: (info) => (
-                    <div className="text-right">
-                        {formatNumber(info.getValue())}
-                    </div>
-                ),
-                footer: ({ table }) => {
-                    const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'co_amount');
-                    return (
-                        <div className="text-right font-bold">
-                            {formatNumber(total.toString())}
+                    ),
+                    footer: ({ table }) => {
+                        const rows = table.getFilteredRowModel().flatRows;
+                        const total = sumField(rows, 'ps_amount');
+                        return (
+                            <div className="text-right font-bold">
+                                {formatNumber(total.toString())}
+                            </div>
+                        );
+                    },
+                }),
+                columnHelper.accessor('current_fs.mooe_amount', {
+                    id: 'mooe_amount',
+                    header: () => <div className="text-right">MOOE</div>,
+                    cell: (info) => (
+                        <div className="text-right">
+                            {formatNumber(info.getValue())}
                         </div>
-                    );
-                },
-            }),
-            columnHelper.display({
-                id: 'amount_total',
-                header: () => <div className="text-right font-bold">Total</div>,
-                cell: ({ row }) => {
-                    const fs = row.original.current_fs;
-                    if (!fs) return <div className="text-right">-</div>;
-                    const total = new Decimal(fs.co_amount || 0)
-                        .plus(fs.fe_amount || 0)
-                        .plus(fs.mooe_amount || 0)
-                        .plus(fs.ps_amount || 0);
-                    return (
-                        <div className="text-right font-bold">
-                            {formatNumber(total.toString())}
+                    ),
+                    footer: ({ table }) => {
+                        const rows = table.getFilteredRowModel().flatRows;
+                        const total = sumField(rows, 'mooe_amount');
+
+                        return (
+                            <div className="text-right font-bold">
+                                {formatNumber(total.toString())}
+                            </div>
+                        );
+                    },
+                }),
+                columnHelper.accessor('current_fs.fe_amount', {
+                    id: 'fe_amount',
+                    header: () => <div className="text-right">FE</div>,
+                    cell: (info) => (
+                        <div className="text-right">
+                            {formatNumber(info.getValue())}
                         </div>
-                    );
-                },
-                footer: ({ table }) => {
-                    const rows = table.getFilteredRowModel().flatRows;
-                    const total = rows.reduce((sum, row) => {
+                    ),
+                    footer: ({ table }) => {
+                        const rows = table.getFilteredRowModel().flatRows;
+                        const total = sumField(rows, 'fe_amount');
+                        return (
+                            <div className="text-right font-bold">
+                                {formatNumber(total.toString())}
+                            </div>
+                        );
+                    },
+                }),
+                columnHelper.accessor('current_fs.co_amount', {
+                    id: 'co_amount',
+                    header: () => <div className="text-right">CO</div>,
+                    cell: (info) => (
+                        <div className="text-right">
+                            {formatNumber(info.getValue())}
+                        </div>
+                    ),
+                    footer: ({ table }) => {
+                        const rows = table.getFilteredRowModel().flatRows;
+                        const total = sumField(rows, 'co_amount');
+                        return (
+                            <div className="text-right font-bold">
+                                {formatNumber(total.toString())}
+                            </div>
+                        );
+                    },
+                }),
+                columnHelper.display({
+                    id: 'amount_total',
+                    header: () => (
+                        <div className="text-right font-bold">Total</div>
+                    ),
+                    cell: ({ row }) => {
                         const fs = row.original.current_fs;
-                        if (!fs) return sum;
-                        const rowTotal = new Decimal(fs.co_amount || 0)
+                        if (!fs) return <div className="text-right">-</div>;
+                        const total = new Decimal(fs.co_amount || 0)
                             .plus(fs.fe_amount || 0)
                             .plus(fs.mooe_amount || 0)
                             .plus(fs.ps_amount || 0);
-                        return sum + rowTotal.toNumber();
-                    }, 0);
+                        return (
+                            <div className="text-right font-bold">
+                                {formatNumber(total.toString())}
+                            </div>
+                        );
+                    },
+                    footer: ({ table }) => {
+                        const rows = table.getFilteredRowModel().flatRows;
+                        const total = rows.reduce((sum, row) => {
+                            const fs = row.original.current_fs;
+                            if (!fs) return sum;
+                            const rowTotal = new Decimal(fs.co_amount || 0)
+                                .plus(fs.fe_amount || 0)
+                                .plus(fs.mooe_amount || 0)
+                                .plus(fs.ps_amount || 0);
+                            return sum + rowTotal.toNumber();
+                        }, 0);
+                        return (
+                            <div className="text-right font-bold">
+                                {formatNumber(total.toString())}
+                            </div>
+                        );
+                    },
+                }),
+            ],
+        }),
+
+        // --- GROUPED CLIMATE CHANGE ---
+        columnHelper.group({
+            id: 'climateChange',
+            header: () => (
+                <div className="text-left">Climate Change Expenditure</div>
+            ),
+            size: 250,
+            columns: [
+                columnHelper.accessor('current_fs.ccet_adaptation', {
+                    id: 'cc_adaptation',
+                    header: () => <div className="text-right">Adaptation</div>,
+                    cell: (info) => (
+                        <div className="text-right">
+                            {formatNumber(info.getValue())}
+                        </div>
+                    ),
+                    footer: ({ table }) => {
+                        const rows = table.getFilteredRowModel().flatRows;
+                        const total = sumField(rows, 'ccet_adaptation');
+                        return (
+                            <div className="text-right font-bold">
+                                {formatNumber(total.toString())}
+                            </div>
+                        );
+                    },
+                }),
+                columnHelper.accessor('current_fs.ccet_mitigation', {
+                    id: 'cc_mitigation',
+                    header: () => <div className="text-right">Mitigation</div>,
+                    cell: (info) => (
+                        <div className="text-right">
+                            {formatNumber(info.getValue())}
+                        </div>
+                    ),
+                    footer: ({ table }) => {
+                        const rows = table.getFilteredRowModel().flatRows;
+                        const total = sumField(rows, 'ccet_mitigation');
+
+                        return (
+                            <div className="text-right font-bold">
+                                {formatNumber(total.toString())}
+                            </div>
+                        );
+                    },
+                }),
+            ],
+        }),
+
+        columnHelper.display({
+            id: 'cc_typology_code',
+            header: 'Typology',
+            cell: () => <div className="text-right">-</div>,
+            footer: () => <div className="text-right font-medium">-</div>, // optional label
+        }),
+
+        columnHelper.display({
+            id: 'action',
+            size: 120,
+            cell: ({ row, table }) => {
+                const isReadOnly = (table.options.meta as any)?.readOnly;
+                const can = row.original.can;
+                const canImport = can?.import;
+                const canEdit = can?.edit;
+                const canDelete = can?.delete;
+                const canEditFundingSources = can?.editFundingSources;
+
+                if (isReadOnly) {
                     return (
-                        <div className="text-right font-bold">
-                            {formatNumber(total.toString())}
+                        <div className="text-center text-muted-foreground">
+                            -
                         </div>
                     );
-                },
-            }),
-        ],
-    }),
+                }
 
-    // --- GROUPED CLIMATE CHANGE ---
-    columnHelper.group({
-        id: 'climateChange',
-        header: () => (
-            <div className="text-left">Climate Change Expenditure</div>
-        ),
-        size: 250,
-        columns: [
-            columnHelper.accessor('current_fs.ccet_adaptation', {
-                id: 'cc_adaptation',
-                header: () => <div className="text-right">Adaptation</div>,
-                cell: (info) => (
-                    <div className="text-right">
-                        {formatNumber(info.getValue())}
+                return (
+                    <div className="flex items-center gap-1">
+                        {/*{canImport && (*/}
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() =>
+                                table.options.meta?.onAdd?.(row.original)
+                            }
+                            disabled={
+                                row.original.type === 'Sub-Activity' ||
+                                !canImport
+                            }
+                        >
+                            <Plus />
+                        </Button>
+                        {/*)}*/}
+
+                        {/*{canEdit && (*/}
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() =>
+                                table.options.meta?.onEdit?.(row.original)
+                            }
+                            disabled={!canEdit && !canEditFundingSources}
+                        >
+                            <Pencil />
+                        </Button>
+                        {/*)}*/}
+
+                        {/*{canDelete && (*/}
+                        <Button
+                            size="icon"
+                            variant="destructive"
+                            onClick={() =>
+                                table.options.meta?.onDelete?.(row.original)
+                            }
+                            disabled={!canDelete}
+                        >
+                            <Trash />
+                        </Button>
+                        {/*)}*/}
                     </div>
-                ),
-                footer: ({ table }) => {
-                    const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'ccet_adaptation');
-                    return (
-                        <div className="text-right font-bold">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
-                },
-            }),
-            columnHelper.accessor('current_fs.ccet_mitigation', {
-                id: 'cc_mitigation',
-                header: () => <div className="text-right">Mitigation</div>,
-                cell: (info) => (
-                    <div className="text-right">
-                        {formatNumber(info.getValue())}
-                    </div>
-                ),
-                footer: ({ table }) => {
-                    const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'ccet_mitigation');
+                );
+            },
+            meta: { rowSpan: true },
+        }),
+    ];
 
-                    return (
-                        <div className="text-right font-bold">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
-                },
-            }),
-        ],
-    }),
-
-    columnHelper.display({
-        id: 'cc_typology_code',
-        header: 'Typology',
-        cell: () => <div className="text-right">-</div>,
-        footer: () => <div className="text-right font-medium">-</div>, // optional label
-    }),
-    columnHelper.display({
-        id: 'action',
-        size: 120,
-        cell: ({ row, table }) => {
-            const isReadOnly = (table.options.meta as any)?.readOnly;
-            if (isReadOnly) {
-                return <div className="text-center text-muted-foreground">-</div>;
-            }
-            return (
-                <div className="flex items-center gap-1">
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => table.options.meta?.onAdd?.(row.original)}
-                        disabled={row.original.type === 'Sub-Activity'}
-                    >
-                        <Plus />
-                    </Button>
-
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => table.options.meta?.onEdit?.(row.original)}
-                    >
-                        <Pencil />
-                    </Button>
-
-                    <Button
-                        size="icon"
-                        variant="destructive"
-                        onClick={() => table.options.meta?.onDelete?.(row.original)}
-                    >
-                        <Trash />
-                    </Button>
-                </div>
-            );
-        },
-        meta: { rowSpan: true },
-    }),
-];
+    return cols;
+};
 
 export default columns;

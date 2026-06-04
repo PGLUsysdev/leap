@@ -61,6 +61,13 @@ class FiscalYearPolicy
         return $permissions->contains('fiscal-year.edit.status');
     }
 
+    public function generateApp(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('fiscal-year.generate-app');
+    }
+
     // public function openAipSummary(User $user): bool
     // {
     //     $user->loadMissing('role.permissionRoles.permission');

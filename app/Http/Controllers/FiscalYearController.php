@@ -9,6 +9,7 @@ use App\Models\Office;
 use App\Models\Ppmp;
 use App\Http\Requests\StoreFiscalYearRequest;
 use App\Http\Requests\UpdateFiscalYearRequest;
+use App\Models\PpmpSummary;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 
@@ -30,7 +31,16 @@ class FiscalYearController extends Controller
             'offices' => $isControlOffice ? Office::get() : [],
             'can' => [
                 'add' => request()->user()->can('create', FiscalYear::class),
-                'updateStatus' => request()->user()->can('updateStatus', new FiscalYear()),
+                'updateStatus' => request()
+                    ->user()
+                    ->can('updateStatus', new FiscalYear()),
+                'openAip' => request()->user()->can('viewAny', AipEntry::class),
+                'gerenateApp' => request()
+                    ->user()
+                    ->can('generateApp', FiscalYear::class),
+                'openPpmpSummary' => request()
+                    ->user()
+                    ->can('viewAny', PpmpSummary::class),
             ],
             'app' => Inertia::optional(function () use (
                 $request,

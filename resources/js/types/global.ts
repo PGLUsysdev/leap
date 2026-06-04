@@ -145,6 +145,7 @@ export interface Ppa {
         edit: boolean;
         delete: boolean;
         move: boolean;
+        import: boolean;
     };
 }
 

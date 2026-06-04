@@ -115,6 +115,9 @@ export default function AipEntryFormDialog({
     const [isLoading, setIsLoading] = useState(false);
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
+    const canEditFunding = data?.can?.editFundingSources ?? false;
+    const canEdit = data?.can?.edit ?? false;
+
     const entry = data?.aip_entries?.find(e => e.supplemental_aip_id === (supplementalAipId || null))
                || data?.aip_entries?.[0]
                || null;
@@ -343,7 +346,8 @@ export default function AipEntryFormDialog({
                                                             </FieldLabel>
 
                                                             <CommandSelect
-                                                                options={
+                                                                 disabled={!canEdit}
+                                                                 options={
                                                                     filteredOffices
                                                                 }
                                                                 value={
@@ -433,9 +437,10 @@ export default function AipEntryFormDialog({
                                                             </FieldLabel>
 
                                                             <Textarea
-                                                                {...field}
-                                                                className="min-h-25"
-                                                            />
+                                                                 {...field}
+                                                                 className="min-h-25"
+                                                                 disabled={!canEdit}
+                                                             />
 
                                                             <FieldError
                                                                 errors={[
@@ -470,9 +475,10 @@ export default function AipEntryFormDialog({
                                                                             asChild
                                                                         >
                                                                             <Button
-                                                                                variant="outline"
-                                                                                className="w-full justify-start text-left"
-                                                                            >
+                                                                                 variant="outline"
+                                                                                 className="w-full justify-start text-left"
+                                                                                 disabled={!canEdit}
+                                                                             >
                                                                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                                                                 {field.value
                                                                                     ? format(
@@ -536,6 +542,7 @@ export default function AipEntryFormDialog({
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="sm"
+                                                                disabled={!canEditFunding}
                                                             >
                                                                 <Plus className="mr-2 h-4 w-4" />
                                                                 Add Fund Source
@@ -872,6 +879,7 @@ export default function AipEntryFormDialog({
                                                                                         )
                                                                                     }
                                                                                     title="Remove Funding Source"
+                                                                                    disabled={!canEditFunding}
                                                                                 >
                                                                                     <Trash2 />
                                                                                 </Button>

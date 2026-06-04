@@ -34,9 +34,11 @@ class AipEntryController extends Controller
         $scope = $request->query('scope', 'original');
         $saipId = $request->query('supplemental_aip_id');
 
+        $supplementalAip = null;
+
         if ($scope === 'supplemental' && $saipId) {
-            $saip = \App\Models\SupplementalAip::findOrFail($saipId);
-            $this->authorize('view', $saip);
+            $supplementalAip = \App\Models\SupplementalAip::findOrFail($saipId);
+            $this->authorize('view', $supplementalAip);
         }
 
         $fundingSourceFilter = function ($query) use ($scope, $saipId) {
@@ -102,7 +104,133 @@ class AipEntryController extends Controller
                 'children.children.children.office',
                 'children.children.children.aipEntries' => $aipEntryFilter,
             ])
-            ->get();
+            ->get()
+            ->map(function ($aipEntries) use ($request, $supplementalAip, $scope, $saipId) {
+                $aipEntry = $aipEntries->aip_entries?->first();
+
+                if (!$aipEntry) {
+                    $aipEntry = \App\Models\AipEntry::where('ppa_id', $aipEntries->id)
+                        ->when($scope === 'original', fn($q) => $q->whereNull('supplemental_aip_id'))
+                        ->when($scope === 'supplemental' && $saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+                        ->first();
+                }
+
+                $aipEntries->can = [
+                    'import' => $request
+                        ->user()
+                        ->can('import', [AipEntry::class, [$aipEntries->id]]),
+                    'edit' => $aipEntry
+                        ? $request->user()->can('update', $aipEntry)
+                        : false,
+                    'delete' => $aipEntry
+                        ? $request->user()->can('delete', $aipEntry)
+                        : false,
+                    'editFundingSources' => $aipEntry
+                        ? $request->user()->can('editFundingSources', $aipEntry)
+                        : false,
+                ];
+
+                $aipEntries->children->each(function ($child) use ($request, $scope, $saipId) {
+                    $childEntry = $child->aip_entries?->first();
+
+                    if (!$childEntry) {
+                        $childEntry = \App\Models\AipEntry::where('ppa_id', $child->id)
+                            ->when($scope === 'original', fn($q) => $q->whereNull('supplemental_aip_id'))
+                            ->when($scope === 'supplemental' && $saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+                            ->first();
+                    }
+
+                    $child->can = [
+                        'import' => $request
+                            ->user()
+                            ->can('import', [AipEntry::class, [$child->id]]),
+                        'edit' => $childEntry
+                            ? $request->user()->can('update', $childEntry)
+                            : false,
+                        'delete' => $childEntry
+                            ? $request->user()->can('delete', $childEntry)
+                            : false,
+                        'editFundingSources' => $childEntry
+                            ? $request
+                                ->user()
+                                ->can('editFundingSources', $childEntry)
+                            : false,
+                    ];
+
+                    $child->children->each(function ($child2) use ($request, $scope, $saipId) {
+                        $child2Entry = $child2->aip_entries?->first();
+
+                        if (!$child2Entry) {
+                            $child2Entry = \App\Models\AipEntry::where('ppa_id', $child2->id)
+                                ->when($scope === 'original', fn($q) => $q->whereNull('supplemental_aip_id'))
+                                ->when($scope === 'supplemental' && $saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+                                ->first();
+                        }
+
+                        $child2->can = [
+                            'import' => $request
+                                ->user()
+                                ->can('import', [
+                                    AipEntry::class,
+                                    [$child2->id],
+                                ]),
+                            'edit' => $child2Entry
+                                ? $request->user()->can('update', $child2Entry)
+                                : false,
+                            'delete' => $child2Entry
+                                ? $request->user()->can('delete', $child2Entry)
+                                : false,
+                            'editFundingSources' => $child2Entry
+                                ? $request
+                                    ->user()
+                                    ->can('editFundingSources', $child2Entry)
+                                : false,
+                        ];
+
+                        $child2->children->each(function ($child3) use (
+                            $request,
+                            $scope,
+                            $saipId,
+                        ) {
+                            $child3Entry = $child3->aip_entries?->first();
+
+                            if (!$child3Entry) {
+                                $child3Entry = \App\Models\AipEntry::where('ppa_id', $child3->id)
+                                    ->when($scope === 'original', fn($q) => $q->whereNull('supplemental_aip_id'))
+                                    ->when($scope === 'supplemental' && $saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+                                    ->first();
+                            }
+
+                            $child3->can = [
+                                'import' => $request
+                                    ->user()
+                                    ->can('import', [
+                                        AipEntry::class,
+                                        [$child3->id],
+                                    ]),
+                                'edit' => $child3Entry
+                                    ? $request->user()->can('update', $child3Entry)
+                                    : false,
+                                'delete' => $child3Entry
+                                    ? $request
+                                        ->user()
+                                        ->can('delete', $child3Entry)
+                                    : false,
+                                'editFundingSources' => $child3Entry
+                                    ? $request
+                                        ->user()
+                                        ->can(
+                                            'editFundingSources',
+                                            $child3Entry,
+                                        )
+                                    : false,
+                            ];
+                        });
+                    });
+                });
+
+                return $aipEntries;
+            });
 
         return Inertia::render('aip-summary/index', [
             'fiscalYear' => $fiscalYear,
@@ -115,10 +243,27 @@ class AipEntryController extends Controller
                 $yearId,
             )
                 ->where('office_id', $officeId)
-                ->get(),
+                ->get()
+                ->map(function ($saip) use ($request) {
+                    $saip->can = [
+                        'viewSaip' => $request->user()->can('view', $saip),
+                        'deleteSaip' => $request->user()->can('delete', $saip),
+                    ];
+                    return $saip;
+                }),
             'currentScope' => [
                 'scope' => $scope,
                 'supplemental_aip_id' => $saipId ? (int) $saipId : null,
+            ],
+
+            'can' => [
+                'export' => request()->user()->can('export', AipEntry::class),
+                'import' => $request
+                    ->user()
+                    ->can('import', [AipEntry::class, []]),
+                'createSaip' => $request
+                    ->user()
+                    ->can('create', SupplementalAip::class),
             ],
 
             'dialogPpaTree' => Inertia::lazy(function () use (
@@ -298,10 +443,11 @@ class AipEntryController extends Controller
 
         $saipId = $validated['supplemental_aip_id'] ?? null;
 
-        $detailsChanged = $validated['expected_output'] !== $aipEntry->expected_output
-            || $validated['start_date'] !== $aipEntry->start_date
-            || $validated['end_date'] !== $aipEntry->end_date
-            || (int) $validated['office_id'] !== $ppa->office_id;
+        $detailsChanged =
+            $validated['expected_output'] !== $aipEntry->expected_output ||
+            $validated['start_date'] !== $aipEntry->start_date ||
+            $validated['end_date'] !== $aipEntry->end_date ||
+            (int) $validated['office_id'] !== $ppa->office_id;
 
         $fundingChanged = $this->fundingSourcesChanged(
             $validated['ppa_funding_sources'] ?? [],
@@ -404,8 +550,10 @@ class AipEntryController extends Controller
                             'mooe_amount' => $source['mooe_amount'],
                             'fe_amount' => $source['fe_amount'],
                             'co_amount' => $source['co_amount'],
-                            'ccet_adaptation' => $source['ccet_adaptation'] ?? 0,
-                            'ccet_mitigation' => $source['ccet_mitigation'] ?? 0,
+                            'ccet_adaptation' =>
+                                $source['ccet_adaptation'] ?? 0,
+                            'ccet_mitigation' =>
+                                $source['ccet_mitigation'] ?? 0,
                             'is_supplemental' => (bool) $saipId,
                         ],
                     );
@@ -416,9 +564,13 @@ class AipEntryController extends Controller
         return back()->with('success', 'AIP Entry updated successfully.');
     }
 
-    private function fundingSourcesChanged(array $submittedSources, AipEntry $aipEntry, $saipId): bool
-    {
-        $current = $aipEntry->ppaFundingSources()
+    private function fundingSourcesChanged(
+        array $submittedSources,
+        AipEntry $aipEntry,
+        $saipId,
+    ): bool {
+        $current = $aipEntry
+            ->ppaFundingSources()
             ->when($saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
             ->when(!$saipId, fn($q) => $q->whereNull('supplemental_aip_id'))
             ->get();
@@ -428,16 +580,39 @@ class AipEntryController extends Controller
         }
 
         foreach ($submittedSources as $source) {
-            $match = $current->firstWhere('funding_source_id', $source['funding_source_id']);
+            $match = $current->firstWhere(
+                'funding_source_id',
+                $source['funding_source_id'],
+            );
             if (!$match) {
                 return true;
             }
-            if ((float) $match->ps_amount !== (float) $source['ps_amount']) return true;
-            if ((float) $match->mooe_amount !== (float) $source['mooe_amount']) return true;
-            if ((float) $match->fe_amount !== (float) $source['fe_amount']) return true;
-            if ((float) $match->co_amount !== (float) $source['co_amount']) return true;
-            if ((float) $match->ccet_adaptation !== (float) ($source['ccet_adaptation'] ?? 0)) return true;
-            if ((float) $match->ccet_mitigation !== (float) ($source['ccet_mitigation'] ?? 0)) return true;
+            if ((float) $match->ps_amount !== (float) $source['ps_amount']) {
+                return true;
+            }
+            if (
+                (float) $match->mooe_amount !== (float) $source['mooe_amount']
+            ) {
+                return true;
+            }
+            if ((float) $match->fe_amount !== (float) $source['fe_amount']) {
+                return true;
+            }
+            if ((float) $match->co_amount !== (float) $source['co_amount']) {
+                return true;
+            }
+            if (
+                (float) $match->ccet_adaptation !==
+                (float) ($source['ccet_adaptation'] ?? 0)
+            ) {
+                return true;
+            }
+            if (
+                (float) $match->ccet_mitigation !==
+                (float) ($source['ccet_mitigation'] ?? 0)
+            ) {
+                return true;
+            }
         }
 
         return false;

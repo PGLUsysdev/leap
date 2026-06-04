@@ -45,7 +45,10 @@ class AipEntryPolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
         return $permissions->contains('aip-summary.edit') &&
-            $user->office_id === $aipEntry->ppa->office_id;
+            in_array(
+                $user->office_id,
+                $this->getOfficeAncestorIds($aipEntry->ppa->office_id),
+            );
     }
 
     /**
@@ -56,7 +59,10 @@ class AipEntryPolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
         return $permissions->contains('aip-summary.delete') &&
-            $user->office_id === $aipEntry->ppa->office_id;
+            in_array(
+                $user->office_id,
+                $this->getOfficeAncestorIds($aipEntry->ppa->office_id),
+            );
     }
 
     public function editFundingSources(User $user, AipEntry $aipEntry): bool
@@ -64,7 +70,10 @@ class AipEntryPolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
         return $permissions->contains('aip-summary.edit.funding-source') &&
-            $user->office_id === $aipEntry->ppa->office_id;
+            in_array(
+                $user->office_id,
+                $this->getOfficeAncestorIds($aipEntry->ppa->office_id),
+            );
     }
 
     public function import(User $user, array $ppaIds): bool
@@ -81,6 +90,13 @@ class AipEntryPolicy
         return !Ppa::whereIn('id', $ppaIds)
             ->whereNotIn('office_id', $allowedOfficeIds)
             ->exists();
+    }
+
+    public function export(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppa-summary.export');
     }
 
     /**
@@ -124,5 +140,22 @@ class AipEntryPolicy
         }
 
         return $descendants;
+    }
+
+    private function getOfficeAncestorIds($officeId): array
+    {
+        $ids = [$officeId];
+        $current = $officeId;
+
+        while ($current) {
+            $parentId = Office::where('id', $current)->value('parent_id');
+            if (!$parentId) {
+                break;
+            }
+            $ids[] = $parentId;
+            $current = $parentId;
+        }
+
+        return $ids;
     }
 }
