@@ -39,6 +39,7 @@ declare module '@tanstack/react-table' {
         onShowChildren?: (data: TData) => void;
         onMove?: (data: TData) => void;
         onSelect?: (data: TData, boolean: boolean) => void;
+        onEditPerms?: () => void;
         meta?: {
             priceLists?: PriceList[];
             chartOfAccounts?: ChartOfAccount[];
@@ -53,6 +54,7 @@ const columnHelper = createColumnHelper<FiscalYear>();
 const columns = (
     canUpdateStatus: boolean,
     canOpenAip: boolean,
+    disableOpenAip: boolean,
     canGenerateApp: boolean,
     canOpenPpmpSummary: boolean,
 ) => {
@@ -219,6 +221,7 @@ const columns = (
                                           variant="outline"
                                           size="icon"
                                           title="Open AIP"
+                                          disabled={disableOpenAip}
                                           onClick={() =>
                                               table.options.meta?.onOpen?.(
                                                   row.original,

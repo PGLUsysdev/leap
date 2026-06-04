@@ -51,7 +51,8 @@ class PpaPolicy
             ->value(DB::raw('COALESCE(parent_id, id)'));
 
         return $permissions->contains('ppa.edit') &&
-            $user->office_id === $mainOfficeId;
+            ($permissions->contains('ppa.show.all') ||
+                $user->office_id === $mainOfficeId);
     }
 
     /**
@@ -67,7 +68,8 @@ class PpaPolicy
             ->value(DB::raw('COALESCE(parent_id, id)'));
 
         return $permissions->contains('ppa.delete') &&
-            $user->office_id === $mainOfficeId;
+            ($permissions->contains('ppa.show.all') ||
+                $user->office_id === $mainOfficeId);
     }
 
     /**
@@ -96,7 +98,8 @@ class PpaPolicy
             ->value(DB::raw('COALESCE(parent_id, id)'));
 
         return $permissions->contains('ppa.move') &&
-            $user->office_id === $mainOfficeId;
+            ($permissions->contains('ppa.show.all') ||
+                $user->office_id === $mainOfficeId);
     }
 
     public function importLastYearPpa(User $user): bool

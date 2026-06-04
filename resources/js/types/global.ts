@@ -286,6 +286,15 @@ export interface AipSummary {
     ppa_id: number;
 }
 
+export interface Role {
+    id: number;
+    name: string;
+    created_at: string | null;
+    updated_at: string | null;
+    permissions?: string[];
+    users_count?: number;
+}
+
 export interface User {
     id: number;
     name: string;
@@ -365,4 +374,5 @@ export interface Filter {
     is_dialog_open?: boolean | null;
     dialog_mode?: string | null;
     id?: number | null;
+    selected_office_id?: string | null;
 }

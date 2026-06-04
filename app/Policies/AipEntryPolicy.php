@@ -92,6 +92,20 @@ class AipEntryPolicy
             ->exists();
     }
 
+    public function showSummaryAll(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('aip-summary.show.all');
+    }
+
+    public function showSummaryOwn(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('aip-summary.show.own');
+    }
+
     public function export(User $user): bool
     {
         $user->loadMissing('role.permissionRoles.permission');

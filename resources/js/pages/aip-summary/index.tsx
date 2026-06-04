@@ -121,9 +121,13 @@ export default function AipSummaryTable({
     const [isCreateSaipDialogOpen, setIsCreateSaipDialogOpen] = useState(false);
     const [isDeleteSaipDialogOpen, setIsDeleteSaipDialogOpen] = useState(false);
 
-    const currentSaip = currentScope?.scope === 'supplemental' && currentScope.supplemental_aip_id
-        ? supplementalAips.find((s: any) => s.id === currentScope.supplemental_aip_id)
-        : null;
+    const currentSaip =
+        currentScope?.scope === 'supplemental' &&
+        currentScope.supplemental_aip_id
+            ? supplementalAips.find(
+                  (s: any) => s.id === currentScope.supplemental_aip_id,
+              )
+            : null;
     const canDeleteSaip = currentSaip?.can?.deleteSaip ?? false;
 
     const updatedBreadcrumbs = [
@@ -467,15 +471,16 @@ export default function AipSummaryTable({
                     </Tabs>
 
                     <div className="flex items-center gap-2">
-                        {currentScope.scope === 'supplemental' && canDeleteSaip && (
-                            <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={handleDeleteSaip}
-                            >
-                                Delete Plan
-                            </Button>
-                        )}
+                        {currentScope.scope === 'supplemental' &&
+                            canDeleteSaip && (
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleDeleteSaip}
+                                >
+                                    Delete Plan
+                                </Button>
+                            )}
 
                         {can.createSaip && (
                             <Button
@@ -593,6 +598,8 @@ export default function AipSummaryTable({
                 offices={offices}
                 auth={auth}
                 supplementalAipId={currentScope.supplemental_aip_id}
+                canShowSummaryAll={can?.showSummaryAll ?? false}
+                selectedOfficeId={filters?.selected_office_id}
             />
 
             <DeleteDialog

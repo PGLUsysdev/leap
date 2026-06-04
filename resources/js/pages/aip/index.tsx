@@ -15,6 +15,15 @@ import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 import PdfPreviewDialog from './pdf-preview-dialog';
 import { index } from '@/routes/ppmp-summaries';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -30,8 +39,10 @@ interface AipProps {
     can?: {
         add: boolean;
         updateStatus: boolean;
-        openAip: boolean;
-        gerenateApp: boolean;
+        showSummaryAll: boolean;
+        showSummaryOwn: boolean;
+        generateAppAll: boolean;
+        generateAppOwn: boolean;
         openPpmpSummary: boolean;
     };
 }
@@ -50,6 +61,14 @@ export default function AipPage({
     const [openPdfPreviewDialog, setOpenPdfPreviewDialog] = useState(false);
     const [selectedYear, setSelectedYear] = useState<FiscalYear | null>(null);
 
+    const params = new URLSearchParams(window.location.search);
+    const [selectedOfficeId, setSelectedOfficeId] = useState<string>(
+        params.get('selected_office_id') ?? '',
+    );
+
+    const canOpenAip = can?.showSummaryOwn || can?.showSummaryAll;
+    const isOpenAipDisabled = can?.showSummaryAll && !selectedOfficeId;
+
     // Standard Handlers (Ensure these exist if DataTable uses them)
     function onUpdateStatus(data: FiscalYear, status: FiscalYearStatus) {
         router.patch(
@@ -59,8 +78,21 @@ export default function AipPage({
         );
     }
 
+    function handleOfficeChange(officeId: string) {
+        setSelectedOfficeId(officeId);
+        router.visit(window.location.pathname, {
+            data: { selected_office_id: officeId },
+            preserveState: true,
+        });
+    }
+
     function handleOpenAipSummary(data: FiscalYear) {
-        router.get(`/aip/${data.id}/summary`);
+        const query: Record<string, string> = {};
+        if (selectedOfficeId) {
+            query.selected_office_id = selectedOfficeId;
+        }
+        const qs = new URLSearchParams(query).toString();
+        router.get(`/aip/${data.id}/summary?${qs}`);
     }
 
     function handleOpenFormDialog() {
@@ -72,9 +104,14 @@ export default function AipPage({
     function handleGeneratePdf(selectedYearId: FiscalYear) {
         setSelectedYear(selectedYearId);
 
+        const data: Record<string, any> = { fiscal_year_id: selectedYearId.id };
+        if (!can?.generateAppAll && can?.generateAppOwn) {
+            data.office_id = auth.user.office_id;
+        }
+
         router.reload({
             only: ['app'],
-            data: { fiscal_year_id: selectedYearId.id },
+            data,
             onSuccess: () => setOpenPdfPreviewDialog(true),
         });
     }
@@ -90,8 +127,10 @@ export default function AipPage({
                 <DataTable
                     columns={columns(
                         can?.updateStatus ?? false,
-                        can?.openAip ?? false,
-                        can?.gerenateApp ?? false,
+                        canOpenAip ?? false,
+                        isOpenAipDisabled,
+                        (can?.generateAppAll ?? false) ||
+                            (can?.generateAppOwn ?? false),
                         can?.openPpmpSummary ?? false,
                     )}
                     data={fiscalYears}
@@ -101,11 +140,37 @@ export default function AipPage({
                     onOpenPpmpSummary={handleOpenPpmpSummary}
                     withSearch={true}
                 >
-                    {can?.add && (
-                        <Button onClick={handleOpenFormDialog}>
-                            Initialize AIP
-                        </Button>
-                    )}
+                    <div className="flex gap-2">
+                        {can?.showSummaryAll && offices.length > 0 && (
+                            <Select
+                                value={selectedOfficeId}
+                                onValueChange={handleOfficeChange}
+                            >
+                                <SelectTrigger className="w-[220px]">
+                                    <SelectValue placeholder="Select office..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>Offices</SelectLabel>
+                                        {offices.map((office) => (
+                                            <SelectItem
+                                                key={office.id}
+                                                value={office.id.toString()}
+                                            >
+                                                {office.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        )}
+
+                        {can?.add && (
+                            <Button onClick={handleOpenFormDialog}>
+                                Initialize AIP
+                            </Button>
+                        )}
+                    </div>
                 </DataTable>
             </div>
 
@@ -118,6 +183,7 @@ export default function AipPage({
                 fiscalYear={selectedYear}
                 offices={offices}
                 auth={auth}
+                canGenerateAppAll={can?.generateAppAll}
             />
         </AppLayout>
     );

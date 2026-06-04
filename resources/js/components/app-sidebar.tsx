@@ -24,6 +24,7 @@ import {
     LayoutGrid,
     PieChart,
     Receipt,
+    ShieldCheck,
     Tags,
     Users,
 } from 'lucide-react';
@@ -91,9 +92,14 @@ const mainNavItems: NavItem[] = [
     },
     { title: '', href: '', type: 'separator' },
     {
+        title: 'Roles',
+        href: '/roles',
+        icon: ShieldCheck,
+    },
+    {
         title: 'Users',
         href: '/users',
-        icon: Users, // Standardized for people management
+        icon: Users,
     },
 ];
 

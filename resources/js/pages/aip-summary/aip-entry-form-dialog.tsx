@@ -66,6 +66,8 @@ interface AipEntryFormDialogProps {
     offices: Office[];
     auth: AuthData;
     supplementalAipId?: number | null;
+    canShowSummaryAll?: boolean; // NEW
+    selectedOfficeId?: string;
 }
 
 const amountSchema = z.string();
@@ -110,6 +112,8 @@ export default function AipEntryFormDialog({
     offices,
     auth,
     supplementalAipId = null,
+    canShowSummaryAll, // ✅ destructure
+    selectedOfficeId,
 }: AipEntryFormDialogProps) {
     const userOfficeId = auth?.user?.office_id;
     const [isLoading, setIsLoading] = useState(false);
@@ -119,10 +123,15 @@ export default function AipEntryFormDialog({
     const canEdit = data?.can?.edit ?? false;
     const canViewPpmp = data?.can?.viewPpmp ?? false;
 
-    const entry = data?.aip_entries?.find(e => e.supplemental_aip_id === (supplementalAipId || null))
-               || data?.aip_entries?.[0]
-               || null;
-    const isEdit = !!(entry && entry.supplemental_aip_id === (supplementalAipId || null));
+    const entry =
+        data?.aip_entries?.find(
+            (e) => e.supplemental_aip_id === (supplementalAipId || null),
+        ) ||
+        data?.aip_entries?.[0] ||
+        null;
+    const isEdit = !!(
+        entry && entry.supplemental_aip_id === (supplementalAipId || null)
+    );
 
     const filteredOffices = useMemo(() => {
         if (!userOfficeId) return offices;
@@ -188,6 +197,16 @@ export default function AipEntryFormDialog({
     ) => {
         if (!isEdit || !entry || !canViewPpmp) return;
 
+        const query: Record<string, any> = {
+            choice: choice,
+            ppa_funding_source_id: ppaFundingSourceId,
+        };
+
+        // Forward the selected office for super admins
+        if (canShowSummaryAll && selectedOfficeId) {
+            query.selected_office_id = selectedOfficeId;
+        }
+
         router.visit(
             index(
                 {
@@ -235,13 +254,19 @@ export default function AipEntryFormDialog({
 
     useEffect(() => {
         if (open && data) {
-            const currentEntry = data.aip_entries?.find(e => e.supplemental_aip_id === (supplementalAipId || null))
-                       || data.aip_entries?.[0]
-                       || null;
+            const currentEntry =
+                data.aip_entries?.find(
+                    (e) =>
+                        e.supplemental_aip_id === (supplementalAipId || null),
+                ) ||
+                data.aip_entries?.[0] ||
+                null;
 
-            const currentSources = currentEntry && currentEntry.supplemental_aip_id === (supplementalAipId || null)
-                ? currentEntry.ppa_funding_sources || []
-                : [];
+            const currentSources =
+                currentEntry &&
+                currentEntry.supplemental_aip_id === (supplementalAipId || null)
+                    ? currentEntry.ppa_funding_sources || []
+                    : [];
 
             form.reset({
                 office_id: data.office_id?.toString() || '',
@@ -347,8 +372,10 @@ export default function AipEntryFormDialog({
                                                             </FieldLabel>
 
                                                             <CommandSelect
-                                                                 disabled={!canEdit}
-                                                                 options={
+                                                                disabled={
+                                                                    !canEdit
+                                                                }
+                                                                options={
                                                                     filteredOffices
                                                                 }
                                                                 value={
@@ -438,10 +465,12 @@ export default function AipEntryFormDialog({
                                                             </FieldLabel>
 
                                                             <Textarea
-                                                                 {...field}
-                                                                 className="min-h-25"
-                                                                 disabled={!canEdit}
-                                                             />
+                                                                {...field}
+                                                                className="min-h-25"
+                                                                disabled={
+                                                                    !canEdit
+                                                                }
+                                                            />
 
                                                             <FieldError
                                                                 errors={[
@@ -476,10 +505,12 @@ export default function AipEntryFormDialog({
                                                                             asChild
                                                                         >
                                                                             <Button
-                                                                                 variant="outline"
-                                                                                 className="w-full justify-start text-left"
-                                                                                 disabled={!canEdit}
-                                                                             >
+                                                                                variant="outline"
+                                                                                className="w-full justify-start text-left"
+                                                                                disabled={
+                                                                                    !canEdit
+                                                                                }
+                                                                            >
                                                                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                                                                 {field.value
                                                                                     ? format(
@@ -543,7 +574,9 @@ export default function AipEntryFormDialog({
                                                                 type="button"
                                                                 variant="outline"
                                                                 size="sm"
-                                                                disabled={!canEditFunding}
+                                                                disabled={
+                                                                    !canEditFunding
+                                                                }
                                                             >
                                                                 <Plus className="mr-2 h-4 w-4" />
                                                                 Add Fund Source
@@ -881,7 +914,9 @@ export default function AipEntryFormDialog({
                                                                                         )
                                                                                     }
                                                                                     title="Remove Funding Source"
-                                                                                    disabled={!canEditFunding}
+                                                                                    disabled={
+                                                                                        !canEditFunding
+                                                                                    }
                                                                                 >
                                                                                     <Trash2 />
                                                                                 </Button>

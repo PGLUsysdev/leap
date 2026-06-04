@@ -17,6 +17,7 @@ use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\PpmpController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\TestDataTableController;
 use App\Http\Controllers\UserController;
@@ -179,6 +180,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Roles
+    Route::get('roles', [RoleController::class, 'index'])->name(
+        'roles.index',
+    );
+    Route::post('roles', [RoleController::class, 'store'])->name(
+        'roles.store',
+    );
+    Route::patch('roles/{role}', [RoleController::class, 'update'])->name(
+        'roles.update',
+    );
+    Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name(
+        'roles.destroy',
+    );
+
     // Offices
     Route::get('offices', [OfficeController::class, 'index'])->name(
         'offices.index',

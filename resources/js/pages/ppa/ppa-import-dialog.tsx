@@ -24,6 +24,7 @@ interface PpaImportDialogProps {
     dialogPpaTree: PaginatedResponse<Ppa> | [];
     dialogCurrent: Ppa[];
     filters: Filter;
+    selectedOfficeId?: number | null;
 }
 
 export default function PpaImportDialog({
@@ -33,6 +34,7 @@ export default function PpaImportDialog({
     dialogPpaTree,
     dialogCurrent,
     onClose,
+    selectedOfficeId,
 }: PpaImportDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
@@ -160,7 +162,10 @@ export default function PpaImportDialog({
 
         router.post(
             '/ppa/import-from-previous-year',
-            { ppa_ids: ids },
+            {
+                ppa_ids: ids,
+                office_id: selectedOfficeId,
+            },
             {
                 onStart: () => setLoading(true),
                 onSuccess: () => {

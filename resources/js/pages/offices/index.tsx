@@ -18,6 +18,7 @@ interface OfficesPageProps {
     officeTypes: OfficeType[];
     can?: {
         addOffice: boolean;
+        showAllOffices: boolean;
     };
 }
 
@@ -86,6 +87,12 @@ export default function OfficesPage({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="py-4">
+                <div className="mb-2 text-xs text-muted-foreground">
+                    {can?.showAllOffices
+                        ? 'Showing all offices'
+                        : 'Showing your office'}
+                </div>
+
                 <DataTable
                     columns={cols}
                     data={offices}

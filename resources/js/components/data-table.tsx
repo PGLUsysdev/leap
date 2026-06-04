@@ -59,6 +59,7 @@ interface DataTableProps<TData extends { id: unknown }> {
     onReorder?: (activeId: string, overId: string) => void;
     onMove?: (data: TData) => void;
     onShowChildren?: (data: TData) => void;
+    onEditPerms?: (data: TData) => void;
     onSelect?: (data: TData, boolean: boolean) => void;
     paginationObj?: PaginatedResponse<TData> | [];
     meta?: any;
@@ -91,6 +92,7 @@ export function DataTable<TData extends { id: unknown }>({
     onOpenPpmpSummary,
     onSelect,
     onReorder,
+    onEditPerms,
     onMove,
     onShowChildren,
     withSearch = false,
@@ -184,6 +186,7 @@ export function DataTable<TData extends { id: unknown }>({
             onGeneratePdf,
             onOpenPpmpSummary,
             onReorder,
+            onEditPerms,
             onMove,
             onShowChildren,
             onSelect,

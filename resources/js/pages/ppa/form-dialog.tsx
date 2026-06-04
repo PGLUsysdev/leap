@@ -9,6 +9,9 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
+import { ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 import { Checkbox } from '@/components/ui/checkbox';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,8 +26,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+
 import type { Office, Ppa, AuthData } from '@/types/global';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -71,6 +73,7 @@ interface PpaFormDialogProps {
     editPpa: Ppa | null;
     offices: Office[];
     auth: AuthData;
+    selectedOfficeId?: number | null;
 }
 
 export default function PpaFormDialog({
@@ -82,16 +85,18 @@ export default function PpaFormDialog({
     editPpa,
     offices,
     auth,
+    selectedOfficeId,
 }: PpaFormDialogProps) {
     const isEditing = mode === 'edit';
     const isAddingChild = mode === 'add' && !!parentPpa;
+
     const [openOfficeCommand, setOpenOfficeCommand] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isErrorAlertOpen, setIsErrorAlertOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
     const userOfficeId = auth.user.office_id;
-    const isOfficeAutoSelected = mode === 'add' && !parentPpa && !!userOfficeId;
+    const defaultOfficeId = selectedOfficeId ?? userOfficeId;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -104,7 +109,7 @@ export default function PpaFormDialog({
         },
     });
 
-    const selectedOfficeId = Number(form.watch('office_id'));
+    const watchedOfficeId = Number(form.watch('office_id'));
     const codeSuffix = form.watch('code_suffix');
 
     useEffect(() => {
@@ -120,10 +125,9 @@ export default function PpaFormDialog({
             });
         } else if (mode === 'add') {
             form.reset({
-                // office_id: parentPpa?.office_id?.toString() || '',
                 office_id:
                     parentPpa?.office_id?.toString() ||
-                    userOfficeId?.toString() ||
+                    defaultOfficeId?.toString() ||
                     '',
                 name: '',
                 code_suffix: '',
@@ -139,7 +143,7 @@ export default function PpaFormDialog({
         mode,
         targetType,
         form,
-        userOfficeId,
+        defaultOfficeId,
     ]);
 
     const getCodePreview = () => {
@@ -169,7 +173,7 @@ export default function PpaFormDialog({
             }
 
             const officeFullCode = offices.find(
-                (o) => o.id === selectedOfficeId,
+                (o) => o.id === watchedOfficeId,
             )?.full_code;
             return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
         }
@@ -186,7 +190,7 @@ export default function PpaFormDialog({
         }
 
         const officeFullCode = offices.find(
-            (o) => o.id === selectedOfficeId,
+            (o) => o.id === watchedOfficeId,
         )?.full_code;
         return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
     };
@@ -375,11 +379,7 @@ export default function PpaFormDialog({
                                                             true,
                                                         )
                                                     }
-                                                    disabled={
-                                                        isEditing ||
-                                                        isAddingChild ||
-                                                        isOfficeAutoSelected
-                                                    }
+                                                    disabled
                                                 >
                                                     {field.value ? (
                                                         <span className="truncate">
@@ -398,7 +398,6 @@ export default function PpaFormDialog({
                                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                                 </Button>
 
-                                                {/* final command dialog */}
                                                 <CommandDialog
                                                     open={openOfficeCommand}
                                                     onOpenChange={
@@ -429,10 +428,6 @@ export default function PpaFormDialog({
                                                                                 office.id.toString()
                                                                             }
                                                                             onSelect={() => {
-                                                                                // form.setValue(
-                                                                                //     'office_id',
-                                                                                //     office.id.toString(),
-                                                                                // );
                                                                                 field.onChange(
                                                                                     office.id.toString(),
                                                                                 );

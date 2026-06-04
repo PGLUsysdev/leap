@@ -26,7 +26,14 @@ class AipEntryController extends Controller
     {
         $this->authorize('viewAny', AipEntry::class);
 
-        $officeId = auth()->user()->office_id;
+        $user = auth()->user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $canViewAll = $permissions->contains('aip-summary.show.all');
+        $officeId = $canViewAll
+            ? ($request->query('selected_office_id') ?:
+            $user->office_id)
+            : $user->office_id;
         $officeIds = $this->getOfficeHierarchyIds($officeId);
 
         $yearId = $fiscalYear->id;
@@ -76,9 +83,8 @@ class AipEntryController extends Controller
                 ->orderBy('sort_order');
         };
 
-        $aipEntries = Ppa
-            // whereIn('office_id', $officeIds)->
-            ::whereNull('parent_id')
+        $aipEntries = Ppa::whereIn('office_id', $officeIds)
+            ->whereNull('parent_id')
             ->where('fiscal_year_id', $yearId)
             ->whereHas('aipEntries', function ($q) use ($scope, $saipId) {
                 if ($scope === 'original') {
@@ -105,13 +111,27 @@ class AipEntryController extends Controller
                 'children.children.children.aipEntries' => $aipEntryFilter,
             ])
             ->get()
-            ->map(function ($aipEntries) use ($request, $supplementalAip, $scope, $saipId) {
+            ->map(function ($aipEntries) use (
+                $request,
+                $supplementalAip,
+                $scope,
+                $saipId,
+            ) {
                 $aipEntry = $aipEntries->aip_entries?->first();
 
                 if (!$aipEntry) {
-                    $aipEntry = \App\Models\AipEntry::where('ppa_id', $aipEntries->id)
-                        ->when($scope === 'original', fn($q) => $q->whereNull('supplemental_aip_id'))
-                        ->when($scope === 'supplemental' && $saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+                    $aipEntry = \App\Models\AipEntry::where(
+                        'ppa_id',
+                        $aipEntries->id,
+                    )
+                        ->when(
+                            $scope === 'original',
+                            fn($q) => $q->whereNull('supplemental_aip_id'),
+                        )
+                        ->when(
+                            $scope === 'supplemental' && $saipId,
+                            fn($q) => $q->where('supplemental_aip_id', $saipId),
+                        )
                         ->first();
                 }
 
@@ -129,17 +149,35 @@ class AipEntryController extends Controller
                         ? $request->user()->can('editFundingSources', $aipEntry)
                         : false,
                     'viewPpmp' => $aipEntry
-                        ? $request->user()->can('viewAny', [Ppmp::class, $aipEntry])
+                        ? $request
+                            ->user()
+                            ->can('viewAny', [Ppmp::class, $aipEntry])
                         : false,
                 ];
 
-                $aipEntries->children->each(function ($child) use ($request, $scope, $saipId) {
+                $aipEntries->children->each(function ($child) use (
+                    $request,
+                    $scope,
+                    $saipId,
+                ) {
                     $childEntry = $child->aip_entries?->first();
 
                     if (!$childEntry) {
-                        $childEntry = \App\Models\AipEntry::where('ppa_id', $child->id)
-                            ->when($scope === 'original', fn($q) => $q->whereNull('supplemental_aip_id'))
-                            ->when($scope === 'supplemental' && $saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+                        $childEntry = \App\Models\AipEntry::where(
+                            'ppa_id',
+                            $child->id,
+                        )
+                            ->when(
+                                $scope === 'original',
+                                fn($q) => $q->whereNull('supplemental_aip_id'),
+                            )
+                            ->when(
+                                $scope === 'supplemental' && $saipId,
+                                fn($q) => $q->where(
+                                    'supplemental_aip_id',
+                                    $saipId,
+                                ),
+                            )
                             ->first();
                     }
 
@@ -159,17 +197,37 @@ class AipEntryController extends Controller
                                 ->can('editFundingSources', $childEntry)
                             : false,
                         'viewPpmp' => $childEntry
-                            ? $request->user()->can('viewAny', [Ppmp::class, $childEntry])
+                            ? $request
+                                ->user()
+                                ->can('viewAny', [Ppmp::class, $childEntry])
                             : false,
                     ];
 
-                    $child->children->each(function ($child2) use ($request, $scope, $saipId) {
+                    $child->children->each(function ($child2) use (
+                        $request,
+                        $scope,
+                        $saipId,
+                    ) {
                         $child2Entry = $child2->aip_entries?->first();
 
                         if (!$child2Entry) {
-                            $child2Entry = \App\Models\AipEntry::where('ppa_id', $child2->id)
-                                ->when($scope === 'original', fn($q) => $q->whereNull('supplemental_aip_id'))
-                                ->when($scope === 'supplemental' && $saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+                            $child2Entry = \App\Models\AipEntry::where(
+                                'ppa_id',
+                                $child2->id,
+                            )
+                                ->when(
+                                    $scope === 'original',
+                                    fn($q) => $q->whereNull(
+                                        'supplemental_aip_id',
+                                    ),
+                                )
+                                ->when(
+                                    $scope === 'supplemental' && $saipId,
+                                    fn($q) => $q->where(
+                                        'supplemental_aip_id',
+                                        $saipId,
+                                    ),
+                                )
                                 ->first();
                         }
 
@@ -192,7 +250,12 @@ class AipEntryController extends Controller
                                     ->can('editFundingSources', $child2Entry)
                                 : false,
                             'viewPpmp' => $child2Entry
-                                ? $request->user()->can('viewAny', [Ppmp::class, $child2Entry])
+                                ? $request
+                                    ->user()
+                                    ->can('viewAny', [
+                                        Ppmp::class,
+                                        $child2Entry,
+                                    ])
                                 : false,
                         ];
 
@@ -204,9 +267,23 @@ class AipEntryController extends Controller
                             $child3Entry = $child3->aip_entries?->first();
 
                             if (!$child3Entry) {
-                                $child3Entry = \App\Models\AipEntry::where('ppa_id', $child3->id)
-                                    ->when($scope === 'original', fn($q) => $q->whereNull('supplemental_aip_id'))
-                                    ->when($scope === 'supplemental' && $saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
+                                $child3Entry = \App\Models\AipEntry::where(
+                                    'ppa_id',
+                                    $child3->id,
+                                )
+                                    ->when(
+                                        $scope === 'original',
+                                        fn($q) => $q->whereNull(
+                                            'supplemental_aip_id',
+                                        ),
+                                    )
+                                    ->when(
+                                        $scope === 'supplemental' && $saipId,
+                                        fn($q) => $q->where(
+                                            'supplemental_aip_id',
+                                            $saipId,
+                                        ),
+                                    )
                                     ->first();
                             }
 
@@ -218,7 +295,9 @@ class AipEntryController extends Controller
                                         [$child3->id],
                                     ]),
                                 'edit' => $child3Entry
-                                    ? $request->user()->can('update', $child3Entry)
+                                    ? $request
+                                        ->user()
+                                        ->can('update', $child3Entry)
                                     : false,
                                 'delete' => $child3Entry
                                     ? $request
@@ -234,7 +313,12 @@ class AipEntryController extends Controller
                                         )
                                     : false,
                                 'viewPpmp' => $child3Entry
-                                    ? $request->user()->can('viewAny', [Ppmp::class, $child3Entry])
+                                    ? $request
+                                        ->user()
+                                        ->can('viewAny', [
+                                            Ppmp::class,
+                                            $child3Entry,
+                                        ])
                                     : false,
                             ];
                         });
@@ -276,6 +360,9 @@ class AipEntryController extends Controller
                 'createSaip' => $request
                     ->user()
                     ->can('create', SupplementalAip::class),
+                'showSummaryAll' => $permissions->contains(
+                    'aip-summary.show.all',
+                ),
             ],
 
             'dialogPpaTree' => Inertia::lazy(function () use (
@@ -291,9 +378,8 @@ class AipEntryController extends Controller
 
                 $targetParentId = $id ?: $boundaryId;
 
-                return Ppa
-                    // whereIn('office_id', $officeIds)->
-                    ::where('fiscal_year_id', $yearId)
+                return Ppa::whereIn('office_id', $officeIds)
+                    ->where('fiscal_year_id', $yearId)
                     ->where('parent_id', $targetParentId)
                     ->where(function ($q) use ($scope, $saipId) {
                         if ($scope === 'original') {

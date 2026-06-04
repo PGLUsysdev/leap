@@ -38,7 +38,12 @@ class PpaController extends Controller
         $this->authorize('viewAny', Ppa::class);
 
         $user = request()->user();
-        $userOfficeId = $user->office_id;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $showAll = $permissions->contains('ppa.show.all');
+        $userOfficeId = $showAll
+            ? $request->query('selected_office_id')
+            : $user->office_id;
         $mode = $request->query('dialog_mode');
 
         return Inertia::render('ppa/index', [
@@ -46,6 +51,9 @@ class PpaController extends Controller
                 'add' => $user->can('create', Ppa::class),
                 'import' => $user->can('importLastYearPpa', Ppa::class),
             ],
+            'showAllOffices' => $showAll,
+            'selectedOfficeId' => $userOfficeId ? (int) $userOfficeId : null,
+            'parentOffices' => Office::whereNull('parent_id')->get(),
             'ppaTree' => $this->getPpaQuery(
                 $request,
                 $userOfficeId,
@@ -83,6 +91,7 @@ class PpaController extends Controller
                 'dialog_search',
                 'dialog_page',
                 'dialog_mode',
+                'selected_office_id',
             ]),
 
             'dialogPpaTree' => Inertia::lazy(function () use (
@@ -131,7 +140,11 @@ class PpaController extends Controller
         $id = $request->query($idKey);
         $search = $request->query($searchKey);
 
-        return Ppa::where('office_id', $officeId)
+        return Ppa::when(
+            $officeId,
+            fn($q) => $q->where('office_id', $officeId),
+            fn($q) => $q->whereNull('id'),
+        )
             ->where('fiscal_year_id', $fiscalYearId)
             ->when(
                 $id,
@@ -179,7 +192,11 @@ class PpaController extends Controller
         $search = $request->query('dialog_search');
 
         // get ppa null first
-        return Ppa::where('office_id', $userOfficeId)
+        return Ppa::when(
+            $userOfficeId,
+            fn($q) => $q->where('office_id', $userOfficeId),
+            fn($q) => $q->whereNull('id'),
+        )
             ->where('fiscal_year_id', $prevYearId)
             ->when(
                 $id,
@@ -253,12 +270,19 @@ class PpaController extends Controller
         $type = $validated['type'];
         $fiscalYearId = session('active_fiscal_year_id');
 
+        $user = Auth::user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $showAll = $permissions->contains('ppa.show.all');
+
         if ($parentId) {
             $parent = Ppa::findOrFail($parentId);
-            abort_if($parent->office_id !== Auth::user()->office_id, 403);
+            abort_if(!$showAll && $parent->office_id !== $user->office_id, 403);
             $officeId = $parent->office_id;
         } else {
-            $officeId = Auth::user()->office_id;
+            $officeId = $showAll
+                ? $validated['office_id']
+                : $user->office_id;
         }
 
         // ONE query to get both count and max order
@@ -527,7 +551,13 @@ class PpaController extends Controller
             'ppa_ids.*' => 'integer',
         ]);
 
-        $userOfficeId = Auth::user()->office_id;
+        $user = Auth::user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $showAll = $permissions->contains('ppa.show.all');
+        $userOfficeId = $showAll
+            ? $request->input('office_id', $user->office_id)
+            : $user->office_id;
         $currentFiscalYearId = session('active_fiscal_year_id');
 
         if (!$currentFiscalYearId) {

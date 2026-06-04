@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { SharedData, User } from '@/types/global';
+import type { User } from '@/types/global';
 import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 import FormDialog from './form-dialog';
-import { usePage } from '@inertiajs/react';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: '#' }];
 
@@ -27,7 +26,7 @@ export default function UsersIndex({ users, can }: UsersIndexProps) {
         setOpenFormDialog(true);
     }
 
-    const cols = columns(can?.edit);
+    const cols = columns(can?.edit ?? false);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

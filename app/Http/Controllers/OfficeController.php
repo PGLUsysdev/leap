@@ -23,6 +23,10 @@ class OfficeController extends Controller
         $this->authorize('viewAny', Office::class);
 
         $user = auth()->user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $showAll = $permissions->contains('office.show.all');
+
         $query = Office::with([
             'sector',
             'lguLevel',
@@ -31,10 +35,12 @@ class OfficeController extends Controller
             'children',
         ]);
 
-        if (!$user->office_id) {
+        if ($showAll) {
             $offices = $query->whereNull('parent_id')->get();
-        } else {
+        } elseif ($user->office_id) {
             $offices = $query->where('id', $user->office_id)->get();
+        } else {
+            $offices = $query->whereNull('parent_id')->get();
         }
 
         $mapOffice = function ($office) use ($user, &$mapOffice) {
@@ -71,6 +77,7 @@ class OfficeController extends Controller
             'officeTypes' => OfficeType::all(),
             'can' => [
                 'addOffice' => $user->can('createOffice', Office::class),
+                'showAllOffices' => $showAll,
             ],
         ]);
     }

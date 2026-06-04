@@ -23,21 +23,24 @@ class FiscalYearController extends Controller
         $this->authorize('viewAny', FiscalYear::class);
 
         $user = $request->user();
-        // $isControlOffice = $user->office_id === 2 || $user->role === 'admin';
-        $isControlOffice = $user->office_id === 2;
+        $canGenerateAppAll = $user->can('generateAppAll', FiscalYear::class);
+        $canGenerateAppOwn = $user->can('generateAppOwn', FiscalYear::class);
+        $canShowSummaryAll = $user->can('showSummaryAll', AipEntry::class);
+        $canShowSummaryOwn = $user->can('showSummaryOwn', AipEntry::class);
+        $showOffices = $canGenerateAppAll || $canShowSummaryAll;
 
         return Inertia::render('aip/index', [
             'fiscalYears' => FiscalYear::orderBy('year', 'asc')->get(),
-            'offices' => $isControlOffice ? Office::get() : [],
+            'offices' => $showOffices ? Office::get() : [],
             'can' => [
                 'add' => request()->user()->can('create', FiscalYear::class),
                 'updateStatus' => request()
                     ->user()
                     ->can('updateStatus', new FiscalYear()),
-                'openAip' => request()->user()->can('viewAny', AipEntry::class),
-                'gerenateApp' => request()
-                    ->user()
-                    ->can('generateApp', FiscalYear::class),
+                'showSummaryAll' => $canShowSummaryAll,
+                'showSummaryOwn' => $canShowSummaryOwn,
+                'generateAppAll' => $canGenerateAppAll,
+                'generateAppOwn' => $canGenerateAppOwn,
                 'openPpmpSummary' => request()
                     ->user()
                     ->can('viewAny', PpmpSummary::class),
@@ -45,7 +48,7 @@ class FiscalYearController extends Controller
             'app' => Inertia::optional(function () use (
                 $request,
                 $user,
-                $isControlOffice,
+                $canGenerateAppAll,
             ) {
                 $id = $request->query('fiscal_year_id'); // fiscal_year_id = 4
 
@@ -53,7 +56,7 @@ class FiscalYearController extends Controller
                     return null;
                 }
 
-                $targetOfficeId = $isControlOffice
+                $targetOfficeId = $canGenerateAppAll
                     ? $request->query('office_id', 'all')
                     : $user->office_id;
 
