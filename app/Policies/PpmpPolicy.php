@@ -31,6 +31,7 @@ class PpmpPolicy
             $office = $office->parent;
         }
 
+        // return false;
         return $user->office_id === $office->id;
     }
 

@@ -45,20 +45,23 @@ class PpmpController extends Controller
             fn($entry) => !is_null($entry->supplemental_aip_id),
         );
 
-        $canViewSupplemental = request()->user()->can(
-            'viewSupplemental',
-            Ppmp::class,
-        );
+        $canViewSupplemental = request()
+            ->user()
+            ->can('viewSupplemental', Ppmp::class);
 
-        if ($tab && str_starts_with($tab, 'supplemental_') && !$canViewSupplemental) {
+        if (
+            $tab &&
+            str_starts_with($tab, 'supplemental_') &&
+            !$canViewSupplemental
+        ) {
             abort(403);
         }
 
         // Filter to original-only if user can't view supplemental
         if (!$canViewSupplemental && $hasSupplementalAipEntries) {
-            $allAipEntries = $allAipEntries->filter(
-                fn($entry) => is_null($entry->supplemental_aip_id),
-            )->values();
+            $allAipEntries = $allAipEntries
+                ->filter(fn($entry) => is_null($entry->supplemental_aip_id))
+                ->values();
 
             // Force tab to original
             if (!$tab || str_starts_with($tab, 'supplemental_')) {
@@ -143,14 +146,23 @@ class PpmpController extends Controller
             },
         )->get();
 
+        $ppmps->each(function ($ppmp) use ($request) {
+            $ppmp->can = [
+                'edit' => $request->user()->can('editPriceListQuantity', $ppmp),
+                'delete' => $request->user()->can('deletePriceList', $ppmp),
+            ];
+        });
+
         return Inertia::render('ppmp/index', [
             'can' => [
-                'addPriceList' => request()->user()->can('addPriceList', Ppmp::class),
-                'editPriceListQuantity' => request()->user()->can('editPriceListQuantity', Ppmp::class),
-                'deletePriceList' => request()->user()->can('deletePriceList', Ppmp::class),
+                'addPriceList' => request()
+                    ->user()
+                    ->can('addPriceList', Ppmp::class),
                 'viewSupplemental' => $canViewSupplemental,
                 'export' => request()->user()->can('export', Ppmp::class),
-                'generateSummary' => request()->user()->can('generateSummary', Ppmp::class),
+                'generateSummary' => request()
+                    ->user()
+                    ->can('generateSummary', Ppmp::class),
             ],
             'fiscalYear' => $fiscalYear,
             'aipEntry' => $selectedAipEntry,
@@ -161,7 +173,11 @@ class PpmpController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'fundingSources' => $fundingSources,
-            'currentTab' => $tab ?: ($selectedAipEntry->supplemental_aip_id ? "supplemental_{$selectedAipEntry->id}" : 'original'),
+            'currentTab' =>
+                $tab ?:
+                ($selectedAipEntry->supplemental_aip_id
+                    ? "supplemental_{$selectedAipEntry->id}"
+                    : 'original'),
             'initialChoice' => $request->query('choice', 'MOOE'),
             'initialPpaFundingSourceId' => $request->query(
                 'ppa_funding_source_id',

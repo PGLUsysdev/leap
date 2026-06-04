@@ -97,7 +97,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
         );
     };
 
-    const isReadOnly = table.options.meta?.readOnly;
+    const isReadOnly = table.options.meta?.readOnly || !row.original.can?.edit;
 
     return (
         <Input
@@ -214,32 +214,32 @@ const MONTHS: MonthConfig[] = [
 const columnHelper = createColumnHelper<Ppmp>();
 
 const columns = [
-    columnHelper.accessor('ppa_funding_source.funding_source.code', {
-        // id: 'funding_source',
-        header: () => <div>Funding Source</div>,
-        cell: ({ getValue }) => <span className="text-wrap">{getValue()}</span>,
-    }),
-    columnHelper.accessor(
-        'ppmp_price_list.chart_of_account_ppmp_category.chart_of_account.expense_class',
-        {
-            // id: 'expense_class',
-            header: () => <div>Expense Class</div>,
-            cell: ({ getValue }) => (
-                <span className="font-medium text-wrap">{getValue()}</span>
-            ),
-        },
-    ),
-    columnHelper.accessor(
-        'ppmp_price_list.chart_of_account_ppmp_category.chart_of_account.account_title',
-        {
-            // id: 'expense_account',
-            size: 300,
-            header: () => <div>Expense Account</div>,
-            cell: ({ getValue }) => (
-                <div className="text-wrap">{getValue()}</div>
-            ),
-        },
-    ),
+    // columnHelper.accessor('ppa_funding_source.funding_source.code', {
+    //     // id: 'funding_source',
+    //     header: () => <div>Funding Source</div>,
+    //     cell: ({ getValue }) => <span className="text-wrap">{getValue()}</span>,
+    // }),
+    // columnHelper.accessor(
+    //     'ppmp_price_list.chart_of_account_ppmp_category.chart_of_account.expense_class',
+    //     {
+    //         // id: 'expense_class',
+    //         header: () => <div>Expense Class</div>,
+    //         cell: ({ getValue }) => (
+    //             <span className="font-medium text-wrap">{getValue()}</span>
+    //         ),
+    //     },
+    // ),
+    // columnHelper.accessor(
+    //     'ppmp_price_list.chart_of_account_ppmp_category.chart_of_account.account_title',
+    //     {
+    //         // id: 'expense_account',
+    //         size: 300,
+    //         header: () => <div>Expense Account</div>,
+    //         cell: ({ getValue }) => (
+    //             <div className="text-wrap">{getValue()}</div>
+    //         ),
+    //     },
+    // ),
     columnHelper.accessor('ppmp_price_list.item_number', {
         // id: 'item_number',
         size: 150,
@@ -257,22 +257,31 @@ const columns = [
             const ppmp = row.original;
             return (
                 <div className="flex flex-col py-1">
-                    <span className="text-wrap font-medium">{getValue()}</span>
+                    <span className="font-medium text-wrap">{getValue()}</span>
                     {ppmp.isCombined ? (
                         <div className="mt-1">
-                            <Badge variant="outline" className="border-indigo-300 bg-indigo-50/50 text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/20 dark:text-indigo-400 text-[9px] py-0 px-1.5 h-4 font-semibold uppercase tracking-wider">
+                            <Badge
+                                variant="outline"
+                                className="h-4 border-indigo-300 bg-indigo-50/50 px-1.5 py-0 text-[9px] font-semibold tracking-wider text-indigo-700 uppercase dark:border-indigo-900/50 dark:bg-indigo-950/20 dark:text-indigo-400"
+                            >
                                 Combined
                             </Badge>
                         </div>
                     ) : ppmp.ppa_funding_source?.supplemental_aip_id ? (
                         <div className="mt-1">
-                            <Badge variant="outline" className="border-sky-300 bg-sky-50/50 text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-400 text-[9px] py-0 px-1.5 h-4 font-semibold uppercase tracking-wider">
+                            <Badge
+                                variant="outline"
+                                className="h-4 border-sky-300 bg-sky-50/50 px-1.5 py-0 text-[9px] font-semibold tracking-wider text-sky-700 uppercase dark:border-sky-900/50 dark:bg-sky-950/20 dark:text-sky-400"
+                            >
                                 Supplemental
                             </Badge>
                         </div>
                     ) : (
                         <div className="mt-1">
-                            <Badge variant="secondary" className="text-[9px] py-0 px-1.5 h-4 font-semibold uppercase tracking-wider">
+                            <Badge
+                                variant="secondary"
+                                className="h-4 px-1.5 py-0 text-[9px] font-semibold tracking-wider uppercase"
+                            >
                                 Original
                             </Badge>
                         </div>
@@ -383,16 +392,18 @@ const columns = [
     // action
     columnHelper.display({
         id: 'action',
-        size: 52,
+        size: 46,
         cell: ({ row, table }) => {
-            const canDelete = table.options.meta?.canDelete;
-            if (!canDelete) return null;
+            // if (!row.original.can?.delete) return null;
             return (
                 <div className="flex justify-center">
                     <Button
                         size="icon"
                         variant="destructive"
-                        onClick={() => table.options.meta?.onDelete?.(row.original)}
+                        onClick={() =>
+                            table.options.meta?.onDelete?.(row.original)
+                        }
+                        disabled={!row.original.can?.delete}
                     >
                         <Trash />
                     </Button>

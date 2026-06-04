@@ -128,6 +128,9 @@ class AipEntryController extends Controller
                     'editFundingSources' => $aipEntry
                         ? $request->user()->can('editFundingSources', $aipEntry)
                         : false,
+                    'viewPpmp' => $aipEntry
+                        ? $request->user()->can('viewAny', [Ppmp::class, $aipEntry])
+                        : false,
                 ];
 
                 $aipEntries->children->each(function ($child) use ($request, $scope, $saipId) {
@@ -154,6 +157,9 @@ class AipEntryController extends Controller
                             ? $request
                                 ->user()
                                 ->can('editFundingSources', $childEntry)
+                            : false,
+                        'viewPpmp' => $childEntry
+                            ? $request->user()->can('viewAny', [Ppmp::class, $childEntry])
                             : false,
                     ];
 
@@ -184,6 +190,9 @@ class AipEntryController extends Controller
                                 ? $request
                                     ->user()
                                     ->can('editFundingSources', $child2Entry)
+                                : false,
+                            'viewPpmp' => $child2Entry
+                                ? $request->user()->can('viewAny', [Ppmp::class, $child2Entry])
                                 : false,
                         ];
 
@@ -223,6 +232,9 @@ class AipEntryController extends Controller
                                             'editFundingSources',
                                             $child3Entry,
                                         )
+                                    : false,
+                                'viewPpmp' => $child3Entry
+                                    ? $request->user()->can('viewAny', [Ppmp::class, $child3Entry])
                                     : false,
                             ];
                         });

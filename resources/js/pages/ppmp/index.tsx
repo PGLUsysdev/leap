@@ -69,8 +69,6 @@ interface PpmpPageProps {
     initialPpaFundingSourceId: number;
     can?: {
         addPriceList: boolean;
-        editPriceListQuantity: boolean;
-        deletePriceList: boolean;
         viewSupplemental: boolean;
         export: boolean;
         generateSummary: boolean;
@@ -427,39 +425,43 @@ export default function PpmpPage({
                         Viewing: {aipEntry?.ppa?.name}
                     </small>
 
-                    {hasSupplementalEntries && (
-                        <Tabs
-                            value={currentTab}
-                            onValueChange={(val: any) => {
-                                router.get(
-                                    window.location.pathname,
-                                    { tab: val },
-                                    {
-                                        preserveState: true,
-                                        preserveScroll: true,
-                                        replace: true,
-                                    },
-                                );
+                    {/*{hasSupplementalEntries && (*/}
+                    <Tabs
+                        value={currentTab}
+                        onValueChange={(val: any) => {
+                            router.get(
+                                window.location.pathname,
+                                { tab: val },
+                                {
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                    replace: true,
+                                },
+                            );
+                        }}
+                        className="w-auto"
+                    >
+                        <TabsList
+                            className="grid gap-1"
+                            style={{
+                                gridTemplateColumns: `repeat(${tabsList.length}, minmax(0, 1fr))`,
                             }}
-                            className="w-auto"
                         >
-                            <TabsList
-                                className="grid gap-1"
-                                style={{
-                                    gridTemplateColumns: `repeat(${tabsList.length}, minmax(0, 1fr))`,
-                                }}
-                            >
-                                {tabsList.map((tab) => (
-                                    <TabsTrigger
-                                        key={tab.value}
-                                        value={tab.value}
-                                    >
-                                        {tab.label}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </Tabs>
-                    )}
+                            {tabsList.map((tab) => (
+                                <TabsTrigger
+                                    key={tab.value}
+                                    value={tab.value}
+                                    disabled={
+                                        tab.value.startsWith('supplemental_') &&
+                                        !can?.viewSupplemental
+                                    }
+                                >
+                                    {tab.label}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                    {/*)}*/}
                 </div>
 
                 <DataTable
@@ -467,11 +469,10 @@ export default function PpmpPage({
                     data={filteredPpmpItems}
                     withSearch={true}
                     withFooter={true}
-                    negativeHeight={9.9}
+                    negativeHeight={13}
                     onDelete={handleDeleteDialogOpen}
                     meta={{
-                        readOnly: !isActiveTab || !can?.editPriceListQuantity,
-                        canDelete: can?.deletePriceList,
+                        readOnly: !isActiveTab,
                     }}
                 >
                     <div className="flex gap-2">
@@ -536,96 +537,96 @@ export default function PpmpPage({
                         </Select>
 
                         {can?.export && (
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline">
-                                    <FileDown /> Export
-                                </Button>
-                            </DropdownMenuTrigger>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <FileDown /> Export
+                                    </Button>
+                                </DropdownMenuTrigger>
 
-                            <DropdownMenuContent>
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            selectedFundingSourceId
-                                                ? exportToPrint({
-                                                      filteredPpmpItems,
-                                                      priceLists,
-                                                      ppmpCategories,
-                                                      chartOfAccounts,
-                                                      aipEntry:
-                                                          activeAipEntry ||
-                                                          aipEntry,
-                                                      fundingSources,
-                                                      selectedFundingSourceId,
-                                                      auth,
-                                                      fiscalYear,
-                                                      currentTab,
-                                                  })
-                                                : setOpenAlert(true)
-                                        }
-                                    >
-                                        <Printer /> Print
-                                    </DropdownMenuItem>
+                                <DropdownMenuContent>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                selectedFundingSourceId
+                                                    ? exportToPrint({
+                                                          filteredPpmpItems,
+                                                          priceLists,
+                                                          ppmpCategories,
+                                                          chartOfAccounts,
+                                                          aipEntry:
+                                                              activeAipEntry ||
+                                                              aipEntry,
+                                                          fundingSources,
+                                                          selectedFundingSourceId,
+                                                          auth,
+                                                          fiscalYear,
+                                                          currentTab,
+                                                      })
+                                                    : setOpenAlert(true)
+                                            }
+                                        >
+                                            <Printer /> Print
+                                        </DropdownMenuItem>
 
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            selectedFundingSourceId
-                                                ? exportToPDF({
-                                                      filteredPpmpItems,
-                                                      priceLists,
-                                                      ppmpCategories,
-                                                      chartOfAccounts,
-                                                      aipEntry:
-                                                          activeAipEntry ||
-                                                          aipEntry,
-                                                      fundingSources,
-                                                      selectedFundingSourceId,
-                                                      auth,
-                                                      fiscalYear,
-                                                      currentTab,
-                                                  })
-                                                : setOpenAlert(true)
-                                        }
-                                    >
-                                        <FileText /> To PDF
-                                    </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                selectedFundingSourceId
+                                                    ? exportToPDF({
+                                                          filteredPpmpItems,
+                                                          priceLists,
+                                                          ppmpCategories,
+                                                          chartOfAccounts,
+                                                          aipEntry:
+                                                              activeAipEntry ||
+                                                              aipEntry,
+                                                          fundingSources,
+                                                          selectedFundingSourceId,
+                                                          auth,
+                                                          fiscalYear,
+                                                          currentTab,
+                                                      })
+                                                    : setOpenAlert(true)
+                                            }
+                                        >
+                                            <FileText /> To PDF
+                                        </DropdownMenuItem>
 
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            selectedFundingSourceId
-                                                ? exportToExcel({
-                                                      filteredPpmpItems,
-                                                      priceLists,
-                                                      ppmpCategories,
-                                                      chartOfAccounts,
-                                                      aipEntry:
-                                                          activeAipEntry ||
-                                                          aipEntry,
-                                                      fundingSources,
-                                                      selectedFundingSourceId,
-                                                      auth,
-                                                      fiscalYear,
-                                                      currentTab,
-                                                  })
-                                                : setOpenAlert(true)
-                                        }
-                                    >
-                                        <Sheet /> To Excel
-                                    </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                selectedFundingSourceId
+                                                    ? exportToExcel({
+                                                          filteredPpmpItems,
+                                                          priceLists,
+                                                          ppmpCategories,
+                                                          chartOfAccounts,
+                                                          aipEntry:
+                                                              activeAipEntry ||
+                                                              aipEntry,
+                                                          fundingSources,
+                                                          selectedFundingSourceId,
+                                                          auth,
+                                                          fiscalYear,
+                                                          currentTab,
+                                                      })
+                                                    : setOpenAlert(true)
+                                            }
+                                        >
+                                            <Sheet /> To Excel
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         )}
 
                         {can?.generateSummary && (
-                        <Button
-                            onClick={() =>
-                                setOpenExpenseAccountSummaryDialog(true)
-                            }
-                        >
-                            Expense Account Summary per PPMP
-                        </Button>
+                            <Button
+                                onClick={() =>
+                                    setOpenExpenseAccountSummaryDialog(true)
+                                }
+                            >
+                                Expense Account Summary per PPMP
+                            </Button>
                         )}
 
                         {isActiveTab && can?.addPriceList && (

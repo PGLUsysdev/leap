@@ -146,6 +146,7 @@ export interface Ppa {
         delete: boolean;
         move: boolean;
         import: boolean;
+        viewPpmp: boolean;
     };
 }
 
@@ -216,6 +217,10 @@ export interface Ppmp {
     ppa_funding_source?: PpaFundingSource;
     ppmp_price_list?: PriceList;
     isCombined?: boolean;
+    can?: {
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export interface PriceList {

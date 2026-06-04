@@ -117,6 +117,7 @@ export default function AipEntryFormDialog({
 
     const canEditFunding = data?.can?.editFundingSources ?? false;
     const canEdit = data?.can?.edit ?? false;
+    const canViewPpmp = data?.can?.viewPpmp ?? false;
 
     const entry = data?.aip_entries?.find(e => e.supplemental_aip_id === (supplementalAipId || null))
                || data?.aip_entries?.[0]
@@ -185,7 +186,7 @@ export default function AipEntryFormDialog({
         ppaFundingSourceId: number | undefined,
         choice: 'MOOE' | 'CO',
     ) => {
-        if (!isEdit || !entry) return;
+        if (!isEdit || !entry || !canViewPpmp) return;
 
         router.visit(
             index(
@@ -809,6 +810,7 @@ export default function AipEntryFormDialog({
                                                                                             title="Manage PPMP Items"
                                                                                             disabled={
                                                                                                 !isEdit ||
+                                                                                                !canViewPpmp ||
                                                                                                 !watchedSources?.[
                                                                                                     index
                                                                                                 ]
