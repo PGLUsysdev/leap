@@ -21,7 +21,7 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         return Inertia::render('users/index', [
-            'users' => User::where('office_id', 18)->with('office')->get(),
+            'users' => User::with('office')->get(),
             'can' => [
                 'edit' => Auth::user()->can('update', User::class),
             ],

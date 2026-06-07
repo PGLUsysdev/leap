@@ -213,12 +213,7 @@ export default function AipEntryFormDialog({
                     fiscalYear: fiscalYear.id,
                     aipEntry: entry.id,
                 },
-                {
-                    query: {
-                        choice: choice,
-                        ppa_funding_source_id: ppaFundingSourceId,
-                    },
-                },
+                { query }, // ✅ use the built object here
             ),
         );
     };

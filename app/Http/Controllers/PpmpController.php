@@ -153,6 +153,8 @@ class PpmpController extends Controller
             ];
         });
 
+        $selectedOfficeId = $request->query('selected_office_id');
+
         return Inertia::render('ppmp/index', [
             'can' => [
                 'addPriceList' => request()
@@ -163,6 +165,9 @@ class PpmpController extends Controller
                 'generateSummary' => request()
                     ->user()
                     ->can('generateSummary', Ppmp::class),
+                'showSummaryAll' => $request
+                    ->user()
+                    ->can('showSummaryAll', AipEntry::class),
             ],
             'fiscalYear' => $fiscalYear,
             'aipEntry' => $selectedAipEntry,
@@ -182,6 +187,7 @@ class PpmpController extends Controller
             'initialPpaFundingSourceId' => $request->query(
                 'ppa_funding_source_id',
             ),
+            'selectedOfficeId' => $selectedOfficeId,
         ]);
     }
 

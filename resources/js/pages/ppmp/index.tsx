@@ -72,7 +72,9 @@ interface PpmpPageProps {
         viewSupplemental: boolean;
         export: boolean;
         generateSummary: boolean;
+        showSummaryAll?: boolean;
     };
+    selectedOfficeId?: string;
 }
 
 export default function PpmpPage({
@@ -89,6 +91,7 @@ export default function PpmpPage({
     initialPpaFundingSourceId,
     currentTab,
     can,
+    selectedOfficeId,
 }: PpmpPageProps) {
     console.log({
         fiscalYear,
@@ -102,9 +105,18 @@ export default function PpmpPage({
         fundingSources,
         initialChoice,
         initialPpaFundingSourceId,
+        selectedOfficeId,
     });
 
     const { auth } = usePage<SharedData>().props;
+
+    const buildQuery = (extra: Record<string, any> = {}) => {
+        const query = { ...extra };
+        if (can?.showSummaryAll && selectedOfficeId) {
+            query.selected_office_id = selectedOfficeId;
+        }
+        return query;
+    };
 
     const initialFsId = useMemo(() => {
         const bridge = aipEntry.ppa_funding_sources?.find(
@@ -174,15 +186,12 @@ export default function PpmpPage({
 
                 router.get(
                     window.location.pathname,
-                    {
+                    buildQuery({
                         choice: selectedExpenseClass,
                         ppa_funding_source_id: bridgeId,
                         tab: currentTab,
-                    },
-                    {
-                        preserveState: true,
-                        replace: true,
-                    },
+                    }),
+                    { preserveState: true, replace: true },
                 );
             }
         }
@@ -223,49 +232,49 @@ export default function PpmpPage({
         return list;
     }, [allAipEntries]);
 
+    const summaryHref = useMemo(() => {
+        let href = `/aip/${fiscalYear.id}/summary`;
+        if (can?.showSummaryAll && selectedOfficeId) {
+            href += `?selected_office_id=${selectedOfficeId}`;
+        }
+        return href;
+    }, [fiscalYear.id, can?.showSummaryAll, selectedOfficeId]);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
         {
             title: `AIP Summary FY ${fiscalYear.year}`,
-            href: `/aip/${fiscalYear.id}/summary`,
+            // href: `/aip/${fiscalYear.id}/summary`,
+            href: summaryHref,
         },
         { title: `PPMP Management`, href: `#` },
     ];
 
     const handleExpenseClassChange = (value: 'MOOE' | 'CO') => {
         setSelectedExpenseClass(value);
-
         router.get(
             window.location.pathname,
-            {
+            buildQuery({
                 choice: value,
                 ppa_funding_source_id: currentPpaFundingSourceId,
-            },
-            {
-                preserveState: true,
-                replace: true,
-            },
+            }),
+            { preserveState: true, replace: true },
         );
     };
 
     const handleFundingSourceChange = (value: string) => {
         const fsId = Number(value);
         setSelectedFundingSourceId(fsId);
-
         const bridgeId = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
             (pfs) => pfs.funding_source_id === fsId,
         )?.id;
-
         router.get(
             window.location.pathname,
-            {
+            buildQuery({
                 choice: selectedExpenseClass,
                 ppa_funding_source_id: bridgeId,
-            },
-            {
-                preserveState: true,
-                replace: true,
-            },
+            }),
+            { preserveState: true, replace: true },
         );
     };
 
@@ -429,15 +438,17 @@ export default function PpmpPage({
                     <Tabs
                         value={currentTab}
                         onValueChange={(val: any) => {
-                            router.get(
-                                window.location.pathname,
-                                { tab: val },
-                                {
-                                    preserveState: true,
-                                    preserveScroll: true,
-                                    replace: true,
-                                },
-                            );
+                            const query: Record<string, any> = { tab: val };
+                            // Keep the selected office for super admins
+                            if (can?.showSummaryAll && selectedOfficeId) {
+                                query.selected_office_id = selectedOfficeId;
+                            }
+
+                            router.get(window.location.pathname, query, {
+                                preserveState: true,
+                                preserveScroll: true,
+                                replace: true,
+                            });
                         }}
                         className="w-auto"
                     >

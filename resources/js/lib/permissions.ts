@@ -2,6 +2,7 @@ export interface ScopedPermission {
     key: string;
     label: string;
     scopes: string[];
+    disableOption?: boolean;
 }
 
 export interface PermissionNode {
@@ -13,67 +14,201 @@ export interface PermissionNode {
 }
 
 export const permissionTree: PermissionNode[] = [
-    { key: 'user', label: 'User', permissions: ['view', 'edit'] },
-    { key: 'funding-source', label: 'Funding Source', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'chart-of-account', label: 'Chart of Account', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'ppmp-category', label: 'PPMP Category', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'price-list', label: 'Price List', permissions: ['view', 'add', 'edit', 'delete', 'move'] },
-    { key: 'office-type', label: 'Office Type', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'lgu-level', label: 'LGU Level', permissions: ['view', 'add', 'edit', 'delete'] },
-    { key: 'sector', label: 'Sector', permissions: ['view', 'add', 'edit', 'delete'] },
+    { key: 'user', label: 'User', permissions: [], scopedPermissions: [
+        { key: 'view', label: 'View', scopes: [],             disableOption: true },
+        { key: 'show', label: 'Show', scopes: ['own', 'all'] },
+        { key: 'edit', label: 'Edit', scopes: ['own', 'all'], disableOption: true },
+    ] },
+    {
+        key: 'funding-source',
+        label: 'Funding Source',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'chart-of-account',
+        label: 'Chart of Account',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'ppmp-category',
+        label: 'PPMP Category',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'price-list',
+        label: 'Price List',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view',   label: 'View',   scopes: [], disableOption: true },
+            { key: 'add',    label: 'Add',    scopes: [], disableOption: true },
+            { key: 'edit',   label: 'Edit',   scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+            { key: 'move',   label: 'Move',   scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'office-type',
+        label: 'Office Type',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'lgu-level',
+        label: 'LGU Level',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'sector',
+        label: 'Sector',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'add', label: 'Add', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
     {
         key: 'office',
         label: 'Office',
-        permissions: ['view'],
+        permissions: [],
         scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
             { key: 'show', label: 'Show', scopes: ['own', 'all'] },
-            { key: 'add-office', label: 'Add Office', scopes: ['own', 'all'] },
-            { key: 'add-sub-unit', label: 'Add Sub Unit', scopes: ['own', 'all'] },
-            { key: 'edit-office', label: 'Edit Office', scopes: ['own', 'all'] },
-            { key: 'edit-sub-unit', label: 'Edit Sub Unit', scopes: ['own', 'all'] },
-            { key: 'delete-office', label: 'Delete Office', scopes: ['own', 'all'] },
-            { key: 'delete-sub-unit', label: 'Delete Sub Unit', scopes: ['own', 'all'] },
+            {
+                key: 'create.office',
+                label: 'Create Office',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'edit.office',
+                label: 'Edit Office',
+                scopes: ['own', 'all'],
+                disableOption: true,
+            },
+            {
+                key: 'delete.office',
+                label: 'Delete Office',
+                scopes: [],
+                disableOption: true,
+            },
+            {
+                key: 'create.sub-unit',
+                label: 'Create Sub Unit',
+                scopes: ['own', 'all'],
+                disableOption: true,
+            },
+            {
+                key: 'edit.sub-unit',
+                label: 'Edit Sub Unit',
+                scopes: ['own', 'all'],
+                disableOption: true,
+            },
+            {
+                key: 'delete.sub-unit',
+                label: 'Delete Sub Unit',
+                scopes: ['own', 'all'],
+                disableOption: true,
+            },
         ],
     },
-    { key: 'ppa', label: 'PPA', permissions: ['view', 'create', 'edit', 'delete'] },
+    {
+        key: 'ppa',
+        label: 'PPA',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'show', label: 'Show', scopes: ['own', 'all'] },
+            { key: 'create', label: 'Create', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+            { key: 'move', label: 'Move', scopes: [], disableOption: true },
+            { key: 'import', label: 'Import', scopes: [], disableOption: true },
+        ],
+    },
     {
         key: 'aip',
         label: 'AIP',
-        permissions: ['view', 'create', 'edit', 'delete'],
-        children: [
-            {
-                key: 'aip-summary',
-                label: 'AIP Summary',
-                permissions: ['view', 'create', 'edit', 'delete'],
-                children: [
-                    { key: 'ppmp', label: 'PPMP', permissions: ['view', 'create', 'edit', 'delete'] },
-                ],
-            },
-            { key: 'ppmp-summary', label: 'PPMP Summary', permissions: ['view', 'create', 'edit', 'delete'] },
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view',         label: 'View',             scopes: [],             disableOption: true },
+            { key: 'create',       label: 'Create',           scopes: [],             disableOption: true },
+            { key: 'edit.status',  label: 'Edit',             scopes: [],             disableOption: true },
+            { key: 'generate-app', label: 'Generate App',     scopes: ['own', 'all'], disableOption: true },
+            { key: 'ppmp-summary', label: 'PPMP Summary',     scopes: [],             disableOption: true },
+            { key: 'aip-summary',  label: 'Open AIP Summary', scopes: [],             disableOption: true },
+        ],
+    },
+    {
+        key: 'aip-summary',
+        label: 'AIP Summary',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view',                label: 'View',                scopes: [],             disableOption: true },
+            { key: 'show',                label: 'Show',                scopes: ['own', 'all'] },
+            { key: 'import',              label: 'Import',              scopes: [],             disableOption: true },
+            { key: 'edit',                label: 'Edit',                scopes: [],             disableOption: true },
+            { key: 'edit.funding-source', label: 'Edit Funding Source', scopes: [],             disableOption: true },
+            { key: 'delete',              label: 'Delete',              scopes: [],             disableOption: true },
+            { key: 'create.supplemental', label: 'Create Supplemental', scopes: [],             disableOption: true },
+            { key: 'delete.supplemental', label: 'Delete Supplemental', scopes: [],             disableOption: true },
+            { key: 'view.supplemental',   label: 'View Supplemental',   scopes: [],             disableOption: true },
+        ],
+    },
+    {
+        key: 'ppmp',
+        label: 'PPMP',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view',                   label: 'View',                scopes: [], disableOption: true },
+            { key: 'export',                 label: 'Export',              scopes: [], disableOption: true },
+            { key: 'edit.price-list-quantity', label: 'Edit',              scopes: [], disableOption: true },
+            { key: 'delete.price-list',      label: 'Delete',              scopes: [], disableOption: true },
+            { key: 'add.price-list',         label: 'Add',                 scopes: [], disableOption: true },
+            { key: 'view.supplemental',      label: 'View Supplemental',   scopes: [], disableOption: true },
+            { key: 'generate-summary',       label: 'Generate Summary',    scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'role',
+        label: 'Roles',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view',           label: 'View',              scopes: [], disableOption: true },
+            { key: 'add',            label: 'Add',               scopes: [], disableOption: true },
+            { key: 'edit.name',      label: 'Edit',              scopes: [], disableOption: true },
+            { key: 'edit.permissions', label: 'Edit Permissions', scopes: [], disableOption: true },
+            { key: 'delete',         label: 'Delete',            scopes: [], disableOption: true },
         ],
     },
 ];
-
-export function getPermissionKey(moduleKey: string, permission: string): string {
-    return `${moduleKey}.${permission}`;
-}
-
-export function getSubtreeKeys(node: PermissionNode): string[] {
-    const keys: string[] = [];
-    for (const perm of node.permissions) {
-        keys.push(getPermissionKey(node.key, perm));
-    }
-    if (node.scopedPermissions) {
-        for (const sp of node.scopedPermissions) {
-            for (const scope of sp.scopes) {
-                keys.push(`${node.key}.${sp.key}.${scope}`);
-            }
-        }
-    }
-    if (node.children) {
-        for (const child of node.children) {
-            keys.push(...getSubtreeKeys(child));
-        }
-    }
-    return keys;
-}
