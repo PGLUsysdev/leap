@@ -213,6 +213,7 @@ export const permissionTree: PermissionNode[] = [
             { key: 'view', label: 'View', scopes: [], disableOption: true },
             { key: 'show', label: 'Show', scopes: ['own', 'all'] },
             { key: 'import', label: 'Import', scopes: [], disableOption: true },
+            { key: 'export', label: 'Export', scopes: [], disableOption: true },
             { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
             {
                 key: 'edit.funding-source',

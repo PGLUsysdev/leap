@@ -15,6 +15,7 @@ class PermissionSeeder extends Seeder
             'aip-summary.delete.supplemental',
             'aip-summary.edit',
             'aip-summary.edit.funding-source',
+            'aip-summary.export',
             'aip-summary.import',
             'aip-summary.show.all',
             'aip-summary.show.own',
