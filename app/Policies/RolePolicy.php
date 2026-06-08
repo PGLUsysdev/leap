@@ -12,7 +12,7 @@ class RolePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('user.view');
+        return $permissions->contains('role.view');
     }
 
     public function view(User $user, Role $role): bool
@@ -24,21 +24,21 @@ class RolePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('user.edit');
+        return $permissions->contains('role.add');
     }
 
     public function update(User $user, Role $role): bool
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('user.edit');
+        return $permissions->contains('role.edit.name') || $permissions->contains('role.edit.permissions');
     }
 
     public function delete(User $user, Role $role): bool
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('user.edit');
+        return $permissions->contains('role.delete');
     }
 
     public function restore(User $user, Role $role): bool

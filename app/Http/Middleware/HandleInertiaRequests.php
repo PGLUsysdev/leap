@@ -66,6 +66,9 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user()?->load('office'),
+                'permissions' => $request->user()
+                    ?->loadMissing('role.permissionRoles.permission')
+                    ?->role?->permissionRoles?->pluck('permission.name') ?? [],
             ],
             'sidebarOpen' =>
                 !$request->hasCookie('sidebar_state') ||

@@ -62,7 +62,7 @@ export default function RolePage({ roles, can }: RolePageProps) {
         });
     }
 
-    const cols = columns(can?.edit ?? false, can?.delete ?? false);
+    const cols = columns(can?.edit ?? false, can?.managePermissions ?? false, can?.delete ?? false);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

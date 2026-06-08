@@ -21,11 +21,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { User } from '@/types/global';
+import type { Office, Role, User } from '@/types/global';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const formSchema = z.object({
     status: z.enum(['pending', 'active', 'inactive']),
+    role_id: z.string().optional(),
+    office_id: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -34,17 +36,33 @@ interface FormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     data: User | null;
+    roles: Role[];
+    offices: Office[];
+    editOfficeAll: boolean;
+    editOfficeOwn: boolean;
+    editRoleAll: boolean;
+    editRoleOwn: boolean;
+    userOfficeId: number | null;
 }
 
 export default function FormDialog({
     open,
     onOpenChange,
     data,
+    roles,
+    offices,
+    editOfficeAll,
+    editOfficeOwn,
+    editRoleAll,
+    editRoleOwn,
+    userOfficeId,
 }: FormDialogProps) {
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             status: 'pending',
+            role_id: undefined,
+            office_id: undefined,
         },
     });
 
@@ -53,21 +71,42 @@ export default function FormDialog({
         if (data) {
             form.reset({
                 status: data.status as FormValues['status'],
+                role_id: String(data.role?.id ?? ''),
+                office_id: String(data.office_id ?? ''),
             });
+        } else {
+            form.reset({ status: 'pending', role_id: '', office_id: '' });
         }
     }, [data, form]);
 
-    function onSubmit(values: FormValues) {
-        console.log(values);
+    function canEditOffice() {
+        if (editOfficeAll) return true;
+        if (editOfficeOwn && data && data.office_id === userOfficeId) return true;
+        return false;
+    }
 
+    function canEditRole() {
+        if (editRoleAll) return true;
+        if (editRoleOwn && data && data.office_id === userOfficeId) return true;
+        return false;
+    }
+
+    function handleSubmit(values: FormValues) {
         if (!data) return;
 
-        // We use backticks (``) to build the URL string with the user's ID
-        router.patch(`/users/${data.id}/status`, values, {
+        const payload: {
+            status: string;
+            role_id: number | null;
+            office_id: number | null;
+        } = {
+            status: values.status,
+            role_id: values.role_id ? Number(values.role_id) : null,
+            office_id: values.office_id ? Number(values.office_id) : null,
+        };
+
+        router.patch(`/users/${data.id}`, payload, {
             preserveState: true,
             preserveScroll: true,
-            // onStart: () => setIsLoading(true),
-            // onFinish: () => setIsLoading(false),
             onSuccess: () => {
                 onOpenChange(false);
                 form.reset();
@@ -75,13 +114,15 @@ export default function FormDialog({
         });
     }
 
+    const onSubmit = form.handleSubmit(handleSubmit);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-sm">
                 <DialogHeader>
-                    <DialogTitle>Edit User Status</DialogTitle>
+                    <DialogTitle>Edit User</DialogTitle>
                     <DialogDescription>
-                        Update the account status for{' '}
+                        Update account details for{' '}
                         <strong>{data?.name}</strong>.
                     </DialogDescription>
                 </DialogHeader>
@@ -89,8 +130,8 @@ export default function FormDialog({
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
                         <form
-                            id="user-status-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
+                            id="user-form"
+                            onSubmit={onSubmit}
                         >
                             <Controller
                                 name="status"
@@ -132,6 +173,101 @@ export default function FormDialog({
                                     </Field>
                                 )}
                             />
+
+                            <Controller
+                                name="role_id"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        className="mt-4"
+                                        data-invalid={fieldState.invalid}
+                                    >
+                                        <FieldLabel htmlFor={field.name}>
+                                            Role
+                                        </FieldLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                            disabled={!canEditRole()}
+                                        >
+                                            <SelectTrigger
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                            >
+                                                <SelectValue placeholder="Select role" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {roles.map((role) => (
+                                                    <SelectItem
+                                                        key={role.id}
+                                                        value={String(
+                                                            role.id,
+                                                        )}
+                                                    >
+                                                        {role.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="office_id"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        className="mt-4"
+                                        data-invalid={fieldState.invalid}
+                                    >
+                                        <FieldLabel htmlFor={field.name}>
+                                            Department / Office
+                                        </FieldLabel>
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                            disabled={!canEditOffice()}
+                                        >
+                                            <SelectTrigger
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                            >
+                                                <SelectValue placeholder="Select office" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {offices.map((office) => (
+                                                    <SelectItem
+                                                        key={office.id}
+                                                        value={String(
+                                                            office.id,
+                                                        )}
+                                                    >
+                                                        {office.name}
+                                                        {office.acronym
+                                                            ? ` (${office.acronym})`
+                                                            : ''}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
                         </form>
                     </ScrollArea>
                 </div>
@@ -147,7 +283,7 @@ export default function FormDialog({
 
                     <Button
                         type="submit"
-                        form="user-status-form"
+                        form="user-form"
                         disabled={form.formState.isSubmitting}
                     >
                         Save Changes

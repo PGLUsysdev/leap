@@ -42,10 +42,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     // User Status Management
     Route::get('users', [UserController::class, 'index'])->name('users.index');
-    Route::patch('users/{user}/status', [
+    Route::patch('users/{user}', [
         UserController::class,
         'update',
-    ])->name('users.update-status');
+    ])->name('users.update');
 
     // User Approval
     Route::patch('/admin/users/{user}/approve', [
@@ -192,6 +192,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     );
     Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name(
         'roles.destroy',
+    );
+    Route::get('roles/{role}/permissions', [RoleController::class, 'getPermissions'])->name(
+        'roles.permissions.get',
+    );
+    Route::post('roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name(
+        'roles.permissions.update',
     );
 
     // Offices

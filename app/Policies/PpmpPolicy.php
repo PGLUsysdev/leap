@@ -18,21 +18,7 @@ class PpmpPolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        if (!$permissions->contains('ppmp.view')) {
-            return false;
-        }
-
-        if (!$aipEntry) {
-            return true;
-        }
-
-        $office = $aipEntry->ppa->office;
-        if ($office->parent_id) {
-            $office = $office->parent;
-        }
-
-        // return false;
-        return $user->office_id === $office->id;
+        return $permissions->contains('ppmp.view');
     }
 
     public function viewSupplemental(User $user): bool

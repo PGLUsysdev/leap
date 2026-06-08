@@ -54,19 +54,7 @@ class PpmpController extends Controller
             str_starts_with($tab, 'supplemental_') &&
             !$canViewSupplemental
         ) {
-            abort(403);
-        }
-
-        // Filter to original-only if user can't view supplemental
-        if (!$canViewSupplemental && $hasSupplementalAipEntries) {
-            $allAipEntries = $allAipEntries
-                ->filter(fn($entry) => is_null($entry->supplemental_aip_id))
-                ->values();
-
-            // Force tab to original
-            if (!$tab || str_starts_with($tab, 'supplemental_')) {
-                $tab = 'original';
-            }
+            $tab = 'original';
         }
 
         $aipEntryIds = $allAipEntries->pluck('id');

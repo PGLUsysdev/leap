@@ -305,7 +305,7 @@ export interface User {
     two_factor_recovery_codes: string | null;
     two_factor_confirmed_at: string | null;
     status: string;
-    role: string;
+    role?: Role;
     remember_token: string | null;
     created_at: string | null;
     updated_at: string | null;

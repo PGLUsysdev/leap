@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Permission;
 use App\Models\Role;
 use App\Http\Requests\StoreRoleRequest;
 use App\Http\Requests\UpdateRoleRequest;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class RoleController extends Controller
@@ -58,5 +60,38 @@ class RoleController extends Controller
         $this->authorize('delete', $role);
 
         $role->delete();
+    }
+
+    public function getPermissions(Role $role)
+    {
+        $permissionNames = $role->permissionRoles()
+            ->with('permission')
+            ->get()
+            ->pluck('permission.name');
+
+        return response()->json(['permissions' => $permissionNames]);
+    }
+
+    public function updatePermissions(Request $request, Role $role)
+    {
+        $request->validate([
+            'permissions' => 'array',
+            'permissions.*' => 'string',
+        ]);
+
+        $permissionIds = Permission::whereIn('name', $request->permissions)
+            ->pluck('id', 'name');
+
+        $role->permissionRoles()->delete();
+
+        foreach ($request->permissions as $name) {
+            if (isset($permissionIds[$name])) {
+                $role->permissionRoles()->create([
+                    'permission_id' => $permissionIds[$name],
+                ]);
+            }
+        }
+
+        return back();
     }
 }

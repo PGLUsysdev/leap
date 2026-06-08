@@ -19,6 +19,7 @@ import {
     ToggleGroupItem,
 } from '@/components/ui/toggle-group';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { router } from '@inertiajs/react';
 import { permissionTree } from '@/lib/permissions';
 import type { PermissionNode } from '@/lib/permissions';
 import type { Role } from '@/types/global';
@@ -74,7 +75,7 @@ function usePermissionState() {
         [],
     );
 
-    return { selected, toggle, toggleAll, toggleSingle };
+    return { selected, setSelected, toggle, toggleAll, toggleSingle };
 }
 
 function getScopedPermissionKeys(node: PermissionNode): string[] {
@@ -313,10 +314,44 @@ export default function PermissionDialog({
     onOpenChange,
     role,
 }: PermissionDialogProps) {
-    const { selected, toggle, toggleAll, toggleSingle } = usePermissionState();
+    const { selected, setSelected, toggle, toggleAll, toggleSingle } = usePermissionState();
     const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
-        new Set(['aip']),
+        new Set(),
     );
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!open || !role) return;
+
+        setIsLoading(true);
+        fetch(`/roles/${role.id}/permissions`, {
+            headers: { Accept: 'application/json' },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                setSelected(new Set(data.permissions));
+            })
+            .finally(() => setIsLoading(false));
+    }, [open, role, setSelected]);
+
+    const handleSave = useCallback(() => {
+        if (!role) return;
+
+        setIsLoading(true);
+        router.post(`/roles/${role.id}/permissions`, {
+            permissions: Array.from(selected),
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsLoading(false);
+                onOpenChange(false);
+            },
+            onError: () => {
+                setIsLoading(false);
+            },
+        });
+    }, [role, selected, onOpenChange]);
 
     const handleToggleExpand = useCallback((key: string) => {
         setExpandedKeys((prev) => {
@@ -370,9 +405,10 @@ export default function PermissionDialog({
                     </Button>
                     <Button
                         type="button"
-                        onClick={() => onOpenChange(false)}
+                        onClick={handleSave}
+                        disabled={isLoading}
                     >
-                        Save Changes
+                        {isLoading ? 'Saving...' : 'Save Changes'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

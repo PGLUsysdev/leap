@@ -52,9 +52,8 @@ class OfficePolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        return $permissions->contains('office.create.sub-unit') &&
-            ($permissions->contains('office.show.all') ||
-                $user->office_id === $parentOffice->id);
+        return $permissions->contains('office.create.sub-unit.all') ||
+            ($permissions->contains('office.create.sub-unit.own') && $user->office_id === $parentOffice->id);
     }
 
     /**
@@ -65,9 +64,8 @@ class OfficePolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        return $permissions->contains('office.edit.office') &&
-            ($permissions->contains('office.show.all') ||
-                $user->office_id === $office->id);
+        return $permissions->contains('office.edit.office.all') ||
+            ($permissions->contains('office.edit.office.own') && $user->office_id === $office->id);
     }
 
     public function updateSubUnit(User $user, Office $parentOffice): bool
@@ -75,9 +73,8 @@ class OfficePolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        return $permissions->contains('office.edit.sub-unit') &&
-            ($permissions->contains('office.show.all') ||
-                $user->office_id === $parentOffice->id);
+        return $permissions->contains('office.edit.sub-unit.all') ||
+            ($permissions->contains('office.edit.sub-unit.own') && $user->office_id === $parentOffice->id);
     }
 
     /**
@@ -94,9 +91,8 @@ class OfficePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('office.delete.sub-unit') &&
-            ($permissions->contains('office.show.all') ||
-                $user->office_id === $parentOffice->id);
+        return $permissions->contains('office.delete.sub-unit.all') ||
+            ($permissions->contains('office.delete.sub-unit.own') && $user->office_id === $parentOffice->id);
     }
 
     /**

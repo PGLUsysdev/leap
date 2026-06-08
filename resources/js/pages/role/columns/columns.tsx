@@ -5,7 +5,7 @@ import { Pencil, Shield, Trash } from 'lucide-react';
 
 const columnHelper = createColumnHelper<Role>();
 
-const columns = (canEdit: boolean, canDelete: boolean) => {
+const columns = (canEditName: boolean, canEditPerms: boolean, canDelete: boolean) => {
     const cols = [
         columnHelper.accessor('name', {
             header: 'Role Name',
@@ -15,7 +15,7 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
         }),
     ];
 
-    if (canEdit || canDelete) {
+    if (canEditName || canEditPerms || canDelete) {
         cols.push(
             columnHelper.display({
                 id: 'action',
@@ -23,33 +23,33 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
                 cell: ({ row, table }) => {
                     return (
                         <div className="flex items-center gap-1">
-                            {canEdit && (
-                                <>
-                                    <Button
-                                        size="icon"
-                                        variant="outline"
-                                        onClick={() =>
-                                            table.options.meta?.onEdit?.(
-                                                row.original,
-                                            )
-                                        }
-                                        title="Edit role name"
-                                    >
-                                        <Pencil />
-                                    </Button>
+                            {canEditName && (
+                                <Button
+                                    size="icon"
+                                    variant="outline"
+                                    onClick={() =>
+                                        table.options.meta?.onEdit?.(
+                                            row.original,
+                                        )
+                                    }
+                                    title="Edit role name"
+                                >
+                                    <Pencil />
+                                </Button>
+                            )}
 
-                                    <Button
-                                        size="icon"
-                                        variant="outline"
-                                        onClick={() =>
-                                            table.options.meta
-                                                ?.onEditPerms?.(row.original)
-                                        }
-                                        title="Manage permissions"
-                                    >
-                                        <Shield />
-                                    </Button>
-                                </>
+                            {canEditPerms && (
+                                <Button
+                                    size="icon"
+                                    variant="outline"
+                                    onClick={() =>
+                                        table.options.meta
+                                            ?.onEditPerms?.(row.original)
+                                    }
+                                    title="Manage permissions"
+                                >
+                                    <Shield />
+                                </Button>
                             )}
 
                             {canDelete && (

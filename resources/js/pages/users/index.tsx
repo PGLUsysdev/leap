@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { User } from '@/types/global';
+import type { Office, Role, User } from '@/types/global';
 import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 import FormDialog from './form-dialog';
@@ -10,12 +10,20 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: '#' }];
 
 interface UsersIndexProps {
     users: User[] | null;
+    roles: Role[];
+    offices: Office[];
     can?: {
-        edit: boolean;
+        editAll: boolean;
+        editOwn: boolean;
+        editOfficeAll: boolean;
+        editOfficeOwn: boolean;
+        editRoleAll: boolean;
+        editRoleOwn: boolean;
+        userOfficeId: number | null;
     };
 }
 
-export default function UsersIndex({ users, can }: UsersIndexProps) {
+export default function UsersIndex({ users, roles, offices, can }: UsersIndexProps) {
     console.log({ users, can });
 
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -26,7 +34,11 @@ export default function UsersIndex({ users, can }: UsersIndexProps) {
         setOpenFormDialog(true);
     }
 
-    const cols = columns(can?.edit ?? false);
+    const cols = columns({
+        editAll: can?.editAll ?? false,
+        editOwn: can?.editOwn ?? false,
+        userOfficeId: can?.userOfficeId ?? null,
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -40,6 +52,13 @@ export default function UsersIndex({ users, can }: UsersIndexProps) {
             </div>
 
             <FormDialog
+                roles={roles}
+                offices={offices}
+                editOfficeAll={can?.editOfficeAll ?? false}
+                editOfficeOwn={can?.editOfficeOwn ?? false}
+                editRoleAll={can?.editRoleAll ?? false}
+                editRoleOwn={can?.editRoleOwn ?? false}
+                userOfficeId={can?.userOfficeId ?? null}
                 open={openFormDialog}
                 onOpenChange={setOpenFormDialog}
                 data={selectedUser}

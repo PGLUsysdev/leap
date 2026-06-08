@@ -5,7 +5,13 @@ import { Pencil } from 'lucide-react';
 
 const columnHelper = createColumnHelper<User>();
 
-const columns = (canEdit: boolean) => {
+interface ColumnsOptions {
+    editAll: boolean;
+    editOwn: boolean;
+    userOfficeId: number | null;
+}
+
+const columns = ({ editAll, editOwn, userOfficeId }: ColumnsOptions) => {
     const cols = [
         columnHelper.accessor('name', {
             header: 'Name',
@@ -15,6 +21,7 @@ const columns = (canEdit: boolean) => {
         }),
         columnHelper.accessor('email', {
             header: 'Email',
+            size: 300,
             cell: (info) => {
                 return <div className="text-wrap">{info.getValue()}</div>;
             },
@@ -26,6 +33,15 @@ const columns = (canEdit: boolean) => {
                 return <div className="text-wrap">{info.getValue()}</div>;
             },
         }),
+        columnHelper.accessor('role.name', {
+            header: 'Role',
+            size: 150,
+            cell: (info) => {
+                return (
+                    <div className="text-wrap">{info.getValue() ?? '-'}</div>
+                );
+            },
+        }),
         columnHelper.accessor('status', {
             header: 'Status',
             size: 100,
@@ -35,12 +51,16 @@ const columns = (canEdit: boolean) => {
         }),
     ];
 
-    if (canEdit) {
+    if (editAll || editOwn) {
         cols.push(
             columnHelper.display({
                 id: 'action',
                 size: 48,
                 cell: ({ row, table }) => {
+                    const canEditRow =
+                        editAll ||
+                        (editOwn && row.original.office_id === userOfficeId);
+                    if (!canEditRow) return null;
                     return (
                         <div>
                             <Button
