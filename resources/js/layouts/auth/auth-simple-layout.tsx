@@ -1,4 +1,4 @@
-import AppLogoIcon from '@/components/app-logo-icon';
+// import AppLogoIcon from '@/components/app-logo-icon';
 // import { home } from '@/routes';
 import { login } from '@/routes';
 import { Link } from '@inertiajs/react';
@@ -18,7 +18,7 @@ export default function AuthSimpleLayout({
     description,
 }: PropsWithChildren<AuthLayoutProps>) {
     return (
-        <div className="relative flex min-h-svh flex-col items-center justify-center gap-6 overflow-hidden bg-background p-6 md:p-10">
+        <div className="relative flex min-h-svh w-full flex-col items-center justify-center gap-6 overflow-hidden bg-background p-6 md:p-10">
             <div
                 className="pointer-events-none fixed inset-0 z-0 h-full w-full opacity-50"
                 style={{
@@ -31,11 +31,6 @@ export default function AuthSimpleLayout({
                 }}
             />
 
-            {/*<img
-                src={buildingImage}
-                className="right pointer-events-none absolute -right-10 -bottom-120 z-0 h-[150%] w-[200%] object-cover object-bottom opacity-20"
-                alt=""
-            />*/}
             <div
                 className="pointer-events-none absolute inset-0 z-0 opacity-20"
                 style={{
