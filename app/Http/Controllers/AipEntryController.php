@@ -49,7 +49,7 @@ class AipEntryController extends Controller
         }
 
         $fundingSourceFilter = function ($query) use ($scope, $saipId) {
-            $query->with('fundingSource');
+            $query->with(['fundingSource', 'ccTypology']);
             if ($scope === 'original') {
                 $query->whereNull('supplemental_aip_id');
             } elseif ($scope === 'supplemental' && $saipId) {
@@ -332,6 +332,13 @@ class AipEntryController extends Controller
             'fiscalYear' => $fiscalYear,
             'aipEntries' => $aipEntries,
             'fundingSources' => FundingSource::all(),
+            'ccTypologies' => \App\Models\CcTypology::select(
+                'id',
+                'code',
+                'description',
+            )
+                ->orderBy('code')
+                ->get(),
             'offices' => Office::all(),
             'filters' => $request->all(),
             'supplementalAips' => \App\Models\SupplementalAip::where(
@@ -652,6 +659,8 @@ class AipEntryController extends Controller
                                 $source['ccet_adaptation'] ?? 0,
                             'ccet_mitigation' =>
                                 $source['ccet_mitigation'] ?? 0,
+                            'cc_typology_id' =>
+                                $source['cc_typology_id'] ?? null,
                             'is_supplemental' => (bool) $saipId,
                         ],
                     );
@@ -708,6 +717,12 @@ class AipEntryController extends Controller
             if (
                 (float) $match->ccet_mitigation !==
                 (float) ($source['ccet_mitigation'] ?? 0)
+            ) {
+                return true;
+            }
+            if (
+                ($match->cc_typology_id ?? '') !==
+                ($source['cc_typology_id'] ?? '')
             ) {
                 return true;
             }

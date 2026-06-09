@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Decimal } from 'decimal.js';
-import type { FlattenedPpa } from '@/types/global';
+import type { FlattenedPpa, PpaFundingSource } from '@/types/global';
 
 export const formatNumber = (val: string | null) => {
     if (!val) return '-';
@@ -321,11 +321,14 @@ const columns = () => {
             ],
         }),
 
-        columnHelper.display({
+        columnHelper.accessor('current_fs.cc_typology.code', {
             id: 'cc_typology_code',
-            header: 'Typology',
-            cell: () => <div className="text-right">-</div>,
-            footer: () => <div className="text-right font-medium">-</div>, // optional label
+            header: () => <div className="text-left">Typology</div>,
+            cell: (info) => {
+                const code = info.getValue();
+                return <div className="text-right">{code || '—'}</div>;
+            },
+            footer: () => <div className="text-right font-medium">—</div>,
         }),
 
         columnHelper.display({

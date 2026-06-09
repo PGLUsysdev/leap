@@ -107,6 +107,7 @@ export interface PpaFundingSource {
     co_amount: string;
     ccet_adaptation: string;
     ccet_mitigation: string;
+    cc_typology_id?: number | null;
     created_at: string | null;
     updated_at: string | null;
 
@@ -116,6 +117,7 @@ export interface PpaFundingSource {
     supplemental_aip_id?: number | null;
 
     funding_source?: FundingSource;
+    cc_typology?: { id: number; code: string; description: string };
 }
 
 export type PpaTye = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
@@ -147,6 +149,7 @@ export interface Ppa {
         move: boolean;
         import: boolean;
         viewPpmp: boolean;
+        editFundingSources: boolean;
     };
 }
 

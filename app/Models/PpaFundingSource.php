@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\FundingSource;
+use App\Models\CcTypology;
 use App\Models\Ppmp;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -25,6 +26,7 @@ class PpaFundingSource extends Model
         'ccet_mitigation',
         'supplemental_aip_id',
         'is_supplemental',
+        'cc_typology_id',
     ];
 
     // hasMany
@@ -47,5 +49,10 @@ class PpaFundingSource extends Model
     public function supplementalAip(): BelongsTo
     {
         return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
+    }
+
+    public function ccTypology(): BelongsTo
+    {
+        return $this->belongsTo(CcTypology::class, 'cc_typology_id');
     }
 }

@@ -44,6 +44,7 @@ interface AipSummaryTableProps {
     aipEntries: Ppa[];
     can: { export: boolean; import: boolean; createSaip: boolean };
     fundingSources: FundingSource[];
+    ccTypologies: { id: number; code: string; description: string }[];
     offices: Office[];
     filters: Filter;
     dialogPpaTree?: PaginatedResponse<Ppa>;
@@ -86,6 +87,7 @@ export default function AipSummaryTable({
     aipEntries,
     can,
     fundingSources,
+    ccTypologies,
     offices,
     filters,
     dialogPpaTree,
@@ -595,6 +597,7 @@ export default function AipSummaryTable({
                 data={selectedEntry}
                 fiscalYear={fiscalYear}
                 fundingSources={fundingSources}
+                ccTypologies={ccTypologies}
                 offices={offices}
                 auth={auth}
                 supplementalAipId={currentScope.supplemental_aip_id}

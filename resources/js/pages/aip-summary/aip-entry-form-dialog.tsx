@@ -48,6 +48,13 @@ import {
 } from '@/components/ui/dialog';
 import { FormDialogShell } from '@/components/form-dialog-shell';
 import { CommandSelect } from '@/components/command-select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import type {
     FiscalYear,
     Ppa,
@@ -68,6 +75,7 @@ interface AipEntryFormDialogProps {
     supplementalAipId?: number | null;
     canShowSummaryAll?: boolean; // NEW
     selectedOfficeId?: string;
+    ccTypologies: { id: number; code: string; description: string }[];
 }
 
 const amountSchema = z.string();
@@ -87,7 +95,7 @@ const formSchema = z.object({
             co_amount: amountSchema,
             ccet_adaptation: amountSchema,
             ccet_mitigation: amountSchema,
-            cc_typology_code: z.string().optional().nullable(),
+            cc_typology_id: z.number().optional().nullable(),
         }),
     ),
 });
@@ -109,6 +117,7 @@ export default function AipEntryFormDialog({
     data,
     fiscalYear,
     fundingSources,
+    ccTypologies,
     offices,
     auth,
     supplementalAipId = null,
@@ -278,6 +287,7 @@ export default function AipEntryFormDialog({
                         co_amount: fs.co_amount,
                         ccet_adaptation: fs.ccet_adaptation,
                         ccet_mitigation: fs.ccet_mitigation,
+                        cc_typology_id: (fs as any).cc_typology_id ?? null,
                     })) || [],
             });
         }
@@ -631,7 +641,7 @@ export default function AipEntryFormDialog({
                                                                                                 '0.00',
                                                                                             ccet_mitigation:
                                                                                                 '0.00',
-                                                                                            cc_typology_code:
+                                                                                            cc_typology_id:
                                                                                                 null,
                                                                                         },
                                                                                     )
@@ -710,14 +720,13 @@ export default function AipEntryFormDialog({
                                                                             field.id
                                                                         }
                                                                     >
-                                                                        <input
-                                                                            type="hidden"
-                                                                            {...form.register(
-                                                                                `ppa_funding_sources.${index}.funding_source_id`,
-                                                                            )}
-                                                                        />
-
                                                                         <TableCell>
+                                                                            <input
+                                                                                type="hidden"
+                                                                                {...form.register(
+                                                                                    `ppa_funding_sources.${index}.funding_source_id`,
+                                                                                )}
+                                                                            />
                                                                             <div className="flex h-9 w-full items-center rounded-md border border-transparent bg-muted/30 px-3 py-1 text-sm font-medium text-foreground">
                                                                                 {fundingSources.find(
                                                                                     (
@@ -798,32 +807,102 @@ export default function AipEntryFormDialog({
                                                                                     }
                                                                                     className="text-right"
                                                                                 >
-                                                                                    {parseFloat(
-                                                                                        String(
-                                                                                            watchedSources?.[
-                                                                                                index
-                                                                                            ]?.[
-                                                                                                amt as keyof (typeof watchedSources)[0]
-                                                                                            ] ||
-                                                                                                '0',
-                                                                                        ),
-                                                                                    ).toLocaleString(
-                                                                                        undefined,
-                                                                                        {
-                                                                                            minimumFractionDigits: 2,
-                                                                                            maximumFractionDigits: 2,
-                                                                                        },
-                                                                                    )}
+                                                                                    <Controller
+                                                                                        control={
+                                                                                            form.control
+                                                                                        }
+                                                                                        name={
+                                                                                            `ppa_funding_sources.${index}.${amt}` as any
+                                                                                        }
+                                                                                        render={({
+                                                                                            field,
+                                                                                        }) => (
+                                                                                            <Input
+                                                                                                type="number"
+                                                                                                step="0.01"
+                                                                                                className="h-8 w-28 text-right"
+                                                                                                value={
+                                                                                                    field.value as string
+                                                                                                }
+                                                                                                onChange={(
+                                                                                                    e,
+                                                                                                ) =>
+                                                                                                    field.onChange(
+                                                                                                        e
+                                                                                                            .target
+                                                                                                            .value,
+                                                                                                    )
+                                                                                                }
+                                                                                                disabled={
+                                                                                                    !canEditFunding
+                                                                                                }
+                                                                                            />
+                                                                                        )}
+                                                                                    />
                                                                                 </TableCell>
                                                                             ),
                                                                         )}
 
                                                                         <TableCell className="text-left">
-                                                                            {watchedSources?.[
-                                                                                index
-                                                                            ]
-                                                                                ?.cc_typology_code ||
-                                                                                '—'}
+                                                                            <Controller
+                                                                                control={
+                                                                                    form.control
+                                                                                }
+                                                                                name={
+                                                                                    `ppa_funding_sources.${index}.cc_typology_id` as any
+                                                                                }
+                                                                                render={({
+                                                                                    field,
+                                                                                }) => (
+                                                                                    <Select
+                                                                                        value={
+                                                                                            (
+                                                                                                field.value as number
+                                                                                            )?.toString() ||
+                                                                                            undefined
+                                                                                        }
+                                                                                        onValueChange={(
+                                                                                            val,
+                                                                                        ) =>
+                                                                                            field.onChange(
+                                                                                                val
+                                                                                                    ? parseInt(
+                                                                                                          val,
+                                                                                                      )
+                                                                                                    : null,
+                                                                                            )
+                                                                                        }
+                                                                                        disabled={
+                                                                                            !canEditFunding
+                                                                                        }
+                                                                                    >
+                                                                                        <SelectTrigger className="h-8 w-44">
+                                                                                            <SelectValue placeholder="Typology..." />
+                                                                                        </SelectTrigger>
+                                                                                        <SelectContent>
+                                                                                            {(
+                                                                                                ccTypologies ||
+                                                                                                []
+                                                                                            ).map(
+                                                                                                (
+                                                                                                    t,
+                                                                                                ) => (
+                                                                                                    <SelectItem
+                                                                                                        key={
+                                                                                                            t.id
+                                                                                                        }
+                                                                                                        value={t.id.toString()}
+                                                                                                    >
+                                                                                                        {
+                                                                                                            t.code
+                                                                                                        }
+                                                                                                    </SelectItem>
+                                                                                                ),
+                                                                                            )}
+                                                                                        </SelectContent>
+                                                                                    </Select>
+                                                                                )}
+                                                                            />
                                                                         </TableCell>
 
                                                                         <TableCell>

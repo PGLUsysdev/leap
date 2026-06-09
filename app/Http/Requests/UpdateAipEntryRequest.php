@@ -36,7 +36,8 @@ class UpdateAipEntryRequest extends FormRequest
             'ppa_funding_sources.*.co_amount' => 'required|numeric',
             'ppa_funding_sources.*.ccet_adaptation' => 'nullable|numeric',
             'ppa_funding_sources.*.ccet_mitigation' => 'nullable|numeric',
-            'ppa_funding_sources.*.cc_typology_code' => 'nullable|string',
+            'ppa_funding_sources.*.cc_typology_id' =>
+                'nullable|exists:cc_typologies,id',
             'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
         ];
     }
