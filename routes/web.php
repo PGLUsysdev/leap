@@ -359,11 +359,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         CcStrategicPriorityController::class,
         'index',
     ])->name('cc-strategic-priority.index');
+    Route::post('cc-strategic-priority', [
+        CcStrategicPriorityController::class,
+        'store',
+    ])->name('cc-strategic-priority.store');
+    Route::patch('cc-strategic-priority/{ccStrategicPriority}', [
+        CcStrategicPriorityController::class,
+        'update',
+    ])->name('cc-strategic-priority.update');
+    Route::delete('cc-strategic-priority/{ccStrategicPriority}', [
+        CcStrategicPriorityController::class,
+        'destroy',
+    ])->name('cc-strategic-priority.destroy');
 
     // CC Sub Sectors
     Route::get('cc-sub-sector', [CcSubSectorController::class, 'index'])->name(
         'cc-sub-sector.index',
     );
+    Route::post('cc-sub-sector', [CcSubSectorController::class, 'store'])->name(
+        'cc-sub-sector.store',
+    );
+    Route::patch('cc-sub-sector/{ccSubSector}', [
+        CcSubSectorController::class,
+        'update',
+    ])->name('cc-sub-sector.update');
+    Route::delete('cc-sub-sector/{ccSubSector}', [
+        CcSubSectorController::class,
+        'destroy',
+    ])->name('cc-sub-sector.destroy');
 
     // CC Typology
     Route::get('cc-typology', [CcTypologyController::class, 'index'])->name(

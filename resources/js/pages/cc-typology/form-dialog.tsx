@@ -20,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { router } from '@inertiajs/react';
 import { FormDialogShell } from '@/components/form-dialog-shell';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import {
     Select,
     SelectContent,
@@ -104,6 +105,7 @@ export default function FormDialog({
     subSectors = [],
 }: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
     const isEditing = !!initialData;
 
     const formSchema = useMemo(
@@ -126,6 +128,7 @@ export default function FormDialog({
 
     useEffect(() => {
         if (open) {
+            setFormError(null);
             if (initialData) {
                 form.reset({
                     strategic_priority_id: String(
@@ -202,20 +205,26 @@ export default function FormDialog({
             item_num: Number(data.item_num),
         };
 
+        function handleError(errors: Record<string, string>) {
+            if (errors.message) {
+                setFormError(errors.message as string);
+                return;
+            }
+            Object.keys(errors).forEach((key) => {
+                form.setError(key as any, {
+                    type: 'server',
+                    message: errors[key],
+                });
+            });
+        }
+
         if (isEditing) {
             router.patch(`/cc-typology/${initialData.id}`, payload, {
                 preserveState: true,
                 preserveScroll: true,
                 onStart: () => setIsLoading(true),
                 onSuccess: () => setOpen(false),
-                onError: (errors) => {
-                    Object.keys(errors).forEach((key) => {
-                        form.setError(key as any, {
-                            type: 'server',
-                            message: errors[key],
-                        });
-                    });
-                },
+                onError: handleError,
                 onFinish: () => setIsLoading(false),
             });
         } else {
@@ -224,21 +233,21 @@ export default function FormDialog({
                 preserveScroll: true,
                 onStart: () => setIsLoading(true),
                 onSuccess: () => setOpen(false),
-                onError: (errors) => {
-                    Object.keys(errors).forEach((key) => {
-                        form.setError(key as any, {
-                            type: 'server',
-                            message: errors[key],
-                        });
-                    });
-                },
+                onError: handleError,
                 onFinish: () => setIsLoading(false),
             });
         }
     }
 
     return (
-        <FormDialogShell
+        <>
+            <AlertErrorDialog
+                open={!!formError}
+                onOpenChange={() => setFormError(null)}
+                error={formError}
+            />
+
+            <FormDialogShell
             open={open}
             onOpenChange={setOpen}
             title={isEditing ? 'Edit CC Typology' : 'Create CC Typology'}
@@ -658,5 +667,6 @@ export default function FormDialog({
                 </ScrollArea>
             </div>
         </FormDialogShell>
+        </>
     );
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CcStrategicPriority;
 use App\Http\Requests\StoreCcStrategicPriorityRequest;
 use App\Http\Requests\UpdateCcStrategicPriorityRequest;
+use Illuminate\Database\QueryException;
 use Inertia\Inertia;
 
 class CcStrategicPriorityController extends Controller
@@ -32,7 +33,9 @@ class CcStrategicPriorityController extends Controller
      */
     public function store(StoreCcStrategicPriorityRequest $request)
     {
-        //
+        CcStrategicPriority::create($request->validated());
+
+        return redirect()->back();
     }
 
     /**
@@ -56,7 +59,9 @@ class CcStrategicPriorityController extends Controller
      */
     public function update(UpdateCcStrategicPriorityRequest $request, CcStrategicPriority $ccStrategicPriority)
     {
-        //
+        $ccStrategicPriority->update($request->validated());
+
+        return redirect()->back();
     }
 
     /**
@@ -64,6 +69,21 @@ class CcStrategicPriorityController extends Controller
      */
     public function destroy(CcStrategicPriority $ccStrategicPriority)
     {
-        //
+        try {
+            $ccStrategicPriority->delete();
+
+            return redirect()->back();
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return redirect()
+                    ->back()
+                    ->withErrors([
+                        'message' =>
+                            'Cannot delete this strategic priority because it is linked to existing sub-sectors or typologies.',
+                    ]);
+            }
+
+            throw $e;
+        }
     }
 }

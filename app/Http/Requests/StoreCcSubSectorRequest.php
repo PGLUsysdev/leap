@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCcSubSectorRequest extends FormRequest
 {
@@ -23,7 +24,20 @@ class StoreCcSubSectorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'strategic_priority_id' => [
+                'required',
+                'integer',
+                'exists:cc_strategic_priorities,id',
+            ],
+            'code' => [
+                'required',
+                'integer',
+                'min:1',
+                'max:9',
+                Rule::unique('cc_sub_sectors')
+                    ->where('strategic_priority_id', $this->strategic_priority_id),
+            ],
+            'name' => ['required', 'string', 'max:255'],
         ];
     }
 }

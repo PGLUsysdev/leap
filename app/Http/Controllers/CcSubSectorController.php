@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CcStrategicPriority;
 use App\Models\CcSubSector;
 use App\Http\Requests\StoreCcSubSectorRequest;
 use App\Http\Requests\UpdateCcSubSectorRequest;
+use Illuminate\Database\QueryException;
 use Inertia\Inertia;
 
 class CcSubSectorController extends Controller
@@ -16,6 +18,7 @@ class CcSubSectorController extends Controller
     {
         return Inertia::render('cc-sub-sector/index', [
             'subSectors' => CcSubSector::with('strategicPriority')->get(),
+            'strategicPriorities' => CcStrategicPriority::all(),
         ]);
     }
 
@@ -32,7 +35,9 @@ class CcSubSectorController extends Controller
      */
     public function store(StoreCcSubSectorRequest $request)
     {
-        //
+        CcSubSector::create($request->validated());
+
+        return redirect()->back();
     }
 
     /**
@@ -56,7 +61,9 @@ class CcSubSectorController extends Controller
      */
     public function update(UpdateCcSubSectorRequest $request, CcSubSector $ccSubSector)
     {
-        //
+        $ccSubSector->update($request->validated());
+
+        return redirect()->back();
     }
 
     /**
@@ -64,6 +71,21 @@ class CcSubSectorController extends Controller
      */
     public function destroy(CcSubSector $ccSubSector)
     {
-        //
+        try {
+            $ccSubSector->delete();
+
+            return redirect()->back();
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return redirect()
+                    ->back()
+                    ->withErrors([
+                        'message' =>
+                            'Cannot delete this sub sector because it is linked to existing typologies.',
+                    ]);
+            }
+
+            throw $e;
+        }
     }
 }

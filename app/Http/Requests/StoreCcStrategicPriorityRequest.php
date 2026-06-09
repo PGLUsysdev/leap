@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCcStrategicPriorityRequest extends FormRequest
 {
@@ -23,7 +24,14 @@ class StoreCcStrategicPriorityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'code' => [
+                'required',
+                'integer',
+                'min:1',
+                'max:9',
+                Rule::unique('cc_strategic_priorities'),
+            ],
+            'name' => ['required', 'string', 'max:255'],
         ];
     }
 }

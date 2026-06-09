@@ -7,6 +7,7 @@ use App\Models\CcStrategicPriority;
 use App\Models\CcSubSector;
 use App\Http\Requests\StoreCcTypologyRequest;
 use App\Http\Requests\UpdateCcTypologyRequest;
+use Illuminate\Database\QueryException;
 use Inertia\Inertia;
 
 class CcTypologyController extends Controller
@@ -52,16 +53,26 @@ class CcTypologyController extends Controller
             . '-'
             . str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
 
-        CcTypology::create([
-            'code' => $code,
-            'description' => $request->description,
-            'response_type' => $request->response_type,
-            'strategic_priority_id' => $request->strategic_priority_id,
-            'sub_sector_id' => $request->sub_sector_id,
-            'category_code' => $request->category_code,
-            'item_num' => $request->item_num,
-            'is_nccap_activity' => $request->boolean('is_nccap_activity'),
-        ]);
+        try {
+            CcTypology::create([
+                'code' => $code,
+                'description' => $request->description,
+                'response_type' => $request->response_type,
+                'strategic_priority_id' => $request->strategic_priority_id,
+                'sub_sector_id' => $request->sub_sector_id,
+                'category_code' => $request->category_code,
+                'item_num' => $request->item_num,
+                'is_nccap_activity' => $request->boolean('is_nccap_activity'),
+            ]);
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return redirect()->back()->withErrors([
+                    'message' => "A typology with code \"{$code}\" already exists.",
+                ]);
+            }
+
+            throw $e;
+        }
 
         return redirect()->back();
     }
@@ -101,16 +112,26 @@ class CcTypologyController extends Controller
             . '-'
             . str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
 
-        $ccTypology->update([
-            'code' => $code,
-            'description' => $request->description,
-            'response_type' => $request->response_type,
-            'strategic_priority_id' => $request->strategic_priority_id,
-            'sub_sector_id' => $request->sub_sector_id,
-            'category_code' => $request->category_code,
-            'item_num' => $request->item_num,
-            'is_nccap_activity' => $request->boolean('is_nccap_activity'),
-        ]);
+        try {
+            $ccTypology->update([
+                'code' => $code,
+                'description' => $request->description,
+                'response_type' => $request->response_type,
+                'strategic_priority_id' => $request->strategic_priority_id,
+                'sub_sector_id' => $request->sub_sector_id,
+                'category_code' => $request->category_code,
+                'item_num' => $request->item_num,
+                'is_nccap_activity' => $request->boolean('is_nccap_activity'),
+            ]);
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return redirect()->back()->withErrors([
+                    'message' => "A typology with code \"{$code}\" already exists.",
+                ]);
+            }
+
+            throw $e;
+        }
 
         return redirect()->back();
     }
