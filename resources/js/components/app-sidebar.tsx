@@ -100,6 +100,19 @@ const mainNavItems: NavItem[] = [
     },
     { title: '', href: '', type: 'separator' },
     {
+        title: 'CC Typology',
+        href: '/cc-typology',
+        icon: ShieldCheck,
+        // permission: 'fiscal-year.view',
+    },
+    {
+        title: 'CC Strategic Priorities',
+        href: '/roles',
+        icon: ShieldCheck,
+        permission: 'fiscal-year.view',
+    },
+    { title: '', href: '', type: 'separator' },
+    {
         title: 'Roles',
         href: '/roles',
         icon: ShieldCheck,

@@ -162,6 +162,18 @@ export interface FlattenedPpa extends Ppa {
 
 // --- not checked
 
+export interface CcTypology {
+    id: number;
+    code: string;
+    description: string;
+    response_type: string;
+    strategic_priority_id: number;
+    sub_sector_id: number | null;
+    category_code: string;
+    item_num: number;
+    is_nccap_activity: boolean;
+}
+
 export interface ChartOfAccount {
     id: number;
     account_number: string;
@@ -375,4 +387,31 @@ export interface Filter {
     dialog_mode?: string | null;
     id?: number | null;
     selected_office_id?: string | null;
+}
+
+export interface CcTypology {
+    id: number;
+    code: string;
+    description: string;
+    response_type: string;
+    strategic_priority_id: number;
+    sub_sector_id: number | null;
+    category_code: string;
+    item_num: number;
+    is_nccap_activity: boolean;
+    strategic_priority?: CcStrategicPriority;
+    sub_sector?: CcSubSector | null;
+}
+
+export interface CcStrategicPriority {
+    id: number;
+    code: number;
+    name: string;
+}
+
+export interface CcSubSector {
+    id: number;
+    strategic_priority_id: number;
+    code: number;
+    name: string;
 }

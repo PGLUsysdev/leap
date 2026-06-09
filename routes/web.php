@@ -21,6 +21,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\TestDataTableController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CcTypologyController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -42,10 +43,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     // User Status Management
     Route::get('users', [UserController::class, 'index'])->name('users.index');
-    Route::patch('users/{user}', [
-        UserController::class,
-        'update',
-    ])->name('users.update');
+    Route::patch('users/{user}', [UserController::class, 'update'])->name(
+        'users.update',
+    );
 
     // User Approval
     Route::patch('/admin/users/{user}/approve', [
@@ -181,24 +181,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Roles
-    Route::get('roles', [RoleController::class, 'index'])->name(
-        'roles.index',
-    );
-    Route::post('roles', [RoleController::class, 'store'])->name(
-        'roles.store',
-    );
+    Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
     Route::patch('roles/{role}', [RoleController::class, 'update'])->name(
         'roles.update',
     );
     Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name(
         'roles.destroy',
     );
-    Route::get('roles/{role}/permissions', [RoleController::class, 'getPermissions'])->name(
-        'roles.permissions.get',
-    );
-    Route::post('roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name(
-        'roles.permissions.update',
-    );
+    Route::get('roles/{role}/permissions', [
+        RoleController::class,
+        'getPermissions',
+    ])->name('roles.permissions.get');
+    Route::post('roles/{role}/permissions', [
+        RoleController::class,
+        'updatePermissions',
+    ])->name('roles.permissions.update');
 
     // Offices
     Route::get('offices', [OfficeController::class, 'index'])->name(
@@ -353,6 +351,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         PpmpPriceListController::class,
         'destroy',
     ])->name('ppmp-price-list.destroy');
+
+    // CC Typology
+    Route::get('cc-typology', [CcTypologyController::class, 'index'])->name(
+        'cc-typology.index',
+    );
 
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
