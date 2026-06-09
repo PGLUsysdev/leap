@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CcSubSector;
 use App\Http\Requests\StoreCcSubSectorRequest;
 use App\Http\Requests\UpdateCcSubSectorRequest;
+use Inertia\Inertia;
 
 class CcSubSectorController extends Controller
 {
@@ -13,7 +14,9 @@ class CcSubSectorController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('cc-sub-sector/index', [
+            'subSectors' => CcSubSector::with('strategicPriority')->get(),
+        ]);
     }
 
     /**

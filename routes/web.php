@@ -22,6 +22,8 @@ use App\Http\Controllers\SectorController;
 use App\Http\Controllers\TestDataTableController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\CcTypologyController;
+use App\Http\Controllers\CcStrategicPriorityController;
+use App\Http\Controllers\CcSubSectorController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -352,10 +354,32 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'destroy',
     ])->name('ppmp-price-list.destroy');
 
+    // CC Strategic Priorities
+    Route::get('cc-strategic-priority', [
+        CcStrategicPriorityController::class,
+        'index',
+    ])->name('cc-strategic-priority.index');
+
+    // CC Sub Sectors
+    Route::get('cc-sub-sector', [CcSubSectorController::class, 'index'])->name(
+        'cc-sub-sector.index',
+    );
+
     // CC Typology
     Route::get('cc-typology', [CcTypologyController::class, 'index'])->name(
         'cc-typology.index',
     );
+    Route::post('cc-typology', [CcTypologyController::class, 'store'])->name(
+        'cc-typology.store',
+    );
+    Route::patch('cc-typology/{ccTypology}', [
+        CcTypologyController::class,
+        'update',
+    ])->name('cc-typology.update');
+    Route::delete('cc-typology/{ccTypology}', [
+        CcTypologyController::class,
+        'destroy',
+    ])->name('cc-typology.destroy');
 
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);

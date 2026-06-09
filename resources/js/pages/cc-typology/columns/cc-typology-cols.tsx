@@ -17,73 +17,88 @@ const categoryLabels: Record<string, string> = {
     '4': 'Service Delivery',
 };
 
-const columns = [
-    columnHelper.accessor('code', {
-        header: 'Code',
-        size: 200,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-    }),
-    columnHelper.accessor('description', {
-        header: 'Description',
-        size: 400,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-    }),
-    columnHelper.accessor('response_type', {
-        header: 'Response Type',
-        size: 200,
-        cell: (info) => (
-            <div className="text-wrap">
-                {responseTypeLabels[info.getValue()] ?? info.getValue()}
-            </div>
-        ),
-    }),
-    columnHelper.accessor('strategic_priority.name', {
-        header: 'Strategic Priority',
-        size: 200,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-    }),
-    columnHelper.accessor('sub_sector.name', {
-        header: 'Sub Sector',
-        size: 200,
-        cell: (info) => (
-            <div className="text-wrap">{info.getValue() ?? '—'}</div>
-        ),
-    }),
-    columnHelper.accessor('category_code', {
-        header: 'Category Code',
-        size: 200,
-        cell: (info) => (
-            <div className="text-wrap">
-                {categoryLabels[info.getValue()] ?? info.getValue()}
-            </div>
-        ),
-    }),
-    columnHelper.accessor('item_num', {
-        header: 'Item No.',
-        size: 200,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-    }),
-    columnHelper.accessor('is_nccap_activity', {
-        header: 'NCCAP Activity',
-        size: 200,
-        cell: (info) => (
-            <div className="text-wrap">{info.getValue() ? 'Yes' : 'No'}</div>
-        ),
-    }),
-    columnHelper.accessor('action', {
-        header: null,
-        size: 80,
-        cell: (info) => (
-            <div className="text-wrap">
-                <Button size="icon">
-                    <Pencil />
-                </Button>
-                <Button size="icon" variant="destructive">
-                    <Trash />
-                </Button>
-            </div>
-        ),
-    }),
-];
+export interface ColumnActions {
+    onEdit: (typology: CcTypology) => void;
+    onDelete: (typology: CcTypology) => void;
+}
 
-export default columns;
+export default function columns({ onEdit, onDelete }: ColumnActions) {
+    return [
+        columnHelper.accessor('code', {
+            header: 'Code',
+            size: 150,
+            cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+        }),
+        columnHelper.accessor('description', {
+            header: 'Description',
+            size: 400,
+            cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+        }),
+        columnHelper.accessor('response_type', {
+            header: 'Response Type',
+            size: 150,
+            cell: (info) => (
+                <div className="text-wrap">
+                    {responseTypeLabels[info.getValue()] ?? info.getValue()}
+                </div>
+            ),
+        }),
+        columnHelper.accessor('strategic_priority.name', {
+            header: 'Strategic Priority',
+            size: 200,
+            cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+        }),
+        columnHelper.accessor('sub_sector.name', {
+            header: 'Sub Sector',
+            size: 200,
+            cell: (info) => (
+                <div className="text-wrap">{info.getValue() ?? '—'}</div>
+            ),
+        }),
+        columnHelper.accessor('category_code', {
+            header: 'Category Code',
+            size: 200,
+            cell: (info) => (
+                <div className="text-wrap">
+                    {categoryLabels[info.getValue()] ?? info.getValue()}
+                </div>
+            ),
+        }),
+        columnHelper.accessor('item_num', {
+            header: 'Item No.',
+            size: 150,
+            cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+        }),
+        columnHelper.accessor('is_nccap_activity', {
+            header: 'NCCAP Activity',
+            size: 150,
+            cell: (info) => (
+                <div className="text-wrap">
+                    {info.getValue() ? 'Yes' : 'No'}
+                </div>
+            ),
+        }),
+        columnHelper.display({
+            id: 'action',
+            size: 84,
+            cell: (info) => (
+                <div className="flex gap-1">
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => onEdit(info.row.original)}
+                    >
+                        <Pencil />
+                    </Button>
+                    <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => onDelete(info.row.original)}
+                    >
+                        <Trash />
+                    </Button>
+                </div>
+            ),
+        }),
+    ];
+}

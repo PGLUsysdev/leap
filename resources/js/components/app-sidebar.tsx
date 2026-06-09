@@ -107,9 +107,15 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'CC Strategic Priorities',
-        href: '/roles',
+        href: '/cc-strategic-priority',
         icon: ShieldCheck,
-        permission: 'fiscal-year.view',
+        // permission: 'fiscal-year.view',
+    },
+    {
+        title: 'CC Sub Sectors',
+        href: '/cc-sub-sector',
+        icon: ShieldCheck,
+        // permission: 'fiscal-year.view',
     },
     { title: '', href: '', type: 'separator' },
     {

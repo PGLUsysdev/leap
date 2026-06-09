@@ -12,7 +12,7 @@ class UpdateCcTypologyRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,13 @@ class UpdateCcTypologyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'response_type' => 'required|in:A,M',
+            'strategic_priority_id' => 'required|exists:cc_strategic_priorities,id',
+            'sub_sector_id' => 'nullable|exists:cc_sub_sectors,id',
+            'category_code' => 'required|in:1,2,3,4',
+            'item_num' => 'required|integer|min:1|max:99',
+            'description' => 'required|string',
+            'is_nccap_activity' => 'boolean',
         ];
     }
 }

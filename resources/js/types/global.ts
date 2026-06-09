@@ -414,4 +414,5 @@ export interface CcSubSector {
     strategic_priority_id: number;
     code: number;
     name: string;
+    strategic_priority?: CcStrategicPriority;
 }

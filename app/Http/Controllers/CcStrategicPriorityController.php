@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CcStrategicPriority;
 use App\Http\Requests\StoreCcStrategicPriorityRequest;
 use App\Http\Requests\UpdateCcStrategicPriorityRequest;
+use Inertia\Inertia;
 
 class CcStrategicPriorityController extends Controller
 {
@@ -13,7 +14,9 @@ class CcStrategicPriorityController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('cc-strategic-priority/index', [
+            'strategicPriorities' => CcStrategicPriority::all(),
+        ]);
     }
 
     /**

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\CcTypology;
+use App\Models\CcStrategicPriority;
+use App\Models\CcSubSector;
 use App\Http\Requests\StoreCcTypologyRequest;
 use App\Http\Requests\UpdateCcTypologyRequest;
 use Inertia\Inertia;
@@ -20,6 +22,8 @@ class CcTypologyController extends Controller
                 'strategicPriority',
                 'subSector',
             ])->get(),
+            'strategicPriorities' => CcStrategicPriority::all(),
+            'subSectors' => CcSubSector::all(),
         ]);
     }
 
@@ -36,7 +40,30 @@ class CcTypologyController extends Controller
      */
     public function store(StoreCcTypologyRequest $request)
     {
-        //
+        $priority = CcStrategicPriority::findOrFail($request->strategic_priority_id);
+        $subSector = $request->sub_sector_id
+            ? CcSubSector::find($request->sub_sector_id)
+            : null;
+
+        $code = $request->response_type
+            . $priority->code
+            . ($subSector?->code ?? '1')
+            . $request->category_code
+            . '-'
+            . str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
+
+        CcTypology::create([
+            'code' => $code,
+            'description' => $request->description,
+            'response_type' => $request->response_type,
+            'strategic_priority_id' => $request->strategic_priority_id,
+            'sub_sector_id' => $request->sub_sector_id,
+            'category_code' => $request->category_code,
+            'item_num' => $request->item_num,
+            'is_nccap_activity' => $request->boolean('is_nccap_activity'),
+        ]);
+
+        return redirect()->back();
     }
 
     /**
@@ -62,7 +89,30 @@ class CcTypologyController extends Controller
         UpdateCcTypologyRequest $request,
         CcTypology $ccTypology,
     ) {
-        //
+        $priority = CcStrategicPriority::findOrFail($request->strategic_priority_id);
+        $subSector = $request->sub_sector_id
+            ? CcSubSector::find($request->sub_sector_id)
+            : null;
+
+        $code = $request->response_type
+            . $priority->code
+            . ($subSector?->code ?? '1')
+            . $request->category_code
+            . '-'
+            . str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
+
+        $ccTypology->update([
+            'code' => $code,
+            'description' => $request->description,
+            'response_type' => $request->response_type,
+            'strategic_priority_id' => $request->strategic_priority_id,
+            'sub_sector_id' => $request->sub_sector_id,
+            'category_code' => $request->category_code,
+            'item_num' => $request->item_num,
+            'is_nccap_activity' => $request->boolean('is_nccap_activity'),
+        ]);
+
+        return redirect()->back();
     }
 
     /**
@@ -70,6 +120,8 @@ class CcTypologyController extends Controller
      */
     public function destroy(CcTypology $ccTypology)
     {
-        //
+        $ccTypology->delete();
+
+        return redirect()->back();
     }
 }
