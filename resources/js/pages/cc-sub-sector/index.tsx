@@ -15,11 +15,17 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'CC Sub Sectors', href: '#' }];
 interface CcSubSectorPageProps {
     subSectors: CcSubSector[];
     strategicPriorities: CcStrategicPriority[];
+    can: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export default function CcSubSectorPage({
     subSectors,
     strategicPriorities,
+    can,
 }: CcSubSectorPageProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingSubSector, setEditingSubSector] =
@@ -45,30 +51,24 @@ export default function CcSubSectorPage({
         setEditingSubSector(null);
     }, []);
 
-    const handleDeleteRequest = useCallback(
-        (subSector: CcSubSector) => {
-            setDeletingSubSector(subSector);
-        },
-        [],
-    );
+    const handleDeleteRequest = useCallback((subSector: CcSubSector) => {
+        setDeletingSubSector(subSector);
+    }, []);
 
     const handleDeleteConfirm = useCallback(() => {
         if (!deletingSubSector) return;
         setIsDeleting(true);
-        router.delete(
-            `/cc-sub-sector/${deletingSubSector.id}`,
-            {
-                preserveState: true,
-                preserveScroll: true,
-                onSuccess: () => setDeletingSubSector(null),
-                onError: (errors) => {
-                    if (errors.message) {
-                        setDeleteError(errors.message as string);
-                    }
-                },
-                onFinish: () => setIsDeleting(false),
+        router.delete(`/cc-sub-sector/${deletingSubSector.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => setDeletingSubSector(null),
+            onError: (errors) => {
+                if (errors.message) {
+                    setDeleteError(errors.message as string);
+                }
             },
-        );
+            onFinish: () => setIsDeleting(false),
+        });
     }, [deletingSubSector]);
 
     const handleDeleteCancel = useCallback(() => {
@@ -85,10 +85,13 @@ export default function CcSubSectorPage({
                     data={subSectors}
                     withSearch
                     negativeHeight={7}
+                    meta={{ can }}
                 >
-                    <Button onClick={handleCreate}>
-                        Create CC Sub Sector
-                    </Button>
+                    {can?.add && (
+                        <Button onClick={handleCreate}>
+                            Create CC Sub Sector
+                        </Button>
+                    )}
                 </DataTable>
             </div>
 
@@ -107,16 +110,14 @@ export default function CcSubSectorPage({
 
             <DeleteDialog
                 isOpen={!!deletingSubSector}
-                onOpenChange={(open) =>
-                    !open && setDeletingSubSector(null)
-                }
+                onOpenChange={(open) => !open && setDeletingSubSector(null)}
                 title="Delete CC Sub Sector"
                 description={
                     deletingSubSector ? (
                         <>
                             Are you sure you want to delete{' '}
-                            <strong>{deletingSubSector.name}</strong>?
-                            This action cannot be undone.
+                            <strong>{deletingSubSector.name}</strong>? This
+                            action cannot be undone.
                         </>
                     ) : null
                 }

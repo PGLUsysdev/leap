@@ -16,10 +16,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface CcStrategicPriorityPageProps {
     strategicPriorities: CcStrategicPriority[];
+    can: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export default function CcStrategicPriorityPage({
     strategicPriorities,
+    can,
 }: CcStrategicPriorityPageProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingPriority, setEditingPriority] =
@@ -45,30 +51,24 @@ export default function CcStrategicPriorityPage({
         setEditingPriority(null);
     }, []);
 
-    const handleDeleteRequest = useCallback(
-        (priority: CcStrategicPriority) => {
-            setDeletingPriority(priority);
-        },
-        [],
-    );
+    const handleDeleteRequest = useCallback((priority: CcStrategicPriority) => {
+        setDeletingPriority(priority);
+    }, []);
 
     const handleDeleteConfirm = useCallback(() => {
         if (!deletingPriority) return;
         setIsDeleting(true);
-        router.delete(
-            `/cc-strategic-priority/${deletingPriority.id}`,
-            {
-                preserveState: true,
-                preserveScroll: true,
-                onSuccess: () => setDeletingPriority(null),
-                onError: (errors) => {
-                    if (errors.message) {
-                        setDeleteError(errors.message as string);
-                    }
-                },
-                onFinish: () => setIsDeleting(false),
+        router.delete(`/cc-strategic-priority/${deletingPriority.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onSuccess: () => setDeletingPriority(null),
+            onError: (errors) => {
+                if (errors.message) {
+                    setDeleteError(errors.message as string);
+                }
             },
-        );
+            onFinish: () => setIsDeleting(false),
+        });
     }, [deletingPriority]);
 
     const handleDeleteCancel = useCallback(() => {
@@ -85,10 +85,13 @@ export default function CcStrategicPriorityPage({
                     data={strategicPriorities}
                     withSearch
                     negativeHeight={7}
+                    meta={{ can }}
                 >
-                    <Button onClick={handleCreate}>
-                        Create CC Strategic Priority
-                    </Button>
+                    {can?.add && (
+                        <Button onClick={handleCreate}>
+                            Create CC Strategic Priority
+                        </Button>
+                    )}
                 </DataTable>
             </div>
 
@@ -112,8 +115,8 @@ export default function CcStrategicPriorityPage({
                     deletingPriority ? (
                         <>
                             Are you sure you want to delete{' '}
-                            <strong>{deletingPriority.name}</strong>?
-                            This action cannot be undone.
+                            <strong>{deletingPriority.name}</strong>? This
+                            action cannot be undone.
                         </>
                     ) : null
                 }

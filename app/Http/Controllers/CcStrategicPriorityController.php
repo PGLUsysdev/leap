@@ -15,8 +15,21 @@ class CcStrategicPriorityController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', CcStrategicPriority::class);
+
         return Inertia::render('cc-strategic-priority/index', [
             'strategicPriorities' => CcStrategicPriority::all(),
+            'can' => [
+                'add' => request()
+                    ->user()
+                    ->can('create', CcStrategicPriority::class),
+                'edit' => request()
+                    ->user()
+                    ->can('update', new CcStrategicPriority()),
+                'delete' => request()
+                    ->user()
+                    ->can('delete', new CcStrategicPriority()),
+            ],
         ]);
     }
 
@@ -33,6 +46,8 @@ class CcStrategicPriorityController extends Controller
      */
     public function store(StoreCcStrategicPriorityRequest $request)
     {
+        $this->authorize('create', CcStrategicPriority::class);
+
         CcStrategicPriority::create($request->validated());
 
         return redirect()->back();
@@ -57,8 +72,12 @@ class CcStrategicPriorityController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCcStrategicPriorityRequest $request, CcStrategicPriority $ccStrategicPriority)
-    {
+    public function update(
+        UpdateCcStrategicPriorityRequest $request,
+        CcStrategicPriority $ccStrategicPriority,
+    ) {
+        $this->authorize('update', $ccStrategicPriority);
+
         $ccStrategicPriority->update($request->validated());
 
         return redirect()->back();
@@ -69,6 +88,8 @@ class CcStrategicPriorityController extends Controller
      */
     public function destroy(CcStrategicPriority $ccStrategicPriority)
     {
+        $this->authorize('delete', $ccStrategicPriority);
+
         try {
             $ccStrategicPriority->delete();
 

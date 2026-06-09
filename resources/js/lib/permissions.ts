@@ -311,4 +311,37 @@ export const permissionTree: PermissionNode[] = [
             { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
         ],
     },
+    {
+        key: 'cc-strategic-priority',
+        label: 'CC Strategic Priority',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'create', label: 'Create', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'cc-sub-sector',
+        label: 'CC Sub Sector',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'create', label: 'Create', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
+    {
+        key: 'cc-typology',
+        label: 'CC Typology',
+        permissions: [],
+        scopedPermissions: [
+            { key: 'view', label: 'View', scopes: [], disableOption: true },
+            { key: 'create', label: 'Create', scopes: [], disableOption: true },
+            { key: 'edit', label: 'Edit', scopes: [], disableOption: true },
+            { key: 'delete', label: 'Delete', scopes: [], disableOption: true },
+        ],
+    },
 ];

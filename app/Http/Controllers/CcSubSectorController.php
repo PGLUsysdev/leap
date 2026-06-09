@@ -16,9 +16,16 @@ class CcSubSectorController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', CcSubSector::class);
+
         return Inertia::render('cc-sub-sector/index', [
             'subSectors' => CcSubSector::with('strategicPriority')->get(),
             'strategicPriorities' => CcStrategicPriority::all(),
+            'can' => [
+                'add' => request()->user()->can('create', CcSubSector::class),
+                'edit' => request()->user()->can('update', new CcSubSector()),
+                'delete' => request()->user()->can('delete', new CcSubSector()),
+            ],
         ]);
     }
 
@@ -35,6 +42,8 @@ class CcSubSectorController extends Controller
      */
     public function store(StoreCcSubSectorRequest $request)
     {
+        $this->authorize('create', CcSubSector::class);
+
         CcSubSector::create($request->validated());
 
         return redirect()->back();
@@ -59,8 +68,12 @@ class CcSubSectorController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCcSubSectorRequest $request, CcSubSector $ccSubSector)
-    {
+    public function update(
+        UpdateCcSubSectorRequest $request,
+        CcSubSector $ccSubSector,
+    ) {
+        $this->authorize('update', $ccSubSector);
+
         $ccSubSector->update($request->validated());
 
         return redirect()->back();
@@ -71,6 +84,8 @@ class CcSubSectorController extends Controller
      */
     public function destroy(CcSubSector $ccSubSector)
     {
+        $this->authorize('delete', $ccSubSector);
+
         try {
             $ccSubSector->delete();
 

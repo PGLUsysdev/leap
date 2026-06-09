@@ -17,6 +17,8 @@ class CcTypologyController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', CcTypology::class);
+
         return Inertia::render('cc-typology/index', [
             // 'ccTypologies' => CcTypology::all(),
             'ccTypologies' => CcTypology::with([
@@ -25,6 +27,11 @@ class CcTypologyController extends Controller
             ])->get(),
             'strategicPriorities' => CcStrategicPriority::all(),
             'subSectors' => CcSubSector::all(),
+            'can' => [
+                'add' => request()->user()->can('create', CcTypology::class),
+                'edit' => request()->user()->can('update', new CcTypology()),
+                'delete' => request()->user()->can('delete', new CcTypology()),
+            ],
         ]);
     }
 
@@ -41,17 +48,22 @@ class CcTypologyController extends Controller
      */
     public function store(StoreCcTypologyRequest $request)
     {
-        $priority = CcStrategicPriority::findOrFail($request->strategic_priority_id);
+        $this->authorize('create', CcTypology::class);
+
+        $priority = CcStrategicPriority::findOrFail(
+            $request->strategic_priority_id,
+        );
         $subSector = $request->sub_sector_id
             ? CcSubSector::find($request->sub_sector_id)
             : null;
 
-        $code = $request->response_type
-            . $priority->code
-            . ($subSector?->code ?? '1')
-            . $request->category_code
-            . '-'
-            . str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
+        $code =
+            $request->response_type .
+            $priority->code .
+            ($subSector?->code ?? '1') .
+            $request->category_code .
+            '-' .
+            str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
 
         try {
             CcTypology::create([
@@ -66,9 +78,11 @@ class CcTypologyController extends Controller
             ]);
         } catch (QueryException $e) {
             if ($e->getCode() === '23000') {
-                return redirect()->back()->withErrors([
-                    'message' => "A typology with code \"{$code}\" already exists.",
-                ]);
+                return redirect()
+                    ->back()
+                    ->withErrors([
+                        'message' => "A typology with code \"{$code}\" already exists.",
+                    ]);
             }
 
             throw $e;
@@ -100,17 +114,22 @@ class CcTypologyController extends Controller
         UpdateCcTypologyRequest $request,
         CcTypology $ccTypology,
     ) {
-        $priority = CcStrategicPriority::findOrFail($request->strategic_priority_id);
+        $this->authorize('update', $ccTypology);
+
+        $priority = CcStrategicPriority::findOrFail(
+            $request->strategic_priority_id,
+        );
         $subSector = $request->sub_sector_id
             ? CcSubSector::find($request->sub_sector_id)
             : null;
 
-        $code = $request->response_type
-            . $priority->code
-            . ($subSector?->code ?? '1')
-            . $request->category_code
-            . '-'
-            . str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
+        $code =
+            $request->response_type .
+            $priority->code .
+            ($subSector?->code ?? '1') .
+            $request->category_code .
+            '-' .
+            str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
 
         try {
             $ccTypology->update([
@@ -125,9 +144,11 @@ class CcTypologyController extends Controller
             ]);
         } catch (QueryException $e) {
             if ($e->getCode() === '23000') {
-                return redirect()->back()->withErrors([
-                    'message' => "A typology with code \"{$code}\" already exists.",
-                ]);
+                return redirect()
+                    ->back()
+                    ->withErrors([
+                        'message' => "A typology with code \"{$code}\" already exists.",
+                    ]);
             }
 
             throw $e;
@@ -141,6 +162,8 @@ class CcTypologyController extends Controller
      */
     public function destroy(CcTypology $ccTypology)
     {
+        $this->authorize('delete', $ccTypology);
+
         $ccTypology->delete();
 
         return redirect()->back();

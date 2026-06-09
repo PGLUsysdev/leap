@@ -13,7 +13,9 @@ class CcSubSectorPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('cc-sub-sector.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class CcSubSectorPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('cc-sub-sector.create');
     }
 
     /**
@@ -37,7 +41,9 @@ class CcSubSectorPolicy
      */
     public function update(User $user, CcSubSector $ccSubSector): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('cc-sub-sector.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class CcSubSectorPolicy
      */
     public function delete(User $user, CcSubSector $ccSubSector): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('cc-sub-sector.delete');
     }
 
     /**

@@ -3,7 +3,11 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { DataTable } from '@/components/data-table';
 import createColumns from './columns/cc-typology-cols';
-import type { CcTypology, CcStrategicPriority, CcSubSector } from '@/types/global';
+import type {
+    CcTypology,
+    CcStrategicPriority,
+    CcSubSector,
+} from '@/types/global';
 import { Button } from '@/components/ui/button';
 import { router } from '@inertiajs/react';
 import { DeleteDialog } from '@/components/delete-dialog';
@@ -15,17 +19,27 @@ interface CcTypologyPageProps {
     ccTypologies: CcTypology[];
     strategicPriorities: CcStrategicPriority[];
     subSectors: CcSubSector[];
+    can: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export default function CcTypologyPage({
     ccTypologies,
     strategicPriorities,
     subSectors,
+    can,
 }: CcTypologyPageProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingTypology, setEditingTypology] = useState<CcTypology | null>(null);
+    const [editingTypology, setEditingTypology] = useState<CcTypology | null>(
+        null,
+    );
 
-    const [deletingTypology, setDeletingTypology] = useState<CcTypology | null>(null);
+    const [deletingTypology, setDeletingTypology] = useState<CcTypology | null>(
+        null,
+    );
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleCreate = useCallback(() => {
@@ -62,7 +76,11 @@ export default function CcTypologyPage({
         setEditingTypology(null);
     }, []);
 
-    const columns = createColumns({ onEdit: handleEdit, onDelete: handleDelete });
+    const columns = createColumns({
+        onEdit: handleEdit,
+        onDelete: handleDelete,
+        can,
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -73,9 +91,11 @@ export default function CcTypologyPage({
                     withSearch
                     negativeHeight={7}
                 >
-                    <Button onClick={handleCreate}>
-                        Create CC Typology
-                    </Button>
+                    {can?.add && (
+                        <Button onClick={handleCreate}>
+                            Create CC Typology
+                        </Button>
+                    )}
                 </DataTable>
             </div>
 
@@ -94,8 +114,9 @@ export default function CcTypologyPage({
                 description={
                     deletingTypology ? (
                         <>
-                            Are you sure you want to delete <strong>{deletingTypology.code}</strong>?
-                            This action cannot be undone.
+                            Are you sure you want to delete{' '}
+                            <strong>{deletingTypology.code}</strong>? This
+                            action cannot be undone.
                         </>
                     ) : null
                 }

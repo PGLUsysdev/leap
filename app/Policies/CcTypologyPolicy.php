@@ -13,7 +13,9 @@ class CcTypologyPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('cc-typology.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class CcTypologyPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('cc-typology.create');
     }
 
     /**
@@ -37,7 +41,9 @@ class CcTypologyPolicy
      */
     public function update(User $user, CcTypology $ccTypology): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('cc-typology.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class CcTypologyPolicy
      */
     public function delete(User $user, CcTypology $ccTypology): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('cc-typology.delete');
     }
 
     /**

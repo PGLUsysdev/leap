@@ -20,9 +20,14 @@ const categoryLabels: Record<string, string> = {
 export interface ColumnActions {
     onEdit: (typology: CcTypology) => void;
     onDelete: (typology: CcTypology) => void;
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
-export default function columns({ onEdit, onDelete }: ColumnActions) {
+export default function columns({ onEdit, onDelete, can }: ColumnActions) {
     return [
         columnHelper.accessor('code', {
             header: 'Code',
@@ -86,6 +91,7 @@ export default function columns({ onEdit, onDelete }: ColumnActions) {
                     <Button
                         size="icon"
                         variant="outline"
+                        disabled={!can?.edit}
                         onClick={() => onEdit(info.row.original)}
                     >
                         <Pencil />
@@ -93,6 +99,7 @@ export default function columns({ onEdit, onDelete }: ColumnActions) {
                     <Button
                         size="icon"
                         variant="destructive"
+                        disabled={!can?.delete}
                         onClick={() => onDelete(info.row.original)}
                     >
                         <Trash />

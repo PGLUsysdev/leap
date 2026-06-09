@@ -29,6 +29,7 @@ const columns = [
                 <Button
                     size="icon"
                     variant="outline"
+                    disabled={!table.options.meta?.can?.edit}
                     onClick={() => table.options.meta?.onEdit?.(row.original)}
                 >
                     <Pencil />
@@ -36,6 +37,7 @@ const columns = [
                 <Button
                     size="icon"
                     variant="destructive"
+                    disabled={!table.options.meta?.can?.delete}
                     onClick={() => table.options.meta?.onDelete?.(row.original)}
                 >
                     <Trash />
