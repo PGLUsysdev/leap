@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Office extends Model
@@ -38,50 +39,45 @@ class Office extends Model
         );
     }
 
-    public function children()
+    // hasMany
+    public function children(): HasMany
     {
         return $this->hasMany(Office::class, 'parent_id');
     }
 
-    public function parent()
-    {
-        return $this->belongsTo(Office::class, 'parent_id');
-    }
-
-    public function users()
+    public function users(): HasMany
     {
         return $this->hasMany(User::class, 'office_id');
     }
 
-    public function ppas()
+    public function ppas(): HasMany
     {
         return $this->hasMany(Ppa::class, 'office_id');
     }
 
-    public function sector()
+    public function supplementalAips(): HasMany
+    {
+        return $this->hasMany(SupplementalAip::class, 'office_id');
+    }
+
+    // belongsTo
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Office::class, 'parent_id');
+    }
+
+    public function sector(): BelongsTo
     {
         return $this->belongsTo(Sector::class, 'sector_id');
     }
 
-    public function lguLevel()
+    public function lguLevel(): BelongsTo
     {
         return $this->belongsTo(LguLevel::class, 'lgu_level_id');
     }
 
-    public function officeType()
+    public function officeType(): BelongsTo
     {
         return $this->belongsTo(OfficeType::class, 'office_type_id');
-    }
-
-    //
-
-    public function childrenRecursive()
-    {
-        return $this->children()->with([
-            'childrenRecursive',
-            'sector',
-            'lguLevel',
-            'officeType',
-        ]);
     }
 }

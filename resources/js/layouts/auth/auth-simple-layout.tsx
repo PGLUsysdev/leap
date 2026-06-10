@@ -1,4 +1,4 @@
-import AppLogoIcon from '@/components/app-logo-icon';
+// import AppLogoIcon from '@/components/app-logo-icon';
 // import { home } from '@/routes';
 import { login } from '@/routes';
 import { Link } from '@inertiajs/react';
@@ -17,27 +17,38 @@ export default function AuthSimpleLayout({
     title,
     description,
 }: PropsWithChildren<AuthLayoutProps>) {
-    // console.log(logo);
-
     return (
-        <div className="relative flex min-h-svh flex-col items-center justify-center gap-6 overflow-hidden bg-background p-6 md:p-10">
-            <img
-                src={buildingImage}
-                className="right pointer-events-none absolute -right-10 -bottom-120 h-[150%] w-[200%] object-cover object-bottom opacity-20"
-                alt=""
+        <div className="relative flex min-h-svh w-full flex-col items-center justify-center gap-6 overflow-hidden bg-background p-6 md:p-10">
+            <div
+                className="pointer-events-none fixed inset-0 z-0 h-full w-full opacity-50"
+                style={{
+                    backgroundImage: `
+                        radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.6) 0%, transparent 100%),
+                        radial-gradient(circle at 50% 100%, rgba(234, 179, 8, 0.5) 0%, transparent 100%),
+                        radial-gradient(circle at 100% 20%, rgba(239, 68, 68, 0.6) 0%, transparent 100%)
+                    `,
+                    filter: 'blur(0px)',
+                }}
             />
 
-            <div className="w-full max-w-sm">
+            <div
+                className="pointer-events-none absolute inset-0 z-0 opacity-20"
+                style={{
+                    backgroundImage: `url(${buildingImage})`,
+                    backgroundSize: '101% auto',
+                    backgroundPosition: 'center -10%',
+                    backgroundRepeat: 'no-repeat',
+                }}
+            />
+
+            <div className="relative z-10 w-full max-w-sm">
                 <div className="flex flex-col gap-8">
                     <div className="flex flex-col items-center gap-4">
                         <Link
-                            // href={home()}
                             href={login()}
                             className="flex flex-col items-center gap-2 font-medium"
                         >
-                            {/* <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md"> */}
                             <div className="flex flex-col items-center">
-                                {/* <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" /> */}
                                 <img
                                     src={logo}
                                     alt="PGLU Logo"
@@ -45,6 +56,7 @@ export default function AuthSimpleLayout({
                                 />
                                 <span>LEAP</span>
                             </div>
+
                             <span className="sr-only">{title}</span>
                         </Link>
 

@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import type { RowData } from '@tanstack/react-table';
-// import { Separator } from '@/components/ui/separator';
 
 declare module '@tanstack/react-table' {
     interface TableMeta<TData extends RowData> {
@@ -40,6 +39,7 @@ declare module '@tanstack/react-table' {
         onShowChildren?: (data: TData) => void;
         onMove?: (data: TData) => void;
         onSelect?: (data: TData, boolean: boolean) => void;
+        onEditPerms?: () => void;
         meta?: {
             priceLists?: PriceList[];
             chartOfAccounts?: ChartOfAccount[];
@@ -51,171 +51,225 @@ declare module '@tanstack/react-table' {
 
 const columnHelper = createColumnHelper<FiscalYear>();
 
-const columns = [
-    columnHelper.accessor('year', {
-        header: 'Fiscal Year',
-        cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
-    }),
-    columnHelper.accessor('status', {
-        header: 'Status',
-        cell: (info) => {
-            const status = info.getValue(); // 'active' | 'inactive' | 'closed'
+const columns = (
+    canUpdateStatus: boolean,
+    canOpenAip: boolean,
+    disableOpenAip: boolean,
+    canGenerateApp: boolean,
+    canOpenPpmpSummary: boolean,
+) => {
+    const cols = [
+        columnHelper.accessor('year', {
+            header: 'Fiscal Year',
+            cell: (value) => (
+                <span className="text-wrap">{value.getValue()}</span>
+            ),
+        }),
+        columnHelper.accessor('status', {
+            header: 'Status',
+            cell: (info) => {
+                const status = info.getValue();
 
-            const STATUS_MAP = {
-                active: { label: 'Active', variant: 'default' as const },
-                inactive: { label: 'Inactive', variant: 'secondary' as const },
-                closed: { label: 'Closed', variant: 'outline' as const },
-            } as const;
+                const STATUS_MAP = {
+                    active: { label: 'Active', variant: 'default' as const },
+                    inactive: {
+                        label: 'Inactive',
+                        variant: 'secondary' as const,
+                    },
+                    closed: { label: 'Closed', variant: 'outline' as const },
+                } as const;
 
-            const config = STATUS_MAP[status] || {
-                label: status,
-                variant: 'secondary',
-            };
+                const config = STATUS_MAP[status] || {
+                    label: status,
+                    variant: 'secondary',
+                };
 
-            return (
-                <Badge variant={config.variant} className="capitalize">
-                    {config.label}
-                </Badge>
-            );
-        },
-    }),
-    columnHelper.accessor('created_at', {
-        header: 'Created At',
-        // size: 500,
-        cell: (info) => {
-            const rawValue = info.getValue();
-            const date = new Date(String(rawValue));
-            const formattedDate = date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            });
+                return (
+                    <Badge variant={config.variant} className="capitalize">
+                        {config.label}
+                    </Badge>
+                );
+            },
+        }),
+        columnHelper.accessor('created_at', {
+            header: 'Created At',
+            cell: (info) => {
+                const rawValue = info.getValue();
+                const date = new Date(String(rawValue));
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                });
 
-            return <span className="text-wrap">{formattedDate}</span>;
-        },
-    }),
-    columnHelper.accessor('updated_at', {
-        header: 'Updated At',
-        // size: 300,
-        cell: (info) => {
-            const rawValue = info.getValue();
-            const date = new Date(String(rawValue));
-            const formattedDate = date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            });
+                return <span className="text-wrap">{formattedDate}</span>;
+            },
+        }),
+        columnHelper.accessor('updated_at', {
+            header: 'Updated At',
+            cell: (info) => {
+                const rawValue = info.getValue();
+                const date = new Date(String(rawValue));
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                });
 
-            return <span className="text-wrap">{formattedDate}</span>;
-        },
-    }),
-    columnHelper.display({
-        id: 'action',
-        size: 154,
-        cell: ({ row, table }) => {
-            const initialStatus = row.original.status;
+                return <span className="text-wrap">{formattedDate}</span>;
+            },
+        }),
+        ...(canUpdateStatus ||
+        canOpenAip ||
+        canGenerateApp ||
+        canOpenPpmpSummary
+            ? [
+                  columnHelper.display({
+                      id: 'action',
+                      size: (() => {
+                          const count = [
+                              canUpdateStatus,
+                              canOpenAip,
+                              canGenerateApp,
+                              canOpenPpmpSummary,
+                          ].filter(Boolean).length;
+                          return count === 0
+                              ? 0
+                              : count === 1
+                                ? 48
+                                : count === 2
+                                  ? 84
+                                  : count === 3
+                                    ? 120
+                                    : 154;
+                      })(),
+                      cell: ({ row, table }) => {
+                          const initialStatus = row.original.status;
 
-            return (
-                <div className="flex items-center gap-1">
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                title="Change AIP status"
-                                onClick={() =>
-                                    table.options.meta?.onEdit?.(row.original)
-                                }
-                            >
-                                <Pencil />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    Change AIP Status
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        table.options.meta?.onUpdateStatus?.(
-                                            row.original,
-                                            'active',
-                                        )
-                                    }
-                                    disabled={initialStatus === 'active'}
-                                >
-                                    Active
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        table.options.meta?.onUpdateStatus?.(
-                                            row.original,
-                                            'inactive',
-                                        )
-                                    }
-                                    disabled={initialStatus === 'inactive'}
-                                >
-                                    Inactive
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        table.options.meta?.onUpdateStatus?.(
-                                            row.original,
-                                            'closed',
-                                        )
-                                    }
-                                    disabled={initialStatus === 'closed'}
-                                >
-                                    Closed
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                          return (
+                              <div className="flex items-center gap-1">
+                                  {canUpdateStatus && (
+                                      <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                              <Button
+                                                  variant="outline"
+                                                  size="icon"
+                                                  title="Change AIP status"
+                                                  onClick={() =>
+                                                      table.options.meta?.onEdit?.(
+                                                          row.original,
+                                                      )
+                                                  }
+                                              >
+                                                  <Pencil />
+                                              </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent>
+                                              <DropdownMenuGroup>
+                                                  <DropdownMenuLabel>
+                                                      Change AIP Status
+                                                  </DropdownMenuLabel>
+                                                  <DropdownMenuItem
+                                                      onClick={() =>
+                                                          table.options.meta?.onUpdateStatus?.(
+                                                              row.original,
+                                                              'active',
+                                                          )
+                                                      }
+                                                      disabled={
+                                                          initialStatus ===
+                                                          'active'
+                                                      }
+                                                  >
+                                                      Active
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem
+                                                      onClick={() =>
+                                                          table.options.meta?.onUpdateStatus?.(
+                                                              row.original,
+                                                              'inactive',
+                                                          )
+                                                      }
+                                                      disabled={
+                                                          initialStatus ===
+                                                          'inactive'
+                                                      }
+                                                  >
+                                                      Inactive
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem
+                                                      onClick={() =>
+                                                          table.options.meta?.onUpdateStatus?.(
+                                                              row.original,
+                                                              'closed',
+                                                          )
+                                                      }
+                                                      disabled={
+                                                          initialStatus ===
+                                                          'closed'
+                                                      }
+                                                  >
+                                                      Closed
+                                                  </DropdownMenuItem>
+                                              </DropdownMenuGroup>
+                                          </DropdownMenuContent>
+                                      </DropdownMenu>
+                                  )}
 
-                    {/* <Separator orientation="vertical" /> */}
+                                  {canOpenAip && (
+                                      <Button
+                                          variant="outline"
+                                          size="icon"
+                                          title="Open AIP"
+                                          disabled={disableOpenAip}
+                                          onClick={() =>
+                                              table.options.meta?.onOpen?.(
+                                                  row.original,
+                                              )
+                                          }
+                                      >
+                                          <ExternalLink />
+                                      </Button>
+                                  )}
 
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        title="Open AIP"
-                        onClick={() =>
-                            table.options.meta?.onOpen?.(row.original)
-                        }
-                    >
-                        <ExternalLink />
-                    </Button>
+                                  {canGenerateApp && (
+                                      <Button
+                                          variant="outline"
+                                          title="Generate APP"
+                                          size="icon"
+                                          onClick={() => {
+                                              table.options.meta?.onGeneratePdf?.(
+                                                  row.original,
+                                              );
+                                          }}
+                                      >
+                                          <FileText />
+                                      </Button>
+                                  )}
 
-                    {/* <Separator orientation="vertical" /> */}
+                                  {canOpenPpmpSummary && (
+                                      <Button
+                                          variant="outline"
+                                          title="Open PPMP Summary"
+                                          size="icon"
+                                          onClick={() => {
+                                              table.options.meta?.onOpenPpmpSummary?.(
+                                                  row.original,
+                                              );
+                                          }}
+                                      >
+                                          <ExternalLink />
+                                      </Button>
+                                  )}
+                              </div>
+                          );
+                      },
+                  }),
+              ]
+            : []),
+    ];
 
-                    <Button
-                        variant="outline"
-                        title="Generate APP"
-                        size="icon"
-                        onClick={() => {
-                            table.options.meta?.onGeneratePdf?.(row.original);
-                        }}
-                    >
-                        <FileText />
-                    </Button>
-
-                    {/* <Separator orientation="vertical" /> */}
-
-                    <Button
-                        variant="outline"
-                        title="Open PPMP Summary"
-                        size="icon"
-                        onClick={() => {
-                            table.options.meta?.onOpenPpmpSummary?.(
-                                row.original,
-                            );
-                        }}
-                    >
-                        <ExternalLink />
-                    </Button>
-                </div>
-            );
-        },
-    }),
-];
+    return cols;
+};
 
 export default columns;

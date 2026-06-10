@@ -11,27 +11,24 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index } from '@/routes/aip';
-import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
 import {
-    // BanknoteArrowUp,
     Briefcase,
     Building2,
     Calculator,
     ClipboardList,
-    // FileText,
     FolderTree,
-    // Gem,
     Landmark,
     Layers,
     LayoutGrid,
     PieChart,
     Receipt,
+    ShieldCheck,
     Tags,
     Users,
 } from 'lucide-react';
 import AppLogo from './app-logo';
-import { usePage } from '@inertiajs/react';
 
 const mainNavItems: NavItem[] = [
     {
@@ -44,58 +41,94 @@ const mainNavItems: NavItem[] = [
         title: 'Annual Investment Programs',
         href: index(),
         icon: FolderTree,
+        permission: 'fiscal-year.view',
     },
     {
         title: 'PPA Masterlist',
         href: '/ppa',
-        icon: ClipboardList, // More specific to a "Masterlist" than FileText
+        icon: ClipboardList,
+        permission: 'ppa.view',
     },
     {
         title: 'Offices',
         href: '/offices',
-        icon: Building2, // Represents physical/organizational entities
+        icon: Building2,
+        permission: 'office.view',
     },
     {
         title: 'Sectors',
         href: '/sectors',
-        icon: PieChart, // Represents segments or divisions
+        icon: PieChart,
+        permission: 'sector.view',
     },
     {
         title: 'Lgu Levels',
         href: '/lgu-levels',
-        icon: Layers, // Represents hierarchical levels
+        icon: Layers,
+        permission: 'lgu-level.view',
     },
     {
         title: 'Office Types',
         href: '/office-types',
-        icon: Briefcase, // Differentiates categories of work/offices
+        icon: Briefcase,
+        permission: 'office-type.view',
     },
     { title: '', href: '', type: 'separator' },
     {
         title: 'Price Lists',
         href: '/price-lists',
-        icon: Receipt, // Better suited for pricing/billing than Gem
+        icon: Receipt,
+        permission: 'price-list.view',
     },
     {
         title: 'PPMP Categories',
         href: '/ppmp-categories',
         icon: Tags,
+        permission: 'ppmp-category.view',
     },
     {
         title: 'Chart of Accounts',
         href: '/chart-of-accounts',
         icon: Calculator,
+        permission: 'chart-of-account.view',
     },
     {
         title: 'Funding Sources',
         href: '/funding-sources',
-        icon: Landmark, // Represents the institutional source of funds
+        icon: Landmark,
+        permission: 'funding-source.view',
     },
     { title: '', href: '', type: 'separator' },
     {
+        title: 'CC Typology',
+        href: '/cc-typology',
+        icon: ShieldCheck,
+        permission: 'cc-typology.view',
+    },
+    {
+        title: 'CC Strategic Priorities',
+        href: '/cc-strategic-priority',
+        icon: ShieldCheck,
+        permission: 'cc-strategic-priority.view',
+    },
+    {
+        title: 'CC Sub Sectors',
+        href: '/cc-sub-sector',
+        icon: ShieldCheck,
+        permission: 'cc-sub-sector.view',
+    },
+    { title: '', href: '', type: 'separator' },
+    {
+        title: 'Roles',
+        href: '/roles',
+        icon: ShieldCheck,
+        permission: 'role.view',
+    },
+    {
         title: 'Users',
         href: '/users',
-        icon: Users, // Standardized for people management
+        icon: Users,
+        permission: 'user.view',
     },
 ];
 
@@ -113,24 +146,22 @@ const mainNavItems: NavItem[] = [
 // ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
-
-    const filteredNavItems = mainNavItems.filter((item) => {
-        // If the item is 'Users', check the permission we shared in Middleware
-        if (item.title === 'Users') {
-            return auth.can?.manage_users;
-        }
-
-        // Return all other items as usual
-        return true;
-    });
+    const { auth } = usePage<SharedData>().props;
+    const permissions = new Set(auth.permissions ?? []);
+    const filteredNavItems = mainNavItems.filter(
+        (item) => !item.permission || permissions.has(item.permission),
+    );
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="inset" className="border-r">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton
+                            size="lg"
+                            asChild
+                            className="h-12 p-2 group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:px-2"
+                        >
                             <Link href={dashboard()} prefetch>
                                 <AppLogo />
                             </Link>
@@ -140,7 +171,6 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                {/* <NavMain items={mainNavItems} /> */}
                 <NavMain items={filteredNavItems} />
             </SidebarContent>
 

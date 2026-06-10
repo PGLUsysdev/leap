@@ -29,6 +29,8 @@ class UpdateUserRequest extends FormRequest
                 'string',
                 Rule::in(['pending', 'active', 'inactive']),
             ],
+            'role_id' => ['nullable', 'integer', 'exists:roles,id'],
+            'office_id' => ['nullable', 'integer', 'exists:offices,id'],
         ];
     }
 }

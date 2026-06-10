@@ -13,7 +13,9 @@ class LguLevelPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('lgu-level.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class LguLevelPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('lgu-level.add');
     }
 
     /**
@@ -37,7 +41,9 @@ class LguLevelPolicy
      */
     public function update(User $user, LguLevel $lguLevel): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('lgu-level.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class LguLevelPolicy
      */
     public function delete(User $user, LguLevel $lguLevel): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('lgu-level.delete');
     }
 
     /**

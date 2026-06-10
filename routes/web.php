@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AipCostingController;
 use App\Http\Controllers\AipEntryController;
+use App\Http\Controllers\SupplementalAipController;
 use App\Http\Controllers\AipRefCodeController;
 use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\FiscalYearController;
@@ -16,9 +17,13 @@ use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\PpmpController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\TestDataTableController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CcTypologyController;
+use App\Http\Controllers\CcStrategicPriorityController;
+use App\Http\Controllers\CcSubSectorController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -37,13 +42,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('test-combobox', fn() => Inertia::render('test-combobox'));
 });
 
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     // User Status Management
     Route::get('users', [UserController::class, 'index'])->name('users.index');
-    Route::patch('users/{user}/status', [
-        UserController::class,
-        'update',
-    ])->name('users.update-status');
+    Route::patch('users/{user}', [UserController::class, 'update'])->name(
+        'users.update',
+    );
 
     // User Approval
     Route::patch('/admin/users/{user}/approve', [
@@ -85,6 +89,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         AipEntryController::class,
         'destroy',
     ]);
+
+    // --- Supplemental AIPs ---
+    Route::post('/supplemental-aips', [
+        SupplementalAipController::class,
+        'store',
+    ])->name('supplemental-aips.store');
+    Route::delete('/supplemental-aips/{supplementalAip}', [
+        SupplementalAipController::class,
+        'destroy',
+    ])->name('supplemental-aips.destroy');
 
     // --- AIP Costing ---
     Route::post('/aip-costing/{aipEntry}', [
@@ -168,6 +182,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Roles
+    Route::get('roles', [RoleController::class, 'index'])->name('roles.index');
+    Route::post('roles', [RoleController::class, 'store'])->name('roles.store');
+    Route::patch('roles/{role}', [RoleController::class, 'update'])->name(
+        'roles.update',
+    );
+    Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name(
+        'roles.destroy',
+    );
+    Route::get('roles/{role}/permissions', [
+        RoleController::class,
+        'getPermissions',
+    ])->name('roles.permissions.get');
+    Route::post('roles/{role}/permissions', [
+        RoleController::class,
+        'updatePermissions',
+    ])->name('roles.permissions.update');
+
     // Offices
     Route::get('offices', [OfficeController::class, 'index'])->name(
         'offices.index',
@@ -321,6 +353,56 @@ Route::middleware(['auth', 'verified'])->group(function () {
         PpmpPriceListController::class,
         'destroy',
     ])->name('ppmp-price-list.destroy');
+
+    // CC Strategic Priorities
+    Route::get('cc-strategic-priority', [
+        CcStrategicPriorityController::class,
+        'index',
+    ])->name('cc-strategic-priority.index');
+    Route::post('cc-strategic-priority', [
+        CcStrategicPriorityController::class,
+        'store',
+    ])->name('cc-strategic-priority.store');
+    Route::patch('cc-strategic-priority/{ccStrategicPriority}', [
+        CcStrategicPriorityController::class,
+        'update',
+    ])->name('cc-strategic-priority.update');
+    Route::delete('cc-strategic-priority/{ccStrategicPriority}', [
+        CcStrategicPriorityController::class,
+        'destroy',
+    ])->name('cc-strategic-priority.destroy');
+
+    // CC Sub Sectors
+    Route::get('cc-sub-sector', [CcSubSectorController::class, 'index'])->name(
+        'cc-sub-sector.index',
+    );
+    Route::post('cc-sub-sector', [CcSubSectorController::class, 'store'])->name(
+        'cc-sub-sector.store',
+    );
+    Route::patch('cc-sub-sector/{ccSubSector}', [
+        CcSubSectorController::class,
+        'update',
+    ])->name('cc-sub-sector.update');
+    Route::delete('cc-sub-sector/{ccSubSector}', [
+        CcSubSectorController::class,
+        'destroy',
+    ])->name('cc-sub-sector.destroy');
+
+    // CC Typology
+    Route::get('cc-typology', [CcTypologyController::class, 'index'])->name(
+        'cc-typology.index',
+    );
+    Route::post('cc-typology', [CcTypologyController::class, 'store'])->name(
+        'cc-typology.store',
+    );
+    Route::patch('cc-typology/{ccTypology}', [
+        CcTypologyController::class,
+        'update',
+    ])->name('cc-typology.update');
+    Route::delete('cc-typology/{ccTypology}', [
+        CcTypologyController::class,
+        'destroy',
+    ])->name('cc-typology.destroy');
 
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);

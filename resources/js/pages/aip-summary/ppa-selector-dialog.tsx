@@ -24,6 +24,7 @@ interface PpaSelectorDialogProps {
     fiscalYearId: number;
     existingPpaIds: number[];
     filters: Filter;
+    supplementalAipId?: number | null;
 }
 
 export default function PpaSelectorDialog({
@@ -34,6 +35,7 @@ export default function PpaSelectorDialog({
     filters,
     fiscalYearId,
     existingPpaIds = [],
+    supplementalAipId = null,
 }: PpaSelectorDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
@@ -176,7 +178,10 @@ export default function PpaSelectorDialog({
         const ids = Array.from(selectedItems.keys());
         router.post(
             `/aip/${fiscalYearId}/import`,
-            { ppa_ids: ids },
+            { 
+                ppa_ids: ids,
+                supplemental_aip_id: supplementalAipId,
+            },
             {
                 onStart: () => setLoading(true),
                 onSuccess: () => {
@@ -249,7 +254,7 @@ export default function PpaSelectorDialog({
                                     onClick={() => handleNavigate(item.id)}
                                     disabled={
                                         !!isAncestor ||
-                                        item.id === filters.dialog_id
+                                        item.id.toString() === filters.dialog_id
                                     }
                                 >
                                     {item.name}

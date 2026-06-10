@@ -18,9 +18,10 @@ class IsAdmin
     {
         // 1. Check if the user is even logged in
         // 2. Check if the user has the 'admin' role
-        if (Auth::check() && Auth::user()->role === 'admin') {
-            return $next($request);
-        }
+        // if (Auth::check() && Auth::user()->role === 'admin') {
+        // if (Auth::user()->role?->name === 'admin') {
+        //     return $next($request);
+        // }
 
         // If not an admin, boot them out
         abort(403, 'Unauthorized action.');

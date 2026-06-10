@@ -84,6 +84,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                     <Menu className="h-5 w-5" />
                                 </Button>
                             </SheetTrigger>
+
                             <SheetContent
                                 side="left"
                                 className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar"
@@ -91,9 +92,11 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                 <SheetTitle className="sr-only">
                                     Navigation Menu
                                 </SheetTitle>
+
                                 <SheetHeader className="flex justify-start text-left">
                                     <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
                                 </SheetHeader>
+
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col justify-between text-sm">
                                         <div className="flex flex-col space-y-4">
@@ -250,6 +253,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                     </div>
                 </div>
             </div>
+
             {breadcrumbs.length > 1 && (
                 <div className="flex w-full border-b border-sidebar-border/70">
                     <div className="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl">

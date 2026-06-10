@@ -29,7 +29,7 @@ export function NavUser() {
                         <SidebarMenuButton
                             size="lg"
                             // className="group text-muted-foreground text-sidebar-accent-foreground data-[state=open]:bg-sidebar-accent"
-                            className="group text-muted-foreground data-[state=open]:bg-sidebar-accent"
+                            className="group text-muted-foreground data-[state=open]:bg-sidebar-accent p-2 group-data-[collapsible=icon]:px-2 h-12 group-data-[collapsible=icon]:h-12!"
                             data-test="sidebar-menu-button"
                         >
                             <UserInfo user={auth.user} />

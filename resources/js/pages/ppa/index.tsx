@@ -7,6 +7,15 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 // Page-Specific Components
 import PpaFormDialog from '@/pages/ppa/form-dialog';
@@ -42,6 +51,13 @@ interface PpaPageProps {
     filters: Filter;
     dialogPpaTree: PaginatedResponse<Ppa>;
     dialogCurrent: Ppa[];
+    can?: {
+        add: boolean;
+        import: boolean;
+    };
+    showAllOffices?: boolean;
+    selectedOfficeId?: number;
+    parentOffices?: Office[];
 }
 
 export default function PpaPage({
@@ -51,9 +67,11 @@ export default function PpaPage({
     filters,
     dialogPpaTree,
     dialogCurrent,
+    can,
+    showAllOffices,
+    selectedOfficeId,
+    parentOffices,
 }: PpaPageProps) {
-    console.log(ppaTree);
-
     const { auth } = usePage<SharedData>().props;
 
     // Form Dialog States
@@ -209,8 +227,27 @@ export default function PpaPage({
         );
     }
 
+    function handleOfficeChange(officeId: string) {
+        router.visit(
+            index({
+                query: {
+                    selected_office_id: officeId,
+                },
+            }),
+            {},
+        );
+    }
+
     function handleShowChildren(ppa: Ppa) {
-        router.visit(index({ query: { id: ppa.id } }), {});
+        router.visit(
+            index({
+                query: {
+                    id: ppa.id,
+                    selected_office_id: filters.selected_office_id,
+                },
+            }),
+            {},
+        );
     }
 
     const nextType =
@@ -235,9 +272,9 @@ export default function PpaPage({
 
     return (
         <AppLayout breadcrumbs={finalBreadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={columns(ppaTree.data)}
                     data={ppaTree.data}
                     withSearch={true}
                     onAdd={handleAddChild}
@@ -254,18 +291,47 @@ export default function PpaPage({
                     pageKey="page"
                 >
                     <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => handleImportOpen()}
-                        >
-                            Import from Last Year
-                        </Button>
-                        {(current.length === 0 ||
-                            current[0].type !== 'Sub-Activity') && (
-                            <Button onClick={handleAddNew}>
-                                New {nextType}
+                        {showAllOffices && parentOffices && (
+                            <Select
+                                value={selectedOfficeId ? String(selectedOfficeId) : undefined}
+                                onValueChange={handleOfficeChange}
+                            >
+                                <SelectTrigger className="w-[220px]">
+                                    <SelectValue placeholder="Select LGU Office..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        <SelectLabel>
+                                            Parent Offices
+                                        </SelectLabel>
+                                        {parentOffices.map((office) => (
+                                            <SelectItem
+                                                key={office.id}
+                                                value={office.id.toString()}
+                                            >
+                                                {office.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        )}
+
+                        {can?.import && (
+                            <Button
+                                variant="outline"
+                                onClick={() => handleImportOpen()}
+                            >
+                                Import from Last Year
                             </Button>
                         )}
+                        {can?.add &&
+                            (current.length === 0 ||
+                                current[0].type !== 'Sub-Activity') && (
+                                <Button onClick={handleAddNew}>
+                                    New {nextType}
+                                </Button>
+                            )}
                     </div>
                 </DataTable>
             </div>
@@ -279,6 +345,7 @@ export default function PpaPage({
                 editPpa={editPpa}
                 offices={offices}
                 auth={auth}
+                selectedOfficeId={selectedOfficeId}
             />
 
             <PpaMoveDialog
@@ -297,6 +364,7 @@ export default function PpaPage({
                 dialogPpaTree={dialogPpaTree}
                 dialogCurrent={dialogCurrent}
                 onClose={() => setIsImportDialogOpen(false)}
+                selectedOfficeId={selectedOfficeId}
             />
 
             <DeleteDialog

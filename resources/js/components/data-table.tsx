@@ -59,6 +59,7 @@ interface DataTableProps<TData extends { id: unknown }> {
     onReorder?: (activeId: string, overId: string) => void;
     onMove?: (data: TData) => void;
     onShowChildren?: (data: TData) => void;
+    onEditPerms?: (data: TData) => void;
     onSelect?: (data: TData, boolean: boolean) => void;
     paginationObj?: PaginatedResponse<TData> | [];
     meta?: any;
@@ -91,6 +92,7 @@ export function DataTable<TData extends { id: unknown }>({
     onOpenPpmpSummary,
     onSelect,
     onReorder,
+    onEditPerms,
     onMove,
     onShowChildren,
     withSearch = false,
@@ -184,6 +186,7 @@ export function DataTable<TData extends { id: unknown }>({
             onGeneratePdf,
             onOpenPpmpSummary,
             onReorder,
+            onEditPerms,
             onMove,
             onShowChildren,
             onSelect,
@@ -321,7 +324,7 @@ export function DataTable<TData extends { id: unknown }>({
         <>
             <div className="flex flex-col gap-4">
                 {(withSearch || children) && (
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center justify-between gap-4 px-4">
                         {withSearch ? (
                             <InputGroup className="max-w-sm">
                                 <InputGroupInput
@@ -346,7 +349,8 @@ export function DataTable<TData extends { id: unknown }>({
                 <ScrollArea
                     ref={tableContainerRef}
                     style={{ height: `calc(100vh - ${negativeHeight}rem)` }}
-                    className="rounded-md border"
+                    // className="rounded-md border"
+                    className="border-t border-b"
                 >
                     <Table
                         style={{
@@ -355,35 +359,44 @@ export function DataTable<TData extends { id: unknown }>({
                             width: '100%',
                         }}
                     >
-                        <TableHeader className="sticky top-0 z-20 bg-background">
-                            {table.getHeaderGroups().map((headerGroup) => (
-                                <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map((header) => (
-                                        <TableHead
-                                            key={header.id}
-                                            colSpan={header.colSpan}
-                                            className="border-b-0 bg-primary text-primary-foreground"
-                                            style={{
-                                                width: `${header.getSize()}px`,
-                                                ...getCommonPinningStyles(
-                                                    header.column,
-                                                    table,
-                                                    false,
-                                                    true,
-                                                ),
-                                            }}
-                                        >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef
-                                                          .header,
-                                                      header.getContext(),
-                                                  )}
-                                        </TableHead>
-                                    ))}
-                                </TableRow>
-                            ))}
+                        <TableHeader>
+                            {table
+                                .getHeaderGroups()
+                                .map((headerGroup, groupIndex) => (
+                                    <TableRow
+                                        key={headerGroup.id}
+                                        className="sticky bg-background"
+                                        style={{
+                                            top: `${groupIndex * 40}px`,
+                                            zIndex: 5 - groupIndex,
+                                        }}
+                                    >
+                                        {headerGroup.headers.map((header) => (
+                                            <TableHead
+                                                key={header.id}
+                                                colSpan={header.colSpan}
+                                                className="bg-background"
+                                                style={{
+                                                    width: `${header.getSize()}px`,
+                                                    ...getCommonPinningStyles(
+                                                        header.column,
+                                                        table,
+                                                        false,
+                                                        true,
+                                                    ),
+                                                }}
+                                            >
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                          header.column
+                                                              .columnDef.header,
+                                                          header.getContext(),
+                                                      )}
+                                            </TableHead>
+                                        ))}
+                                    </TableRow>
+                                ))}
                         </TableHeader>
 
                         <TableBody>
@@ -555,7 +568,7 @@ export function DataTable<TData extends { id: unknown }>({
                 {paginationObj &&
                     paginationObj !== undefined &&
                     !Array.isArray(paginationObj) && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 px-4">
                             <Button
                                 size="icon"
                                 onClick={() =>

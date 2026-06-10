@@ -21,6 +21,7 @@ interface ExportToPdfDialogProps {
     aipEntries: Ppa[];
     fiscalYear: FiscalYear;
     auth: AuthData;
+    currentScope?: any;
 }
 
 // Disable hyphenation globally
@@ -32,6 +33,7 @@ export default function ExportToPdfDialog({
     aipEntries,
     fiscalYear,
     auth,
+    currentScope,
 }: ExportToPdfDialogProps) {
     const COLUMN_WIDTHS = [
         7.14, 17.86, 7.14, 5.36, 5.36, 7.14, 5.36, 5.36, 7.14, 5.36, 5.36, 5.36,
@@ -125,12 +127,59 @@ export default function ExportToPdfDialog({
                 displayTitle = `${outlineString}${suffix} ${displayTitle}`;
             }
 
-            const aipEntry = item.aip_entries?.[0];
-            const fundingSources =
-                aipEntry?.ppa_funding_sources &&
-                aipEntry.ppa_funding_sources.length > 0
-                    ? aipEntry.ppa_funding_sources
-                    : [{}];
+            let aipEntry = item.aip_entries?.[0];
+            const activeAips = item.aip_entries || [];
+            let fundingSources = activeAips.flatMap(aip => aip.ppa_funding_sources || []);
+
+            if (currentScope?.scope === 'combined') {
+                const grouped = new Map<number, any>();
+                fundingSources.forEach((src) => {
+                    const id = src.funding_source_id;
+                    if (!id) return;
+                    if (!grouped.has(id)) {
+                        grouped.set(id, {
+                            ...src,
+                            ps_amount: 0,
+                            mooe_amount: 0,
+                            co_amount: 0,
+                            fe_amount: 0,
+                            ccet_adaptation: 0,
+                            ccet_mitigation: 0,
+                        });
+                    }
+                    const base = grouped.get(id);
+                    base.ps_amount += parseFloat(src.ps_amount || 0);
+                    base.mooe_amount += parseFloat(src.mooe_amount || 0);
+                    base.co_amount += parseFloat(src.co_amount || 0);
+                    base.fe_amount += parseFloat(src.fe_amount || 0);
+                    base.ccet_adaptation += parseFloat(src.ccet_adaptation || 0);
+                    base.ccet_mitigation += parseFloat(src.ccet_mitigation || 0);
+                });
+
+                fundingSources = Array.from(grouped.values()).map(src => ({
+                    ...src,
+                    ps_amount: src.ps_amount > 0 ? src.ps_amount.toString() : '',
+                    mooe_amount: src.mooe_amount > 0 ? src.mooe_amount.toString() : '',
+                    co_amount: src.co_amount > 0 ? src.co_amount.toString() : '',
+                    fe_amount: src.fe_amount > 0 ? src.fe_amount.toString() : '',
+                    ccet_adaptation: src.ccet_adaptation > 0 ? src.ccet_adaptation.toString() : '',
+                    ccet_mitigation: src.ccet_mitigation > 0 ? src.ccet_mitigation.toString() : '',
+                }));
+
+                // Use the latest SAIP entry for non-numeric fields
+                const latestEntry = [...activeAips].sort(
+                    (a: any, b: any) =>
+                        (b.supplemental_aip_id ?? -1) -
+                        (a.supplemental_aip_id ?? -1),
+                )[0];
+                if (latestEntry) {
+                    aipEntry = latestEntry;
+                }
+            }
+
+            if (fundingSources.length === 0) {
+                fundingSources = [{}];
+            }
 
             result.push(
                 <View
@@ -459,8 +508,9 @@ export default function ExportToPdfDialog({
                             }}
                         >
                             <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
-                                CY {fiscalYear.year} Annual Investment Program
-                                (AIP)
+                                {currentScope?.scope === 'supplemental'
+                                    ? `CY ${fiscalYear.year} Supplemental Annual Investment Program (SAIP)`
+                                    : `CY ${fiscalYear.year} Annual Investment Program (AIP)`}
                             </Text>
 
                             <Text style={{ fontSize: 9, fontWeight: 'bold' }}>

@@ -22,10 +22,10 @@ class UpdateAipEntryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'office_id' => 'required|exists:offices,id',
-            'expected_output' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date',
+            'office_id' => 'sometimes|required|exists:offices,id',
+            'expected_output' => 'sometimes|required|string',
+            'start_date' => 'sometimes|required|date',
+            'end_date' => 'sometimes|required|date',
             'ppa_funding_sources' => 'nullable|array',
             'ppa_funding_sources.*.funding_source_id' =>
                 'required|exists:funding_sources,id',
@@ -36,7 +36,9 @@ class UpdateAipEntryRequest extends FormRequest
             'ppa_funding_sources.*.co_amount' => 'required|numeric',
             'ppa_funding_sources.*.ccet_adaptation' => 'nullable|numeric',
             'ppa_funding_sources.*.ccet_mitigation' => 'nullable|numeric',
-            'ppa_funding_sources.*.cc_typology_code' => 'nullable|string',
+            'ppa_funding_sources.*.cc_typology_id' =>
+                'nullable|exists:cc_typologies,id',
+            'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
         ];
     }
 }

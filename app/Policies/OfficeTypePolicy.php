@@ -13,7 +13,9 @@ class OfficeTypePolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office-type.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class OfficeTypePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office-type.add');
     }
 
     /**
@@ -37,7 +41,9 @@ class OfficeTypePolicy
      */
     public function update(User $user, OfficeType $officeType): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office-type.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class OfficeTypePolicy
      */
     public function delete(User $user, OfficeType $officeType): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('office-type.delete');
     }
 
     /**

@@ -14,21 +14,23 @@ class ChartOfAccountPpmpCategory extends Model
 
     protected $fillable = ['chart_of_account_id', 'ppmp_category_id'];
 
-    public function chartOfAccount(): BelongsTo
-    {
-        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account_id');
-    }
-
-    public function ppmpCategory(): BelongsTo
-    {
-        return $this->belongsTo(PpmpCategory::class, 'ppmp_category_id');
-    }
-
+    // hasMany
     public function ppmpPriceLists(): HasMany
     {
         return $this->hasMany(
             PpmpPriceList::class,
             'chart_of_account_ppmp_category_id',
         );
+    }
+
+    // belongsTo
+    public function ppmpCategory(): BelongsTo
+    {
+        return $this->belongsTo(PpmpCategory::class, 'ppmp_category_id');
+    }
+
+    public function chartOfAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'chart_of_account_id');
     }
 }

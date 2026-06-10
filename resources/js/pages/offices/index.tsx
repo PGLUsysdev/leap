@@ -3,15 +3,9 @@ import { type BreadcrumbItem } from '@/types';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import FormDialog from './form-dialog';
-import type {
-    Office,
-    Sector,
-    LguLevel,
-    OfficeType,
-    SharedData,
-} from '@/types/global';
+import type { Office, Sector, LguLevel, OfficeType } from '@/types/global';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 
@@ -22,6 +16,10 @@ interface OfficesPageProps {
     sectors: Sector[];
     lguLevels: LguLevel[];
     officeTypes: OfficeType[];
+    can?: {
+        addOffice: boolean;
+        showAllOffices: boolean;
+    };
 }
 
 export default function OfficesPage({
@@ -29,11 +27,9 @@ export default function OfficesPage({
     sectors,
     lguLevels,
     officeTypes,
+    can,
 }: OfficesPageProps) {
-    const { auth } = usePage<SharedData>().props;
-    const userRole = auth.user.role;
-
-    console.log(offices);
+    console.log({ offices, can });
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
@@ -41,9 +37,6 @@ export default function OfficesPage({
         useState<Office | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    console.log('office:', selectedOffice);
-    console.log('parentOffice', selectedParentOffice);
 
     function handleCreate() {
         setSelectedOffice(null);
@@ -89,20 +82,28 @@ export default function OfficesPage({
         });
     }
 
+    const cols = columns();
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="w-full px-4 pt-4 pb-4">
+            <div className="py-4">
+                <div className="mb-2 text-xs text-muted-foreground">
+                    {can?.showAllOffices
+                        ? 'Showing all offices'
+                        : 'Showing your office'}
+                </div>
+
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={offices}
                     withSearch={true}
                     onAdd={handleCreateChild}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    {userRole === 'admin' ? (
+                    {can?.addOffice && (
                         <Button onClick={handleCreate}>Add Office</Button>
-                    ) : undefined}
+                    )}
                 </DataTable>
             </div>
 

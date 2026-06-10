@@ -21,6 +21,8 @@ class PpmpPriceListController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorize('viewAny', PpmpPriceList::class);
+
         $mode = $request->query('dialog_mode');
 
         $query = PpmpPriceList::query()
@@ -66,14 +68,25 @@ class PpmpPriceListController extends Controller
             'CO',
         ])->get();
 
+        // $ppmpCategory = PpmpCategory::with(
+        //     'chartOfAccounts:id,account_title,account_number',
+        // )->get();
         $ppmpCategory = PpmpCategory::with(
-            'chartOfAccounts:id,account_title,account_number',
+            'chartOfAccountPpmpCategories.chartOfAccount:id,account_title,account_number',
         )->get();
 
         return Inertia::render('price-list/index', [
             'paginatedPriceList' => $priceList,
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategory' => $ppmpCategory,
+            'can' => [
+                'add' => request()->user()->can('create', PpmpPriceList::class),
+                'edit' => request()->user()->can('update', new PpmpPriceList()),
+                'delete' => request()
+                    ->user()
+                    ->can('delete', new PpmpPriceList()),
+                'move' => request()->user()->can('move', PpmpPriceList::class),
+            ],
             'filters' => $request->only([
                 'id',
                 'search',
@@ -153,6 +166,8 @@ class PpmpPriceListController extends Controller
      */
     public function store(StorePpmpPriceListRequest $request)
     {
+        $this->authorize('create', PpmpPriceList::class);
+
         $validated = $request->validated();
 
         // Auto-assign sort_order and item_number as the next available number
@@ -197,6 +212,8 @@ class PpmpPriceListController extends Controller
         UpdatePpmpPriceListRequest $request,
         PpmpPriceList $ppmpPriceList,
     ) {
+        $this->authorize('update', $ppmpPriceList);
+
         $validated = $request->validated();
 
         $junction = ChartOfAccountPpmpCategory::firstOrCreate([
@@ -217,6 +234,8 @@ class PpmpPriceListController extends Controller
      */
     public function destroy(PpmpPriceList $ppmpPriceList)
     {
+        $this->authorize('delete', $ppmpPriceList);
+
         // $ppmpPriceList->delete();
 
         try {
@@ -244,6 +263,8 @@ class PpmpPriceListController extends Controller
      */
     public function reorder(Request $request)
     {
+        $this->authorize('move', PpmpPriceList::class);
+
         $request->validate([
             'active_id' => 'required|exists:ppmp_price_lists,id',
             'over_id' => 'required|exists:ppmp_price_lists,id',

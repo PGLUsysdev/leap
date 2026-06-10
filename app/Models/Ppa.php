@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Ppa extends Model
@@ -21,6 +22,8 @@ class Ppa extends Model
         'is_active',
         'sort_order',
         'fiscal_year_id',
+        'supplemental_aip_id',
+        'is_supplemental',
     ];
 
     protected $appends = ['full_code'];
@@ -55,33 +58,35 @@ class Ppa extends Model
         );
     }
 
+    // hasMany
+    public function children(): HasMany
+    {
+        return $this->hasMany(Ppa::class, 'parent_id');
+    }
+
+    public function aipEntries(): HasMany
+    {
+        return $this->hasMany(AipEntry::class, 'ppa_id');
+    }
+
+    // belongsTo
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Ppa::class, 'parent_id');
     }
 
-    public function ancestor()
+    public function fiscalYear(): BelongsTo
     {
-        return $this->parent()->with('ancestor');
+        return $this->belongsTo(FiscalYear::class, 'fiscal_year_id');
     }
 
-    public function children()
-    {
-        return $this->hasMany(Ppa::class, 'parent_id');
-    }
-
-    public function aipEntries()
-    {
-        return $this->hasMany(AipEntry::class, 'ppa_id');
-    }
-
-    public function office()
+    public function office(): BelongsTo
     {
         return $this->belongsTo(Office::class, 'office_id');
     }
 
-    public function allDescendants()
+    public function supplementalAip(): BelongsTo
     {
-        return $this->children()->with('allDescendants');
+        return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
     }
 }

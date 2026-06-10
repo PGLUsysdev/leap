@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use Illuminate\Support\Facades\Request;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+
 use Inertia\Inertia;
+
+use App\Models\Office;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
@@ -14,8 +20,31 @@ class UserController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', User::class);
+
+        $user = Auth::user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        $usersQuery = User::with(['office', 'role']);
+
+        if (!$permissions->contains('user.show.all')) {
+            $usersQuery->where('office_id', $user->office_id);
+        }
+
         return Inertia::render('users/index', [
-            'users' => User::with('office')->get(),
+            'users' => $usersQuery->get(),
+            'roles' => Role::all(['id', 'name']),
+            'offices' => Office::all(['id', 'name', 'acronym']),
+            'can' => [
+                'editAll' => $permissions->contains('user.edit.all'),
+                'editOwn' => $permissions->contains('user.edit.own'),
+                'editOfficeAll' => $permissions->contains('user.edit.office.all'),
+                'editOfficeOwn' => $permissions->contains('user.edit.office.own'),
+                'editRoleAll' => $permissions->contains('user.edit.role.all'),
+                'editRoleOwn' => $permissions->contains('user.edit.role.own'),
+                'userOfficeId' => $user->office_id,
+            ],
         ]);
     }
 
@@ -56,9 +85,28 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-        // The UpdateUserRequest should contain validation for 'status'
-        // but we can also handle it directly here if the request class is empty
-        $user->update($request->validated());
+        $this->authorize('update', $user);
+
+        $data = $request->validated();
+
+        if (array_key_exists('office_id', $data) || array_key_exists('role_id', $data)) {
+            $authUser = $request->user();
+            $authUser->loadMissing('role.permissionRoles.permission');
+            $permissions = $authUser->role->permissionRoles->pluck('permission.name');
+
+            $canOffice = $permissions->contains('user.edit.office.all')
+                || ($permissions->contains('user.edit.office.own') && $authUser->office_id === $user->office_id);
+
+            $canRole = $permissions->contains('user.edit.role.all')
+                || ($permissions->contains('user.edit.role.own') && $authUser->office_id === $user->office_id);
+
+            $officeOk = !array_key_exists('office_id', $data) || $canOffice;
+            $roleOk = !array_key_exists('role_id', $data) || $canRole;
+
+            abort_unless($officeOk && $roleOk, 403);
+        }
+
+        $user->update($data);
 
         return back()->with('status', 'User updated successfully.');
     }

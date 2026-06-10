@@ -15,10 +15,16 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface ChartOfAccountPageProps {
     chartOfAccounts: ChartOfAccount[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export default function ChartOfAccountPage({
     chartOfAccounts,
+    can,
 }: ChartOfAccountPageProps) {
     const [open, setOpen] = useState(false);
     const [selectedAccount, setSelectedAccount] =
@@ -67,21 +73,25 @@ export default function ChartOfAccountPage({
         });
     }
 
+    const cols = columns(can?.edit ?? false, can?.delete ?? false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={chartOfAccounts}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    <div className="flex justify-end">
-                        <Button onClick={handleAdd}>
-                            Add Chart of Account
-                        </Button>
-                    </div>
+                    {can?.add && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>
+                                Add Chart of Account
+                            </Button>
+                        </div>
+                    )}
                 </DataTable>
             </div>
 

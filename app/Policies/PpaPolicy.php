@@ -5,6 +5,8 @@ namespace App\Policies;
 use App\Models\Ppa;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PpaPolicy
 {
@@ -13,7 +15,9 @@ class PpaPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppa.view');
     }
 
     /**
@@ -29,7 +33,9 @@ class PpaPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ppa.create');
     }
 
     /**
@@ -37,7 +43,16 @@ class PpaPolicy
      */
     public function update(User $user, Ppa $ppa): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        $mainOfficeId = DB::table('offices')
+            ->where('id', $ppa->office_id)
+            ->value(DB::raw('COALESCE(parent_id, id)'));
+
+        return $permissions->contains('ppa.edit') &&
+            ($permissions->contains('ppa.show.all') ||
+                $user->office_id === $mainOfficeId);
     }
 
     /**
@@ -45,7 +60,16 @@ class PpaPolicy
      */
     public function delete(User $user, Ppa $ppa): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        $mainOfficeId = DB::table('offices')
+            ->where('id', $ppa->office_id)
+            ->value(DB::raw('COALESCE(parent_id, id)'));
+
+        return $permissions->contains('ppa.delete') &&
+            ($permissions->contains('ppa.show.all') ||
+                $user->office_id === $mainOfficeId);
     }
 
     /**
@@ -62,5 +86,27 @@ class PpaPolicy
     public function forceDelete(User $user, Ppa $ppa): bool
     {
         return false;
+    }
+
+    public function move(User $user, Ppa $ppa): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+
+        $mainOfficeId = DB::table('offices')
+            ->where('id', $ppa->office_id)
+            ->value(DB::raw('COALESCE(parent_id, id)'));
+
+        return $permissions->contains('ppa.move') &&
+            ($permissions->contains('ppa.show.all') ||
+                $user->office_id === $mainOfficeId);
+    }
+
+    public function importLastYearPpa(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        // Log::info($permissions);
+        return $permissions->contains('ppa.import');
     }
 }

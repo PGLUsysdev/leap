@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Decimal } from 'decimal.js';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -31,6 +32,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { DataTable } from '@/components/data-table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import columns from './columns/columns';
 
 import { type BreadcrumbItem } from '@/types';
@@ -55,39 +57,66 @@ import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-di
 interface PpmpPageProps {
     fiscalYear: FiscalYear;
     aipEntry: AipEntry;
+    allAipEntries?: AipEntry[];
     ppmps: Ppmp[];
+    isSupplemental?: boolean;
     priceLists: PriceList[];
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
     fundingSources: FundingSource[];
+    currentTab: string;
     initialChoice: 'MOOE' | 'CO';
     initialPpaFundingSourceId: number;
+    can?: {
+        addPriceList: boolean;
+        viewSupplemental: boolean;
+        export: boolean;
+        generateSummary: boolean;
+        showSummaryAll?: boolean;
+    };
+    selectedOfficeId?: string;
 }
 
 export default function PpmpPage({
     fiscalYear,
     aipEntry,
+    allAipEntries = [],
     ppmps,
+    isSupplemental = false,
     priceLists,
     chartOfAccounts,
     ppmpCategories,
     fundingSources,
     initialChoice,
     initialPpaFundingSourceId,
+    currentTab,
+    can,
+    selectedOfficeId,
 }: PpmpPageProps) {
     console.log({
         fiscalYear,
         aipEntry,
+        allAipEntries,
         ppmps,
+        isSupplemental,
         priceLists,
         chartOfAccounts,
         ppmpCategories,
         fundingSources,
         initialChoice,
         initialPpaFundingSourceId,
+        selectedOfficeId,
     });
 
     const { auth } = usePage<SharedData>().props;
+
+    const buildQuery = (extra: Record<string, any> = {}) => {
+        const query = { ...extra };
+        if (can?.showSummaryAll && selectedOfficeId) {
+            query.selected_office_id = selectedOfficeId;
+        }
+        return query;
+    };
 
     const initialFsId = useMemo(() => {
         const bridge = aipEntry.ppa_funding_sources?.find(
@@ -111,63 +140,238 @@ export default function PpmpPage({
         setOpenExpenseAccountSummaryDialog,
     ] = useState(false);
 
+    const activeAipEntry = useMemo(() => {
+        if (currentTab === 'original') {
+            return allAipEntries.find((e) => !e.supplemental_aip_id);
+        }
+        if (currentTab.startsWith('supplemental_')) {
+            const entryId = Number(currentTab.replace('supplemental_', ''));
+            return allAipEntries.find((e) => e.id === entryId);
+        }
+        return null;
+    }, [currentTab, allAipEntries]);
+
+    const isActiveTab = useMemo(() => {
+        return currentTab !== 'combined';
+    }, [currentTab]);
+
+    const activeFundingSources = useMemo(() => {
+        if (currentTab === 'combined') {
+            return fundingSources;
+        }
+
+        const currentEntry = activeAipEntry || aipEntry;
+        const entryFsIds = new Set(
+            currentEntry?.ppa_funding_sources?.map(
+                (pfs) => pfs.funding_source_id,
+            ) || [],
+        );
+        return fundingSources.filter((fs) => entryFsIds.has(fs.id));
+    }, [currentTab, activeAipEntry, aipEntry, fundingSources]);
+
+    useEffect(() => {
+        if (activeFundingSources.length > 0) {
+            const hasSelected = activeFundingSources.some(
+                (fs) => fs.id === selectedFundingSourceId,
+            );
+            if (!hasSelected) {
+                const nextFsId = activeFundingSources[0].id;
+                setSelectedFundingSourceId(nextFsId);
+
+                const bridgeId = (
+                    activeAipEntry || aipEntry
+                ).ppa_funding_sources?.find(
+                    (pfs) => pfs.funding_source_id === nextFsId,
+                )?.id;
+
+                router.get(
+                    window.location.pathname,
+                    buildQuery({
+                        choice: selectedExpenseClass,
+                        ppa_funding_source_id: bridgeId,
+                        tab: currentTab,
+                    }),
+                    { preserveState: true, replace: true },
+                );
+            }
+        }
+    }, [
+        currentTab,
+        activeFundingSources,
+        selectedFundingSourceId,
+        activeAipEntry,
+        aipEntry,
+        selectedExpenseClass,
+    ]);
+
+    const hasSupplementalEntries = useMemo(() => {
+        if (!can?.viewSupplemental) return false;
+        return allAipEntries.some(
+            (e) =>
+                e.supplemental_aip_id &&
+                (e.ppa_funding_sources?.length ?? 0) > 0,
+        );
+    }, [allAipEntries, can?.viewSupplemental]);
+
+    const tabsList = useMemo(() => {
+        const list: { value: string; label: string }[] = [];
+        list.push({ value: 'original', label: 'Original' });
+        allAipEntries.forEach((entry) => {
+            if (
+                entry.supplemental_aip_id &&
+                (entry.ppa_funding_sources?.length ?? 0) > 0
+            ) {
+                const name = entry.supplemental_aip?.name || 'Supplemental';
+                list.push({
+                    value: `supplemental_${entry.id}`,
+                    label: name.replace('AIP', 'PPMP'),
+                });
+            }
+        });
+        list.push({ value: 'combined', label: 'Combined' });
+        return list;
+    }, [allAipEntries]);
+
+    const summaryHref = useMemo(() => {
+        let href = `/aip/${fiscalYear.id}/summary`;
+        if (can?.showSummaryAll && selectedOfficeId) {
+            href += `?selected_office_id=${selectedOfficeId}`;
+        }
+        return href;
+    }, [fiscalYear.id, can?.showSummaryAll, selectedOfficeId]);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Annual Investment Programs', href: '/aip' },
         {
             title: `AIP Summary FY ${fiscalYear.year}`,
-            href: `/aip/${fiscalYear.id}/summary`,
+            // href: `/aip/${fiscalYear.id}/summary`,
+            href: summaryHref,
         },
         { title: `PPMP Management`, href: `#` },
     ];
 
     const handleExpenseClassChange = (value: 'MOOE' | 'CO') => {
         setSelectedExpenseClass(value);
-
         router.get(
             window.location.pathname,
-            {
+            buildQuery({
                 choice: value,
                 ppa_funding_source_id: currentPpaFundingSourceId,
-            },
-            {
-                preserveState: true,
-                replace: true,
-            },
+            }),
+            { preserveState: true, replace: true },
         );
     };
 
     const handleFundingSourceChange = (value: string) => {
         const fsId = Number(value);
         setSelectedFundingSourceId(fsId);
-
-        const bridgeId = aipEntry.ppa_funding_sources?.find(
+        const bridgeId = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
             (pfs) => pfs.funding_source_id === fsId,
         )?.id;
-
         router.get(
             window.location.pathname,
-            {
+            buildQuery({
                 choice: selectedExpenseClass,
                 ppa_funding_source_id: bridgeId,
-            },
-            {
-                preserveState: true,
-                replace: true,
-            },
+            }),
+            { preserveState: true, replace: true },
         );
     };
 
-    const filteredPpmpItems = ppmps.filter((ppmp) => {
-        const matchesFunding =
-            ppmp.ppa_funding_source?.funding_source_id ===
-            selectedFundingSourceId;
+    const activePpmpItems = useMemo(() => {
+        if (currentTab === 'combined') {
+            return ppmps;
+        }
 
-        const matchesExpenseClass =
-            ppmp.ppmp_price_list?.chart_of_account_ppmp_category
-                ?.chart_of_account?.expense_class === selectedExpenseClass;
+        if (currentTab === 'original') {
+            const origEntry = allAipEntries.find((e) => !e.supplemental_aip_id);
+            if (!origEntry) return [];
+            return ppmps.filter(
+                (item) =>
+                    item.ppa_funding_source?.aip_entry_id === origEntry.id,
+            );
+        }
 
-        return matchesFunding && matchesExpenseClass;
-    });
+        if (currentTab.startsWith('supplemental_')) {
+            const entryId = Number(currentTab.replace('supplemental_', ''));
+            return ppmps.filter(
+                (item) => item.ppa_funding_source?.aip_entry_id === entryId,
+            );
+        }
+
+        return [];
+    }, [currentTab, ppmps, allAipEntries]);
+
+    const filteredPpmpItems = useMemo(() => {
+        const items = activePpmpItems.filter((ppmp) => {
+            const matchesFunding =
+                ppmp.ppa_funding_source?.funding_source_id ===
+                selectedFundingSourceId;
+
+            const matchesExpenseClass =
+                ppmp.ppmp_price_list?.chart_of_account_ppmp_category
+                    ?.chart_of_account?.expense_class === selectedExpenseClass;
+
+            return matchesFunding && matchesExpenseClass;
+        });
+
+        if (currentTab === 'combined') {
+            const grouped = new Map<number, Ppmp[]>();
+            items.forEach((item) => {
+                const key = item.ppmp_price_list_id;
+                if (!key) return;
+                const list = grouped.get(key) || [];
+                list.push(item);
+                grouped.set(key, list);
+            });
+
+            return Array.from(grouped.values()).map((list) => {
+                const base = { ...list[0] };
+                const months = [
+                    'jan',
+                    'feb',
+                    'mar',
+                    'apr',
+                    'may',
+                    'jun',
+                    'jul',
+                    'aug',
+                    'sep',
+                    'oct',
+                    'nov',
+                    'dec',
+                ];
+
+                months.forEach((m) => {
+                    const qtyKey = `${m}_qty`;
+                    const amtKey = `${m}_amount`;
+
+                    let totalQty = 0;
+                    let totalAmt = new Decimal(0);
+
+                    list.forEach((item) => {
+                        totalQty += Number((item as any)[qtyKey] || 0);
+                        totalAmt = totalAmt.plus(
+                            new Decimal((item as any)[amtKey] || 0),
+                        );
+                    });
+
+                    (base as any)[qtyKey] = totalQty;
+                    (base as any)[amtKey] = totalAmt.toString();
+                });
+
+                base.isCombined = true;
+                return base;
+            });
+        }
+
+        return items;
+    }, [
+        activePpmpItems,
+        selectedFundingSourceId,
+        selectedExpenseClass,
+        currentTab,
+    ]);
 
     console.log(filteredPpmpItems);
 
@@ -198,76 +402,89 @@ export default function PpmpPage({
         );
     }, [chartOfAccounts, selectedExpenseClass]);
 
-    // ---
-
-    const coaWithPriceListsByExpenseClass = useMemo(() => {
-        return filteredPpmpItems.reduce((acc: any, item) => {
-            // Correctly navigate the relationship: PPMP -> PriceList -> COA
-            const priceList = item.ppmp_price_list;
-            const coa =
-                priceList?.chart_of_account_ppmp_category?.chart_of_account;
-
-            if (coa && priceList) {
-                const expenseClass = coa.expense_class;
-                if (!acc[expenseClass]) acc[expenseClass] = [];
-
-                const existingCoa = acc[expenseClass].find(
-                    (c: any) => c.id === coa.id,
-                );
-
-                if (existingCoa) {
-                    existingCoa.price_lists.push({ ...priceList, ...item });
-                } else {
-                    acc[expenseClass].push({
-                        ...coa,
-                        price_lists: [{ ...priceList, ...item }],
-                    });
-                }
-            }
-            return acc;
-        }, {});
-    }, [filteredPpmpItems]);
-
     const selectedFundingSource = fundingSources.find((fs) => {
         return fs.id === selectedFundingSourceId;
     });
 
     const currentPpaFundingSourceId = useMemo(() => {
         // Look for the record in the pivot/bridge table
-        const bridge = aipEntry.ppa_funding_sources?.find(
+        const bridge = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
             (pfs) => pfs.funding_source_id === selectedFundingSourceId,
         );
         return bridge?.id; // This is the primary key of ppa_funding_sources
-    }, [aipEntry.ppa_funding_sources, selectedFundingSourceId]);
+    }, [activeAipEntry, aipEntry, selectedFundingSourceId]);
 
     const allPpmpItemsForFundingSource = useMemo(() => {
         if (!selectedFundingSourceId) return [];
-        return ppmps.filter(
+        return activePpmpItems.filter(
             (ppmp) =>
                 ppmp.ppa_funding_source?.funding_source_id ===
                 selectedFundingSourceId,
         );
-    }, [ppmps, selectedFundingSourceId]);
+    }, [activePpmpItems, selectedFundingSourceId]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
-                <small className="text-sm leading-none font-medium">
-                    Viewing: {aipEntry?.ppa?.name}
-                </small>
+            <div className="flex flex-col gap-4 py-4">
+                <div
+                    // className="flex flex-wrap items-center justify-between gap-4"
+                    className="flex flex-col gap-2 px-4"
+                >
+                    <small className="text-sm leading-none font-medium">
+                        Viewing: {aipEntry?.ppa?.name}
+                    </small>
+
+                    {/*{hasSupplementalEntries && (*/}
+                    <Tabs
+                        value={currentTab}
+                        onValueChange={(val: any) => {
+                            const query: Record<string, any> = { tab: val };
+                            // Keep the selected office for super admins
+                            if (can?.showSummaryAll && selectedOfficeId) {
+                                query.selected_office_id = selectedOfficeId;
+                            }
+
+                            router.get(window.location.pathname, query, {
+                                preserveState: true,
+                                preserveScroll: true,
+                                replace: true,
+                            });
+                        }}
+                        className="w-auto"
+                    >
+                        <TabsList
+                            className="grid gap-1"
+                            style={{
+                                gridTemplateColumns: `repeat(${tabsList.length}, minmax(0, 1fr))`,
+                            }}
+                        >
+                            {tabsList.map((tab) => (
+                                <TabsTrigger
+                                    key={tab.value}
+                                    value={tab.value}
+                                    disabled={
+                                        tab.value.startsWith('supplemental_') &&
+                                        !can?.viewSupplemental
+                                    }
+                                >
+                                    {tab.label}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                    {/*)}*/}
+                </div>
 
                 <DataTable
                     columns={columns}
                     data={filteredPpmpItems}
                     withSearch={true}
                     withFooter={true}
-                    negativeHeight={9.9}
+                    negativeHeight={13}
                     onDelete={handleDeleteDialogOpen}
-                    // meta={{
-                    //     priceLists: priceLists,
-                    //     chartOfAccounts: chartOfAccounts,
-                    //     fundingSources: fundingSources,
-                    // }}
+                    meta={{
+                        readOnly: !isActiveTab,
+                    }}
                 >
                     <div className="flex gap-2">
                         <Select
@@ -310,7 +527,7 @@ export default function PpmpPage({
                             <SelectContent>
                                 <SelectGroup>
                                     <SelectLabel>Funding Sources</SelectLabel>
-                                    {fundingSources.map((fs) => (
+                                    {activeFundingSources.map((fs) => (
                                         <SelectItem
                                             key={fs.id}
                                             value={String(fs.id)}
@@ -330,89 +547,104 @@ export default function PpmpPage({
                             </SelectContent>
                         </Select>
 
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline">
-                                    <FileDown /> Export
-                                </Button>
-                            </DropdownMenuTrigger>
+                        {can?.export && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <FileDown /> Export
+                                    </Button>
+                                </DropdownMenuTrigger>
 
-                            <DropdownMenuContent>
-                                <DropdownMenuGroup>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            selectedFundingSourceId
-                                                ? exportToPrint({
-                                                      filteredPpmpItems,
-                                                      priceLists,
-                                                      ppmpCategories,
-                                                      chartOfAccounts,
-                                                      aipEntry,
-                                                      fundingSources,
-                                                      selectedFundingSourceId,
-                                                      auth,
-                                                      fiscalYear,
-                                                  })
-                                                : setOpenAlert(true)
-                                        }
-                                    >
-                                        <Printer /> Print
-                                    </DropdownMenuItem>
+                                <DropdownMenuContent>
+                                    <DropdownMenuGroup>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                selectedFundingSourceId
+                                                    ? exportToPrint({
+                                                          filteredPpmpItems,
+                                                          priceLists,
+                                                          ppmpCategories,
+                                                          chartOfAccounts,
+                                                          aipEntry:
+                                                              activeAipEntry ||
+                                                              aipEntry,
+                                                          fundingSources,
+                                                          selectedFundingSourceId,
+                                                          auth,
+                                                          fiscalYear,
+                                                          currentTab,
+                                                      })
+                                                    : setOpenAlert(true)
+                                            }
+                                        >
+                                            <Printer /> Print
+                                        </DropdownMenuItem>
 
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            selectedFundingSourceId
-                                                ? exportToPDF({
-                                                      filteredPpmpItems,
-                                                      priceLists,
-                                                      ppmpCategories,
-                                                      chartOfAccounts,
-                                                      aipEntry,
-                                                      fundingSources,
-                                                      selectedFundingSourceId,
-                                                      auth,
-                                                      fiscalYear,
-                                                  })
-                                                : setOpenAlert(true)
-                                        }
-                                    >
-                                        <FileText /> To PDF
-                                    </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                selectedFundingSourceId
+                                                    ? exportToPDF({
+                                                          filteredPpmpItems,
+                                                          priceLists,
+                                                          ppmpCategories,
+                                                          chartOfAccounts,
+                                                          aipEntry:
+                                                              activeAipEntry ||
+                                                              aipEntry,
+                                                          fundingSources,
+                                                          selectedFundingSourceId,
+                                                          auth,
+                                                          fiscalYear,
+                                                          currentTab,
+                                                      })
+                                                    : setOpenAlert(true)
+                                            }
+                                        >
+                                            <FileText /> To PDF
+                                        </DropdownMenuItem>
 
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            selectedFundingSourceId
-                                                ? exportToExcel({
-                                                      filteredPpmpItems,
-                                                      priceLists,
-                                                      ppmpCategories,
-                                                      chartOfAccounts,
-                                                      aipEntry,
-                                                      fundingSources,
-                                                      selectedFundingSourceId,
-                                                      auth,
-                                                      fiscalYear,
-                                                  })
-                                                : setOpenAlert(true)
-                                        }
-                                    >
-                                        <Sheet /> To Excel
-                                    </DropdownMenuItem>
-                                </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                selectedFundingSourceId
+                                                    ? exportToExcel({
+                                                          filteredPpmpItems,
+                                                          priceLists,
+                                                          ppmpCategories,
+                                                          chartOfAccounts,
+                                                          aipEntry:
+                                                              activeAipEntry ||
+                                                              aipEntry,
+                                                          fundingSources,
+                                                          selectedFundingSourceId,
+                                                          auth,
+                                                          fiscalYear,
+                                                          currentTab,
+                                                      })
+                                                    : setOpenAlert(true)
+                                            }
+                                        >
+                                            <Sheet /> To Excel
+                                        </DropdownMenuItem>
+                                    </DropdownMenuGroup>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
 
-                        <Button
-                            onClick={() =>
-                                setOpenExpenseAccountSummaryDialog(true)
-                            }
-                        >
-                            Expense Account Summary per PPMP
-                        </Button>
+                        {can?.generateSummary && (
+                            <Button
+                                onClick={() =>
+                                    setOpenExpenseAccountSummaryDialog(true)
+                                }
+                            >
+                                Expense Account Summary per PPMP
+                            </Button>
+                        )}
 
-                        <Button onClick={() => setOpen(true)}>
-                            <Plus /> Add Item
-                        </Button>
+                        {isActiveTab && can?.addPriceList && (
+                            <Button onClick={() => setOpen(true)}>
+                                <Plus /> Add Item
+                            </Button>
+                        )}
                     </div>
                 </DataTable>
             </div>
@@ -423,7 +655,7 @@ export default function PpmpPage({
                 chartOfAccounts={filteredChartOfAccounts}
                 ppmpCategories={ppmpCategories}
                 priceLists={priceLists}
-                selectedEntry={aipEntry}
+                selectedEntry={activeAipEntry || aipEntry}
                 fundingSources={fundingSources}
                 selectedExpenseClass={selectedExpenseClass}
                 selectedFundingSourceId={selectedFundingSourceId}
@@ -456,7 +688,7 @@ export default function PpmpPage({
                 open={openExpenseAccountSummaryDialog}
                 onOpenChange={setOpenExpenseAccountSummaryDialog}
                 ppmps={allPpmpItemsForFundingSource}
-                aipEntry={aipEntry}
+                aipEntry={activeAipEntry || aipEntry}
                 fundingSource={selectedFundingSource}
                 auth={auth}
             />

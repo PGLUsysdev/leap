@@ -13,17 +13,20 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'LGU Levels', href: '#' }];
 
 interface LguLevelPageProps {
     lguLevels: LguLevel[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
-export default function LguLevelPage({ lguLevels }: LguLevelPageProps) {
+export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
     const [open, setOpen] = useState(false);
     const [selectedLguLevel, setSelectedLguLevel] = useState<LguLevel | null>(
         null,
     );
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    console.log(selectedLguLevel);
 
     function handleAdd() {
         setSelectedLguLevel(null);
@@ -58,19 +61,23 @@ export default function LguLevelPage({ lguLevels }: LguLevelPageProps) {
         });
     }
 
+    const cols = columns(can?.edit ?? false, can?.delete ?? false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={lguLevels}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    <div className="flex justify-end">
-                        <Button onClick={handleAdd}>Add LGU Level</Button>
-                    </div>
+                    {can?.add && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>Add LGU Level</Button>
+                        </div>
+                    )}
                 </DataTable>
             </div>
 

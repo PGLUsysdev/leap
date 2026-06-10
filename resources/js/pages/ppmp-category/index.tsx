@@ -14,11 +14,17 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'PPMP Category', href: '#' }];
 interface PpmpCategoryPageProps {
     ppmpCategories: PpmpCategory[];
     chartOfAccounts: ChartOfAccount[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export default function PpmpCategoryPage({
     ppmpCategories,
     chartOfAccounts,
+    can,
 }: PpmpCategoryPageProps) {
     console.log(chartOfAccounts);
     console.log(ppmpCategories);
@@ -83,17 +89,19 @@ export default function PpmpCategoryPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={columns(can?.edit ?? false, can?.delete ?? false)}
                     data={categoriesWithAccounts}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    <div className="flex justify-end">
-                        <Button onClick={handleAdd}>Add PPMP Category</Button>
-                    </div>
+                    {can?.add && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>Add PPMP Category</Button>
+                        </div>
+                    )}
                 </DataTable>
             </div>
 

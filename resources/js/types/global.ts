@@ -42,9 +42,16 @@ export interface Office {
     office_type?: OfficeType;
     sector?: Sector;
 
-    // verify if being used
     parent?: Office;
     children?: Office[];
+
+    can?: {
+        addSubUnit: boolean;
+        editOffice: boolean;
+        editSubUnit: boolean;
+        deleteOffice: boolean;
+        deleteSubUnit: boolean;
+    };
 }
 
 export type FiscalYearStatus = 'active' | 'inactive' | 'closed';
@@ -53,6 +60,15 @@ export interface FiscalYear {
     id: number;
     year: string;
     status: FiscalYearStatus;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export interface SupplementalAip {
+    id: number;
+    fiscal_year_id: number;
+    office_id: number | null;
+    name: string;
     created_at: string | null;
     updated_at: string | null;
 }
@@ -66,9 +82,11 @@ export interface AipEntry {
     updated_at: string | null;
 
     ppa_id: number;
+    supplemental_aip_id: number | null;
 
     ppa?: Ppa;
     ppa_funding_sources?: PpaFundingSource[];
+    supplemental_aip?: SupplementalAip;
 }
 
 export interface FundingSource {
@@ -89,13 +107,17 @@ export interface PpaFundingSource {
     co_amount: string;
     ccet_adaptation: string;
     ccet_mitigation: string;
+    cc_typology_id?: number | null;
     created_at: string | null;
     updated_at: string | null;
 
     ppa_id: number;
     funding_source_id: number;
+    aip_entry_id: number;
+    supplemental_aip_id?: number | null;
 
     funding_source?: FundingSource;
+    cc_typology?: { id: number; code: string; description: string };
 }
 
 export type PpaTye = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
@@ -120,6 +142,15 @@ export interface Ppa {
 
     full_code: string;
     children_count?: number;
+
+    can?: {
+        edit: boolean;
+        delete: boolean;
+        move: boolean;
+        import: boolean;
+        viewPpmp: boolean;
+        editFundingSources: boolean;
+    };
 }
 
 export interface FlattenedPpa extends Ppa {
@@ -133,6 +164,18 @@ export interface FlattenedPpa extends Ppa {
 }
 
 // --- not checked
+
+export interface CcTypology {
+    id: number;
+    code: string;
+    description: string;
+    response_type: string;
+    strategic_priority_id: number;
+    sub_sector_id: number | null;
+    category_code: string;
+    item_num: number;
+    is_nccap_activity: boolean;
+}
 
 export interface ChartOfAccount {
     id: number;
@@ -188,7 +231,11 @@ export interface Ppmp {
 
     ppa_funding_source?: PpaFundingSource;
     ppmp_price_list?: PriceList;
-    // funding_source: FundingSource;
+    isCombined?: boolean;
+    can?: {
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export interface PriceList {
@@ -254,6 +301,15 @@ export interface AipSummary {
     ppa_id: number;
 }
 
+export interface Role {
+    id: number;
+    name: string;
+    created_at: string | null;
+    updated_at: string | null;
+    permissions?: string[];
+    users_count?: number;
+}
+
 export interface User {
     id: number;
     name: string;
@@ -264,7 +320,7 @@ export interface User {
     two_factor_recovery_codes: string | null;
     two_factor_confirmed_at: string | null;
     status: string;
-    role: string;
+    role?: Role;
     remember_token: string | null;
     created_at: string | null;
     updated_at: string | null;
@@ -293,9 +349,6 @@ export interface App {
 }
 
 export type AuthData = {
-    can: {
-        manage_users: boolean;
-    };
     user: User;
 };
 export type SharedData = {
@@ -330,4 +383,39 @@ export interface Filter {
     dialog_boundary_id?: string | null;
     dialog_id?: string | null;
     dialog_page?: string | null;
+    scope?: string | null;
+    supplemental_aip_id?: number | null;
+    dialog_search?: string | null;
+    is_dialog_open?: boolean | null;
+    dialog_mode?: string | null;
+    id?: number | null;
+    selected_office_id?: string | null;
+}
+
+export interface CcTypology {
+    id: number;
+    code: string;
+    description: string;
+    response_type: string;
+    strategic_priority_id: number;
+    sub_sector_id: number | null;
+    category_code: string;
+    item_num: number;
+    is_nccap_activity: boolean;
+    strategic_priority?: CcStrategicPriority;
+    sub_sector?: CcSubSector | null;
+}
+
+export interface CcStrategicPriority {
+    id: number;
+    code: number;
+    name: string;
+}
+
+export interface CcSubSector {
+    id: number;
+    strategic_priority_id: number;
+    code: number;
+    name: string;
+    strategic_priority?: CcStrategicPriority;
 }

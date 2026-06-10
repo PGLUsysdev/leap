@@ -13,7 +13,9 @@ class FundingSourcePolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadmissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('funding-source.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class FundingSourcePolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadmissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('funding-source.add');
     }
 
     /**
@@ -37,7 +41,9 @@ class FundingSourcePolicy
      */
     public function update(User $user, FundingSource $fundingSource): bool
     {
-        return false;
+        $user->loadmissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('funding-source.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class FundingSourcePolicy
      */
     public function delete(User $user, FundingSource $fundingSource): bool
     {
-        return false;
+        $user->loadmissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('funding-source.delete');
     }
 
     /**

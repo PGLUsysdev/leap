@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Field,
     FieldError,
@@ -14,6 +14,13 @@ import { router } from '@inertiajs/react';
 import { formSchema, type FormSchemaType } from './form-dialog-schema';
 import { FormDialogShell } from '@/components/form-dialog-shell';
 import { CommandSelect } from '@/components/command-select';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface PpmpFormDialogProps {
     open: boolean;
@@ -25,8 +32,13 @@ interface PpmpFormDialogProps {
     fundingSources: FundingSource[];
     selectedExpenseClass: string;
     selectedFundingSourceId: number;
-    // NEW: The ID of the bridge record linking the Activity and the Fund
+    // The ID of the bridge record linking the Activity and the Fund
     ppaFundingSourceId: number | undefined;
+    // Quick-add mode: adds month selector and quantity field
+    mode?: 'default' | 'quick-add';
+    defaultMonth?: string;
+    defaultQuantity?: number;
+    onItemAdded?: () => void;
 }
 
 export default function PpmpFormDialog({
@@ -39,7 +51,11 @@ export default function PpmpFormDialog({
     fundingSources,
     selectedExpenseClass,
     selectedFundingSourceId,
-    ppaFundingSourceId, // Receives the ID from the parent
+    ppaFundingSourceId,
+    mode = 'default',
+    defaultMonth,
+    defaultQuantity,
+    onItemAdded,
 }: PpmpFormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -55,6 +71,8 @@ export default function PpmpFormDialog({
             unitOfMeasurement: null,
             price: null,
             fundingSource: selectedFundingSourceId || null,
+            month: defaultMonth || null,
+            quantity: defaultQuantity ?? null,
         },
     });
 
@@ -80,6 +98,8 @@ export default function PpmpFormDialog({
                 unitOfMeasurement: null,
                 price: null,
                 fundingSource: null,
+                month: null,
+                quantity: null,
             });
         }
     }, [open, form]);
@@ -88,8 +108,9 @@ export default function PpmpFormDialog({
         (cat) => cat.id === selectedCategory,
     );
     const categoryExpenseAccountIds =
-        selectedCategoryData?.chart_of_accounts?.map((coa: any) => coa.id) ||
-        [];
+        selectedCategoryData?.chart_of_account_ppmp_categories
+            ?.map((cac: any) => cac.chart_of_account?.id)
+            .filter((id: any): id is number => id != null) || [];
 
     const filteredChartOfAccounts = chartOfAccounts.filter((coa) => {
         const matchesCategory = selectedCategory
@@ -101,8 +122,9 @@ export default function PpmpFormDialog({
 
     const filteredPpmpCategories = selectedExpenseAccount
         ? ppmpCategories.filter((pc) =>
-              pc.chart_of_accounts?.some(
-                  (coa: any) => coa.id === selectedExpenseAccount,
+              pc.chart_of_account_ppmp_categories?.some(
+                  (cac: any) =>
+                      cac.chart_of_account?.id === selectedExpenseAccount,
               ),
           )
         : ppmpCategories;
@@ -134,16 +156,22 @@ export default function PpmpFormDialog({
 
     const handleReset = () => {
         form.reset();
-        form.setValue('ppa_funding_source_id', ppaFundingSourceId);
+        form.setValue('ppa_funding_source_id', ppaFundingSourceId || null);
         form.setValue('fundingSource', selectedFundingSourceId);
     };
 
     function onSubmit(data: FormSchemaType) {
-        // We only send the foreign keys required by the 'ppmps' table
-        const payload = {
+        // Build payload with the foreign keys required by the 'ppmps' table
+        const payload: Record<string, any> = {
             ppa_funding_source_id: data.ppa_funding_source_id,
             ppmp_price_list_id: data.ppmp_price_list_id,
         };
+
+        // Include month and quantity in quick-add mode
+        if (mode === 'quick-add') {
+            payload.month = data.month;
+            payload.quantity = data.quantity;
+        }
 
         router.post('/ppmp', payload, {
             onStart: () => setIsLoading(true),
@@ -151,6 +179,7 @@ export default function PpmpFormDialog({
             onSuccess: () => {
                 onOpenChange(false);
                 form.reset();
+                onItemAdded?.();
             },
             preserveState: true,
         });
@@ -168,14 +197,24 @@ export default function PpmpFormDialog({
         <FormDialogShell
             open={open}
             onOpenChange={onOpenChange}
-            title="Add PPMP Item"
-            description="Add a new item to the PPMP list"
+            title={
+                mode === 'quick-add' ? 'Quick Add PPMP Item' : 'Add PPMP Item'
+            }
+            description={
+                mode === 'quick-add'
+                    ? 'Select a procurement item and set the monthly quantity'
+                    : 'Add a new item to the PPMP list'
+            }
             isLoading={isLoading}
             formId="form-rhf-demo"
             onReset={handleReset}
             onCancel={() => onOpenChange(false)}
-            submitLabel="Add Item"
-            submittingLabel="Adding Item"
+            submitLabel={
+                mode === 'quick-add' ? 'Add & Set Quantity' : 'Add Item'
+            }
+            submittingLabel={
+                mode === 'quick-add' ? 'Adding Item...' : 'Adding Item'
+            }
             className="sm:max-w-2xl"
         >
             <div className="flex min-h-0">
@@ -641,6 +680,181 @@ export default function PpmpFormDialog({
                                         />
                                     </div>
                                 </div>
+
+                                {mode === 'quick-add' && (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Controller
+                                            name="month"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldContent>
+                                                        <FieldLabel
+                                                            htmlFor={field.name}
+                                                        >
+                                                            Month
+                                                        </FieldLabel>
+
+                                                        <Select
+                                                            value={
+                                                                field.value ??
+                                                                undefined
+                                                            }
+                                                            onValueChange={(
+                                                                val,
+                                                            ) =>
+                                                                field.onChange(
+                                                                    val,
+                                                                )
+                                                            }
+                                                        >
+                                                            <SelectTrigger
+                                                                id={field.name}
+                                                                className="h-9"
+                                                            >
+                                                                <SelectValue placeholder="Select month" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {[
+                                                                    {
+                                                                        value: 'jan',
+                                                                        label: 'January',
+                                                                    },
+                                                                    {
+                                                                        value: 'feb',
+                                                                        label: 'February',
+                                                                    },
+                                                                    {
+                                                                        value: 'mar',
+                                                                        label: 'March',
+                                                                    },
+                                                                    {
+                                                                        value: 'apr',
+                                                                        label: 'April',
+                                                                    },
+                                                                    {
+                                                                        value: 'may',
+                                                                        label: 'May',
+                                                                    },
+                                                                    {
+                                                                        value: 'jun',
+                                                                        label: 'June',
+                                                                    },
+                                                                    {
+                                                                        value: 'jul',
+                                                                        label: 'July',
+                                                                    },
+                                                                    {
+                                                                        value: 'aug',
+                                                                        label: 'August',
+                                                                    },
+                                                                    {
+                                                                        value: 'sep',
+                                                                        label: 'September',
+                                                                    },
+                                                                    {
+                                                                        value: 'oct',
+                                                                        label: 'October',
+                                                                    },
+                                                                    {
+                                                                        value: 'nov',
+                                                                        label: 'November',
+                                                                    },
+                                                                    {
+                                                                        value: 'dec',
+                                                                        label: 'December',
+                                                                    },
+                                                                ].map((m) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            m.value
+                                                                        }
+                                                                        value={
+                                                                            m.value
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            m.label
+                                                                        }
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+
+                                                        {fieldState.invalid && (
+                                                            <FieldError
+                                                                errors={[
+                                                                    fieldState.error,
+                                                                ]}
+                                                            />
+                                                        )}
+                                                    </FieldContent>
+                                                </Field>
+                                            )}
+                                        />
+
+                                        <Controller
+                                            name="quantity"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldContent>
+                                                        <FieldLabel
+                                                            htmlFor={field.name}
+                                                        >
+                                                            Quantity
+                                                        </FieldLabel>
+
+                                                        <Input
+                                                            id={field.name}
+                                                            type="number"
+                                                            step="1"
+                                                            min="0"
+                                                            className="h-9"
+                                                            value={
+                                                                field.value ??
+                                                                ''
+                                                            }
+                                                            onChange={(e) => {
+                                                                const val =
+                                                                    e.target
+                                                                        .value;
+                                                                if (
+                                                                    val === ''
+                                                                ) {
+                                                                    field.onChange(
+                                                                        null,
+                                                                    );
+                                                                } else {
+                                                                    field.onChange(
+                                                                        val,
+                                                                    );
+                                                                }
+                                                            }}
+                                                            placeholder="Enter quantity"
+                                                        />
+
+                                                        {fieldState.invalid && (
+                                                            <FieldError
+                                                                errors={[
+                                                                    fieldState.error,
+                                                                ]}
+                                                            />
+                                                        )}
+                                                    </FieldContent>
+                                                </Field>
+                                            )}
+                                        />
+                                    </div>
+                                )}
 
                                 <Controller
                                     name="fundingSource"

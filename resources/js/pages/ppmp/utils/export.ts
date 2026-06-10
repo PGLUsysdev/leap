@@ -25,6 +25,7 @@ interface ExportToExcelProps {
     selectedFundingSourceId: number;
     fiscalYear: FiscalYear;
     auth: AuthData;
+    currentTab?: string;
 }
 
 export async function exportToExcel({
@@ -37,6 +38,7 @@ export async function exportToExcel({
     selectedFundingSourceId,
     auth,
     fiscalYear,
+    currentTab,
 }: ExportToExcelProps) {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('PPMP');
@@ -467,7 +469,9 @@ export async function exportToExcel({
     aipRefCode.value = `${aipEntry?.ppa?.full_code || 'N/A'}`;
     ppaDesc.value = `${aipEntry?.ppa?.name || 'N/A'}`;
     headerTitle.value = 'PROVINCIAL GOVERNMENT OF LA UNION';
-    headerSubTitle.value = `PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY ${fiscalYear.year}`;
+    headerSubTitle.value = currentTab?.startsWith('supplemental')
+        ? `SUPPLEMENTAL PROJECT PROCUREMENT MANAGEMENT PLAN(SPPMP) CY ${fiscalYear.year}`
+        : `PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY ${fiscalYear.year}`;
 
     [
         fundingSourceCell,
@@ -506,6 +510,7 @@ export async function exportToPrint({
     selectedFundingSourceId,
     auth,
     fiscalYear,
+    currentTab,
 }: ExportToExcelProps) {
     const longBondPaper = [8.5, 13];
     const convertInchToMm = (inch: number[]) =>
@@ -882,7 +887,9 @@ export async function exportToPrint({
                     },
                 },
                 {
-                    content: `PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY ${fiscalYear.year}`,
+                    content: currentTab?.startsWith('supplemental')
+                        ? `SUPPLEMENTAL PROJECT PROCUREMENT MANAGEMENT PLAN(SPPMP) CY ${fiscalYear.year}`
+                        : `PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY ${fiscalYear.year}`,
                     colSpan: 24,
                     rowSpan: 2,
                     styles: {
@@ -1030,6 +1037,7 @@ export async function exportToPDF({
     selectedFundingSourceId,
     auth,
     fiscalYear,
+    currentTab,
 }: ExportToExcelProps) {
     const longBondPaper = [8.5, 13];
     const convertInchToMm = (inch: number[]) =>
@@ -1406,7 +1414,9 @@ export async function exportToPDF({
                     },
                 },
                 {
-                    content: `PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY ${fiscalYear.year}`,
+                    content: currentTab?.startsWith('supplemental')
+                        ? `SUPPLEMENTAL PROJECT PROCUREMENT MANAGEMENT PLAN(SPPMP) CY ${fiscalYear.year}`
+                        : `PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY ${fiscalYear.year}`,
                     colSpan: 24,
                     rowSpan: 2,
                     styles: {

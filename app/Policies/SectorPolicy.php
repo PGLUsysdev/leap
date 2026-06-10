@@ -13,7 +13,9 @@ class SectorPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('sector.view');
     }
 
     /**
@@ -21,7 +23,7 @@ class SectorPolicy
      */
     public function view(User $user, Sector $sector): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -29,7 +31,9 @@ class SectorPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('sector.add');
     }
 
     /**
@@ -37,7 +41,9 @@ class SectorPolicy
      */
     public function update(User $user, Sector $sector): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('sector.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class SectorPolicy
      */
     public function delete(User $user, Sector $sector): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('sector.delete');
     }
 
     /**

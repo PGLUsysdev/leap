@@ -13,7 +13,9 @@ class PpmpPriceListPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('price-list.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class PpmpPriceListPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('price-list.add');
     }
 
     /**
@@ -37,7 +41,9 @@ class PpmpPriceListPolicy
      */
     public function update(User $user, PpmpPriceList $ppmpPriceList): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('price-list.edit');
     }
 
     /**
@@ -45,7 +51,9 @@ class PpmpPriceListPolicy
      */
     public function delete(User $user, PpmpPriceList $ppmpPriceList): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('price-list.delete');
     }
 
     /**
@@ -62,5 +70,12 @@ class PpmpPriceListPolicy
     public function forceDelete(User $user, PpmpPriceList $ppmpPriceList): bool
     {
         return false;
+    }
+
+    public function move(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('price-list.move');
     }
 }

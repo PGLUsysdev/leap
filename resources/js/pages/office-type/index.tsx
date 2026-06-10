@@ -13,9 +13,14 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Office Types', href: '#' }];
 
 interface OfficeTypePageProps {
     officeTypes: OfficeType[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
-export default function SectorPage({ officeTypes }: OfficeTypePageProps) {
+export default function OfficeTypePage({ officeTypes, can }: OfficeTypePageProps) {
     const [open, setOpen] = useState(false);
     const [selectedOfficeType, setSelectedOfficeType] =
         useState<OfficeType | null>(null);
@@ -55,19 +60,23 @@ export default function SectorPage({ officeTypes }: OfficeTypePageProps) {
         });
     }
 
+    const cols = columns(can?.edit ?? false, can?.delete ?? false);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 p-4">
+            <div className="py-4">
                 <DataTable
-                    columns={columns}
+                    columns={cols}
                     data={officeTypes}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                 >
-                    <div className="flex justify-end">
-                        <Button onClick={handleAdd}>Add Office Type</Button>
-                    </div>
+                    {can?.add && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>Add Office Type</Button>
+                        </div>
+                    )}
                 </DataTable>
             </div>
 

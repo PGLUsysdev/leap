@@ -35,10 +35,25 @@ class PpaController extends Controller
 
     public function index(Request $request)
     {
-        $userOfficeId = Auth::user()->office_id;
+        $this->authorize('viewAny', Ppa::class);
+
+        $user = request()->user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $showAll = $permissions->contains('ppa.show.all');
+        $userOfficeId = $showAll
+            ? $request->query('selected_office_id')
+            : $user->office_id;
         $mode = $request->query('dialog_mode');
 
         return Inertia::render('ppa/index', [
+            'can' => [
+                'add' => $user->can('create', Ppa::class),
+                'import' => $user->can('importLastYearPpa', Ppa::class),
+            ],
+            'showAllOffices' => $showAll,
+            'selectedOfficeId' => $userOfficeId ? (int) $userOfficeId : null,
+            'parentOffices' => Office::whereNull('parent_id')->get(),
             'ppaTree' => $this->getPpaQuery(
                 $request,
                 $userOfficeId,
@@ -46,11 +61,19 @@ class PpaController extends Controller
                 'search',
             )
                 ->paginate(100)
-                ->withQueryString(),
+                ->withQueryString()
+                ->through(function ($ppa) use ($user) {
+                    $ppa->can = [
+                        'edit' => $user->can('update', $ppa),
+                        'delete' => $user->can('delete', $ppa),
+                        'move' => $user->can('move', $ppa),
+                    ];
+                    return $ppa;
+                }),
 
             'current' => $request->query('id')
                 ? $this->flattenAncestors(
-                    Ppa::with('ancestor.ancestor')->find($request->query('id')),
+                    Ppa::with('parent.parent')->find($request->query('id')),
                 )
                 : [],
 
@@ -68,11 +91,13 @@ class PpaController extends Controller
                 'dialog_search',
                 'dialog_page',
                 'dialog_mode',
+                'selected_office_id',
             ]),
 
             'dialogPpaTree' => Inertia::lazy(function () use (
                 $request,
                 $userOfficeId,
+                $user,
                 $mode,
             ) {
                 if ($mode === 'import') {
@@ -85,7 +110,15 @@ class PpaController extends Controller
                     'dialog_search',
                 )
                     ->paginate(100, ['*'], 'dialog_page')
-                    ->withQueryString();
+                    ->withQueryString()
+                    ->through(function ($ppa) use ($user) {
+                        $ppa->can = [
+                            'edit' => $user->can('update', $ppa),
+                            'delete' => $user->can('delete', $ppa),
+                            'move' => $user->can('move', $ppa),
+                        ];
+                        return $ppa;
+                    });
             }),
 
             'dialogCurrent' => Inertia::lazy(function () use ($request) {
@@ -94,7 +127,7 @@ class PpaController extends Controller
                     return [];
                 }
 
-                $ppa = Ppa::with('ancestor.ancestor')->find($id);
+                $ppa = Ppa::with('parent.parent')->find($id);
                 return $ppa ? $this->flattenAncestors($ppa) : [];
             }),
         ]);
@@ -107,7 +140,11 @@ class PpaController extends Controller
         $id = $request->query($idKey);
         $search = $request->query($searchKey);
 
-        return Ppa::where('office_id', $officeId)
+        return Ppa::when(
+            $officeId,
+            fn($q) => $q->where('office_id', $officeId),
+            fn($q) => $q->whereNull('id'),
+        )
             ->where('fiscal_year_id', $fiscalYearId)
             ->when(
                 $id,
@@ -155,7 +192,11 @@ class PpaController extends Controller
         $search = $request->query('dialog_search');
 
         // get ppa null first
-        return Ppa::where('office_id', $userOfficeId)
+        return Ppa::when(
+            $userOfficeId,
+            fn($q) => $q->where('office_id', $userOfficeId),
+            fn($q) => $q->whereNull('id'),
+        )
             ->where('fiscal_year_id', $prevYearId)
             ->when(
                 $id,
@@ -197,13 +238,13 @@ class PpaController extends Controller
         $current = $ppa;
 
         while ($current) {
-            // Create a copy without the ancestor relation
+            // Create a copy without the parent relation to keep output flat
             $item = $current->toArray();
-            unset($item['ancestor']);
+            unset($item['parent']);
             $result[] = $item;
 
             // Move to the next level up
-            $current = $current->ancestor;
+            $current = $current->parent;
         }
 
         return $result;
@@ -222,11 +263,27 @@ class PpaController extends Controller
      */
     public function store(StorePpaRequest $request)
     {
+        $this->authorize('create', Ppa::class);
+
         $validated = $request->validated();
         $parentId = $validated['parent_id'] ?? null;
         $type = $validated['type'];
-        $officeId = Auth::user()->office_id;
         $fiscalYearId = session('active_fiscal_year_id');
+
+        $user = Auth::user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $showAll = $permissions->contains('ppa.show.all');
+
+        if ($parentId) {
+            $parent = Ppa::findOrFail($parentId);
+            abort_if(!$showAll && $parent->office_id !== $user->office_id, 403);
+            $officeId = $parent->office_id;
+        } else {
+            $officeId = $showAll
+                ? $validated['office_id']
+                : $user->office_id;
+        }
 
         // ONE query to get both count and max order
         $stats = Ppa::where('office_id', $officeId)
@@ -276,12 +333,16 @@ class PpaController extends Controller
      */
     public function update(UpdatePpaRequest $request, Ppa $ppa)
     {
+        $this->authorize('update', $ppa);
+
         $validated = $request->validated();
         $ppa->update($validated);
     }
 
     public function move(Request $request, Ppa $ppa)
     {
+        $this->authorize('move', $ppa);
+
         $target = Ppa::findOrFail($request->target_id);
         $direction = $request->direction;
 
@@ -401,10 +462,9 @@ class PpaController extends Controller
      */
     public function destroy(Ppa $ppa)
     {
-        // 1. Load the PPA with all its recursive children to check for dependencies
-        $ppa->load('allDescendants');
+        $this->authorize('delete', $ppa);
 
-        // 2. Get a flat array of all IDs in this branch (Parent + all children)
+        // Get a flat array of all IDs in this branch (Parent + all children)
         $allIds = $this->getAllDescendantIds($ppa);
 
         // 3. Check for AIP Entry dependencies across the entire branch
@@ -484,12 +544,20 @@ class PpaController extends Controller
      */
     public function importFromPreviousYear(Request $request)
     {
+        $this->authorize('importLastYearPpa', Ppa::class);
+
         $request->validate([
             'ppa_ids' => 'required|array',
             'ppa_ids.*' => 'integer',
         ]);
 
-        $userOfficeId = Auth::user()->office_id;
+        $user = Auth::user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $showAll = $permissions->contains('ppa.show.all');
+        $userOfficeId = $showAll
+            ? $request->input('office_id', $user->office_id)
+            : $user->office_id;
         $currentFiscalYearId = session('active_fiscal_year_id');
 
         if (!$currentFiscalYearId) {
@@ -605,35 +673,4 @@ class PpaController extends Controller
                 ]);
         }
     }
-
-    /**
-     * Get breadcrumbs for PPA navigation
-     */
-    // private function getPpaBreadcrumbs($ppaId, $fiscalYearId = null)
-    // {
-    //     $query = Ppa::with('parent.parent');
-
-    //     if ($fiscalYearId) {
-    //         $query->where('fiscal_year_id', $fiscalYearId);
-    //     }
-
-    //     $ppa = $query->find($ppaId);
-
-    //     if (!$ppa) {
-    //         return [];
-    //     }
-
-    //     $breadcrumbs = [];
-    //     $current = $ppa;
-
-    //     while ($current) {
-    //         array_unshift($breadcrumbs, [
-    //             'id' => $current->id,
-    //             'name' => $current->name,
-    //         ]);
-    //         $current = $current->parent;
-    //     }
-
-    //     return $breadcrumbs;
-    // }
 }

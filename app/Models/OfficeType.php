@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OfficeType extends Model
 {
@@ -12,8 +13,9 @@ class OfficeType extends Model
 
     protected $fillable = ['code', 'name'];
 
-    public function offices()
+    // hasMany
+    public function offices(): HasMany
     {
-        return $this->hasMany(Office::class);
+        return $this->hasMany(Office::class, 'office_type_id');
     }
 }

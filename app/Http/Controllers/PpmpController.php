@@ -25,21 +25,56 @@ class PpmpController extends Controller
         FiscalYear $fiscalYear,
         AipEntry $aipEntry,
     ) {
+        $this->authorize('viewAny', [Ppmp::class, $aipEntry]);
+
         $selectedAipEntry = AipEntry::with(['ppa', 'ppaFundingSources'])->find(
             $aipEntry->id,
         );
 
-        $ppmps = Ppmp::whereHas('ppaFundingSource', function ($query) use (
-            $aipEntry,
+        $tab = $request->query('tab');
+
+        $isSupplemental = !is_null($selectedAipEntry->supplemental_aip_id);
+
+        // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
+        $allAipEntries = AipEntry::where('ppa_id', $selectedAipEntry->ppa_id)
+            ->with(['supplementalAip', 'ppaFundingSources', 'ppa'])
+            ->get();
+
+        // Check viewSupplemental whenever supplemental entries exist
+        $hasSupplementalAipEntries = $allAipEntries->contains(
+            fn($entry) => !is_null($entry->supplemental_aip_id),
+        );
+
+        $canViewSupplemental = request()
+            ->user()
+            ->can('viewSupplemental', Ppmp::class);
+
+        if (
+            $tab &&
+            str_starts_with($tab, 'supplemental_') &&
+            !$canViewSupplemental
         ) {
-            $query->where('aip_entry_id', $aipEntry->id);
+            $tab = 'original';
+        }
+
+        $aipEntryIds = $allAipEntries->pluck('id');
+
+        $ppmps = Ppmp::whereHas('ppaFundingSource', function ($query) use (
+            $aipEntryIds,
+        ) {
+            $query->whereIn('aip_entry_id', $aipEntryIds);
         })
             ->with([
                 'ppaFundingSource' => function ($query) {
-                    $query->select('id', 'funding_source_id');
+                    $query->select(
+                        'id',
+                        'funding_source_id',
+                        'supplemental_aip_id',
+                        'aip_entry_id',
+                    );
                 },
                 'ppaFundingSource.fundingSource' => function ($query) {
-                    $query->select('id', 'code'); // only 'code' is needed for display
+                    $query->select('id', 'code', 'title'); // only 'code' is needed for display
                 },
                 'ppmpPriceList' => function ($query) {
                     $query->select(
@@ -88,28 +123,59 @@ class PpmpController extends Controller
             'CO',
         ])->get();
 
-        // $ppmpCategories = PpmpCategory::with('chartOfAccounts')->get();
-        $ppmpCategories = PpmpCategory::with('chartOfAccounts')->get();
+        $ppmpCategories = PpmpCategory::with(
+            'chartOfAccountPpmpCategories.chartOfAccount',
+        )->get();
 
         $fundingSources = FundingSource::whereHas(
             'ppaFundingSources',
-            function ($query) use ($aipEntry) {
-                $query->where('aip_entry_id', $aipEntry->id);
+            function ($query) use ($aipEntryIds) {
+                $query->whereIn('aip_entry_id', $aipEntryIds);
             },
         )->get();
 
+        $ppmps->each(function ($ppmp) use ($request) {
+            $ppmp->can = [
+                'edit' => $request->user()->can('editPriceListQuantity', $ppmp),
+                'delete' => $request->user()->can('deletePriceList', $ppmp),
+            ];
+        });
+
+        $selectedOfficeId = $request->query('selected_office_id');
+
         return Inertia::render('ppmp/index', [
+            'can' => [
+                'addPriceList' => request()
+                    ->user()
+                    ->can('addPriceList', Ppmp::class),
+                'viewSupplemental' => $canViewSupplemental,
+                'export' => request()->user()->can('export', Ppmp::class),
+                'generateSummary' => request()
+                    ->user()
+                    ->can('generateSummary', Ppmp::class),
+                'showSummaryAll' => $request
+                    ->user()
+                    ->can('showSummaryAll', AipEntry::class),
+            ],
             'fiscalYear' => $fiscalYear,
             'aipEntry' => $selectedAipEntry,
+            'allAipEntries' => $allAipEntries,
             'ppmps' => $ppmps,
+            'isSupplemental' => $isSupplemental,
             'priceLists' => $priceLists,
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'fundingSources' => $fundingSources,
+            'currentTab' =>
+                $tab ?:
+                ($selectedAipEntry->supplemental_aip_id
+                    ? "supplemental_{$selectedAipEntry->id}"
+                    : 'original'),
             'initialChoice' => $request->query('choice', 'MOOE'),
             'initialPpaFundingSourceId' => $request->query(
                 'ppa_funding_source_id',
             ),
+            'selectedOfficeId' => $selectedOfficeId,
         ]);
     }
 
@@ -126,6 +192,8 @@ class PpmpController extends Controller
      */
     public function store(StorePpmpRequest $request)
     {
+        $this->authorize('addPriceList', Ppmp::class);
+
         $validated = $request->validated();
 
         // Save using the normalized bridge ID
@@ -135,16 +203,36 @@ class PpmpController extends Controller
             // quantities default to 0 via DB schema
         ]);
 
+        // If month and quantity are provided, add to the existing monthly quantity
+        if ($request->filled('month') && $request->filled('quantity')) {
+            $monthQty = $validated['month'] . '_qty';
+            $monthAmount = $validated['month'] . '_amount';
+            $unitPrice = $ppmp->ppmpPriceList?->price ?? 0;
+            $addQuantity = (int) round($validated['quantity']);
+
+            $currentQty = (int) ($ppmp->{$monthQty} ?? 0);
+            $newQty = $currentQty + $addQuantity;
+
+            $ppmp->update([
+                $monthQty => $newQty,
+                $monthAmount => $newQty * $unitPrice,
+            ]);
+        }
+
         // Sync the total back to the ppa_funding_sources table
         $this->updatePpaFundingSourceTotals(
             $ppmp->ppaFundingSource,
             $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
                 ->expense_class,
         );
+
+        return back();
     }
 
     public function updateMonthlyQuantity(Request $request, Ppmp $ppmp)
     {
+        $this->authorize('editPriceListQuantity', $ppmp);
+
         $validated = $request->validate([
             'month' => 'required|string',
             'quantity' => 'required|numeric|min:0',
@@ -191,6 +279,8 @@ class PpmpController extends Controller
      */
     public function destroy(Ppmp $ppmp)
     {
+        $this->authorize('deletePriceList', $ppmp);
+
         $bridge = $ppmp->ppaFundingSource;
         $expenseClass =
             $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount

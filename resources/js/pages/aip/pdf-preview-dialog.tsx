@@ -44,6 +44,7 @@ interface PdfPreviewDialogProps {
     fiscalYear: FiscalYear | null;
     offices: Office[];
     auth: AuthData;
+    canGenerateAppAll?: boolean;
 }
 
 const COLUMN_WIDTHS = [5, 20, 5, 10, 5, 11, 4, 6, 4, 6, 4, 6, 4, 10];
@@ -1693,13 +1694,11 @@ export default function PdfPreviewDialog({
     fiscalYear,
     offices,
     auth,
+    canGenerateAppAll,
 }: PdfPreviewDialogProps) {
-    // console.log(auth);
-
     const [isReloading, setIsReloading] = useState(false);
-    const [selectedOfficeId, setSelectedOfficeId] = useState<string>('all');
-
-    const isBACSU = auth.user.office_id === 2 || auth.user.role === 'admin';
+    const defaultOfficeId = canGenerateAppAll ? 'all' : String(auth.user.office_id ?? '');
+    const [selectedOfficeId, setSelectedOfficeId] = useState<string>(defaultOfficeId);
 
     const handleOfficeChange = (officeId: string) => {
         if (!fiscalYear) return;
@@ -1713,7 +1712,7 @@ export default function PdfPreviewDialog({
     };
 
     const getOfficeLabel = () => {
-        if (!isBACSU) return `${auth.user.office?.name || 'My Office'}`;
+        if (!canGenerateAppAll) return `${auth.user.office?.name || 'My Office'}`;
 
         if (selectedOfficeId === 'all') {
             const mainOffice = offices.find((o) => o.id === 1);
@@ -1739,7 +1738,7 @@ export default function PdfPreviewDialog({
                 </DialogHeader>
 
                 <div className="flex flex-1 overflow-hidden">
-                    {isBACSU && (
+                    {canGenerateAppAll && (
                         <div className="p-4">
                             {/* <div className="w-80 space-y-4 border-r bg-muted/10 p-4">
                                 <div className="space-y-2">

@@ -25,7 +25,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { index } from '@/routes/ppa';
+// import { index } from '@/routes/ppa';
 
 interface PpaMoveDialogProps {
     isOpen: boolean;

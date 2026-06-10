@@ -14,8 +14,21 @@ class ChartOfAccountController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', ChartOfAccount::class);
+
         return Inertia::render('chart-of-account/index', [
             'chartOfAccounts' => ChartOfAccount::all(),
+            'can' => [
+                'add' => request()
+                    ->user()
+                    ->can('create', ChartOfAccount::class),
+                'edit' => request()
+                    ->user()
+                    ->can('update', new ChartOfAccount()),
+                'delete' => request()
+                    ->user()
+                    ->can('delete', new ChartOfAccount()),
+            ],
         ]);
     }
 
@@ -32,6 +45,8 @@ class ChartOfAccountController extends Controller
      */
     public function store(StoreChartOfAccountRequest $request)
     {
+        $this->authorize('create', ChartOfAccount::class);
+
         $validated = $request->validated();
 
         ChartOfAccount::create($validated);
@@ -60,6 +75,8 @@ class ChartOfAccountController extends Controller
         UpdateChartOfAccountRequest $request,
         ChartOfAccount $chartOfAccount,
     ) {
+        $this->authorize('update', $chartOfAccount);
+
         $validated = $request->validated();
 
         $chartOfAccount->update($validated);
@@ -70,6 +87,8 @@ class ChartOfAccountController extends Controller
      */
     public function destroy(ChartOfAccount $chartOfAccount)
     {
+        $this->authorize('delete', $chartOfAccount);
+
         $chartOfAccount->delete();
     }
 }

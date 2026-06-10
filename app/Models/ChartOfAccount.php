@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChartOfAccount extends Model
 {
@@ -24,7 +26,13 @@ class ChartOfAccount extends Model
         'description',
     ];
 
-    public function chartOfAccountPpmpCategories()
+    // hasMany
+    public function children(): HasMany
+    {
+        return $this->hasMany(ChartOfAccount::class, 'parent_id');
+    }
+
+    public function chartOfAccountPpmpCategories(): HasMany
     {
         return $this->hasMany(
             ChartOfAccountPpmpCategory::class,
@@ -32,19 +40,9 @@ class ChartOfAccount extends Model
         );
     }
 
-    public function parent()
+    // belongsTo
+    public function parent(): BelongsTo
     {
-        return $this->belongsTo(
-            ChartOfAccount::class,
-            'parent_id',
-        );
-    }
-
-    public function children()
-    {
-        return $this->hasMany(
-            ChartOfAccount::class,
-            'parent_id',
-        );
+        return $this->belongsTo(ChartOfAccount::class, 'parent_id');
     }
 }
