@@ -27,6 +27,9 @@ import {
     ShieldCheck,
     Tags,
     Users,
+    ChartNetwork,
+    Waypoints,
+    SquaresExclude,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -102,19 +105,19 @@ const mainNavItems: NavItem[] = [
     {
         title: 'CC Typology',
         href: '/cc-typology',
-        icon: ShieldCheck,
+        icon: ChartNetwork,
         permission: 'cc-typology.view',
     },
     {
         title: 'CC Strategic Priorities',
         href: '/cc-strategic-priority',
-        icon: ShieldCheck,
+        icon: Waypoints,
         permission: 'cc-strategic-priority.view',
     },
     {
         title: 'CC Sub Sectors',
         href: '/cc-sub-sector',
-        icon: ShieldCheck,
+        icon: SquaresExclude,
         permission: 'cc-sub-sector.view',
     },
     { title: '', href: '', type: 'separator' },

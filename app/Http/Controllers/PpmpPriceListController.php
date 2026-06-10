@@ -240,6 +240,15 @@ class PpmpPriceListController extends Controller
 
         try {
             $ppmpPriceList->delete();
+
+            $all = PpmpPriceList::orderBy('sort_order')->get();
+            foreach ($all as $index => $item) {
+                $item->update([
+                    'sort_order' => $index + 1,
+                    'item_number' => $index + 1,
+                ]);
+            }
+
             return Redirect::back()->with(
                 'success',
                 'Price list deleted successfully.',

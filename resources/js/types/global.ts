@@ -419,3 +419,39 @@ export interface CcSubSector {
     name: string;
     strategic_priority?: CcStrategicPriority;
 }
+
+export interface DashboardStats {
+    totalBudget: number;
+    totalPpas: number;
+    totalPriceListItems: number;
+    totalProcurement: number;
+    totalOffices: number;
+    totalUsers: number;
+}
+
+export interface DashboardExpenseClass {
+    ps: number;
+    mooe: number;
+    fe: number;
+    co: number;
+}
+
+export interface DashboardLabelValue {
+    label: string;
+    value: number;
+}
+
+export interface DashboardTypeCount {
+    type: string;
+    count: number;
+}
+
+export interface DashboardNameCount {
+    name: string;
+    count: number;
+}
+
+export interface DashboardCcExpenditure {
+    adaptation: number;
+    mitigation: number;
+}

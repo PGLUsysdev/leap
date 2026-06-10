@@ -6,6 +6,7 @@ use App\Http\Controllers\AipEntryController;
 use App\Http\Controllers\SupplementalAipController;
 use App\Http\Controllers\AipRefCodeController;
 use App\Http\Controllers\ChartOfAccountController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FiscalYearController;
 use App\Http\Controllers\FundingSourceController;
 use App\Http\Controllers\LguLevelController;
@@ -30,7 +31,7 @@ use Inertia\Inertia;
 Route::redirect('/', '/login');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', fn() => Inertia::render('dashboard'))->name(
+    Route::get('dashboard', [DashboardController::class, 'index'])->name(
         'dashboard',
     );
     Route::get('home', fn() => Inertia::render('home'));
