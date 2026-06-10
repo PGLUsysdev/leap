@@ -61,8 +61,12 @@ import type {
     FundingSource,
     Office,
     AuthData,
+    ChartOfAccount,
+    PriceList,
+    PpmpCategory,
 } from '@/types/global';
 import { index } from '@/routes/aip/summary/ppmp';
+import PpmpFormDialog from '@/pages/ppmp/form-dialog';
 
 interface AipEntryFormDialogProps {
     open: boolean;
@@ -76,6 +80,10 @@ interface AipEntryFormDialogProps {
     canShowSummaryAll?: boolean; // NEW
     selectedOfficeId?: string;
     ccTypologies: { id: number; code: string; description: string }[];
+    chartOfAccounts: ChartOfAccount[];
+    priceLists: PriceList[];
+    ppmpCategories: PpmpCategory[];
+    onPpmpItemAdded?: () => void;
 }
 
 const amountSchema = z.string();
@@ -121,12 +129,22 @@ export default function AipEntryFormDialog({
     offices,
     auth,
     supplementalAipId = null,
-    canShowSummaryAll, // ✅ destructure
+    canShowSummaryAll,
     selectedOfficeId,
+    chartOfAccounts,
+    priceLists,
+    ppmpCategories,
+    onPpmpItemAdded,
 }: AipEntryFormDialogProps) {
     const userOfficeId = auth?.user?.office_id;
     const [isLoading, setIsLoading] = useState(false);
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+
+    const [ppmpDialogOpen, setPpmpDialogOpen] = useState(false);
+    const [ppmpExpenseClass, setPpmpExpenseClass] = useState<'MOOE' | 'CO'>(
+        'MOOE',
+    );
+    const [ppmpSourceIndex, setPpmpSourceIndex] = useState<number>(0);
 
     const canEditFunding = data?.can?.editFundingSources ?? false;
     const canEdit = data?.can?.edit ?? false;
@@ -200,6 +218,13 @@ export default function AipEntryFormDialog({
         setShowCloseConfirm(false);
     };
 
+    const handleQuickAddPpmp = (index: number, expenseClass: 'MOOE' | 'CO') => {
+        if (!canEdit || !canViewPpmp) return;
+        setPpmpSourceIndex(index);
+        setPpmpExpenseClass(expenseClass);
+        setPpmpDialogOpen(true);
+    };
+
     const handleGoToPpmp = (
         ppaFundingSourceId: number | undefined,
         choice: 'MOOE' | 'CO',
@@ -242,10 +267,7 @@ export default function AipEntryFormDialog({
                 setIsLoading(true);
                 form.clearErrors();
             },
-            onSuccess: () => {
-                onOpenChange(false);
-                form.reset();
-            },
+            onSuccess: () => {},
             onFinish: () => setIsLoading(false),
         };
 
@@ -669,25 +691,25 @@ export default function AipEntryFormDialog({
                                                             <TableHead className="text-right">
                                                                 PS
                                                             </TableHead>
-                                                            <TableHead className="text-right">
+                                                            <TableHead className="pr-9 text-right">
                                                                 MOOE
                                                             </TableHead>
                                                             <TableHead className="text-right">
                                                                 FE
                                                             </TableHead>
-                                                            <TableHead className="text-right">
+                                                            <TableHead className="pr-9 text-right">
                                                                 CO
                                                             </TableHead>
                                                             <TableHead className="text-right">
                                                                 Total
                                                             </TableHead>
-                                                            <TableHead className="text-right">
+                                                            <TableHead className="w-0 text-right">
                                                                 Adaptation
                                                             </TableHead>
-                                                            <TableHead className="text-right">
+                                                            <TableHead className="w-0 text-right">
                                                                 Mitigation
                                                             </TableHead>
-                                                            <TableHead className="text-left">
+                                                            <TableHead className="w-0 text-left">
                                                                 CC Typology Code
                                                             </TableHead>
                                                             <TableHead className="w-0"></TableHead>
@@ -743,28 +765,35 @@ export default function AipEntryFormDialog({
                                                                             </div>
                                                                         </TableCell>
 
-                                                                        {[
-                                                                            'ps_amount',
-                                                                            'mooe_amount',
-                                                                            'fe_amount',
-                                                                            'co_amount',
-                                                                        ].map(
-                                                                            (
-                                                                                amt,
-                                                                            ) => (
-                                                                                <TableCell
-                                                                                    key={
-                                                                                        amt
-                                                                                    }
-                                                                                    className="text-right"
-                                                                                >
+                                                                        {/* PS Amount */}
+                                                                        <TableCell className="text-right">
+                                                                            {parseFloat(
+                                                                                String(
+                                                                                    watchedSources?.[
+                                                                                        index
+                                                                                    ]
+                                                                                        ?.ps_amount ||
+                                                                                        '0',
+                                                                                ),
+                                                                            ).toLocaleString(
+                                                                                undefined,
+                                                                                {
+                                                                                    minimumFractionDigits: 2,
+                                                                                    maximumFractionDigits: 2,
+                                                                                },
+                                                                            )}
+                                                                        </TableCell>
+
+                                                                        {/* MOOE Amount with Button */}
+                                                                        <TableCell className="text-right">
+                                                                            <div className="flex items-center justify-end gap-1">
+                                                                                <span>
                                                                                     {parseFloat(
                                                                                         String(
                                                                                             watchedSources?.[
                                                                                                 index
-                                                                                            ]?.[
-                                                                                                amt as keyof (typeof watchedSources)[0]
-                                                                                            ] ||
+                                                                                            ]
+                                                                                                ?.mooe_amount ||
                                                                                                 '0',
                                                                                         ),
                                                                                     ).toLocaleString(
@@ -774,9 +803,103 @@ export default function AipEntryFormDialog({
                                                                                             maximumFractionDigits: 2,
                                                                                         },
                                                                                     )}
-                                                                                </TableCell>
-                                                                            ),
-                                                                        )}
+                                                                                </span>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    size="icon"
+                                                                                    variant="ghost"
+                                                                                    className="h-6 w-6"
+                                                                                    onClick={() =>
+                                                                                        handleQuickAddPpmp(
+                                                                                            index,
+                                                                                            'MOOE',
+                                                                                        )
+                                                                                    }
+                                                                                    disabled={
+                                                                                        !isEdit ||
+                                                                                        !canViewPpmp ||
+                                                                                        !watchedSources?.[
+                                                                                            index
+                                                                                        ]
+                                                                                            ?.funding_source_id ||
+                                                                                        !watchedSources?.[
+                                                                                            index
+                                                                                        ]
+                                                                                            ?.id
+                                                                                    }
+                                                                                >
+                                                                                    <ListPlus className="h-3.5 w-3.5" />
+                                                                                </Button>
+                                                                            </div>
+                                                                        </TableCell>
+
+                                                                        {/* FE Amount */}
+                                                                        <TableCell className="text-right">
+                                                                            {parseFloat(
+                                                                                String(
+                                                                                    watchedSources?.[
+                                                                                        index
+                                                                                    ]
+                                                                                        ?.fe_amount ||
+                                                                                        '0',
+                                                                                ),
+                                                                            ).toLocaleString(
+                                                                                undefined,
+                                                                                {
+                                                                                    minimumFractionDigits: 2,
+                                                                                    maximumFractionDigits: 2,
+                                                                                },
+                                                                            )}
+                                                                        </TableCell>
+
+                                                                        {/* CO Amount with Button */}
+                                                                        <TableCell className="text-right">
+                                                                            <div className="flex items-center justify-end gap-1">
+                                                                                <span>
+                                                                                    {parseFloat(
+                                                                                        String(
+                                                                                            watchedSources?.[
+                                                                                                index
+                                                                                            ]
+                                                                                                ?.co_amount ||
+                                                                                                '0',
+                                                                                        ),
+                                                                                    ).toLocaleString(
+                                                                                        undefined,
+                                                                                        {
+                                                                                            minimumFractionDigits: 2,
+                                                                                            maximumFractionDigits: 2,
+                                                                                        },
+                                                                                    )}
+                                                                                </span>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    size="icon"
+                                                                                    variant="ghost"
+                                                                                    className="h-6 w-6"
+                                                                                    onClick={() =>
+                                                                                        handleQuickAddPpmp(
+                                                                                            index,
+                                                                                            'CO',
+                                                                                        )
+                                                                                    }
+                                                                                    disabled={
+                                                                                        !isEdit ||
+                                                                                        !canViewPpmp ||
+                                                                                        !watchedSources?.[
+                                                                                            index
+                                                                                        ]
+                                                                                            ?.funding_source_id ||
+                                                                                        !watchedSources?.[
+                                                                                            index
+                                                                                        ]
+                                                                                            ?.id
+                                                                                    }
+                                                                                >
+                                                                                    <ListPlus className="h-3.5 w-3.5" />
+                                                                                </Button>
+                                                                            </div>
+                                                                        </TableCell>
 
                                                                         {/* Total */}
                                                                         <TableCell className="text-right font-bold">
@@ -1013,6 +1136,25 @@ export default function AipEntryFormDialog({
                     </ScrollArea>
                 </div>
             </FormDialogShell>
+
+            {ppmpDialogOpen && watchedSources?.[ppmpSourceIndex] && (
+                <PpmpFormDialog
+                    open={ppmpDialogOpen}
+                    onOpenChange={setPpmpDialogOpen}
+                    chartOfAccounts={chartOfAccounts}
+                    priceLists={priceLists}
+                    ppmpCategories={ppmpCategories}
+                    selectedEntry={null}
+                    fundingSources={fundingSources}
+                    selectedExpenseClass={ppmpExpenseClass}
+                    selectedFundingSourceId={parseInt(
+                        watchedSources[ppmpSourceIndex]?.funding_source_id,
+                    )}
+                    ppaFundingSourceId={watchedSources[ppmpSourceIndex]?.id}
+                    mode="quick-add"
+                    onItemAdded={onPpmpItemAdded}
+                />
+            )}
 
             <Dialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
                 <DialogContent className="sm:max-w-md">

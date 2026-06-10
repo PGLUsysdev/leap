@@ -41,6 +41,9 @@ export const formSchema = z.object({
         .refine((val) => val !== null && val !== 0, {
             message: 'Funding source is required',
         }),
+    // Quick-add mode fields
+    month: z.string().nullable().optional(),
+    quantity: z.union([z.string(), z.number()]).nullable().optional(),
 });
 
 export type FormSchemaType = z.infer<typeof formSchema>;

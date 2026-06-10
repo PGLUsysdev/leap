@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Library, FileDown, FileText, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +31,9 @@ import type {
     SharedData,
     Filter,
     PaginatedResponse,
+    ChartOfAccount,
+    PriceList,
+    PpmpCategory,
 } from '@/types/global';
 import { type BreadcrumbItem } from '@/types';
 import { router, usePage } from '@inertiajs/react';
@@ -54,6 +57,9 @@ interface AipSummaryTableProps {
         scope: string;
         supplemental_aip_id: number | null;
     };
+    chartOfAccounts: ChartOfAccount[];
+    priceLists: PriceList[];
+    ppmpCategories: PpmpCategory[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -94,6 +100,9 @@ export default function AipSummaryTable({
     dialogCurrent,
     supplementalAips = [],
     currentScope = { scope: 'original', supplemental_aip_id: null },
+    chartOfAccounts,
+    priceLists,
+    ppmpCategories,
 }: AipSummaryTableProps) {
     console.log({
         fiscalYear,
@@ -112,8 +121,22 @@ export default function AipSummaryTable({
 
     const { auth } = usePage<SharedData>().props;
 
-    const [selectedEntry, setSelectedEntry] = useState<Ppa | null>(null);
+    const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+    const selectedEntry = useMemo(() => {
+        const findInTree = (entries: Ppa[], id: number): Ppa | null => {
+            for (const entry of entries) {
+                if (entry.id === id) return entry;
+                if (entry.children) {
+                    const found = findInTree(entry.children, id);
+                    if (found) return found;
+                }
+            }
+            return null;
+        };
+        return selectedEntryId ? findInTree(aipEntries, selectedEntryId) : null;
+    }, [aipEntries, selectedEntryId]);
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
 
     const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
@@ -380,14 +403,22 @@ export default function AipSummaryTable({
     );
 
     const handleEditDialogOpen = (data: Ppa) => {
-        setSelectedEntry(data);
+        setSelectedEntryId(data.id);
         setIsEditDialogOpen(true);
     };
 
     function handleDeleteDialogOpen(data: Ppa) {
-        setSelectedEntry(data);
+        setSelectedEntryId(data.id);
         setIsDeleteDialogOpen(true);
     }
+
+    const handlePpmpItemAdded = () => {
+        router.visit(window.location.href, {
+            only: ['aipEntries'],
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
 
     function handleDelete() {
         const entryId = selectedEntry?.aip_entries?.[0]?.id;
@@ -398,7 +429,7 @@ export default function AipSummaryTable({
             onStart: () => setIsLoading(true),
             onSuccess: () => {
                 setIsDeleteDialogOpen(false);
-                setSelectedEntry(null);
+                setSelectedEntryId(null);
             },
             onFinish: () => setIsLoading(false),
             onError: (error) => console.error('error', error),
@@ -603,6 +634,10 @@ export default function AipSummaryTable({
                 supplementalAipId={currentScope.supplemental_aip_id}
                 canShowSummaryAll={can?.showSummaryAll ?? false}
                 selectedOfficeId={filters?.selected_office_id}
+                chartOfAccounts={chartOfAccounts}
+                priceLists={priceLists}
+                ppmpCategories={ppmpCategories}
+                onPpmpItemAdded={handlePpmpItemAdded}
             />
 
             <DeleteDialog
@@ -629,7 +664,7 @@ export default function AipSummaryTable({
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setIsDeleteDialogOpen(false);
-                    setSelectedEntry(null);
+                    setSelectedEntryId(null);
                 }}
                 isLoading={isLoading}
             />

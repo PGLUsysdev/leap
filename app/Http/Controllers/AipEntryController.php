@@ -332,6 +332,21 @@ class AipEntryController extends Controller
             'fiscalYear' => $fiscalYear,
             'aipEntries' => $aipEntries,
             'fundingSources' => FundingSource::all(),
+            'chartOfAccounts' => \App\Models\ChartOfAccount::select(
+                'id',
+                'account_number',
+                'account_title',
+                'expense_class',
+            )
+                ->orderBy('account_number')
+                ->get(),
+            'priceLists' => \App\Models\PpmpPriceList::with([
+                'chartOfAccountPpmpCategory.chartOfAccount',
+                'chartOfAccountPpmpCategory.ppmpCategory',
+            ])->get(),
+            'ppmpCategories' => \App\Models\PpmpCategory::with([
+                'chartOfAccountPpmpCategories.chartOfAccount',
+            ])->get(),
             'ccTypologies' => \App\Models\CcTypology::select(
                 'id',
                 'code',

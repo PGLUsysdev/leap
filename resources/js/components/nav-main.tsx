@@ -36,7 +36,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                     resolveUrl(item.href),
                                 )}
                                 tooltip={{ children: item.title }}
-                                className="h-12 p-4 group-data-[collapsible=icon]:h-12! group-data-[collapsible=icon]:px-4"
+                                className="h-8 p-4 group-data-[collapsible=icon]:h-8! group-data-[collapsible=icon]:px-4"
                             >
                                 <Link href={item.href} prefetch>
                                     {item.icon && <item.icon />}

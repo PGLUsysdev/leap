@@ -203,12 +203,30 @@ class PpmpController extends Controller
             // quantities default to 0 via DB schema
         ]);
 
+        // If month and quantity are provided, add to the existing monthly quantity
+        if ($request->filled('month') && $request->filled('quantity')) {
+            $monthQty = $validated['month'] . '_qty';
+            $monthAmount = $validated['month'] . '_amount';
+            $unitPrice = $ppmp->ppmpPriceList?->price ?? 0;
+            $addQuantity = (int) round($validated['quantity']);
+
+            $currentQty = (int) ($ppmp->{$monthQty} ?? 0);
+            $newQty = $currentQty + $addQuantity;
+
+            $ppmp->update([
+                $monthQty => $newQty,
+                $monthAmount => $newQty * $unitPrice,
+            ]);
+        }
+
         // Sync the total back to the ppa_funding_sources table
         $this->updatePpaFundingSourceTotals(
             $ppmp->ppaFundingSource,
             $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
                 ->expense_class,
         );
+
+        return back();
     }
 
     public function updateMonthlyQuantity(Request $request, Ppmp $ppmp)
