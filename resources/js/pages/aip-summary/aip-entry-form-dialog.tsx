@@ -48,13 +48,6 @@ import {
 } from '@/components/ui/dialog';
 import { FormDialogShell } from '@/components/form-dialog-shell';
 import { CommandSelect } from '@/components/command-select';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import type {
     FiscalYear,
     Ppa,
@@ -977,53 +970,70 @@ export default function AipEntryFormDialog({
                                                                                 render={({
                                                                                     field,
                                                                                 }) => (
-                                                                                    <Select
+                                                                                    <CommandSelect<{
+                                                                                        id: number;
+                                                                                        code: string;
+                                                                                        description: string;
+                                                                                    }>
                                                                                         value={
-                                                                                            (
-                                                                                                field.value as number
-                                                                                            )?.toString() ||
-                                                                                            undefined
+                                                                                            field.value as number | null
                                                                                         }
-                                                                                        onValueChange={(
+                                                                                        onChange={(
                                                                                             val,
                                                                                         ) =>
                                                                                             field.onChange(
-                                                                                                val
-                                                                                                    ? parseInt(
-                                                                                                          val,
-                                                                                                      )
-                                                                                                    : null,
+                                                                                                val,
                                                                                             )
+                                                                                        }
+                                                                                        options={
+                                                                                            ccTypologies ||
+                                                                                            []
+                                                                                        }
+                                                                                        getOptionValue={(
+                                                                                            t,
+                                                                                        ) =>
+                                                                                            t.id
+                                                                                        }
+                                                                                        getOptionSearchText={(
+                                                                                            t,
+                                                                                        ) =>
+                                                                                            `${t.code} ${t.description}`
+                                                                                        }
+                                                                                        renderTrigger={(
+                                                                                            t,
+                                                                                        ) => (
+                                                                                            <span className="truncate">
+                                                                                                {
+                                                                                                    t.code
+                                                                                                }
+                                                                                            </span>
+                                                                                        )}
+                                                                                        renderOption={(
+                                                                                            t,
+                                                                                        ) => (
+                                                                                            <div className="grid w-full grid-cols-12 gap-2">
+                                                                                                <span className="col-span-3 font-medium">
+                                                                                                    {
+                                                                                                        t.code
+                                                                                                    }
+                                                                                                </span>
+                                                                                                <span className="col-span-9 text-muted-foreground">
+                                                                                                    {
+                                                                                                        t.description
+                                                                                                    }
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        )}
+                                                                                        placeholder="Typology..."
+                                                                                        searchPlaceholder="Search typology..."
+                                                                                        heading="CC Typologies"
+                                                                                        showClear={
+                                                                                            false
                                                                                         }
                                                                                         disabled={
                                                                                             !canEditFunding
                                                                                         }
-                                                                                    >
-                                                                                        <SelectTrigger className="h-8 w-44">
-                                                                                            <SelectValue placeholder="Typology..." />
-                                                                                        </SelectTrigger>
-                                                                                        <SelectContent>
-                                                                                            {(
-                                                                                                ccTypologies ||
-                                                                                                []
-                                                                                            ).map(
-                                                                                                (
-                                                                                                    t,
-                                                                                                ) => (
-                                                                                                    <SelectItem
-                                                                                                        key={
-                                                                                                            t.id
-                                                                                                        }
-                                                                                                        value={t.id.toString()}
-                                                                                                    >
-                                                                                                        {
-                                                                                                            t.code
-                                                                                                        }
-                                                                                                    </SelectItem>
-                                                                                                ),
-                                                                                            )}
-                                                                                        </SelectContent>
-                                                                                    </Select>
+                                                                                    />
                                                                                 )}
                                                                             />
                                                                         </TableCell>

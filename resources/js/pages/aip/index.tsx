@@ -15,15 +15,7 @@ import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 import PdfPreviewDialog from './pdf-preview-dialog';
 import { index } from '@/routes/ppmp-summaries';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { CommandSelect } from '@/components/command-select';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -78,10 +70,11 @@ export default function AipPage({
         );
     }
 
-    function handleOfficeChange(officeId: string) {
-        setSelectedOfficeId(officeId);
+    function handleOfficeChange(officeId: string | number | null) {
+        const id = officeId?.toString() ?? '';
+        setSelectedOfficeId(id);
         router.visit(window.location.pathname, {
-            data: { selected_office_id: officeId },
+            data: { selected_office_id: id },
             preserveState: true,
         });
     }
@@ -142,27 +135,38 @@ export default function AipPage({
                 >
                     <div className="flex gap-2">
                         {can?.showSummaryAll && offices.length > 0 && (
-                            <Select
-                                value={selectedOfficeId}
-                                onValueChange={handleOfficeChange}
-                            >
-                                <SelectTrigger className="w-[220px]">
-                                    <SelectValue placeholder="Select office..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectLabel>Offices</SelectLabel>
-                                        {offices.map((office) => (
-                                            <SelectItem
-                                                key={office.id}
-                                                value={office.id.toString()}
-                                            >
+                            <div className="w-[220px]">
+                                <CommandSelect<Office>
+                                    value={selectedOfficeId}
+                                    onChange={handleOfficeChange}
+                                    options={offices}
+                                    getOptionValue={(office) =>
+                                        office.id.toString()
+                                    }
+                                    getOptionSearchText={(office) =>
+                                        `${office.acronym ?? ''} ${office.name}`
+                                    }
+                                    renderTrigger={(office) => (
+                                        <span className="truncate">
+                                            {office.acronym || office.name}
+                                        </span>
+                                    )}
+                                    renderOption={(office) => (
+                                        <div className="grid w-full grid-cols-4 gap-4">
+                                            <span className="col-span-1">
+                                                {office.acronym ?? '-'}
+                                            </span>
+                                            <span className="col-span-3 whitespace-normal">
                                                 {office.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
+                                            </span>
+                                        </div>
+                                    )}
+                                    placeholder="Select office..."
+                                    searchPlaceholder="Search office name..."
+                                    heading="Offices"
+                                    showClear={false}
+                                />
+                            </div>
                         )}
 
                         {can?.add && (
