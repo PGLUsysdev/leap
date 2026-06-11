@@ -340,15 +340,10 @@ export default function ExportToPdfDialog({
                                                                 );
                                                             // Always return something for Col 14 to keep vertical line intact
                                                             if (colIndex === 14)
-                                                                return fsIndex ===
-                                                                    0
-                                                                    ? (
-                                                                          aipEntry as any
-                                                                      )
-                                                                          ?.typology
-                                                                          ?.code ||
-                                                                          '-'
-                                                                    : '-';
+                                                                return (
+                                                                    fs?.cc_typology
+                                                                        ?.code || '-'
+                                                                );
                                                             return '-';
                                                         })()}
                                                     </Text>

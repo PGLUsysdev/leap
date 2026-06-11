@@ -47,7 +47,15 @@ interface AipSummaryTableProps {
     aipEntries: Ppa[];
     can: { export: boolean; import: boolean; createSaip: boolean };
     fundingSources: FundingSource[];
-    ccTypologies: { id: number; code: string; description: string }[];
+    ccTypologies: {
+        id: number;
+        code: string;
+        description: string;
+        strategic_priority_id: number;
+        sub_sector_id: number | null;
+        strategic_priority?: { id: number; code: number; name: string };
+        sub_sector?: { id: number; code: number; name: string } | null;
+    }[];
     offices: Office[];
     filters: Filter;
     dialogPpaTree?: PaginatedResponse<Ppa>;

@@ -47,6 +47,14 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { FormDialogShell } from '@/components/form-dialog-shell';
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogDescription,
+    AlertDialogFooter,
+} from '@/components/ui/alert-dialog';
 import { CommandSelect } from '@/components/command-select';
 import type {
     FiscalYear,
@@ -72,7 +80,15 @@ interface AipEntryFormDialogProps {
     supplementalAipId?: number | null;
     canShowSummaryAll?: boolean; // NEW
     selectedOfficeId?: string;
-    ccTypologies: { id: number; code: string; description: string }[];
+    ccTypologies: {
+        id: number;
+        code: string;
+        description: string;
+        strategic_priority_id: number;
+        sub_sector_id: number | null;
+        strategic_priority?: { id: number; code: number; name: string };
+        sub_sector?: { id: number; code: number; name: string } | null;
+    }[];
     chartOfAccounts: ChartOfAccount[];
     priceLists: PriceList[];
     ppmpCategories: PpmpCategory[];
@@ -132,6 +148,7 @@ export default function AipEntryFormDialog({
     const userOfficeId = auth?.user?.office_id;
     const [isLoading, setIsLoading] = useState(false);
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+    const [removeSourceIndex, setRemoveSourceIndex] = useState<number | null>(null);
 
     const [ppmpDialogOpen, setPpmpDialogOpen] = useState(false);
     const [ppmpExpenseClass, setPpmpExpenseClass] = useState<'MOOE' | 'CO'>(
@@ -210,6 +227,22 @@ export default function AipEntryFormDialog({
     const handleCancelClose = () => {
         setShowCloseConfirm(false);
     };
+
+    function handleRemoveSource(index: number) {
+        const source = watchedSources?.[index];
+        if (source?.id) {
+            setRemoveSourceIndex(index);
+        } else {
+            remove(index);
+        }
+    }
+
+    function confirmRemoveSource() {
+        if (removeSourceIndex !== null) {
+            remove(removeSourceIndex);
+            setRemoveSourceIndex(null);
+        }
+    }
 
     const handleQuickAddPpmp = (index: number, expenseClass: 'MOOE' | 'CO') => {
         if (!canEdit || !canViewPpmp) return;
@@ -329,6 +362,21 @@ export default function AipEntryFormDialog({
                 submitLabel={isEdit ? 'Save Changes' : 'Add Entry'}
                 submittingLabel="Saving..."
                 className="sm:max-w-[80%]"
+                extraFooter={
+                    <div className="flex flex-1 items-center gap-2 self-center text-left">
+                        {isDirty ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                Unsaved changes
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                Saved
+                            </span>
+                        )}
+                    </div>
+                }
             >
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
@@ -974,6 +1022,18 @@ export default function AipEntryFormDialog({
                                                                                         id: number;
                                                                                         code: string;
                                                                                         description: string;
+                                                                                        strategic_priority_id: number;
+                                                                                        sub_sector_id: number | null;
+                                                                                        strategic_priority?: {
+                                                                                            id: number;
+                                                                                            code: number;
+                                                                                            name: string;
+                                                                                        };
+                                                                                        sub_sector?: {
+                                                                                            id: number;
+                                                                                            code: number;
+                                                                                            name: string;
+                                                                                        } | null;
                                                                                     }>
                                                                                         value={
                                                                                             field.value as number | null
@@ -997,7 +1057,7 @@ export default function AipEntryFormDialog({
                                                                                         getOptionSearchText={(
                                                                                             t,
                                                                                         ) =>
-                                                                                            `${t.code} ${t.description}`
+                                                                                            `${t.strategic_priority?.name ?? ''} ${t.strategic_priority?.code ?? ''} ${t.sub_sector?.name ?? ''} ${t.sub_sector?.code ?? ''} ${t.code} ${t.description}`
                                                                                         }
                                                                                         renderTrigger={(
                                                                                             t,
@@ -1011,13 +1071,21 @@ export default function AipEntryFormDialog({
                                                                                         renderOption={(
                                                                                             t,
                                                                                         ) => (
-                                                                                            <div className="grid w-full grid-cols-12 gap-2">
-                                                                                                <span className="col-span-3 font-medium">
+                                                                                            <div className="grid w-full grid-cols-12 gap-2 text-sm">
+                                                                                                <span className="col-span-2 whitespace-normal font-medium text-foreground">
+                                                                                                    {t.strategic_priority?.code ?? '-'}. {t.strategic_priority?.name ?? '-'}
+                                                                                                </span>
+                                                                                                <span className="col-span-2 whitespace-normal text-muted-foreground">
+                                                                                                    {t.sub_sector
+                                                                                                        ? `${t.sub_sector.code}. ${t.sub_sector.name}`
+                                                                                                        : '—'}
+                                                                                                </span>
+                                                                                                <span className="col-span-2 whitespace-normal font-medium">
                                                                                                     {
                                                                                                         t.code
                                                                                                     }
                                                                                                 </span>
-                                                                                                <span className="col-span-9 text-muted-foreground">
+                                                                                                <span className="col-span-6 whitespace-normal text-muted-foreground">
                                                                                                     {
                                                                                                         t.description
                                                                                                     }
@@ -1027,6 +1095,7 @@ export default function AipEntryFormDialog({
                                                                                         placeholder="Typology..."
                                                                                         searchPlaceholder="Search typology..."
                                                                                         heading="CC Typologies"
+                                                                                        dialogClassName="sm:max-w-[900px]"
                                                                                         showClear={
                                                                                             false
                                                                                         }
@@ -1116,7 +1185,7 @@ export default function AipEntryFormDialog({
                                                                                     size="icon"
                                                                                     variant="destructive"
                                                                                     onClick={() =>
-                                                                                        remove(
+                                                                                        handleRemoveSource(
                                                                                             index,
                                                                                         )
                                                                                     }
@@ -1163,6 +1232,19 @@ export default function AipEntryFormDialog({
                     ppaFundingSourceId={watchedSources[ppmpSourceIndex]?.id}
                     mode="quick-add"
                     onItemAdded={onPpmpItemAdded}
+                    existingPpmps={(() => {
+                        if (!data) return undefined;
+                        const fsId = watchedSources[ppmpSourceIndex]?.id;
+                        if (!fsId) return undefined;
+                        for (const ae of data.aip_entries ?? []) {
+                            for (const fs of ae.ppa_funding_sources ?? []) {
+                                if (fs.id === fsId) {
+                                    return (fs as any).ppmps ?? [];
+                                }
+                            }
+                        }
+                        return undefined;
+                    })()}
                 />
             )}
 
@@ -1192,6 +1274,40 @@ export default function AipEntryFormDialog({
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog
+                open={removeSourceIndex !== null}
+                onOpenChange={(open) => !open && setRemoveSourceIndex(null)}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Remove Funding Source?
+                        </AlertDialogTitle>
+
+                        <AlertDialogDescription>
+                            Removing this funding source will also delete all
+                            associated PPMP items. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <AlertDialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setRemoveSourceIndex(null)}
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            variant="destructive"
+                            onClick={confirmRemoveSource}
+                        >
+                            Remove
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

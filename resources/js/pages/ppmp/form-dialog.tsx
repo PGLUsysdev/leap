@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { ChartOfAccount, FundingSource, AipEntry } from '@/types/global';
+import type { ChartOfAccount, FundingSource, AipEntry, Ppmp } from '@/types/global';
 import { router } from '@inertiajs/react';
 import { formSchema, type FormSchemaType } from './form-dialog-schema';
 import { FormDialogShell } from '@/components/form-dialog-shell';
@@ -39,6 +39,8 @@ interface PpmpFormDialogProps {
     defaultMonth?: string;
     defaultQuantity?: number;
     onItemAdded?: () => void;
+    // Existing PPMP records for this funding source (for pre-filling in quick-add mode)
+    existingPpmps?: Ppmp[];
 }
 
 export default function PpmpFormDialog({
@@ -56,6 +58,7 @@ export default function PpmpFormDialog({
     defaultMonth,
     defaultQuantity,
     onItemAdded,
+    existingPpmps,
 }: PpmpFormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -103,6 +106,30 @@ export default function PpmpFormDialog({
             });
         }
     }, [open, form]);
+
+    const selectedPriceListId = form.watch('ppmp_price_list_id');
+
+    const MONTHS = [
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+    ] as const;
+
+    useEffect(() => {
+        if (mode !== 'quick-add' || !selectedPriceListId || !existingPpmps?.length) return;
+
+        const match = (existingPpmps as any[]).find(
+            (p) =>
+                Number(p.ppa_funding_source_id) === Number(ppaFundingSourceId) &&
+                Number(p.ppmp_price_list_id) === Number(selectedPriceListId),
+        );
+        if (!match) return;
+
+        const firstMonth = MONTHS.find((m) => (Number(match[`${m}_qty`]) || 0) > 0);
+        if (firstMonth) {
+            form.setValue('month', firstMonth);
+            form.setValue('quantity', Number(match[`${firstMonth}_qty`]));
+        }
+    }, [selectedPriceListId, mode, existingPpmps, ppaFundingSourceId, form]);
 
     const selectedCategoryData = ppmpCategories.find(
         (cat) => cat.id === selectedCategory,

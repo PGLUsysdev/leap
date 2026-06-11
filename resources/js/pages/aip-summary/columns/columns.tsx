@@ -323,12 +323,12 @@ const columns = () => {
 
         columnHelper.accessor('current_fs.cc_typology.code', {
             id: 'cc_typology_code',
-            header: () => <div className="text-left">Typology</div>,
+            header: () => <div className="text-left pl-4">Typology</div>,
             cell: (info) => {
                 const code = info.getValue();
-                return <div className="text-right">{code || '—'}</div>;
+                return <div className="pl-4" >{code || '-'}</div>;
             },
-            footer: () => <div className="text-right font-medium">—</div>,
+            footer: () => <div className="pl-4 font-medium">-</div>,
         }),
 
         columnHelper.display({

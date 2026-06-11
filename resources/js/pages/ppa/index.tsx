@@ -7,15 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { CommandSelect } from '@/components/command-select';
 
 // Page-Specific Components
 import PpaFormDialog from '@/pages/ppa/form-dialog';
@@ -227,11 +219,11 @@ export default function PpaPage({
         );
     }
 
-    function handleOfficeChange(officeId: string) {
+    function handleOfficeChange(officeId: string | number | null) {
         router.visit(
             index({
                 query: {
-                    selected_office_id: officeId,
+                    selected_office_id: officeId?.toString() ?? '',
                 },
             }),
             {},
@@ -292,29 +284,38 @@ export default function PpaPage({
                 >
                     <div className="flex items-center gap-2">
                         {showAllOffices && parentOffices && (
-                            <Select
-                                value={selectedOfficeId ? String(selectedOfficeId) : undefined}
-                                onValueChange={handleOfficeChange}
-                            >
-                                <SelectTrigger className="w-[220px]">
-                                    <SelectValue placeholder="Select LGU Office..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        <SelectLabel>
-                                            Parent Offices
-                                        </SelectLabel>
-                                        {parentOffices.map((office) => (
-                                            <SelectItem
-                                                key={office.id}
-                                                value={office.id.toString()}
-                                            >
+                            <div className="w-[220px]">
+                                <CommandSelect<Office>
+                                    value={selectedOfficeId ?? null}
+                                    onChange={handleOfficeChange}
+                                    options={parentOffices}
+                                    getOptionValue={(office) =>
+                                        office.id
+                                    }
+                                    getOptionSearchText={(office) =>
+                                        `${office.acronym ?? ''} ${office.name}`
+                                    }
+                                    renderTrigger={(office) => (
+                                        <span className="truncate">
+                                            {office.acronym || office.name}
+                                        </span>
+                                    )}
+                                    renderOption={(office) => (
+                                        <div className="grid w-full grid-cols-12 gap-2 text-sm">
+                                            <span className="col-span-3 font-medium">
+                                                {office.acronym ?? '-'}
+                                            </span>
+                                            <span className="col-span-9 whitespace-normal text-muted-foreground">
                                                 {office.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
+                                            </span>
+                                        </div>
+                                    )}
+                                    placeholder="Select LGU Office..."
+                                    searchPlaceholder="Search office..."
+                                    heading="Parent Offices"
+                                    showClear={false}
+                                />
+                            </div>
                         )}
 
                         {can?.import && (

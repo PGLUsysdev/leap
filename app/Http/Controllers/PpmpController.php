@@ -203,15 +203,12 @@ class PpmpController extends Controller
             // quantities default to 0 via DB schema
         ]);
 
-        // If month and quantity are provided, add to the existing monthly quantity
+        // If month and quantity are provided, set the monthly quantity
         if ($request->filled('month') && $request->filled('quantity')) {
             $monthQty = $validated['month'] . '_qty';
             $monthAmount = $validated['month'] . '_amount';
             $unitPrice = $ppmp->ppmpPriceList?->price ?? 0;
-            $addQuantity = (int) round($validated['quantity']);
-
-            $currentQty = (int) ($ppmp->{$monthQty} ?? 0);
-            $newQty = $currentQty + $addQuantity;
+            $newQty = (int) round($validated['quantity']);
 
             $ppmp->update([
                 $monthQty => $newQty,

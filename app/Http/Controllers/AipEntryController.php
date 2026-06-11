@@ -49,7 +49,7 @@ class AipEntryController extends Controller
         }
 
         $fundingSourceFilter = function ($query) use ($scope, $saipId) {
-            $query->with(['fundingSource', 'ccTypology']);
+            $query->with(['fundingSource', 'ccTypology', 'ppmps']);
             if ($scope === 'original') {
                 $query->whereNull('supplemental_aip_id');
             } elseif ($scope === 'supplemental' && $saipId) {
@@ -351,7 +351,13 @@ class AipEntryController extends Controller
                 'id',
                 'code',
                 'description',
+                'strategic_priority_id',
+                'sub_sector_id',
             )
+                ->with([
+                    'strategicPriority:id,code,name',
+                    'subSector:id,code,name',
+                ])
                 ->orderBy('code')
                 ->get(),
             'offices' => Office::all(),
@@ -516,7 +522,7 @@ class AipEntryController extends Controller
                     [
                         'start_date' => $fiscalYear->year . '-01-01',
                         'end_date' => $fiscalYear->year . '-12-31',
-                        'expected_output' => 'To be defined.',
+                        'expected_output' => '-',
                         'is_supplemental' => (bool) $saipId,
                     ],
                 );
@@ -607,28 +613,6 @@ class AipEntryController extends Controller
             $newFundingSourceIds,
         );
 
-        if (!empty($idsToRemove)) {
-            $isUsedInPpmp = Ppmp::whereHas('ppaFundingSource', function (
-                $query,
-            ) use ($aipEntry, $idsToRemove, $saipId) {
-                $query
-                    ->where('aip_entry_id', $aipEntry->id)
-                    ->whereIn('funding_source_id', $idsToRemove);
-                if ($saipId) {
-                    $query->where('supplemental_aip_id', $saipId);
-                } else {
-                    $query->whereNull('supplemental_aip_id');
-                }
-            })->exists();
-
-            if ($isUsedInPpmp) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'ppa_funding_sources' =>
-                        'Cannot remove a funding source that is already being used by PPMP items.',
-                ]);
-            }
-        }
-
         \DB::transaction(function () use (
             $validated,
             $aipEntry,
@@ -649,15 +633,20 @@ class AipEntryController extends Controller
             }
 
             if ($canEditFunding) {
-                $deleteQuery = $aipEntry
+                $sourcesToRemove = $aipEntry
                     ->ppaFundingSources()
                     ->whereIn('funding_source_id', $idsToRemove);
                 if ($saipId) {
-                    $deleteQuery->where('supplemental_aip_id', $saipId);
+                    $sourcesToRemove->where('supplemental_aip_id', $saipId);
                 } else {
-                    $deleteQuery->whereNull('supplemental_aip_id');
+                    $sourcesToRemove->whereNull('supplemental_aip_id');
                 }
-                $deleteQuery->delete();
+
+                $ppaFundingSourceIds = $sourcesToRemove->pluck('id');
+
+                Ppmp::whereIn('ppa_funding_source_id', $ppaFundingSourceIds)->delete();
+
+                $sourcesToRemove->delete();
 
                 foreach ($validated['ppa_funding_sources'] ?? [] as $source) {
                     $aipEntry->ppaFundingSources()->updateOrCreate(

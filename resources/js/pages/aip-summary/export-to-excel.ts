@@ -324,10 +324,7 @@ export async function exportToExcel({
             total: fs ? formatNumber(rowTotal) : '-',
             adaptation: fs ? formatNumber(adaptation) : '-',
             mitigation: fs ? formatNumber(mitigation) : '-',
-            typology:
-                fs && showPpaDetails
-                    ? (aipEntry as any)?.typology?.code || '-'
-                    : '-',
+            typology: fs?.cc_typology?.code || '-',
         });
 
         // Apply indentation to description column

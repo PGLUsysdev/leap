@@ -660,6 +660,7 @@ export default function PpmpPage({
                 selectedExpenseClass={selectedExpenseClass}
                 selectedFundingSourceId={selectedFundingSourceId}
                 ppaFundingSourceId={currentPpaFundingSourceId}
+                existingPpmps={ppmps}
             />
 
             <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
