@@ -9,7 +9,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { ChartOfAccount, FundingSource, AipEntry, Ppmp } from '@/types/global';
+import type {
+    ChartOfAccount,
+    FundingSource,
+    AipEntry,
+    Ppmp,
+} from '@/types/global';
 import { router } from '@inertiajs/react';
 import { formSchema, type FormSchemaType } from './form-dialog-schema';
 import { FormDialogShell } from '@/components/form-dialog-shell';
@@ -110,21 +115,39 @@ export default function PpmpFormDialog({
     const selectedPriceListId = form.watch('ppmp_price_list_id');
 
     const MONTHS = [
-        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
-        'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
     ] as const;
 
     useEffect(() => {
-        if (mode !== 'quick-add' || !selectedPriceListId || !existingPpmps?.length) return;
+        if (
+            mode !== 'quick-add' ||
+            !selectedPriceListId ||
+            !existingPpmps?.length
+        )
+            return;
 
         const match = (existingPpmps as any[]).find(
             (p) =>
-                Number(p.ppa_funding_source_id) === Number(ppaFundingSourceId) &&
+                Number(p.ppa_funding_source_id) ===
+                    Number(ppaFundingSourceId) &&
                 Number(p.ppmp_price_list_id) === Number(selectedPriceListId),
         );
         if (!match) return;
 
-        const firstMonth = MONTHS.find((m) => (Number(match[`${m}_qty`]) || 0) > 0);
+        const firstMonth = MONTHS.find(
+            (m) => (Number(match[`${m}_qty`]) || 0) > 0,
+        );
         if (firstMonth) {
             form.setValue('month', firstMonth);
             form.setValue('quantity', Number(match[`${firstMonth}_qty`]));
@@ -252,154 +275,6 @@ export default function PpmpFormDialog({
                             onSubmit={form.handleSubmit(onSubmit)}
                         >
                             <div className="grid gap-6">
-                                <Controller
-                                    name="expenseAccount"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            // className="overflow-hidden"
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
-                                                    Expense Account{' '}
-                                                    {selectedExpenseClass ===
-                                                    'MOOE'
-                                                        ? '(MOOE)'
-                                                        : '(CO)'}
-                                                </FieldLabel>
-
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val) => {
-                                                        if (
-                                                            field.value !== val
-                                                        ) {
-                                                            field.onChange(val);
-                                                            clearDependencies();
-                                                        }
-                                                    }}
-                                                    options={
-                                                        filteredChartOfAccounts
-                                                    }
-                                                    getOptionValue={(acc) =>
-                                                        acc.id
-                                                    }
-                                                    getOptionSearchText={(
-                                                        acc,
-                                                    ) =>
-                                                        `${acc.account_number} ${acc.account_title}`
-                                                    }
-                                                    placeholder="Select expense account"
-                                                    searchPlaceholder="Search account number or title..."
-                                                    heading="Chart of Accounts"
-                                                    onClear={() => {
-                                                        field.onChange(null);
-                                                        form.setValue(
-                                                            'category',
-                                                            null,
-                                                        );
-                                                        clearDependencies();
-                                                    }}
-                                                    renderTrigger={(acc) => (
-                                                        <span className="truncate">
-                                                            <code className="mr-2 rounded bg-muted p-0.5 text-xs">
-                                                                {
-                                                                    acc.account_number
-                                                                }
-                                                            </code>
-                                                            {acc.account_title}
-                                                        </span>
-                                                    )}
-                                                    renderOption={(acc) => (
-                                                        <div>
-                                                            <code className="mr-2 rounded bg-muted p-1 text-xs">
-                                                                {
-                                                                    acc.account_number
-                                                                }
-                                                            </code>
-                                                            {acc.account_title}
-                                                        </div>
-                                                    )}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="category"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            // className="overflow-hidden"
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
-                                                    Category
-                                                </FieldLabel>
-
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val) => {
-                                                        if (
-                                                            field.value !== val
-                                                        ) {
-                                                            field.onChange(val);
-                                                            clearDependencies();
-                                                        }
-                                                    }}
-                                                    options={
-                                                        filteredPpmpCategories
-                                                    }
-                                                    getOptionValue={(cat) =>
-                                                        cat.id
-                                                    }
-                                                    getOptionSearchText={(
-                                                        cat,
-                                                    ) => cat.name}
-                                                    placeholder="Select category"
-                                                    searchPlaceholder="Search category..."
-                                                    heading="Categories"
-                                                    onClear={() => {
-                                                        field.onChange(null);
-                                                        clearDependencies();
-                                                    }}
-                                                    renderTrigger={(cat) => (
-                                                        <span className="truncate">
-                                                            {cat.name}
-                                                        </span>
-                                                    )}
-                                                    renderOption={(cat) =>
-                                                        cat.name
-                                                    }
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
                                 <Controller
                                     name="description"
                                     control={form.control}
@@ -707,6 +582,154 @@ export default function PpmpFormDialog({
                                         />
                                     </div>
                                 </div>
+
+                                <Controller
+                                    name="expenseAccount"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            // className="overflow-hidden"
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Expense Account{' '}
+                                                    {selectedExpenseClass ===
+                                                    'MOOE'
+                                                        ? '(MOOE)'
+                                                        : '(CO)'}
+                                                </FieldLabel>
+
+                                                <CommandSelect
+                                                    value={field.value}
+                                                    onChange={(val) => {
+                                                        if (
+                                                            field.value !== val
+                                                        ) {
+                                                            field.onChange(val);
+                                                            clearDependencies();
+                                                        }
+                                                    }}
+                                                    options={
+                                                        filteredChartOfAccounts
+                                                    }
+                                                    getOptionValue={(acc) =>
+                                                        acc.id
+                                                    }
+                                                    getOptionSearchText={(
+                                                        acc,
+                                                    ) =>
+                                                        `${acc.account_number} ${acc.account_title}`
+                                                    }
+                                                    placeholder="Select expense account"
+                                                    searchPlaceholder="Search account number or title..."
+                                                    heading="Chart of Accounts"
+                                                    onClear={() => {
+                                                        field.onChange(null);
+                                                        form.setValue(
+                                                            'category',
+                                                            null,
+                                                        );
+                                                        clearDependencies();
+                                                    }}
+                                                    renderTrigger={(acc) => (
+                                                        <span className="truncate">
+                                                            <code className="mr-2 rounded bg-muted p-0.5 text-xs">
+                                                                {
+                                                                    acc.account_number
+                                                                }
+                                                            </code>
+                                                            {acc.account_title}
+                                                        </span>
+                                                    )}
+                                                    renderOption={(acc) => (
+                                                        <div>
+                                                            <code className="mr-2 rounded bg-muted p-1 text-xs">
+                                                                {
+                                                                    acc.account_number
+                                                                }
+                                                            </code>
+                                                            {acc.account_title}
+                                                        </div>
+                                                    )}
+                                                />
+
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
+
+                                <Controller
+                                    name="category"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            // className="overflow-hidden"
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Category
+                                                </FieldLabel>
+
+                                                <CommandSelect
+                                                    value={field.value}
+                                                    onChange={(val) => {
+                                                        if (
+                                                            field.value !== val
+                                                        ) {
+                                                            field.onChange(val);
+                                                            clearDependencies();
+                                                        }
+                                                    }}
+                                                    options={
+                                                        filteredPpmpCategories
+                                                    }
+                                                    getOptionValue={(cat) =>
+                                                        cat.id
+                                                    }
+                                                    getOptionSearchText={(
+                                                        cat,
+                                                    ) => cat.name}
+                                                    placeholder="Select category"
+                                                    searchPlaceholder="Search category..."
+                                                    heading="Categories"
+                                                    onClear={() => {
+                                                        field.onChange(null);
+                                                        clearDependencies();
+                                                    }}
+                                                    renderTrigger={(cat) => (
+                                                        <span className="truncate">
+                                                            {cat.name}
+                                                        </span>
+                                                    )}
+                                                    renderOption={(cat) =>
+                                                        cat.name
+                                                    }
+                                                />
+
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
 
                                 {mode === 'quick-add' && (
                                     <div className="grid grid-cols-2 gap-4">
