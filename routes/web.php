@@ -25,6 +25,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CcTypologyController;
 use App\Http\Controllers\CcStrategicPriorityController;
 use App\Http\Controllers\CcSubSectorController;
+use App\Http\Controllers\PpaFundingSourceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -88,6 +89,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ]);
     Route::delete('/aip-entries/{aipEntry}', [
         AipEntryController::class,
+        'destroy',
+    ]);
+    Route::post('/aip-entries/{aipEntry}/ppa-funding-sources', [
+        PpaFundingSourceController::class,
+        'store',
+    ]);
+    Route::delete('/aip-entries/{aipEntry}/ppa-funding-sources/{ppaFundingSource}', [
+        PpaFundingSourceController::class,
         'destroy',
     ]);
 

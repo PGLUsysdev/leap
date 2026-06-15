@@ -148,7 +148,9 @@ export default function AipEntryFormDialog({
     const userOfficeId = auth?.user?.office_id;
     const [isLoading, setIsLoading] = useState(false);
     const [showCloseConfirm, setShowCloseConfirm] = useState(false);
-    const [removeSourceIndex, setRemoveSourceIndex] = useState<number | null>(null);
+    const [removeSourceIndex, setRemoveSourceIndex] = useState<number | null>(
+        null,
+    );
 
     const [ppmpDialogOpen, setPpmpDialogOpen] = useState(false);
     const [ppmpExpenseClass, setPpmpExpenseClass] = useState<'MOOE' | 'CO'>(
@@ -193,8 +195,6 @@ export default function AipEntryFormDialog({
         },
     });
 
-    const { isDirty } = form.formState;
-
     const { fields, append, remove } = useFieldArray({
         control: form.control,
         name: 'ppa_funding_sources',
@@ -204,6 +204,26 @@ export default function AipEntryFormDialog({
         control: form.control,
         name: 'ppa_funding_sources',
     });
+
+    const watchedAll = useWatch({ control: form.control });
+    const [savedHash, setSavedHash] = useState<string>('');
+    const isDirty = JSON.stringify(watchedAll) !== savedHash;
+
+    const getSaveWorthyFields = (values: FormValues) => ({
+        office_id: values.office_id,
+        expected_output: values.expected_output,
+        start_date: values.start_date,
+        end_date: values.end_date,
+        ppa_funding_sources: (values.ppa_funding_sources || []).map((s) => ({
+            ccet_adaptation: s.ccet_adaptation,
+            ccet_mitigation: s.ccet_mitigation,
+            cc_typology_id: s.cc_typology_id,
+        })),
+    });
+
+    const [saveWorthyHash, setSaveWorthyHash] = useState<string>('');
+    const hasSaveWorthyChanges =
+        JSON.stringify(getSaveWorthyFields(watchedAll)) !== saveWorthyHash;
 
     const selectedSourceIds = useMemo(() => {
         return (watchedSources || [])
@@ -226,6 +246,10 @@ export default function AipEntryFormDialog({
 
     const handleCancelClose = () => {
         setShowCloseConfirm(false);
+    };
+
+    const cleanupAndClose = () => {
+        onOpenChange(false);
     };
 
     function handleRemoveSource(index: number) {
@@ -278,6 +302,38 @@ export default function AipEntryFormDialog({
         );
     };
 
+    const handleAddFundingSource = (fs: FundingSource) => {
+        if (!entry?.id) {
+            append({
+                funding_source_id: fs.id.toString(),
+                ps_amount: '0.00',
+                mooe_amount: '0.00',
+                fe_amount: '0.00',
+                co_amount: '0.00',
+                ccet_adaptation: '0.00',
+                ccet_mitigation: '0.00',
+                cc_typology_id: null,
+            });
+            return;
+        }
+
+        router.post(
+            `/aip-entries/${entry.id}/ppa-funding-sources`,
+            {
+                funding_source_id: fs.id,
+                ps_amount: '0.00',
+                mooe_amount: '0.00',
+                fe_amount: '0.00',
+                co_amount: '0.00',
+                ccet_adaptation: '0.00',
+                ccet_mitigation: '0.00',
+                cc_typology_id: null,
+                supplemental_aip_id: supplementalAipId,
+            },
+            { preserveState: true, preserveScroll: true },
+        );
+    };
+
     function onSubmit(values: FormValues) {
         const payload = {
             ...values,
@@ -293,7 +349,12 @@ export default function AipEntryFormDialog({
                 setIsLoading(true);
                 form.clearErrors();
             },
-            onSuccess: () => {},
+            onSuccess: () => {
+                setSavedHash(JSON.stringify(form.getValues()));
+                setSaveWorthyHash(
+                    JSON.stringify(getSaveWorthyFields(form.getValues())),
+                );
+            },
             onFinish: () => setIsLoading(false),
         };
 
@@ -338,6 +399,10 @@ export default function AipEntryFormDialog({
                         cc_typology_id: (fs as any).cc_typology_id ?? null,
                     })) || [],
             });
+            setSavedHash(JSON.stringify(form.getValues()));
+            setSaveWorthyHash(
+                JSON.stringify(getSaveWorthyFields(form.getValues())),
+            );
         }
     }, [data, open, form, supplementalAipId]);
 
@@ -358,7 +423,8 @@ export default function AipEntryFormDialog({
                 }
                 isLoading={isLoading}
                 formId="aip-form"
-                onCancel={() => onOpenChange(false)}
+                onCancel={cleanupAndClose}
+                submitDisabled={!hasSaveWorthyChanges}
                 submitLabel={isEdit ? 'Save Changes' : 'Add Entry'}
                 submittingLabel="Saving..."
                 className="sm:max-w-[80%]"
@@ -632,94 +698,6 @@ export default function AipEntryFormDialog({
                                                 <FieldLabel>
                                                     Funding Distribution
                                                 </FieldLabel>
-
-                                                <div className="pb-1">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="sm"
-                                                                disabled={
-                                                                    !canEditFunding
-                                                                }
-                                                            >
-                                                                <Plus className="mr-2 h-4 w-4" />
-                                                                Add Fund Source
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent
-                                                            align="end"
-                                                            className="w-50"
-                                                        >
-                                                            <DropdownMenuLabel>
-                                                                Select Source to
-                                                                Add
-                                                            </DropdownMenuLabel>
-                                                            <DropdownMenuSeparator />
-
-                                                            {fundingSources.filter(
-                                                                (fs) =>
-                                                                    !selectedSourceIds.includes(
-                                                                        fs.id.toString(),
-                                                                    ),
-                                                            ).length === 0 ? (
-                                                                <div className="p-2 text-center text-sm text-muted-foreground">
-                                                                    All sources
-                                                                    added
-                                                                </div>
-                                                            ) : (
-                                                                fundingSources
-                                                                    .filter(
-                                                                        (fs) =>
-                                                                            !selectedSourceIds.includes(
-                                                                                fs.id.toString(),
-                                                                            ),
-                                                                    )
-                                                                    .map(
-                                                                        (
-                                                                            fs,
-                                                                        ) => (
-                                                                            <DropdownMenuItem
-                                                                                key={
-                                                                                    fs.id
-                                                                                }
-                                                                                className="cursor-pointer font-medium"
-                                                                                onClick={() =>
-                                                                                    append(
-                                                                                        {
-                                                                                            funding_source_id:
-                                                                                                fs.id.toString(),
-                                                                                            ps_amount:
-                                                                                                '0.00',
-                                                                                            mooe_amount:
-                                                                                                '0.00',
-                                                                                            fe_amount:
-                                                                                                '0.00',
-                                                                                            co_amount:
-                                                                                                '0.00',
-                                                                                            ccet_adaptation:
-                                                                                                '0.00',
-                                                                                            ccet_mitigation:
-                                                                                                '0.00',
-                                                                                            cc_typology_id:
-                                                                                                null,
-                                                                                        },
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                {
-                                                                                    fs.code
-                                                                                }
-                                                                            </DropdownMenuItem>
-                                                                        ),
-                                                                    )
-                                                            )}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
                                             </div>
 
                                             <div className="rounded-md border">
@@ -1023,7 +1001,9 @@ export default function AipEntryFormDialog({
                                                                                         code: string;
                                                                                         description: string;
                                                                                         strategic_priority_id: number;
-                                                                                        sub_sector_id: number | null;
+                                                                                        sub_sector_id:
+                                                                                            | number
+                                                                                            | null;
                                                                                         strategic_priority?: {
                                                                                             id: number;
                                                                                             code: number;
@@ -1036,7 +1016,9 @@ export default function AipEntryFormDialog({
                                                                                         } | null;
                                                                                     }>
                                                                                         value={
-                                                                                            field.value as number | null
+                                                                                            field.value as
+                                                                                                | number
+                                                                                                | null
                                                                                         }
                                                                                         onChange={(
                                                                                             val,
@@ -1072,15 +1054,23 @@ export default function AipEntryFormDialog({
                                                                                             t,
                                                                                         ) => (
                                                                                             <div className="grid w-full grid-cols-12 gap-2 text-sm">
-                                                                                                <span className="col-span-2 whitespace-normal font-medium text-foreground">
-                                                                                                    {t.strategic_priority?.code ?? '-'}. {t.strategic_priority?.name ?? '-'}
+                                                                                                <span className="col-span-2 font-medium whitespace-normal text-foreground">
+                                                                                                    {t
+                                                                                                        .strategic_priority
+                                                                                                        ?.code ??
+                                                                                                        '-'}
+                                                                                                    .{' '}
+                                                                                                    {t
+                                                                                                        .strategic_priority
+                                                                                                        ?.name ??
+                                                                                                        '-'}
                                                                                                 </span>
                                                                                                 <span className="col-span-2 whitespace-normal text-muted-foreground">
                                                                                                     {t.sub_sector
                                                                                                         ? `${t.sub_sector.code}. ${t.sub_sector.name}`
                                                                                                         : '—'}
                                                                                                 </span>
-                                                                                                <span className="col-span-2 whitespace-normal font-medium">
+                                                                                                <span className="col-span-2 font-medium whitespace-normal">
                                                                                                     {
                                                                                                         t.code
                                                                                                     }
@@ -1206,6 +1196,73 @@ export default function AipEntryFormDialog({
                                                 </Table>
 
                                                 <ScrollBar orientation="horizontal" />
+                                            </div>
+
+                                            <div className="pt-1">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger
+                                                        asChild
+                                                    >
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            disabled={
+                                                                !canEditFunding
+                                                            }
+                                                            className="w-43"
+                                                        >
+                                                            <Plus className="mr-2 h-4 w-4" />
+                                                            Add Fund Source
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent
+                                                        align="end"
+                                                        className="w-50"
+                                                    >
+                                                        <DropdownMenuLabel>
+                                                            Select Source to Add
+                                                        </DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+
+                                                        {fundingSources.filter(
+                                                            (fs) =>
+                                                                !selectedSourceIds.includes(
+                                                                    fs.id.toString(),
+                                                                ),
+                                                        ).length === 0 ? (
+                                                            <div className="p-2 text-center text-sm text-muted-foreground">
+                                                                All sources
+                                                                added
+                                                            </div>
+                                                        ) : (
+                                                            fundingSources
+                                                                .filter(
+                                                                    (fs) =>
+                                                                        !selectedSourceIds.includes(
+                                                                            fs.id.toString(),
+                                                                        ),
+                                                                )
+                                                                        .map((fs) => (
+                                                                        <DropdownMenuItem
+                                                                            key={
+                                                                                fs.id
+                                                                            }
+                                                                            className="cursor-pointer font-medium"
+                                                                            onClick={() =>
+                                                                                handleAddFundingSource(
+                                                                                    fs,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                        {
+                                                                            fs.code
+                                                                        }
+                                                                    </DropdownMenuItem>
+                                                                ))
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </div>
                                         </FieldContent>
                                     </Field>
