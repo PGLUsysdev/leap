@@ -86,12 +86,12 @@ export default function OfficesPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="py-4">
-                <div className="mb-2 text-xs text-muted-foreground">
+            <div className="pt-4">
+                {/*<div className="mb-2 text-xs text-muted-foreground">
                     {can?.showAllOffices
                         ? 'Showing all offices'
                         : 'Showing your office'}
-                </div>
+                </div>*/}
 
                 <DataTable
                     columns={cols}
@@ -100,6 +100,7 @@ export default function OfficesPage({
                     onAdd={handleCreateChild}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
+                    negativeHeight={7}
                 >
                     {can?.addOffice && (
                         <Button onClick={handleCreate}>Add Office</Button>

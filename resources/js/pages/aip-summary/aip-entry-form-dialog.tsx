@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -158,6 +158,10 @@ export default function AipEntryFormDialog({
     );
     const [ppmpSourceIndex, setPpmpSourceIndex] = useState<number>(0);
 
+    const baselineSourceIds = useRef<Set<number>>(new Set());
+    const baselineCaptured = useRef(false);
+    const removedNewSourceIds = useRef<Set<number>>(new Set());
+
     const canEditFunding = data?.can?.editFundingSources ?? false;
     const canEdit = data?.can?.edit ?? false;
     const canViewPpmp = data?.can?.viewPpmp ?? false;
@@ -239,17 +243,57 @@ export default function AipEntryFormDialog({
         onOpenChange(newOpen);
     };
 
-    const handleConfirmClose = () => {
+    const cleanupNewSources = async () => {
+        if (!isEdit || !canEditFunding || !entry) return;
+
+        const currentIds = new Set(
+            (form.getValues().ppa_funding_sources || [])
+                .filter((s: any) => s.id != null)
+                .map((s: any) => s.id as number),
+        );
+
+        const added = [...currentIds].filter(
+            (id) => !baselineSourceIds.current.has(id),
+        );
+
+        const toDelete = [...new Set([...added, ...removedNewSourceIds.current])];
+
+        if (toDelete.length === 0) return;
+
+        await Promise.all(
+            toDelete.map((id) =>
+                fetch(
+                    `/aip-entries/${entry.id}/ppa-funding-sources/${id}`,
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN':
+                                document
+                                    .querySelector('meta[name="csrf-token"]')
+                                    ?.getAttribute('content') || '',
+                            'Content-Type': 'application/json',
+                        },
+                    },
+                ).catch(() => {}),
+            ),
+        );
+    };
+
+    const handleConfirmClose = async () => {
+        await cleanupNewSources();
         setShowCloseConfirm(false);
         onOpenChange(false);
+        router.reload({ preserveScroll: true });
     };
 
     const handleCancelClose = () => {
         setShowCloseConfirm(false);
     };
 
-    const cleanupAndClose = () => {
+    const cleanupAndClose = async () => {
+        await cleanupNewSources();
         onOpenChange(false);
+        router.reload({ preserveScroll: true });
     };
 
     function handleRemoveSource(index: number) {
@@ -263,6 +307,10 @@ export default function AipEntryFormDialog({
 
     function confirmRemoveSource() {
         if (removeSourceIndex !== null) {
+            const source = watchedSources?.[removeSourceIndex];
+            if (source?.id && !baselineSourceIds.current.has(source.id)) {
+                removedNewSourceIds.current.add(source.id);
+            }
             remove(removeSourceIndex);
             setRemoveSourceIndex(null);
         }
@@ -381,6 +429,15 @@ export default function AipEntryFormDialog({
                     ? currentEntry.ppa_funding_sources || []
                     : [];
 
+            if (!baselineCaptured.current) {
+                baselineSourceIds.current = new Set(
+                    currentSources
+                        .filter((fs: any) => fs.id != null)
+                        .map((fs: any) => fs.id),
+                );
+                baselineCaptured.current = true;
+            }
+
             form.reset({
                 office_id: data.office_id?.toString() || '',
                 expected_output: currentEntry?.expected_output || '',
@@ -403,6 +460,10 @@ export default function AipEntryFormDialog({
             setSaveWorthyHash(
                 JSON.stringify(getSaveWorthyFields(form.getValues())),
             );
+        } else if (!open) {
+            baselineCaptured.current = false;
+            baselineSourceIds.current = new Set();
+            removedNewSourceIds.current = new Set();
         }
     }, [data, open, form, supplementalAipId]);
 

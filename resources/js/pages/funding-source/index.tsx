@@ -75,17 +75,20 @@ export default function FundingSourcePage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="py-4">
+            <div className="pt-4">
                 <DataTable
                     columns={cols}
                     data={fundingSources}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
+                    negativeHeight={7}
                 >
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add Funding Source</Button>
+                            <Button onClick={handleAdd}>
+                                Add Funding Source
+                            </Button>
                         </div>
                     )}
                 </DataTable>

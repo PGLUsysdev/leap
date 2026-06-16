@@ -116,7 +116,7 @@ export default function AipPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="py-4">
+            <div className="pt-4">
                 <DataTable
                     columns={columns(
                         can?.updateStatus ?? false,
@@ -132,6 +132,7 @@ export default function AipPage({
                     onGeneratePdf={handleGeneratePdf}
                     onOpenPpmpSummary={handleOpenPpmpSummary}
                     withSearch={true}
+                    negativeHeight={7}
                 >
                     <div className="flex gap-2">
                         {can?.showSummaryAll && offices.length > 0 && (

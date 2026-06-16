@@ -62,11 +62,15 @@ export default function RolePage({ roles, can }: RolePageProps) {
         });
     }
 
-    const cols = columns(can?.edit ?? false, can?.managePermissions ?? false, can?.delete ?? false);
+    const cols = columns(
+        can?.edit ?? false,
+        can?.managePermissions ?? false,
+        can?.delete ?? false,
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="py-4">
+            <div className="pt-4">
                 <DataTable
                     columns={cols}
                     data={roles ?? []}
@@ -74,6 +78,7 @@ export default function RolePage({ roles, can }: RolePageProps) {
                     onEdit={handleEdit}
                     onEditPerms={handleEditPerms}
                     onDelete={handleDeleteDialogOpen}
+                    negativeHeight={7}
                 >
                     {can?.add && (
                         <div className="flex justify-end">

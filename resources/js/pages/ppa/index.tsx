@@ -264,7 +264,7 @@ export default function PpaPage({
 
     return (
         <AppLayout breadcrumbs={finalBreadcrumbs}>
-            <div className="py-4">
+            <div className="pt-4">
                 <DataTable
                     columns={columns(ppaTree.data)}
                     data={ppaTree.data}
@@ -276,7 +276,7 @@ export default function PpaPage({
                     onMove={handleMoveOpen}
                     onShowChildren={handleShowChildren}
                     paginationObj={ppaTree}
-                    negativeHeight={11}
+                    negativeHeight={10.7}
                     filters={filters}
                     onlyKeys={['ppaTree', 'filters', 'current']}
                     searchKey="search"
@@ -289,9 +289,7 @@ export default function PpaPage({
                                     value={selectedOfficeId ?? null}
                                     onChange={handleOfficeChange}
                                     options={parentOffices}
-                                    getOptionValue={(office) =>
-                                        office.id
-                                    }
+                                    getOptionValue={(office) => office.id}
                                     getOptionSearchText={(office) =>
                                         `${office.acronym ?? ''} ${office.name}`
                                     }

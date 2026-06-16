@@ -65,13 +65,14 @@ export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="py-4">
+            <div className="pt-4">
                 <DataTable
                     columns={cols}
                     data={lguLevels}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
+                    negativeHeight={7}
                 >
                     {can?.add && (
                         <div className="flex justify-end">

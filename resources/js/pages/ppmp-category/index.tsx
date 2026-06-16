@@ -89,17 +89,20 @@ export default function PpmpCategoryPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="py-4">
+            <div className="pt-4">
                 <DataTable
                     columns={columns(can?.edit ?? false, can?.delete ?? false)}
                     data={categoriesWithAccounts}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
+                    negativeHeight={7}
                 >
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add PPMP Category</Button>
+                            <Button onClick={handleAdd}>
+                                Add PPMP Category
+                            </Button>
                         </div>
                     )}
                 </DataTable>

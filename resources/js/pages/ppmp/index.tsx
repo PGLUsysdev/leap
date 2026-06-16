@@ -425,7 +425,7 @@ export default function PpmpPage({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-4 pt-4">
                 <div
                     // className="flex flex-wrap items-center justify-between gap-4"
                     className="flex flex-col gap-2 px-4"
@@ -480,7 +480,7 @@ export default function PpmpPage({
                     data={filteredPpmpItems}
                     withSearch={true}
                     withFooter={true}
-                    negativeHeight={13}
+                    negativeHeight={11.4}
                     onDelete={handleDeleteDialogOpen}
                     meta={{
                         readOnly: !isActiveTab,

@@ -37,6 +37,7 @@ export default function PpmpSummaryPage({
                     data={priceLists}
                     withSearch={true}
                     withFooter={true}
+                    negativeHeight={7}
                 />
             </div>
         </AppLayout>

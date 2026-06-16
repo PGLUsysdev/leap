@@ -23,7 +23,12 @@ interface UsersIndexProps {
     };
 }
 
-export default function UsersIndex({ users, roles, offices, can }: UsersIndexProps) {
+export default function UsersIndex({
+    users,
+    roles,
+    offices,
+    can,
+}: UsersIndexProps) {
     console.log({ users, can });
 
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -48,6 +53,7 @@ export default function UsersIndex({ users, roles, offices, can }: UsersIndexPro
                     data={users ?? []}
                     withSearch={true}
                     onEdit={handleOpenFormDialog}
+                    negativeHeight={7}
                 />
             </div>
 
