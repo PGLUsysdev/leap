@@ -343,7 +343,9 @@ class AipEntryController extends Controller
             'priceLists' => \App\Models\PpmpPriceList::with([
                 'chartOfAccountPpmpCategory.chartOfAccount',
                 'chartOfAccountPpmpCategory.ppmpCategory',
-            ])->get(),
+            ])
+                ->orderBy('sort_order', 'asc')
+                ->get(),
             'ppmpCategories' => \App\Models\PpmpCategory::with([
                 'chartOfAccountPpmpCategories.chartOfAccount',
             ])->get(),
@@ -644,7 +646,10 @@ class AipEntryController extends Controller
 
                 $ppaFundingSourceIds = $sourcesToRemove->pluck('id');
 
-                Ppmp::whereIn('ppa_funding_source_id', $ppaFundingSourceIds)->delete();
+                Ppmp::whereIn(
+                    'ppa_funding_source_id',
+                    $ppaFundingSourceIds,
+                )->delete();
 
                 $sourcesToRemove->delete();
 
