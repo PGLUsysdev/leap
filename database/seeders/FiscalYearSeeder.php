@@ -14,13 +14,16 @@ class FiscalYearSeeder extends Seeder
     public function run(): void
     {
         $fiscalYears = [
-            ['year' => 2023, 'status' => 'active'],
-            ['year' => 2024, 'status' => 'inactive'],
-            ['year' => 2025, 'status' => 'closed'],
+            ['year' => 2025, 'status' => 'archived'],
+            ['year' => 2026, 'status' => 'open'],
+            ['year' => 2027, 'status' => 'draft'],
         ];
 
         foreach ($fiscalYears as $fiscalYear) {
-            FiscalYear::create($fiscalYear);
+            FiscalYear::updateOrCreate(
+                ['year' => $fiscalYear['year']],
+                ['status' => $fiscalYear['status']],
+            );
         }
     }
 }

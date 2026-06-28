@@ -14,7 +14,7 @@ class FiscalYear extends Model
     protected $fillable = ['year', 'status'];
 
     protected $attributes = [
-        'status' => 'active',
+        'status' => 'draft',
     ];
 
     // hasMany

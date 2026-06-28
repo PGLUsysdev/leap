@@ -38,15 +38,15 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
-        // 1. Get the year from session, or find the latest 'active' one as default
+        // 1. Get the year from session, or find the latest 'draft' one as default
         $yearId = $request->session()->get('active_fiscal_year_id');
 
         if (!$yearId) {
-            $yearId = \App\Models\FiscalYear::where('status', 'active')
+            $yearId = \App\Models\FiscalYear::where('status', 'draft')
                 ->orderBy('year', 'desc')
                 ->value('id');
 
-            // If no 'active' exists, fallback to the literal latest year record
+            // If no 'draft' exists, fallback to the literal latest year record
             if (!$yearId) {
                 $yearId = \App\Models\FiscalYear::orderBy(
                     'year',
@@ -66,9 +66,12 @@ class HandleInertiaRequests extends Middleware
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user()?->load('office'),
-                'permissions' => $request->user()
-                    ?->loadMissing('role.permissionRoles.permission')
-                    ?->role?->permissionRoles?->pluck('permission.name') ?? [],
+                'permissions' =>
+                    $request
+                        ->user()
+                        ?->loadMissing('role.permissionRoles.permission')
+                        ?->role?->permissionRoles?->pluck('permission.name') ??
+                    [],
             ],
             'sidebarOpen' =>
                 !$request->hasCookie('sidebar_state') ||

@@ -328,9 +328,87 @@ class AipEntryController extends Controller
                 return $aipEntries;
             });
 
+        // Collect all ppa_funding_source IDs from the loaded tree
+        $allPfsIds = collect();
+        $crawlPpas = function ($ppas) use (&$crawlPpas, &$allPfsIds) {
+            foreach ($ppas as $ppa) {
+                foreach ($ppa->aipEntries ?? [] as $entry) {
+                    foreach ($entry->ppaFundingSources ?? [] as $source) {
+                        $allPfsIds->push($source->id);
+                    }
+                }
+                if (
+                    $ppa->relationLoaded('children') &&
+                    $ppa->children->isNotEmpty()
+                ) {
+                    $crawlPpas($ppa->children);
+                }
+            }
+        };
+        $crawlPpas($aipEntries);
+        $allPfsIds = $allPfsIds->unique()->values();
+
+        \Illuminate\Support\Facades\Log::info('PFS IDs', [
+            'ids' => $allPfsIds->toArray(),
+        ]);
+
+        // Aggregate PPMP amounts per ppa_funding_source_id and chart_of_account_id
+        $ppmpCoaTotals = \App\Models\Ppmp::whereIn(
+            'ppa_funding_source_id',
+            $allPfsIds,
+        )
+            ->join(
+                'ppmp_price_lists',
+                'ppmps.ppmp_price_list_id',
+                '=',
+                'ppmp_price_lists.id',
+            )
+            ->join(
+                'chart_of_account_ppmp_categories',
+                'ppmp_price_lists.chart_of_account_ppmp_category_id',
+                '=',
+                'chart_of_account_ppmp_categories.id',
+            )
+            ->selectRaw(
+                '
+                ppmps.ppa_funding_source_id,
+                chart_of_account_ppmp_categories.chart_of_account_id,
+                COALESCE(SUM(
+                    COALESCE(jan_amount, 0) + COALESCE(feb_amount, 0) +
+                    COALESCE(mar_amount, 0) + COALESCE(apr_amount, 0) +
+                    COALESCE(may_amount, 0) + COALESCE(jun_amount, 0) +
+                    COALESCE(jul_amount, 0) + COALESCE(aug_amount, 0) +
+                    COALESCE(sep_amount, 0) + COALESCE(oct_amount, 0) +
+                    COALESCE(nov_amount, 0) + COALESCE(dec_amount, 0)
+                ), 0) as total
+            ',
+            )
+            ->groupBy(
+                'ppmps.ppa_funding_source_id',
+                'chart_of_account_ppmp_categories.chart_of_account_id',
+            )
+            ->get()
+            ->groupBy('ppa_funding_source_id')
+            ->map(
+                fn($items) => $items
+                    ->keyBy('chart_of_account_id')
+                    ->map(fn($item) => (float) $item->total),
+            );
+
+        \Illuminate\Support\Facades\Log::info('PPMP COA totals raw', [
+            'data' => $ppmpCoaTotals->toArray(),
+        ]);
+
         return Inertia::render('aip-summary/index', [
             'fiscalYear' => $fiscalYear,
             'aipEntries' => $aipEntries,
+            'ppmpCoaTotals' => $ppmpCoaTotals,
+            'psCoaAutoTotals' => $officeId
+                ? PsBreakdownController::computePsCoaTotalsForOffice(
+                    $officeId,
+                    $yearId,
+                )
+                : [],
             'fundingSources' => FundingSource::all(),
             'chartOfAccounts' => \App\Models\ChartOfAccount::select(
                 'id',

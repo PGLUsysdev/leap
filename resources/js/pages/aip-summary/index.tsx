@@ -68,6 +68,8 @@ interface AipSummaryTableProps {
     chartOfAccounts: ChartOfAccount[];
     priceLists: PriceList[];
     ppmpCategories: PpmpCategory[];
+    ppmpCoaTotals: Record<number, Record<number, number>>;
+    psCoaAutoTotals: Record<string, number>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -111,6 +113,8 @@ export default function AipSummaryTable({
     chartOfAccounts,
     priceLists,
     ppmpCategories,
+    ppmpCoaTotals,
+    psCoaAutoTotals = {},
 }: AipSummaryTableProps) {
     console.log({
         fiscalYear,
@@ -645,6 +649,8 @@ export default function AipSummaryTable({
                 chartOfAccounts={chartOfAccounts}
                 priceLists={priceLists}
                 ppmpCategories={ppmpCategories}
+                ppmpCoaTotals={ppmpCoaTotals}
+                psCoaAutoTotals={psCoaAutoTotals}
                 onPpmpItemAdded={handlePpmpItemAdded}
             />
 

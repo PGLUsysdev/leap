@@ -122,6 +122,25 @@ const mainNavItems: NavItem[] = [
     },
     { title: '', href: '', type: 'separator' },
     {
+        title: 'Salary Standards',
+        href: '/salary-standard',
+        icon: SquaresExclude,
+        // permission: 'cc-strategic-priority.view',
+    },
+    {
+        title: 'Positions',
+        href: '/position',
+        icon: SquaresExclude,
+        // permission: 'cc-sub-sector.view',
+    },
+    {
+        title: 'IOS',
+        href: '/ios',
+        icon: SquaresExclude,
+        // permission: 'cc-sub-sector.view',
+    },
+    { title: '', href: '', type: 'separator' },
+    {
         title: 'Roles',
         href: '/roles',
         icon: ShieldCheck,

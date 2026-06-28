@@ -50,7 +50,7 @@ interface DataTableProps<TData extends { id: unknown }> {
     onAdd?: (parent: TData, childType: any) => void;
     onUpdateStatus?: (
         data: TData,
-        status: 'active' | 'inactive' | 'closed',
+        status: 'draft' | 'open' | 'locked' | 'archived',
     ) => void;
     onOpen?: (data: TData) => void;
     onGeneratePdf?: (data: TData) => void;
@@ -561,8 +561,10 @@ export function DataTable<TData extends { id: unknown }>({
                         )}
                     </Table>
 
-                    <ScrollBar orientation="horizontal" className="z-30" />
                     <ScrollBar orientation="vertical" className="z-30" />
+                    <ScrollBar orientation="horizontal" className="z-30" />
+                    {/* <ScrollBar orientation="vertical" />
+                        <ScrollBar orientation="horizontal" /> */}
                 </ScrollArea>
 
                 {paginationObj &&

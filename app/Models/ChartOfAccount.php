@@ -26,6 +26,10 @@ class ChartOfAccount extends Model
         'description',
     ];
 
+    protected $casts = [
+        'is_manual' => 'boolean',
+    ];
+
     // hasMany
     public function children(): HasMany
     {

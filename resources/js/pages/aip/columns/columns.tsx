@@ -30,7 +30,7 @@ declare module '@tanstack/react-table' {
         ) => void;
         onUpdateStatus?: (
             data: TData,
-            status: 'active' | 'inactive' | 'closed',
+            status: 'draft' | 'open' | 'locked' | 'archived',
         ) => void;
         onOpen?: (data: TData) => void;
         onGeneratePdf?: (data: TData) => void;
@@ -71,12 +71,13 @@ const columns = (
                 const status = info.getValue();
 
                 const STATUS_MAP = {
-                    active: { label: 'Active', variant: 'default' as const },
-                    inactive: {
-                        label: 'Inactive',
-                        variant: 'secondary' as const,
+                    draft: { label: 'Draft', variant: 'secondary' as const },
+                    open: { label: 'Open', variant: 'default' as const },
+                    locked: { label: 'Locked', variant: 'outline' as const },
+                    archived: {
+                        label: 'Archived',
+                        variant: 'outline' as const,
                     },
-                    closed: { label: 'Closed', variant: 'outline' as const },
                 } as const;
 
                 const config = STATUS_MAP[status] || {
@@ -173,43 +174,57 @@ const columns = (
                                                       onClick={() =>
                                                           table.options.meta?.onUpdateStatus?.(
                                                               row.original,
-                                                              'active',
+                                                              'draft',
                                                           )
                                                       }
                                                       disabled={
                                                           initialStatus ===
-                                                          'active'
+                                                          'draft'
                                                       }
                                                   >
-                                                      Active
+                                                      Draft
                                                   </DropdownMenuItem>
                                                   <DropdownMenuItem
                                                       onClick={() =>
                                                           table.options.meta?.onUpdateStatus?.(
                                                               row.original,
-                                                              'inactive',
+                                                              'open',
                                                           )
                                                       }
                                                       disabled={
                                                           initialStatus ===
-                                                          'inactive'
+                                                          'open'
                                                       }
                                                   >
-                                                      Inactive
+                                                      Open
                                                   </DropdownMenuItem>
                                                   <DropdownMenuItem
                                                       onClick={() =>
                                                           table.options.meta?.onUpdateStatus?.(
                                                               row.original,
-                                                              'closed',
+                                                              'locked',
                                                           )
                                                       }
                                                       disabled={
                                                           initialStatus ===
-                                                          'closed'
+                                                          'locked'
                                                       }
                                                   >
-                                                      Closed
+                                                      Locked
+                                                  </DropdownMenuItem>
+                                                  <DropdownMenuItem
+                                                      onClick={() =>
+                                                          table.options.meta?.onUpdateStatus?.(
+                                                              row.original,
+                                                              'archived',
+                                                          )
+                                                      }
+                                                      disabled={
+                                                          initialStatus ===
+                                                          'archived'
+                                                      }
+                                                  >
+                                                      Archived
                                                   </DropdownMenuItem>
                                               </DropdownMenuGroup>
                                           </DropdownMenuContent>

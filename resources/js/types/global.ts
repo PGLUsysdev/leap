@@ -54,7 +54,7 @@ export interface Office {
     };
 }
 
-export type FiscalYearStatus = 'active' | 'inactive' | 'closed';
+export type FiscalYearStatus = 'draft' | 'open' | 'locked' | 'archived';
 
 export interface FiscalYear {
     id: number;
@@ -191,6 +191,7 @@ export interface ChartOfAccount {
     description: string | null;
     created_at: string | null;
     updated_at: string | null;
+    is_manual: boolean;
 
     parent_id: number | null;
 
@@ -326,6 +327,8 @@ export interface User {
     updated_at: string | null;
 
     office_id: number | null;
+    position_id: number | null;
+    step: number | null;
 
     office?: Office;
 }
@@ -454,4 +457,94 @@ export interface DashboardNameCount {
 export interface DashboardCcExpenditure {
     adaptation: number;
     mitigation: number;
+}
+
+export interface PlantillaPosition {
+    id: number;
+    office_id: number;
+    fiscal_year_id: number;
+    item_number: string;
+    position_title: string;
+    incumbent_name: string;
+    position_type: 'permanent' | 'casual' | 'contractual' | 'coterminous';
+    current_sg: number;
+    current_step: number;
+    current_annual_rate: string;
+    budget_sg: number;
+    budget_step: number;
+    budget_annual_rate: string;
+    remarks: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+
+    office?: Office;
+    fiscal_year?: FiscalYear;
+}
+
+export interface Position {
+    id: number;
+    office_id: number;
+    item_number: string;
+    title: string;
+    salary_grade: number;
+    employment_type: 'permanent' | 'casual' | 'contractual' | 'coterminous';
+    is_funded: boolean;
+    status: 'occupied' | 'vacant' | 'abolished';
+    created_at: string | null;
+    updated_at: string | null;
+
+    office?: Office;
+    user?: User;
+}
+
+export interface GovSalarySchedule {
+    id: number;
+    fiscal_year_id: number;
+    tranche_id: number;
+    salary_grade: number;
+    step: number;
+    annual_rate: string;
+    created_at: string | null;
+    updated_at: string | null;
+
+    fiscal_year?: FiscalYear;
+}
+
+export interface SalaryStandard {
+    id: number;
+    fiscal_year_id: number;
+    salary_grade: number;
+    step_increment: number;
+    monthly_rate: string;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export interface SalaryScheduleMatrixRow {
+    id: string;
+    fiscal_year_id: number;
+    salary_grade: number;
+    [key: `step_${number}`]: number | null;
+}
+
+export interface Ios {
+    id: number;
+    occupational_service_code: string;
+    occupational_group_code: string;
+    class_id: string;
+    class: string;
+    salary_grade: number;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
+export interface PsBreakdownItem {
+    id: number;
+    ppa_funding_source_id: number;
+    chart_of_account_id: number;
+    plantilla_position_id: number | null;
+    amount: string;
+    is_manual: boolean;
+    created_at: string | null;
+    updated_at: string | null;
 }

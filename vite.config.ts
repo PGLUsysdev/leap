@@ -10,15 +10,15 @@ const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
 const appVersion = packageJson.version;
 
 export default defineConfig({
+    // server: {
+    //     host: true,
+    //     hmr: {
+    //         host: '10.10.26.228',
+    //     },
+    // },
     define: {
         '__APP_VERSION__': JSON.stringify(appVersion),
     },
-    // server: {
-    //     host: '0.0.0.0',
-    //     hmr: {
-    //         host: '10.10.26.120',
-    //     },
-    // },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],

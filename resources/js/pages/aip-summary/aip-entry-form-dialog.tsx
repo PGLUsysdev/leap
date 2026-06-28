@@ -3,7 +3,7 @@ import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format, parseISO } from 'date-fns';
-import { CalendarIcon, Plus, Trash2, ListPlus } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, ListPlus, FileText } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import { Form } from '@/components/ui/form';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -68,6 +68,8 @@ import type {
 } from '@/types/global';
 import { index } from '@/routes/aip/summary/ppmp';
 import PpmpFormDialog from '@/pages/ppmp/form-dialog';
+import { index as psBreakdownIndex } from '@/routes/ps-breakdown';
+import PreviewPdfDialog from '@/pages/ps-breakdown/pdf-preview-dialog';
 
 interface AipEntryFormDialogProps {
     open: boolean;
@@ -92,6 +94,8 @@ interface AipEntryFormDialogProps {
     chartOfAccounts: ChartOfAccount[];
     priceLists: PriceList[];
     ppmpCategories: PpmpCategory[];
+    ppmpCoaTotals: Record<number, Record<number, number>>;
+    psCoaAutoTotals: Record<string, number>;
     onPpmpItemAdded?: () => void;
 }
 
@@ -143,6 +147,8 @@ export default function AipEntryFormDialog({
     chartOfAccounts,
     priceLists,
     ppmpCategories,
+    ppmpCoaTotals = {},
+    psCoaAutoTotals = {},
     onPpmpItemAdded,
 }: AipEntryFormDialogProps) {
     const userOfficeId = auth?.user?.office_id;
@@ -157,6 +163,7 @@ export default function AipEntryFormDialog({
         'MOOE',
     );
     const [ppmpSourceIndex, setPpmpSourceIndex] = useState<number>(0);
+    const [previewOpen, setPreviewOpen] = useState(false);
 
     const baselineSourceIds = useRef<Set<number>>(new Set());
     const baselineCaptured = useRef(false);
@@ -209,6 +216,72 @@ export default function AipEntryFormDialog({
         name: 'ppa_funding_sources',
     });
 
+    const sectionTotals = useMemo(() => {
+        const sum = (
+            key: 'ps_amount' | 'mooe_amount' | 'fe_amount' | 'co_amount',
+        ) =>
+            (watchedSources || [])
+                .reduce((s, src: any) => s + parseFloat(src?.[key] || '0'), 0)
+                .toFixed(2);
+
+        const sumCoaAmount = (coaId: number) => {
+            const result = (watchedSources || [])
+                .reduce((s, src: any) => {
+                    if (!src.id) return s;
+                    console.log(
+                        `src.id=${src.id}, coaId=${coaId}, lookup=${ppmpCoaTotals[src.id]?.[coaId]}`,
+                    );
+                    return s + (ppmpCoaTotals[src.id]?.[coaId] ?? 0);
+                }, 0)
+                .toFixed(2);
+            console.log(`sumCoaAmount(${coaId}) = ${result}`);
+            return result;
+        };
+
+        const buildSection = (
+            expenseClass: 'PS' | 'MOOE' | 'FE' | 'CO',
+            total: string,
+        ) => {
+            const coas =
+                expenseClass === 'FE'
+                    ? []
+                    : chartOfAccounts
+                          .filter((coa) => coa.expense_class === expenseClass)
+                          .map((coa) => ({
+                              account_number: coa.account_number,
+                              account_title: coa.account_title,
+                              amount:
+                                  expenseClass === 'PS'
+                                      ? (
+                                            psCoaAutoTotals[
+                                                coa.account_number
+                                            ] ?? 0
+                                        ).toFixed(2)
+                                      : sumCoaAmount(coa.id),
+                          }));
+
+            // For PS, recompute total from computed COA amounts
+            if (expenseClass === 'PS') {
+                const computedTotal = coas
+                    .reduce((sum, coa) => sum + parseFloat(coa.amount), 0)
+                    .toFixed(2);
+                return { total: computedTotal, coas };
+            }
+
+            return { total, coas };
+        };
+
+        return {
+            ps: buildSection('PS', sum('ps_amount')),
+            mooe: buildSection('MOOE', sum('mooe_amount')),
+            fe: buildSection('FE', sum('fe_amount')),
+            co: buildSection('CO', sum('co_amount')),
+        };
+    }, [watchedSources, chartOfAccounts, ppmpCoaTotals, psCoaAutoTotals]);
+
+    console.log('ppmpCoaTotals prop:', ppmpCoaTotals);
+    console.log('sectionTotals:', sectionTotals);
+
     const watchedAll = useWatch({ control: form.control });
     const [savedHash, setSavedHash] = useState<string>('');
     const isDirty = JSON.stringify(watchedAll) !== savedHash;
@@ -256,25 +329,24 @@ export default function AipEntryFormDialog({
             (id) => !baselineSourceIds.current.has(id),
         );
 
-        const toDelete = [...new Set([...added, ...removedNewSourceIds.current])];
+        const toDelete = [
+            ...new Set([...added, ...removedNewSourceIds.current]),
+        ];
 
         if (toDelete.length === 0) return;
 
         await Promise.all(
             toDelete.map((id) =>
-                fetch(
-                    `/aip-entries/${entry.id}/ppa-funding-sources/${id}`,
-                    {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRF-TOKEN':
-                                document
-                                    .querySelector('meta[name="csrf-token"]')
-                                    ?.getAttribute('content') || '',
-                            'Content-Type': 'application/json',
-                        },
+                fetch(`/aip-entries/${entry.id}/ppa-funding-sources/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN':
+                            document
+                                .querySelector('meta[name="csrf-token"]')
+                                ?.getAttribute('content') || '',
+                        'Content-Type': 'application/json',
                     },
-                ).catch(() => {}),
+                }).catch(() => {}),
             ),
         );
     };
@@ -466,6 +538,23 @@ export default function AipEntryFormDialog({
             removedNewSourceIds.current = new Set();
         }
     }, [data, open, form, supplementalAipId]);
+
+    const handleGoToPsBreakdown = (sourceIndex: number) => {
+        if (!entry) return;
+        const sourceId = watchedSources?.[sourceIndex]?.id;
+
+        const query: Record<string, any> = {};
+        if (sourceId) query.ppa_funding_source_id = sourceId;
+        if (canShowSummaryAll && selectedOfficeId)
+            query.selected_office_id = selectedOfficeId;
+
+        router.visit(
+            psBreakdownIndex(
+                { fiscalYear: fiscalYear.id, aipEntry: entry.id },
+                { query },
+            ),
+        );
+    };
 
     return (
         <>
@@ -759,8 +848,18 @@ export default function AipEntryFormDialog({
                                                 <FieldLabel>
                                                     Funding Distribution
                                                 </FieldLabel>
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    onClick={() =>
+                                                        setPreviewOpen(true)
+                                                    }
+                                                >
+                                                    <FileText className="mr-1 h-4 w-4" />
+                                                    Preview LBP Form No. 2
+                                                </Button>
                                             </div>
-
                                             <div className="rounded-md border">
                                                 <Table>
                                                     <TableHeader>
@@ -1234,6 +1333,26 @@ export default function AipEntryFormDialog({
                                                                                 <Button
                                                                                     type="button"
                                                                                     size="icon"
+                                                                                    variant="outline"
+                                                                                    title="PS Breakdown"
+                                                                                    disabled={
+                                                                                        !watchedSources?.[
+                                                                                            index
+                                                                                        ]
+                                                                                            ?.id
+                                                                                    }
+                                                                                    onClick={() =>
+                                                                                        handleGoToPsBreakdown(
+                                                                                            index,
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <FileText />
+                                                                                </Button>
+
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    size="icon"
                                                                                     variant="destructive"
                                                                                     onClick={() =>
                                                                                         handleRemoveSource(
@@ -1304,18 +1423,18 @@ export default function AipEntryFormDialog({
                                                                             fs.id.toString(),
                                                                         ),
                                                                 )
-                                                                        .map((fs) => (
-                                                                        <DropdownMenuItem
-                                                                            key={
-                                                                                fs.id
-                                                                            }
-                                                                            className="cursor-pointer font-medium"
-                                                                            onClick={() =>
-                                                                                handleAddFundingSource(
-                                                                                    fs,
-                                                                                )
-                                                                            }
-                                                                        >
+                                                                .map((fs) => (
+                                                                    <DropdownMenuItem
+                                                                        key={
+                                                                            fs.id
+                                                                        }
+                                                                        className="cursor-pointer font-medium"
+                                                                        onClick={() =>
+                                                                            handleAddFundingSource(
+                                                                                fs,
+                                                                            )
+                                                                        }
+                                                                    >
                                                                         {
                                                                             fs.code
                                                                         }
@@ -1426,6 +1545,12 @@ export default function AipEntryFormDialog({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <PreviewPdfDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                sections={sectionTotals}
+            />
         </>
     );
 }

@@ -213,7 +213,7 @@ class FiscalYearController extends Controller
         $this->authorize('updateStatus', $fiscalYear);
 
         $validated = $request->validate([
-            'status' => 'required|string|in:active,inactive,closed',
+            'status' => 'required|string|in:draft,open,locked,archived',
         ]);
 
         $fiscalYear->update($validated);

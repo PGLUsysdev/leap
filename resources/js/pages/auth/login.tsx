@@ -10,6 +10,7 @@ import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import { Form, Head } from '@inertiajs/react';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface LoginProps {
     status?: string;
@@ -27,6 +28,23 @@ export default function Login({
             title="Log in to your account"
             description="Enter your email and password below to log in"
         >
+            {/*test only*/}
+            {/*<ScrollArea className="size-100 rounded-md border bg-blue-900">
+                <div className="h-200 w-200"></div>
+
+                <div className="p-4">
+                    <ScrollArea className="size-50 rounded-md border bg-red-900">
+                        <div className="size-200"></div>
+
+                        <ScrollBar orientation="vertical" />
+                        <ScrollBar orientation="horizontal" />
+                    </ScrollArea>
+                </div>
+
+                <ScrollBar orientation="vertical" />
+                <ScrollBar orientation="horizontal" />
+            </ScrollArea>*/}
+
             <Head title="Log in" />
 
             <Form

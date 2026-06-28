@@ -30,10 +30,10 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             PermissionSeeder::class,
-
-            UserSeeder::class,
+            RoleSeeder::class,
 
             FiscalYearSeeder::class,
+            PsRateSeeder::class,
             SectorSeeder::class,
             LguLevelSeeder::class,
             OfficeTypeSeeder::class,
@@ -42,6 +42,10 @@ class DatabaseSeeder extends Seeder
             ChartOfAccountSeeder::class,
 
             OfficeSeeder::class,
+            PositionSeeder::class,
+
+            UserSeeder::class,
+            SalaryStandardSeeder::class,
             PpaSeeder::class,
 
             AipEntrySeeder::class,

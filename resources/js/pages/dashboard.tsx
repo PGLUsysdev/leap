@@ -80,7 +80,7 @@ function formatNumber(value: number): string {
 }
 
 interface DashboardPageProps {
-    activeYear: FiscalYear | null;
+    draftYear: FiscalYear | null;
     stats: DashboardStats;
     expenseClassBudget: DashboardExpenseClass | null;
     fundingSourceBudget: DashboardLabelValue[];
@@ -93,7 +93,7 @@ interface DashboardPageProps {
 export default function Dashboard() {
     const props = usePage().props as unknown as DashboardPageProps;
 
-    if (!props.activeYear) {
+    if (!props.draftYear) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title="Dashboard" />
@@ -121,12 +121,12 @@ export default function Dashboard() {
                 <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                     <div className="flex items-center justify-between">
                         <h2 className="text-2xl font-bold">
-                            FY {props.activeYear.year} Dashboard
+                            FY {props.draftYear.year} Dashboard
                         </h2>
                         <span className="text-sm text-muted-foreground">
-                            {props.activeYear.status === 'active'
+                            {props.draftYear.status === 'draft'
                                 ? 'Active'
-                                : props.activeYear.status}
+                                : props.draftYear.status}
                         </span>
                     </div>
 

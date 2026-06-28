@@ -26,6 +26,15 @@ use App\Http\Controllers\CcTypologyController;
 use App\Http\Controllers\CcStrategicPriorityController;
 use App\Http\Controllers\CcSubSectorController;
 use App\Http\Controllers\PpaFundingSourceController;
+use App\Http\Controllers\PlantillaPositionController;
+use App\Http\Controllers\PositionController;
+use App\Http\Controllers\GovSalaryScheduleController;
+use App\Http\Controllers\PsBreakdownController;
+use App\Http\Controllers\IosController;
+use App\Http\Controllers\SalaryStandardController;
+use App\Models\GovSalarySchedule;
+use App\Models\PlantillaPosition;
+use App\Models\SalaryStandard;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -95,10 +104,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         PpaFundingSourceController::class,
         'store',
     ]);
-    Route::delete('/aip-entries/{aipEntry}/ppa-funding-sources/{ppaFundingSource}', [
-        PpaFundingSourceController::class,
-        'destroy',
-    ]);
+    Route::delete(
+        '/aip-entries/{aipEntry}/ppa-funding-sources/{ppaFundingSource}',
+        [PpaFundingSourceController::class, 'destroy'],
+    );
 
     // --- Supplemental AIPs ---
     Route::post('/supplemental-aips', [
@@ -413,6 +422,50 @@ Route::middleware(['auth', 'verified'])->group(function () {
         CcTypologyController::class,
         'destroy',
     ])->name('cc-typology.destroy');
+
+    // position
+    Route::get('position', [PositionController::class, 'index'])->name(
+        'position.index',
+    );
+    Route::post('plantilla-position', [
+        PlantillaPositionController::class,
+        'store',
+    ])->name('plantilla-position.store');
+    Route::patch('plantilla-position/{plantillaPosition}', [
+        PlantillaPositionController::class,
+        'update',
+    ])->name('plantilla-position.update');
+    Route::delete('plantilla-position/{plantillaPosition}', [
+        PlantillaPositionController::class,
+        'destroy',
+    ])->name('plantilla-position.destroy');
+
+    // ios
+    Route::get('ios', [IosController::class, 'index'])->name('ios.index');
+
+    // salary standard
+    Route::get('salary-standard', [
+        SalaryStandardController::class,
+        'index',
+    ])->name('salary-standard.index');
+
+    // ps breakdown
+    Route::get('/aip/{fiscalYear}/summary/{aipEntry}/ps-breakdown', [
+        PsBreakdownController::class,
+        'index',
+    ])->name('ps-breakdown.index');
+    Route::post('/ps-breakdown-items', [
+        PsBreakdownController::class,
+        'store',
+    ])->name('ps-breakdown-items.store');
+    Route::delete('/ps-breakdown-items/{psBreakdownItem}', [
+        PsBreakdownController::class,
+        'destroy',
+    ])->name('ps-breakdown-items.destroy');
+    Route::post('/ps-breakdown-items/recalculate', [
+        PsBreakdownController::class,
+        'recalculate',
+    ])->name('ps-breakdown-items.recalculate');
 
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
