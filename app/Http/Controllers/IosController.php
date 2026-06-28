@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ios;
+use App\Models\SalaryStandard;
 use App\Http\Requests\StoreIosRequest;
 use App\Http\Requests\UpdateIosRequest;
 use Inertia\Inertia;
@@ -14,8 +15,27 @@ class IosController extends Controller
      */
     public function index()
     {
+        $activeYear = \App\Models\FiscalYear::find(
+            request()->session()->get('active_fiscal_year_id'),
+        );
+
+        $salaryGrades = collect();
+        if ($activeYear) {
+            $salaryGrades = SalaryStandard::where(
+                'fiscal_year_id',
+                $activeYear->id,
+            )
+                ->selectRaw(
+                    'salary_grade, MIN(monthly_rate) as min_rate, MAX(monthly_rate) as max_rate',
+                )
+                ->groupBy('salary_grade')
+                ->orderBy('salary_grade')
+                ->get();
+        }
+
         return Inertia::render('ios/index', [
             'ios' => Ios::query()->paginate(100)->withQueryString(),
+            'salaryGrades' => $salaryGrades,
         ]);
     }
 
@@ -32,7 +52,9 @@ class IosController extends Controller
      */
     public function store(StoreIosRequest $request)
     {
-        //
+        Ios::create($request->validated());
+
+        return redirect()->back();
     }
 
     /**
@@ -56,7 +78,9 @@ class IosController extends Controller
      */
     public function update(UpdateIosRequest $request, Ios $ios)
     {
-        //
+        $ios->update($request->validated());
+
+        return redirect()->back();
     }
 
     /**
@@ -64,6 +88,8 @@ class IosController extends Controller
      */
     public function destroy(Ios $ios)
     {
-        //
+        $ios->delete();
+
+        return redirect()->back();
     }
 }

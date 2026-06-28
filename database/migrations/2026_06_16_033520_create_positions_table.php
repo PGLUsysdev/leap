@@ -18,17 +18,19 @@ return new class extends Migration {
                 ->foreignId('office_id')
                 ->constrained('offices')
                 ->onDelete('cascade');
-            $table->string('title');
-            $table->integer('salary_grade');
+            $table
+                ->foreignId('ios_id')
+                ->constrained('ios')
+                ->onDelete('restrict');
             $table
                 ->enum('employment_type', [
                     'permanent',
                     'casual',
                     'contractual',
-                    'coterminous',
+                    'job_order',
                 ])
                 ->default('permanent');
-            $table->boolean('is_funded');
+            $table->boolean('is_funded')->default(true);
             $table
                 ->enum('status', ['occupied', 'vacant', 'abolished'])
                 ->default('vacant');

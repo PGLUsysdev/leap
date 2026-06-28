@@ -427,6 +427,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('position', [PositionController::class, 'index'])->name(
         'position.index',
     );
+    Route::post('position', [PositionController::class, 'store'])->name(
+        'position.store',
+    );
+    Route::patch('position/{position}', [
+        PositionController::class,
+        'update',
+    ])->name('position.update');
+    Route::delete('position/{position}', [
+        PositionController::class,
+        'destroy',
+    ])->name('position.destroy');
     Route::post('plantilla-position', [
         PlantillaPositionController::class,
         'store',
@@ -442,6 +453,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ios
     Route::get('ios', [IosController::class, 'index'])->name('ios.index');
+    Route::post('ios', [IosController::class, 'store'])->name('ios.store');
+    Route::patch('ios/{ios}', [IosController::class, 'update'])->name(
+        'ios.update',
+    );
+    Route::delete('ios/{ios}', [IosController::class, 'destroy'])->name(
+        'ios.destroy',
+    );
 
     // salary standard
     Route::get('salary-standard', [

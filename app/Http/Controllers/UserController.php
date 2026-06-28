@@ -9,6 +9,7 @@ use App\Http\Requests\UpdateUserRequest;
 use Inertia\Inertia;
 
 use App\Models\Office;
+use App\Models\Position;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -26,7 +27,7 @@ class UserController extends Controller
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        $usersQuery = User::with(['office', 'role']);
+        $usersQuery = User::with(['office', 'role', 'position.ios']);
 
         if (!$permissions->contains('user.show.all')) {
             $usersQuery->where('office_id', $user->office_id);
@@ -36,11 +37,20 @@ class UserController extends Controller
             'users' => $usersQuery->get(),
             'roles' => Role::all(['id', 'name']),
             'offices' => Office::all(['id', 'name', 'acronym']),
+            'positions' => Position::with('ios:id,class,salary_grade')->get([
+                'id',
+                'item_number',
+                'ios_id',
+            ]),
             'can' => [
                 'editAll' => $permissions->contains('user.edit.all'),
                 'editOwn' => $permissions->contains('user.edit.own'),
-                'editOfficeAll' => $permissions->contains('user.edit.office.all'),
-                'editOfficeOwn' => $permissions->contains('user.edit.office.own'),
+                'editOfficeAll' => $permissions->contains(
+                    'user.edit.office.all',
+                ),
+                'editOfficeOwn' => $permissions->contains(
+                    'user.edit.office.own',
+                ),
                 'editRoleAll' => $permissions->contains('user.edit.role.all'),
                 'editRoleOwn' => $permissions->contains('user.edit.role.own'),
                 'userOfficeId' => $user->office_id,
@@ -89,16 +99,25 @@ class UserController extends Controller
 
         $data = $request->validated();
 
-        if (array_key_exists('office_id', $data) || array_key_exists('role_id', $data)) {
+        if (
+            array_key_exists('office_id', $data) ||
+            array_key_exists('role_id', $data)
+        ) {
             $authUser = $request->user();
             $authUser->loadMissing('role.permissionRoles.permission');
-            $permissions = $authUser->role->permissionRoles->pluck('permission.name');
+            $permissions = $authUser->role->permissionRoles->pluck(
+                'permission.name',
+            );
 
-            $canOffice = $permissions->contains('user.edit.office.all')
-                || ($permissions->contains('user.edit.office.own') && $authUser->office_id === $user->office_id);
+            $canOffice =
+                $permissions->contains('user.edit.office.all') ||
+                ($permissions->contains('user.edit.office.own') &&
+                    $authUser->office_id === $user->office_id);
 
-            $canRole = $permissions->contains('user.edit.role.all')
-                || ($permissions->contains('user.edit.role.own') && $authUser->office_id === $user->office_id);
+            $canRole =
+                $permissions->contains('user.edit.role.all') ||
+                ($permissions->contains('user.edit.role.own') &&
+                    $authUser->office_id === $user->office_id);
 
             $officeOk = !array_key_exists('office_id', $data) || $canOffice;
             $roleOk = !array_key_exists('role_id', $data) || $canRole;
@@ -106,7 +125,25 @@ class UserController extends Controller
             abort_unless($officeOk && $roleOk, 403);
         }
 
+        $oldPositionId = $user->position_id;
+
         $user->update($data);
+
+        $newPositionId = $user->position_id;
+
+        if ($oldPositionId !== $newPositionId) {
+            if ($oldPositionId) {
+                Position::where('id', $oldPositionId)->update([
+                    'status' => 'vacant',
+                ]);
+            }
+
+            if ($newPositionId) {
+                Position::where('id', $newPositionId)->update([
+                    'status' => 'occupied',
+                ]);
+            }
+        }
 
         return back()->with('status', 'User updated successfully.');
     }

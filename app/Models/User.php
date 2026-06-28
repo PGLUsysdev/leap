@@ -26,6 +26,8 @@ class User extends Authenticatable
         'status',
         'office_id',
         'role_id',
+        'position_id',
+        'step',
     ];
 
     /**
@@ -64,6 +66,11 @@ class User extends Authenticatable
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
     }
 
     //

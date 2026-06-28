@@ -331,6 +331,7 @@ export interface User {
     step: number | null;
 
     office?: Office;
+    position?: Position;
 }
 
 // not a table in the database
@@ -485,15 +486,15 @@ export interface Position {
     id: number;
     office_id: number;
     item_number: string;
-    title: string;
-    salary_grade: number;
-    employment_type: 'permanent' | 'casual' | 'contractual' | 'coterminous';
+    ios_id: number;
+    employment_type: 'permanent' | 'casual' | 'contractual' | 'job_order';
     is_funded: boolean;
     status: 'occupied' | 'vacant' | 'abolished';
     created_at: string | null;
     updated_at: string | null;
 
     office?: Office;
+    ios?: Ios;
     user?: User;
 }
 

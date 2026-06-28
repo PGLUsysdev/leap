@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FiscalYear;
+use App\Models\Ios;
 use App\Models\Office;
 use App\Models\Position;
-use App\Models\FiscalYear;
 use App\Models\SalaryStandard;
 use App\Http\Requests\StorePositionRequest;
 use App\Http\Requests\UpdatePositionRequest;
@@ -17,49 +18,30 @@ class PositionController extends Controller
      */
     public function index()
     {
-        // The DB 'draft' fiscal year is the year being budgeted FOR (e.g. 2027).
-        // LBP Form No. 3:
-        //   Current Year (Appropriation) = draft year - 1  (e.g. 2026)
-        //   Budget Year                  = draft year       (e.g. 2027)
+        $currentFiscalYear = FiscalYear::where('status', 'open')->first();
         $budgetFiscalYear = FiscalYear::where('status', 'draft')->first();
 
-        $currentFiscalYear = $budgetFiscalYear
-            ? FiscalYear::where(
-                'year',
-                (int) $budgetFiscalYear->year - 1,
-            )->first()
-            : null;
-
-        $currentStandards = $currentFiscalYear
-            ? SalaryStandard::where(
-                'fiscal_year_id',
-                $currentFiscalYear->id,
-            )->get()
-            : collect();
-
-        $budgetStandards = $budgetFiscalYear
-            ? SalaryStandard::where(
-                'fiscal_year_id',
-                $budgetFiscalYear->id,
-            )->get()
-            : collect();
-
         return Inertia::render('position/index', [
-            'positions' => Position::with('user')->get(),
+            'positions' => Position::with('office', 'ios', 'user')->get(),
+            // ->paginate(100)
+            // ->withQueryString(),
             'offices' => Office::all(['id', 'name', 'acronym']),
-            'currentStandards' => $currentStandards,
-            'budgetStandards' => $budgetStandards,
+            'iosList' => Ios::all(['id', 'class', 'salary_grade']),
             'currentFiscalYear' => $currentFiscalYear,
             'budgetFiscalYear' => $budgetFiscalYear,
+            'currentStandards' => $currentFiscalYear
+                ? SalaryStandard::where(
+                    'fiscal_year_id',
+                    $currentFiscalYear->id,
+                )->get()
+                : [],
+            'budgetStandards' => $budgetFiscalYear
+                ? SalaryStandard::where(
+                    'fiscal_year_id',
+                    $budgetFiscalYear->id,
+                )->get()
+                : [],
         ]);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -67,23 +49,9 @@ class PositionController extends Controller
      */
     public function store(StorePositionRequest $request)
     {
-        //
-    }
+        Position::create($request->validated());
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Position $position)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Position $position)
-    {
-        //
+        return redirect()->back();
     }
 
     /**
@@ -91,7 +59,9 @@ class PositionController extends Controller
      */
     public function update(UpdatePositionRequest $request, Position $position)
     {
-        //
+        $position->update($request->validated());
+
+        return redirect()->back();
     }
 
     /**
@@ -99,6 +69,14 @@ class PositionController extends Controller
      */
     public function destroy(Position $position)
     {
-        //
+        // Unassign any users before deleting
+        $position->user()?->update([
+            'position_id' => null,
+            'step' => null,
+        ]);
+
+        $position->delete();
+
+        return redirect()->back();
     }
 }

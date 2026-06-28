@@ -439,9 +439,13 @@ const MyDocument = ({
                         {positions.map((pos, i) => {
                             const step = pos.user?.step ?? 1;
                             const curMonthly =
-                                curMap.get(`${pos.salary_grade}-${step}`) ?? 0;
+                                curMap.get(
+                                    `${pos.ios?.salary_grade}-${step}`,
+                                ) ?? 0;
                             const budMonthly =
-                                budMap.get(`${pos.salary_grade}-${step}`) ?? 0;
+                                budMap.get(
+                                    `${pos.ios?.salary_grade}-${step}`,
+                                ) ?? 0;
                             const curAnnual = curMonthly * 12;
                             const budAnnual = budMonthly * 12;
                             const increase = budAnnual - curAnnual;
@@ -480,7 +484,7 @@ const MyDocument = ({
                                             style={styles.tableCellLeft}
                                             wrap={false}
                                         >
-                                            {pos.title}
+                                            {pos.ios?.class ?? '—'}
                                         </Text>
                                     </View>
                                     <View
@@ -503,7 +507,7 @@ const MyDocument = ({
                                         ]}
                                     >
                                         <Text style={styles.tableCell}>
-                                            {pos.salary_grade}/
+                                            {pos.ios?.salary_grade ?? '—'}/
                                             {pos.user?.step ?? 1}
                                         </Text>
                                     </View>
@@ -524,7 +528,7 @@ const MyDocument = ({
                                         ]}
                                     >
                                         <Text style={styles.tableCell}>
-                                            {pos.salary_grade}/
+                                            {pos.ios?.salary_grade ?? '—'}/
                                             {pos.user?.step ?? 1}
                                         </Text>
                                     </View>

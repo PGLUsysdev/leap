@@ -12,7 +12,7 @@ class StorePositionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,21 @@ class StorePositionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'item_number' => [
+                'required',
+                'string',
+                'max:50',
+                'unique:positions,item_number',
+            ],
+            'office_id' => ['required', 'integer', 'exists:offices,id'],
+            'ios_id' => ['required', 'integer', 'exists:ios,id'],
+            'employment_type' => [
+                'required',
+                'string',
+                'in:permanent,casual,contractual,job_order',
+            ],
+            'is_funded' => ['required', 'boolean'],
+            'status' => ['required', 'string', 'in:occupied,vacant,abolished'],
         ];
     }
 }

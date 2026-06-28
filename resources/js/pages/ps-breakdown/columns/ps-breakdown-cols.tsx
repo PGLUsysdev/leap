@@ -3,6 +3,7 @@ import type { ChartOfAccount, Position } from '@/types/global';
 import type { PsBreakdownItem } from '@/types/global';
 import { Input } from '@/components/ui/input';
 import { router } from '@inertiajs/react';
+import { getCellNumericValue } from '@/lib/ps-calculations';
 
 const columnHelper = createColumnHelper<Position>();
 
@@ -14,91 +15,6 @@ const currency = (value: string | number | null | undefined) => {
         minimumFractionDigits: 2,
     });
 };
-
-function getCellNumericValue(
-    pos: Position,
-    coa: ChartOfAccount,
-    rates: Record<string, number>,
-    annualRateMap: Record<number, { current: number; budget: number }>,
-): number | null {
-    const isOccupied = pos.status === 'occupied';
-    const isRegular =
-        pos.employment_type === 'permanent' ||
-        pos.employment_type === 'coterminous';
-
-    const currentAnnualRate = annualRateMap[pos.id]?.current ?? 0;
-    const budgetAnnualRate = annualRateMap[pos.id]?.budget ?? 0;
-
-    switch (coa.account_number) {
-        case '5-01-01-010':
-            return isRegular ? budgetAnnualRate : null;
-        case '5-01-01-020':
-            return pos.employment_type === 'casual' ||
-                pos.employment_type === 'contractual'
-                ? budgetAnnualRate
-                : null;
-        case '5-01-02-010':
-            return isOccupied ? (rates['pera_monthly'] ?? 2000) * 12 : null;
-        // case '5-01-02-020': // RATA — skipped
-        //     if (isOccupied && isRegular && pos.salary_grade >= 16) {
-        //         const ra =
-        //             pos.salary_grade >= 24
-        //                 ? (rates['rata_sg_24_above'] ?? 4000)
-        //                 : (rates['rata_sg_16_23'] ?? 2000);
-        //         return ra * 12;
-        //     }
-        //     return null;
-        // case '5-01-02-030': // TA — skipped
-        //     if (isOccupied && isRegular && pos.salary_grade >= 16) {
-        //         const ta =
-        //             pos.salary_grade >= 24
-        //                 ? (rates['ta_sg_24_above'] ?? 2000)
-        //                 : (rates['ta_sg_16_23'] ?? 1000);
-        //         return ta * 12;
-        //     }
-        //     return null;
-        case '5-01-02-040':
-            return isOccupied ? Number(rates['clothing_annual'] ?? 5000) : null;
-        case '5-01-02-050':
-            if (isRegular) {
-                return isOccupied
-                    ? Number(rates['subsistence_daily_fulltime'] ?? 50) *
-                          Number(rates['num_days_annual'] ?? 264)
-                    : null;
-            }
-            return isOccupied
-                ? Number(rates['subsistence_daily_parttime'] ?? 25) *
-                      Number(rates['num_days_annual'] ?? 264)
-                : null;
-        case '5-01-02-060':
-            return isOccupied ? (rates['laundry_monthly'] ?? 300) * 12 : null;
-        // case '5-01-02-070': // Quarters Allowance — skipped
-        //     return isOccupied ? (rates['quarters_monthly'] ?? 500) * 12 : null;
-        case '5-01-02-080':
-            return isOccupied ? Number(rates['pei_max'] ?? 5000) : null;
-        case '5-01-02-140':
-            return isOccupied ? currentAnnualRate / 12 : null;
-        case '5-01-02-150':
-            return isOccupied ? Number(rates['cash_gift'] ?? 5000) : null;
-        case '5-01-03-010':
-            return isOccupied && isRegular
-                ? currentAnnualRate * ((rates['gsis_percent'] ?? 12) / 100)
-                : null;
-        case '5-01-03-020':
-            return isOccupied ? (rates['pagibig_monthly'] ?? 100) * 12 : null;
-        case '5-01-03-030':
-            return isOccupied
-                ? currentAnnualRate *
-                      ((rates['philhealth_percent'] ?? 2.5) / 100)
-                : null;
-        case '5-01-03-040':
-            return isOccupied
-                ? currentAnnualRate * ((rates['ecip_percent'] ?? 1) / 100)
-                : null;
-        default:
-            return null;
-    }
-}
 
 export default function getColumns(
     coas: ChartOfAccount[],
@@ -119,7 +35,7 @@ export default function getColumns(
             size: 300,
             cell: (info) => (
                 <span className="text-sm">
-                    {info.getValue()} — {info.row.original.title}
+                    {info.row.original.ios?.class ?? '—'}
                 </span>
             ),
             footer: () => <span className="font-semibold">Total</span>,
@@ -135,15 +51,41 @@ export default function getColumns(
             ),
         }),
         columnHelper.display({
+            id: 'sg_step',
+            header: 'SG/Step',
+            size: 90,
+            cell: ({ row }) => (
+                <span className="text-sm tabular-nums">
+                    {row.original.ios?.salary_grade ?? '—'}/
+                    {row.original.user?.step ?? 1}
+                </span>
+            ),
+        }),
+        columnHelper.display({
             id: 'monthly_salary',
             header: 'Monthly Salary',
             size: 140,
             cell: ({ row }) => {
                 const monthly =
-                    (annualRateMap[row.original.id]?.current ?? 0) / 12;
+                    (annualRateMap[row.original.id]?.budget ?? 0) / 12;
                 return (
                     <span className="text-sm tabular-nums">
                         {currency(monthly)}
+                    </span>
+                );
+            },
+            footer: ({ table }) => {
+                const total = table
+                    .getCoreRowModel()
+                    .rows.reduce((sum, row) => {
+                        return (
+                            sum +
+                            (annualRateMap[row.original.id]?.budget ?? 0) / 12
+                        );
+                    }, 0);
+                return (
+                    <span className="font-semibold tabular-nums">
+                        {currency(total)}
                     </span>
                 );
             },
@@ -152,32 +94,34 @@ export default function getColumns(
             id: 'months',
             header: '# of Months',
             size: 100,
-            cell: () => <span className="text-sm tabular-nums">3</span>,
+            cell: () => <span className="text-sm tabular-nums">12</span>,
         }),
         columnHelper.display({
             id: 'annual_salary',
             header: 'Annual Salary',
             size: 150,
             cell: ({ row }) => {
-                const monthly =
-                    (annualRateMap[row.original.id]?.current ?? 0) / 12;
-                const annual = monthly * 3;
+                const annual = annualRateMap[row.original.id]?.budget ?? 0;
                 return (
                     <span className="text-sm tabular-nums">
                         {currency(annual)}
                     </span>
                 );
             },
-        }),
-        columnHelper.display({
-            id: 'total_annual_salary',
-            header: 'Total Annual Salary',
-            size: 150,
-            cell: ({ row }) => (
-                <span className="text-sm tabular-nums">
-                    {currency(annualRateMap[row.original.id]?.current ?? 0)}
-                </span>
-            ),
+            footer: ({ table }) => {
+                const total = table
+                    .getCoreRowModel()
+                    .rows.reduce((sum, row) => {
+                        return (
+                            sum + (annualRateMap[row.original.id]?.budget ?? 0)
+                        );
+                    }, 0);
+                return (
+                    <span className="font-semibold tabular-nums">
+                        {currency(total)}
+                    </span>
+                );
+            },
         }),
         ...coas.map((coa) =>
             columnHelper.display({

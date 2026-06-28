@@ -14,6 +14,9 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
+import type { ChartOfAccount, Position } from '@/types/global';
+import { getCellNumericValue } from '@/lib/ps-calculations';
+
 interface CoaRow {
     account_number: string;
     account_title: string;
@@ -33,6 +36,13 @@ interface PreviewPdfDialogProps {
         mooe: SectionData;
         fe: SectionData;
         co: SectionData;
+    };
+    /** Raw data for computing PS COA amounts locally using the same logic as the PS Breakdown table */
+    psComputationData?: {
+        positions: Position[];
+        chartOfAccounts: ChartOfAccount[];
+        rates: Record<string, number>;
+        annualRateMap: Record<number, { current: number; budget: number }>;
     };
 }
 
@@ -192,9 +202,10 @@ const fmt = (v: string) => {
 
 interface MyDocumentProps {
     sections: PreviewPdfDialogProps['sections'];
+    psComputationData?: PreviewPdfDialogProps['psComputationData'];
 }
 
-const MyDocument = ({ sections }: MyDocumentProps) => {
+const MyDocument = ({ sections, psComputationData }: MyDocumentProps) => {
     const sectionConfigs: {
         key: keyof PreviewPdfDialogProps['sections'];
         label: string;
@@ -205,11 +216,43 @@ const MyDocument = ({ sections }: MyDocumentProps) => {
         { key: 'co', label: 'CAPITAL OUTLAYS' },
     ];
 
+    // If psComputationData is provided, compute PS section dynamically to
+    // match the same per-position logic used in the PS Breakdown table.
+    const effectivePsSection: SectionData = (() => {
+        if (!psComputationData) return sections.ps;
+
+        const { positions, chartOfAccounts, rates, annualRateMap } =
+            psComputationData;
+        const psCoas = chartOfAccounts.filter(
+            (coa) => coa.expense_class === 'PS',
+        );
+
+        const coas: CoaRow[] = psCoas.map((coa) => {
+            let total = 0;
+            for (const pos of positions) {
+                const val = getCellNumericValue(pos, coa, rates, annualRateMap);
+                if (val !== null) total += val;
+            }
+            return {
+                account_number: coa.account_number,
+                account_title: coa.account_title,
+                amount: total.toFixed(2),
+            };
+        });
+
+        const computedTotal = coas
+            .reduce((sum, coa) => sum + parseFloat(coa.amount), 0)
+            .toFixed(2);
+
+        return { total: computedTotal, coas };
+    })();
+
     const totalAll = sectionConfigs
-        .reduce(
-            (sum, cfg) => sum + parseFloat(sections[cfg.key]?.total || '0'),
-            0,
-        )
+        .reduce((sum, cfg) => {
+            const sec =
+                cfg.key === 'ps' ? effectivePsSection : sections[cfg.key];
+            return sum + parseFloat(sec?.total || '0');
+        }, 0)
         .toFixed(2);
 
     const currentYearWidth =
@@ -485,7 +528,10 @@ const MyDocument = ({ sections }: MyDocumentProps) => {
 
                         {/* ===== SECTION ROWS ===== */}
                         {sectionConfigs.flatMap((cfg) => {
-                            const section = sections[cfg.key];
+                            const section =
+                                cfg.key === 'ps'
+                                    ? effectivePsSection
+                                    : sections[cfg.key];
                             const rows: React.ReactElement[] = [];
 
                             // Section header row
@@ -1006,6 +1052,7 @@ export default function PreviewPdfDialog({
     open,
     onOpenChange,
     sections,
+    psComputationData,
 }: PreviewPdfDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1025,7 +1072,10 @@ export default function PreviewPdfDialog({
                     height="100%"
                     style={{ border: 'none' }}
                 >
-                    <MyDocument sections={sections} />
+                    <MyDocument
+                        sections={sections}
+                        psComputationData={psComputationData}
+                    />
                 </PDFViewer>
             </DialogContent>
         </Dialog>

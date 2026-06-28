@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { Office, Role, User } from '@/types/global';
+import type { Office, Position, Role, User } from '@/types/global';
 import { DataTable } from '@/components/data-table';
 import columns from './columns/columns';
 import FormDialog from './form-dialog';
@@ -12,6 +12,7 @@ interface UsersIndexProps {
     users: User[] | null;
     roles: Role[];
     offices: Office[];
+    positions: Position[];
     can?: {
         editAll: boolean;
         editOwn: boolean;
@@ -27,6 +28,7 @@ export default function UsersIndex({
     users,
     roles,
     offices,
+    positions,
     can,
 }: UsersIndexProps) {
     console.log({ users, can });
@@ -60,6 +62,7 @@ export default function UsersIndex({
             <FormDialog
                 roles={roles}
                 offices={offices}
+                positions={positions}
                 editOfficeAll={can?.editOfficeAll ?? false}
                 editOfficeOwn={can?.editOfficeOwn ?? false}
                 editRoleAll={can?.editRoleAll ?? false}

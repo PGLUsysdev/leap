@@ -25,7 +25,7 @@ class PsRateSeeder extends Seeder
             ['rate_key' => 'rata_sg_16_23', 'rate_value' => 2000.0],
             ['rate_key' => 'ta_sg_24_above', 'rate_value' => 2000.0],
             ['rate_key' => 'ta_sg_16_23', 'rate_value' => 1000.0],
-            ['rate_key' => 'clothing_annual', 'rate_value' => 5000.0],
+            ['rate_key' => 'clothing_annual', 'rate_value' => 7000.0],
             ['rate_key' => 'cash_gift', 'rate_value' => 5000.0],
             ['rate_key' => 'pei_max', 'rate_value' => 5000.0],
             ['rate_key' => 'philhealth_percent', 'rate_value' => 2.5],

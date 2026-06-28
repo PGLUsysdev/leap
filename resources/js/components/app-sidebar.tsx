@@ -128,14 +128,14 @@ const mainNavItems: NavItem[] = [
         // permission: 'cc-strategic-priority.view',
     },
     {
-        title: 'Positions',
-        href: '/position',
+        title: 'IOS',
+        href: '/ios',
         icon: SquaresExclude,
         // permission: 'cc-sub-sector.view',
     },
     {
-        title: 'IOS',
-        href: '/ios',
+        title: 'Positions',
+        href: '/position',
         icon: SquaresExclude,
         // permission: 'cc-sub-sector.view',
     },

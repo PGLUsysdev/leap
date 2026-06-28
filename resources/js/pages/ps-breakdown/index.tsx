@@ -1,10 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import type { ChartOfAccount, Position, PsBreakdownItem } from '@/types/global';
-import coaCols from './columns/coa-cols';
 import getPsBreakdownCols from './columns/ps-breakdown-cols';
+import PreviewPdfDialog from './pdf-preview-dialog';
 
 interface PsBreakdownProps {
     chartOfAccounts: ChartOfAccount[];
@@ -29,6 +30,8 @@ export default function PsBreakdown({
     fiscalYear,
     annualRateMap,
 }: PsBreakdownProps) {
+    const [openPdfPreview, setOpenPdfPreview] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = useMemo(
         () => [
             { title: 'Annual Investment Programs', href: '/aip' },
@@ -59,26 +62,47 @@ export default function PsBreakdown({
         ],
     );
 
+    // Build sections for the PDF preview — PS is computed from raw data;
+    // MOOE/FE/CO have no data in this context.
+    const pdfSections = useMemo(
+        () => ({
+            ps: { total: '0.00', coas: [] },
+            mooe: { total: '0.00', coas: [] },
+            fe: { total: '0.00', coas: [] },
+            co: { total: '0.00', coas: [] },
+        }),
+        [],
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-1 space-y-4 border-r pt-4">
-                    <DataTable
-                        columns={coaCols}
-                        data={chartOfAccounts}
-                        withSearch={true}
-                        withFooter={true}
-                        negativeHeight={7}
-                    />
-                </div>
-                <div className="col-span-2 space-y-4 pt-4">
-                    <DataTable
-                        data={positions}
-                        columns={psBreakdownCols}
-                        withFooter={true}
-                    />
-                </div>
+            <div className="mb-4 flex gap-2 pt-4">
+                <Button
+                    variant="secondary"
+                    onClick={() => setOpenPdfPreview(true)}
+                >
+                    Preview LBP Form No. 2
+                </Button>
             </div>
+            <DataTable
+                data={positions}
+                columns={psBreakdownCols}
+                withFooter={true}
+                withSearch={true}
+                negativeHeight={7}
+            />
+
+            <PreviewPdfDialog
+                open={openPdfPreview}
+                onOpenChange={setOpenPdfPreview}
+                sections={pdfSections}
+                psComputationData={{
+                    positions,
+                    chartOfAccounts,
+                    rates,
+                    annualRateMap,
+                }}
+            />
         </AppLayout>
     );
 }

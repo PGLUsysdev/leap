@@ -42,6 +42,28 @@ const columns = ({ editAll, editOwn, userOfficeId }: ColumnsOptions) => {
                 );
             },
         }),
+        columnHelper.accessor('position', {
+            header: 'Assigned Position',
+            size: 250,
+            cell: (info) => {
+                const position = info.getValue();
+                if (!position) return '-';
+                return (
+                    <div className="text-wrap">
+                        {position.item_number}
+                        {position.ios ? ` — ${position.ios.class}` : ''}
+                    </div>
+                );
+            },
+        }),
+        columnHelper.accessor('step', {
+            header: 'Step',
+            size: 80,
+            cell: (info) => {
+                const step = info.getValue();
+                return <div className="text-wrap">{step ?? '-'}</div>;
+            },
+        }),
         columnHelper.accessor('status', {
             header: 'Status',
             size: 100,

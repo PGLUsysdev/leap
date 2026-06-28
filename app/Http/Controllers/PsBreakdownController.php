@@ -24,65 +24,74 @@ class PsBreakdownController extends Controller
         array $rates,
         array $annualRateMap,
     ): array {
-        $regular = $positions->whereIn('employment_type', [
-            'permanent',
-            'coterminous',
-        ]);
-        $casualContractual = $positions->whereIn('employment_type', [
-            'casual',
-            'contractual',
-        ]);
-
-        $totalBasicSalary = collect($annualRateMap)->sum('budget');
-        $regularCount = $regular->count();
-        $totalCount = $positions->count();
-
-        $rataEligible = $regular
-            ->filter(fn($p) => ($p->salary_grade ?? 0) >= 24)
-            ->count();
-        $rataEligibleMid = $regular
-            ->filter(
-                fn($p) => ($p->salary_grade ?? 0) >= 16 &&
-                    ($p->salary_grade ?? 0) <= 23,
-            )
-            ->count();
-
-        return [
-            '5-01-01-010' => $regular->sum(
-                fn($p) => $annualRateMap[$p->id]['budget'] ?? 0,
-            ),
-            '5-01-01-020' => $casualContractual->sum(
-                fn($p) => $annualRateMap[$p->id]['budget'] ?? 0,
-            ),
-            '5-01-02-010' =>
-                $regularCount * (float) ($rates['pera_monthly'] ?? 2000) * 12,
-            '5-01-02-040' =>
-                $totalCount * (float) ($rates['clothing_annual'] ?? 5000),
-            '5-01-02-050' =>
-                $regularCount *
-                    (float) ($rates['subsistence_daily_fulltime'] ?? 50) *
-                    (float) ($rates['num_days_annual'] ?? 264) +
-                $casualContractual->count() *
-                    (float) ($rates['subsistence_daily_parttime'] ?? 25) *
-                    (float) ($rates['num_days_annual'] ?? 264),
-            '5-01-02-060' =>
-                $regularCount * (float) ($rates['laundry_monthly'] ?? 300) * 12,
-            '5-01-02-080' => $totalCount * (float) ($rates['pei_max'] ?? 5000),
-            '5-01-02-140' => $totalBasicSalary,
-            '5-01-02-150' =>
-                $totalCount * (float) ($rates['cash_gift'] ?? 5000),
-            '5-01-03-010' =>
-                $totalBasicSalary *
-                ((float) ($rates['gsis_percent'] ?? 12) / 100),
-            '5-01-03-020' =>
-                $totalCount * (float) ($rates['pagibig_monthly'] ?? 100) * 12,
-            '5-01-03-030' =>
-                $totalBasicSalary *
-                ((float) ($rates['philhealth_percent'] ?? 2.5) / 100),
-            '5-01-03-040' =>
-                $totalBasicSalary *
-                ((float) ($rates['ecip_percent'] ?? 1) / 100),
+        // Per-position computation matching the frontend getCellNumericValue.
+        // Iterating per position ensures frontend and backend stay in sync.
+        $totals = [
+            '5-01-01-010' => 0,
+            '5-01-01-020' => 0,
+            '5-01-02-010' => 0,
+            '5-01-02-040' => 0,
+            '5-01-02-080' => 0,
+            '5-01-02-140' => 0,
+            '5-01-02-150' => 0,
+            '5-01-02-990' => 0,
+            '5-01-03-010' => 0,
+            '5-01-03-020' => 0,
+            '5-01-03-030' => 0,
         ];
+
+        foreach ($positions as $pos) {
+            $isRegular = $pos->employment_type === 'permanent';
+            $budgetAnnual = (float) ($annualRateMap[$pos->id]['budget'] ?? 0);
+
+            // 5-01-01-010 — Salaries & Wages - Regular
+            if ($isRegular) {
+                $totals['5-01-01-010'] += $budgetAnnual;
+            }
+
+            // 5-01-01-020 — Salaries & Wages - Casual/Contractual
+            if (
+                $pos->employment_type === 'casual' ||
+                $pos->employment_type === 'contractual'
+            ) {
+                $totals['5-01-01-020'] += $budgetAnnual;
+            }
+
+            // 5-01-02-010 — PERA (all positions)
+            $totals['5-01-02-010'] +=
+                (float) ($rates['pera_monthly'] ?? 2000) * 12;
+
+            // 5-01-02-040 — Clothing Allowance (all positions)
+            $totals['5-01-02-040'] +=
+                (float) ($rates['clothing_annual'] ?? 5000);
+
+            // 5-01-02-080 — PEI (all positions)
+            $totals['5-01-02-080'] += (float) ($rates['pei_max'] ?? 5000);
+
+            // 5-01-02-140 — Year End Bonus (1 month salary, all positions)
+            $totals['5-01-02-140'] += $budgetAnnual / 12;
+
+            // 5-01-02-150 — Cash Gift (all positions)
+            $totals['5-01-02-150'] += (float) ($rates['cash_gift'] ?? 5000);
+
+            // 5-01-02-990 — Other Bonuses & Allowances (1 month salary, all positions)
+            $totals['5-01-02-990'] += $budgetAnnual / 12;
+
+            // 5-01-03-010 — GSIS (all positions)
+            $totals['5-01-03-010'] +=
+                $budgetAnnual * ((float) ($rates['gsis_percent'] ?? 12) / 100);
+
+            // 5-01-03-020 — Pag-ibig (all positions)
+            $totals['5-01-03-020'] +=
+                (float) ($rates['pagibig_monthly'] ?? 100) * 12;
+
+            // 5-01-03-030 — PhilHealth (all positions)
+            $totals['5-01-03-030'] +=
+                $budgetAnnual *
+                ((float) ($rates['philhealth_percent'] ?? 2.5) / 100);
+        }
+
+        return $totals;
     }
 
     /**
@@ -99,7 +108,7 @@ class PsBreakdownController extends Controller
 
         $currentFy = FiscalYear::where('year', $budgetFy->year - 1)->first();
 
-        $positions = Position::with('user')
+        $positions = Position::with('user', 'ios')
             ->where('office_id', $officeId)
             ->get();
 
@@ -120,7 +129,7 @@ class PsBreakdownController extends Controller
         $annualRateMap = [];
         foreach ($positions as $pos) {
             $step = $pos->user?->step ?? 1;
-            $sg = $pos->salary_grade;
+            $sg = $pos->ios?->salary_grade;
 
             $currentStd = $salaryStandards->firstWhere(
                 fn($s) => $s->fiscal_year_id == $currentFy?->id &&
@@ -186,7 +195,7 @@ class PsBreakdownController extends Controller
                     ->toArray();
 
                 $officeId = $fundingSource->aipEntry->ppa->office_id;
-                $positions = Position::with('user')
+                $positions = Position::with('user', 'ios')
                     ->where('office_id', $officeId)
                     ->get();
 
@@ -200,7 +209,7 @@ class PsBreakdownController extends Controller
                 // Build annual rate map per position
                 foreach ($positions as $pos) {
                     $step = $pos->user?->step ?? 1;
-                    $sg = $pos->salary_grade;
+                    $sg = $pos->ios?->salary_grade;
 
                     $currentStd = $salaryStandards->firstWhere(
                         fn($s) => $s->fiscal_year_id == $currentFy?->id &&
@@ -321,7 +330,7 @@ class PsBreakdownController extends Controller
                 : null;
 
             $officeId = $fundingSource->aipEntry->ppa->office_id;
-            $positions = Position::with('user')
+            $positions = Position::with('user', 'ios')
                 ->where('office_id', $officeId)
                 ->get();
 
@@ -333,7 +342,7 @@ class PsBreakdownController extends Controller
 
             foreach ($positions as $pos) {
                 $step = $pos->user?->step ?? 1;
-                $sg = $pos->salary_grade;
+                $sg = $pos->ios?->salary_grade;
                 $currentStd = $salaryStandards->firstWhere(
                     fn($s) => $s->fiscal_year_id == $currentFy?->id &&
                         $s->salary_grade == $sg &&
@@ -399,7 +408,7 @@ class PsBreakdownController extends Controller
             ->pluck('rate_value', 'rate_key')
             ->toArray();
 
-        $positions = Position::with('user')
+        $positions = Position::with('user', 'ios')
             ->where('office_id', $officeId)
             ->get();
 

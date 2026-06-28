@@ -55,6 +55,18 @@ class UserPolicy
             return true;
         }
 
+        if ($permissions->contains('user.edit.office.all')) {
+            return true;
+        }
+
+        if (
+            $permissions->contains('user.edit.office.own') &&
+            $targetUser &&
+            $targetUser->office_id === $user->office_id
+        ) {
+            return true;
+        }
+
         return false;
     }
 

@@ -31,6 +31,8 @@ class UpdateUserRequest extends FormRequest
             ],
             'role_id' => ['nullable', 'integer', 'exists:roles,id'],
             'office_id' => ['nullable', 'integer', 'exists:offices,id'],
+            'position_id' => ['nullable', 'integer', 'exists:positions,id'],
+            'step' => ['nullable', 'integer', 'min:1', 'max:8'],
         ];
     }
 }
