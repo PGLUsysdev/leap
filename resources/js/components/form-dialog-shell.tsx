@@ -51,8 +51,27 @@ export function FormDialogShell({
                     'flex max-h-[90vh] flex-col sm:max-w-2xl',
                     className,
                 )}
+                onPointerDownOutside={(e) => {
+                    const target = e.target as HTMLElement;
+
+                    // If submitting, always prevent closing
+                    if (isLoading) {
+                        e.preventDefault();
+                        return;
+                    }
+
+                    // Ignore pointer events from Radix portal elements
+                    // (Select dropdowns, Tooltips, etc.) — they render outside
+                    // DialogContent and would otherwise trigger an outside click.
+                    if (
+                        target?.closest('[data-radix-select-content]') ||
+                        target?.closest('[role="listbox"]') ||
+                        target?.closest('.z-50')
+                    ) {
+                        e.preventDefault();
+                    }
+                }}
                 onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
-                onPointerDownOutside={(e) => isLoading && e.preventDefault()}
             >
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
@@ -67,6 +86,7 @@ export function FormDialogShell({
                     {onReset && (
                         <Button
                             variant="outline"
+                            type="button"
                             onClick={onReset}
                             disabled={isLoading}
                         >

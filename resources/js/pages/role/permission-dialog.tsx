@@ -1,26 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-    Collapsible,
-    CollapsibleContent,
-} from '@/components/ui/collapsible';
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-} from '@/components/ui/toggle-group';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import { permissionTree } from '@/lib/permissions';
+import { FormDialogShell } from '@/components/form-dialog-shell';
 import type { PermissionNode } from '@/lib/permissions';
 import type { Role } from '@/types/global';
 
@@ -124,9 +110,14 @@ function PermissionRow({
     const isViewEnabled = viewKey ? selected.has(viewKey) : true;
 
     const hasShowToggle = node.scopedPermissions?.some(
-        (sp) => sp.key === 'show' && sp.scopes.includes('own') && sp.scopes.includes('all'),
+        (sp) =>
+            sp.key === 'show' &&
+            sp.scopes.includes('own') &&
+            sp.scopes.includes('all'),
     );
-    const isOwnMode = hasShowToggle ? selected.has(`${node.key}.show.own`) : false;
+    const isOwnMode = hasShowToggle
+        ? selected.has(`${node.key}.show.own`)
+        : false;
 
     useEffect(() => {
         if (!viewKey) return;
@@ -151,7 +142,11 @@ function PermissionRow({
                 onToggle(showOwnKey);
             }
 
-            if ((node.key === 'office' || node.key === 'user') && showOwnOn && !showAllOn) {
+            if (
+                (node.key === 'office' || node.key === 'user') &&
+                showOwnOn &&
+                !showAllOn
+            ) {
                 const globalKeys = (node.scopedPermissions || [])
                     .filter((sp) => sp.scopes.length === 0 && sp.key !== 'view')
                     .map((sp) => `${node.key}.${sp.key}`);
@@ -163,7 +158,9 @@ function PermissionRow({
                 const subUnitAllKeys = (node.scopedPermissions || [])
                     .filter((sp) => sp.disableOption)
                     .map((sp) => `${node.key}.${sp.key}.all`);
-                const hasSubUnitAll = subUnitAllKeys.some((k) => selected.has(k));
+                const hasSubUnitAll = subUnitAllKeys.some((k) =>
+                    selected.has(k),
+                );
                 if (hasSubUnitAll) {
                     onToggleAll(subUnitAllKeys, false);
                 }
@@ -181,7 +178,7 @@ function PermissionRow({
                     <button
                         type="button"
                         onClick={() => onToggleExpand(node.key)}
-                        className="text-muted-foreground hover:text-foreground shrink-0"
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
                     >
                         {isExpanded ? (
                             <ChevronDown className="size-4" />
@@ -193,23 +190,30 @@ function PermissionRow({
                     <span className="size-4 shrink-0" />
                 )}
 
-                <span className="text-sm font-medium flex-1">{node.label}</span>
+                <span className="flex-1 text-sm font-medium">{node.label}</span>
             </div>
 
             <div
                 className="flex flex-wrap gap-3 pb-2"
                 style={{ paddingLeft: (depth + 1) * 24 + 24 }}
             >
-                {node.scopedPermissions?.filter((sp) => {
+                {node.scopedPermissions
+                    ?.filter((sp) => {
                         const isToggleScope =
                             (sp.scopes.length === 0 && sp.disableOption) ||
                             (sp.scopes.length === 2 &&
                                 sp.scopes.includes('own') &&
                                 sp.scopes.includes('all'));
                         return isToggleScope;
-                    }).map((sp) => {
+                    })
+                    .map((sp) => {
                         const options = sp.disableOption
-                            ? ['disabled', ...(sp.scopes.length > 0 ? sp.scopes : ['enable'])]
+                            ? [
+                                  'disabled',
+                                  ...(sp.scopes.length > 0
+                                      ? sp.scopes
+                                      : ['enable']),
+                              ]
                             : sp.scopes;
 
                         let currentSelected: string;
@@ -224,33 +228,52 @@ function PermissionRow({
                         }
 
                         return (
-                            <div key={sp.key} className="flex items-center gap-2 py-0.5 w-full">
-                                <span className="text-sm text-muted-foreground min-w-[110px]">
+                            <div
+                                key={sp.key}
+                                className="flex w-full items-center gap-2 py-0.5"
+                            >
+                                <span className="min-w-[110px] text-sm text-muted-foreground">
                                     {sp.label}
                                 </span>
                                 <ToggleGroup
                                     type="single"
                                     size="sm"
                                     variant="outline"
-                                    value={currentSelected || (sp.disableOption && (sp.key === 'view' || isViewEnabled) ? 'disabled' : '')}
+                                    value={
+                                        currentSelected ||
+                                        (sp.disableOption &&
+                                        (sp.key === 'view' || isViewEnabled)
+                                            ? 'disabled'
+                                            : '')
+                                    }
                                     onValueChange={(value) => {
                                         if (sp.key === 'show' && !value) return;
                                         if (sp.scopes.length === 0) {
                                             const key = `${node.key}.${sp.key}`;
-                                            if (value === 'enable' && !selected.has(key)) {
+                                            if (
+                                                value === 'enable' &&
+                                                !selected.has(key)
+                                            ) {
                                                 onToggle(key);
-                                            } else if (value === 'disabled' && selected.has(key)) {
+                                            } else if (
+                                                value === 'disabled' &&
+                                                selected.has(key)
+                                            ) {
                                                 onToggle(key);
                                             }
                                         } else {
                                             const groupKeys = sp.scopes.map(
-                                                (s) => `${node.key}.${sp.key}.${s}`,
+                                                (s) =>
+                                                    `${node.key}.${sp.key}.${s}`,
                                             );
                                             const selectedKey =
                                                 value && value !== 'disabled'
                                                     ? `${node.key}.${sp.key}.${value}`
                                                     : '';
-                                            onToggleSingle(groupKeys, selectedKey);
+                                            onToggleSingle(
+                                                groupKeys,
+                                                selectedKey,
+                                            );
                                         }
                                     }}
                                 >
@@ -259,8 +282,8 @@ function PermissionRow({
                                             scope === 'disabled'
                                                 ? 'Disabled'
                                                 : scope === 'enable'
-                                                    ? 'Enable'
-                                                    : scope;
+                                                  ? 'Enable'
+                                                  : scope;
                                         return (
                                             <ToggleGroupItem
                                                 key={scope}
@@ -269,12 +292,22 @@ function PermissionRow({
                                                     sp.key === 'view'
                                                         ? false
                                                         : scope === 'disabled'
-                                                            ? !isViewEnabled
-                                                            : scope === 'enable'
-                                                                ? !isViewEnabled || (isOwnMode && (node.key === 'office' || node.key === 'user'))
-                                                                : !isViewEnabled || (isOwnMode && sp.key !== 'show' && scope === 'all')
+                                                          ? !isViewEnabled
+                                                          : scope === 'enable'
+                                                            ? !isViewEnabled ||
+                                                              (isOwnMode &&
+                                                                  (node.key ===
+                                                                      'office' ||
+                                                                      node.key ===
+                                                                          'user'))
+                                                            : !isViewEnabled ||
+                                                              (isOwnMode &&
+                                                                  sp.key !==
+                                                                      'show' &&
+                                                                  scope ===
+                                                                      'all')
                                                 }
-                                                className="capitalize text-xs"
+                                                className="text-xs capitalize"
                                             >
                                                 {label}
                                             </ToggleGroupItem>
@@ -314,10 +347,9 @@ export default function PermissionDialog({
     onOpenChange,
     role,
 }: PermissionDialogProps) {
-    const { selected, setSelected, toggle, toggleAll, toggleSingle } = usePermissionState();
-    const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
-        new Set(),
-    );
+    const { selected, setSelected, toggle, toggleAll, toggleSingle } =
+        usePermissionState();
+    const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
@@ -338,19 +370,23 @@ export default function PermissionDialog({
         if (!role) return;
 
         setIsLoading(true);
-        router.post(`/roles/${role.id}/permissions`, {
-            permissions: Array.from(selected),
-        }, {
-            preserveState: true,
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsLoading(false);
-                onOpenChange(false);
+        router.post(
+            `/roles/${role.id}/permissions`,
+            {
+                permissions: Array.from(selected),
             },
-            onError: () => {
-                setIsLoading(false);
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setIsLoading(false);
+                    onOpenChange(false);
+                },
+                onError: () => {
+                    setIsLoading(false);
+                },
             },
-        });
+        );
     }, [role, selected, onOpenChange]);
 
     const handleToggleExpand = useCallback((key: string) => {
@@ -365,18 +401,32 @@ export default function PermissionDialog({
         });
     }, []);
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>Manage Permissions</DialogTitle>
-                    <DialogDescription>
-                        {role
-                            ? `Configure permissions for role: ${role.name}.`
-                            : 'Select a role to manage permissions.'}
-                    </DialogDescription>
-                </DialogHeader>
+    const handleFormSubmit = useCallback(
+        (e: React.FormEvent) => {
+            e.preventDefault();
+            handleSave();
+        },
+        [handleSave],
+    );
 
+    return (
+        <FormDialogShell
+            open={open}
+            onOpenChange={onOpenChange}
+            title="Manage Permissions"
+            description={
+                role
+                    ? `Configure permissions for role: ${role.name}.`
+                    : 'Select a role to manage permissions.'
+            }
+            formId="permission-form"
+            submitLabel="Save Changes"
+            submittingLabel="Saving..."
+            isLoading={isLoading}
+            onCancel={() => onOpenChange(false)}
+            className="sm:max-w-lg"
+        >
+            <form id="permission-form" onSubmit={handleFormSubmit}>
                 <div className="flex min-h-0">
                     <ScrollArea className="max-h-[60vh] w-full pr-4">
                         {permissionTree.map((node) => (
@@ -394,24 +444,7 @@ export default function PermissionDialog({
                         ))}
                     </ScrollArea>
                 </div>
-
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </form>
+        </FormDialogShell>
     );
 }

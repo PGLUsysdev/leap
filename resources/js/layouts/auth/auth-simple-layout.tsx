@@ -4,6 +4,7 @@ import { login } from '@/routes';
 import { Link } from '@inertiajs/react';
 import { type PropsWithChildren } from 'react';
 import logo from '../../../images/pglu-logo.png';
+import leapTempLogo from '../../../images/leap-temp-logo.png';
 import buildingImage from '../../../images/pglu-building.png';
 
 interface AuthLayoutProps {
@@ -50,11 +51,12 @@ export default function AuthSimpleLayout({
                         >
                             <div className="flex flex-col items-center">
                                 <img
-                                    src={logo}
+                                    // src={logo}
+                                    src={leapTempLogo}
                                     alt="PGLU Logo"
                                     className="aspect-square h-20 w-auto object-cover"
                                 />
-                                <span>LEAP</span>
+                                {/*<span>LEAP</span>*/}
                             </div>
 
                             <span className="sr-only">{title}</span>

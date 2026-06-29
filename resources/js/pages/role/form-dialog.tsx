@@ -4,19 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { router } from '@inertiajs/react';
 
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Field, FieldLabel, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import type { Role } from '@/types/global';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { FormDialogShell } from '@/components/form-dialog-shell';
+import type { Role } from '@/types/global';
 
 const formSchema = z.object({
     name: z.string().min(1, 'Role name is required'),
@@ -73,67 +65,55 @@ export default function FormDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-sm">
-                <DialogHeader>
-                    <DialogTitle>{data ? 'Edit Role' : 'Add Role'}</DialogTitle>
-                    <DialogDescription>
-                        {data
-                            ? `Update the name for role "${data.name}".`
-                            : 'Enter a name for the new role.'}
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="flex min-h-0">
-                    <ScrollArea className="w-full">
-                        <form
-                            id="role-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
-                            <Controller
-                                name="name"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel htmlFor={field.name}>
-                                            Role Name
-                                        </FieldLabel>
-                                        <Input
-                                            {...field}
-                                            id={field.name}
-                                            aria-invalid={fieldState.invalid}
-                                            placeholder="e.g. Encoder"
-                                            autoComplete="off"
+        <FormDialogShell
+            open={open}
+            onOpenChange={onOpenChange}
+            title={data ? 'Edit Role' : 'Add Role'}
+            description={
+                data
+                    ? `Update the name for role "${data.name}".`
+                    : 'Enter a name for the new role.'
+            }
+            formId="role-form"
+            submitLabel={data ? 'Save Changes' : 'Create Role'}
+            submittingLabel="Saving..."
+            isLoading={form.formState.isSubmitting}
+            onCancel={() => onOpenChange(false)}
+            className="sm:max-w-sm"
+        >
+            <div className="flex min-h-0 flex-1">
+                <ScrollArea className="w-full pr-4">
+                    <form
+                        id="role-form"
+                        onSubmit={form.handleSubmit(onSubmit)}
+                        className="space-y-4 py-1"
+                    >
+                        <Controller
+                            name="name"
+                            control={form.control}
+                            render={({ field, fieldState }) => (
+                                <Field data-invalid={fieldState.invalid}>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Role Name
+                                    </FieldLabel>
+                                    <Input
+                                        {...field}
+                                        id={field.name}
+                                        aria-invalid={fieldState.invalid}
+                                        placeholder="e.g. Encoder"
+                                        autoComplete="off"
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
                                         />
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
-                            />
-                        </form>
-                    </ScrollArea>
-                </div>
-
-                <DialogFooter>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        type="submit"
-                        form="role-form"
-                        disabled={form.formState.isSubmitting}
-                    >
-                        {data ? 'Save Changes' : 'Create Role'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                                    )}
+                                </Field>
+                            )}
+                        />
+                    </form>
+                </ScrollArea>
+            </div>
+        </FormDialogShell>
     );
 }
