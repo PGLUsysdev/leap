@@ -30,6 +30,9 @@ import {
     ChartNetwork,
     Waypoints,
     SquaresExclude,
+    Network,
+    Scale,
+    AppWindow,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -117,26 +120,26 @@ const mainNavItems: NavItem[] = [
     {
         title: 'CC Sub Sectors',
         href: '/cc-sub-sector',
-        icon: SquaresExclude,
+        icon: Network,
         permission: 'cc-sub-sector.view',
     },
     { title: '', href: '', type: 'separator' },
     {
         title: 'Salary Standards',
         href: '/salary-standard',
-        icon: SquaresExclude,
+        icon: Scale,
         // permission: 'cc-strategic-priority.view',
     },
     {
         title: 'IOS',
         href: '/ios',
-        icon: SquaresExclude,
+        icon: AppWindow,
         // permission: 'cc-sub-sector.view',
     },
     {
         title: 'Positions',
         href: '/position',
-        icon: SquaresExclude,
+        icon: Briefcase,
         // permission: 'cc-sub-sector.view',
     },
     { title: '', href: '', type: 'separator' },
