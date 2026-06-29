@@ -16,7 +16,7 @@
 .phpunit.result.cache
 
 # --- Frontend & Build Tools ---
-# /public/build
+/public/build
 /public/hot
 /bootstrap/ssr
 npm-debug.log
