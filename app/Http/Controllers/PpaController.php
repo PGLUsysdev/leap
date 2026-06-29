@@ -15,6 +15,7 @@ use App\Models\Sector;
 use App\Models\LguLevel;
 use App\Models\OfficeType;
 use App\Models\FiscalYear;
+use App\Services\PSPoolService;
 
 class PpaController extends Controller
 {
@@ -280,9 +281,7 @@ class PpaController extends Controller
             abort_if(!$showAll && $parent->office_id !== $user->office_id, 403);
             $officeId = $parent->office_id;
         } else {
-            $officeId = $showAll
-                ? $validated['office_id']
-                : $user->office_id;
+            $officeId = $showAll ? $validated['office_id'] : $user->office_id;
         }
 
         // ONE query to get both count and max order
@@ -671,6 +670,38 @@ class PpaController extends Controller
                 ->withErrors([
                     'error' => 'Error importing PPAs: ' . $e->getMessage(),
                 ]);
+        }
+    }
+
+    public function setAsPsPool(Ppa $ppa, PSPoolService $poolService)
+    {
+        $this->authorize('update', $ppa);
+
+        try {
+            // Find the current pool before we switch
+            $oldPool = Ppa::psPoolForFiscalYear($ppa->fiscal_year_id)->first();
+
+            $poolService->setPool($ppa);
+
+            // Clear old pool's PS amounts
+            if ($oldPool) {
+                foreach ($oldPool->aipEntries as $entry) {
+                    $entry->ppaFundingSources()->update(['ps_amount' => 0]);
+                }
+            }
+
+            // Sync new pool's PS amounts (auto-creates GF Proper if needed)
+            foreach ($ppa->aipEntries as $entry) {
+                PsBreakdownController::syncPoolPsAmount($entry);
+            }
+
+            return redirect()
+                ->back()
+                ->with('success', "{$ppa->name} is now the PS pool.");
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
         }
     }
 }

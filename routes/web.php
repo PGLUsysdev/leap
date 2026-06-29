@@ -147,6 +147,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('ppa/move-index', [PpaController::class, 'moveIndex'])->name(
         'ppa.move-index',
     );
+    Route::post('ppas/{ppa}/set-as-ps-pool', [
+        PpaController::class,
+        'setAsPsPool',
+    ])->name('ppas.set-as-ps-pool');
 
     // PPA Import
     Route::get('ppa/previous-year', [

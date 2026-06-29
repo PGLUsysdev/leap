@@ -10,8 +10,10 @@ use App\Http\Requests\UpdatePpaFundingSourceRequest;
 
 class PpaFundingSourceController extends Controller
 {
-    public function store(StorePpaFundingSourceRequest $request, AipEntry $aipEntry)
-    {
+    public function store(
+        StorePpaFundingSourceRequest $request,
+        AipEntry $aipEntry,
+    ) {
         $validated = $request->validated();
 
         $saipId = $validated['supplemental_aip_id'] ?? null;
@@ -29,11 +31,18 @@ class PpaFundingSourceController extends Controller
             'is_supplemental' => (bool) $saipId,
         ]);
 
+        // PS Pool sync: if the parent PPA is the PS pool,
+        // auto-calculate ps_amount onto the GF Proper funding source (id=1),
+        // creating it if needed.
+        PsBreakdownController::syncPoolPsAmount($aipEntry, $saipId);
+
         return redirect()->back();
     }
 
-    public function destroy(AipEntry $aipEntry, PpaFundingSource $ppaFundingSource)
-    {
+    public function destroy(
+        AipEntry $aipEntry,
+        PpaFundingSource $ppaFundingSource,
+    ) {
         $user = auth()->user();
 
         if (!$user->can('editFundingSources', $aipEntry)) {

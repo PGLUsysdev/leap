@@ -70,6 +70,7 @@ interface AipSummaryTableProps {
     ppmpCategories: PpmpCategory[];
     ppmpCoaTotals: Record<number, Record<number, number>>;
     psCoaAutoTotals: Record<string, number>;
+    psPoolPpaId?: number | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -115,6 +116,7 @@ export default function AipSummaryTable({
     ppmpCategories,
     ppmpCoaTotals,
     psCoaAutoTotals = {},
+    psPoolPpaId = null,
 }: AipSummaryTableProps) {
     console.log({
         fiscalYear,
@@ -343,6 +345,18 @@ export default function AipSummaryTable({
         );
     };
 
+    const handleSetAsPsPool = useCallback((ppa: Ppa) => {
+        router.post(
+            `/ppas/${ppa.id}/set-as-ps-pool`,
+
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
+    }, []);
+
     const handleDeleteSaip = () => {
         setIsDeleteSaipDialogOpen(true);
     };
@@ -556,6 +570,8 @@ export default function AipSummaryTable({
                     negativeHeight={9.98}
                     meta={{
                         readOnly: currentScope.scope === 'combined',
+                        psPoolPpaId,
+                        onSetAsPsPool: handleSetAsPsPool,
                     }}
                 >
                     <div className="flex gap-2">
@@ -651,6 +667,7 @@ export default function AipSummaryTable({
                 ppmpCategories={ppmpCategories}
                 ppmpCoaTotals={ppmpCoaTotals}
                 psCoaAutoTotals={psCoaAutoTotals}
+                psPoolPpaId={psPoolPpaId}
                 onPpmpItemAdded={handlePpmpItemAdded}
             />
 

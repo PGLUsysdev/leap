@@ -155,6 +155,57 @@ class PsBreakdownController extends Controller
         return self::computePsCoaTotals($positions, $rates, $annualRateMap);
     }
 
+    /**
+     * Sync the total PS amount onto the GF Proper (funding_source_id=1)
+     * funding source for the given AIP entry — but only if its PPA is the PS pool.
+     * All other funding sources on this AIP entry get ps_amount = 0.
+     * If no GF Proper funding source exists, it will be created automatically.
+     */
+    public static function syncPoolPsAmount(
+        AipEntry $aipEntry,
+        $saipId = null,
+    ): void {
+        $ppa = $aipEntry->ppa;
+
+        if (!$ppa || !$ppa->is_ps_pool) {
+            return;
+        }
+
+        $psTotals = self::computePsCoaTotalsForOffice(
+            $ppa->office_id,
+            $ppa->fiscal_year_id,
+        );
+        $totalPs = array_sum($psTotals);
+
+        // Find or create the GF Proper funding source (id=1)
+        $gfSource = $aipEntry->ppaFundingSources()->updateOrCreate(
+            [
+                'funding_source_id' => 1,
+                'supplemental_aip_id' => $saipId ?: null,
+            ],
+            [
+                'ps_amount' => $totalPs,
+                'mooe_amount' => 0,
+                'fe_amount' => 0,
+                'co_amount' => 0,
+                'is_supplemental' => (bool) $saipId,
+                'ccet_adaptation' => 0,
+                'ccet_mitigation' => 0,
+            ],
+        );
+
+        // Zero out PS on all other funding sources for this AIP entry
+        $aipEntry
+            ->ppaFundingSources()
+            ->where('id', '!=', $gfSource->id)
+            ->when(
+                $saipId,
+                fn($q) => $q->where('supplemental_aip_id', $saipId),
+                fn($q) => $q->whereNull('supplemental_aip_id'),
+            )
+            ->update(['ps_amount' => 0]);
+    }
+
     public function index($fiscalYear, $aipEntry)
     {
         AipEntry::findOrFail($aipEntry);

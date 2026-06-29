@@ -135,6 +135,7 @@ export interface Ppa {
     office_id: number;
     parent_id: number | null;
     fiscal_year_id: number;
+    is_ps_pool?: boolean;
 
     aip_entries?: AipEntry[];
     children?: Ppa[];

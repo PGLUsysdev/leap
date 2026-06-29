@@ -24,6 +24,7 @@ class Ppa extends Model
         'fiscal_year_id',
         'supplemental_aip_id',
         'is_supplemental',
+        'is_ps_pool',
     ];
 
     protected $appends = ['full_code'];
@@ -88,5 +89,12 @@ class Ppa extends Model
     public function supplementalAip(): BelongsTo
     {
         return $this->belongsTo(SupplementalAip::class, 'supplemental_aip_id');
+    }
+
+    public function scopePsPoolForFiscalYear($query, int $fiscalYearId)
+    {
+        return $query
+            ->where('is_ps_pool', true)
+            ->where('fiscal_year_id', $fiscalYearId);
     }
 }

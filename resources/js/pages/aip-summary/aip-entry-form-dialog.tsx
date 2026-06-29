@@ -97,6 +97,7 @@ interface AipEntryFormDialogProps {
     ppmpCoaTotals: Record<number, Record<number, number>>;
     psCoaAutoTotals: Record<string, number>;
     onPpmpItemAdded?: () => void;
+    psPoolPpaId?: number | null;
 }
 
 const amountSchema = z.string();
@@ -150,6 +151,7 @@ export default function AipEntryFormDialog({
     ppmpCoaTotals = {},
     psCoaAutoTotals = {},
     onPpmpItemAdded,
+    psPoolPpaId,
 }: AipEntryFormDialogProps) {
     const userOfficeId = auth?.user?.office_id;
     const [isLoading, setIsLoading] = useState(false);
@@ -182,6 +184,8 @@ export default function AipEntryFormDialog({
     const isEdit = !!(
         entry && entry.supplemental_aip_id === (supplementalAipId || null)
     );
+
+    const isPsPool = data?.id === psPoolPpaId;
 
     const filteredOffices = useMemo(() => {
         if (!userOfficeId) return offices;
@@ -251,13 +255,15 @@ export default function AipEntryFormDialog({
                               account_number: coa.account_number,
                               account_title: coa.account_title,
                               amount:
-                                  expenseClass === 'PS'
+                                  expenseClass === 'PS' && isPsPool
                                       ? (
                                             psCoaAutoTotals[
                                                 coa.account_number
                                             ] ?? 0
                                         ).toFixed(2)
-                                      : sumCoaAmount(coa.id),
+                                      : expenseClass === 'PS' && !isPsPool
+                                        ? '0.00'
+                                        : sumCoaAmount(coa.id),
                           }));
 
             // For PS, recompute total from computed COA amounts
@@ -277,7 +283,13 @@ export default function AipEntryFormDialog({
             fe: buildSection('FE', sum('fe_amount')),
             co: buildSection('CO', sum('co_amount')),
         };
-    }, [watchedSources, chartOfAccounts, ppmpCoaTotals, psCoaAutoTotals]);
+    }, [
+        watchedSources,
+        chartOfAccounts,
+        ppmpCoaTotals,
+        psCoaAutoTotals,
+        isPsPool,
+    ]);
 
     console.log('ppmpCoaTotals prop:', ppmpCoaTotals);
     console.log('sectionTotals:', sectionTotals);
@@ -423,10 +435,17 @@ export default function AipEntryFormDialog({
     };
 
     const handleAddFundingSource = (fs: FundingSource) => {
+        // Compute PS total from position-based COA amounts when this PPA is the pool
+        const rawPsTotal = isPsPool
+            ? Object.values(psCoaAutoTotals)
+                  .reduce((sum, val) => sum + (val ?? 0), 0)
+                  .toFixed(2)
+            : '0.00';
+
         if (!entry?.id) {
             append({
                 funding_source_id: fs.id.toString(),
-                ps_amount: '0.00',
+                ps_amount: rawPsTotal,
                 mooe_amount: '0.00',
                 fe_amount: '0.00',
                 co_amount: '0.00',
@@ -441,7 +460,7 @@ export default function AipEntryFormDialog({
             `/aip-entries/${entry.id}/ppa-funding-sources`,
             {
                 funding_source_id: fs.id,
-                ps_amount: '0.00',
+                ps_amount: rawPsTotal,
                 mooe_amount: '0.00',
                 fe_amount: '0.00',
                 co_amount: '0.00',
@@ -1339,7 +1358,8 @@ export default function AipEntryFormDialog({
                                                                                         !watchedSources?.[
                                                                                             index
                                                                                         ]
-                                                                                            ?.id
+                                                                                            ?.id ||
+                                                                                        !isPsPool
                                                                                     }
                                                                                     onClick={() =>
                                                                                         handleGoToPsBreakdown(

@@ -399,8 +399,11 @@ class AipEntryController extends Controller
             'data' => $ppmpCoaTotals->toArray(),
         ]);
 
+        $psPoolPpa = Ppa::psPoolForFiscalYear($yearId)->first();
+
         return Inertia::render('aip-summary/index', [
             'fiscalYear' => $fiscalYear,
+            'psPoolPpaId' => $psPoolPpa?->id,
             'aipEntries' => $aipEntries,
             'ppmpCoaTotals' => $ppmpCoaTotals,
             'psCoaAutoTotals' => $officeId
@@ -754,6 +757,12 @@ class AipEntryController extends Controller
                 }
             }
         });
+
+        // PS Pool sync: if this PPA is the PS pool, auto-calculate ps_amount
+        // onto the GF Proper funding source (id=1), creating it if needed.
+        if ($ppa->is_ps_pool && $canEditFunding) {
+            PsBreakdownController::syncPoolPsAmount($aipEntry, $saipId);
+        }
 
         return back()->with('success', 'AIP Entry updated successfully.');
     }

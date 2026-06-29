@@ -1,5 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Plus, Pencil, Trash } from 'lucide-react';
+import { Plus, Pencil, Trash, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Decimal } from 'decimal.js';
@@ -90,6 +90,15 @@ const columns = () => {
                             >
                                 {ppa.name}
                             </span>
+                            {ppa.is_ps_pool && (
+                                <Badge
+                                    variant="default"
+                                    className="mt-0.5 w-fit bg-emerald-600 text-[10px] text-white"
+                                >
+                                    <ShieldCheck className="mr-0.5 h-3 w-3" />
+                                    PS Pool
+                                </Badge>
+                            )}
                         </div>
                     </div>
                 );
@@ -323,17 +332,17 @@ const columns = () => {
 
         columnHelper.accessor('current_fs.cc_typology.code', {
             id: 'cc_typology_code',
-            header: () => <div className="text-left pl-4">Typology</div>,
+            header: () => <div className="pl-4 text-left">Typology</div>,
             cell: (info) => {
                 const code = info.getValue();
-                return <div className="pl-4" >{code || '-'}</div>;
+                return <div className="pl-4">{code || '-'}</div>;
             },
             footer: () => <div className="pl-4 font-medium">-</div>,
         }),
 
         columnHelper.display({
             id: 'action',
-            size: 120,
+            size: 154,
             cell: ({ row, table }) => {
                 const isReadOnly = (table.options.meta as any)?.readOnly;
                 const can = row.original.can;
@@ -380,6 +389,35 @@ const columns = () => {
                             <Pencil />
                         </Button>
                         {/*)}*/}
+
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            className={
+                                row.original.type === 'Program' &&
+                                !row.original.is_ps_pool
+                                    ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
+                                    : 'border-gray-300 text-gray-300'
+                            }
+                            onClick={() =>
+                                table.options.meta?.onSetAsPsPool?.(
+                                    row.original,
+                                )
+                            }
+                            disabled={
+                                row.original.type !== 'Program' ||
+                                row.original.is_ps_pool
+                            }
+                            title={
+                                row.original.type !== 'Program'
+                                    ? 'Only Programs can be designated as the PS pool'
+                                    : row.original.is_ps_pool
+                                      ? 'This Program is already the PS pool'
+                                      : 'Designate this Program as the PS pool'
+                            }
+                        >
+                            <ShieldCheck className="h-4 w-4" />
+                        </Button>
 
                         {/*{canDelete && (*/}
                         <Button
