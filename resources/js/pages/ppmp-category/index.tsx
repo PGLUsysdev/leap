@@ -50,6 +50,8 @@ export default function PpmpCategoryPage({
     const [selectedCategory, setSelectedCategory] =
         useState<PpmpCategory | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isForceDeleteDialogOpen, setIsForceDeleteDialogOpen] =
+        useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     function handleAdd() {
@@ -81,6 +83,25 @@ export default function PpmpCategoryPage({
             onStart: () => setIsLoading(true),
             onSuccess: () => {
                 setIsDeleteDialogOpen(false);
+                setSelectedCategory(null);
+            },
+            onError: (errors) => {
+                if (errors.force_delete) {
+                    setIsDeleteDialogOpen(false);
+                    setIsForceDeleteDialogOpen(true);
+                }
+            },
+            onFinish: () => setIsLoading(false),
+        });
+    }
+
+    function handleForceDelete() {
+        router.delete(`/ppmp-categories/${selectedCategory?.id}?force=1`, {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setIsForceDeleteDialogOpen(false);
                 setSelectedCategory(null);
             },
             onFinish: () => setIsLoading(false),
@@ -131,6 +152,26 @@ export default function PpmpCategoryPage({
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setIsDeleteDialogOpen(false);
+                    setSelectedCategory(null);
+                }}
+                isLoading={isLoading}
+            />
+
+            <DeleteDialog
+                isOpen={isForceDeleteDialogOpen}
+                onOpenChange={setIsForceDeleteDialogOpen}
+                title="Delete PPMP Category?"
+                description={
+                    <>
+                        This category has dependent PPMP price list items.
+                        Continuing will delete all price list items associated
+                        with this category. This action cannot be undone.
+                    </>
+                }
+                confirmText="Continue"
+                onConfirm={handleForceDelete}
+                onCancel={() => {
+                    setIsForceDeleteDialogOpen(false);
                     setSelectedCategory(null);
                 }}
                 isLoading={isLoading}

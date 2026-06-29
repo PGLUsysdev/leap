@@ -15,49 +15,51 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // // User::factory(10)->create();
 
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => 'password',
-                'email_verified_at' => now(),
-            ],
-        );
+        // User::firstOrCreate(
+        //     ['email' => 'test@example.com'],
+        //     [
+        //         'name' => 'Test User',
+        //         'password' => 'password',
+        //         'email_verified_at' => now(),
+        //     ],
+        // );
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        // DB::statement('SET FOREIGN_KEY_CHECKS=0;');
 
-        $this->call([
-            PermissionSeeder::class,
-            RoleSeeder::class,
+        // $this->call([
+        //     PermissionSeeder::class,
+        //     RoleSeeder::class,
 
-            FiscalYearSeeder::class,
-            PsRateSeeder::class,
-            SectorSeeder::class,
-            LguLevelSeeder::class,
-            OfficeTypeSeeder::class,
-            FundingSourceSeeder::class,
-            PpmpCategorySeeder::class,
-            ChartOfAccountSeeder::class,
+        //     FiscalYearSeeder::class,
+        //     PsRateSeeder::class,
+        //     SectorSeeder::class,
+        //     LguLevelSeeder::class,
+        //     OfficeTypeSeeder::class,
+        //     FundingSourceSeeder::class,
+        //     PpmpCategorySeeder::class,
+        //     ChartOfAccountSeeder::class,
 
-            OfficeSeeder::class,
-            PositionSeeder::class,
+        //     OfficeSeeder::class,
+        //     PositionSeeder::class,
 
-            UserSeeder::class,
-            SalaryStandardSeeder::class,
-            PpaSeeder::class,
+        //     UserSeeder::class,
+        //     SalaryStandardSeeder::class,
+        //     PpaSeeder::class,
 
-            AipEntrySeeder::class,
-            PpaFundingSourceSeeder::class,
-            PpmpPriceListSeeder::class,
+        //     AipEntrySeeder::class,
+        //     PpaFundingSourceSeeder::class,
+        //     PpmpPriceListSeeder::class,
 
-            PpmpSeeder::class,
+        //     PpmpSeeder::class,
 
-            AllotmentClassSeeder::class,
-            AccountGroupSeeder::class,
-        ]);
+        //     AllotmentClassSeeder::class,
+        //     AccountGroupSeeder::class,
+        // ]);
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        // disabled for now
     }
 }

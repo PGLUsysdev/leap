@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormDialogShell } from '@/components/form-dialog-shell';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import {
     Field,
     FieldContent,
@@ -62,6 +62,8 @@ export default function FormDialog({
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
     const [pendingClose, setPendingClose] = useState(false);
+    const [showForceDeleteDialog, setShowForceDeleteDialog] = useState(false);
+    const { errors } = usePage().props;
 
     const isEditing = !!initialData;
 
@@ -111,9 +113,14 @@ export default function FormDialog({
         setHasUnsavedChanges(hasChanges);
     }, [formValues.chart_of_accounts, initialChartOfAccounts]);
 
-    function onSubmit(data: z.infer<typeof formSchema>) {
-        // console.log(data);
+    // Watch for force_delete error from Inertia page props
+    useEffect(() => {
+        if (errors && (errors as Record<string, string>).force_delete) {
+            setShowForceDeleteDialog(true);
+        }
+    }, [errors]);
 
+    function onSubmit(data: z.infer<typeof formSchema>) {
         if (isEditing) {
             router.patch(`/ppmp-categories/${initialData.id}`, data, {
                 preserveScroll: true,
@@ -123,7 +130,15 @@ export default function FormDialog({
                     setHasUnsavedChanges(false);
                     setOpen(false);
                 },
-                onError: (error) => console.error(error),
+                onError: (submitErrors) => {
+                    if (
+                        submitErrors &&
+                        typeof submitErrors === 'object' &&
+                        'force_delete' in submitErrors
+                    ) {
+                        setShowForceDeleteDialog(true);
+                    }
+                },
                 onFinish: () => setIsLoading(false),
             });
         } else {
@@ -132,10 +147,25 @@ export default function FormDialog({
                 preserveState: true,
                 onStart: () => setIsLoading(true),
                 onSuccess: () => setOpen(false),
-                onError: (error) => console.error(error),
                 onFinish: () => setIsLoading(false),
             });
         }
+    }
+
+    function handleForceSave() {
+        if (!initialData) return;
+        const data = form.getValues();
+        router.patch(`/ppmp-categories/${initialData.id}?force=1`, data, {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setHasUnsavedChanges(false);
+                setShowForceDeleteDialog(false);
+                setOpen(false);
+            },
+            onFinish: () => setIsLoading(false),
+        });
     }
 
     function handleOpenChange(isOpen: boolean) {
@@ -488,6 +518,42 @@ export default function FormDialog({
                             onClick={handleUnsavedConfirm}
                         >
                             Discard Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={showForceDeleteDialog}
+                onOpenChange={setShowForceDeleteDialog}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Remove Chart of Accounts?</DialogTitle>
+                        <DialogDescription>
+                            Some of the chart of accounts you removed have
+                            dependent PPMP price list items. Continuing will
+                            delete those price list items as well. This action
+                            cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowForceDeleteDialog(false);
+                                setOpen(false);
+                            }}
+                            disabled={isLoading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleForceSave}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Saving...' : 'Continue'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
