@@ -23,9 +23,14 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'IOS', href: '#' }];
 interface IosPageProps {
     ios: PaginatedResponse<Ios>;
     salaryGrades: SalaryStandard[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
-export default function IosPage({ ios, salaryGrades }: IosPageProps) {
+export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
     const [selectedData, setSelectedData] = useState<Ios | null>(null);
     const [openForm, setOpenForm] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
@@ -57,22 +62,24 @@ export default function IosPage({ ios, salaryGrades }: IosPageProps) {
             <div className="pt-4">
                 <DataTable
                     columns={columns({
-                        onEdit: handleEdit,
-                        onDelete: handleDelete,
+                        onEdit: can?.edit ? handleEdit : undefined,
+                        onDelete: can?.delete ? handleDelete : undefined,
                     })}
                     data={ios.data}
                     paginationObj={ios}
                     withSearch={true}
                     negativeHeight={10.8}
                 >
-                    <Button
-                        onClick={() => {
-                            setSelectedData(null);
-                            setOpenForm(true);
-                        }}
-                    >
-                        Add IOS
-                    </Button>
+                    {can?.add && (
+                        <Button
+                            onClick={() => {
+                                setSelectedData(null);
+                                setOpenForm(true);
+                            }}
+                        >
+                            Add IOS
+                        </Button>
+                    )}
                 </DataTable>
             </div>
 

@@ -6,8 +6,8 @@ import { Pencil, Trash2 } from 'lucide-react';
 const columnHelper = createColumnHelper<Ios>();
 
 interface ColumnsOptions {
-    onEdit: (data: Ios) => void;
-    onDelete: (data: Ios) => void;
+    onEdit?: (data: Ios) => void;
+    onDelete?: (data: Ios) => void;
 }
 
 const columns = ({ onEdit, onDelete }: ColumnsOptions) => [
@@ -36,28 +36,36 @@ const columns = ({ onEdit, onDelete }: ColumnsOptions) => [
         size: 100,
         cell: (info) => info.getValue(),
     }),
-    columnHelper.display({
-        id: 'action',
-        size: 83,
-        cell: ({ row }) => (
-            <div className="flex items-center gap-1">
-                <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => onEdit(row.original)}
-                >
-                    <Pencil />
-                </Button>
-                <Button
-                    size="icon"
-                    variant="destructive"
-                    onClick={() => onDelete(row.original)}
-                >
-                    <Trash2 />
-                </Button>
-            </div>
-        ),
-    }),
+    ...(onEdit || onDelete
+        ? [
+              columnHelper.display({
+                  id: 'action',
+                  size: 83,
+                  cell: ({ row }) => (
+                      <div className="flex items-center gap-1">
+                          {onEdit && (
+                              <Button
+                                  size="icon"
+                                  variant="outline"
+                                  onClick={() => onEdit(row.original)}
+                              >
+                                  <Pencil />
+                              </Button>
+                          )}
+                          {onDelete && (
+                              <Button
+                                  size="icon"
+                                  variant="destructive"
+                                  onClick={() => onDelete(row.original)}
+                              >
+                                  <Trash2 />
+                              </Button>
+                          )}
+                      </div>
+                  ),
+              }),
+          ]
+        : []),
 ];
 
 export default columns;

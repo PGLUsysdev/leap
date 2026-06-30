@@ -68,7 +68,7 @@ const mainNavItems: NavItem[] = [
         permission: 'sector.view',
     },
     {
-        title: 'Lgu Levels',
+        title: 'LGU Levels',
         href: '/lgu-levels',
         icon: Layers,
         permission: 'lgu-level.view',
@@ -128,19 +128,19 @@ const mainNavItems: NavItem[] = [
         title: 'Salary Standards',
         href: '/salary-standard',
         icon: Scale,
-        // permission: 'cc-strategic-priority.view',
+        permission: 'salary-standard.view',
     },
     {
         title: 'IOS',
         href: '/ios',
         icon: AppWindow,
-        // permission: 'cc-sub-sector.view',
+        permission: 'ios.view',
     },
     {
         title: 'Positions',
         href: '/position',
         icon: Briefcase,
-        // permission: 'cc-sub-sector.view',
+        permission: 'position.view',
     },
     { title: '', href: '', type: 'separator' },
     {
@@ -173,9 +173,26 @@ const mainNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth } = usePage<SharedData>().props;
     const permissions = new Set(auth.permissions ?? []);
-    const filteredNavItems = mainNavItems.filter(
+
+    const allowedItems = mainNavItems.filter(
         (item) => !item.permission || permissions.has(item.permission),
     );
+
+    // const filteredNavItems = mainNavItems.filter(
+    //     (item) => !item.permission || permissions.has(item.permission),
+    // );
+
+    const filteredNavItems = allowedItems.filter((item, index) => {
+        if (item.type === 'separator') {
+            const nextItem = allowedItems[index + 1];
+            // If there's no next item, it's a trailing separator -> remove it
+            // If the next item is also a separator -> remove this duplicate
+            if (!nextItem || nextItem.type === 'separator') {
+                return false;
+            }
+        }
+        return true;
+    });
 
     return (
         <Sidebar collapsible="icon" variant="inset" className="border-r">

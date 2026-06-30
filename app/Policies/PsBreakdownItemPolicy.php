@@ -2,11 +2,11 @@
 
 namespace App\Policies;
 
-use App\Models\Ios;
+use App\Models\PsBreakdownItem;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class IosPolicy
+class PsBreakdownItemPolicy
 {
     /**
      * Determine whether the user can view any models.
@@ -15,13 +15,23 @@ class IosPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('ios.view');
+        return $permissions->contains('ps-breakdown.view');
+    }
+
+    /**
+     * Determine whether the user can export LBP forms.
+     */
+    public function export(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('ps-breakdown.export');
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Ios $ios): bool
+    public function view(User $user, PsBreakdownItem $psBreakdownItem): bool
     {
         return false;
     }
@@ -31,35 +41,29 @@ class IosPolicy
      */
     public function create(User $user): bool
     {
-        $user->loadMissing('role.permissionRoles.permission');
-        $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('ios.add');
+        return false;
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Ios $ios): bool
+    public function update(User $user, PsBreakdownItem $psBreakdownItem): bool
     {
-        $user->loadMissing('role.permissionRoles.permission');
-        $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('ios.edit');
+        return false;
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Ios $ios): bool
+    public function delete(User $user, PsBreakdownItem $psBreakdownItem): bool
     {
-        $user->loadMissing('role.permissionRoles.permission');
-        $permissions = $user->role->permissionRoles->pluck('permission.name');
-        return $permissions->contains('ios.delete');
+        return false;
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Ios $ios): bool
+    public function restore(User $user, PsBreakdownItem $psBreakdownItem): bool
     {
         return false;
     }
@@ -67,8 +71,10 @@ class IosPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, Ios $ios): bool
-    {
+    public function forceDelete(
+        User $user,
+        PsBreakdownItem $psBreakdownItem,
+    ): bool {
         return false;
     }
 }

@@ -231,6 +231,21 @@ const columns = (
                                       </DropdownMenu>
                                   )}
 
+                                  {canGenerateApp && (
+                                      <Button
+                                          variant="outline"
+                                          title="Generate APP"
+                                          size="icon"
+                                          onClick={() => {
+                                              table.options.meta?.onGeneratePdf?.(
+                                                  row.original,
+                                              );
+                                          }}
+                                      >
+                                          <FileText />
+                                      </Button>
+                                  )}
+
                                   {canOpenAip && (
                                       <Button
                                           variant="outline"
@@ -244,21 +259,6 @@ const columns = (
                                           }
                                       >
                                           <ExternalLink />
-                                      </Button>
-                                  )}
-
-                                  {canGenerateApp && (
-                                      <Button
-                                          variant="outline"
-                                          title="Generate APP"
-                                          size="icon"
-                                          onClick={() => {
-                                              table.options.meta?.onGeneratePdf?.(
-                                                  row.original,
-                                              );
-                                          }}
-                                      >
-                                          <FileText />
                                       </Button>
                                   )}
 

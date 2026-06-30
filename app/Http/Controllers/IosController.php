@@ -15,6 +15,8 @@ class IosController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', Ios::class);
+
         $activeYear = \App\Models\FiscalYear::find(
             request()->session()->get('active_fiscal_year_id'),
         );
@@ -36,6 +38,11 @@ class IosController extends Controller
         return Inertia::render('ios/index', [
             'ios' => Ios::query()->paginate(100)->withQueryString(),
             'salaryGrades' => $salaryGrades,
+            'can' => [
+                'add' => request()->user()->can('create', Ios::class),
+                'edit' => request()->user()->can('update', new Ios()),
+                'delete' => request()->user()->can('delete', new Ios()),
+            ],
         ]);
     }
 
@@ -52,6 +59,8 @@ class IosController extends Controller
      */
     public function store(StoreIosRequest $request)
     {
+        $this->authorize('create', Ios::class);
+
         Ios::create($request->validated());
 
         return redirect()->back();
@@ -78,6 +87,8 @@ class IosController extends Controller
      */
     public function update(UpdateIosRequest $request, Ios $ios)
     {
+        $this->authorize('update', $ios);
+
         $ios->update($request->validated());
 
         return redirect()->back();
@@ -88,6 +99,8 @@ class IosController extends Controller
      */
     public function destroy(Ios $ios)
     {
+        $this->authorize('delete', $ios);
+
         $ios->delete();
 
         return redirect()->back();

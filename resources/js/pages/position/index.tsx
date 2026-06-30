@@ -36,6 +36,12 @@ interface PositionPageProps {
     budgetFiscalYear: FiscalYear | null;
     currentStandards: SalaryStandard[];
     budgetStandards: SalaryStandard[];
+    can?: {
+        add: boolean;
+        edit: boolean;
+        delete: boolean;
+        export: boolean;
+    };
 }
 
 export default function PositionPage({
@@ -46,6 +52,7 @@ export default function PositionPage({
     budgetFiscalYear,
     currentStandards,
     budgetStandards,
+    can,
 }: PositionPageProps) {
     const { auth } = usePage<SharedData>().props;
     const userOfficeId = auth.user.office_id;
@@ -95,8 +102,8 @@ export default function PositionPage({
             <div className="pt-4">
                 <DataTable
                     columns={columns({
-                        onEdit: handleEdit,
-                        onDelete: handleDelete,
+                        onEdit: can?.edit ? handleEdit : undefined,
+                        onDelete: can?.delete ? handleDelete : undefined,
                     })}
                     data={positions}
                     // paginationObj={positions}
@@ -105,26 +112,32 @@ export default function PositionPage({
                     negativeHeight={7}
                 >
                     <div className="flex gap-1">
-                        <Button
-                            variant="secondary"
-                            onClick={() => setPdfFormType('permanent')}
-                        >
-                            Generate LBP Form No. 3
-                        </Button>
-                        <Button
-                            variant="secondary"
-                            onClick={() => setPdfFormType('casual')}
-                        >
-                            Generate LBP Form No. 3a
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                setSelectedPosition(null);
-                                setOpenForm(true);
-                            }}
-                        >
-                            Add Position
-                        </Button>
+                        {can?.export && (
+                            <>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setPdfFormType('permanent')}
+                                >
+                                    Generate LBP Form No. 3
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setPdfFormType('casual')}
+                                >
+                                    Generate LBP Form No. 3a
+                                </Button>
+                            </>
+                        )}
+                        {can?.add && (
+                            <Button
+                                onClick={() => {
+                                    setSelectedPosition(null);
+                                    setOpenForm(true);
+                                }}
+                            >
+                                Add Position
+                            </Button>
+                        )}
                     </div>
                 </DataTable>
             </div>

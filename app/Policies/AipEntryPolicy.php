@@ -129,6 +129,13 @@ class AipEntryPolicy
         return $permissions->contains('aip-summary.export');
     }
 
+    public function setPsPool(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('aip-summary.set.ps-pool');
+    }
+
     public function restore(User $user, AipEntry $aipEntry): bool
     {
         return false;

@@ -185,12 +185,7 @@ class PsBreakdownController extends Controller
             ],
             [
                 'ps_amount' => $totalPs,
-                'mooe_amount' => 0,
-                'fe_amount' => 0,
-                'co_amount' => 0,
                 'is_supplemental' => (bool) $saipId,
-                'ccet_adaptation' => 0,
-                'ccet_mitigation' => 0,
             ],
         );
 
@@ -208,6 +203,8 @@ class PsBreakdownController extends Controller
 
     public function index($fiscalYear, $aipEntry)
     {
+        $this->authorize('viewAny', PsBreakdownItem::class);
+
         AipEntry::findOrFail($aipEntry);
         $fy = FiscalYear::findOrFail($fiscalYear);
 
@@ -307,6 +304,11 @@ class PsBreakdownController extends Controller
             'officeId' => $officeId,
             'offices' => \App\Models\Office::all(['id', 'name', 'acronym']),
             'fiscalYears' => \App\Models\FiscalYear::all(['id', 'year']),
+            'can' => [
+                'export' => request()
+                    ->user()
+                    ->can('export', PsBreakdownItem::class),
+            ],
         ]);
     }
 

@@ -15,6 +15,7 @@ use App\Models\Sector;
 use App\Models\LguLevel;
 use App\Models\OfficeType;
 use App\Models\FiscalYear;
+use App\Models\AipEntry;
 use App\Services\PSPoolService;
 
 class PpaController extends Controller
@@ -675,7 +676,7 @@ class PpaController extends Controller
 
     public function setAsPsPool(Ppa $ppa, PSPoolService $poolService)
     {
-        $this->authorize('update', $ppa);
+        $this->authorize('setPsPool', AipEntry::class);
 
         try {
             // Find the current pool before we switch

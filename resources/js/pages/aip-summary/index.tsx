@@ -45,7 +45,12 @@ import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-
 interface AipSummaryTableProps {
     fiscalYear: FiscalYear;
     aipEntries: Ppa[];
-    can: { export: boolean; import: boolean; createSaip: boolean };
+    can: {
+        export: boolean;
+        import: boolean;
+        createSaip: boolean;
+        setPsPool: boolean;
+    };
     fundingSources: FundingSource[];
     ccTypologies: {
         id: number;
@@ -570,6 +575,7 @@ export default function AipSummaryTable({
                     negativeHeight={9.98}
                     meta={{
                         readOnly: currentScope.scope === 'combined',
+                        canSetPsPool: can?.setPsPool ?? false,
                         psPoolPpaId,
                         onSetAsPsPool: handleSetAsPsPool,
                     }}

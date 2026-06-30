@@ -114,6 +114,19 @@ class PermissionSeeder extends Seeder
             'user.show.all',
             'user.show.own',
             'user.view',
+            'salary-standard.view',
+            'ios.view',
+            'ios.add',
+            'ios.edit',
+            'ios.delete',
+            'position.view',
+            'position.add',
+            'position.edit',
+            'position.delete',
+            'position.export',
+            'aip-summary.set.ps-pool',
+            'ps-breakdown.edit',
+            'ps-breakdown.view',
         ];
 
         foreach ($names as $name) {

@@ -174,6 +174,7 @@ export default function AipEntryFormDialog({
     const canEditFunding = data?.can?.editFundingSources ?? false;
     const canEdit = data?.can?.edit ?? false;
     const canViewPpmp = data?.can?.viewPpmp ?? false;
+    const canViewPsBreakdown = data?.can?.viewPsBreakdown ?? false;
 
     const entry =
         data?.aip_entries?.find(
@@ -411,7 +412,7 @@ export default function AipEntryFormDialog({
         ppaFundingSourceId: number | undefined,
         choice: 'MOOE' | 'CO',
     ) => {
-        if (!isEdit || !entry || !canViewPpmp) return;
+        if (!entry || !canViewPpmp) return;
 
         const query: Record<string, any> = {
             choice: choice,
@@ -593,7 +594,7 @@ export default function AipEntryFormDialog({
                 isLoading={isLoading}
                 formId="aip-form"
                 onCancel={cleanupAndClose}
-                submitDisabled={!hasSaveWorthyChanges}
+                submitDisabled={!canEdit || !hasSaveWorthyChanges}
                 submitLabel={isEdit ? 'Save Changes' : 'Add Entry'}
                 submittingLabel="Saving..."
                 className="sm:max-w-[80%]"
@@ -1014,7 +1015,7 @@ export default function AipEntryFormDialog({
                                                                                         )
                                                                                     }
                                                                                     disabled={
-                                                                                        !isEdit ||
+                                                                                        !canEdit ||
                                                                                         !canViewPpmp ||
                                                                                         !watchedSources?.[
                                                                                             index
@@ -1082,7 +1083,7 @@ export default function AipEntryFormDialog({
                                                                                         )
                                                                                     }
                                                                                     disabled={
-                                                                                        !isEdit ||
+                                                                                        !canEdit ||
                                                                                         !canViewPpmp ||
                                                                                         !watchedSources?.[
                                                                                             index
@@ -1287,7 +1288,6 @@ export default function AipEntryFormDialog({
                                                                                             size="icon"
                                                                                             title="Manage PPMP Items"
                                                                                             disabled={
-                                                                                                !isEdit ||
                                                                                                 !canViewPpmp ||
                                                                                                 !watchedSources?.[
                                                                                                     index
@@ -1353,8 +1353,13 @@ export default function AipEntryFormDialog({
                                                                                     type="button"
                                                                                     size="icon"
                                                                                     variant="outline"
-                                                                                    title="PS Breakdown"
+                                                                                    title={
+                                                                                        !canViewPsBreakdown
+                                                                                            ? "You don't have permission to view PS Breakdown"
+                                                                                            : 'PS Breakdown'
+                                                                                    }
                                                                                     disabled={
+                                                                                        !canViewPsBreakdown ||
                                                                                         !watchedSources?.[
                                                                                             index
                                                                                         ]

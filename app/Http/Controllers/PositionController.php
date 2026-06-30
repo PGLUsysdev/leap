@@ -18,6 +18,8 @@ class PositionController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', Position::class);
+
         $currentFiscalYear = FiscalYear::where('status', 'open')->first();
         $budgetFiscalYear = FiscalYear::where('status', 'draft')->first();
 
@@ -41,6 +43,12 @@ class PositionController extends Controller
                     $budgetFiscalYear->id,
                 )->get()
                 : [],
+            'can' => [
+                'add' => request()->user()->can('create', Position::class),
+                'edit' => request()->user()->can('update', new Position()),
+                'delete' => request()->user()->can('delete', new Position()),
+                'export' => request()->user()->can('export', Position::class),
+            ],
         ]);
     }
 

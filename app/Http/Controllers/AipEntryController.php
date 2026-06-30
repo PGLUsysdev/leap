@@ -8,6 +8,7 @@ use App\Models\FiscalYear;
 use App\Models\Ppa;
 use App\Models\Office;
 use App\Models\Ppmp;
+use App\Models\PsBreakdownItem;
 
 use App\Http\Requests\StoreAipEntryRequest;
 use App\Http\Requests\UpdateAipEntryRequest;
@@ -153,6 +154,9 @@ class AipEntryController extends Controller
                             ->user()
                             ->can('viewAny', [Ppmp::class, $aipEntry])
                         : false,
+                    'viewPsBreakdown' => $request
+                        ->user()
+                        ->can('viewAny', PsBreakdownItem::class),
                 ];
 
                 $aipEntries->children->each(function ($child) use (
@@ -201,6 +205,9 @@ class AipEntryController extends Controller
                                 ->user()
                                 ->can('viewAny', [Ppmp::class, $childEntry])
                             : false,
+                        'viewPsBreakdown' => $request
+                            ->user()
+                            ->can('viewAny', PsBreakdownItem::class),
                     ];
 
                     $child->children->each(function ($child2) use (
@@ -257,6 +264,9 @@ class AipEntryController extends Controller
                                         $child2Entry,
                                     ])
                                 : false,
+                            'viewPsBreakdown' => $request
+                                ->user()
+                                ->can('viewAny', PsBreakdownItem::class),
                         ];
 
                         $child2->children->each(function ($child3) use (
@@ -320,6 +330,9 @@ class AipEntryController extends Controller
                                             $child3Entry,
                                         ])
                                     : false,
+                                'viewPsBreakdown' => $request
+                                    ->user()
+                                    ->can('viewAny', PsBreakdownItem::class),
                             ];
                         });
                     });
@@ -474,6 +487,9 @@ class AipEntryController extends Controller
                 'showSummaryAll' => $permissions->contains(
                     'aip-summary.show.all',
                 ),
+                'setPsPool' => request()
+                    ->user()
+                    ->can('setPsPool', AipEntry::class),
             ],
 
             'dialogPpaTree' => Inertia::lazy(function () use (

@@ -19,6 +19,9 @@ interface PsBreakdownProps {
     officeId: number | null;
     offices: never[];
     fiscalYears: never[];
+    can?: {
+        export?: boolean;
+    };
 }
 
 export default function PsBreakdown({
@@ -29,6 +32,7 @@ export default function PsBreakdown({
     rates,
     fiscalYear,
     annualRateMap,
+    can,
 }: PsBreakdownProps) {
     const [openPdfPreview, setOpenPdfPreview] = useState(false);
 
@@ -76,21 +80,26 @@ export default function PsBreakdown({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div className="mb-4 flex gap-2 pt-4">
-                <Button
-                    variant="secondary"
-                    onClick={() => setOpenPdfPreview(true)}
+            <div className="pt-4">
+                <DataTable
+                    data={positions}
+                    columns={psBreakdownCols}
+                    withFooter={true}
+                    withSearch={true}
+                    negativeHeight={7}
                 >
-                    Preview LBP Form No. 2
-                </Button>
+                    <div>
+                        {can?.export && (
+                            <Button
+                                variant="secondary"
+                                onClick={() => setOpenPdfPreview(true)}
+                            >
+                                Preview LBP Form No. 2
+                            </Button>
+                        )}
+                    </div>
+                </DataTable>
             </div>
-            <DataTable
-                data={positions}
-                columns={psBreakdownCols}
-                withFooter={true}
-                withSearch={true}
-                negativeHeight={7}
-            />
 
             <PreviewPdfDialog
                 open={openPdfPreview}

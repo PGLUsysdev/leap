@@ -15,6 +15,8 @@ class SalaryStandardController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', SalaryStandard::class);
+
         return Inertia::render('salary-standard/index', [
             'salaryStandtards' => SalaryStandard::get(),
             'fiscalYears' => FiscalYear::get(),

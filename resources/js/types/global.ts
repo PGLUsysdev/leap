@@ -150,6 +150,7 @@ export interface Ppa {
         move: boolean;
         import: boolean;
         viewPpmp: boolean;
+        viewPsBreakdown: boolean;
         editFundingSources: boolean;
     };
 }

@@ -13,7 +13,9 @@ class PositionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('position.view');
     }
 
     /**
@@ -29,7 +31,9 @@ class PositionPolicy
      */
     public function create(User $user): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('position.add');
     }
 
     /**
@@ -37,7 +41,9 @@ class PositionPolicy
      */
     public function update(User $user, Position $position): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('position.edit');
     }
 
     /**
@@ -45,7 +51,16 @@ class PositionPolicy
      */
     public function delete(User $user, Position $position): bool
     {
-        return false;
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('position.delete');
+    }
+
+    public function export(User $user): bool
+    {
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        return $permissions->contains('position.export');
     }
 
     /**

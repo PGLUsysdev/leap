@@ -345,11 +345,14 @@ const columns = () => {
             size: 154,
             cell: ({ row, table }) => {
                 const isReadOnly = (table.options.meta as any)?.readOnly;
+                const canSetPsPool = (table.options.meta as any)?.canSetPsPool;
                 const can = row.original.can;
                 const canImport = can?.import;
                 const canEdit = can?.edit;
                 const canDelete = can?.delete;
                 const canEditFundingSources = can?.editFundingSources;
+                const canViewPpmp = can?.viewPpmp;
+                const canViewPsBreakdown = can?.viewPsBreakdown;
 
                 if (isReadOnly) {
                     return (
@@ -384,7 +387,12 @@ const columns = () => {
                             onClick={() =>
                                 table.options.meta?.onEdit?.(row.original)
                             }
-                            disabled={!canEdit && !canEditFundingSources}
+                            disabled={
+                                !canEdit &&
+                                !canEditFundingSources &&
+                                !canViewPpmp &&
+                                !canViewPsBreakdown
+                            }
                         >
                             <Pencil />
                         </Button>
@@ -406,14 +414,17 @@ const columns = () => {
                             }
                             disabled={
                                 row.original.type !== 'Program' ||
-                                row.original.is_ps_pool
+                                row.original.is_ps_pool ||
+                                !canSetPsPool
                             }
                             title={
-                                row.original.type !== 'Program'
-                                    ? 'Only Programs can be designated as the PS pool'
-                                    : row.original.is_ps_pool
-                                      ? 'This Program is already the PS pool'
-                                      : 'Designate this Program as the PS pool'
+                                !canSetPsPool
+                                    ? "You don't have permission to set the PS pool"
+                                    : row.original.type !== 'Program'
+                                      ? 'Only Programs can be designated as the PS pool'
+                                      : row.original.is_ps_pool
+                                        ? 'This Program is already the PS pool'
+                                        : 'Designate this Program as the PS pool'
                             }
                         >
                             <ShieldCheck className="h-4 w-4" />
