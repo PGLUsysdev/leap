@@ -58,7 +58,10 @@ export default function PositionPage({
     );
     const [openForm, setOpenForm] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
-    const [openPdfPreview, setOpenPdfPreview] = useState(false);
+    const [pdfFormType, setPdfFormType] = useState<
+        'permanent' | 'casual' | null
+    >(null);
+    const openPdfPreview = pdfFormType !== null;
 
     function handleEdit(data: Position) {
         setSelectedPosition(data);
@@ -104,9 +107,15 @@ export default function PositionPage({
                     <div className="flex gap-1">
                         <Button
                             variant="secondary"
-                            onClick={() => setOpenPdfPreview(true)}
+                            onClick={() => setPdfFormType('permanent')}
                         >
                             Generate LBP Form No. 3
+                        </Button>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setPdfFormType('casual')}
+                        >
+                            Generate LBP Form No. 3a
                         </Button>
                         <Button
                             onClick={() => {
@@ -130,8 +139,17 @@ export default function PositionPage({
 
             <PreviewPdfDialog
                 open={openPdfPreview}
-                onOpenChange={setOpenPdfPreview}
-                positions={officePositions}
+                onOpenChange={(isOpen) => {
+                    if (!isOpen) setPdfFormType(null);
+                }}
+                positions={officePositions.filter(
+                    (p) => p.employment_type === pdfFormType,
+                )}
+                title={
+                    pdfFormType === 'permanent'
+                        ? 'LBP Form No. 3'
+                        : 'LBP Form No. 3a'
+                }
                 currentStandards={currentStandards}
                 budgetStandards={budgetStandards}
                 currentFiscalYear={currentFiscalYear}

@@ -67,7 +67,7 @@ export function CommandSelect<T>({
                 <Button
                     type="button"
                     variant="outline"
-                    className="flex-1 items-center justify-between overflow-hidden"
+                    className="w-1 flex-1 items-center justify-between overflow-hidden"
                     onClick={() => setOpen(true)}
                     disabled={disabled}
                 >

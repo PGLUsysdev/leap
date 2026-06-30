@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FormDialogShell } from '@/components/form-dialog-shell';
+import { CommandSelect } from '@/components/command-select';
 import type { Office, Position, Role, User } from '@/types/global';
 
 const formSchema = z.object({
@@ -233,34 +234,47 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Department / Office
-                                    </FieldLabel>
-                                    <Select
-                                        value={field.value}
-                                        onValueChange={field.onChange}
-                                        disabled={!canEditOffice()}
-                                    >
-                                        <SelectTrigger
-                                            id={field.name}
-                                            aria-invalid={fieldState.invalid}
-                                        >
-                                            <SelectValue placeholder="Select office" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {offices.map((office) => (
-                                                <SelectItem
-                                                    key={office.id}
-                                                    value={String(office.id)}
-                                                >
+                                    <FieldLabel>Department / Office</FieldLabel>
+                                    <CommandSelect<Office>
+                                        value={field.value || null}
+                                        onChange={(value) =>
+                                            field.onChange(
+                                                value ? String(value) : '',
+                                            )
+                                        }
+                                        options={offices.filter(
+                                            (o) => o.parent_id === null,
+                                        )}
+                                        getOptionValue={(office) =>
+                                            String(office.id)
+                                        }
+                                        getOptionSearchText={(office) =>
+                                            `${office.name} ${office.acronym ?? ''}`
+                                        }
+                                        renderTrigger={(office) => (
+                                            <span className="truncate">
+                                                {office.name}
+                                                {office.acronym
+                                                    ? ` (${office.acronym})`
+                                                    : ''}
+                                            </span>
+                                        )}
+                                        renderOption={(office) => (
+                                            <div className="grid w-full grid-cols-[auto_1fr] gap-3">
+                                                <span className="font-medium">
+                                                    {office.acronym || '—'}
+                                                </span>
+                                                <span className="text-muted-foreground">
                                                     {office.name}
-                                                    {office.acronym
-                                                        ? ` (${office.acronym})`
-                                                        : ''}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                                </span>
+                                            </div>
+                                        )}
+                                        placeholder="Select office"
+                                        searchPlaceholder="Search offices..."
+                                        heading="Offices"
+                                        showClear={false}
+                                        disabled={!canEditOffice()}
+                                    />
                                     {fieldState.invalid && (
                                         <FieldError
                                             errors={[fieldState.error]}
@@ -289,17 +303,30 @@ export default function FormDialog({
                                             <SelectValue placeholder="Select position" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {positions.map((position) => (
-                                                <SelectItem
-                                                    key={position.id}
-                                                    value={String(position.id)}
-                                                >
-                                                    {position.item_number}
-                                                    {position.ios
-                                                        ? ` — ${position.ios.class} (SG ${position.ios.salary_grade})`
-                                                        : ''}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="">
+                                                None
+                                            </SelectItem>
+                                            {positions
+                                                .filter(
+                                                    (p) =>
+                                                        p.status !==
+                                                            'occupied' ||
+                                                        p.id ===
+                                                            data?.position_id,
+                                                )
+                                                .map((position) => (
+                                                    <SelectItem
+                                                        key={position.id}
+                                                        value={String(
+                                                            position.id,
+                                                        )}
+                                                    >
+                                                        {position.item_number}
+                                                        {position.ios
+                                                            ? ` — ${position.ios.class} (SG ${position.ios.salary_grade})`
+                                                            : ''}
+                                                    </SelectItem>
+                                                ))}
                                         </SelectContent>
                                     </Select>
                                     {fieldState.invalid && (

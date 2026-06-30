@@ -19,6 +19,7 @@ interface PreviewPdfDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     positions: Position[];
+    title: string;
     currentStandards: SalaryStandard[];
     budgetStandards: SalaryStandard[];
     currentFiscalYear: FiscalYear | null;
@@ -591,6 +592,7 @@ export default function PreviewPdfDialog({
     open,
     onOpenChange,
     positions,
+    title,
     currentStandards,
     budgetStandards,
     currentFiscalYear,
@@ -600,11 +602,9 @@ export default function PreviewPdfDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
                 <DialogHeader>
-                    <DialogTitle className="sr-only">
-                        Plantilla of Personnel PDF Preview
-                    </DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Preview of the Plantilla of Personnel Document.
+                    <DialogTitle>{title} — Plantilla of Personnel</DialogTitle>
+                    <DialogDescription>
+                        Preview of the {title} Plantilla of Personnel Document.
                     </DialogDescription>
                 </DialogHeader>
 

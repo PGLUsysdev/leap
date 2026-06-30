@@ -52,6 +52,7 @@ import {
     exportToPrint,
 } from '@/pages/ppmp/utils/export';
 
+import NewPpmpFormDialog from '@/pages/ppmp/new-ppmp-form-dialog';
 import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-dialog';
 
 interface PpmpPageProps {
@@ -139,6 +140,7 @@ export default function PpmpPage({
         openExpenseAccountSummaryDialog,
         setOpenExpenseAccountSummaryDialog,
     ] = useState(false);
+    const [openNewPpmpForm, setOpenNewPpmpForm] = useState(false);
 
     const activeAipEntry = useMemo(() => {
         if (currentTab === 'original') {
@@ -625,6 +627,14 @@ export default function PpmpPage({
                                         >
                                             <Sheet /> To Excel
                                         </DropdownMenuItem>
+
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                setOpenNewPpmpForm(true)
+                                            }
+                                        >
+                                            <FileText /> New PPMP Form
+                                        </DropdownMenuItem>
                                     </DropdownMenuGroup>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -692,6 +702,11 @@ export default function PpmpPage({
                 aipEntry={activeAipEntry || aipEntry}
                 fundingSource={selectedFundingSource}
                 auth={auth}
+            />
+
+            <NewPpmpFormDialog
+                open={openNewPpmpForm}
+                onOpenChange={setOpenNewPpmpForm}
             />
 
             <DeleteDialog

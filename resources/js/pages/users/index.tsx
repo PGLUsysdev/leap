@@ -31,7 +31,8 @@ export default function UsersIndex({
     positions,
     can,
 }: UsersIndexProps) {
-    console.log({ users, can });
+    // console.log({ users, can });
+    console.log(offices);
 
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [openFormDialog, setOpenFormDialog] = useState(false);

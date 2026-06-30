@@ -36,11 +36,12 @@ class UserController extends Controller
         return Inertia::render('users/index', [
             'users' => $usersQuery->get(),
             'roles' => Role::all(['id', 'name']),
-            'offices' => Office::all(['id', 'name', 'acronym']),
+            'offices' => Office::all(['id', 'name', 'acronym', 'parent_id']),
             'positions' => Position::with('ios:id,class,salary_grade')->get([
                 'id',
                 'item_number',
                 'ios_id',
+                'status',
             ]),
             'can' => [
                 'editAll' => $permissions->contains('user.edit.all'),
