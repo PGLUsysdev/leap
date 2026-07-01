@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { FormDialogShell } from '@/components/form-dialog-shell';
+import { CommandSelect } from '@/components/command-select';
 import type { Ios, Office, Position } from '@/types/global';
 
 const formSchema = z.object({
@@ -39,6 +40,7 @@ interface FormDialogProps {
     data: Position | null;
     offices: Office[];
     iosList: Ios[];
+    userOfficeId?: number | null;
 }
 
 export default function FormDialog({
@@ -47,6 +49,7 @@ export default function FormDialog({
     data,
     offices,
     iosList,
+    userOfficeId,
 }: FormDialogProps) {
     const [submitting, setSubmitting] = useState(false);
 
@@ -54,13 +57,45 @@ export default function FormDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             item_number: '',
-            office_id: '',
+            office_id: data
+                ? String(data.office_id)
+                : userOfficeId
+                  ? String(userOfficeId)
+                  : '',
             ios_id: '',
             employment_type: 'permanent',
             is_funded: 'true',
             status: 'vacant',
         },
     });
+
+    const watchedIosId = form.watch('ios_id');
+    const watchedEmploymentType = form.watch('employment_type');
+
+    const employmentTypeOptions = watchedIosId
+        ? ([
+              { value: 'permanent', label: 'Permanent' },
+              { value: 'contractual', label: 'Contractual' },
+              ...(watchedEmploymentType === 'casual'
+                  ? [{ value: 'casual', label: 'Casual' }]
+                  : []),
+          ] as const)
+        : ([
+              { value: 'permanent', label: 'Permanent' },
+              { value: 'casual', label: 'Casual' },
+              { value: 'contractual', label: 'Contractual' },
+              { value: 'job_order', label: 'Job Order' },
+          ] as const);
+
+    // When casual is selected, auto-set IOS to Laborer I
+    useEffect(() => {
+        if (watchedEmploymentType === 'casual') {
+            const laborerI = iosList.find((ios) => ios.class === 'Laborer I');
+            if (laborerI) {
+                form.setValue('ios_id', String(laborerI.id));
+            }
+        }
+    }, [watchedEmploymentType, iosList, form]);
 
     useEffect(() => {
         if (data) {
@@ -75,14 +110,14 @@ export default function FormDialog({
         } else {
             form.reset({
                 item_number: '',
-                office_id: '',
+                office_id: userOfficeId ? String(userOfficeId) : '',
                 ios_id: '',
                 employment_type: 'permanent',
                 is_funded: 'true',
                 status: 'vacant',
             });
         }
-    }, [data, form]);
+    }, [data, form, userOfficeId]);
 
     function handleSubmit(values: FormValues) {
         setSubmitting(true);
@@ -171,30 +206,37 @@ export default function FormDialog({
                                     <FieldLabel htmlFor={field.name}>
                                         Office
                                     </FieldLabel>
-                                    <Select
-                                        name={field.name}
+                                    <CommandSelect<Office>
                                         value={field.value}
-                                        onValueChange={field.onChange}
-                                    >
-                                        <SelectTrigger
-                                            id={field.name}
-                                            aria-invalid={fieldState.invalid}
-                                        >
-                                            <SelectValue placeholder="Select office" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {offices.map((office) => (
-                                                <SelectItem
-                                                    key={office.id}
-                                                    value={String(office.id)}
-                                                >
-                                                    {office.acronym
-                                                        ? `${office.acronym} — ${office.name}`
-                                                        : office.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        onChange={(value) =>
+                                            field.onChange(value)
+                                        }
+                                        options={offices}
+                                        getOptionValue={(office) =>
+                                            String(office.id)
+                                        }
+                                        getOptionSearchText={(office) =>
+                                            office.name
+                                        }
+                                        renderTrigger={(office) => (
+                                            <span className="truncate">
+                                                {office.acronym
+                                                    ? `${office.acronym} — ${office.name}`
+                                                    : office.name}
+                                            </span>
+                                        )}
+                                        renderOption={(office) => (
+                                            <span>
+                                                {office.acronym
+                                                    ? `${office.acronym} — ${office.name}`
+                                                    : office.name}
+                                            </span>
+                                        )}
+                                        placeholder="Select office"
+                                        searchPlaceholder="Search offices..."
+                                        heading="Offices"
+                                        disabled={!data}
+                                    />
                                     {fieldState.invalid && (
                                         <FieldError
                                             errors={[fieldState.error]}
@@ -212,29 +254,31 @@ export default function FormDialog({
                                     <FieldLabel htmlFor={field.name}>
                                         IOS Classification
                                     </FieldLabel>
-                                    <Select
-                                        name={field.name}
+                                    <CommandSelect<Ios>
                                         value={field.value}
-                                        onValueChange={field.onChange}
-                                    >
-                                        <SelectTrigger
-                                            id={field.name}
-                                            aria-invalid={fieldState.invalid}
-                                        >
-                                            <SelectValue placeholder="Select IOS" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {iosList.map((ios) => (
-                                                <SelectItem
-                                                    key={ios.id}
-                                                    value={String(ios.id)}
-                                                >
-                                                    {ios.class} (SG{' '}
-                                                    {ios.salary_grade})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                        onChange={(value) =>
+                                            field.onChange(value)
+                                        }
+                                        options={iosList}
+                                        getOptionValue={(ios) => String(ios.id)}
+                                        getOptionSearchText={(ios) => ios.class}
+                                        renderTrigger={(ios) => (
+                                            <span className="truncate">
+                                                {ios.class} (SG{' '}
+                                                {ios.salary_grade})
+                                            </span>
+                                        )}
+                                        renderOption={(ios) => (
+                                            <span>
+                                                {ios.class} (SG{' '}
+                                                {ios.salary_grade})
+                                            </span>
+                                        )}
+                                        placeholder="Select IOS"
+                                        searchPlaceholder="Search IOS classifications..."
+                                        heading="IOS Classifications"
+                                        onClear={() => field.onChange('')}
+                                    />
                                     {fieldState.invalid && (
                                         <FieldError
                                             errors={[fieldState.error]}
@@ -264,18 +308,16 @@ export default function FormDialog({
                                             <SelectValue placeholder="Select type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="permanent">
-                                                Permanent
-                                            </SelectItem>
-                                            <SelectItem value="casual">
-                                                Casual
-                                            </SelectItem>
-                                            <SelectItem value="contractual">
-                                                Contractual
-                                            </SelectItem>
-                                            <SelectItem value="job_order">
-                                                Job Order
-                                            </SelectItem>
+                                            {employmentTypeOptions.map(
+                                                (opt) => (
+                                                    <SelectItem
+                                                        key={opt.value}
+                                                        value={opt.value}
+                                                    >
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ),
+                                            )}
                                         </SelectContent>
                                     </Select>
                                     {fieldState.invalid && (

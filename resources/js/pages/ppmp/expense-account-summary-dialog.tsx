@@ -279,9 +279,9 @@ export default function ExpenseAccountSummaryDialog({
                             paddingBottom: 2,
                         }}
                     >
-                        <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
+                        {/*<Text style={{ fontSize: 9, fontWeight: 'bold' }}>
                             {auth.user.name}
-                        </Text>
+                        </Text>*/}
                         <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
                             {fundingSource?.title.toUpperCase()}
                         </Text>

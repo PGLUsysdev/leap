@@ -93,6 +93,12 @@ export default function FormDialog({
         }
     }, [data, form]);
 
+    const watchedOfficeId = form.watch('office_id');
+
+    const officePositions = watchedOfficeId
+        ? positions.filter((p) => p.office_id === Number(watchedOfficeId))
+        : positions;
+
     function canEditOffice() {
         if (editOfficeAll) return true;
         if (editOfficeOwn && data && data.office_id === userOfficeId)
@@ -273,7 +279,7 @@ export default function FormDialog({
                                         searchPlaceholder="Search offices..."
                                         heading="Offices"
                                         showClear={false}
-                                        disabled={!canEditOffice()}
+                                        disabled={true}
                                     />
                                     {fieldState.invalid && (
                                         <FieldError
@@ -306,7 +312,7 @@ export default function FormDialog({
                                             <SelectItem value="">
                                                 None
                                             </SelectItem>
-                                            {positions
+                                            {officePositions
                                                 .filter(
                                                     (p) =>
                                                         p.status !==

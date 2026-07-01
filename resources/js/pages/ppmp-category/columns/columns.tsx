@@ -11,7 +11,9 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
         columnHelper.accessor('name', {
             header: () => <div>Category Name</div>,
             size: 300,
-            cell: (value) => <div className="text-wrap">{value.getValue()}</div>,
+            cell: (value) => (
+                <div className="text-wrap">{value.getValue()}</div>
+            ),
         }),
         columnHelper.accessor('is_non_procurement', {
             header: () => <div>Procurement Type</div>,
@@ -23,7 +25,7 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
             ),
         }),
         columnHelper.accessor('chart_of_accounts', {
-            header: () => <div>Expense Accounts</div>,
+            header: () => <div>Chart of Accounts</div>,
             size: 300,
             cell: ({ getValue }) => (
                 <div className="flex flex-wrap gap-2">
@@ -46,7 +48,9 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
                             <Button
                                 size="icon"
                                 variant="outline"
-                                onClick={() => table.options.meta?.onEdit?.(row.original)}
+                                onClick={() =>
+                                    table.options.meta?.onEdit?.(row.original)
+                                }
                             >
                                 <Pencil />
                             </Button>
@@ -56,7 +60,9 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
                             <Button
                                 size="icon"
                                 variant="destructive"
-                                onClick={() => table.options.meta?.onDelete?.(row.original)}
+                                onClick={() =>
+                                    table.options.meta?.onDelete?.(row.original)
+                                }
                             >
                                 <Trash />
                             </Button>

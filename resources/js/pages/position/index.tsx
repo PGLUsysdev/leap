@@ -105,7 +105,7 @@ export default function PositionPage({
                         onEdit: can?.edit ? handleEdit : undefined,
                         onDelete: can?.delete ? handleDelete : undefined,
                     })}
-                    data={positions}
+                    data={officePositions}
                     // paginationObj={positions}
                     withSearch={true}
                     onEdit={handleEdit}
@@ -148,6 +148,7 @@ export default function PositionPage({
                 data={selectedPosition}
                 offices={offices}
                 iosList={iosList}
+                userOfficeId={userOfficeId}
             />
 
             <PreviewPdfDialog

@@ -22,6 +22,13 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Salary Standards', href: '#' },
 ];
 
+const TRANCHE_MAP: Record<number, string> = {
+    2024: 'First Tranche',
+    2025: 'Second Tranche',
+    2026: 'Third Tranche',
+    2027: 'Fourth Tranche',
+};
+
 interface SalaryStandardProps {
     salaryStandtards: SalaryStandard[];
     fiscalYears: FiscalYear[];
@@ -37,6 +44,13 @@ export default function SalaryStandard({
     const [selectedFiscalYearId, setSelectedFiscalYearId] = useState<number>(
         activeFiscalYear?.id ?? fiscalYears[0]?.id,
     );
+
+    const selectedFiscalYear = fiscalYears.find(
+        (fy) => fy.id === selectedFiscalYearId,
+    );
+    const trancheLabel = selectedFiscalYear
+        ? TRANCHE_MAP[selectedFiscalYear.year]
+        : null;
 
     const filteredStandards = useMemo(
         () =>
@@ -123,31 +137,47 @@ export default function SalaryStandard({
                     columns={columns}
                     data={matrixData}
                     withSearch={true}
-                    negativeHeight={7}
+                    negativeHeight={8}
                 >
-                    <Select
-                        value={String(selectedFiscalYearId)}
-                        onValueChange={(value) =>
-                            setSelectedFiscalYearId(Number(value))
-                        }
-                    >
-                        <SelectTrigger className="w-full max-w-48">
-                            <SelectValue placeholder="Select Fiscal Year" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectLabel>Fiscal Years</SelectLabel>
-                                {fiscalYears.map((fy) => (
-                                    <SelectItem
-                                        key={fy.id}
-                                        value={String(fy.id)}
-                                    >
-                                        {fy.year}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-lg font-semibold whitespace-nowrap">
+                                Salary Standards
+                                {selectedFiscalYear &&
+                                    ` — ${selectedFiscalYear.year}`}
+                                {trancheLabel && ` (${trancheLabel})`}
+                            </h2>
+                        </div>
+                        <Select
+                            value={String(selectedFiscalYearId)}
+                            onValueChange={(value) =>
+                                setSelectedFiscalYearId(Number(value))
+                            }
+                        >
+                            <SelectTrigger className="w-full max-w-48">
+                                <SelectValue placeholder="Select Fiscal Year" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Fiscal Years</SelectLabel>
+                                    {fiscalYears.map((fy) => (
+                                        <SelectItem
+                                            key={fy.id}
+                                            value={String(fy.id)}
+                                        >
+                                            {fy.year}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                        <span>2024 — First Tranche</span>
+                        <span>2025 — Second Tranche</span>
+                        <span>2026 — Third Tranche</span>
+                        <span>2027 — Fourth Tranche</span>
+                    </div>
                 </DataTable>
             </div>
         </AppLayout>

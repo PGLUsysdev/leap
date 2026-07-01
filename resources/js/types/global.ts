@@ -462,6 +462,14 @@ export interface DashboardCcExpenditure {
     mitigation: number;
 }
 
+export interface DashboardCoaBudget {
+    id: number;
+    account_number: string;
+    account_title: string;
+    expense_class: string;
+    value: number;
+}
+
 export interface PlantillaPosition {
     id: number;
     office_id: number;

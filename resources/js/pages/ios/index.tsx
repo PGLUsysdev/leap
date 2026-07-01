@@ -18,7 +18,9 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'IOS', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'Index of Occupational Services', href: '#' },
+];
 
 interface IosPageProps {
     ios: PaginatedResponse<Ios>;

@@ -498,7 +498,7 @@ const MyDocument = ({
                                             style={styles.tableCellLeft}
                                             wrap={false}
                                         >
-                                            {pos.user?.name ?? '—'}
+                                            {pos.user?.name ?? 'Vacant'}
                                         </Text>
                                     </View>
                                     <View

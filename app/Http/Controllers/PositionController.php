@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\PsBreakdownController;
 use App\Models\FiscalYear;
 use App\Models\Ios;
 use App\Models\Office;
@@ -57,7 +58,12 @@ class PositionController extends Controller
      */
     public function store(StorePositionRequest $request)
     {
-        Position::create($request->validated());
+        $position = Position::create($request->validated());
+
+        $officeId = $request->validated()['office_id'] ?? null;
+        if ($officeId) {
+            PsBreakdownController::recalculateOfficePsAmounts((int) $officeId);
+        }
 
         return redirect()->back();
     }
@@ -68,6 +74,8 @@ class PositionController extends Controller
     public function update(UpdatePositionRequest $request, Position $position)
     {
         $position->update($request->validated());
+
+        PsBreakdownController::recalculateOfficePsAmounts($position->office_id);
 
         return redirect()->back();
     }
@@ -83,7 +91,10 @@ class PositionController extends Controller
             'step' => null,
         ]);
 
+        $officeId = $position->office_id;
         $position->delete();
+
+        PsBreakdownController::recalculateOfficePsAmounts($officeId);
 
         return redirect()->back();
     }

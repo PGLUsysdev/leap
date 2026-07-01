@@ -606,7 +606,7 @@ export default function AipSummaryTable({
                                         </div>
                                     </DropdownMenuItem>
 
-                                    <DropdownMenuItem
+                                    {/*<DropdownMenuItem
                                         onClick={handleExportToExcel}
                                     >
                                         <div className="flex items-center">
@@ -616,7 +616,7 @@ export default function AipSummaryTable({
                                                 Export to Excel
                                             </span>
                                         </div>
-                                    </DropdownMenuItem>
+                                    </DropdownMenuItem>*/}
 
                                     <DropdownMenuItem
                                         onClick={() =>

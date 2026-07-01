@@ -69,19 +69,22 @@ const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
                 </div>
             ),
         }),
-        columnHelper.accessor('chart_of_account_ppmp_category.ppmp_category.name', {
-            header: 'PPMP Category',
-            size: 180,
-            cell: (value) => (
-                <div className="leading-tight whitespace-normal">
-                    {value.getValue()}
-                </div>
-            ),
-        }),
+        columnHelper.accessor(
+            'chart_of_account_ppmp_category.ppmp_category.name',
+            {
+                header: 'PPMP Category',
+                size: 180,
+                cell: (value) => (
+                    <div className="leading-tight whitespace-normal">
+                        {value.getValue()}
+                    </div>
+                ),
+            },
+        ),
         columnHelper.accessor(
             'chart_of_account_ppmp_category.chart_of_account.account_title',
             {
-                header: 'Expense Account',
+                header: 'Chart of Account',
                 size: 250,
                 cell: (value) => (
                     <div className="wrap-break-words text-xs leading-tight whitespace-normal text-muted-foreground">
@@ -103,7 +106,9 @@ const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
                             <Button
                                 size="icon"
                                 variant="outline"
-                                onClick={() => table.options.meta?.onEdit?.(row.original)}
+                                onClick={() =>
+                                    table.options.meta?.onEdit?.(row.original)
+                                }
                             >
                                 <Pencil className="h-4 w-4" />
                             </Button>
@@ -113,7 +118,9 @@ const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
                             <Button
                                 size="icon"
                                 variant="destructive"
-                                onClick={() => table.options.meta?.onDelete?.(row.original)}
+                                onClick={() =>
+                                    table.options.meta?.onDelete?.(row.original)
+                                }
                             >
                                 <Trash className="h-4 w-4" />
                             </Button>

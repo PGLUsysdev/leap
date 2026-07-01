@@ -332,19 +332,7 @@ export default function AipEntryFormDialog({
     const cleanupNewSources = async () => {
         if (!isEdit || !canEditFunding || !entry) return;
 
-        const currentIds = new Set(
-            (form.getValues().ppa_funding_sources || [])
-                .filter((s: any) => s.id != null)
-                .map((s: any) => s.id as number),
-        );
-
-        const added = [...currentIds].filter(
-            (id) => !baselineSourceIds.current.has(id),
-        );
-
-        const toDelete = [
-            ...new Set([...added, ...removedNewSourceIds.current]),
-        ];
+        const toDelete = [...new Set([...removedNewSourceIds.current])];
 
         if (toDelete.length === 0) return;
 

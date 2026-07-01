@@ -72,6 +72,37 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row' },
     centered: { justifyContent: 'center', alignItems: 'center' },
     flex1: { flex: 1 },
+    footerSection: {
+        marginTop: 20,
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    certText: {
+        fontSize: 8,
+        width: '40%',
+        fontStyle: 'italic',
+        lineHeight: 1.4,
+    },
+    signatureWrapper: {
+        width: '60%',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 20, // Space between the two signatories
+    },
+    sigBlock: {
+        alignItems: 'center',
+        width: '100%',
+    },
+    sigName: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        textDecoration: 'underline',
+        textTransform: 'uppercase',
+    },
+    sigTitle: {
+        fontSize: 9,
+        marginTop: 2,
+    },
 });
 
 const formatNumber = (value: number | string | undefined) => {
@@ -1661,6 +1692,40 @@ const MyDocument = ({
                                         </Text>
                                     </View>
                                 </View>
+
+                                <View style={styles.footerSection} wrap={false}>
+                                    {/* Left Side: Certification */}
+                                    <View style={styles.certText}>
+                                        <Text>
+                                            This is to certify that the above
+                                            procurement plan is in accordance
+                                            with the objective of this Office.
+                                        </Text>
+                                    </View>
+
+                                    {/* Right Side: Signatories */}
+                                    <View style={styles.signatureWrapper}>
+                                        {/* Signatory 1 */}
+                                        <View style={styles.sigBlock}>
+                                            <Text style={styles.sigName}>
+                                                ____________________________
+                                            </Text>
+                                            <Text style={styles.sigTitle}>
+                                                Head of Office / Department Head
+                                            </Text>
+                                        </View>
+
+                                        {/* Signatory 2 */}
+                                        <View style={styles.sigBlock}>
+                                            <Text style={styles.sigName}>
+                                                ____________________________
+                                            </Text>
+                                            <Text style={styles.sigTitle}>
+                                                Provincial Governor
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
                             </>
                         );
                     })()}
@@ -1697,8 +1762,11 @@ export default function PdfPreviewDialog({
     canGenerateAppAll,
 }: PdfPreviewDialogProps) {
     const [isReloading, setIsReloading] = useState(false);
-    const defaultOfficeId = canGenerateAppAll ? 'all' : String(auth.user.office_id ?? '');
-    const [selectedOfficeId, setSelectedOfficeId] = useState<string>(defaultOfficeId);
+    const defaultOfficeId = canGenerateAppAll
+        ? 'all'
+        : String(auth.user.office_id ?? '');
+    const [selectedOfficeId, setSelectedOfficeId] =
+        useState<string>(defaultOfficeId);
 
     const handleOfficeChange = (officeId: string) => {
         if (!fiscalYear) return;
@@ -1712,7 +1780,8 @@ export default function PdfPreviewDialog({
     };
 
     const getOfficeLabel = () => {
-        if (!canGenerateAppAll) return `${auth.user.office?.name || 'My Office'}`;
+        if (!canGenerateAppAll)
+            return `${auth.user.office?.name || 'My Office'}`;
 
         if (selectedOfficeId === 'all') {
             const mainOffice = offices.find((o) => o.id === 1);

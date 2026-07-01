@@ -88,7 +88,7 @@ export default function PsBreakdown({
                     withSearch={true}
                     negativeHeight={7}
                 >
-                    <div>
+                    {/*<div>
                         {can?.export && (
                             <Button
                                 variant="secondary"
@@ -97,7 +97,7 @@ export default function PsBreakdown({
                                 Preview LBP Form No. 2
                             </Button>
                         )}
-                    </div>
+                    </div>*/}
                 </DataTable>
             </div>
 

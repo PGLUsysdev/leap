@@ -81,24 +81,27 @@ const columns = () => {
                             <span className="text-[10px] font-bold text-muted-foreground uppercase">
                                 {ppa.type}
                             </span>
-                            <span
-                                className={`wrap-break-words leading-tight whitespace-normal ${
-                                    ppa.depth === 0
-                                        ? 'font-bold'
-                                        : 'font-medium'
-                                }`}
-                            >
-                                {ppa.name}
-                            </span>
-                            {ppa.is_ps_pool && (
-                                <Badge
-                                    variant="default"
-                                    className="mt-0.5 w-fit bg-emerald-600 text-[10px] text-white"
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <span
+                                    className={`wrap-break-words leading-tight whitespace-normal ${
+                                        ppa.depth === 0
+                                            ? 'font-bold'
+                                            : 'font-medium'
+                                    }`}
                                 >
-                                    <ShieldCheck className="mr-0.5 h-3 w-3" />
-                                    PS Pool
-                                </Badge>
-                            )}
+                                    {ppa.name}
+                                </span>
+
+                                {ppa.is_ps_pool && (
+                                    <Badge
+                                        variant="default"
+                                        title="PS Pool" /* Added title for accessibility on hover */
+                                        className="h-fit w-fit min-w-0 bg-emerald-600 p-1 text-white"
+                                    >
+                                        <ShieldCheck className="h-3.5 w-3.5" />
+                                    </Badge>
+                                )}
+                            </div>
                         </div>
                     </div>
                 );

@@ -9,6 +9,7 @@ use App\Models\Position;
 use App\Models\PpaFundingSource;
 use App\Models\PsBreakdownItem;
 use App\Models\PsRate;
+use App\Models\Ppa;
 use App\Models\SalaryStandard;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -199,6 +200,31 @@ class PsBreakdownController extends Controller
                 fn($q) => $q->whereNull('supplemental_aip_id'),
             )
             ->update(['ps_amount' => 0]);
+    }
+
+    /**
+     * Recalculate PS amounts for all PS Pool PPAs in the given office.
+     * Called automatically when positions or user assignments change.
+     */
+    public static function recalculateOfficePsAmounts(int $officeId): void
+    {
+        $draftYear = FiscalYear::where('status', 'draft')->first();
+        if (!$draftYear) {
+            return;
+        }
+
+        $psPoolPpa = \App\Models\Ppa::where('office_id', $officeId)
+            ->where('fiscal_year_id', $draftYear->id)
+            ->where('is_ps_pool', true)
+            ->first();
+
+        if (!$psPoolPpa) {
+            return;
+        }
+
+        foreach ($psPoolPpa->aipEntries as $entry) {
+            self::syncPoolPsAmount($entry);
+        }
     }
 
     public function index($fiscalYear, $aipEntry)

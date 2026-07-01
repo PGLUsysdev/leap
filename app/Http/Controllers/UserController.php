@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\PsBreakdownController;
 use Illuminate\Support\Facades\Request;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
@@ -41,6 +42,7 @@ class UserController extends Controller
                 'id',
                 'item_number',
                 'ios_id',
+                'office_id',
                 'status',
             ]),
             'can' => [
@@ -143,6 +145,36 @@ class UserController extends Controller
                 Position::where('id', $newPositionId)->update([
                     'status' => 'occupied',
                 ]);
+            }
+        }
+
+        // Recalculate PS amounts if position changed
+        if ($oldPositionId !== $newPositionId) {
+            if ($oldPositionId) {
+                $oldPosition = Position::find($oldPositionId);
+                if ($oldPosition) {
+                    PsBreakdownController::recalculateOfficePsAmounts(
+                        $oldPosition->office_id,
+                    );
+                }
+            }
+            if ($newPositionId) {
+                $newPosition = Position::find($newPositionId);
+                if ($newPosition) {
+                    PsBreakdownController::recalculateOfficePsAmounts(
+                        $newPosition->office_id,
+                    );
+                }
+            }
+        }
+
+        // Also recalculate if step changed (same position, different step)
+        if (array_key_exists('step', $data) && $user->position_id) {
+            $pos = Position::find($user->position_id);
+            if ($pos) {
+                PsBreakdownController::recalculateOfficePsAmounts(
+                    $pos->office_id,
+                );
             }
         }
 

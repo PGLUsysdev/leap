@@ -28,6 +28,7 @@ import type {
     DashboardTypeCount,
     DashboardNameCount,
     DashboardCcExpenditure,
+    DashboardCoaBudget,
     FiscalYear,
 } from '@/types/global';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -88,6 +89,7 @@ interface DashboardPageProps {
     topOfficesByBudget: DashboardLabelValue[];
     ppaCountPerOffice: DashboardNameCount[];
     ccExpenditure: DashboardCcExpenditure | null;
+    coaBudget: DashboardCoaBudget[];
 }
 
 export default function Dashboard() {
@@ -142,9 +144,8 @@ export default function Dashboard() {
                         <CcExpenditureChart data={props.ccExpenditure} />
                     </div>
 
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        <TopOfficesChart data={props.topOfficesByBudget} />
-                        <PpaPerOfficeChart data={props.ppaCountPerOffice} />
+                    <div className="grid gap-4">
+                        <CoaBudgetChart data={props.coaBudget} />
                     </div>
                 </div>
 
@@ -179,8 +180,8 @@ function SummaryCards({ stats }: { stats: DashboardStats }) {
             bg: 'bg-amber-50 dark:bg-amber-950/30',
         },
         {
-            title: 'Offices / Users',
-            value: `${formatNumber(stats.totalOffices)} / ${formatNumber(stats.totalUsers)}`,
+            title: 'Total Users',
+            value: formatNumber(stats.totalUsers),
             icon: Building2,
             color: 'text-purple-500',
             bg: 'bg-purple-50 dark:bg-purple-950/30',
@@ -218,8 +219,6 @@ function SummaryCards({ stats }: { stats: DashboardStats }) {
 }
 
 function ExpenseClassChart({ data }: { data: DashboardExpenseClass | null }) {
-    if (!data) return null;
-
     const chartData = [
         { name: 'PS', value: data.ps, fill: EXPENSE_CLASS_COLORS.ps },
         { name: 'MOOE', value: data.mooe, fill: EXPENSE_CLASS_COLORS.mooe },
@@ -274,8 +273,6 @@ function ExpenseClassChart({ data }: { data: DashboardExpenseClass | null }) {
 }
 
 function FundingSourceChart({ data }: { data: DashboardLabelValue[] }) {
-    if (!data.length) return null;
-
     const total = data.reduce((sum, d) => sum + d.value, 0);
 
     return (
@@ -325,8 +322,6 @@ function FundingSourceChart({ data }: { data: DashboardLabelValue[] }) {
 }
 
 function PpaTypeChart({ data }: { data: DashboardTypeCount[] }) {
-    if (!data.length) return null;
-
     const chartData = data.map((d) => ({
         type: d.type,
         count: d.count,
@@ -365,8 +360,6 @@ function PpaTypeChart({ data }: { data: DashboardTypeCount[] }) {
 }
 
 function CcExpenditureChart({ data }: { data: DashboardCcExpenditure | null }) {
-    if (!data) return null;
-
     const chartData = [
         {
             name: 'Adaptation',
@@ -477,6 +470,76 @@ function TopOfficesChart({ data }: { data: DashboardLabelValue[] }) {
                                 />
                             ))}
                         </Bar>
+                    </BarChart>
+                </ChartContainer>
+            </CardContent>
+        </Card>
+    );
+}
+
+function CoaBudgetChart({ data }: { data: DashboardCoaBudget[] }) {
+    const EXPENSE_CLASS_ORDER: Record<string, number> = {
+        ps: 0,
+        mooe: 1,
+        fe: 2,
+        co: 3,
+    };
+
+    const sortedData = [...data].sort(
+        (a, b) =>
+            (EXPENSE_CLASS_ORDER[a.expense_class] ?? 99) -
+            (EXPENSE_CLASS_ORDER[b.expense_class] ?? 99),
+    );
+
+    const chartData = sortedData.map((item) => ({
+        name: item.account_title,
+        value: item.value,
+        fill: EXPENSE_CLASS_COLORS[item.expense_class] ?? '#6b7280',
+    }));
+
+    const config = sortedData.reduce(
+        (acc, item) => {
+            acc[item.account_title] = {
+                label: `${item.account_number} - ${item.account_title}`,
+                color: EXPENSE_CLASS_COLORS[item.expense_class] ?? '#6b7280',
+            };
+            return acc;
+        },
+        {} as Record<string, { label: string; color: string }>,
+    );
+
+    return (
+        <Card className="lg:col-span-2">
+            <CardHeader>
+                <CardTitle>Budget by Account</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer config={config} className="aspect-[3/1]">
+                    <BarChart data={chartData}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                            dataKey="name"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                        />
+                        <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v) =>
+                                `₱${(v / 1000000).toFixed(1)}M`
+                            }
+                        />
+                        <ChartTooltip
+                            content={
+                                <ChartTooltipContent
+                                    formatter={(value: unknown) =>
+                                        formatCurrency(Number(value))
+                                    }
+                                />
+                            }
+                        />
+                        <Bar dataKey="value" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>

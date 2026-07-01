@@ -9,6 +9,7 @@ use App\Models\Ppmp;
 use App\Models\Office;
 use App\Models\User;
 use App\Models\PpaFundingSource;
+
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,6 +18,19 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $draftYear = FiscalYear::where('status', 'draft')->first();
+        $officeId = $request->user()?->office_id;
+
+        // Include sub-offices (children)
+        $officeIds = [];
+        if ($officeId) {
+            $office = Office::with('children')->find($officeId);
+            $officeIds = [$officeId];
+            if ($office && $office->children->isNotEmpty()) {
+                foreach ($office->children as $child) {
+                    $officeIds[] = $child->id;
+                }
+            }
+        }
 
         $totalBudget = 0;
         $totalPpas = 0;
@@ -26,29 +40,60 @@ class DashboardController extends Controller
         $topOfficesByBudget = collect();
         $ppaCountPerOffice = collect();
         $ccExpenditure = null;
+        $coaBudget = collect();
 
         if ($draftYear) {
             $totalBudget = PpaFundingSource::where('is_supplemental', false)
-                ->whereHas('aipEntry.ppa', function ($q) use ($draftYear) {
-                    $q->where('fiscal_year_id', $draftYear->id);
+                ->whereHas('aipEntry.ppa', function ($q) use (
+                    $draftYear,
+                    $officeId,
+                    $officeIds,
+                ) {
+                    $q->where('fiscal_year_id', $draftYear->id)->when(
+                        !empty($officeIds),
+                        fn($q) => $q->whereIn('office_id', $officeIds),
+                    );
                 })
                 ->selectRaw(
                     'COALESCE(SUM(ps_amount + mooe_amount + fe_amount + co_amount), 0) as total',
                 )
                 ->value('total');
 
-            $totalPpas = Ppa::where('fiscal_year_id', $draftYear->id)->count();
+            $totalPpas = Ppa::where('fiscal_year_id', $draftYear->id)
+                ->when(
+                    !empty($officeIds),
+                    fn($q) => $q->whereIn('office_id', $officeIds),
+                )
+                ->count();
+
+            // Compute PS total from salary standards (across all offices)
+            $computedPsTotal = 0;
+            if (!empty($officeIds)) {
+                foreach ($officeIds as $oid) {
+                    $psTotals = PsBreakdownController::computePsCoaTotalsForOffice(
+                        $oid,
+                        $draftYear->id,
+                    );
+                    $computedPsTotal += array_sum($psTotals);
+                }
+            }
 
             $expenseClassBudget = PpaFundingSource::where(
                 'is_supplemental',
                 false,
             )
-                ->whereHas('aipEntry.ppa', function ($q) use ($draftYear) {
-                    $q->where('fiscal_year_id', $draftYear->id);
+                ->whereHas('aipEntry.ppa', function ($q) use (
+                    $draftYear,
+                    $officeId,
+                    $officeIds,
+                ) {
+                    $q->where('fiscal_year_id', $draftYear->id)->when(
+                        !empty($officeIds),
+                        fn($q) => $q->whereIn('office_id', $officeIds),
+                    );
                 })
                 ->selectRaw(
                     '
-                    COALESCE(SUM(ps_amount), 0) as ps,
                     COALESCE(SUM(mooe_amount), 0) as mooe,
                     COALESCE(SUM(fe_amount), 0) as fe,
                     COALESCE(SUM(co_amount), 0) as co
@@ -60,8 +105,15 @@ class DashboardController extends Controller
                 'is_supplemental',
                 false,
             )
-                ->whereHas('aipEntry.ppa', function ($q) use ($draftYear) {
-                    $q->where('fiscal_year_id', $draftYear->id);
+                ->whereHas('aipEntry.ppa', function ($q) use (
+                    $draftYear,
+                    $officeId,
+                    $officeIds,
+                ) {
+                    $q->where('fiscal_year_id', $draftYear->id)->when(
+                        !empty($officeIds),
+                        fn($q) => $q->whereIn('office_id', $officeIds),
+                    );
                 })
                 ->selectRaw(
                     'funding_source_id, SUM(ps_amount + mooe_amount + fe_amount + co_amount) as total',
@@ -71,6 +123,10 @@ class DashboardController extends Controller
                 ->get();
 
             $ppaTypeDistribution = Ppa::where('fiscal_year_id', $draftYear->id)
+                ->when(
+                    !empty($officeIds),
+                    fn($q) => $q->whereIn('office_id', $officeIds),
+                )
                 ->selectRaw('type, COUNT(*) as count')
                 ->groupBy('type')
                 ->get();
@@ -108,8 +164,15 @@ class DashboardController extends Controller
                 ->get();
 
             $ccExpenditure = PpaFundingSource::where('is_supplemental', false)
-                ->whereHas('aipEntry.ppa', function ($q) use ($draftYear) {
-                    $q->where('fiscal_year_id', $draftYear->id);
+                ->whereHas('aipEntry.ppa', function ($q) use (
+                    $draftYear,
+                    $officeId,
+                    $officeIds,
+                ) {
+                    $q->where('fiscal_year_id', $draftYear->id)->when(
+                        !empty($officeIds),
+                        fn($q) => $q->whereIn('office_id', $officeIds),
+                    );
                 })
                 ->selectRaw(
                     '
@@ -118,11 +181,135 @@ class DashboardController extends Controller
                 ',
                 )
                 ->first();
+
+            // PS COA amounts from computed salary standards (across all offices)
+            $psTotals = [];
+            if (!empty($officeIds)) {
+                foreach ($officeIds as $oid) {
+                    $officePsTotals = PsBreakdownController::computePsCoaTotalsForOffice(
+                        $oid,
+                        $draftYear->id,
+                    );
+                    foreach ($officePsTotals as $acct => $amt) {
+                        $psTotals[$acct] = ($psTotals[$acct] ?? 0) + $amt;
+                    }
+                }
+            }
+
+            $psCoaBudget = collect();
+            if (!empty($psTotals)) {
+                $coas = \App\Models\ChartOfAccount::whereIn(
+                    'account_number',
+                    array_keys($psTotals),
+                )
+                    ->where('expense_class', 'PS')
+                    ->get()
+                    ->keyBy('account_number');
+
+                foreach ($psTotals as $accountNumber => $total) {
+                    $coa = $coas->get($accountNumber);
+                    if ($coa && $total > 0) {
+                        $psCoaBudget->push(
+                            (object) [
+                                'id' => $coa->id,
+                                'account_number' => $coa->account_number,
+                                'account_title' => $coa->account_title,
+                                'expense_class' => 'ps',
+                                'total' => $total,
+                            ],
+                        );
+                    }
+                }
+            }
+
+            // MOOE/CO/FE COA amounts from PPMP procurement data
+            $mooeCoBudget = collect();
+            if ($draftYear && !empty($officeIds)) {
+                $ppmpTotals = \App\Models\Ppmp::whereHas(
+                    'ppaFundingSource.aipEntry.ppa',
+                    function ($q) use ($draftYear, $officeIds) {
+                        $q->where('fiscal_year_id', $draftYear->id)->when(
+                            !empty($officeIds),
+                            fn($q) => $q->whereIn('office_id', $officeIds),
+                        );
+                    },
+                )
+                    ->join(
+                        'ppmp_price_lists',
+                        'ppmps.ppmp_price_list_id',
+                        '=',
+                        'ppmp_price_lists.id',
+                    )
+                    ->join(
+                        'chart_of_account_ppmp_categories',
+                        'ppmp_price_lists.chart_of_account_ppmp_category_id',
+                        '=',
+                        'chart_of_account_ppmp_categories.id',
+                    )
+                    ->join(
+                        'chart_of_accounts',
+                        'chart_of_account_ppmp_categories.chart_of_account_id',
+                        '=',
+                        'chart_of_accounts.id',
+                    )
+                    ->whereIn('chart_of_accounts.expense_class', [
+                        'MOOE',
+                        'CO',
+                        'FE',
+                    ])
+                    ->selectRaw(
+                        '
+                        chart_of_accounts.id,
+                        chart_of_accounts.account_number,
+                        chart_of_accounts.account_title,
+                        chart_of_accounts.expense_class,
+                        COALESCE(SUM(ppmps.jan_amount + ppmps.feb_amount + ppmps.mar_amount + ppmps.apr_amount + ppmps.may_amount + ppmps.jun_amount + ppmps.jul_amount + ppmps.aug_amount + ppmps.sep_amount + ppmps.oct_amount + ppmps.nov_amount + ppmps.dec_amount), 0) as total
+                    ',
+                    )
+                    ->groupBy(
+                        'chart_of_accounts.id',
+                        'chart_of_accounts.account_number',
+                        'chart_of_accounts.account_title',
+                        'chart_of_accounts.expense_class',
+                    )
+                    ->get();
+
+                foreach ($ppmpTotals as $item) {
+                    if ((float) $item->total > 0) {
+                        $mooeCoBudget->push(
+                            (object) [
+                                'id' => $item->id,
+                                'account_number' => $item->account_number,
+                                'account_title' => $item->account_title,
+                                'expense_class' => strtolower(
+                                    $item->expense_class,
+                                ),
+                                'total' => (float) $item->total,
+                            ],
+                        );
+                    }
+                }
+            }
+
+            $coaBudget = $psCoaBudget->concat($mooeCoBudget);
         }
 
         $totalPriceListItems = PpmpPriceList::count();
 
         $totalProcurement = Ppmp::query()
+            ->whereHas('ppaFundingSource.aipEntry.ppa', function ($q) use (
+                $draftYear,
+                $officeId,
+                $officeIds,
+            ) {
+                $q->when(
+                    $draftYear,
+                    fn($q) => $q->where('fiscal_year_id', $draftYear->id),
+                )->when(
+                    !empty($officeIds),
+                    fn($q) => $q->whereIn('office_id', $officeIds),
+                );
+            })
             ->selectRaw(
                 '
                 COALESCE(SUM(jan_amount), 0) +
@@ -142,7 +329,10 @@ class DashboardController extends Controller
             ->value('total');
 
         $totalOffices = Office::count();
-        $totalUsers = User::count();
+        $totalUsers = User::when(
+            !empty($officeIds),
+            fn($q) => $q->whereIn('office_id', $officeIds),
+        )->count();
 
         return Inertia::render('dashboard', [
             'draftYear' => $draftYear,
@@ -156,7 +346,7 @@ class DashboardController extends Controller
             ],
             'expenseClassBudget' => $expenseClassBudget
                 ? [
-                    'ps' => (float) $expenseClassBudget->ps,
+                    'ps' => (float) $computedPsTotal,
                     'mooe' => (float) $expenseClassBudget->mooe,
                     'fe' => (float) $expenseClassBudget->fe,
                     'co' => (float) $expenseClassBudget->co,
@@ -197,6 +387,15 @@ class DashboardController extends Controller
                     'mitigation' => (float) $ccExpenditure->mitigation,
                 ]
                 : null,
+            'coaBudget' => $coaBudget->map(
+                fn($item) => [
+                    'id' => $item->id,
+                    'account_number' => $item->account_number,
+                    'account_title' => $item->account_title,
+                    'expense_class' => strtolower($item->expense_class),
+                    'value' => (float) $item->total,
+                ],
+            ),
         ]);
     }
 }

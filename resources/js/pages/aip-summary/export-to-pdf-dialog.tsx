@@ -41,6 +41,11 @@ export default function ExportToPdfDialog({
     ];
 
     const office = auth.user.office?.name.toUpperCase() || '';
+    const officeLabel = (
+        auth.user.office?.acronym ||
+        auth.user.office?.name ||
+        'Requesting Office'
+    ).toUpperCase();
 
     const styles = StyleSheet.create({
         page: { padding: 36 },
@@ -67,6 +72,31 @@ export default function ExportToPdfDialog({
             textAlign: 'center',
         },
         headerGroup: { flexDirection: 'column', padding: 0 },
+        footerContainer: {
+            marginTop: 20,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+        },
+        footerBlock: {
+            width: '20%', // Slightly less than 25% to allow for gaps
+            flexDirection: 'column',
+        },
+        footerLabel: {
+            fontSize: 7,
+            marginBottom: 20, // Space for the actual signature
+        },
+        footerNameLine: {
+            borderBottomWidth: 1,
+            borderColor: 'black',
+            marginBottom: 2,
+        },
+        footerTitle: {
+            fontSize: 6.5,
+            fontWeight: 'bold',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+        },
     });
 
     const formatNumber = (value: any) => {
@@ -129,7 +159,9 @@ export default function ExportToPdfDialog({
 
             let aipEntry = item.aip_entries?.[0];
             const activeAips = item.aip_entries || [];
-            let fundingSources = activeAips.flatMap(aip => aip.ppa_funding_sources || []);
+            let fundingSources = activeAips.flatMap(
+                (aip) => aip.ppa_funding_sources || [],
+            );
 
             if (currentScope?.scope === 'combined') {
                 const grouped = new Map<number, any>();
@@ -152,18 +184,32 @@ export default function ExportToPdfDialog({
                     base.mooe_amount += parseFloat(src.mooe_amount || 0);
                     base.co_amount += parseFloat(src.co_amount || 0);
                     base.fe_amount += parseFloat(src.fe_amount || 0);
-                    base.ccet_adaptation += parseFloat(src.ccet_adaptation || 0);
-                    base.ccet_mitigation += parseFloat(src.ccet_mitigation || 0);
+                    base.ccet_adaptation += parseFloat(
+                        src.ccet_adaptation || 0,
+                    );
+                    base.ccet_mitigation += parseFloat(
+                        src.ccet_mitigation || 0,
+                    );
                 });
 
-                fundingSources = Array.from(grouped.values()).map(src => ({
+                fundingSources = Array.from(grouped.values()).map((src) => ({
                     ...src,
-                    ps_amount: src.ps_amount > 0 ? src.ps_amount.toString() : '',
-                    mooe_amount: src.mooe_amount > 0 ? src.mooe_amount.toString() : '',
-                    co_amount: src.co_amount > 0 ? src.co_amount.toString() : '',
-                    fe_amount: src.fe_amount > 0 ? src.fe_amount.toString() : '',
-                    ccet_adaptation: src.ccet_adaptation > 0 ? src.ccet_adaptation.toString() : '',
-                    ccet_mitigation: src.ccet_mitigation > 0 ? src.ccet_mitigation.toString() : '',
+                    ps_amount:
+                        src.ps_amount > 0 ? src.ps_amount.toString() : '',
+                    mooe_amount:
+                        src.mooe_amount > 0 ? src.mooe_amount.toString() : '',
+                    co_amount:
+                        src.co_amount > 0 ? src.co_amount.toString() : '',
+                    fe_amount:
+                        src.fe_amount > 0 ? src.fe_amount.toString() : '',
+                    ccet_adaptation:
+                        src.ccet_adaptation > 0
+                            ? src.ccet_adaptation.toString()
+                            : '',
+                    ccet_mitigation:
+                        src.ccet_mitigation > 0
+                            ? src.ccet_mitigation.toString()
+                            : '',
                 }));
 
                 // Use the latest SAIP entry for non-numeric fields
@@ -341,8 +387,10 @@ export default function ExportToPdfDialog({
                                                             // Always return something for Col 14 to keep vertical line intact
                                                             if (colIndex === 14)
                                                                 return (
-                                                                    fs?.cc_typology
-                                                                        ?.code || '-'
+                                                                    fs
+                                                                        ?.cc_typology
+                                                                        ?.code ||
+                                                                    '-'
                                                                 );
                                                             return '-';
                                                         })()}
@@ -772,6 +820,44 @@ export default function ExportToPdfDialog({
                             marginTop: -1, // Pulls it up to touch the vertical lines perfectly
                         }}
                     />
+
+                    <View style={styles.footerContainer} wrap={false}>
+                        {/* 1. Prepared By */}
+                        <View style={styles.footerBlock}>
+                            <Text style={styles.footerLabel}>Prepared by:</Text>
+                            <View style={styles.footerNameLine} />
+                            <Text style={styles.footerTitle}>
+                                Provincial Planning and Development Coordinator
+                            </Text>
+                        </View>
+
+                        {/* 2. Reviewed By */}
+                        <View style={styles.footerBlock}>
+                            <Text style={styles.footerLabel}>Reviewed by:</Text>
+                            <View style={styles.footerNameLine} />
+                            <Text style={styles.footerTitle}>
+                                Provincial Budget Officer
+                            </Text>
+                        </View>
+
+                        {/* 3. Approved By */}
+                        <View style={styles.footerBlock}>
+                            <Text style={styles.footerLabel}>Approved by:</Text>
+                            <View style={styles.footerNameLine} />
+                            <Text style={styles.footerTitle}>
+                                Provincial Governor
+                            </Text>
+                        </View>
+
+                        {/* 4. Conforme */}
+                        <View style={styles.footerBlock}>
+                            <Text style={styles.footerLabel}>Conforme:</Text>
+                            <View style={styles.footerNameLine} />
+                            <Text style={styles.footerTitle}>
+                                Unit Head, {officeLabel}
+                            </Text>
+                        </View>
+                    </View>
 
                     <Text
                         fixed
