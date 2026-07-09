@@ -1,47 +1,29 @@
-# --- Dependencies ---
+/.phpunit.cache
+/bootstrap/ssr
 /node_modules
-/vendor
-/auth.json
-
-# --- Laravel Core ---
-.env
-.env.backup
-.env.production
-.env.local
-.env.testing
+/public/build
+/public/fonts-manifest.dev.json
+/public/hot
 /public/storage
 /storage/*.key
 /storage/pail
-/.phpunit.cache
-.phpunit.result.cache
-
-# --- Frontend & Build Tools ---
-/public/build
-/public/hot
-/bootstrap/ssr
-npm-debug.log
-yarn-error.log
-
-# --- Wayfinder (Generated Files) ---
 /resources/js/actions
 /resources/js/routes
 /resources/js/wayfinder
-
-# --- IDEs & Editors ---
+/vendor
 .DS_Store
-/.idea
-/.vscode
-/.fleet
-/.zed
-/.nova
+.env
+.env.backup
+.env.production
 .phpactor.json
-
-# --- Homestead/Vagrant ---
+.phpunit.result.cache
 Homestead.json
 Homestead.yaml
-
-_ide_helper.php
-_ide_helper_models.php
-.phpstorm.meta.php
-
-docs/
+npm-debug.log
+yarn-error.log
+/auth.json
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed

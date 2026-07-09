@@ -1,19 +1,7 @@
 // resources/js/pages/aip-summary/export-summary-to-pdf-dialog.tsx
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    Page,
-    Text,
-    View,
-    Document,
-    StyleSheet,
-    PDFViewer,
-} from '@react-pdf/renderer';
-import type { FiscalYear, Ppa } from '@/types/global';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Page, Text, View, Document, StyleSheet, PDFViewer } from "@react-pdf/renderer";
+import type { FiscalYear, Ppa } from "@/types";
 
 interface Props {
     open: boolean;
@@ -101,41 +89,41 @@ export default function ExportSummaryToPdfDialog({
     const { rows, grandTotal } = computeTotals(allSources);
 
     const styles = StyleSheet.create({
-        page: { padding: 36, fontFamily: 'Helvetica' },
+        page: { padding: 36, fontFamily: "Helvetica" },
         title: {
             fontSize: 14,
-            fontWeight: 'bold',
-            textAlign: 'center',
+            fontWeight: "bold",
+            textAlign: "center",
             marginBottom: 10,
         },
-        subtitle: { fontSize: 12, textAlign: 'center', marginBottom: 20 },
+        subtitle: { fontSize: 12, textAlign: "center", marginBottom: 20 },
         tableHeader: {
-            flexDirection: 'row',
+            flexDirection: "row",
             borderBottomWidth: 1,
             borderTopWidth: 1,
-            borderColor: '#000',
-            backgroundColor: '#f0f0f0',
+            borderColor: "#000",
+            backgroundColor: "#f0f0f0",
         },
         tableRow: {
-            flexDirection: 'row',
+            flexDirection: "row",
             borderBottomWidth: 1,
-            borderColor: '#ccc',
+            borderColor: "#ccc",
         },
-        tableCell: { padding: 6, fontSize: 10, flex: 1, textAlign: 'right' },
-        tableCellFirst: { flex: 2, textAlign: 'left' },
+        tableCell: { padding: 6, fontSize: 10, flex: 1, textAlign: "right" },
+        tableCellFirst: { flex: 2, textAlign: "left" },
         grandTotalRow: {
-            flexDirection: 'row',
+            flexDirection: "row",
             borderTopWidth: 2,
             borderBottomWidth: 1,
-            borderColor: '#000',
+            borderColor: "#000",
             marginTop: 10,
-            fontWeight: 'bold',
+            fontWeight: "bold",
         },
     });
 
     const formatNumber = (value: number) => {
-        if (!value) return '-';
-        return value.toLocaleString('en-US', {
+        if (!value) return "-";
+        return value.toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         });
@@ -145,19 +133,14 @@ export default function ExportSummaryToPdfDialog({
         <Document>
             {/* Changed size from "A4" to [936, 612] for 13x8.5 landscape */}
             <Page size={[936, 612]} style={styles.page}>
-                <Text style={styles.title}>
-                    Annual Investment Program (AIP)
-                </Text>
+                <Text style={styles.title}>Annual Investment Program (AIP)</Text>
                 <Text style={styles.subtitle}>
-                    Fiscal Year {fiscalYear.year} – Summary of Financial Totals
-                    by Funding Source
+                    Fiscal Year {fiscalYear.year} – Summary of Financial Totals by Funding Source
                 </Text>
 
                 {/* Header */}
                 <View style={styles.tableHeader}>
-                    <Text style={[styles.tableCell, styles.tableCellFirst]}>
-                        Funding Source
-                    </Text>
+                    <Text style={[styles.tableCell, styles.tableCellFirst]}>Funding Source</Text>
                     <Text style={styles.tableCell}>PS</Text>
                     <Text style={styles.tableCell}>MOOE</Text>
                     <Text style={styles.tableCell}>FE</Text>
@@ -170,54 +153,26 @@ export default function ExportSummaryToPdfDialog({
                 {rows.map((row, idx) => (
                     <View key={idx} style={styles.tableRow}>
                         <Text style={[styles.tableCell, styles.tableCellFirst]}>
-                            {row.funding_source?.code ||
-                                row.funding_source?.title ||
-                                'Unknown'}
+                            {row.funding_source?.code || row.funding_source?.title || "Unknown"}
                         </Text>
-                        <Text style={styles.tableCell}>
-                            {formatNumber(row.ps_amount)}
-                        </Text>
-                        <Text style={styles.tableCell}>
-                            {formatNumber(row.mooe_amount)}
-                        </Text>
-                        <Text style={styles.tableCell}>
-                            {formatNumber(row.fe_amount)}
-                        </Text>
-                        <Text style={styles.tableCell}>
-                            {formatNumber(row.co_amount)}
-                        </Text>
-                        <Text style={styles.tableCell}>
-                            {formatNumber(row.ccet_adaptation)}
-                        </Text>
-                        <Text style={styles.tableCell}>
-                            {formatNumber(row.ccet_mitigation)}
-                        </Text>
+                        <Text style={styles.tableCell}>{formatNumber(row.ps_amount)}</Text>
+                        <Text style={styles.tableCell}>{formatNumber(row.mooe_amount)}</Text>
+                        <Text style={styles.tableCell}>{formatNumber(row.fe_amount)}</Text>
+                        <Text style={styles.tableCell}>{formatNumber(row.co_amount)}</Text>
+                        <Text style={styles.tableCell}>{formatNumber(row.ccet_adaptation)}</Text>
+                        <Text style={styles.tableCell}>{formatNumber(row.ccet_mitigation)}</Text>
                     </View>
                 ))}
 
                 {/* Grand Total row */}
                 <View style={styles.grandTotalRow}>
-                    <Text style={[styles.tableCell, styles.tableCellFirst]}>
-                        GRAND TOTAL
-                    </Text>
-                    <Text style={styles.tableCell}>
-                        {formatNumber(grandTotal.ps_amount)}
-                    </Text>
-                    <Text style={styles.tableCell}>
-                        {formatNumber(grandTotal.mooe_amount)}
-                    </Text>
-                    <Text style={styles.tableCell}>
-                        {formatNumber(grandTotal.fe_amount)}
-                    </Text>
-                    <Text style={styles.tableCell}>
-                        {formatNumber(grandTotal.co_amount)}
-                    </Text>
-                    <Text style={styles.tableCell}>
-                        {formatNumber(grandTotal.ccet_adaptation)}
-                    </Text>
-                    <Text style={styles.tableCell}>
-                        {formatNumber(grandTotal.ccet_mitigation)}
-                    </Text>
+                    <Text style={[styles.tableCell, styles.tableCellFirst]}>GRAND TOTAL</Text>
+                    <Text style={styles.tableCell}>{formatNumber(grandTotal.ps_amount)}</Text>
+                    <Text style={styles.tableCell}>{formatNumber(grandTotal.mooe_amount)}</Text>
+                    <Text style={styles.tableCell}>{formatNumber(grandTotal.fe_amount)}</Text>
+                    <Text style={styles.tableCell}>{formatNumber(grandTotal.co_amount)}</Text>
+                    <Text style={styles.tableCell}>{formatNumber(grandTotal.ccet_adaptation)}</Text>
+                    <Text style={styles.tableCell}>{formatNumber(grandTotal.ccet_mitigation)}</Text>
                 </View>
             </Page>
         </Document>

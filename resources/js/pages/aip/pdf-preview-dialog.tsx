@@ -1,21 +1,14 @@
-import {
-    PDFViewer,
-    Page,
-    Text,
-    View,
-    Document,
-    StyleSheet,
-} from '@react-pdf/renderer';
+import { PDFViewer, Page, Text, View, Document, StyleSheet } from "@react-pdf/renderer";
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
-import type { App, AuthData, FiscalYear, Office } from '@/types/global';
+} from "@/components/ui/dialog";
+import type { App, AuthData, FiscalYear, Office } from "@/types";
 
-import { useState } from 'react';
+import { useState } from "react";
 // import {
 //     Select,
 //     SelectContent,
@@ -23,8 +16,8 @@ import { useState } from 'react';
 //     SelectTrigger,
 //     SelectValue,
 // } from '@/components/ui/select';
-import { router } from '@inertiajs/react';
-import { Spinner } from '@/components/ui/spinner';
+import { router } from "@inertiajs/react";
+import { Spinner } from "@/components/ui/spinner";
 import {
     Command,
     // CommandDialog,
@@ -35,7 +28,7 @@ import {
     CommandList,
     CommandSeparator,
     // CommandShortcut,
-} from '@/components/ui/command';
+} from "@/components/ui/command";
 
 interface PdfPreviewDialogProps {
     open: boolean;
@@ -50,54 +43,54 @@ interface PdfPreviewDialogProps {
 const COLUMN_WIDTHS = [5, 20, 5, 10, 5, 11, 4, 6, 4, 6, 4, 6, 4, 10];
 
 const styles = StyleSheet.create({
-    page: { padding: 30, fontFamily: 'Helvetica' },
+    page: { padding: 30, fontFamily: "Helvetica" },
     tableHeaderCell: {
         margin: 2,
         fontSize: 6,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        textTransform: 'uppercase',
+        fontWeight: "bold",
+        textAlign: "center",
+        textTransform: "uppercase",
     },
     tableCell: {
         margin: 2,
         fontSize: 6.5,
         paddingVertical: 1,
-        textAlign: 'center',
+        textAlign: "center",
     },
-    headerGroup: { flexDirection: 'column', padding: 0 },
+    headerGroup: { flexDirection: "column", padding: 0 },
     borderRight: { borderRightWidth: 1 },
     borderBottom: { borderBottomWidth: 1 },
     borderLeft: { borderLeftWidth: 1 },
     borderTop: { borderTopWidth: 1 },
-    row: { flexDirection: 'row' },
-    centered: { justifyContent: 'center', alignItems: 'center' },
+    row: { flexDirection: "row" },
+    centered: { justifyContent: "center", alignItems: "center" },
     flex1: { flex: 1 },
     footerSection: {
         marginTop: 20,
-        flexDirection: 'row',
-        alignItems: 'flex-start',
+        flexDirection: "row",
+        alignItems: "flex-start",
     },
     certText: {
         fontSize: 8,
-        width: '40%',
-        fontStyle: 'italic',
+        width: "40%",
+        fontStyle: "italic",
         lineHeight: 1.4,
     },
     signatureWrapper: {
-        width: '60%',
-        flexDirection: 'column',
-        alignItems: 'center',
+        width: "60%",
+        flexDirection: "column",
+        alignItems: "center",
         gap: 20, // Space between the two signatories
     },
     sigBlock: {
-        alignItems: 'center',
-        width: '100%',
+        alignItems: "center",
+        width: "100%",
     },
     sigName: {
         fontSize: 9,
-        fontWeight: 'bold',
-        textDecoration: 'underline',
-        textTransform: 'uppercase',
+        fontWeight: "bold",
+        textDecoration: "underline",
+        textTransform: "uppercase",
     },
     sigTitle: {
         fontSize: 9,
@@ -106,10 +99,10 @@ const styles = StyleSheet.create({
 });
 
 const formatNumber = (value: number | string | undefined) => {
-    if (value === undefined || value === null) return '-';
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(num) || num === 0) return '-';
-    return new Intl.NumberFormat('en-US', {
+    if (value === undefined || value === null) return "-";
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (isNaN(num) || num === 0) return "-";
+    return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(num);
@@ -129,36 +122,20 @@ const MyDocument = ({
     const grandTotal = Object.values(data)
         .flatMap((chartOfAccounts: any) =>
             Object.values(chartOfAccounts).flatMap((items: any) =>
-                items.reduce(
-                    (sum: number, item: any) =>
-                        sum + (Number(item.total_amount) || 0),
-                    0,
-                ),
+                items.reduce((sum: number, item: any) => sum + (Number(item.total_amount) || 0), 0),
             ),
         )
         .reduce((a, b) => a + b, 0);
 
-    const TitleRow = ({
-        title,
-        isCategory,
-    }: {
-        title: string;
-        isCategory: boolean;
-    }) => (
+    const TitleRow = ({ title, isCategory }: { title: string; isCategory: boolean }) => (
         <View
             style={[
                 styles.row,
                 styles.borderBottom,
-                { backgroundColor: isCategory ? '#d0cece' : '#fbe4d5' },
+                { backgroundColor: isCategory ? "#d0cece" : "#fbe4d5" },
             ]}
         >
-            <View
-                style={[
-                    { width: getWidth(0) },
-                    styles.borderLeft,
-                    styles.borderRight,
-                ]}
-            >
+            <View style={[{ width: getWidth(0) }, styles.borderLeft, styles.borderRight]}>
                 <Text style={styles.tableCell} />
             </View>
             <View style={[{ width: getWidth(1) }, styles.borderRight]}>
@@ -166,9 +143,9 @@ const MyDocument = ({
                     style={[
                         styles.tableCell,
                         {
-                            textAlign: 'left',
-                            fontWeight: 'bold',
-                            textTransform: 'uppercase',
+                            textAlign: "left",
+                            fontWeight: "bold",
+                            textTransform: "uppercase",
                         },
                     ]}
                 >
@@ -176,10 +153,7 @@ const MyDocument = ({
                 </Text>
             </View>
             {COLUMN_WIDTHS.slice(2).map((_, i) => (
-                <View
-                    key={i}
-                    style={[{ width: getWidth(i + 2) }, styles.borderRight]}
-                >
+                <View key={i} style={[{ width: getWidth(i + 2) }, styles.borderRight]}>
                     <Text style={styles.tableCell} />
                 </View>
             ))}
@@ -190,18 +164,14 @@ const MyDocument = ({
         <Document title="">
             <Page size={[612, 936]} orientation="landscape" style={styles.page}>
                 <View style={{ gap: 20 }}>
-                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
-                        FDP Form 4a - Annual Procurement Plan or Procurement
-                        List
+                    <Text style={{ fontSize: 10, fontWeight: "bold" }}>
+                        FDP Form 4a - Annual Procurement Plan or Procurement List
                     </Text>
-                    <View
-                        fixed
-                        style={{ marginBottom: 10, textAlign: 'center' }}
-                    >
-                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
+                    <View fixed style={{ marginBottom: 10, textAlign: "center" }}>
+                        <Text style={{ fontSize: 10, fontWeight: "bold" }}>
                             ANNUAL PROCUREMENT PLAN
                         </Text>
-                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
+                        <Text style={{ fontSize: 10, fontWeight: "bold" }}>
                             FOR THE YEAR {fiscalYear.year}
                         </Text>
                     </View>
@@ -209,27 +179,22 @@ const MyDocument = ({
 
                 <View fixed>
                     <View
-                        style={[
-                            styles.row,
-                            styles.borderTop,
-                            styles.borderBottom,
-                            { height: 36 },
-                        ]}
+                        style={[styles.row, styles.borderTop, styles.borderBottom, { height: 36 }]}
                     >
                         <View
                             style={{
                                 width: `${COLUMN_WIDTHS.slice(0, 5).reduce((a, b) => a + b, 0)}%`,
                                 borderLeftWidth: 1,
                                 borderRightWidth: 1,
-                                justifyContent: 'flex-end',
+                                justifyContent: "flex-end",
                             }}
                         >
                             <Text
                                 style={[
                                     styles.tableHeaderCell,
                                     {
-                                        textTransform: 'none',
-                                        textAlign: 'left',
+                                        textTransform: "none",
+                                        textAlign: "left",
                                     },
                                 ]}
                             >
@@ -239,8 +204,8 @@ const MyDocument = ({
                                 style={[
                                     styles.tableHeaderCell,
                                     {
-                                        textTransform: 'none',
-                                        textAlign: 'left',
+                                        textTransform: "none",
+                                        textAlign: "left",
                                     },
                                 ]}
                             >
@@ -250,8 +215,8 @@ const MyDocument = ({
                                 style={[
                                     styles.tableHeaderCell,
                                     {
-                                        textTransform: 'none',
-                                        textAlign: 'left',
+                                        textTransform: "none",
+                                        textAlign: "left",
                                     },
                                 ]}
                             >
@@ -272,30 +237,28 @@ const MyDocument = ({
                                 style={{
                                     borderBottomWidth: 1,
                                     flex: 2,
-                                    justifyContent: 'flex-end',
+                                    justifyContent: "flex-end",
                                 }}
                             >
                                 <Text
                                     style={[
                                         styles.tableHeaderCell,
                                         {
-                                            textAlign: 'left',
-                                            textTransform: 'none',
+                                            textAlign: "left",
+                                            textTransform: "none",
                                         },
                                     ]}
                                 >
                                     Planned Amount
                                 </Text>
                             </View>
-                            <View
-                                style={{ flex: 1, justifyContent: 'flex-end' }}
-                            >
+                            <View style={{ flex: 1, justifyContent: "flex-end" }}>
                                 <Text
                                     style={[
                                         styles.tableHeaderCell,
                                         {
-                                            textAlign: 'left',
-                                            textTransform: 'none',
+                                            textAlign: "left",
+                                            textTransform: "none",
                                         },
                                     ]}
                                 >
@@ -317,15 +280,15 @@ const MyDocument = ({
                                 style={{
                                     borderBottomWidth: 1,
                                     flex: 2,
-                                    justifyContent: 'flex-end',
+                                    justifyContent: "flex-end",
                                 }}
                             >
                                 <Text
                                     style={[
                                         styles.tableHeaderCell,
                                         {
-                                            textAlign: 'left',
-                                            textTransform: 'none',
+                                            textAlign: "left",
+                                            textTransform: "none",
                                         },
                                     ]}
                                 >
@@ -333,20 +296,20 @@ const MyDocument = ({
                                 </Text>
                             </View>
 
-                            <View style={{ flexDirection: 'row', flex: 1 }}>
+                            <View style={{ flexDirection: "row", flex: 1 }}>
                                 <View
                                     style={{
-                                        width: '50%',
+                                        width: "50%",
                                         borderRightWidth: 1,
-                                        justifyContent: 'flex-end',
+                                        justifyContent: "flex-end",
                                     }}
                                 >
                                     <Text
                                         style={[
                                             styles.tableHeaderCell,
                                             {
-                                                textAlign: 'left',
-                                                textTransform: 'none',
+                                                textAlign: "left",
+                                                textTransform: "none",
                                             },
                                         ]}
                                     >
@@ -355,16 +318,16 @@ const MyDocument = ({
                                 </View>
                                 <View
                                     style={{
-                                        width: '50%',
-                                        justifyContent: 'flex-end',
+                                        width: "50%",
+                                        justifyContent: "flex-end",
                                     }}
                                 >
                                     <Text
                                         style={[
                                             styles.tableHeaderCell,
                                             {
-                                                textAlign: 'left',
-                                                textTransform: 'none',
+                                                textAlign: "left",
+                                                textTransform: "none",
                                             },
                                         ]}
                                     >
@@ -378,17 +341,17 @@ const MyDocument = ({
                             style={{
                                 width: `${COLUMN_WIDTHS.slice(10, 14).reduce((a, b) => a + b, 0)}%`,
                                 borderRightWidth: 1,
-                                justifyContent: 'flex-end',
-                                backgroundColor: '#f9f9f9',
+                                justifyContent: "flex-end",
+                                backgroundColor: "#f9f9f9",
                             }}
                         >
                             <Text
                                 style={[
                                     styles.tableHeaderCell,
                                     {
-                                        textAlign: 'left',
+                                        textAlign: "left",
                                         marginLeft: 5,
-                                        textTransform: 'none',
+                                        textTransform: "none",
                                     },
                                 ]}
                             >
@@ -397,13 +360,7 @@ const MyDocument = ({
                         </View>
                     </View>
 
-                    <View
-                        style={[
-                            styles.row,
-                            styles.borderBottom,
-                            { height: 40 },
-                        ]}
-                    >
+                    <View style={[styles.row, styles.borderBottom, { height: 40 }]}>
                         <View
                             style={[
                                 { width: `${COLUMN_WIDTHS[0]}%` },
@@ -421,9 +378,7 @@ const MyDocument = ({
                                 styles.centered,
                             ]}
                         >
-                            <Text style={styles.tableHeaderCell}>
-                                Description
-                            </Text>
+                            <Text style={styles.tableHeaderCell}>Description</Text>
                         </View>
                         <View
                             style={[
@@ -441,9 +396,7 @@ const MyDocument = ({
                                 styles.centered,
                             ]}
                         >
-                            <Text style={styles.tableHeaderCell}>
-                                UNIT COST
-                            </Text>
+                            <Text style={styles.tableHeaderCell}>UNIT COST</Text>
                         </View>
                         <View
                             style={[
@@ -461,9 +414,7 @@ const MyDocument = ({
                                 styles.centered,
                             ]}
                         >
-                            <Text style={styles.tableHeaderCell}>
-                                TOTAL COST
-                            </Text>
+                            <Text style={styles.tableHeaderCell}>TOTAL COST</Text>
                         </View>
 
                         <View
@@ -478,663 +429,475 @@ const MyDocument = ({
                                 style={{
                                     borderBottomWidth: 1,
                                     borderRightWidth: 1,
-                                    justifyContent: 'center',
+                                    justifyContent: "center",
                                     flex: 0.5,
                                 }}
                             >
-                                <Text style={styles.tableHeaderCell}>
-                                    DISTRIBUTION
-                                </Text>
+                                <Text style={styles.tableHeaderCell}>DISTRIBUTION</Text>
                             </View>
 
-                            <View style={{ flexDirection: 'row', flex: 1 }}>
-                                {[
-                                    '1ST QUARTER',
-                                    '2ND QUARTER',
-                                    '3RD QUARTER',
-                                    '4TH QUARTER',
-                                ].map((q, idx) => {
-                                    const startIdx = 6 + idx * 2;
-                                    const groupWidth =
-                                        COLUMN_WIDTHS[startIdx] +
-                                        COLUMN_WIDTHS[startIdx + 1];
-                                    const parentWidth = COLUMN_WIDTHS.slice(
-                                        6,
-                                        14,
-                                    ).reduce((a, b) => a + b, 0);
-                                    return (
-                                        <View
-                                            key={q}
-                                            style={{
-                                                width: `${(groupWidth / parentWidth) * 100}%`,
-                                            }}
-                                        >
+                            <View style={{ flexDirection: "row", flex: 1 }}>
+                                {["1ST QUARTER", "2ND QUARTER", "3RD QUARTER", "4TH QUARTER"].map(
+                                    (q, idx) => {
+                                        const startIdx = 6 + idx * 2;
+                                        const groupWidth =
+                                            COLUMN_WIDTHS[startIdx] + COLUMN_WIDTHS[startIdx + 1];
+                                        const parentWidth = COLUMN_WIDTHS.slice(6, 14).reduce(
+                                            (a, b) => a + b,
+                                            0,
+                                        );
+                                        return (
                                             <View
-                                                style={[
-                                                    styles.borderBottom,
-                                                    styles.borderRight,
-                                                    styles.centered,
-                                                    { flex: 1 },
-                                                ]}
-                                            >
-                                                <Text
-                                                    style={
-                                                        styles.tableHeaderCell
-                                                    }
-                                                >
-                                                    {q}
-                                                </Text>
-                                            </View>
-
-                                            <View
-                                                style={[
-                                                    styles.row,
-                                                    { flex: 1 },
-                                                ]}
+                                                key={q}
+                                                style={{
+                                                    width: `${(groupWidth / parentWidth) * 100}%`,
+                                                }}
                                             >
                                                 <View
                                                     style={[
-                                                        {
-                                                            width: `${(COLUMN_WIDTHS[startIdx] / groupWidth) * 100}%`,
-                                                        },
+                                                        styles.borderBottom,
                                                         styles.borderRight,
                                                         styles.centered,
+                                                        { flex: 1 },
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={
-                                                            styles.tableHeaderCell
-                                                        }
-                                                    >
-                                                        Qty.
-                                                    </Text>
+                                                    <Text style={styles.tableHeaderCell}>{q}</Text>
                                                 </View>
 
-                                                <View
-                                                    style={[
-                                                        {
-                                                            width: `${(COLUMN_WIDTHS[startIdx + 1] / groupWidth) * 100}%`,
-                                                        },
-                                                        styles.borderRight,
-                                                        styles.centered,
-                                                    ]}
-                                                >
-                                                    <Text
-                                                        style={
-                                                            styles.tableHeaderCell
-                                                        }
+                                                <View style={[styles.row, { flex: 1 }]}>
+                                                    <View
+                                                        style={[
+                                                            {
+                                                                width: `${(COLUMN_WIDTHS[startIdx] / groupWidth) * 100}%`,
+                                                            },
+                                                            styles.borderRight,
+                                                            styles.centered,
+                                                        ]}
                                                     >
-                                                        Amount
-                                                    </Text>
+                                                        <Text style={styles.tableHeaderCell}>
+                                                            Qty.
+                                                        </Text>
+                                                    </View>
+
+                                                    <View
+                                                        style={[
+                                                            {
+                                                                width: `${(COLUMN_WIDTHS[startIdx + 1] / groupWidth) * 100}%`,
+                                                            },
+                                                            styles.borderRight,
+                                                            styles.centered,
+                                                        ]}
+                                                    >
+                                                        <Text style={styles.tableHeaderCell}>
+                                                            Amount
+                                                        </Text>
+                                                    </View>
                                                 </View>
                                             </View>
-                                        </View>
-                                    );
-                                })}
+                                        );
+                                    },
+                                )}
                             </View>
                         </View>
                     </View>
                 </View>
 
-                {Object.entries(data).map(
-                    ([categoryName, chartOfAccounts]: [string, any]) => {
-                        const categoryItems = Object.values(
-                            chartOfAccounts,
-                        ).flat() as any[];
-                        const catTotals = {
-                            amt: categoryItems.reduce(
-                                (sum, item) =>
-                                    sum + (Number(item.total_amount) || 0),
-                                0,
-                            ),
-                            q1: categoryItems.reduce(
-                                (sum, item) =>
-                                    sum + (Number(item.q1_amount) || 0),
-                                0,
-                            ),
-                            q2: categoryItems.reduce(
-                                (sum, item) =>
-                                    sum + (Number(item.q2_amount) || 0),
-                                0,
-                            ),
-                            q3: categoryItems.reduce(
-                                (sum, item) =>
-                                    sum + (Number(item.q3_amount) || 0),
-                                0,
-                            ),
-                            q4: categoryItems.reduce(
-                                (sum, item) =>
-                                    sum + (Number(item.q4_amount) || 0),
-                                0,
-                            ),
-                        };
+                {Object.entries(data).map(([categoryName, chartOfAccounts]: [string, any]) => {
+                    const categoryItems = Object.values(chartOfAccounts).flat() as any[];
+                    const catTotals = {
+                        amt: categoryItems.reduce(
+                            (sum, item) => sum + (Number(item.total_amount) || 0),
+                            0,
+                        ),
+                        q1: categoryItems.reduce(
+                            (sum, item) => sum + (Number(item.q1_amount) || 0),
+                            0,
+                        ),
+                        q2: categoryItems.reduce(
+                            (sum, item) => sum + (Number(item.q2_amount) || 0),
+                            0,
+                        ),
+                        q3: categoryItems.reduce(
+                            (sum, item) => sum + (Number(item.q3_amount) || 0),
+                            0,
+                        ),
+                        q4: categoryItems.reduce(
+                            (sum, item) => sum + (Number(item.q4_amount) || 0),
+                            0,
+                        ),
+                    };
 
-                        return (
-                            <View key={categoryName} break={false}>
-                                <TitleRow
-                                    title={categoryName}
-                                    isCategory={true}
-                                />
-                                {Object.entries(chartOfAccounts).map(
-                                    ([accountTitle, items]: [string, any]) => {
-                                        // console.log(items);
+                    return (
+                        <View key={categoryName} break={false}>
+                            <TitleRow title={categoryName} isCategory={true} />
+                            {Object.entries(chartOfAccounts).map(
+                                ([accountTitle, items]: [string, any]) => {
+                                    // console.log(items);
 
-                                        return (
-                                            <View key={accountTitle}>
-                                                <TitleRow
-                                                    title={accountTitle}
-                                                    isCategory={false}
-                                                />
-                                                {items.map(
-                                                    (
-                                                        item: any,
-                                                        index: number,
-                                                    ) => {
-                                                        // console.log(item);
+                                    return (
+                                        <View key={accountTitle}>
+                                            <TitleRow title={accountTitle} isCategory={false} />
+                                            {items.map((item: any, index: number) => {
+                                                // console.log(item);
 
-                                                        return (
-                                                            <View
-                                                                key={index}
+                                                return (
+                                                    <View
+                                                        key={index}
+                                                        style={[styles.row, styles.borderBottom]}
+                                                        wrap={false}
+                                                    >
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(0),
+                                                                },
+                                                                styles.borderLeft,
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text style={styles.tableCell}>
+                                                                {/* {index + 1} */}
+                                                                {item.ppmp_price_list.item_number}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(1),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text
                                                                 style={[
-                                                                    styles.row,
-                                                                    styles.borderBottom,
+                                                                    styles.tableCell,
+                                                                    {
+                                                                        textAlign: "left",
+                                                                    },
                                                                 ]}
-                                                                wrap={false}
                                                             >
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                0,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderLeft,
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={
-                                                                            styles.tableCell
-                                                                        }
-                                                                    >
-                                                                        {/* {index + 1} */}
-                                                                        {
-                                                                            item
-                                                                                .ppmp_price_list
-                                                                                .item_number
-                                                                        }
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                1,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={[
-                                                                            styles.tableCell,
-                                                                            {
-                                                                                textAlign:
-                                                                                    'left',
-                                                                            },
-                                                                        ]}
-                                                                    >
-                                                                        {
-                                                                            item
-                                                                                .ppmp_price_list
-                                                                                ?.description
-                                                                        }
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                2,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={
-                                                                            styles.tableCell
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            item
-                                                                                .ppmp_price_list
-                                                                                ?.unit_of_measurement
-                                                                        }
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                3,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={[
-                                                                            styles.tableCell,
-                                                                            {
-                                                                                textAlign:
-                                                                                    'right',
-                                                                            },
-                                                                        ]}
-                                                                    >
-                                                                        {formatNumber(
-                                                                            item
-                                                                                .ppmp_price_list
-                                                                                ?.price,
-                                                                        )}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                4,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={
-                                                                            styles.tableCell
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            item.total_qty
-                                                                        }
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                5,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={[
-                                                                            styles.tableCell,
-                                                                            {
-                                                                                textAlign:
-                                                                                    'right',
-                                                                            },
-                                                                        ]}
-                                                                    >
-                                                                        {formatNumber(
-                                                                            item.total_amount,
-                                                                        )}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                6,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={
-                                                                            styles.tableCell
-                                                                        }
-                                                                    >
-                                                                        {item.q1_qty ||
-                                                                            '-'}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                7,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={[
-                                                                            styles.tableCell,
-                                                                            {
-                                                                                textAlign:
-                                                                                    'right',
-                                                                            },
-                                                                        ]}
-                                                                    >
-                                                                        {formatNumber(
-                                                                            item.q1_amount,
-                                                                        )}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                8,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={
-                                                                            styles.tableCell
-                                                                        }
-                                                                    >
-                                                                        {item.q2_qty ||
-                                                                            '-'}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                9,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={[
-                                                                            styles.tableCell,
-                                                                            {
-                                                                                textAlign:
-                                                                                    'right',
-                                                                            },
-                                                                        ]}
-                                                                    >
-                                                                        {formatNumber(
-                                                                            item.q2_amount,
-                                                                        )}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                10,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={
-                                                                            styles.tableCell
-                                                                        }
-                                                                    >
-                                                                        {item.q3_qty ||
-                                                                            '-'}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                11,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={[
-                                                                            styles.tableCell,
-                                                                            {
-                                                                                textAlign:
-                                                                                    'right',
-                                                                            },
-                                                                        ]}
-                                                                    >
-                                                                        {formatNumber(
-                                                                            item.q3_amount,
-                                                                        )}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                12,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={
-                                                                            styles.tableCell
-                                                                        }
-                                                                    >
-                                                                        {item.q4_qty ||
-                                                                            '-'}
-                                                                    </Text>
-                                                                </View>
-                                                                <View
-                                                                    style={[
-                                                                        {
-                                                                            width: getWidth(
-                                                                                13,
-                                                                            ),
-                                                                        },
-                                                                        styles.borderRight,
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={[
-                                                                            styles.tableCell,
-                                                                            {
-                                                                                textAlign:
-                                                                                    'right',
-                                                                            },
-                                                                        ]}
-                                                                    >
-                                                                        {formatNumber(
-                                                                            item.q4_amount,
-                                                                        )}
-                                                                    </Text>
-                                                                </View>
-                                                            </View>
-                                                        );
-                                                    },
-                                                )}
-                                            </View>
-                                        );
-                                    },
-                                )}
+                                                                {item.ppmp_price_list?.description}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(2),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text style={styles.tableCell}>
+                                                                {
+                                                                    item.ppmp_price_list
+                                                                        ?.unit_of_measurement
+                                                                }
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(3),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    styles.tableCell,
+                                                                    {
+                                                                        textAlign: "right",
+                                                                    },
+                                                                ]}
+                                                            >
+                                                                {formatNumber(
+                                                                    item.ppmp_price_list?.price,
+                                                                )}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(4),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text style={styles.tableCell}>
+                                                                {item.total_qty}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(5),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    styles.tableCell,
+                                                                    {
+                                                                        textAlign: "right",
+                                                                    },
+                                                                ]}
+                                                            >
+                                                                {formatNumber(item.total_amount)}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(6),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text style={styles.tableCell}>
+                                                                {item.q1_qty || "-"}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(7),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    styles.tableCell,
+                                                                    {
+                                                                        textAlign: "right",
+                                                                    },
+                                                                ]}
+                                                            >
+                                                                {formatNumber(item.q1_amount)}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(8),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text style={styles.tableCell}>
+                                                                {item.q2_qty || "-"}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(9),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    styles.tableCell,
+                                                                    {
+                                                                        textAlign: "right",
+                                                                    },
+                                                                ]}
+                                                            >
+                                                                {formatNumber(item.q2_amount)}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(10),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text style={styles.tableCell}>
+                                                                {item.q3_qty || "-"}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(11),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    styles.tableCell,
+                                                                    {
+                                                                        textAlign: "right",
+                                                                    },
+                                                                ]}
+                                                            >
+                                                                {formatNumber(item.q3_amount)}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(12),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text style={styles.tableCell}>
+                                                                {item.q4_qty || "-"}
+                                                            </Text>
+                                                        </View>
+                                                        <View
+                                                            style={[
+                                                                {
+                                                                    width: getWidth(13),
+                                                                },
+                                                                styles.borderRight,
+                                                            ]}
+                                                        >
+                                                            <Text
+                                                                style={[
+                                                                    styles.tableCell,
+                                                                    {
+                                                                        textAlign: "right",
+                                                                    },
+                                                                ]}
+                                                            >
+                                                                {formatNumber(item.q4_amount)}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                );
+                                            })}
+                                        </View>
+                                    );
+                                },
+                            )}
+                            <View
+                                style={[
+                                    styles.row,
+                                    styles.borderBottom,
+                                    { backgroundColor: "#fef2cb" },
+                                ]}
+                                wrap={false}
+                            >
                                 <View
                                     style={[
-                                        styles.row,
-                                        styles.borderBottom,
-                                        { backgroundColor: '#fef2cb' },
+                                        { width: getWidth(0) },
+                                        styles.borderLeft,
+                                        styles.borderRight,
                                     ]}
-                                    wrap={false}
                                 >
-                                    <View
+                                    <Text style={styles.tableCell} />
+                                </View>
+                                <View style={[{ width: getWidth(1) }, styles.borderRight]}>
+                                    <Text
                                         style={[
-                                            { width: getWidth(0) },
-                                            styles.borderLeft,
-                                            styles.borderRight,
-                                        ]}
-                                    >
-                                        <Text style={styles.tableCell} />
-                                    </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(1) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.tableCell,
-                                                {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'left',
-                                                },
-                                            ]}
-                                        >
-                                            {categoryName.toUpperCase()} - TOTAL
-                                        </Text>
-                                    </View>
-                                    <View
-                                        style={[
+                                            styles.tableCell,
                                             {
-                                                width: `${COLUMN_WIDTHS.slice(2, 5).reduce((a, b) => a + b, 0)}%`,
+                                                fontWeight: "bold",
+                                                textAlign: "left",
                                             },
-                                            styles.borderRight,
                                         ]}
                                     >
-                                        <Text style={styles.tableCell} />
-                                    </View>
-                                    <View
+                                        {categoryName.toUpperCase()} - TOTAL
+                                    </Text>
+                                </View>
+                                <View
+                                    style={[
+                                        {
+                                            width: `${COLUMN_WIDTHS.slice(2, 5).reduce((a, b) => a + b, 0)}%`,
+                                        },
+                                        styles.borderRight,
+                                    ]}
+                                >
+                                    <Text style={styles.tableCell} />
+                                </View>
+                                <View style={[{ width: getWidth(5) }, styles.borderRight]}>
+                                    <Text
                                         style={[
-                                            { width: getWidth(5) },
-                                            styles.borderRight,
+                                            styles.tableCell,
+                                            {
+                                                fontWeight: "bold",
+                                                textAlign: "right",
+                                            },
                                         ]}
                                     >
-                                        <Text
-                                            style={[
-                                                styles.tableCell,
-                                                {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
-                                                },
-                                            ]}
-                                        >
-                                            {formatNumber(catTotals.amt)}
-                                        </Text>
-                                    </View>
-                                    <View
+                                        {formatNumber(catTotals.amt)}
+                                    </Text>
+                                </View>
+                                <View style={[{ width: getWidth(6) }, styles.borderRight]}>
+                                    <Text style={styles.tableCell} />
+                                </View>
+                                <View style={[{ width: getWidth(7) }, styles.borderRight]}>
+                                    <Text
                                         style={[
-                                            { width: getWidth(6) },
-                                            styles.borderRight,
+                                            styles.tableCell,
+                                            {
+                                                fontWeight: "bold",
+                                                textAlign: "right",
+                                            },
                                         ]}
                                     >
-                                        <Text style={styles.tableCell} />
-                                    </View>
-                                    <View
+                                        {formatNumber(catTotals.q1)}
+                                    </Text>
+                                </View>
+                                <View style={[{ width: getWidth(8) }, styles.borderRight]}>
+                                    <Text style={styles.tableCell} />
+                                </View>
+                                <View style={[{ width: getWidth(9) }, styles.borderRight]}>
+                                    <Text
                                         style={[
-                                            { width: getWidth(7) },
-                                            styles.borderRight,
+                                            styles.tableCell,
+                                            {
+                                                fontWeight: "bold",
+                                                textAlign: "right",
+                                            },
                                         ]}
                                     >
-                                        <Text
-                                            style={[
-                                                styles.tableCell,
-                                                {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
-                                                },
-                                            ]}
-                                        >
-                                            {formatNumber(catTotals.q1)}
-                                        </Text>
-                                    </View>
-                                    <View
+                                        {formatNumber(catTotals.q2)}
+                                    </Text>
+                                </View>
+                                <View style={[{ width: getWidth(10) }, styles.borderRight]}>
+                                    <Text style={styles.tableCell} />
+                                </View>
+                                <View style={[{ width: getWidth(11) }, styles.borderRight]}>
+                                    <Text
                                         style={[
-                                            { width: getWidth(8) },
-                                            styles.borderRight,
+                                            styles.tableCell,
+                                            {
+                                                fontWeight: "bold",
+                                                textAlign: "right",
+                                            },
                                         ]}
                                     >
-                                        <Text style={styles.tableCell} />
-                                    </View>
-                                    <View
+                                        {formatNumber(catTotals.q3)}
+                                    </Text>
+                                </View>
+                                <View style={[{ width: getWidth(12) }, styles.borderRight]}>
+                                    <Text style={styles.tableCell} />
+                                </View>
+                                <View style={[{ width: getWidth(13) }, styles.borderRight]}>
+                                    <Text
                                         style={[
-                                            { width: getWidth(9) },
-                                            styles.borderRight,
+                                            styles.tableCell,
+                                            {
+                                                fontWeight: "bold",
+                                                textAlign: "right",
+                                            },
                                         ]}
                                     >
-                                        <Text
-                                            style={[
-                                                styles.tableCell,
-                                                {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
-                                                },
-                                            ]}
-                                        >
-                                            {formatNumber(catTotals.q2)}
-                                        </Text>
-                                    </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(10) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
-                                        <Text style={styles.tableCell} />
-                                    </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(11) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.tableCell,
-                                                {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
-                                                },
-                                            ]}
-                                        >
-                                            {formatNumber(catTotals.q3)}
-                                        </Text>
-                                    </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(12) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
-                                        <Text style={styles.tableCell} />
-                                    </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(13) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
-                                        <Text
-                                            style={[
-                                                styles.tableCell,
-                                                {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
-                                                },
-                                            ]}
-                                        >
-                                            {formatNumber(catTotals.q4)}
-                                        </Text>
-                                    </View>
+                                        {formatNumber(catTotals.q4)}
+                                    </Text>
                                 </View>
                             </View>
-                        );
-                    },
-                )}
+                        </View>
+                    );
+                })}
 
                 <View style={{ marginTop: 0 }}>
                     {/* <View
@@ -1185,38 +948,29 @@ const MyDocument = ({
 
                     {(() => {
                         const allCategoryTotals = Object.entries(data).map(
-                            ([categoryName, chartOfAccounts]: [
-                                string,
-                                any,
-                            ]) => {
+                            ([categoryName, chartOfAccounts]: [string, any]) => {
                                 const categoryItems = Object.values(
                                     chartOfAccounts,
                                 ).flat() as any[];
                                 return {
                                     amt: categoryItems.reduce(
-                                        (sum, item) =>
-                                            sum +
-                                            (Number(item.total_amount) || 0),
+                                        (sum, item) => sum + (Number(item.total_amount) || 0),
                                         0,
                                     ),
                                     q1: categoryItems.reduce(
-                                        (sum, item) =>
-                                            sum + (Number(item.q1_amount) || 0),
+                                        (sum, item) => sum + (Number(item.q1_amount) || 0),
                                         0,
                                     ),
                                     q2: categoryItems.reduce(
-                                        (sum, item) =>
-                                            sum + (Number(item.q2_amount) || 0),
+                                        (sum, item) => sum + (Number(item.q2_amount) || 0),
                                         0,
                                     ),
                                     q3: categoryItems.reduce(
-                                        (sum, item) =>
-                                            sum + (Number(item.q3_amount) || 0),
+                                        (sum, item) => sum + (Number(item.q3_amount) || 0),
                                         0,
                                     ),
                                     q4: categoryItems.reduce(
-                                        (sum, item) =>
-                                            sum + (Number(item.q4_amount) || 0),
+                                        (sum, item) => sum + (Number(item.q4_amount) || 0),
                                         0,
                                     ),
                                 };
@@ -1237,48 +991,30 @@ const MyDocument = ({
                         return (
                             <>
                                 {Object.entries(data).map(
-                                    ([categoryName, chartOfAccounts]: [
-                                        string,
-                                        any,
-                                    ]) => {
+                                    ([categoryName, chartOfAccounts]: [string, any]) => {
                                         const categoryItems = Object.values(
                                             chartOfAccounts,
                                         ).flat() as any[];
                                         const catTotals = {
                                             amt: categoryItems.reduce(
                                                 (sum, item) =>
-                                                    sum +
-                                                    (Number(
-                                                        item.total_amount,
-                                                    ) || 0),
+                                                    sum + (Number(item.total_amount) || 0),
                                                 0,
                                             ),
                                             q1: categoryItems.reduce(
-                                                (sum, item) =>
-                                                    sum +
-                                                    (Number(item.q1_amount) ||
-                                                        0),
+                                                (sum, item) => sum + (Number(item.q1_amount) || 0),
                                                 0,
                                             ),
                                             q2: categoryItems.reduce(
-                                                (sum, item) =>
-                                                    sum +
-                                                    (Number(item.q2_amount) ||
-                                                        0),
+                                                (sum, item) => sum + (Number(item.q2_amount) || 0),
                                                 0,
                                             ),
                                             q3: categoryItems.reduce(
-                                                (sum, item) =>
-                                                    sum +
-                                                    (Number(item.q3_amount) ||
-                                                        0),
+                                                (sum, item) => sum + (Number(item.q3_amount) || 0),
                                                 0,
                                             ),
                                             q4: categoryItems.reduce(
-                                                (sum, item) =>
-                                                    sum +
-                                                    (Number(item.q4_amount) ||
-                                                        0),
+                                                (sum, item) => sum + (Number(item.q4_amount) || 0),
                                                 0,
                                             ),
                                         };
@@ -1286,10 +1022,7 @@ const MyDocument = ({
                                         return (
                                             <View
                                                 key={categoryName}
-                                                style={[
-                                                    styles.row,
-                                                    styles.borderBottom,
-                                                ]}
+                                                style={[styles.row, styles.borderBottom]}
                                                 wrap={false}
                                             >
                                                 <View
@@ -1299,9 +1032,7 @@ const MyDocument = ({
                                                         styles.borderRight,
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={styles.tableCell}
-                                                    />
+                                                    <Text style={styles.tableCell} />
                                                 </View>
                                                 <View
                                                     style={[
@@ -1313,15 +1044,12 @@ const MyDocument = ({
                                                         style={[
                                                             styles.tableCell,
                                                             {
-                                                                fontWeight:
-                                                                    'bold',
-                                                                textAlign:
-                                                                    'left',
+                                                                fontWeight: "bold",
+                                                                textAlign: "left",
                                                             },
                                                         ]}
                                                     >
-                                                        {categoryName.toUpperCase()}{' '}
-                                                        - TOTAL
+                                                        {categoryName.toUpperCase()} - TOTAL
                                                     </Text>
                                                 </View>
                                                 <View
@@ -1330,9 +1058,7 @@ const MyDocument = ({
                                                         styles.borderRight,
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={styles.tableCell}
-                                                    />
+                                                    <Text style={styles.tableCell} />
                                                 </View>
                                                 <View
                                                     style={[
@@ -1340,9 +1066,7 @@ const MyDocument = ({
                                                         styles.borderRight,
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={styles.tableCell}
-                                                    />
+                                                    <Text style={styles.tableCell} />
                                                 </View>
                                                 <View
                                                     style={[
@@ -1350,9 +1074,7 @@ const MyDocument = ({
                                                         styles.borderRight,
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={styles.tableCell}
-                                                    />
+                                                    <Text style={styles.tableCell} />
                                                 </View>
                                                 <View
                                                     style={[
@@ -1364,16 +1086,12 @@ const MyDocument = ({
                                                         style={[
                                                             styles.tableCell,
                                                             {
-                                                                fontWeight:
-                                                                    'bold',
-                                                                textAlign:
-                                                                    'right',
+                                                                fontWeight: "bold",
+                                                                textAlign: "right",
                                                             },
                                                         ]}
                                                     >
-                                                        {formatNumber(
-                                                            catTotals.amt,
-                                                        )}
+                                                        {formatNumber(catTotals.amt)}
                                                     </Text>
                                                 </View>
                                                 <View
@@ -1382,9 +1100,7 @@ const MyDocument = ({
                                                         styles.borderRight,
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={styles.tableCell}
-                                                    />
+                                                    <Text style={styles.tableCell} />
                                                 </View>
                                                 <View
                                                     style={[
@@ -1396,16 +1112,12 @@ const MyDocument = ({
                                                         style={[
                                                             styles.tableCell,
                                                             {
-                                                                fontWeight:
-                                                                    'bold',
-                                                                textAlign:
-                                                                    'right',
+                                                                fontWeight: "bold",
+                                                                textAlign: "right",
                                                             },
                                                         ]}
                                                     >
-                                                        {formatNumber(
-                                                            catTotals.q1,
-                                                        )}
+                                                        {formatNumber(catTotals.q1)}
                                                     </Text>
                                                 </View>
                                                 <View
@@ -1414,9 +1126,7 @@ const MyDocument = ({
                                                         styles.borderRight,
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={styles.tableCell}
-                                                    />
+                                                    <Text style={styles.tableCell} />
                                                 </View>
                                                 <View
                                                     style={[
@@ -1428,16 +1138,12 @@ const MyDocument = ({
                                                         style={[
                                                             styles.tableCell,
                                                             {
-                                                                fontWeight:
-                                                                    'bold',
-                                                                textAlign:
-                                                                    'right',
+                                                                fontWeight: "bold",
+                                                                textAlign: "right",
                                                             },
                                                         ]}
                                                     >
-                                                        {formatNumber(
-                                                            catTotals.q2,
-                                                        )}
+                                                        {formatNumber(catTotals.q2)}
                                                     </Text>
                                                 </View>
                                                 <View
@@ -1446,9 +1152,7 @@ const MyDocument = ({
                                                         styles.borderRight,
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={styles.tableCell}
-                                                    />
+                                                    <Text style={styles.tableCell} />
                                                 </View>
                                                 <View
                                                     style={[
@@ -1460,16 +1164,12 @@ const MyDocument = ({
                                                         style={[
                                                             styles.tableCell,
                                                             {
-                                                                fontWeight:
-                                                                    'bold',
-                                                                textAlign:
-                                                                    'right',
+                                                                fontWeight: "bold",
+                                                                textAlign: "right",
                                                             },
                                                         ]}
                                                     >
-                                                        {formatNumber(
-                                                            catTotals.q3,
-                                                        )}
+                                                        {formatNumber(catTotals.q3)}
                                                     </Text>
                                                 </View>
                                                 <View
@@ -1478,9 +1178,7 @@ const MyDocument = ({
                                                         styles.borderRight,
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={styles.tableCell}
-                                                    />
+                                                    <Text style={styles.tableCell} />
                                                 </View>
                                                 <View
                                                     style={[
@@ -1492,16 +1190,12 @@ const MyDocument = ({
                                                         style={[
                                                             styles.tableCell,
                                                             {
-                                                                fontWeight:
-                                                                    'bold',
-                                                                textAlign:
-                                                                    'right',
+                                                                fontWeight: "bold",
+                                                                textAlign: "right",
                                                             },
                                                         ]}
                                                     >
-                                                        {formatNumber(
-                                                            catTotals.q4,
-                                                        )}
+                                                        {formatNumber(catTotals.q4)}
                                                     </Text>
                                                 </View>
                                             </View>
@@ -1527,164 +1221,99 @@ const MyDocument = ({
                                     >
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(1) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(1) }, styles.borderRight]}>
                                         <Text
                                             style={[
                                                 styles.tableCell,
                                                 {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'left',
+                                                    fontWeight: "bold",
+                                                    textAlign: "left",
                                                 },
                                             ]}
                                         >
                                             TOTAL BUDGET
                                         </Text>
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(2) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(2) }, styles.borderRight]}>
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(3) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(3) }, styles.borderRight]}>
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(4) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(4) }, styles.borderRight]}>
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(5) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(5) }, styles.borderRight]}>
                                         <Text
                                             style={[
                                                 styles.tableCell,
                                                 {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
+                                                    fontWeight: "bold",
+                                                    textAlign: "right",
                                                 },
                                             ]}
                                         >
                                             {formatNumber(grandTotal.amt)}
                                         </Text>
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(6) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(6) }, styles.borderRight]}>
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(7) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(7) }, styles.borderRight]}>
                                         <Text
                                             style={[
                                                 styles.tableCell,
                                                 {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
+                                                    fontWeight: "bold",
+                                                    textAlign: "right",
                                                 },
                                             ]}
                                         >
                                             {formatNumber(grandTotal.q1)}
                                         </Text>
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(8) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(8) }, styles.borderRight]}>
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(9) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(9) }, styles.borderRight]}>
                                         <Text
                                             style={[
                                                 styles.tableCell,
                                                 {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
+                                                    fontWeight: "bold",
+                                                    textAlign: "right",
                                                 },
                                             ]}
                                         >
                                             {formatNumber(grandTotal.q2)}
                                         </Text>
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(10) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(10) }, styles.borderRight]}>
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(11) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(11) }, styles.borderRight]}>
                                         <Text
                                             style={[
                                                 styles.tableCell,
                                                 {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
+                                                    fontWeight: "bold",
+                                                    textAlign: "right",
                                                 },
                                             ]}
                                         >
                                             {formatNumber(grandTotal.q3)}
                                         </Text>
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(12) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(12) }, styles.borderRight]}>
                                         <Text style={styles.tableCell} />
                                     </View>
-                                    <View
-                                        style={[
-                                            { width: getWidth(13) },
-                                            styles.borderRight,
-                                        ]}
-                                    >
+                                    <View style={[{ width: getWidth(13) }, styles.borderRight]}>
                                         <Text
                                             style={[
                                                 styles.tableCell,
                                                 {
-                                                    fontWeight: 'bold',
-                                                    textAlign: 'right',
+                                                    fontWeight: "bold",
+                                                    textAlign: "right",
                                                 },
                                             ]}
                                         >
@@ -1697,9 +1326,8 @@ const MyDocument = ({
                                     {/* Left Side: Certification */}
                                     <View style={styles.certText}>
                                         <Text>
-                                            This is to certify that the above
-                                            procurement plan is in accordance
-                                            with the objective of this Office.
+                                            This is to certify that the above procurement plan is in
+                                            accordance with the objective of this Office.
                                         </Text>
                                     </View>
 
@@ -1720,9 +1348,7 @@ const MyDocument = ({
                                             <Text style={styles.sigName}>
                                                 ____________________________
                                             </Text>
-                                            <Text style={styles.sigTitle}>
-                                                Provincial Governor
-                                            </Text>
+                                            <Text style={styles.sigTitle}>Provincial Governor</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -1734,10 +1360,10 @@ const MyDocument = ({
                 <View
                     fixed
                     style={{
-                        position: 'absolute',
+                        position: "absolute",
                         bottom: 20,
-                        width: '100%',
-                        textAlign: 'center',
+                        width: "100%",
+                        textAlign: "center",
                     }}
                 >
                     <Text
@@ -1762,37 +1388,31 @@ export default function PdfPreviewDialog({
     canGenerateAppAll,
 }: PdfPreviewDialogProps) {
     const [isReloading, setIsReloading] = useState(false);
-    const defaultOfficeId = canGenerateAppAll
-        ? 'all'
-        : String(auth.user.office_id ?? '');
-    const [selectedOfficeId, setSelectedOfficeId] =
-        useState<string>(defaultOfficeId);
+    const defaultOfficeId = canGenerateAppAll ? "all" : String(auth.user.office_id ?? "");
+    const [selectedOfficeId, setSelectedOfficeId] = useState<string>(defaultOfficeId);
 
     const handleOfficeChange = (officeId: string) => {
         if (!fiscalYear) return;
         setSelectedOfficeId(officeId);
         setIsReloading(true);
         router.reload({
-            only: ['app'],
+            only: ["app"],
             data: { fiscal_year_id: fiscalYear.id, office_id: officeId },
             onFinish: () => setIsReloading(false),
         });
     };
 
     const getOfficeLabel = () => {
-        if (!canGenerateAppAll)
-            return `${auth.user.office?.name || 'My Office'}`;
+        if (!canGenerateAppAll) return `${auth.user.office?.name || "My Office"}`;
 
-        if (selectedOfficeId === 'all') {
+        if (selectedOfficeId === "all") {
             const mainOffice = offices.find((o) => o.id === 1);
-            return mainOffice?.name ?? 'All Offices';
+            return mainOffice?.name ?? "All Offices";
         }
 
-        const selected = offices.find(
-            (o) => o.id.toString() === selectedOfficeId,
-        );
+        const selected = offices.find((o) => o.id.toString() === selectedOfficeId);
 
-        return selected?.acronym ?? '';
+        return selected?.acronym ?? "";
     };
 
     if (!fiscalYear) return null;
@@ -1855,9 +1475,7 @@ export default function PdfPreviewDialog({
                                 <CommandInput placeholder="Type a command or search..." />
 
                                 <CommandList className="max-h-none">
-                                    <CommandEmpty>
-                                        No results found.
-                                    </CommandEmpty>
+                                    <CommandEmpty>No results found.</CommandEmpty>
 
                                     <CommandGroup
                                         heading="Offices"
@@ -1866,12 +1484,8 @@ export default function PdfPreviewDialog({
                                         <CommandItem
                                             value="all"
                                             className="flex"
-                                            onSelect={() =>
-                                                handleOfficeChange('all')
-                                            }
-                                            data-checked={
-                                                selectedOfficeId === 'all'
-                                            }
+                                            onSelect={() => handleOfficeChange("all")}
+                                            data-checked={selectedOfficeId === "all"}
                                         >
                                             Consolidated (Whole PGLU)
                                         </CommandItem>
@@ -1885,13 +1499,10 @@ export default function PdfPreviewDialog({
                                                     value={`${office.acronym} ${office.name}`}
                                                     className="flex items-start"
                                                     onSelect={() => {
-                                                        handleOfficeChange(
-                                                            office.id.toString(),
-                                                        );
+                                                        handleOfficeChange(office.id.toString());
                                                     }}
                                                     data-checked={
-                                                        selectedOfficeId ===
-                                                        office.id.toString()
+                                                        selectedOfficeId === office.id.toString()
                                                     }
                                                 >
                                                     <div className="grid w-full grid-cols-3">
@@ -1919,11 +1530,7 @@ export default function PdfPreviewDialog({
                             </div>
                         )}
 
-                        <PDFViewer
-                            width="100%"
-                            height="100%"
-                            style={{ border: 'none' }}
-                        >
+                        <PDFViewer width="100%" height="100%" style={{ border: "none" }}>
                             <MyDocument
                                 data={data}
                                 fiscalYear={fiscalYear}

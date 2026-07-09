@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { router } from '@inertiajs/react';
+import { useState, useEffect, useMemo } from "react";
+import { router } from "@inertiajs/react";
 import {
     Move,
     FolderOpen,
@@ -8,7 +8,7 @@ import {
     Info,
     Home,
     ChevronRight,
-} from 'lucide-react';
+} from "lucide-react";
 import {
     Dialog,
     DialogContent,
@@ -16,15 +16,15 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/ui/dialog';
-import type { Ppa, PaginatedResponse, Filter } from '@/types/global';
-import columns from './columns/move-columns';
-import { DataTable } from '@/components/data-table';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Spinner } from '@/components/ui/spinner';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+} from "@/components/ui/dialog";
+import type { Ppa, PaginatedResponse, Filter } from "@/types";
+import columns from "./columns/move-columns";
+import { DataTable } from "@/components/data-table";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 // import { index } from '@/routes/ppa';
 
 interface PpaMoveDialogProps {
@@ -37,9 +37,9 @@ interface PpaMoveDialogProps {
 }
 
 const isValidParentType = (targetType: string, sourceType: string): boolean => {
-    if (sourceType === 'Project') return targetType === 'Program';
-    if (sourceType === 'Activity') return targetType === 'Project';
-    if (sourceType === 'Sub-Activity') return targetType === 'Activity';
+    if (sourceType === "Project") return targetType === "Program";
+    if (sourceType === "Activity") return targetType === "Project";
+    if (sourceType === "Sub-Activity") return targetType === "Activity";
     return false;
 };
 
@@ -60,20 +60,16 @@ export default function PpaMoveDialog({
     }, [filters?.dialog_id]);
 
     const buttonLabels = useMemo(() => {
-        const currentFolder =
-            dialogCurrent.length > 0 ? dialogCurrent[0] : null;
-        const isProgram = ppaToMove?.type === 'Program';
-        const isSameFolder =
-            ppaToMove &&
-            currentFolder &&
-            ppaToMove.parent_id === currentFolder.id;
+        const currentFolder = dialogCurrent.length > 0 ? dialogCurrent[0] : null;
+        const isProgram = ppaToMove?.type === "Program";
+        const isSameFolder = ppaToMove && currentFolder && ppaToMove.parent_id === currentFolder.id;
 
         const defaultState = {
             showSiblingButtons: false,
             siblingEnabled: false,
             showMoveHereButton: true,
             moveHereEnabled: false,
-            moveHereLabel: 'Select a destination',
+            moveHereLabel: "Select a destination",
             moveHereIcon: <Info className="mr-2 h-4 w-4" />,
             targetId: null as number | null,
         };
@@ -83,14 +79,13 @@ export default function PpaMoveDialog({
         // RULE 1: ROOT PROGRAMS OR MOVING WITHIN THE SAME FOLDER
         // Must ONLY allow "Move Above / Below" sibling actions, kept disabled until selected
         if (isProgram || isSameFolder) {
-            const isSelectedSibling =
-                selectedTarget && selectedTarget.type === ppaToMove.type;
+            const isSelectedSibling = selectedTarget && selectedTarget.type === ppaToMove.type;
             return {
                 showSiblingButtons: true,
                 siblingEnabled: !!isSelectedSibling,
                 showMoveHereButton: false,
                 moveHereEnabled: false,
-                moveHereLabel: '',
+                moveHereLabel: "",
                 moveHereIcon: null,
                 targetId: isSelectedSibling ? selectedTarget.id : null,
             };
@@ -105,7 +100,7 @@ export default function PpaMoveDialog({
                     siblingEnabled: true,
                     showMoveHereButton: false,
                     moveHereEnabled: false,
-                    moveHereLabel: '',
+                    moveHereLabel: "",
                     moveHereIcon: null,
                     targetId: selectedTarget.id,
                 };
@@ -116,7 +111,7 @@ export default function PpaMoveDialog({
                     siblingEnabled: false,
                     showMoveHereButton: true,
                     moveHereEnabled: true,
-                    moveHereLabel: 'Move Into Folder',
+                    moveHereLabel: "Move Into Folder",
                     moveHereIcon: <FolderOpen className="mr-2 h-4 w-4" />,
                     targetId: selectedTarget.id,
                 };
@@ -125,16 +120,13 @@ export default function PpaMoveDialog({
 
         // RULE 3: EMPTY SELECTION, INSIDE ANOTHER FOLDER
         if (currentFolder) {
-            const canMoveHere = isValidParentType(
-                currentFolder.type,
-                ppaToMove.type,
-            );
+            const canMoveHere = isValidParentType(currentFolder.type, ppaToMove.type);
             return {
                 showSiblingButtons: false,
                 siblingEnabled: false,
                 showMoveHereButton: true,
                 moveHereEnabled: canMoveHere,
-                moveHereLabel: canMoveHere ? 'Move Here' : 'Cannot place here',
+                moveHereLabel: canMoveHere ? "Move Here" : "Cannot place here",
                 moveHereIcon: canMoveHere ? (
                     <ArrowDownToLine className="mr-2 h-4 w-4" />
                 ) : (
@@ -147,7 +139,7 @@ export default function PpaMoveDialog({
         return defaultState;
     }, [selectedTarget, ppaToMove, dialogCurrent]);
 
-    const handleMove = (direction: 'top' | 'bottom' | 'into') => {
+    const handleMove = (direction: "top" | "bottom" | "into") => {
         const finalTargetId = buttonLabels.targetId;
         if (!finalTargetId || !ppaToMove) return;
 
@@ -166,27 +158,27 @@ export default function PpaMoveDialog({
 
     function handleShowChildren(ppa: Ppa) {
         router.get(
-            'ppa',
+            "ppa",
             {
                 ...filters,
-                dialog_mode: 'move',
+                dialog_mode: "move",
                 dialog_id: ppa.id,
                 dialog_page: 1,
             },
             {
                 preserveState: true,
-                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                only: ["dialogPpaTree", "dialogCurrent", "filters"],
             },
         );
     }
 
     function navigateToBreadcrumb(id: number | null) {
         router.get(
-            'ppa',
+            "ppa",
             { ...filters, dialog_id: id, dialog_page: 1 },
             {
                 preserveState: true,
-                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                only: ["dialogPpaTree", "dialogCurrent", "filters"],
             },
         );
     }
@@ -278,10 +270,7 @@ export default function PpaMoveDialog({
                     </Button>
 
                     {[...dialogCurrent].reverse().map((item) => (
-                        <div
-                            key={item.id}
-                            className="flex min-w-0 items-center gap-2"
-                        >
+                        <div key={item.id} className="flex min-w-0 items-center gap-2">
                             <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />
 
                             <Button
@@ -311,16 +300,11 @@ export default function PpaMoveDialog({
                                 filters={filters}
                                 searchKey="dialog_search"
                                 pageKey="dialog_page"
-                                onlyKeys={[
-                                    'dialogPpaTree',
-                                    'dialogCurrent',
-                                    'filters',
-                                ]}
+                                onlyKeys={["dialogPpaTree", "dialogCurrent", "filters"]}
                                 meta={{
                                     ppaToMove: ppaToMove,
                                     selectedId: selectedTarget?.id,
-                                    onSelect: (ppa: Ppa | null) =>
-                                        setSelectedTarget(ppa),
+                                    onSelect: (ppa: Ppa | null) => setSelectedTarget(ppa),
                                 }}
                                 isDialog={true}
                             />
@@ -358,22 +342,16 @@ export default function PpaMoveDialog({
                             <>
                                 <Button
                                     variant="outline"
-                                    onClick={() => handleMove('top')}
-                                    disabled={
-                                        !buttonLabels.siblingEnabled || loading
-                                    }
+                                    onClick={() => handleMove("top")}
+                                    disabled={!buttonLabels.siblingEnabled || loading}
                                 >
-                                    <ArrowUpToLine className="mr-2 h-4 w-4" />{' '}
-                                    Move Above Sibling
+                                    <ArrowUpToLine className="mr-2 h-4 w-4" /> Move Above Sibling
                                 </Button>
                                 <Button
-                                    onClick={() => handleMove('bottom')}
-                                    disabled={
-                                        !buttonLabels.siblingEnabled || loading
-                                    }
+                                    onClick={() => handleMove("bottom")}
+                                    disabled={!buttonLabels.siblingEnabled || loading}
                                 >
-                                    <ArrowDownToLine className="mr-2 h-4 w-4" />{' '}
-                                    Move Below Sibling
+                                    <ArrowDownToLine className="mr-2 h-4 w-4" /> Move Below Sibling
                                 </Button>
                             </>
                         )}
@@ -381,10 +359,8 @@ export default function PpaMoveDialog({
                         {/* CONDITION B: Show single dynamic "Move Here" / "Move Into Folder" action button */}
                         {buttonLabels.showMoveHereButton && (
                             <Button
-                                onClick={() => handleMove('into')}
-                                disabled={
-                                    !buttonLabels.moveHereEnabled || loading
-                                }
+                                onClick={() => handleMove("into")}
+                                disabled={!buttonLabels.moveHereEnabled || loading}
                                 className="gap-2"
                             >
                                 {loading ? (

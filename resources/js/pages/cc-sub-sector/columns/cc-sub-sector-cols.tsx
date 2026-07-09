@@ -1,28 +1,28 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, Trash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import type { CcSubSector } from '@/types/global';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Pencil, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { CcSubSector } from "@/types";
 
 const columnHelper = createColumnHelper<CcSubSector>();
 
 const columns = [
-    columnHelper.accessor('code', {
-        header: 'Code',
+    columnHelper.accessor("code", {
+        header: "Code",
         size: 200,
         cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
     }),
-    columnHelper.accessor('name', {
-        header: 'Name',
+    columnHelper.accessor("name", {
+        header: "Name",
         size: 400,
         cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
     }),
-    columnHelper.accessor('strategic_priority.name', {
-        header: 'Strategic Priority',
+    columnHelper.accessor("strategic_priority.name", {
+        header: "Strategic Priority",
         size: 200,
         cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.display({
-        id: 'action',
+        id: "action",
         size: 86,
         cell: ({ row, table }) => (
             <div className="flex gap-1">

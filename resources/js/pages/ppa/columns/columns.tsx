@@ -1,20 +1,9 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import {
-    CheckCircle2,
-    XCircle,
-    Pencil,
-    Trash,
-    Move,
-    FolderOpen,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import type { Ppa } from '@/types/global';
-import {
-    ButtonGroup,
-    ButtonGroupSeparator,
-    ButtonGroupText,
-} from '@/components/ui/button-group';
+import { createColumnHelper } from "@tanstack/react-table";
+import { CheckCircle2, XCircle, Pencil, Trash, Move, FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { Ppa } from "@/types";
+import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "@/components/ui/button-group";
 
 const columnHelper = createColumnHelper<Ppa>();
 
@@ -29,7 +18,7 @@ const columns = (ppaData: Ppa[]) => {
     if (hasMove) {
         cols.push(
             columnHelper.display({
-                id: 'drag-handle',
+                id: "drag-handle",
                 size: 100,
                 cell: ({ row, table }) => {
                     return (
@@ -39,9 +28,7 @@ const columns = (ppaData: Ppa[]) => {
                                     size="icon"
                                     variant="ghost"
                                     onClick={() =>
-                                        (table.options.meta as any)?.onMove?.(
-                                            row.original,
-                                        )
+                                        (table.options.meta as any)?.onMove?.(row.original)
                                     }
                                 >
                                     <Move />
@@ -54,17 +41,15 @@ const columns = (ppaData: Ppa[]) => {
         );
     }
     cols.push(
-        columnHelper.accessor('full_code', {
-            header: 'AIP Reference Code',
+        columnHelper.accessor("full_code", {
+            header: "AIP Reference Code",
             size: 200,
             cell: (value) => {
-                return (
-                    <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>
-                );
+                return <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>;
             },
         }),
-        columnHelper.accessor('name', {
-            header: 'Program/Project/Activity Description',
+        columnHelper.accessor("name", {
+            header: "Program/Project/Activity Description",
             size: 400,
             cell: (info) => {
                 const ppa = info.row.original;
@@ -74,9 +59,7 @@ const columns = (ppaData: Ppa[]) => {
                         className="flex items-center gap-2"
                     >
                         {info.row.depth > 0 && (
-                            <span className="text-muted-foreground opacity-50">
-                                ↳
-                            </span>
+                            <span className="text-muted-foreground opacity-50">↳</span>
                         )}
 
                         <div className="flex flex-col">
@@ -86,9 +69,7 @@ const columns = (ppaData: Ppa[]) => {
 
                             <span
                                 className={`leading-tight break-words whitespace-normal ${
-                                    info.row.depth === 0
-                                        ? 'font-bold'
-                                        : 'font-medium'
+                                    info.row.depth === 0 ? "font-bold" : "font-medium"
                                 }`}
                             >
                                 {ppa.name}
@@ -98,8 +79,8 @@ const columns = (ppaData: Ppa[]) => {
                 );
             },
         }),
-        columnHelper.accessor('is_active', {
-            header: 'Status',
+        columnHelper.accessor("is_active", {
+            header: "Status",
             cell: (value) => {
                 const active = value.getValue<boolean>();
                 return active ? (
@@ -114,7 +95,7 @@ const columns = (ppaData: Ppa[]) => {
             },
         }),
         columnHelper.display({
-            id: 'action',
+            id: "action",
             size: actionSize,
             cell: ({ row, table }) => {
                 const childrenCount = row.original.children_count;
@@ -135,12 +116,8 @@ const columns = (ppaData: Ppa[]) => {
                                 size="icon"
                                 variant="outline"
                                 title="Open PPA"
-                                onClick={() =>
-                                    table.options.meta?.onShowChildren?.(
-                                        row.original,
-                                    )
-                                }
-                                disabled={row.original.type === 'Sub-Activity'}
+                                onClick={() => table.options.meta?.onShowChildren?.(row.original)}
+                                disabled={row.original.type === "Sub-Activity"}
                             >
                                 <FolderOpen />
                             </Button>
@@ -150,9 +127,7 @@ const columns = (ppaData: Ppa[]) => {
                             <Button
                                 size="icon"
                                 variant="outline"
-                                onClick={() =>
-                                    table.options.meta?.onEdit?.(row.original)
-                                }
+                                onClick={() => table.options.meta?.onEdit?.(row.original)}
                                 title="Edit PPA"
                             >
                                 <Pencil />
@@ -163,9 +138,7 @@ const columns = (ppaData: Ppa[]) => {
                             <Button
                                 size="icon"
                                 variant="destructive"
-                                onClick={() =>
-                                    table.options.meta?.onDelete?.(row.original)
-                                }
+                                onClick={() => table.options.meta?.onDelete?.(row.original)}
                                 title="Delete PPA"
                             >
                                 <Trash />

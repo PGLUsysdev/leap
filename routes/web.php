@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AipCostingController;
 use App\Http\Controllers\AipEntryController;
@@ -35,10 +36,11 @@ use App\Http\Controllers\SalaryStandardController;
 use App\Models\GovSalarySchedule;
 use App\Models\PlantillaPosition;
 use App\Models\SalaryStandard;
-use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::redirect('/', '/login');
+
+Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name(

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { ChevronsUpDown, X } from 'lucide-react';
+import React, { useState } from "react";
+import { ChevronsUpDown, X } from "lucide-react";
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import {
     Command,
@@ -12,12 +12,12 @@ import {
     CommandInput,
     CommandItem,
     CommandDialog,
-} from '@/components/ui/command';
+} from "@/components/ui/command";
 
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
-import type { FundingSource } from '@/types/global';
+import type { FundingSource } from "@/types";
 
 interface MultiSelectProps {
     options: FundingSource[];
@@ -30,7 +30,7 @@ export function MultiSelect({
     options,
     value,
     onChange,
-    placeholder = 'Select items',
+    placeholder = "Select items",
 }: MultiSelectProps) {
     const [openDialog, setOpenDialog] = useState(false);
 
@@ -60,9 +60,7 @@ export function MultiSelect({
                 >
                     <div className="flex flex-wrap gap-1">
                         {value.length === 0 && (
-                            <span className="text-muted-foreground">
-                                {placeholder}
-                            </span>
+                            <span className="text-muted-foreground">{placeholder}</span>
                         )}
 
                         {value.map((option) => (
@@ -86,10 +84,7 @@ export function MultiSelect({
                 {/* Selected Items Display */}
                 <div className="flex flex-col gap-2">
                     {value.map((option) => (
-                        <div
-                            key={option.id}
-                            className="rounded-md border bg-muted p-2"
-                        >
+                        <div key={option.id} className="rounded-md border bg-muted p-2">
                             {option.code} - {option.title}
                         </div>
                     ))}
@@ -108,9 +103,7 @@ export function MultiSelect({
                     <CommandGroup>
                         <ScrollArea className="h-[400px]">
                             {options.map((option) => {
-                                const selected = value.some(
-                                    (v) => v.id === option.id,
-                                );
+                                const selected = value.some((v) => v.id === option.id);
 
                                 return (
                                     <CommandItem
@@ -120,16 +113,12 @@ export function MultiSelect({
                                     >
                                         <Checkbox
                                             checked={selected}
-                                            onCheckedChange={() =>
-                                                toggle(option)
-                                            }
+                                            onCheckedChange={() => toggle(option)}
                                             className="mr-2"
                                         />
 
                                         <div>
-                                            <p className="text-xs opacity-50">
-                                                {option.fund_type}
-                                            </p>
+                                            <p className="text-xs opacity-50">{option.fund_type}</p>
 
                                             <div className="flex items-center gap-2">
                                                 <p className="font-bold whitespace-nowrap">

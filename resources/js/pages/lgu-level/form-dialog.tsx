@@ -1,20 +1,14 @@
-import { useEffect, useState } from 'react';
-import type { LguLevel } from '@/types/global';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import * as z from 'zod';
-import {
-    Field,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-    FieldContent,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { router, usePage } from '@inertiajs/react';
-import { FormDialogShell } from '@/components/form-dialog-shell';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import { useEffect, useState } from "react";
+import type { LguLevel } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldContent } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { router, usePage } from "@inertiajs/react";
+import { FormDialogShell } from "@/components/form-dialog-shell";
+import { AlertErrorDialog } from "@/components/alert-error-dialog";
 
 interface FormDialogProps {
     open: boolean;
@@ -26,20 +20,16 @@ const formSchema = z.object({
     code: z
         .string()
         .trim()
-        .length(1, { message: 'Code must be exactly 1 character' })
-        .regex(/^\d$/, { message: 'Code must be a number' }),
+        .length(1, { message: "Code must be exactly 1 character" })
+        .regex(/^\d$/, { message: "Code must be a number" }),
     name: z
         .string()
         .trim()
-        .min(1, { message: 'Level is required' })
-        .max(50, { message: 'Level must not exceed 50 characters' }),
+        .min(1, { message: "Level is required" })
+        .max(50, { message: "Level must not exceed 50 characters" }),
 });
 
-export default function FormDialog({
-    open,
-    setOpen,
-    initialData,
-}: FormDialogProps) {
+export default function FormDialog({ open, setOpen, initialData }: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
     const isEditing = !!initialData;
 
@@ -50,8 +40,8 @@ export default function FormDialog({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            code: '',
-            name: '',
+            code: "",
+            name: "",
         },
     });
 
@@ -59,8 +49,8 @@ export default function FormDialog({
         if (open) {
             form.reset(
                 initialData ?? {
-                    code: '',
-                    name: '',
+                    code: "",
+                    name: "",
                 },
             );
         }
@@ -83,7 +73,7 @@ export default function FormDialog({
                 onError: (errors) => {
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: 'server',
+                            type: "server",
                             message: errors[key],
                         });
                     });
@@ -91,7 +81,7 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post('/lgu-levels', data, {
+            router.post("/lgu-levels", data, {
                 preserveScroll: true,
                 preserveState: true,
                 onStart: () => setIsLoading(true),
@@ -99,7 +89,7 @@ export default function FormDialog({
                 onError: (errors) => {
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: 'server',
+                            type: "server",
                             message: errors[key],
                         });
                     });
@@ -114,40 +104,30 @@ export default function FormDialog({
             <FormDialogShell
                 open={open}
                 onOpenChange={setOpen}
-                title={isEditing ? 'Edit Lgu Level' : 'Add New Lgu Level'}
+                title={isEditing ? "Edit Lgu Level" : "Add New Lgu Level"}
                 description={
                     isEditing
-                        ? 'Modify the details of the existing Lgu level below.'
-                        : 'Fill in the information to create a new LGU level record.'
+                        ? "Modify the details of the existing Lgu level below."
+                        : "Fill in the information to create a new LGU level record."
                 }
                 isLoading={isLoading}
                 formId="lgu-level-form"
                 onCancel={() => setOpen(false)}
-                submitLabel={isEditing ? 'Save Changes' : 'Create Level'}
-                submittingLabel={
-                    isEditing ? 'Saving Changes' : 'Creating Level'
-                }
+                submitLabel={isEditing ? "Save Changes" : "Create Level"}
+                submittingLabel={isEditing ? "Saving Changes" : "Creating Level"}
                 className="sm:max-w-sm"
             >
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
-                        <form
-                            id="lgu-level-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
+                        <form id="lgu-level-form" onSubmit={form.handleSubmit(onSubmit)}>
                             <FieldGroup>
                                 <Controller
                                     name="code"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Code
                                                     {/*<span className="text-red-500">
                                                     *
@@ -157,29 +137,22 @@ export default function FormDialog({
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     placeholder="Enter code..."
                                                     autoComplete="off"
                                                     maxLength={1}
                                                     onChange={(e) => {
                                                         // Regex to remove any non-numeric characters
-                                                        const value =
-                                                            e.target.value.replace(
-                                                                /\D/g,
-                                                                '',
-                                                            );
+                                                        const value = e.target.value.replace(
+                                                            /\D/g,
+                                                            "",
+                                                        );
                                                         field.onChange(value);
                                                     }}
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -190,14 +163,9 @@ export default function FormDialog({
                                     name="name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Title
                                                     {/*<span className="text-red-500">
                                                     *
@@ -207,19 +175,13 @@ export default function FormDialog({
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     placeholder="Title..."
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -231,11 +193,7 @@ export default function FormDialog({
                 </div>
             </FormDialogShell>
 
-            <AlertErrorDialog
-                open={showError}
-                onOpenChange={setShowError}
-                error={errorMessage}
-            />
+            <AlertErrorDialog open={showError} onOpenChange={setShowError} error={errorMessage} />
         </>
     );
 }

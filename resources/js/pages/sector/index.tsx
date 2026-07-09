@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import FormDialog from './form-dialog';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { router } from '@inertiajs/react';
-import type { Sector } from '@/types/global';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/columns';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import FormDialog from "./form-dialog";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import { DeleteDialog } from "@/components/delete-dialog";
+import { router } from "@inertiajs/react";
+import type { Sector } from "@/types";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/columns";
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Sectors', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Sectors", href: "#" }];
 
 interface SectorPageProps {
     sectors: Sector[];
@@ -80,11 +80,7 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
                 </DataTable>
             </div>
 
-            <FormDialog
-                open={open}
-                setOpen={handleDialogOpenChange}
-                initialData={selectedSector}
-            />
+            <FormDialog open={open} setOpen={handleDialogOpenChange} initialData={selectedSector} />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
@@ -92,11 +88,8 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
                 title="Delete Sector?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
-                        <span className="font-bold text-foreground">
-                            "{selectedSector?.name}"
-                        </span>
-                        ?
+                        Are you sure you want to remove{" "}
+                        <span className="font-bold text-foreground">"{selectedSector?.name}"</span>?
                     </>
                 }
                 onConfirm={handleDelete}

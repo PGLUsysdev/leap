@@ -1,48 +1,25 @@
-import { login } from '@/routes';
-import { store } from '@/routes/register';
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head } from "@inertiajs/react";
+import InputError from "@/components/input-error";
+import PasswordInput from "@/components/password-input";
+import TextLink from "@/components/text-link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
+import { login } from "@/routes";
+import { store } from "@/routes/register";
 
-import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
+type Props = {
+    passwordRules: string;
+};
 
-import { usePage } from '@inertiajs/react';
-
-export default function Register() {
-    const { flash } = usePage().props as any;
-
-    if (flash?.status === 'awaiting-approval') {
-        return (
-            <AuthLayout
-                title="Account Pending"
-                description="Your registration was successful."
-            >
-                <div className="space-y-4 text-center">
-                    <p className="text-sm text-muted-foreground">
-                        An administrator needs to approve your account before
-                        you can log in. You'll get an email once you're cleared!
-                    </p>
-                    <Button asChild className="w-full">
-                        <a href="/login">Back to Login</a>
-                    </Button>
-                </div>
-            </AuthLayout>
-        );
-    }
-
+export default function Register({ passwordRules }: Props) {
     return (
-        <AuthLayout
-            title="Create an account"
-            description="Enter your details below to create your account"
-        >
+        <>
             <Head title="Register" />
             <Form
                 {...store.form()}
-                resetOnSuccess={['password', 'password_confirmation']}
+                resetOnSuccess={["password", "password_confirmation"]}
                 disableWhileProcessing
                 className="flex flex-col gap-6"
             >
@@ -61,10 +38,7 @@ export default function Register() {
                                     name="name"
                                     placeholder="Full name"
                                 />
-                                <InputError
-                                    message={errors.name}
-                                    className="mt-2"
-                                />
+                                <InputError message={errors.name} className="mt-2" />
                             </div>
 
                             <div className="grid gap-2">
@@ -83,34 +57,30 @@ export default function Register() {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password">Password</Label>
-                                <Input
+                                <PasswordInput
                                     id="password"
-                                    type="password"
                                     required
                                     tabIndex={3}
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
+                                    passwordrules={passwordRules}
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">
-                                    Confirm password
-                                </Label>
-                                <Input
+                                <Label htmlFor="password_confirmation">Confirm password</Label>
+                                <PasswordInput
                                     id="password_confirmation"
-                                    type="password"
                                     required
                                     tabIndex={4}
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Confirm password"
+                                    passwordrules={passwordRules}
                                 />
-                                <InputError
-                                    message={errors.password_confirmation}
-                                />
+                                <InputError message={errors.password_confirmation} />
                             </div>
 
                             <Button
@@ -125,7 +95,7 @@ export default function Register() {
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{' '}
+                            Already have an account?{" "}
                             <TextLink href={login()} tabIndex={6}>
                                 Log in
                             </TextLink>
@@ -133,6 +103,11 @@ export default function Register() {
                     </>
                 )}
             </Form>
-        </AuthLayout>
+        </>
     );
 }
+
+Register.layout = {
+    title: "Create an account",
+    description: "Enter your details below to create your account",
+};

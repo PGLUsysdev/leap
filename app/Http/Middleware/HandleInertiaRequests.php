@@ -2,8 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -36,36 +36,13 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
-
-        // 1. Get the year from session, or find the latest 'draft' one as default
-        $yearId = $request->session()->get('active_fiscal_year_id');
-
-        if (!$yearId) {
-            $yearId = \App\Models\FiscalYear::where('status', 'draft')
-                ->orderBy('year', 'desc')
-                ->value('id');
-
-            // If no 'draft' exists, fallback to the literal latest year record
-            if (!$yearId) {
-                $yearId = \App\Models\FiscalYear::orderBy(
-                    'year',
-                    'desc',
-                )->value('id');
-            }
-
-            // Optional: Save this to the session so it persists for the rest of the visit
-            if ($yearId) {
-                $request->session()->put('active_fiscal_year_id', $yearId);
-            }
-        }
+        Log::info($request->user());
 
         return [
             ...parent::share($request),
             'name' => config('app.name'),
-            'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
-                'user' => $request->user()?->load('office'),
+                'user' => $request->user(),
                 'permissions' =>
                     $request
                         ->user()
@@ -76,10 +53,6 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' =>
                 !$request->hasCookie('sidebar_state') ||
                 $request->cookie('sidebar_state') === 'true',
-            'flash' => [
-                'status' => $request->session()->get('status'),
-            ],
-            'activeYear' => \App\Models\FiscalYear::find($yearId),
         ];
     }
 }

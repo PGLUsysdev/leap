@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import type { Office, Position, Role, User } from '@/types/global';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/columns';
-import FormDialog from './form-dialog';
+import { useState } from "react";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import type { Office, Position, Role, User } from "@/types";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/columns";
+import FormDialog from "./form-dialog";
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Users', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Users", href: "#" }];
 
 interface UsersIndexProps {
     users: User[] | null;
@@ -24,13 +24,7 @@ interface UsersIndexProps {
     };
 }
 
-export default function UsersIndex({
-    users,
-    roles,
-    offices,
-    positions,
-    can,
-}: UsersIndexProps) {
+export default function UsersIndex({ users, roles, offices, positions, can }: UsersIndexProps) {
     // console.log({ users, can });
     console.log(offices);
 

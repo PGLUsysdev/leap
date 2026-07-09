@@ -1,13 +1,9 @@
-import { DataTable } from '@/components/data-table';
-import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem } from '@/types';
-import type {
-    FiscalYear,
-    SalaryStandard,
-    SalaryScheduleMatrixRow,
-} from '@/types/global';
-import getColumns from './columns/salary-standard-cols';
-import { useMemo, useState } from 'react';
+import { DataTable } from "@/components/data-table";
+import AppLayout from "@/layouts/app-layout";
+import type { BreadcrumbItem } from "@/types";
+import type { FiscalYear, SalaryStandard, SalaryScheduleMatrixRow } from "@/types";
+import getColumns from "./columns/salary-standard-cols";
+import { useMemo, useState } from "react";
 import {
     Select,
     SelectContent,
@@ -16,17 +12,15 @@ import {
     SelectLabel,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Salary Standards', href: '#' },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Salary Standards", href: "#" }];
 
 const TRANCHE_MAP: Record<number, string> = {
-    2024: 'First Tranche',
-    2025: 'Second Tranche',
-    2026: 'Third Tranche',
-    2027: 'Fourth Tranche',
+    2024: "First Tranche",
+    2025: "Second Tranche",
+    2026: "Third Tranche",
+    2027: "Fourth Tranche",
 };
 
 interface SalaryStandardProps {
@@ -34,30 +28,21 @@ interface SalaryStandardProps {
     fiscalYears: FiscalYear[];
 }
 
-export default function SalaryStandard({
-    salaryStandtards,
-    fiscalYears,
-}: SalaryStandardProps) {
+export default function SalaryStandard({ salaryStandtards, fiscalYears }: SalaryStandardProps) {
     console.log(salaryStandtards);
 
-    const activeFiscalYear = fiscalYears.find((fy) => fy.status === 'draft');
+    const activeFiscalYear = fiscalYears.find((fy) => fy.status === "draft");
     const [selectedFiscalYearId, setSelectedFiscalYearId] = useState<number>(
         activeFiscalYear?.id ?? fiscalYears[0]?.id,
     );
 
-    const selectedFiscalYear = fiscalYears.find(
-        (fy) => fy.id === selectedFiscalYearId,
-    );
-    const trancheLabel = selectedFiscalYear
-        ? TRANCHE_MAP[selectedFiscalYear.year]
-        : null;
+    const selectedFiscalYear = fiscalYears.find((fy) => fy.id === selectedFiscalYearId);
+    const trancheLabel = selectedFiscalYear ? TRANCHE_MAP[selectedFiscalYear.year] : null;
 
     const filteredStandards = useMemo(
         () =>
             selectedFiscalYearId
-                ? salaryStandtards.filter(
-                      (s) => s.fiscal_year_id === selectedFiscalYearId,
-                  )
+                ? salaryStandtards.filter((s) => s.fiscal_year_id === selectedFiscalYearId)
                 : salaryStandtards,
         [salaryStandtards, selectedFiscalYearId],
     );
@@ -79,9 +64,7 @@ export default function SalaryStandard({
             const fyId = item.fiscal_year_id;
             const grade = item.salary_grade;
             const step = item.step_increment;
-            const rate = item.monthly_rate
-                ? parseFloat(item.monthly_rate)
-                : null;
+            const rate = item.monthly_rate ? parseFloat(item.monthly_rate) : null;
 
             if (step > detectedMaxStep) {
                 detectedMaxStep = step;
@@ -110,9 +93,7 @@ export default function SalaryStandard({
 
                 for (let s = 1; s <= detectedMaxStep; s++) {
                     row[`step_${s}`] =
-                        group.steps[`step_${s}`] !== undefined
-                            ? group.steps[`step_${s}`]
-                            : null;
+                        group.steps[`step_${s}`] !== undefined ? group.steps[`step_${s}`] : null;
                 }
 
                 return row as SalaryScheduleMatrixRow;
@@ -133,26 +114,18 @@ export default function SalaryStandard({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="pt-4">
-                <DataTable
-                    columns={columns}
-                    data={matrixData}
-                    withSearch={true}
-                    negativeHeight={8}
-                >
+                <DataTable columns={columns} data={matrixData} withSearch={true} negativeHeight={8}>
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-semibold whitespace-nowrap">
                                 Salary Standards
-                                {selectedFiscalYear &&
-                                    ` — ${selectedFiscalYear.year}`}
+                                {selectedFiscalYear && ` — ${selectedFiscalYear.year}`}
                                 {trancheLabel && ` (${trancheLabel})`}
                             </h2>
                         </div>
                         <Select
                             value={String(selectedFiscalYearId)}
-                            onValueChange={(value) =>
-                                setSelectedFiscalYearId(Number(value))
-                            }
+                            onValueChange={(value) => setSelectedFiscalYearId(Number(value))}
                         >
                             <SelectTrigger className="w-full max-w-48">
                                 <SelectValue placeholder="Select Fiscal Year" />
@@ -161,10 +134,7 @@ export default function SalaryStandard({
                                 <SelectGroup>
                                     <SelectLabel>Fiscal Years</SelectLabel>
                                     {fiscalYears.map((fy) => (
-                                        <SelectItem
-                                            key={fy.id}
-                                            value={String(fy.id)}
-                                        >
+                                        <SelectItem key={fy.id} value={String(fy.id)}>
                                             {fy.year}
                                         </SelectItem>
                                     ))}

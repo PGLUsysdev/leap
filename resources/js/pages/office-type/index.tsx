@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import FormDialog from './form-dialog';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { router } from '@inertiajs/react';
-import type { OfficeType } from '@/types/global';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/columns';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import FormDialog from "./form-dialog";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import { DeleteDialog } from "@/components/delete-dialog";
+import { router } from "@inertiajs/react";
+import type { OfficeType } from "@/types";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/columns";
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Office Types', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Office Types", href: "#" }];
 
 interface OfficeTypePageProps {
     officeTypes: OfficeType[];
@@ -20,13 +20,9 @@ interface OfficeTypePageProps {
     };
 }
 
-export default function OfficeTypePage({
-    officeTypes,
-    can,
-}: OfficeTypePageProps) {
+export default function OfficeTypePage({ officeTypes, can }: OfficeTypePageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedOfficeType, setSelectedOfficeType] =
-        useState<OfficeType | null>(null);
+    const [selectedOfficeType, setSelectedOfficeType] = useState<OfficeType | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -96,7 +92,7 @@ export default function OfficeTypePage({
                 title="Delete Office Type?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
+                        Are you sure you want to remove{" "}
                         <span className="font-bold text-foreground">
                             "{selectedOfficeType?.name}"
                         </span>

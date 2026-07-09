@@ -1,12 +1,12 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import type { Ppmp } from '@/types/global';
-import { Decimal } from 'decimal.js';
-import { Trash } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { router } from '@inertiajs/react';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import type { Ppmp } from "@/types";
+import { Decimal } from "decimal.js";
+import { Trash } from "lucide-react";
+import { useState, useEffect } from "react";
+import { router } from "@inertiajs/react";
 
 interface EditableCellProps {
     getValue: () => any;
@@ -16,9 +16,9 @@ interface EditableCellProps {
 }
 
 const formatNumber = (val: string | number) => {
-    const num = typeof val === 'string' ? parseFloat(val) : val;
+    const num = typeof val === "string" ? parseFloat(val) : val;
     return isNaN(num) || num === null
-        ? '0.00'
+        ? "0.00"
         : num.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -26,10 +26,9 @@ const formatNumber = (val: string | number) => {
 };
 
 const formatInteger = (val: string | number) => {
-    const num =
-        typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val;
+    const num = typeof val === "string" ? parseFloat(val.replace(/,/g, "")) : val;
 
-    if (isNaN(num) || num === null) return '0';
+    if (isNaN(num) || num === null) return "0";
 
     return num.toLocaleString(undefined, {
         minimumFractionDigits: 0,
@@ -37,16 +36,9 @@ const formatInteger = (val: string | number) => {
     });
 };
 
-const EditableCell: React.FC<EditableCellProps> = ({
-    getValue,
-    row,
-    column,
-    table,
-}) => {
+const EditableCell: React.FC<EditableCellProps> = ({ getValue, row, column, table }) => {
     const initialValue = getValue();
-    const [localValue, setLocalValue] = useState<string>(
-        formatInteger(initialValue),
-    );
+    const [localValue, setLocalValue] = useState<string>(formatInteger(initialValue));
     const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
@@ -54,20 +46,20 @@ const EditableCell: React.FC<EditableCellProps> = ({
     }, [initialValue]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
+        if (e.key === "Enter") {
             e.currentTarget.blur();
         }
     };
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-        const rawValue = localValue.replace(/,/g, '');
+        const rawValue = localValue.replace(/,/g, "");
         setLocalValue(rawValue);
         setTimeout(() => e.target.select(), 0);
     };
 
     const handleBlur = () => {
-        const cleanValue = localValue.replace(/,/g, '');
-        const cleanInitial = String(initialValue || '0').replace(/,/g, '');
+        const cleanValue = localValue.replace(/,/g, "");
+        const cleanInitial = String(initialValue || "0").replace(/,/g, "");
 
         if (cleanValue === cleanInitial) {
             setLocalValue(formatInteger(cleanValue));
@@ -85,7 +77,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
             {
                 preserveScroll: true,
                 preserveState: true,
-                only: ['ppmps'],
+                only: ["ppmps"],
                 onSuccess: () => {},
                 onError: () => {
                     setLocalValue(formatInteger(initialValue));
@@ -115,18 +107,18 @@ const EditableCell: React.FC<EditableCellProps> = ({
 
 // Define keys to safely access dynamic month properties on the object
 type MonthKey =
-    | 'jan'
-    | 'feb'
-    | 'mar'
-    | 'apr'
-    | 'may'
-    | 'jun'
-    | 'jul'
-    | 'aug'
-    | 'sep'
-    | 'oct'
-    | 'nov'
-    | 'dec';
+    | "jan"
+    | "feb"
+    | "mar"
+    | "apr"
+    | "may"
+    | "jun"
+    | "jul"
+    | "aug"
+    | "sep"
+    | "oct"
+    | "nov"
+    | "dec";
 
 interface MonthConfig {
     qtyKey: `${MonthKey}_qty`;
@@ -138,76 +130,76 @@ interface MonthConfig {
 // 12 Months Configuration Array
 const MONTHS: MonthConfig[] = [
     {
-        qtyKey: 'jan_qty',
-        amountKey: 'jan_amount',
-        qtyHeader: 'JAN-QTY',
-        amountHeader: 'JAN',
+        qtyKey: "jan_qty",
+        amountKey: "jan_amount",
+        qtyHeader: "JAN-QTY",
+        amountHeader: "JAN",
     },
     {
-        qtyKey: 'feb_qty',
-        amountKey: 'feb_amount',
-        qtyHeader: 'FEB-QTY',
-        amountHeader: 'FEB',
+        qtyKey: "feb_qty",
+        amountKey: "feb_amount",
+        qtyHeader: "FEB-QTY",
+        amountHeader: "FEB",
     },
     {
-        qtyKey: 'mar_qty',
-        amountKey: 'mar_amount',
-        qtyHeader: 'MAR-QTY',
-        amountHeader: 'MAR',
+        qtyKey: "mar_qty",
+        amountKey: "mar_amount",
+        qtyHeader: "MAR-QTY",
+        amountHeader: "MAR",
     },
     {
-        qtyKey: 'apr_qty',
-        amountKey: 'apr_amount',
-        qtyHeader: 'APR-QTY',
-        amountHeader: 'APR',
+        qtyKey: "apr_qty",
+        amountKey: "apr_amount",
+        qtyHeader: "APR-QTY",
+        amountHeader: "APR",
     },
     {
-        qtyKey: 'may_qty',
-        amountKey: 'may_amount',
-        qtyHeader: 'MAY-QTY',
-        amountHeader: 'MAY',
+        qtyKey: "may_qty",
+        amountKey: "may_amount",
+        qtyHeader: "MAY-QTY",
+        amountHeader: "MAY",
     },
     {
-        qtyKey: 'jun_qty',
-        amountKey: 'jun_amount',
-        qtyHeader: 'JUN-QTY',
-        amountHeader: 'JUNE',
+        qtyKey: "jun_qty",
+        amountKey: "jun_amount",
+        qtyHeader: "JUN-QTY",
+        amountHeader: "JUNE",
     },
     {
-        qtyKey: 'jul_qty',
-        amountKey: 'jul_amount',
-        qtyHeader: 'JUL-QTY',
-        amountHeader: 'JULY',
+        qtyKey: "jul_qty",
+        amountKey: "jul_amount",
+        qtyHeader: "JUL-QTY",
+        amountHeader: "JULY",
     },
     {
-        qtyKey: 'aug_qty',
-        amountKey: 'aug_amount',
-        qtyHeader: 'AUG-QTY',
-        amountHeader: 'AUG',
+        qtyKey: "aug_qty",
+        amountKey: "aug_amount",
+        qtyHeader: "AUG-QTY",
+        amountHeader: "AUG",
     },
     {
-        qtyKey: 'sep_qty',
-        amountKey: 'sep_amount',
-        qtyHeader: 'SEP-QTY',
-        amountHeader: 'SEP',
+        qtyKey: "sep_qty",
+        amountKey: "sep_amount",
+        qtyHeader: "SEP-QTY",
+        amountHeader: "SEP",
     },
     {
-        qtyKey: 'oct_qty',
-        amountKey: 'oct_amount',
-        qtyHeader: 'OCT-QTY',
-        amountHeader: 'OCT',
+        qtyKey: "oct_qty",
+        amountKey: "oct_amount",
+        qtyHeader: "OCT-QTY",
+        amountHeader: "OCT",
     },
     {
-        qtyKey: 'nov_qty',
-        amountKey: 'nov_amount',
-        qtyHeader: 'NOV-QTY',
-        amountHeader: 'NOV',
+        qtyKey: "nov_qty",
+        amountKey: "nov_amount",
+        qtyHeader: "NOV-QTY",
+        amountHeader: "NOV",
     },
     {
-        qtyKey: 'dec_qty',
-        amountKey: 'dec_amount',
-        qtyHeader: 'DEC-QTY',
-        amountHeader: 'DEC',
+        qtyKey: "dec_qty",
+        amountKey: "dec_amount",
+        qtyHeader: "DEC-QTY",
+        amountHeader: "DEC",
     },
 ];
 
@@ -240,15 +232,13 @@ const columns = [
     //         ),
     //     },
     // ),
-    columnHelper.accessor('ppmp_price_list.item_number', {
+    columnHelper.accessor("ppmp_price_list.item_number", {
         // id: 'item_number',
         size: 150,
         header: () => <div className="pr-20 text-right">Item No.</div>,
-        cell: ({ getValue }) => (
-            <div className="pr-20 text-right">{getValue()}</div>
-        ),
+        cell: ({ getValue }) => <div className="pr-20 text-right">{getValue()}</div>,
     }),
-    columnHelper.accessor('ppmp_price_list.description', {
+    columnHelper.accessor("ppmp_price_list.description", {
         // id: 'description',
         header: () => <div>Description</div>,
         size: 300,
@@ -290,24 +280,22 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor('ppmp_price_list.unit_of_measurement', {
+    columnHelper.accessor("ppmp_price_list.unit_of_measurement", {
         // id: 'unit_of_measurement',
         size: 150,
         header: () => <div>Unit of Measurement</div>,
         cell: ({ getValue }) => <div className="text-wrap">{getValue()}</div>,
     }),
-    columnHelper.accessor('ppmp_price_list.price', {
+    columnHelper.accessor("ppmp_price_list.price", {
         // id: 'price',
         size: 150,
         header: () => <div className="text-right">PRICELIST</div>,
         cell: ({ getValue }) => (
-            <div className="text-right">
-                {formatNumber(Number(getValue()) || 0)}
-            </div>
+            <div className="text-right">{formatNumber(Number(getValue()) || 0)}</div>
         ),
     }),
     columnHelper.display({
-        id: 'cy_qty',
+        id: "cy_qty",
         size: 150,
         header: () => <div className="text-right">CY 2026-QTY</div>,
         cell: ({ row }) => {
@@ -316,11 +304,7 @@ const columns = [
                 (sum, month) => sum + (Number(ppmp[month.qtyKey]) || 0),
                 0,
             );
-            return (
-                <div className="text-right">
-                    {formatInteger(totalQty.toString())}
-                </div>
-            );
+            return <div className="text-right">{formatInteger(totalQty.toString())}</div>;
         },
     }),
     columnHelper.accessor(
@@ -330,27 +314,20 @@ const columns = [
                 new Decimal(0),
             ).toNumber(),
         {
-            id: 'total_amount',
+            id: "total_amount",
             size: 150,
             header: () => <div className="text-right">TOTAL</div>,
             cell: ({ getValue }) => (
-                <div className="text-right">
-                    {formatNumber(String(getValue()))}
-                </div>
+                <div className="text-right">{formatNumber(String(getValue()))}</div>
             ),
             footer: ({ table }) => {
                 const sum = table
                     .getFilteredRowModel()
                     .rows.reduce(
-                        (acc, row) =>
-                            acc.plus(row.getValue<number>('total_amount') || 0),
+                        (acc, row) => acc.plus(row.getValue<number>("total_amount") || 0),
                         new Decimal(0),
                     );
-                return (
-                    <div className="text-right">
-                        {formatNumber(sum.toString())}
-                    </div>
-                );
+                return <div className="text-right">{formatNumber(sum.toString())}</div>;
             },
         },
     ),
@@ -363,35 +340,23 @@ const columns = [
         }),
         columnHelper.accessor(month.amountKey, {
             size: 150,
-            header: () => (
-                <div className="text-right">{month.amountHeader}</div>
-            ),
+            header: () => <div className="text-right">{month.amountHeader}</div>,
             cell: ({ getValue }) => (
-                <div className="text-right">
-                    {formatNumber(String(getValue() ?? 0))}
-                </div>
+                <div className="text-right">{formatNumber(String(getValue() ?? 0))}</div>
             ),
             footer: ({ table }) => {
-                const sum = table
-                    .getFilteredRowModel()
-                    .rows.reduce((acc, row) => {
-                        return acc.plus(
-                            new Decimal(row.getValue(month.amountKey) || 0),
-                        );
-                    }, new Decimal(0));
+                const sum = table.getFilteredRowModel().rows.reduce((acc, row) => {
+                    return acc.plus(new Decimal(row.getValue(month.amountKey) || 0));
+                }, new Decimal(0));
 
-                return (
-                    <div className="text-right">
-                        {formatNumber(sum.toString())}
-                    </div>
-                );
+                return <div className="text-right">{formatNumber(sum.toString())}</div>;
             },
         }),
     ]),
 
     // action
     columnHelper.display({
-        id: 'action',
+        id: "action",
         size: 46,
         cell: ({ row, table }) => {
             // if (!row.original.can?.delete) return null;
@@ -400,9 +365,7 @@ const columns = [
                     <Button
                         size="icon"
                         variant="destructive"
-                        onClick={() =>
-                            table.options.meta?.onDelete?.(row.original)
-                        }
+                        onClick={() => table.options.meta?.onDelete?.(row.original)}
                         disabled={!row.original.can?.delete}
                     >
                         <Trash />

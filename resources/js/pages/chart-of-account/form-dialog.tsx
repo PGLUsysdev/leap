@@ -1,29 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-import type { ChartOfAccount } from '@/types/global';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import * as z from 'zod';
-import {
-    Field,
-    FieldError,
-    FieldLabel,
-    FieldContent,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { router } from '@inertiajs/react';
+import type { ChartOfAccount } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
+import { Field, FieldError, FieldLabel, FieldContent } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { router } from "@inertiajs/react";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { FormDialogShell } from '@/components/form-dialog-shell';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
+} from "@/components/ui/select";
+import { FormDialogShell } from "@/components/form-dialog-shell";
+import { AlertErrorDialog } from "@/components/alert-error-dialog";
 
 interface FormDialogProps {
     open: boolean;
@@ -33,31 +28,24 @@ interface FormDialogProps {
 
 // 1. Schema: Only account_series and description are optional (nullable)
 const formSchema = z.object({
-    account_number: z.string().trim().min(1, 'Account number is required'),
-    account_title: z.string().trim().min(1, 'Account title is required'),
-    account_type: z.enum(
-        ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'],
-        {
-            message: 'Account type is required',
-        },
-    ),
-    expense_class: z.enum(['PS', 'MOOE', 'FE', 'CO'], {
-        message: 'Expense class is required',
+    account_number: z.string().trim().min(1, "Account number is required"),
+    account_title: z.string().trim().min(1, "Account title is required"),
+    account_type: z.enum(["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"], {
+        message: "Account type is required",
     }),
-    account_series: z.string().trim().nullable().or(z.literal('')),
+    expense_class: z.enum(["PS", "MOOE", "FE", "CO"], {
+        message: "Expense class is required",
+    }),
+    account_series: z.string().trim().nullable().or(z.literal("")),
     is_postable: z.boolean(),
     is_active: z.boolean(),
-    normal_balance: z.enum(['DEBIT', 'CREDIT'], {
-        message: 'Normal balance is required',
+    normal_balance: z.enum(["DEBIT", "CREDIT"], {
+        message: "Normal balance is required",
     }),
-    description: z.string().trim().nullable().or(z.literal('')),
+    description: z.string().trim().nullable().or(z.literal("")),
 });
 
-export default function FormDialog({
-    open,
-    setOpen,
-    initialData,
-}: FormDialogProps) {
+export default function FormDialog({ open, setOpen, initialData }: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
 
     const [alertOpen, setAlertOpen] = useState(false);
@@ -68,30 +56,30 @@ export default function FormDialog({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            account_number: '',
-            account_title: '',
-            account_type: 'ASSET',
-            expense_class: 'MOOE',
-            account_series: '',
+            account_number: "",
+            account_title: "",
+            account_type: "ASSET",
+            expense_class: "MOOE",
+            account_series: "",
             is_postable: true,
             is_active: true,
-            normal_balance: 'DEBIT',
-            description: '',
+            normal_balance: "DEBIT",
+            description: "",
         },
     });
 
     useEffect(() => {
         if (open) {
             form.reset({
-                account_number: initialData?.account_number ?? '',
-                account_title: initialData?.account_title ?? '',
-                account_type: (initialData?.account_type as any) ?? 'ASSET',
-                expense_class: (initialData?.expense_class as any) ?? 'MOOE',
-                account_series: initialData?.account_series ?? '',
+                account_number: initialData?.account_number ?? "",
+                account_title: initialData?.account_title ?? "",
+                account_type: (initialData?.account_type as any) ?? "ASSET",
+                expense_class: (initialData?.expense_class as any) ?? "MOOE",
+                account_series: initialData?.account_series ?? "",
                 is_postable: initialData?.is_postable ?? true,
                 is_active: initialData?.is_active ?? true,
-                normal_balance: (initialData?.normal_balance as any) ?? 'DEBIT',
-                description: initialData?.description ?? '',
+                normal_balance: (initialData?.normal_balance as any) ?? "DEBIT",
+                description: initialData?.description ?? "",
             });
         }
     }, [initialData, open, form]);
@@ -99,9 +87,8 @@ export default function FormDialog({
     function onSubmit(values: z.infer<typeof formSchema>) {
         const data = {
             ...values,
-            account_series:
-                values.account_series === '' ? null : values.account_series,
-            description: values.description === '' ? null : values.description,
+            account_series: values.account_series === "" ? null : values.account_series,
+            description: values.description === "" ? null : values.description,
         };
 
         if (isEditing) {
@@ -118,9 +105,7 @@ export default function FormDialog({
                     // Laravel returns an object: { field: "Error message" }
                     const messages = Object.values(errors).flat();
                     const combinedMessage =
-                        messages.length > 0
-                            ? messages.join(' ')
-                            : 'An unexpected error occurred.';
+                        messages.length > 0 ? messages.join(" ") : "An unexpected error occurred.";
 
                     setAlertMessage(combinedMessage);
                     setAlertOpen(true);
@@ -128,7 +113,7 @@ export default function FormDialog({
                     // Optional: Still map errors to fields so they turn red
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: 'server',
+                            type: "server",
                             message: errors[key],
                         });
                     });
@@ -136,7 +121,7 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post('/chart-of-accounts', data, {
+            router.post("/chart-of-accounts", data, {
                 preserveScroll: true,
                 preserveState: true,
                 onStart: () => setIsLoading(true),
@@ -149,9 +134,7 @@ export default function FormDialog({
                     // Laravel returns an object: { field: "Error message" }
                     const messages = Object.values(errors).flat();
                     const combinedMessage =
-                        messages.length > 0
-                            ? messages.join(' ')
-                            : 'An unexpected error occurred.';
+                        messages.length > 0 ? messages.join(" ") : "An unexpected error occurred.";
 
                     setAlertMessage(combinedMessage);
                     setAlertOpen(true);
@@ -159,7 +142,7 @@ export default function FormDialog({
                     // Optional: Still map errors to fields so they turn red
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: 'server',
+                            type: "server",
                             message: errors[key],
                         });
                     });
@@ -174,62 +157,40 @@ export default function FormDialog({
             <FormDialogShell
                 open={open}
                 onOpenChange={setOpen}
-                title={
-                    isEditing
-                        ? 'Edit Chart of Account'
-                        : 'Add New Chart of Account'
-                }
+                title={isEditing ? "Edit Chart of Account" : "Add New Chart of Account"}
                 description="Modify or create chart of account details."
                 isLoading={isLoading}
                 formId="chart-of-account-form"
                 onCancel={() => setOpen(false)}
-                submitLabel={isEditing ? 'Save Changes' : 'Create Account'}
-                submittingLabel={
-                    isEditing ? 'Saving Changes' : 'Creating Account'
-                }
+                submitLabel={isEditing ? "Save Changes" : "Create Account"}
+                submittingLabel={isEditing ? "Saving Changes" : "Creating Account"}
                 className="sm:max-w-sm"
             >
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
-                        <form
-                            id="chart-of-account-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
+                        <form id="chart-of-account-form" onSubmit={form.handleSubmit(onSubmit)}>
                             <div className="flex flex-col gap-4">
                                 <Controller
                                     name="account_number"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Account Number{' '}
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
+                                                    Account Number{" "}
+                                                    <span className="text-red-500">*</span>
                                                 </FieldLabel>
 
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     placeholder="e.g., 5-02-03-010"
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -240,36 +201,23 @@ export default function FormDialog({
                                     name="account_title"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Account Title{' '}
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
+                                                    Account Title{" "}
+                                                    <span className="text-red-500">*</span>
                                                 </FieldLabel>
 
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     placeholder="e.g., Office Supplies"
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -280,25 +228,16 @@ export default function FormDialog({
                                     name="account_type"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
-                                                    Account Type{' '}
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
+                                                    Account Type{" "}
+                                                    <span className="text-red-500">*</span>
                                                 </FieldLabel>
 
                                                 <Select
                                                     value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
+                                                    onValueChange={field.onChange}
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue />
@@ -306,16 +245,13 @@ export default function FormDialog({
 
                                                     <SelectContent>
                                                         {[
-                                                            'ASSET',
-                                                            'LIABILITY',
-                                                            'EQUITY',
-                                                            'REVENUE',
-                                                            'EXPENSE',
+                                                            "ASSET",
+                                                            "LIABILITY",
+                                                            "EQUITY",
+                                                            "REVENUE",
+                                                            "EXPENSE",
                                                         ].map((v) => (
-                                                            <SelectItem
-                                                                key={v}
-                                                                value={v}
-                                                            >
+                                                            <SelectItem key={v} value={v}>
                                                                 {v}
                                                             </SelectItem>
                                                         ))}
@@ -323,11 +259,7 @@ export default function FormDialog({
                                                 </Select>
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -338,41 +270,24 @@ export default function FormDialog({
                                     name="expense_class"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Expense Class
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
+                                                    <span className="text-red-500">*</span>
                                                 </FieldLabel>
 
                                                 <Select
                                                     value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
+                                                    onValueChange={field.onChange}
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue />
                                                     </SelectTrigger>
 
                                                     <SelectContent>
-                                                        {[
-                                                            'PS',
-                                                            'MOOE',
-                                                            'FE',
-                                                            'CO',
-                                                        ].map((v) => (
-                                                            <SelectItem
-                                                                key={v}
-                                                                value={v}
-                                                            >
+                                                        {["PS", "MOOE", "FE", "CO"].map((v) => (
+                                                            <SelectItem key={v} value={v}>
                                                                 {v}
                                                             </SelectItem>
                                                         ))}
@@ -380,11 +295,7 @@ export default function FormDialog({
                                                 </Select>
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -395,32 +306,22 @@ export default function FormDialog({
                                     name="account_series"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
+                                                <FieldLabel htmlFor={field.name}>
                                                     Account Series
                                                 </FieldLabel>
 
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    value={field.value ?? ''}
+                                                    aria-invalid={fieldState.invalid}
+                                                    value={field.value ?? ""}
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -431,34 +332,23 @@ export default function FormDialog({
                                     name="normal_balance"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Normal Balance
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
+                                                    <span className="text-red-500">*</span>
                                                 </FieldLabel>
 
                                                 <Select
                                                     value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
+                                                    onValueChange={field.onChange}
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue />
                                                     </SelectTrigger>
 
                                                     <SelectContent>
-                                                        <SelectItem value="DEBIT">
-                                                            DEBIT
-                                                        </SelectItem>
+                                                        <SelectItem value="DEBIT">DEBIT</SelectItem>
 
                                                         <SelectItem value="CREDIT">
                                                             CREDIT
@@ -467,11 +357,7 @@ export default function FormDialog({
                                                 </Select>
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -482,33 +368,23 @@ export default function FormDialog({
                                     name="description"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
+                                                <FieldLabel htmlFor={field.name}>
                                                     Description
                                                 </FieldLabel>
 
                                                 <Textarea
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    value={field.value ?? ''}
+                                                    aria-invalid={fieldState.invalid}
+                                                    value={field.value ?? ""}
                                                     autoComplete="off"
                                                     className="min-h-15"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -525,9 +401,7 @@ export default function FormDialog({
                                                     <Checkbox
                                                         id={field.name}
                                                         checked={field.value}
-                                                        onCheckedChange={
-                                                            field.onChange
-                                                        }
+                                                        onCheckedChange={field.onChange}
                                                     />
 
                                                     <FieldLabel
@@ -552,9 +426,7 @@ export default function FormDialog({
                                                     <Checkbox
                                                         id={field.name}
                                                         checked={field.value}
-                                                        onCheckedChange={
-                                                            field.onChange
-                                                        }
+                                                        onCheckedChange={field.onChange}
                                                     />
                                                     <FieldLabel
                                                         htmlFor={field.name}
@@ -573,11 +445,7 @@ export default function FormDialog({
                 </div>
             </FormDialogShell>
 
-            <AlertErrorDialog
-                open={alertOpen}
-                onOpenChange={setAlertOpen}
-                error={alertMessage}
-            />
+            <AlertErrorDialog open={alertOpen} onOpenChange={setAlertOpen} error={alertMessage} />
         </>
     );
 }

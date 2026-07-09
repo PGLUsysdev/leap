@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -7,11 +7,11 @@ import {
     DialogHeader,
     DialogTitle,
     DialogClose,
-} from '@/components/ui/dialog';
-import type { Office } from '@/types/global';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import * as z from 'zod';
+} from "@/components/ui/dialog";
+import type { Office } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
 import {
     Field,
     FieldError,
@@ -20,23 +20,23 @@ import {
     FieldContent,
     FieldSet,
     FieldLegend,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Spinner } from '@/components/ui/spinner';
-import type { Sector, LguLevel, OfficeType } from '@/types/global';
-import { router, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Spinner } from "@/components/ui/spinner";
+import type { Sector, LguLevel, OfficeType } from "@/types";
+import { router, usePage } from "@inertiajs/react";
+import { useEffect, useState } from "react";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { FormDialogShell } from '@/components/form-dialog-shell';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { FormDialogShell } from "@/components/form-dialog-shell";
+import { AlertErrorDialog } from "@/components/alert-error-dialog";
 
 interface FormDialogProps {
     open: boolean;
@@ -51,15 +51,12 @@ interface FormDialogProps {
 
 const formSchema = z.object({
     parent_id: z.string().optional(),
-    sector_id: z.string().min(1, 'Sector is required'),
-    lgu_level_id: z.string().min(1, 'LGU Level is required'),
-    office_type_id: z.string().min(1, 'Office Type is required'),
-    code: z.string().min(1).max(3, 'Suffix must be 1-3 characters'),
-    name: z.string().min(1, 'Office name is required').max(100),
-    acronym: z
-        .string()
-        .max(20, 'Acronym must be 20 characters or less')
-        .optional(),
+    sector_id: z.string().min(1, "Sector is required"),
+    lgu_level_id: z.string().min(1, "LGU Level is required"),
+    office_type_id: z.string().min(1, "Office Type is required"),
+    code: z.string().min(1).max(3, "Suffix must be 1-3 characters"),
+    name: z.string().min(1, "Office name is required").max(100),
+    acronym: z.string().max(20, "Acronym must be 20 characters or less").optional(),
     is_lee: z.boolean(),
 });
 
@@ -88,13 +85,13 @@ export default function FormDialog({
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            parent_id: 'none',
-            sector_id: '',
-            lgu_level_id: '',
-            office_type_id: '',
-            code: '',
-            name: '',
-            acronym: '',
+            parent_id: "none",
+            sector_id: "",
+            lgu_level_id: "",
+            office_type_id: "",
+            code: "",
+            name: "",
+            acronym: "",
             is_lee: false,
         },
     });
@@ -102,44 +99,40 @@ export default function FormDialog({
     useEffect(() => {
         if (open) {
             if (initialData) {
-                const rawCode = initialData.code
-                    ? String(parseInt(initialData.code, 10))
-                    : '';
+                const rawCode = initialData.code ? String(parseInt(initialData.code, 10)) : "";
 
                 form.reset({
-                    parent_id: String(initialData.parent_id || 'none'),
-                    sector_id: String(initialData.sector_id || ''),
-                    lgu_level_id: String(initialData.lgu_level_id || ''),
-                    office_type_id: String(initialData.office_type_id || ''),
+                    parent_id: String(initialData.parent_id || "none"),
+                    sector_id: String(initialData.sector_id || ""),
+                    lgu_level_id: String(initialData.lgu_level_id || ""),
+                    office_type_id: String(initialData.office_type_id || ""),
                     code: rawCode,
-                    name: initialData.name || '',
-                    acronym: initialData.acronym || '',
+                    name: initialData.name || "",
+                    acronym: initialData.acronym || "",
                     is_lee: Boolean(initialData.is_lee || false),
                 });
             } else if (parentOffice) {
-                const rawCode = parentOffice.code
-                    ? String(parseInt(parentOffice.code, 10))
-                    : '';
+                const rawCode = parentOffice.code ? String(parseInt(parentOffice.code, 10)) : "";
 
                 form.reset({
                     parent_id: String(parentOffice.id),
-                    sector_id: String(parentOffice.sector_id || ''),
-                    lgu_level_id: String(parentOffice.lgu_level_id || ''),
-                    office_type_id: String(parentOffice.office_type_id || ''),
+                    sector_id: String(parentOffice.sector_id || ""),
+                    lgu_level_id: String(parentOffice.lgu_level_id || ""),
+                    office_type_id: String(parentOffice.office_type_id || ""),
                     code: rawCode,
-                    name: '',
-                    acronym: '',
+                    name: "",
+                    acronym: "",
                     is_lee: false,
                 });
             } else {
                 form.reset({
-                    parent_id: 'none',
-                    sector_id: '',
-                    lgu_level_id: '',
-                    office_type_id: '',
-                    code: '',
-                    name: '',
-                    acronym: '',
+                    parent_id: "none",
+                    sector_id: "",
+                    lgu_level_id: "",
+                    office_type_id: "",
+                    code: "",
+                    name: "",
+                    acronym: "",
                     is_lee: false,
                 });
             }
@@ -155,11 +148,11 @@ export default function FormDialog({
     }, [errors]); // This triggers when errors object changes
 
     function onSubmit(data: FormValues) {
-        const paddedCode = data.code.padStart(3, '0');
+        const paddedCode = data.code.padStart(3, "0");
         const payload = {
             ...data,
             code: paddedCode,
-            parent_id: data.parent_id === 'none' ? null : data.parent_id,
+            parent_id: data.parent_id === "none" ? null : data.parent_id,
         };
 
         if (isEditing) {
@@ -173,11 +166,11 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
                 onSuccess: () => onOpenChange(false),
                 onError: (errors) => {
-                    setError(Object.values(errors).join('. '));
+                    setError(Object.values(errors).join(". "));
                 },
             });
         } else {
-            router.post('/offices', payload, {
+            router.post("/offices", payload, {
                 preserveState: true,
                 preserveScroll: true,
                 onStart: () => {
@@ -187,7 +180,7 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
                 onSuccess: () => onOpenChange(false),
                 onError: (errors) => {
-                    setError(Object.values(errors).join('. '));
+                    setError(Object.values(errors).join(". "));
                 },
             });
         }
@@ -202,40 +195,33 @@ export default function FormDialog({
                 title={
                     isEditing
                         ? initialData?.parent_id
-                            ? 'Edit Sub Unit'
-                            : 'Edit Office'
+                            ? "Edit Sub Unit"
+                            : "Edit Office"
                         : isAddingChild
-                          ? 'Create New Sub Unit'
-                          : 'Create New Office'
+                          ? "Create New Sub Unit"
+                          : "Create New Office"
                 }
                 description={
                     isEditing
                         ? initialData?.parent_id
-                            ? 'Modify the details of the existing sub unit below.'
-                            : 'Modify the details of the existing office below.'
+                            ? "Modify the details of the existing sub unit below."
+                            : "Modify the details of the existing office below."
                         : isAddingChild
-                          ? 'Fill in the information to create a new sub unit record.'
-                          : 'Fill in the information to create a new office record.'
+                          ? "Fill in the information to create a new sub unit record."
+                          : "Fill in the information to create a new office record."
                 }
                 isLoading={isLoading}
                 formId="office-form"
                 onCancel={() => onOpenChange(false)}
                 submitLabel={
-                    isEditing
-                        ? 'Save Changes'
-                        : isAddingChild
-                          ? 'Create Sub Unit'
-                          : 'Create Office'
+                    isEditing ? "Save Changes" : isAddingChild ? "Create Sub Unit" : "Create Office"
                 }
-                submittingLabel={isEditing ? 'Saving Changes' : 'Creating...'}
+                submittingLabel={isEditing ? "Saving Changes" : "Creating..."}
                 className="sm:max-w-sm"
             >
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
-                        <form
-                            id="office-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
+                        <form id="office-form" onSubmit={form.handleSubmit(onSubmit)}>
                             <FieldGroup>
                                 <div className="rounded-lg bg-muted p-3 text-center">
                                     <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
@@ -244,62 +230,40 @@ export default function FormDialog({
 
                                     <div className="font-mono text-xl font-bold text-primary">
                                         {(() => {
-                                            const sectorId =
-                                                form.watch('sector_id');
-                                            const lguLevelId =
-                                                form.watch('lgu_level_id');
-                                            const officeTypeId =
-                                                form.watch('office_type_id');
-                                            const suffixRaw =
-                                                form.watch('code');
+                                            const sectorId = form.watch("sector_id");
+                                            const lguLevelId = form.watch("lgu_level_id");
+                                            const officeTypeId = form.watch("office_type_id");
+                                            const suffixRaw = form.watch("code");
 
                                             const selectedSector = sectors.find(
-                                                (s) =>
-                                                    String(s.id) === sectorId,
+                                                (s) => String(s.id) === sectorId,
                                             );
-                                            const selectedLguLevel =
-                                                lguLevels.find(
-                                                    (l) =>
-                                                        String(l.id) ===
-                                                        lguLevelId,
-                                                );
-                                            const selectedOfficeType =
-                                                officeTypes.find(
-                                                    (ot) =>
-                                                        String(ot.id) ===
-                                                        officeTypeId,
-                                                );
+                                            const selectedLguLevel = lguLevels.find(
+                                                (l) => String(l.id) === lguLevelId,
+                                            );
+                                            const selectedOfficeType = officeTypes.find(
+                                                (ot) => String(ot.id) === officeTypeId,
+                                            );
 
-                                            const sectorCode =
-                                                selectedSector?.code || '0000';
-                                            const lguLevelCode =
-                                                selectedLguLevel?.code || '0';
-                                            const officeTypeCode =
-                                                selectedOfficeType?.code ||
-                                                '00';
+                                            const sectorCode = selectedSector?.code || "0000";
+                                            const lguLevelCode = selectedLguLevel?.code || "0";
+                                            const officeTypeCode = selectedOfficeType?.code || "00";
                                             // Pad suffix to 3 digits for preview
                                             const suffixCode = suffixRaw?.trim()
-                                                ? suffixRaw.padStart(3, '0')
-                                                : '000';
+                                                ? suffixRaw.padStart(3, "0")
+                                                : "000";
 
                                             return `${sectorCode}-${lguLevelCode}-${officeTypeCode}-${suffixCode}`;
                                         })()}
                                     </div>
                                 </div>
 
-                                {!(
-                                    !isAddingChild &&
-                                    (!isEditing || !initialData?.parent_id)
-                                ) && (
+                                {!(!isAddingChild && (!isEditing || !initialData?.parent_id)) && (
                                     <Controller
                                         name="parent_id"
                                         control={form.control}
                                         render={({ field, fieldState }) => (
-                                            <Field
-                                                data-invalid={
-                                                    fieldState.invalid
-                                                }
-                                            >
+                                            <Field data-invalid={fieldState.invalid}>
                                                 <FieldContent>
                                                     <FieldLabel
                                                         htmlFor={field.name}
@@ -314,13 +278,10 @@ export default function FormDialog({
                                                     <Select
                                                         name={field.name}
                                                         value={field.value}
-                                                        onValueChange={
-                                                            field.onChange
-                                                        }
+                                                        onValueChange={field.onChange}
                                                         disabled={
                                                             isAddingChild ||
-                                                            (isEditing &&
-                                                                initialData?.parent_id)
+                                                            (isEditing && initialData?.parent_id)
                                                         }
                                                     >
                                                         <SelectTrigger
@@ -341,33 +302,19 @@ export default function FormDialog({
                                                                         office.id !==
                                                                             initialData.id,
                                                                 )
-                                                                .map(
-                                                                    (
-                                                                        office,
-                                                                    ) => (
-                                                                        <SelectItem
-                                                                            key={
-                                                                                office.id
-                                                                            }
-                                                                            value={String(
-                                                                                office.id,
-                                                                            )}
-                                                                        >
-                                                                            {
-                                                                                office.name
-                                                                            }
-                                                                        </SelectItem>
-                                                                    ),
-                                                                )}
+                                                                .map((office) => (
+                                                                    <SelectItem
+                                                                        key={office.id}
+                                                                        value={String(office.id)}
+                                                                    >
+                                                                        {office.name}
+                                                                    </SelectItem>
+                                                                ))}
                                                         </SelectContent>
                                                     </Select>
 
                                                     {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                                        <FieldError errors={[fieldState.error]} />
                                                     )}
                                                 </FieldContent>
                                             </Field>
@@ -385,33 +332,23 @@ export default function FormDialog({
                                             data-invalid={fieldState.invalid}
                                         >
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Sector
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
+                                                    <span className="text-red-500">*</span>
                                                 </FieldLabel>
 
                                                 <Select
                                                     name={field.name}
                                                     value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
+                                                    onValueChange={field.onChange}
                                                     disabled={
                                                         isAddingChild ||
-                                                        (isEditing &&
-                                                            initialData?.parent_id)
+                                                        (isEditing && initialData?.parent_id)
                                                     }
                                                 >
                                                     <SelectTrigger
                                                         id={field.name}
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
+                                                        aria-invalid={fieldState.invalid}
                                                         className="w-full"
                                                     >
                                                         <SelectValue placeholder="Select Sector" />
@@ -421,23 +358,16 @@ export default function FormDialog({
                                                         {sectors.map((item) => (
                                                             <SelectItem
                                                                 key={item.id}
-                                                                value={String(
-                                                                    item.id,
-                                                                )}
+                                                                value={String(item.id)}
                                                             >
-                                                                {item.code} -{' '}
-                                                                {item.name}
+                                                                {item.code} - {item.name}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -452,9 +382,7 @@ export default function FormDialog({
                                         render={({ field, fieldState }) => (
                                             <Field
                                                 orientation="responsive"
-                                                data-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                data-invalid={fieldState.invalid}
                                             >
                                                 <FieldContent>
                                                     <FieldLabel
@@ -462,59 +390,40 @@ export default function FormDialog({
                                                         className="gap-1"
                                                     >
                                                         LGU Level
-                                                        <span className="text-red-500">
-                                                            *
-                                                        </span>
+                                                        <span className="text-red-500">*</span>
                                                     </FieldLabel>
 
                                                     <Select
                                                         name={field.name}
                                                         value={field.value}
-                                                        onValueChange={
-                                                            field.onChange
-                                                        }
+                                                        onValueChange={field.onChange}
                                                         disabled={
                                                             isAddingChild ||
-                                                            (isEditing &&
-                                                                initialData?.parent_id)
+                                                            (isEditing && initialData?.parent_id)
                                                         }
                                                     >
                                                         <SelectTrigger
                                                             id={field.name}
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
+                                                            aria-invalid={fieldState.invalid}
                                                             className="w-full"
                                                         >
                                                             <SelectValue placeholder="Select Level" />
                                                         </SelectTrigger>
 
                                                         <SelectContent position="item-aligned">
-                                                            {lguLevels.map(
-                                                                (item) => (
-                                                                    <SelectItem
-                                                                        key={
-                                                                            item.id
-                                                                        }
-                                                                        value={String(
-                                                                            item.id,
-                                                                        )}
-                                                                    >
-                                                                        {
-                                                                            item.name
-                                                                        }
-                                                                    </SelectItem>
-                                                                ),
-                                                            )}
+                                                            {lguLevels.map((item) => (
+                                                                <SelectItem
+                                                                    key={item.id}
+                                                                    value={String(item.id)}
+                                                                >
+                                                                    {item.name}
+                                                                </SelectItem>
+                                                            ))}
                                                         </SelectContent>
                                                     </Select>
 
                                                     {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                                        <FieldError errors={[fieldState.error]} />
                                                     )}
                                                 </FieldContent>
                                             </Field>
@@ -528,9 +437,7 @@ export default function FormDialog({
                                         render={({ field, fieldState }) => (
                                             <Field
                                                 orientation="responsive"
-                                                data-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                data-invalid={fieldState.invalid}
                                             >
                                                 <FieldContent>
                                                     <FieldLabel
@@ -538,63 +445,40 @@ export default function FormDialog({
                                                         className="gap-1"
                                                     >
                                                         Office Type
-                                                        <span className="text-red-500">
-                                                            *
-                                                        </span>
+                                                        <span className="text-red-500">*</span>
                                                     </FieldLabel>
 
                                                     <Select
                                                         name={field.name}
                                                         value={field.value}
-                                                        onValueChange={
-                                                            field.onChange
-                                                        }
+                                                        onValueChange={field.onChange}
                                                         disabled={
                                                             isAddingChild ||
-                                                            (isEditing &&
-                                                                initialData?.parent_id)
+                                                            (isEditing && initialData?.parent_id)
                                                         }
                                                     >
                                                         <SelectTrigger
                                                             id={field.name}
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
+                                                            aria-invalid={fieldState.invalid}
                                                             className="w-full"
                                                         >
                                                             <SelectValue placeholder="Select Type" />
                                                         </SelectTrigger>
 
                                                         <SelectContent position="item-aligned">
-                                                            {officeTypes.map(
-                                                                (item) => (
-                                                                    <SelectItem
-                                                                        key={
-                                                                            item.id
-                                                                        }
-                                                                        value={String(
-                                                                            item.id,
-                                                                        )}
-                                                                    >
-                                                                        {
-                                                                            item.code
-                                                                        }{' '}
-                                                                        -{' '}
-                                                                        {
-                                                                            item.name
-                                                                        }
-                                                                    </SelectItem>
-                                                                ),
-                                                            )}
+                                                            {officeTypes.map((item) => (
+                                                                <SelectItem
+                                                                    key={item.id}
+                                                                    value={String(item.id)}
+                                                                >
+                                                                    {item.code} - {item.name}
+                                                                </SelectItem>
+                                                            ))}
                                                         </SelectContent>
                                                     </Select>
 
                                                     {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                                        <FieldError errors={[fieldState.error]} />
                                                     )}
                                                 </FieldContent>
                                             </Field>
@@ -609,28 +493,20 @@ export default function FormDialog({
                                             name="code"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
+                                                <Field data-invalid={fieldState.invalid}>
                                                     <FieldContent>
                                                         <FieldLabel
                                                             htmlFor={field.name}
                                                             className="gap-1"
                                                         >
                                                             Suffix
-                                                            <span className="text-red-500">
-                                                                *
-                                                            </span>
+                                                            <span className="text-red-500">*</span>
                                                         </FieldLabel>
 
                                                         <Input
                                                             {...field}
                                                             id={field.name}
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
+                                                            aria-invalid={fieldState.invalid}
                                                             placeholder="001"
                                                             autoComplete="off"
                                                             disabled={
@@ -640,30 +516,22 @@ export default function FormDialog({
                                                             }
                                                             // maxLength={3}
                                                             onChange={(e) => {
-                                                                const raw =
-                                                                    e.target
-                                                                        .value;
-                                                                const digits =
-                                                                    raw.replace(
-                                                                        /\D/g,
-                                                                        '',
-                                                                    );
-                                                                const truncated =
-                                                                    digits.slice(
-                                                                        0,
-                                                                        3,
-                                                                    );
-                                                                field.onChange(
-                                                                    truncated,
+                                                                const raw = e.target.value;
+                                                                const digits = raw.replace(
+                                                                    /\D/g,
+                                                                    "",
                                                                 );
+                                                                const truncated = digits.slice(
+                                                                    0,
+                                                                    3,
+                                                                );
+                                                                field.onChange(truncated);
                                                             }}
                                                         />
 
                                                         {fieldState.invalid && (
                                                             <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
+                                                                errors={[fieldState.error]}
                                                             />
                                                         )}
                                                     </FieldContent>
@@ -678,41 +546,30 @@ export default function FormDialog({
                                             name="name"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
+                                                <Field data-invalid={fieldState.invalid}>
                                                     <FieldContent>
                                                         <FieldLabel
                                                             htmlFor={field.name}
                                                             className="gap-1"
                                                         >
                                                             {isAddingChild ||
-                                                            (isEditing &&
-                                                                initialData?.parent_id)
-                                                                ? 'Sub Unit Name'
-                                                                : 'Office Name'}
-                                                            <span className="text-red-500">
-                                                                *
-                                                            </span>
+                                                            (isEditing && initialData?.parent_id)
+                                                                ? "Sub Unit Name"
+                                                                : "Office Name"}
+                                                            <span className="text-red-500">*</span>
                                                         </FieldLabel>
 
                                                         <Input
                                                             {...field}
                                                             id={field.name}
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
+                                                            aria-invalid={fieldState.invalid}
                                                             placeholder="sample. Office of the Provincial Governor"
                                                             autoComplete="off"
                                                         />
 
                                                         {fieldState.invalid && (
                                                             <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
+                                                                errors={[fieldState.error]}
                                                             />
                                                         )}
                                                     </FieldContent>
@@ -727,14 +584,9 @@ export default function FormDialog({
                                     name="acronym"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Acronym
                                                     {/* <span className="text-destructive">
                                                         *
@@ -744,19 +596,13 @@ export default function FormDialog({
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     placeholder="sample. OPG"
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -772,46 +618,31 @@ export default function FormDialog({
                                             <FieldSet>
                                                 <FieldContent>
                                                     <FieldLegend variant="label">
-                                                        Local Economic
-                                                        Enterprise (LEE)
+                                                        Local Economic Enterprise (LEE)
                                                     </FieldLegend>
 
                                                     <FieldGroup>
                                                         <Field
                                                             orientation="horizontal"
-                                                            data-invalid={
-                                                                fieldState.invalid
-                                                            }
+                                                            data-invalid={fieldState.invalid}
                                                         >
                                                             <Checkbox
                                                                 id="is_lee"
-                                                                checked={
-                                                                    field.value
-                                                                }
-                                                                onCheckedChange={
-                                                                    field.onChange
-                                                                }
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
                                                             />
 
                                                             <FieldLabel
-                                                                htmlFor={
-                                                                    field.name
-                                                                }
+                                                                htmlFor={field.name}
                                                                 className="font-normal"
                                                             >
-                                                                {field.value
-                                                                    ? 'True'
-                                                                    : 'False'}
+                                                                {field.value ? "True" : "False"}
                                                             </FieldLabel>
                                                         </Field>
                                                     </FieldGroup>
 
                                                     {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                                        <FieldError errors={[fieldState.error]} />
                                                     )}
                                                 </FieldContent>
                                             </FieldSet>

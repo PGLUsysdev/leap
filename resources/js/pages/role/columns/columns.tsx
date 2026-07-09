@@ -1,14 +1,14 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import type { Role } from '@/types/global';
-import { Button } from '@/components/ui/button';
-import { Pencil, Shield, Trash } from 'lucide-react';
+import { createColumnHelper } from "@tanstack/react-table";
+import type { Role } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Pencil, Shield, Trash } from "lucide-react";
 
 const columnHelper = createColumnHelper<Role>();
 
 const columns = (canEditName: boolean, canEditPerms: boolean, canDelete: boolean) => {
     const cols = [
-        columnHelper.accessor('name', {
-            header: 'Role Name',
+        columnHelper.accessor("name", {
+            header: "Role Name",
             cell: (info) => {
                 return <div className="text-wrap font-medium">{info.getValue()}</div>;
             },
@@ -18,7 +18,7 @@ const columns = (canEditName: boolean, canEditPerms: boolean, canDelete: boolean
     if (canEditName || canEditPerms || canDelete) {
         cols.push(
             columnHelper.display({
-                id: 'action',
+                id: "action",
                 size: 130,
                 cell: ({ row, table }) => {
                     return (
@@ -27,11 +27,7 @@ const columns = (canEditName: boolean, canEditPerms: boolean, canDelete: boolean
                                 <Button
                                     size="icon"
                                     variant="outline"
-                                    onClick={() =>
-                                        table.options.meta?.onEdit?.(
-                                            row.original,
-                                        )
-                                    }
+                                    onClick={() => table.options.meta?.onEdit?.(row.original)}
                                     title="Edit role name"
                                 >
                                     <Pencil />
@@ -42,10 +38,7 @@ const columns = (canEditName: boolean, canEditPerms: boolean, canDelete: boolean
                                 <Button
                                     size="icon"
                                     variant="outline"
-                                    onClick={() =>
-                                        table.options.meta
-                                            ?.onEditPerms?.(row.original)
-                                    }
+                                    onClick={() => table.options.meta?.onEditPerms?.(row.original)}
                                     title="Manage permissions"
                                 >
                                     <Shield />
@@ -56,11 +49,7 @@ const columns = (canEditName: boolean, canEditPerms: boolean, canDelete: boolean
                                 <Button
                                     size="icon"
                                     variant="destructive"
-                                    onClick={() =>
-                                        table.options.meta?.onDelete?.(
-                                            row.original,
-                                        )
-                                    }
+                                    onClick={() => table.options.meta?.onDelete?.(row.original)}
                                     title="Delete role"
                                 >
                                     <Trash />

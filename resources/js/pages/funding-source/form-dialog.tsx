@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -7,25 +7,19 @@ import {
     DialogTitle,
     DialogFooter,
     DialogClose,
-} from '@/components/ui/dialog';
-import type { FundingSource } from '@/types/global';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import {
-    Field,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-    FieldContent,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { router } from '@inertiajs/react';
-import { FormDialogShell } from '@/components/form-dialog-shell';
+} from "@/components/ui/dialog";
+import type { FundingSource } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/ui/button";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldContent } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { router } from "@inertiajs/react";
+import { FormDialogShell } from "@/components/form-dialog-shell";
 
 interface FormDialogProps {
     open: boolean;
@@ -34,17 +28,13 @@ interface FormDialogProps {
 }
 
 const formSchema = z.object({
-    fund_type: z.string().trim().min(1, { message: 'Fund type is required' }),
-    code: z.string().trim().min(1, { message: 'Code is required' }),
-    title: z.string().trim().min(1, { message: 'Title is required' }),
+    fund_type: z.string().trim().min(1, { message: "Fund type is required" }),
+    code: z.string().trim().min(1, { message: "Code is required" }),
+    title: z.string().trim().min(1, { message: "Title is required" }),
     description: z.string().trim().nullable(),
 });
 
-export default function FormDialog({
-    open,
-    setOpen,
-    initialData,
-}: FormDialogProps) {
+export default function FormDialog({ open, setOpen, initialData }: FormDialogProps) {
     // console.log(initialData);
 
     const [isLoading, setIsLoading] = useState(false);
@@ -54,10 +44,10 @@ export default function FormDialog({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            fund_type: '',
-            code: '',
-            title: '',
-            description: '',
+            fund_type: "",
+            code: "",
+            title: "",
+            description: "",
         },
     });
 
@@ -65,10 +55,10 @@ export default function FormDialog({
         if (open) {
             form.reset(
                 initialData ?? {
-                    fund_type: '',
-                    code: '',
-                    title: '',
-                    description: '',
+                    fund_type: "",
+                    code: "",
+                    title: "",
+                    description: "",
                 },
             );
         }
@@ -84,7 +74,7 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post('/funding-sources', data, {
+            router.post("/funding-sources", data, {
                 preserveScroll: true,
                 preserveState: true,
                 onStart: () => setIsLoading(true),
@@ -98,25 +88,22 @@ export default function FormDialog({
         <FormDialogShell
             open={open}
             onOpenChange={setOpen}
-            title={isEditing ? 'Edit Funding Source' : 'Add New Funding Source'}
+            title={isEditing ? "Edit Funding Source" : "Add New Funding Source"}
             description={
                 isEditing
-                    ? 'Modify the details of the existing funding source below.'
-                    : 'Fill in the information to create a new funding record.'
+                    ? "Modify the details of the existing funding source below."
+                    : "Fill in the information to create a new funding record."
             }
             isLoading={isLoading}
             formId="funding-source-form"
             onCancel={() => setOpen(false)}
-            submitLabel={isEditing ? 'Save Changes' : 'Create Source'}
-            submittingLabel={isEditing ? 'Saving Changes' : 'Creating Source'}
+            submitLabel={isEditing ? "Save Changes" : "Create Source"}
+            submittingLabel={isEditing ? "Saving Changes" : "Creating Source"}
             className="sm:max-w-sm"
         >
             <div className="flex min-h-0">
                 <ScrollArea className="w-full">
-                    <form
-                        id="funding-source-form"
-                        onSubmit={form.handleSubmit(onSubmit)}
-                    >
+                    <form id="funding-source-form" onSubmit={form.handleSubmit(onSubmit)}>
                         <FieldGroup className="pb-4">
                             <Controller
                                 name="fund_type"
@@ -124,30 +111,21 @@ export default function FormDialog({
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel
-                                                htmlFor={field.name}
-                                                className="gap-1"
-                                            >
+                                            <FieldLabel htmlFor={field.name} className="gap-1">
                                                 Fund Type
-                                                <span className="text-red-500">
-                                                    *
-                                                </span>
+                                                <span className="text-red-500">*</span>
                                             </FieldLabel>
 
                                             <Input
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="Fund type..."
                                                 autoComplete="off"
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -160,30 +138,21 @@ export default function FormDialog({
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel
-                                                htmlFor={field.name}
-                                                className="gap-1"
-                                            >
+                                            <FieldLabel htmlFor={field.name} className="gap-1">
                                                 Code
-                                                <span className="text-red-500">
-                                                    *
-                                                </span>
+                                                <span className="text-red-500">*</span>
                                             </FieldLabel>
 
                                             <Input
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="Code..."
                                                 autoComplete="off"
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -196,31 +165,22 @@ export default function FormDialog({
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel
-                                                htmlFor={field.name}
-                                                className="gap-1"
-                                            >
+                                            <FieldLabel htmlFor={field.name} className="gap-1">
                                                 Title
-                                                <span className="text-red-500">
-                                                    *
-                                                </span>
+                                                <span className="text-red-500">*</span>
                                             </FieldLabel>
 
                                             <Textarea
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="Title..."
                                                 autoComplete="off"
                                                 className="min-h-15"
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -239,20 +199,16 @@ export default function FormDialog({
 
                                             <Textarea
                                                 {...field}
-                                                value={field.value ?? ''}
+                                                value={field.value ?? ""}
                                                 id={field.name}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="Description..."
                                                 autoComplete="off"
                                                 className="min-h-15"
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>

@@ -1,18 +1,16 @@
-import { useState, useCallback } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/cc-strategic-priority-cols';
-import type { CcStrategicPriority } from '@/types/global';
-import { Button } from '@/components/ui/button';
-import { router } from '@inertiajs/react';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import FormDialog from './form-dialog';
+import { useState, useCallback } from "react";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/cc-strategic-priority-cols";
+import type { CcStrategicPriority } from "@/types";
+import { Button } from "@/components/ui/button";
+import { router } from "@inertiajs/react";
+import { DeleteDialog } from "@/components/delete-dialog";
+import { AlertErrorDialog } from "@/components/alert-error-dialog";
+import FormDialog from "./form-dialog";
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'CC Strategic Priorities', href: '#' },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "CC Strategic Priorities", href: "#" }];
 
 interface CcStrategicPriorityPageProps {
     strategicPriorities: CcStrategicPriority[];
@@ -28,11 +26,9 @@ export default function CcStrategicPriorityPage({
     can,
 }: CcStrategicPriorityPageProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingPriority, setEditingPriority] =
-        useState<CcStrategicPriority | null>(null);
+    const [editingPriority, setEditingPriority] = useState<CcStrategicPriority | null>(null);
 
-    const [deletingPriority, setDeletingPriority] =
-        useState<CcStrategicPriority | null>(null);
+    const [deletingPriority, setDeletingPriority] = useState<CcStrategicPriority | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -88,18 +84,12 @@ export default function CcStrategicPriorityPage({
                     meta={{ can }}
                 >
                     {can?.add && (
-                        <Button onClick={handleCreate}>
-                            Create CC Strategic Priority
-                        </Button>
+                        <Button onClick={handleCreate}>Create CC Strategic Priority</Button>
                     )}
                 </DataTable>
             </div>
 
-            <FormDialog
-                open={dialogOpen}
-                setOpen={handleClose}
-                initialData={editingPriority}
-            />
+            <FormDialog open={dialogOpen} setOpen={handleClose} initialData={editingPriority} />
 
             <AlertErrorDialog
                 open={!!deleteError}
@@ -114,9 +104,8 @@ export default function CcStrategicPriorityPage({
                 description={
                     deletingPriority ? (
                         <>
-                            Are you sure you want to delete{' '}
-                            <strong>{deletingPriority.name}</strong>? This
-                            action cannot be undone.
+                            Are you sure you want to delete <strong>{deletingPriority.name}</strong>
+                            ? This action cannot be undone.
                         </>
                     ) : null
                 }

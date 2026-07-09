@@ -1,20 +1,18 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import type { Ppa } from '@/types/global';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { createColumnHelper } from "@tanstack/react-table";
+import type { Ppa } from "@/types";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 const columnHelper = createColumnHelper<Ppa>();
 
 const columns = [
-    columnHelper.accessor('full_code', {
-        header: 'AIP Reference Code',
+    columnHelper.accessor("full_code", {
+        header: "AIP Reference Code",
         size: 100,
-        cell: (value) => (
-            <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>
-        ),
+        cell: (value) => <code className="font-mono text-xs">{`${value.getValue<string>()}`}</code>,
     }),
-    columnHelper.accessor('name', {
-        header: 'Program/Project/Activity Description',
+    columnHelper.accessor("name", {
+        header: "Program/Project/Activity Description",
         size: 300,
         cell: (info) => {
             const ppa = info.row.original;
@@ -24,9 +22,7 @@ const columns = [
                     className="flex items-center gap-2"
                 >
                     {info.row.depth > 0 && (
-                        <span className="text-muted-foreground opacity-50">
-                            ↳
-                        </span>
+                        <span className="text-muted-foreground opacity-50">↳</span>
                     )}
                     <div className="flex flex-col">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase">
@@ -34,9 +30,7 @@ const columns = [
                         </span>
                         <span
                             className={`leading-tight wrap-break-word whitespace-normal ${
-                                info.row.depth === 0
-                                    ? 'font-bold'
-                                    : 'font-medium'
+                                info.row.depth === 0 ? "font-bold" : "font-medium"
                             }`}
                         >
                             {ppa.name}
@@ -46,8 +40,8 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor('is_active', {
-        header: 'Status',
+    columnHelper.accessor("is_active", {
+        header: "Status",
         cell: (value) => {
             const active = value.getValue<boolean>();
             return active ? (
@@ -62,7 +56,7 @@ const columns = [
         },
     }),
     columnHelper.display({
-        id: 'action',
+        id: "action",
         size: 62,
         // cell: ({ row, table }) => (
         cell: () => (

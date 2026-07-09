@@ -1,7 +1,7 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import type { User } from '@/types/global';
-import { Button } from '@/components/ui/button';
-import { Pencil } from 'lucide-react';
+import { createColumnHelper } from "@tanstack/react-table";
+import type { User } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 
 const columnHelper = createColumnHelper<User>();
 
@@ -13,59 +13,57 @@ interface ColumnsOptions {
 
 const columns = ({ editAll, editOwn, userOfficeId }: ColumnsOptions) => {
     const cols = [
-        columnHelper.accessor('name', {
-            header: 'Name',
+        columnHelper.accessor("name", {
+            header: "Name",
             cell: (info) => {
                 return <div className="text-wrap">{info.getValue()}</div>;
             },
         }),
-        columnHelper.accessor('email', {
-            header: 'Email',
+        columnHelper.accessor("email", {
+            header: "Email",
             size: 300,
             cell: (info) => {
                 return <div className="text-wrap">{info.getValue()}</div>;
             },
         }),
-        columnHelper.accessor('office.name', {
-            header: 'Department / Office',
+        columnHelper.accessor("office.name", {
+            header: "Department / Office",
             size: 300,
             cell: (info) => {
                 return <div className="text-wrap">{info.getValue()}</div>;
             },
         }),
-        columnHelper.accessor('role.name', {
-            header: 'Role',
+        columnHelper.accessor("role.name", {
+            header: "Role",
             size: 150,
             cell: (info) => {
-                return (
-                    <div className="text-wrap">{info.getValue() ?? '-'}</div>
-                );
+                return <div className="text-wrap">{info.getValue() ?? "-"}</div>;
             },
         }),
-        columnHelper.accessor('position', {
-            header: 'Assigned Position',
+        columnHelper.accessor("position", {
+            header: "Assigned Position",
             size: 250,
             cell: (info) => {
                 const position = info.getValue();
-                if (!position) return '-';
+                if (!position) return "-";
                 return (
                     <div className="text-wrap">
                         {position.item_number}
-                        {position.ios ? ` — ${position.ios.class}` : ''}
+                        {position.ios ? ` — ${position.ios.class}` : ""}
                     </div>
                 );
             },
         }),
-        columnHelper.accessor('step', {
-            header: 'Step',
+        columnHelper.accessor("step", {
+            header: "Step",
             size: 80,
             cell: (info) => {
                 const step = info.getValue();
-                return <div className="text-wrap">{step ?? '-'}</div>;
+                return <div className="text-wrap">{step ?? "-"}</div>;
             },
         }),
-        columnHelper.accessor('status', {
-            header: 'Status',
+        columnHelper.accessor("status", {
+            header: "Status",
             size: 100,
             cell: (info) => {
                 return <div className="text-wrap">{info.getValue()}</div>;
@@ -76,20 +74,17 @@ const columns = ({ editAll, editOwn, userOfficeId }: ColumnsOptions) => {
     if (editAll || editOwn) {
         cols.push(
             columnHelper.display({
-                id: 'action',
+                id: "action",
                 size: 48,
                 cell: ({ row, table }) => {
                     const canEditRow =
-                        editAll ||
-                        (editOwn && row.original.office_id === userOfficeId);
+                        editAll || (editOwn && row.original.office_id === userOfficeId);
                     if (!canEditRow) return null;
                     return (
                         <div>
                             <Button
                                 size="icon"
-                                onClick={() =>
-                                    table.options.meta?.onEdit?.(row.original)
-                                }
+                                onClick={() => table.options.meta?.onEdit?.(row.original)}
                             >
                                 <Pencil />
                             </Button>

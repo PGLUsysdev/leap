@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -6,15 +6,15 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/ui/dialog';
-import type { PaginatedResponse, Filter, PriceList } from '@/types/global';
-import columns from './columns/move-columns';
-import { DataTable } from '@/components/data-table';
-import { Button } from '@/components/ui/button';
-import { router } from '@inertiajs/react';
-import { reorder } from '@/routes/price-lists';
-import { Spinner } from '@/components/ui/spinner';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from "@/components/ui/dialog";
+import type { PaginatedResponse, Filter, PriceList } from "@/types";
+import columns from "./columns/move-columns";
+import { DataTable } from "@/components/data-table";
+import { Button } from "@/components/ui/button";
+import { router } from "@inertiajs/react";
+import { reorder } from "@/routes/price-lists";
+import { Spinner } from "@/components/ui/spinner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Item,
     ItemActions,
@@ -22,7 +22,7 @@ import {
     ItemDescription,
     ItemMedia,
     ItemTitle,
-} from '@/components/ui/item';
+} from "@/components/ui/item";
 
 interface MoveDialogProps {
     open: boolean;
@@ -53,11 +53,7 @@ export default function MoveDialog({
         }
     }
 
-    function handleMoveItem(
-        item: PriceList,
-        moveTo: PriceList | null,
-        position: 'up' | 'down',
-    ) {
+    function handleMoveItem(item: PriceList, moveTo: PriceList | null, position: "up" | "down") {
         if (!moveTo) return;
 
         router.visit(
@@ -96,9 +92,7 @@ export default function MoveDialog({
                     </ItemMedia>*/}
                     <ItemContent>
                         <ItemTitle>Item to Move:</ItemTitle>
-                        <ItemDescription>
-                            {selectedItemToMove?.description}
-                        </ItemDescription>
+                        <ItemDescription>{selectedItemToMove?.description}</ItemDescription>
                     </ItemContent>
                 </Item>
 
@@ -115,14 +109,9 @@ export default function MoveDialog({
                                 filters={filters}
                                 searchKey="dialog_search"
                                 pageKey="dialog_page"
-                                onlyKeys={[
-                                    'paginatedDialogPriceList',
-                                    'filters',
-                                ]}
+                                onlyKeys={["paginatedDialogPriceList", "filters"]}
                                 isDialog={true}
-                                onSelect={(item, boolean) =>
-                                    handleSelect(item, boolean)
-                                }
+                                onSelect={(item, boolean) => handleSelect(item, boolean)}
                                 selectedItemToMove={selectedItemToMove}
                             />
                         )}
@@ -149,11 +138,7 @@ export default function MoveDialog({
                                 <div className="flex gap-2">
                                     <Button
                                         onClick={() =>
-                                            handleMoveItem(
-                                                selectedItemToMove,
-                                                selectedItem,
-                                                'up',
-                                            )
+                                            handleMoveItem(selectedItemToMove, selectedItem, "up")
                                         }
                                         disabled={!selectedItem}
                                     >
@@ -162,17 +147,11 @@ export default function MoveDialog({
 
                                     <Button
                                         onClick={() =>
-                                            handleMoveItem(
-                                                selectedItemToMove,
-                                                selectedItem,
-                                                'down',
-                                            )
+                                            handleMoveItem(selectedItemToMove, selectedItem, "down")
                                         }
                                         disabled={!selectedItem}
                                     >
-                                        <div className="flex items-center gap-1">
-                                            Move Down
-                                        </div>
+                                        <div className="flex items-center gap-1">Move Down</div>
                                     </Button>
                                 </div>
                             )}

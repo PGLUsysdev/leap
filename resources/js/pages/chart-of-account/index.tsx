@@ -1,17 +1,15 @@
-import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import type { ChartOfAccount } from '@/types/global';
-import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/chart-of-account/form-dialog';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { router } from '@inertiajs/react';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/columns';
+import { useState } from "react";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import type { ChartOfAccount } from "@/types";
+import { Button } from "@/components/ui/button";
+import FormDialog from "@/pages/chart-of-account/form-dialog";
+import { DeleteDialog } from "@/components/delete-dialog";
+import { router } from "@inertiajs/react";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/columns";
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Chart of Accounts', href: '#' },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Chart of Accounts", href: "#" }];
 
 interface ChartOfAccountPageProps {
     chartOfAccounts: ChartOfAccount[];
@@ -22,13 +20,9 @@ interface ChartOfAccountPageProps {
     };
 }
 
-export default function ChartOfAccountPage({
-    chartOfAccounts,
-    can,
-}: ChartOfAccountPageProps) {
+export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAccountPageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedAccount, setSelectedAccount] =
-        useState<ChartOfAccount | null>(null);
+    const [selectedAccount, setSelectedAccount] = useState<ChartOfAccount | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -88,9 +82,7 @@ export default function ChartOfAccountPage({
                 >
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>
-                                Add Chart of Account
-                            </Button>
+                            <Button onClick={handleAdd}>Add Chart of Account</Button>
                         </div>
                     )}
                 </DataTable>
@@ -108,7 +100,7 @@ export default function ChartOfAccountPage({
                 title="Delete Chart of Account?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
+                        Are you sure you want to remove{" "}
                         <span className="font-bold text-foreground">
                             "{selectedAccount?.account_title}"
                         </span>

@@ -1,18 +1,18 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, Trash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import type { LguLevel } from '@/types/global';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Pencil, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { LguLevel } from "@/types";
 
 const columnHelper = createColumnHelper<LguLevel>();
 
 const columns = (canEdit: boolean, canDelete: boolean) => {
     const cols = [
-        columnHelper.accessor('code', {
-            header: 'Code',
+        columnHelper.accessor("code", {
+            header: "Code",
             cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
         }),
-        columnHelper.accessor('name', {
-            header: 'Name',
+        columnHelper.accessor("name", {
+            header: "Name",
             cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
         }),
     ];
@@ -20,7 +20,7 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
     if (canEdit || canDelete) {
         cols.push(
             columnHelper.display({
-                id: 'action',
+                id: "action",
                 size: canEdit && canDelete ? 82 : 48,
                 cell: ({ row, table }) => (
                     <div className="flex items-center gap-1">

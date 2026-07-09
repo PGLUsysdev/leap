@@ -1,16 +1,16 @@
-import { useState, useCallback } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/cc-sub-sector-cols';
-import type { CcStrategicPriority, CcSubSector } from '@/types/global';
-import { Button } from '@/components/ui/button';
-import { router } from '@inertiajs/react';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import FormDialog from './form-dialog';
+import { useState, useCallback } from "react";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/cc-sub-sector-cols";
+import type { CcStrategicPriority, CcSubSector } from "@/types";
+import { Button } from "@/components/ui/button";
+import { router } from "@inertiajs/react";
+import { DeleteDialog } from "@/components/delete-dialog";
+import { AlertErrorDialog } from "@/components/alert-error-dialog";
+import FormDialog from "./form-dialog";
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'CC Sub Sectors', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "CC Sub Sectors", href: "#" }];
 
 interface CcSubSectorPageProps {
     subSectors: CcSubSector[];
@@ -28,11 +28,9 @@ export default function CcSubSectorPage({
     can,
 }: CcSubSectorPageProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingSubSector, setEditingSubSector] =
-        useState<CcSubSector | null>(null);
+    const [editingSubSector, setEditingSubSector] = useState<CcSubSector | null>(null);
 
-    const [deletingSubSector, setDeletingSubSector] =
-        useState<CcSubSector | null>(null);
+    const [deletingSubSector, setDeletingSubSector] = useState<CcSubSector | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -87,11 +85,7 @@ export default function CcSubSectorPage({
                     negativeHeight={7}
                     meta={{ can }}
                 >
-                    {can?.add && (
-                        <Button onClick={handleCreate}>
-                            Create CC Sub Sector
-                        </Button>
-                    )}
+                    {can?.add && <Button onClick={handleCreate}>Create CC Sub Sector</Button>}
                 </DataTable>
             </div>
 
@@ -115,9 +109,8 @@ export default function CcSubSectorPage({
                 description={
                     deletingSubSector ? (
                         <>
-                            Are you sure you want to delete{' '}
-                            <strong>{deletingSubSector.name}</strong>? This
-                            action cannot be undone.
+                            Are you sure you want to delete{" "}
+                            <strong>{deletingSubSector.name}</strong>? This action cannot be undone.
                         </>
                     ) : null
                 }

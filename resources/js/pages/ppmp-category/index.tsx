@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import type { PpmpCategory, ChartOfAccount } from '@/types/global';
-import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/ppmp-category/form-dialog';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { router } from '@inertiajs/react';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/columns';
+import { useState } from "react";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import type { PpmpCategory, ChartOfAccount } from "@/types";
+import { Button } from "@/components/ui/button";
+import FormDialog from "@/pages/ppmp-category/form-dialog";
+import { DeleteDialog } from "@/components/delete-dialog";
+import { router } from "@inertiajs/react";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/columns";
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'PPMP Category', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "PPMP Category", href: "#" }];
 
 interface PpmpCategoryPageProps {
     ppmpCategories: PpmpCategory[];
@@ -34,12 +34,9 @@ export default function PpmpCategoryPage({
         chart_of_accounts:
             category.chart_of_account_ppmp_categories
                 ?.map((pivot) =>
-                    chartOfAccounts.find(
-                        (coa) => coa.id === pivot.chart_of_account_id,
-                    ),
+                    chartOfAccounts.find((coa) => coa.id === pivot.chart_of_account_id),
                 )
-                .filter((coa): coa is ChartOfAccount => coa !== undefined) ||
-            [],
+                .filter((coa): coa is ChartOfAccount => coa !== undefined) || [],
     }));
 
     console.log(categoriesWithAccounts);
@@ -47,11 +44,9 @@ export default function PpmpCategoryPage({
     // ---
 
     const [open, setOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] =
-        useState<PpmpCategory | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<PpmpCategory | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [isForceDeleteDialogOpen, setIsForceDeleteDialogOpen] =
-        useState(false);
+    const [isForceDeleteDialogOpen, setIsForceDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     function handleAdd() {
@@ -121,9 +116,7 @@ export default function PpmpCategoryPage({
                 >
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>
-                                Add PPMP Category
-                            </Button>
+                            <Button onClick={handleAdd}>Add PPMP Category</Button>
                         </div>
                     )}
                 </DataTable>
@@ -142,7 +135,7 @@ export default function PpmpCategoryPage({
                 title="Delete PPMP Category?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
+                        Are you sure you want to remove{" "}
                         <span className="font-bold text-foreground">
                             "{selectedCategory?.name}"
                         </span>
@@ -163,9 +156,9 @@ export default function PpmpCategoryPage({
                 title="Delete PPMP Category?"
                 description={
                     <>
-                        This category has dependent PPMP price list items.
-                        Continuing will delete all price list items associated
-                        with this category. This action cannot be undone.
+                        This category has dependent PPMP price list items. Continuing will delete
+                        all price list items associated with this category. This action cannot be
+                        undone.
                     </>
                 }
                 confirmText="Continue"

@@ -1,35 +1,30 @@
-import { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { router } from '@inertiajs/react';
+import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { router } from "@inertiajs/react";
 
-import { Field, FieldLabel, FieldError } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { FormDialogShell } from '@/components/form-dialog-shell';
-import { CommandSelect } from '@/components/command-select';
-import type { Ios, Office, Position } from '@/types/global';
+} from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { FormDialogShell } from "@/components/form-dialog-shell";
+import { CommandSelect } from "@/components/command-select";
+import type { Ios, Office, Position } from "@/types";
 
 const formSchema = z.object({
-    item_number: z.string().min(1, 'Item number is required'),
-    office_id: z.string().min(1, 'Office is required'),
-    ios_id: z.string().min(1, 'IOS is required'),
-    employment_type: z.enum([
-        'permanent',
-        'casual',
-        'contractual',
-        'job_order',
-    ]),
+    item_number: z.string().min(1, "Item number is required"),
+    office_id: z.string().min(1, "Office is required"),
+    ios_id: z.string().min(1, "IOS is required"),
+    employment_type: z.enum(["permanent", "casual", "contractual", "job_order"]),
     is_funded: z.string().min(1),
-    status: z.enum(['occupied', 'vacant', 'abolished']),
+    status: z.enum(["occupied", "vacant", "abolished"]),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,43 +51,37 @@ export default function FormDialog({
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            item_number: '',
-            office_id: data
-                ? String(data.office_id)
-                : userOfficeId
-                  ? String(userOfficeId)
-                  : '',
-            ios_id: '',
-            employment_type: 'permanent',
-            is_funded: 'true',
-            status: 'vacant',
+            item_number: "",
+            office_id: data ? String(data.office_id) : userOfficeId ? String(userOfficeId) : "",
+            ios_id: "",
+            employment_type: "permanent",
+            is_funded: "true",
+            status: "vacant",
         },
     });
 
-    const watchedIosId = form.watch('ios_id');
-    const watchedEmploymentType = form.watch('employment_type');
+    const watchedIosId = form.watch("ios_id");
+    const watchedEmploymentType = form.watch("employment_type");
 
     const employmentTypeOptions = watchedIosId
         ? ([
-              { value: 'permanent', label: 'Permanent' },
-              { value: 'contractual', label: 'Contractual' },
-              ...(watchedEmploymentType === 'casual'
-                  ? [{ value: 'casual', label: 'Casual' }]
-                  : []),
+              { value: "permanent", label: "Permanent" },
+              { value: "contractual", label: "Contractual" },
+              ...(watchedEmploymentType === "casual" ? [{ value: "casual", label: "Casual" }] : []),
           ] as const)
         : ([
-              { value: 'permanent', label: 'Permanent' },
-              { value: 'casual', label: 'Casual' },
-              { value: 'contractual', label: 'Contractual' },
-              { value: 'job_order', label: 'Job Order' },
+              { value: "permanent", label: "Permanent" },
+              { value: "casual", label: "Casual" },
+              { value: "contractual", label: "Contractual" },
+              { value: "job_order", label: "Job Order" },
           ] as const);
 
     // When casual is selected, auto-set IOS to Laborer I
     useEffect(() => {
-        if (watchedEmploymentType === 'casual') {
-            const laborerI = iosList.find((ios) => ios.class === 'Laborer I');
+        if (watchedEmploymentType === "casual") {
+            const laborerI = iosList.find((ios) => ios.class === "Laborer I");
             if (laborerI) {
-                form.setValue('ios_id', String(laborerI.id));
+                form.setValue("ios_id", String(laborerI.id));
             }
         }
     }, [watchedEmploymentType, iosList, form]);
@@ -104,17 +93,17 @@ export default function FormDialog({
                 office_id: String(data.office_id),
                 ios_id: String(data.ios_id),
                 employment_type: data.employment_type,
-                is_funded: data.is_funded ? 'true' : 'false',
+                is_funded: data.is_funded ? "true" : "false",
                 status: data.status,
             });
         } else {
             form.reset({
-                item_number: '',
-                office_id: userOfficeId ? String(userOfficeId) : '',
-                ios_id: '',
-                employment_type: 'permanent',
-                is_funded: 'true',
-                status: 'vacant',
+                item_number: "",
+                office_id: userOfficeId ? String(userOfficeId) : "",
+                ios_id: "",
+                employment_type: "permanent",
+                is_funded: "true",
+                status: "vacant",
             });
         }
     }, [data, form, userOfficeId]);
@@ -127,7 +116,7 @@ export default function FormDialog({
             office_id: Number(values.office_id),
             ios_id: Number(values.ios_id),
             employment_type: values.employment_type,
-            is_funded: values.is_funded === 'true',
+            is_funded: values.is_funded === "true",
             status: values.status,
         };
 
@@ -147,7 +136,7 @@ export default function FormDialog({
         if (isEditing && data) {
             router.patch(`/position/${data.id}`, payload, options);
         } else {
-            router.post('/position', payload, options);
+            router.post("/position", payload, options);
         }
     }
 
@@ -157,11 +146,11 @@ export default function FormDialog({
         <FormDialogShell
             open={open}
             onOpenChange={onOpenChange}
-            title={isEditing ? 'Edit Position' : 'Add New Position'}
+            title={isEditing ? "Edit Position" : "Add New Position"}
             description={undefined}
             formId="position-form"
-            submitLabel={isEditing ? 'Save Changes' : 'Add Position'}
-            submittingLabel={isEditing ? 'Saving...' : 'Adding...'}
+            submitLabel={isEditing ? "Save Changes" : "Add Position"}
+            submittingLabel={isEditing ? "Saving..." : "Adding..."}
             isLoading={submitting}
             onCancel={() => {
                 onOpenChange(false);
@@ -181,18 +170,10 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Item Number
-                                    </FieldLabel>
-                                    <Input
-                                        id={field.name}
-                                        {...field}
-                                        placeholder="e.g. 001"
-                                    />
+                                    <FieldLabel htmlFor={field.name}>Item Number</FieldLabel>
+                                    <Input id={field.name} {...field} placeholder="e.g. 001" />
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -203,21 +184,13 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Office
-                                    </FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>Office</FieldLabel>
                                     <CommandSelect<Office>
                                         value={field.value}
-                                        onChange={(value) =>
-                                            field.onChange(value)
-                                        }
+                                        onChange={(value) => field.onChange(value)}
                                         options={offices}
-                                        getOptionValue={(office) =>
-                                            String(office.id)
-                                        }
-                                        getOptionSearchText={(office) =>
-                                            office.name
-                                        }
+                                        getOptionValue={(office) => String(office.id)}
+                                        getOptionSearchText={(office) => office.name}
                                         renderTrigger={(office) => (
                                             <span className="truncate">
                                                 {office.acronym
@@ -238,9 +211,7 @@ export default function FormDialog({
                                         disabled={!data}
                                     />
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -251,38 +222,30 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        IOS Classification
-                                    </FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>IOS Classification</FieldLabel>
                                     <CommandSelect<Ios>
                                         value={field.value}
-                                        onChange={(value) =>
-                                            field.onChange(value)
-                                        }
+                                        onChange={(value) => field.onChange(value)}
                                         options={iosList}
                                         getOptionValue={(ios) => String(ios.id)}
                                         getOptionSearchText={(ios) => ios.class}
                                         renderTrigger={(ios) => (
                                             <span className="truncate">
-                                                {ios.class} (SG{' '}
-                                                {ios.salary_grade})
+                                                {ios.class} (SG {ios.salary_grade})
                                             </span>
                                         )}
                                         renderOption={(ios) => (
                                             <span>
-                                                {ios.class} (SG{' '}
-                                                {ios.salary_grade})
+                                                {ios.class} (SG {ios.salary_grade})
                                             </span>
                                         )}
                                         placeholder="Select IOS"
                                         searchPlaceholder="Search IOS classifications..."
                                         heading="IOS Classifications"
-                                        onClear={() => field.onChange('')}
+                                        onClear={() => field.onChange("")}
                                     />
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -293,9 +256,7 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Employment Type
-                                    </FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>Employment Type</FieldLabel>
                                     <Select
                                         name={field.name}
                                         value={field.value}
@@ -308,22 +269,15 @@ export default function FormDialog({
                                             <SelectValue placeholder="Select type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {employmentTypeOptions.map(
-                                                (opt) => (
-                                                    <SelectItem
-                                                        key={opt.value}
-                                                        value={opt.value}
-                                                    >
-                                                        {opt.label}
-                                                    </SelectItem>
-                                                ),
-                                            )}
+                                            {employmentTypeOptions.map((opt) => (
+                                                <SelectItem key={opt.value} value={opt.value}>
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -334,9 +288,7 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Funded
-                                    </FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>Funded</FieldLabel>
                                     <Select
                                         name={field.name}
                                         value={field.value}
@@ -349,18 +301,12 @@ export default function FormDialog({
                                             <SelectValue placeholder="Select" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="true">
-                                                Yes
-                                            </SelectItem>
-                                            <SelectItem value="false">
-                                                No
-                                            </SelectItem>
+                                            <SelectItem value="true">Yes</SelectItem>
+                                            <SelectItem value="false">No</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -371,9 +317,7 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Status
-                                    </FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>Status</FieldLabel>
                                     <Select
                                         name={field.name}
                                         value={field.value}
@@ -388,21 +332,13 @@ export default function FormDialog({
                                             <SelectValue placeholder="Select status" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="occupied">
-                                                Occupied
-                                            </SelectItem>
-                                            <SelectItem value="vacant">
-                                                Vacant
-                                            </SelectItem>
-                                            <SelectItem value="abolished">
-                                                Abolished
-                                            </SelectItem>
+                                            <SelectItem value="occupied">Occupied</SelectItem>
+                                            <SelectItem value="vacant">Vacant</SelectItem>
+                                            <SelectItem value="abolished">Abolished</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}

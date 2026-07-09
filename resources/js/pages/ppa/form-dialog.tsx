@@ -1,5 +1,5 @@
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Command,
     CommandDialog,
@@ -8,16 +8,16 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
-} from '@/components/ui/command';
-import { ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/command";
+import { ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-import { Checkbox } from '@/components/ui/checkbox';
-import { Controller, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -25,10 +25,10 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 
-import type { Office, Ppa, AuthData } from '@/types/global';
-import { Spinner } from '@/components/ui/spinner';
+import type { Office, Ppa, AuthData } from "@/types";
+import { Spinner } from "@/components/ui/spinner";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -37,7 +37,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
     Field,
     FieldContent,
@@ -49,16 +49,16 @@ import {
     // FieldSeparator,
     FieldSet,
     // FieldTitle,
-} from '@/components/ui/field';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { router } from '@inertiajs/react';
-import { FormDialogShell } from '@/components/form-dialog-shell';
+} from "@/components/ui/field";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { router } from "@inertiajs/react";
+import { FormDialogShell } from "@/components/form-dialog-shell";
 
 const formSchema = z.object({
-    office_id: z.string().min(1, 'Implementing office is required'),
-    name: z.string().min(1, 'Name is required'),
+    office_id: z.string().min(1, "Implementing office is required"),
+    name: z.string().min(1, "Name is required"),
     code_suffix: z.string().optional(),
-    type: z.enum(['Program', 'Project', 'Activity', 'Sub-Activity']),
+    type: z.enum(["Program", "Project", "Activity", "Sub-Activity"]),
     is_active: z.boolean(),
 });
 
@@ -67,8 +67,8 @@ type FormValues = z.infer<typeof formSchema>;
 interface PpaFormDialogProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    mode: 'add' | 'edit';
-    targetType: Ppa['type'];
+    mode: "add" | "edit";
+    targetType: Ppa["type"];
     parentPpa: Ppa | null;
     editPpa: Ppa | null;
     offices: Office[];
@@ -87,13 +87,13 @@ export default function PpaFormDialog({
     auth,
     selectedOfficeId,
 }: PpaFormDialogProps) {
-    const isEditing = mode === 'edit';
-    const isAddingChild = mode === 'add' && !!parentPpa;
+    const isEditing = mode === "edit";
+    const isAddingChild = mode === "add" && !!parentPpa;
 
     const [openOfficeCommand, setOpenOfficeCommand] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isErrorAlertOpen, setIsErrorAlertOpen] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
+    const [errorMessage, setErrorMessage] = useState("");
 
     const userOfficeId = auth.user.office_id;
     const defaultOfficeId = selectedOfficeId ?? userOfficeId;
@@ -101,16 +101,16 @@ export default function PpaFormDialog({
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            office_id: '',
-            name: '',
-            code_suffix: '',
-            type: 'Program',
+            office_id: "",
+            name: "",
+            code_suffix: "",
+            type: "Program",
             is_active: true,
         },
     });
 
-    const watchedOfficeId = Number(form.watch('office_id'));
-    const codeSuffix = form.watch('code_suffix');
+    const watchedOfficeId = Number(form.watch("office_id"));
+    const codeSuffix = form.watch("code_suffix");
 
     useEffect(() => {
         if (!isOpen) return;
@@ -123,28 +123,16 @@ export default function PpaFormDialog({
                 type: editPpa.type,
                 is_active: !!editPpa.is_active,
             });
-        } else if (mode === 'add') {
+        } else if (mode === "add") {
             form.reset({
-                office_id:
-                    parentPpa?.office_id?.toString() ||
-                    defaultOfficeId?.toString() ||
-                    '',
-                name: '',
-                code_suffix: '',
+                office_id: parentPpa?.office_id?.toString() || defaultOfficeId?.toString() || "",
+                name: "",
+                code_suffix: "",
                 type: targetType,
                 is_active: true,
             });
         }
-    }, [
-        isOpen,
-        isEditing,
-        editPpa,
-        parentPpa,
-        mode,
-        targetType,
-        form,
-        defaultOfficeId,
-    ]);
+    }, [isOpen, isEditing, editPpa, parentPpa, mode, targetType, form, defaultOfficeId]);
 
     const getCodePreview = () => {
         // For add mode, show type-specific auto-generated placeholder
@@ -152,47 +140,40 @@ export default function PpaFormDialog({
             // Determine placeholder based on type
             let suffix: string;
             switch (targetType) {
-                case 'Program':
-                    suffix = 'XXX'; // 3 digits
+                case "Program":
+                    suffix = "XXX"; // 3 digits
                     break;
-                case 'Project':
-                    suffix = 'XX'; // 2 digits
+                case "Project":
+                    suffix = "XX"; // 2 digits
                     break;
-                case 'Activity':
-                    suffix = 'XX'; // 2 digits
+                case "Activity":
+                    suffix = "XX"; // 2 digits
                     break;
-                case 'Sub-Activity':
-                    suffix = 'X'; // 1 digit, dynamic
+                case "Sub-Activity":
+                    suffix = "X"; // 1 digit, dynamic
                     break;
                 default:
-                    suffix = 'XXX';
+                    suffix = "XXX";
             }
 
             if (isAddingChild && parentPpa?.full_code) {
                 return `${parentPpa.full_code}-${suffix}`;
             }
 
-            const officeFullCode = offices.find(
-                (o) => o.id === watchedOfficeId,
-            )?.full_code;
-            return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
+            const officeFullCode = offices.find((o) => o.id === watchedOfficeId)?.full_code;
+            return `${officeFullCode || "0000-000-0-00-000"}-${suffix}`;
         }
 
         // For edit mode, show the actual suffix
-        const suffix = codeSuffix || '000';
+        const suffix = codeSuffix || "000";
 
-        if (editPpa?.full_code && editPpa.type !== 'Program') {
-            const baseCode = editPpa.full_code
-                .split('-')
-                .slice(0, -1)
-                .join('-');
+        if (editPpa?.full_code && editPpa.type !== "Program") {
+            const baseCode = editPpa.full_code.split("-").slice(0, -1).join("-");
             return `${baseCode}-${suffix}`;
         }
 
-        const officeFullCode = offices.find(
-            (o) => o.id === watchedOfficeId,
-        )?.full_code;
-        return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
+        const officeFullCode = offices.find((o) => o.id === watchedOfficeId)?.full_code;
+        return `${officeFullCode || "0000-000-0-00-000"}-${suffix}`;
     };
 
     function onSubmit(values: FormValues) {
@@ -218,8 +199,8 @@ export default function PpaFormDialog({
             if (isAddingChild && parentPpa) {
                 payload.parent_id = parentPpa.id;
             }
-            router.post('/ppas', payload, {
-                only: ['ppaTree'],
+            router.post("/ppas", payload, {
+                only: ["ppaTree"],
                 preserveState: true,
                 preserveScroll: true,
                 onStart: () => setIsSubmitting(true),
@@ -235,14 +216,14 @@ export default function PpaFormDialog({
                         setIsErrorAlertOpen(true);
                     } else if (Object.keys(errors).length > 0) {
                         setErrorMessage(
-                            'An error occurred while saving. Please check your inputs.',
+                            "An error occurred while saving. Please check your inputs.",
                         );
                         setIsErrorAlertOpen(true);
                     }
 
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as keyof FormValues, {
-                            type: 'server',
+                            type: "server",
                             message: errors[key],
                         });
                     });
@@ -268,16 +249,13 @@ export default function PpaFormDialog({
                 isLoading={isSubmitting}
                 formId="ppa-form"
                 onCancel={() => onOpenChange(false)}
-                submitLabel={isEditing ? 'Save Changes' : 'Create PPA'}
-                submittingLabel={isEditing ? 'Saving...' : 'Creating...'}
+                submitLabel={isEditing ? "Save Changes" : "Create PPA"}
+                submittingLabel={isEditing ? "Saving..." : "Creating..."}
                 className="sm:max-w-2xl"
             >
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
-                        <form
-                            id="ppa-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
+                        <form id="ppa-form" onSubmit={form.handleSubmit(onSubmit)}>
                             <FieldGroup>
                                 <div className="grid grid-cols-3 gap-6">
                                     <div className="col-span-2 flex flex-col gap-1 rounded-lg bg-card p-3">
@@ -308,36 +286,23 @@ export default function PpaFormDialog({
                                     name="name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     PPA Description
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
+                                                    <span className="text-destructive">*</span>
                                                 </FieldLabel>
 
                                                 <Textarea
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     placeholder={`Enter the name of the ${targetType.toLowerCase()}...`}
                                                     className="min-h-25 resize-none"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -348,37 +313,23 @@ export default function PpaFormDialog({
                                     name="office_id"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Implementing Office
-                                                    <span className="text-destructive">
-                                                        *
-                                                    </span>
+                                                    <span className="text-destructive">*</span>
                                                 </FieldLabel>
 
                                                 <Button
                                                     id={field.name}
                                                     type="button"
                                                     variant="outline"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     className={cn(
-                                                        'justify-between',
-                                                        !field.value &&
-                                                            'text-muted-foreground',
+                                                        "justify-between",
+                                                        !field.value && "text-muted-foreground",
                                                     )}
-                                                    onClick={() =>
-                                                        setOpenOfficeCommand(
-                                                            true,
-                                                        )
-                                                    }
+                                                    onClick={() => setOpenOfficeCommand(true)}
                                                     disabled
                                                 >
                                                     {field.value ? (
@@ -392,7 +343,7 @@ export default function PpaFormDialog({
                                                             }
                                                         </span>
                                                     ) : (
-                                                        'Select implementing office...'
+                                                        "Select implementing office..."
                                                     )}
 
                                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -400,9 +351,7 @@ export default function PpaFormDialog({
 
                                                 <CommandDialog
                                                     open={openOfficeCommand}
-                                                    onOpenChange={
-                                                        setOpenOfficeCommand
-                                                    }
+                                                    onOpenChange={setOpenOfficeCommand}
                                                     className="flex max-h-[90vh] flex-col"
                                                 >
                                                     <Command>
@@ -414,56 +363,44 @@ export default function PpaFormDialog({
                                                             </CommandEmpty>
 
                                                             <CommandGroup heading="Offices">
-                                                                {offices.map(
-                                                                    (
-                                                                        office,
-                                                                    ) => (
-                                                                        <CommandItem
-                                                                            key={
-                                                                                office.id
-                                                                            }
-                                                                            value={`${office.acronym} ${office.name}`}
-                                                                            data-checked={
-                                                                                field.value ===
-                                                                                office.id.toString()
-                                                                            }
-                                                                            onSelect={() => {
-                                                                                field.onChange(
-                                                                                    office.id.toString(),
-                                                                                );
+                                                                {offices.map((office) => (
+                                                                    <CommandItem
+                                                                        key={office.id}
+                                                                        value={`${office.acronym} ${office.name}`}
+                                                                        data-checked={
+                                                                            field.value ===
+                                                                            office.id.toString()
+                                                                        }
+                                                                        onSelect={() => {
+                                                                            field.onChange(
+                                                                                office.id.toString(),
+                                                                            );
 
-                                                                                setOpenOfficeCommand(
-                                                                                    false,
-                                                                                );
-                                                                            }}
-                                                                            className="items-start gap-4 py-2"
-                                                                        >
-                                                                            <div className="grid w-full grid-cols-4 gap-4">
-                                                                                <span className="col-span-1">
-                                                                                    {office.acronym ??
-                                                                                        '-'}
-                                                                                </span>
+                                                                            setOpenOfficeCommand(
+                                                                                false,
+                                                                            );
+                                                                        }}
+                                                                        className="items-start gap-4 py-2"
+                                                                    >
+                                                                        <div className="grid w-full grid-cols-4 gap-4">
+                                                                            <span className="col-span-1">
+                                                                                {office.acronym ??
+                                                                                    "-"}
+                                                                            </span>
 
-                                                                                <span className="col-span-3 whitespace-normal">
-                                                                                    {
-                                                                                        office.name
-                                                                                    }
-                                                                                </span>
-                                                                            </div>
-                                                                        </CommandItem>
-                                                                    ),
-                                                                )}
+                                                                            <span className="col-span-3 whitespace-normal">
+                                                                                {office.name}
+                                                                            </span>
+                                                                        </div>
+                                                                    </CommandItem>
+                                                                ))}
                                                             </CommandGroup>
                                                         </CommandList>
                                                     </Command>
                                                 </CommandDialog>
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -476,11 +413,7 @@ export default function PpaFormDialog({
                                         name="code_suffix"
                                         control={form.control}
                                         render={({ field, fieldState }) => (
-                                            <Field
-                                                data-invalid={
-                                                    fieldState.invalid
-                                                }
-                                            >
+                                            <Field data-invalid={fieldState.invalid}>
                                                 <FieldContent>
                                                     <FieldLabel
                                                         htmlFor={field.name}
@@ -488,17 +421,14 @@ export default function PpaFormDialog({
                                                     >
                                                         Code Suffix
                                                         <span className="text-xs text-muted-foreground">
-                                                            (Auto-generated,
-                                                            read-only)
+                                                            (Auto-generated, read-only)
                                                         </span>
                                                     </FieldLabel>
 
                                                     <Input
                                                         {...field}
                                                         id={field.name}
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
+                                                        aria-invalid={fieldState.invalid}
                                                         placeholder="Auto-generated"
                                                         maxLength={10}
                                                         autoComplete="off"
@@ -507,11 +437,7 @@ export default function PpaFormDialog({
                                                     />
 
                                                     {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                                        <FieldError errors={[fieldState.error]} />
                                                     )}
                                                 </FieldContent>
                                             </Field>
@@ -534,27 +460,17 @@ export default function PpaFormDialog({
                                                     <FieldGroup>
                                                         <Field
                                                             orientation="horizontal"
-                                                            data-invalid={
-                                                                fieldState.invalid
-                                                            }
+                                                            data-invalid={fieldState.invalid}
                                                         >
                                                             <Checkbox
                                                                 id={field.name}
-                                                                aria-invalid={
-                                                                    fieldState.invalid
-                                                                }
-                                                                checked={
-                                                                    field.value
-                                                                }
-                                                                onCheckedChange={
-                                                                    field.onChange
-                                                                }
+                                                                aria-invalid={fieldState.invalid}
+                                                                checked={field.value}
+                                                                onCheckedChange={field.onChange}
                                                             />
 
                                                             <FieldLabel
-                                                                htmlFor={
-                                                                    field.name
-                                                                }
+                                                                htmlFor={field.name}
                                                                 className="font-normal"
                                                             >
                                                                 Active
@@ -563,11 +479,7 @@ export default function PpaFormDialog({
                                                     </FieldGroup>
 
                                                     {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                                        <FieldError errors={[fieldState.error]} />
                                                     )}
                                                 </FieldContent>
                                             </FieldSet>
@@ -576,40 +488,27 @@ export default function PpaFormDialog({
                                 </div>
 
                                 {/* Hidden field to ensure type is always submitted */}
-                                <input
-                                    {...form.register('type')}
-                                    type="hidden"
-                                />
+                                <input {...form.register("type")} type="hidden" />
                             </FieldGroup>
                         </form>
                     </ScrollArea>
                 </div>
             </FormDialogShell>
 
-            <AlertDialog
-                open={isErrorAlertOpen}
-                onOpenChange={setIsErrorAlertOpen}
-            >
+            <AlertDialog open={isErrorAlertOpen} onOpenChange={setIsErrorAlertOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Duplicate Entry Detected
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Duplicate Entry Detected</AlertDialogTitle>
 
-                        <AlertDialogDescription>
-                            {errorMessage}
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>{errorMessage}</AlertDialogDescription>
 
                         <div className="mt-2 text-sm text-muted-foreground">
-                            The AIP Reference Code combination (Office + Type +
-                            Suffix) must be unique. Please change the suffix and
-                            try again.
+                            The AIP Reference Code combination (Office + Type + Suffix) must be
+                            unique. Please change the suffix and try again.
                         </div>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogAction
-                            onClick={() => setIsErrorAlertOpen(false)}
-                        >
+                        <AlertDialogAction onClick={() => setIsErrorAlertOpen(false)}>
                             Got it
                         </AlertDialogAction>
                     </AlertDialogFooter>

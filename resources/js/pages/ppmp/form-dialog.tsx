@@ -1,31 +1,21 @@
-import { useState, useEffect } from 'react';
-import {
-    Field,
-    FieldError,
-    FieldLabel,
-    FieldContent,
-} from '@/components/ui/field';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type {
-    ChartOfAccount,
-    FundingSource,
-    AipEntry,
-    Ppmp,
-} from '@/types/global';
-import { router } from '@inertiajs/react';
-import { formSchema, type FormSchemaType } from './form-dialog-schema';
-import { FormDialogShell } from '@/components/form-dialog-shell';
-import { CommandSelect } from '@/components/command-select';
+import { useState, useEffect } from "react";
+import { Field, FieldError, FieldLabel, FieldContent } from "@/components/ui/field";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { ChartOfAccount, FundingSource, AipEntry, Ppmp } from "@/types";
+import { router } from "@inertiajs/react";
+import { formSchema, type FormSchemaType } from "./form-dialog-schema";
+import { FormDialogShell } from "@/components/form-dialog-shell";
+import { CommandSelect } from "@/components/command-select";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 interface PpmpFormDialogProps {
     open: boolean;
@@ -40,7 +30,7 @@ interface PpmpFormDialogProps {
     // The ID of the bridge record linking the Activity and the Fund
     ppaFundingSourceId: number | undefined;
     // Quick-add mode: adds month selector and quantity field
-    mode?: 'default' | 'quick-add';
+    mode?: "default" | "quick-add";
     defaultMonth?: string;
     defaultQuantity?: number;
     onItemAdded?: () => void;
@@ -59,7 +49,7 @@ export default function PpmpFormDialog({
     selectedExpenseClass,
     selectedFundingSourceId,
     ppaFundingSourceId,
-    mode = 'default',
+    mode = "default",
     defaultMonth,
     defaultQuantity,
     onItemAdded,
@@ -84,13 +74,13 @@ export default function PpmpFormDialog({
         },
     });
 
-    const selectedExpenseAccount = form.watch('expenseAccount');
-    const selectedCategory = form.watch('category');
+    const selectedExpenseAccount = form.watch("expenseAccount");
+    const selectedCategory = form.watch("category");
 
     useEffect(() => {
         if (open) {
-            form.setValue('ppa_funding_source_id', ppaFundingSourceId || null);
-            form.setValue('fundingSource', selectedFundingSourceId || null);
+            form.setValue("ppa_funding_source_id", ppaFundingSourceId || null);
+            form.setValue("fundingSource", selectedFundingSourceId || null);
         }
     }, [open, ppaFundingSourceId, selectedFundingSourceId, form]);
 
@@ -112,51 +102,41 @@ export default function PpmpFormDialog({
         }
     }, [open, form]);
 
-    const selectedPriceListId = form.watch('ppmp_price_list_id');
+    const selectedPriceListId = form.watch("ppmp_price_list_id");
 
     const MONTHS = [
-        'jan',
-        'feb',
-        'mar',
-        'apr',
-        'may',
-        'jun',
-        'jul',
-        'aug',
-        'sep',
-        'oct',
-        'nov',
-        'dec',
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "may",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "oct",
+        "nov",
+        "dec",
     ] as const;
 
     useEffect(() => {
-        if (
-            mode !== 'quick-add' ||
-            !selectedPriceListId ||
-            !existingPpmps?.length
-        )
-            return;
+        if (mode !== "quick-add" || !selectedPriceListId || !existingPpmps?.length) return;
 
         const match = (existingPpmps as any[]).find(
             (p) =>
-                Number(p.ppa_funding_source_id) ===
-                    Number(ppaFundingSourceId) &&
+                Number(p.ppa_funding_source_id) === Number(ppaFundingSourceId) &&
                 Number(p.ppmp_price_list_id) === Number(selectedPriceListId),
         );
         if (!match) return;
 
-        const firstMonth = MONTHS.find(
-            (m) => (Number(match[`${m}_qty`]) || 0) > 0,
-        );
+        const firstMonth = MONTHS.find((m) => (Number(match[`${m}_qty`]) || 0) > 0);
         if (firstMonth) {
-            form.setValue('month', firstMonth);
-            form.setValue('quantity', Number(match[`${firstMonth}_qty`]));
+            form.setValue("month", firstMonth);
+            form.setValue("quantity", Number(match[`${firstMonth}_qty`]));
         }
     }, [selectedPriceListId, mode, existingPpmps, ppaFundingSourceId, form]);
 
-    const selectedCategoryData = ppmpCategories.find(
-        (cat) => cat.id === selectedCategory,
-    );
+    const selectedCategoryData = ppmpCategories.find((cat) => cat.id === selectedCategory);
     const categoryExpenseAccountIds =
         selectedCategoryData?.chart_of_account_ppmp_categories
             ?.map((cac: any) => cac.chart_of_account?.id)
@@ -173,8 +153,7 @@ export default function PpmpFormDialog({
     const filteredPpmpCategories = selectedExpenseAccount
         ? ppmpCategories.filter((pc) =>
               pc.chart_of_account_ppmp_categories?.some(
-                  (cac: any) =>
-                      cac.chart_of_account?.id === selectedExpenseAccount,
+                  (cac: any) => cac.chart_of_account?.id === selectedExpenseAccount,
               ),
           )
         : ppmpCategories;
@@ -206,8 +185,8 @@ export default function PpmpFormDialog({
 
     const handleReset = () => {
         form.reset();
-        form.setValue('ppa_funding_source_id', ppaFundingSourceId || null);
-        form.setValue('fundingSource', selectedFundingSourceId);
+        form.setValue("ppa_funding_source_id", ppaFundingSourceId || null);
+        form.setValue("fundingSource", selectedFundingSourceId);
     };
 
     function onSubmit(data: FormSchemaType) {
@@ -218,12 +197,12 @@ export default function PpmpFormDialog({
         };
 
         // Include month and quantity in quick-add mode
-        if (mode === 'quick-add') {
+        if (mode === "quick-add") {
             payload.month = data.month;
             payload.quantity = data.quantity;
         }
 
-        router.post('/ppmp', payload, {
+        router.post("/ppmp", payload, {
             onStart: () => setIsLoading(true),
             onFinish: () => setIsLoading(false),
             onSuccess: () => {
@@ -236,44 +215,35 @@ export default function PpmpFormDialog({
     }
 
     const clearDependencies = () => {
-        form.setValue('ppmp_price_list_id', null);
-        form.setValue('description', null);
-        form.setValue('itemNo', null);
-        form.setValue('price', null);
-        form.setValue('unitOfMeasurement', null);
+        form.setValue("ppmp_price_list_id", null);
+        form.setValue("description", null);
+        form.setValue("itemNo", null);
+        form.setValue("price", null);
+        form.setValue("unitOfMeasurement", null);
     };
 
     return (
         <FormDialogShell
             open={open}
             onOpenChange={onOpenChange}
-            title={
-                mode === 'quick-add' ? 'Quick Add PPMP Item' : 'Add PPMP Item'
-            }
+            title={mode === "quick-add" ? "Quick Add PPMP Item" : "Add PPMP Item"}
             description={
-                mode === 'quick-add'
-                    ? 'Select a procurement item and set the monthly quantity'
-                    : 'Add a new item to the PPMP list'
+                mode === "quick-add"
+                    ? "Select a procurement item and set the monthly quantity"
+                    : "Add a new item to the PPMP list"
             }
             isLoading={isLoading}
             formId="form-rhf-demo"
             onReset={handleReset}
             onCancel={() => onOpenChange(false)}
-            submitLabel={
-                mode === 'quick-add' ? 'Add & Set Quantity' : 'Add Item'
-            }
-            submittingLabel={
-                mode === 'quick-add' ? 'Adding Item...' : 'Adding Item'
-            }
+            submitLabel={mode === "quick-add" ? "Add & Set Quantity" : "Add Item"}
+            submittingLabel={mode === "quick-add" ? "Adding Item..." : "Adding Item"}
             className="sm:max-w-2xl"
         >
             <div className="flex min-h-0">
                 <ScrollArea className="w-full">
                     <div className="grid gap-6">
-                        <form
-                            id="form-rhf-demo"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
+                        <form id="form-rhf-demo" onSubmit={form.handleSubmit(onSubmit)}>
                             <div className="grid gap-6">
                                 <Controller
                                     name="description"
@@ -284,30 +254,25 @@ export default function PpmpFormDialog({
                                             data-invalid={fieldState.invalid}
                                         >
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
+                                                <FieldLabel htmlFor={field.name}>
                                                     Procurement Item
                                                 </FieldLabel>
 
                                                 <CommandSelect
                                                     value={field.value}
-                                                    onChange={(
-                                                        val,
-                                                        priceList,
-                                                    ) => {
+                                                    onChange={(val, priceList) => {
                                                         field.onChange(val);
 
                                                         const pivot =
                                                             priceList.chart_of_account_ppmp_category;
 
                                                         form.setValue(
-                                                            'ppmp_price_list_id',
+                                                            "ppmp_price_list_id",
                                                             priceList.id,
                                                         );
 
                                                         form.setValue(
-                                                            'expenseAccount',
+                                                            "expenseAccount",
                                                             pivot?.chart_of_account_id,
                                                             {
                                                                 // was priceList.chart_of_account_id
@@ -316,9 +281,8 @@ export default function PpmpFormDialog({
                                                         );
 
                                                         form.setValue(
-                                                            'category',
-                                                            pivot?.ppmp_category_id ||
-                                                                null,
+                                                            "category",
+                                                            pivot?.ppmp_category_id || null,
                                                             {
                                                                 // was priceList.ppmp_category_id
                                                                 shouldValidate: true,
@@ -326,23 +290,19 @@ export default function PpmpFormDialog({
                                                         );
 
                                                         form.setValue(
-                                                            'itemNo',
+                                                            "itemNo",
                                                             priceList.item_number,
                                                             {
                                                                 shouldValidate: true,
                                                             },
                                                         );
 
-                                                        form.setValue(
-                                                            'price',
-                                                            priceList.price,
-                                                            {
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
+                                                        form.setValue("price", priceList.price, {
+                                                            shouldValidate: true,
+                                                        });
 
                                                         form.setValue(
-                                                            'unitOfMeasurement',
+                                                            "unitOfMeasurement",
                                                             priceList.unit_of_measurement,
                                                             {
                                                                 shouldValidate: true,
@@ -350,9 +310,7 @@ export default function PpmpFormDialog({
                                                         );
                                                     }}
                                                     options={filteredPriceLists}
-                                                    getOptionValue={(pl) =>
-                                                        pl.id
-                                                    }
+                                                    getOptionValue={(pl) => pl.id}
                                                     getOptionSearchText={(pl) =>
                                                         `${pl.item_number} ${pl.description} ${pl.unit_of_measurement} ${pl.price}`
                                                     }
@@ -362,18 +320,9 @@ export default function PpmpFormDialog({
                                                     dialogClassName="flex max-h-[90vh] flex-col sm:max-w-[600px]"
                                                     onClear={() => {
                                                         field.onChange(null);
-                                                        form.setValue(
-                                                            'itemNo',
-                                                            null,
-                                                        );
-                                                        form.setValue(
-                                                            'price',
-                                                            null,
-                                                        );
-                                                        form.setValue(
-                                                            'unitOfMeasurement',
-                                                            null,
-                                                        );
+                                                        form.setValue("itemNo", null);
+                                                        form.setValue("price", null);
+                                                        form.setValue("unitOfMeasurement", null);
                                                     }}
                                                     renderTrigger={(pl) => (
                                                         <span className="truncate">
@@ -382,30 +331,18 @@ export default function PpmpFormDialog({
                                                     )}
                                                     renderOption={(pl) => (
                                                         <div className="grid w-full grid-cols-10 items-start gap-6 py-1">
-                                                            <span>
-                                                                {pl.item_number}
-                                                            </span>
+                                                            <span>{pl.item_number}</span>
                                                             <span className="col-span-6">
                                                                 {pl.description}
                                                             </span>
-                                                            <span>
-                                                                {
-                                                                    pl.unit_of_measurement
-                                                                }
-                                                            </span>
-                                                            <span>
-                                                                {pl.price}
-                                                            </span>
+                                                            <span>{pl.unit_of_measurement}</span>
+                                                            <span>{pl.price}</span>
                                                         </div>
                                                     )}
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -418,41 +355,26 @@ export default function PpmpFormDialog({
                                             name="itemNo"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
+                                                <Field data-invalid={fieldState.invalid}>
                                                     <FieldContent>
-                                                        <FieldLabel
-                                                            htmlFor={field.name}
-                                                        >
+                                                        <FieldLabel htmlFor={field.name}>
                                                             Item No.
                                                         </FieldLabel>
 
                                                         <Input
                                                             {...field}
                                                             id={field.name}
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
+                                                            aria-invalid={fieldState.invalid}
                                                             type="number"
                                                             min="1"
-                                                            value={
-                                                                field.value ??
-                                                                ''
-                                                            }
+                                                            value={field.value ?? ""}
                                                             readOnly
                                                             onChange={(e) =>
                                                                 field.onChange(
-                                                                    e.target
-                                                                        .value ===
-                                                                        ''
+                                                                    e.target.value === ""
                                                                         ? null
                                                                         : parseInt(
-                                                                              e
-                                                                                  .target
-                                                                                  .value,
+                                                                              e.target.value,
                                                                               10,
                                                                           ),
                                                                 )
@@ -461,9 +383,7 @@ export default function PpmpFormDialog({
 
                                                         {fieldState.invalid && (
                                                             <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
+                                                                errors={[fieldState.error]}
                                                             />
                                                         )}
                                                     </FieldContent>
@@ -477,60 +397,38 @@ export default function PpmpFormDialog({
                                             name="price"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
+                                                <Field data-invalid={fieldState.invalid}>
                                                     <FieldContent>
-                                                        <FieldLabel
-                                                            htmlFor={field.name}
-                                                        >
+                                                        <FieldLabel htmlFor={field.name}>
                                                             Price
                                                         </FieldLabel>
 
                                                         <Input
                                                             {...field}
                                                             id={field.name}
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
+                                                            aria-invalid={fieldState.invalid}
                                                             type="number"
                                                             step="0.01"
                                                             min="0"
-                                                            value={
-                                                                field.value ??
-                                                                ''
-                                                            }
+                                                            value={field.value ?? ""}
                                                             readOnly
                                                             onChange={(e) => {
-                                                                const val =
-                                                                    e.target
-                                                                        .value;
-                                                                if (
-                                                                    val === ''
-                                                                ) {
-                                                                    field.onChange(
-                                                                        null,
-                                                                    );
+                                                                const val = e.target.value;
+                                                                if (val === "") {
+                                                                    field.onChange(null);
                                                                 } else {
-                                                                    const cleaned =
-                                                                        val.replace(
-                                                                            /^0+(?=\d)/,
-                                                                            '',
-                                                                        );
-                                                                    field.onChange(
-                                                                        cleaned,
+                                                                    const cleaned = val.replace(
+                                                                        /^0+(?=\d)/,
+                                                                        "",
                                                                     );
+                                                                    field.onChange(cleaned);
                                                                 }
                                                             }}
                                                         />
 
                                                         {fieldState.invalid && (
                                                             <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
+                                                                errors={[fieldState.error]}
                                                             />
                                                         )}
                                                     </FieldContent>
@@ -544,36 +442,23 @@ export default function PpmpFormDialog({
                                             name="unitOfMeasurement"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
+                                                <Field data-invalid={fieldState.invalid}>
                                                     <FieldContent>
-                                                        <FieldLabel
-                                                            htmlFor={field.name}
-                                                        >
+                                                        <FieldLabel htmlFor={field.name}>
                                                             Unit of Measurement
                                                         </FieldLabel>
 
                                                         <Input
                                                             {...field}
                                                             id={field.name}
-                                                            aria-invalid={
-                                                                fieldState.invalid
-                                                            }
-                                                            value={
-                                                                field.value ??
-                                                                ''
-                                                            }
+                                                            aria-invalid={fieldState.invalid}
+                                                            value={field.value ?? ""}
                                                             readOnly
                                                         />
 
                                                         {fieldState.invalid && (
                                                             <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
+                                                                errors={[fieldState.error]}
                                                             />
                                                         )}
                                                     </FieldContent>
@@ -592,35 +477,24 @@ export default function PpmpFormDialog({
                                             data-invalid={fieldState.invalid}
                                         >
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
-                                                    Expense Account{' '}
-                                                    {selectedExpenseClass ===
-                                                    'MOOE'
-                                                        ? '(MOOE)'
-                                                        : '(CO)'}
+                                                <FieldLabel htmlFor={field.name}>
+                                                    Expense Account{" "}
+                                                    {selectedExpenseClass === "MOOE"
+                                                        ? "(MOOE)"
+                                                        : "(CO)"}
                                                 </FieldLabel>
 
                                                 <CommandSelect
                                                     value={field.value}
                                                     onChange={(val) => {
-                                                        if (
-                                                            field.value !== val
-                                                        ) {
+                                                        if (field.value !== val) {
                                                             field.onChange(val);
                                                             clearDependencies();
                                                         }
                                                     }}
-                                                    options={
-                                                        filteredChartOfAccounts
-                                                    }
-                                                    getOptionValue={(acc) =>
-                                                        acc.id
-                                                    }
-                                                    getOptionSearchText={(
-                                                        acc,
-                                                    ) =>
+                                                    options={filteredChartOfAccounts}
+                                                    getOptionValue={(acc) => acc.id}
+                                                    getOptionSearchText={(acc) =>
                                                         `${acc.account_number} ${acc.account_title}`
                                                     }
                                                     placeholder="Select expense account"
@@ -628,18 +502,13 @@ export default function PpmpFormDialog({
                                                     heading="Chart of Accounts"
                                                     onClear={() => {
                                                         field.onChange(null);
-                                                        form.setValue(
-                                                            'category',
-                                                            null,
-                                                        );
+                                                        form.setValue("category", null);
                                                         clearDependencies();
                                                     }}
                                                     renderTrigger={(acc) => (
                                                         <span className="truncate">
                                                             <code className="mr-2 rounded bg-muted p-0.5 text-xs">
-                                                                {
-                                                                    acc.account_number
-                                                                }
+                                                                {acc.account_number}
                                                             </code>
                                                             {acc.account_title}
                                                         </span>
@@ -647,9 +516,7 @@ export default function PpmpFormDialog({
                                                     renderOption={(acc) => (
                                                         <div>
                                                             <code className="mr-2 rounded bg-muted p-1 text-xs">
-                                                                {
-                                                                    acc.account_number
-                                                                }
+                                                                {acc.account_number}
                                                             </code>
                                                             {acc.account_title}
                                                         </div>
@@ -657,11 +524,7 @@ export default function PpmpFormDialog({
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -677,31 +540,21 @@ export default function PpmpFormDialog({
                                             data-invalid={fieldState.invalid}
                                         >
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
+                                                <FieldLabel htmlFor={field.name}>
                                                     Category
                                                 </FieldLabel>
 
                                                 <CommandSelect
                                                     value={field.value}
                                                     onChange={(val) => {
-                                                        if (
-                                                            field.value !== val
-                                                        ) {
+                                                        if (field.value !== val) {
                                                             field.onChange(val);
                                                             clearDependencies();
                                                         }
                                                     }}
-                                                    options={
-                                                        filteredPpmpCategories
-                                                    }
-                                                    getOptionValue={(cat) =>
-                                                        cat.id
-                                                    }
-                                                    getOptionSearchText={(
-                                                        cat,
-                                                    ) => cat.name}
+                                                    options={filteredPpmpCategories}
+                                                    getOptionValue={(cat) => cat.id}
+                                                    getOptionSearchText={(cat) => cat.name}
                                                     placeholder="Select category"
                                                     searchPlaceholder="Search category..."
                                                     heading="Categories"
@@ -710,56 +563,35 @@ export default function PpmpFormDialog({
                                                         clearDependencies();
                                                     }}
                                                     renderTrigger={(cat) => (
-                                                        <span className="truncate">
-                                                            {cat.name}
-                                                        </span>
+                                                        <span className="truncate">{cat.name}</span>
                                                     )}
-                                                    renderOption={(cat) =>
-                                                        cat.name
-                                                    }
+                                                    renderOption={(cat) => cat.name}
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
                                     )}
                                 />
 
-                                {mode === 'quick-add' && (
+                                {mode === "quick-add" && (
                                     <div className="grid grid-cols-2 gap-4">
                                         <Controller
                                             name="month"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
+                                                <Field data-invalid={fieldState.invalid}>
                                                     <FieldContent>
-                                                        <FieldLabel
-                                                            htmlFor={field.name}
-                                                        >
+                                                        <FieldLabel htmlFor={field.name}>
                                                             Month
                                                         </FieldLabel>
 
                                                         <Select
-                                                            value={
-                                                                field.value ??
-                                                                undefined
-                                                            }
-                                                            onValueChange={(
-                                                                val,
-                                                            ) =>
-                                                                field.onChange(
-                                                                    val,
-                                                                )
+                                                            value={field.value ?? undefined}
+                                                            onValueChange={(val) =>
+                                                                field.onChange(val)
                                                             }
                                                         >
                                                             <SelectTrigger
@@ -771,65 +603,59 @@ export default function PpmpFormDialog({
                                                             <SelectContent>
                                                                 {[
                                                                     {
-                                                                        value: 'jan',
-                                                                        label: 'January',
+                                                                        value: "jan",
+                                                                        label: "January",
                                                                     },
                                                                     {
-                                                                        value: 'feb',
-                                                                        label: 'February',
+                                                                        value: "feb",
+                                                                        label: "February",
                                                                     },
                                                                     {
-                                                                        value: 'mar',
-                                                                        label: 'March',
+                                                                        value: "mar",
+                                                                        label: "March",
                                                                     },
                                                                     {
-                                                                        value: 'apr',
-                                                                        label: 'April',
+                                                                        value: "apr",
+                                                                        label: "April",
                                                                     },
                                                                     {
-                                                                        value: 'may',
-                                                                        label: 'May',
+                                                                        value: "may",
+                                                                        label: "May",
                                                                     },
                                                                     {
-                                                                        value: 'jun',
-                                                                        label: 'June',
+                                                                        value: "jun",
+                                                                        label: "June",
                                                                     },
                                                                     {
-                                                                        value: 'jul',
-                                                                        label: 'July',
+                                                                        value: "jul",
+                                                                        label: "July",
                                                                     },
                                                                     {
-                                                                        value: 'aug',
-                                                                        label: 'August',
+                                                                        value: "aug",
+                                                                        label: "August",
                                                                     },
                                                                     {
-                                                                        value: 'sep',
-                                                                        label: 'September',
+                                                                        value: "sep",
+                                                                        label: "September",
                                                                     },
                                                                     {
-                                                                        value: 'oct',
-                                                                        label: 'October',
+                                                                        value: "oct",
+                                                                        label: "October",
                                                                     },
                                                                     {
-                                                                        value: 'nov',
-                                                                        label: 'November',
+                                                                        value: "nov",
+                                                                        label: "November",
                                                                     },
                                                                     {
-                                                                        value: 'dec',
-                                                                        label: 'December',
+                                                                        value: "dec",
+                                                                        label: "December",
                                                                     },
                                                                 ].map((m) => (
                                                                     <SelectItem
-                                                                        key={
-                                                                            m.value
-                                                                        }
-                                                                        value={
-                                                                            m.value
-                                                                        }
+                                                                        key={m.value}
+                                                                        value={m.value}
                                                                     >
-                                                                        {
-                                                                            m.label
-                                                                        }
+                                                                        {m.label}
                                                                     </SelectItem>
                                                                 ))}
                                                             </SelectContent>
@@ -837,9 +663,7 @@ export default function PpmpFormDialog({
 
                                                         {fieldState.invalid && (
                                                             <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
+                                                                errors={[fieldState.error]}
                                                             />
                                                         )}
                                                     </FieldContent>
@@ -851,15 +675,9 @@ export default function PpmpFormDialog({
                                             name="quantity"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
+                                                <Field data-invalid={fieldState.invalid}>
                                                     <FieldContent>
-                                                        <FieldLabel
-                                                            htmlFor={field.name}
-                                                        >
+                                                        <FieldLabel htmlFor={field.name}>
                                                             Quantity
                                                         </FieldLabel>
 
@@ -869,24 +687,13 @@ export default function PpmpFormDialog({
                                                             step="1"
                                                             min="0"
                                                             className="h-9"
-                                                            value={
-                                                                field.value ??
-                                                                ''
-                                                            }
+                                                            value={field.value ?? ""}
                                                             onChange={(e) => {
-                                                                const val =
-                                                                    e.target
-                                                                        .value;
-                                                                if (
-                                                                    val === ''
-                                                                ) {
-                                                                    field.onChange(
-                                                                        null,
-                                                                    );
+                                                                const val = e.target.value;
+                                                                if (val === "") {
+                                                                    field.onChange(null);
                                                                 } else {
-                                                                    field.onChange(
-                                                                        val,
-                                                                    );
+                                                                    field.onChange(val);
                                                                 }
                                                             }}
                                                             placeholder="Enter quantity"
@@ -894,9 +701,7 @@ export default function PpmpFormDialog({
 
                                                         {fieldState.invalid && (
                                                             <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
+                                                                errors={[fieldState.error]}
                                                             />
                                                         )}
                                                     </FieldContent>
@@ -915,21 +720,15 @@ export default function PpmpFormDialog({
                                             data-invalid={fieldState.invalid}
                                         >
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                >
+                                                <FieldLabel htmlFor={field.name}>
                                                     Funding Source
                                                 </FieldLabel>
 
                                                 <CommandSelect
                                                     value={field.value}
-                                                    onChange={(val) =>
-                                                        field.onChange(val)
-                                                    }
+                                                    onChange={(val) => field.onChange(val)}
                                                     options={fundingSources}
-                                                    getOptionValue={(fs) =>
-                                                        fs.id
-                                                    }
+                                                    getOptionValue={(fs) => fs.id}
                                                     getOptionSearchText={(fs) =>
                                                         `${fs.fund_type} ${fs.code} ${fs.title}`
                                                     }
@@ -938,9 +737,7 @@ export default function PpmpFormDialog({
                                                     heading="Funding Sources"
                                                     disabled // Passed directly through
                                                     showClear={false} // Disabled clear since original had it disabled
-                                                    onClear={() =>
-                                                        field.onChange(null)
-                                                    }
+                                                    onClear={() => field.onChange(null)}
                                                     renderTrigger={(fs) => (
                                                         <span className="truncate">
                                                             <code className="mr-2 rounded bg-muted p-0.5 text-xs">
@@ -961,11 +758,7 @@ export default function PpmpFormDialog({
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>

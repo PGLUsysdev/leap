@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import FormDialog from './form-dialog';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { router } from '@inertiajs/react';
-import type { LguLevel } from '@/types/global';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/columns';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import FormDialog from "./form-dialog";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import { DeleteDialog } from "@/components/delete-dialog";
+import { router } from "@inertiajs/react";
+import type { LguLevel } from "@/types";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/columns";
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'LGU Levels', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "LGU Levels", href: "#" }];
 
 interface LguLevelPageProps {
     lguLevels: LguLevel[];
@@ -22,9 +22,7 @@ interface LguLevelPageProps {
 
 export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedLguLevel, setSelectedLguLevel] = useState<LguLevel | null>(
-        null,
-    );
+    const [selectedLguLevel, setSelectedLguLevel] = useState<LguLevel | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -94,7 +92,7 @@ export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
                 title="Delete LGU Level?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
+                        Are you sure you want to remove{" "}
                         <span className="font-bold text-foreground">
                             "{selectedLguLevel?.name}"
                         </span>

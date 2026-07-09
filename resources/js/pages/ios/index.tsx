@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { router } from '@inertiajs/react';
-import { DataTable } from '@/components/data-table';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import type { Ios, PaginatedResponse, SalaryStandard } from '@/types/global';
-import { Button } from '@/components/ui/button';
-import columns from './columns/columns';
-import FormDialog from './form-dialog';
+import { useState } from "react";
+import { router } from "@inertiajs/react";
+import { DataTable } from "@/components/data-table";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import type { Ios, PaginatedResponse, SalaryStandard } from "@/types";
+import { Button } from "@/components/ui/button";
+import columns from "./columns/columns";
+import FormDialog from "./form-dialog";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,11 +16,9 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Index of Occupational Services', href: '#' },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Index of Occupational Services", href: "#" }];
 
 interface IosPageProps {
     ios: PaginatedResponse<Ios>;
@@ -100,16 +98,13 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete IOS</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this IOS record?
-                            This action cannot be undone.
+                            Are you sure you want to delete this IOS record? This action cannot be
+                            undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            variant="destructive"
-                            onClick={confirmDelete}
-                        >
+                        <AlertDialogAction variant="destructive" onClick={confirmDelete}>
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>

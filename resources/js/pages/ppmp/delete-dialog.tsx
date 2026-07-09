@@ -6,12 +6,12 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import type { Ppmp } from '@/types/global';
-import { router } from '@inertiajs/react';
-import { Spinner } from '@/components/ui/spinner';
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+} from "@/components/ui/alert-dialog";
+import type { Ppmp } from "@/types";
+import { router } from "@inertiajs/react";
+import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 interface DeleteDialogProps {
     open: boolean;
@@ -19,16 +19,12 @@ interface DeleteDialogProps {
     initialData: Ppmp | null;
 }
 
-export default function DeleteDialog({
-    open,
-    setOpen,
-    initialData,
-}: DeleteDialogProps) {
+export default function DeleteDialog({ open, setOpen, initialData }: DeleteDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
 
     function handleDelete() {
         router.visit(`/ppmp/${initialData?.id}`, {
-            method: 'delete',
+            method: "delete",
             preserveState: true,
             // preserveState: false,
             preserveScroll: true,
@@ -40,17 +36,12 @@ export default function DeleteDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={setOpen}>
-            <AlertDialogContent
-                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
-            >
+            <AlertDialogContent onEscapeKeyDown={(e) => isLoading && e.preventDefault()}>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        Are you absolutely sure?
-                    </AlertDialogTitle>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
 
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete{' '}
+                        This action cannot be undone. This will permanently delete{" "}
                         <span className="font-bold">
                             "{initialData?.ppmp_price_list?.description}"
                         </span>
@@ -59,21 +50,15 @@ export default function DeleteDialog({
                 </AlertDialogHeader>
 
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={isLoading}>
-                        Cancel
-                    </AlertDialogCancel>
+                    <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
 
-                    <Button
-                        onClick={handleDelete}
-                        variant={'destructive'}
-                        disabled={isLoading}
-                    >
+                    <Button onClick={handleDelete} variant={"destructive"} disabled={isLoading}>
                         {isLoading ? (
                             <span className="flex items-center gap-1">
                                 <Spinner /> Deleting
                             </span>
                         ) : (
-                            'Delete'
+                            "Delete"
                         )}
                     </Button>
                 </AlertDialogFooter>

@@ -1,19 +1,6 @@
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import {
-    Page,
-    Text,
-    View,
-    Document,
-    StyleSheet,
-    PDFViewer,
-    Font,
-} from '@react-pdf/renderer';
-import type { FiscalYear, Ppa, AuthData } from '@/types/global';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Page, Text, View, Document, StyleSheet, PDFViewer, Font } from "@react-pdf/renderer";
+import type { FiscalYear, Ppa, AuthData } from "@/types";
 
 interface ExportToPdfDialogProps {
     open: boolean;
@@ -36,15 +23,14 @@ export default function ExportToPdfDialog({
     currentScope,
 }: ExportToPdfDialogProps) {
     const COLUMN_WIDTHS = [
-        7.14, 17.86, 7.14, 5.36, 5.36, 7.14, 5.36, 5.36, 7.14, 5.36, 5.36, 5.36,
-        5.36, 5.36, 5.34,
+        7.14, 17.86, 7.14, 5.36, 5.36, 7.14, 5.36, 5.36, 7.14, 5.36, 5.36, 5.36, 5.36, 5.36, 5.34,
     ];
 
-    const office = auth.user.office?.name.toUpperCase() || '';
+    const office = auth.user.office?.name.toUpperCase() || "";
     const officeLabel = (
         auth.user.office?.acronym ||
         auth.user.office?.name ||
-        'Requesting Office'
+        "Requesting Office"
     ).toUpperCase();
 
     const styles = StyleSheet.create({
@@ -53,15 +39,15 @@ export default function ExportToPdfDialog({
             margin: 0,
             padding: 2,
             fontSize: 6,
-            textAlign: 'center',
-            fontWeight: 'bold',
+            textAlign: "center",
+            fontWeight: "bold",
         },
         tableCellContainer: {
             margin: 0,
             padding: 0,
             borderRightWidth: 1,
-            borderColor: 'black',
-            justifyContent: 'center',
+            borderColor: "black",
+            justifyContent: "center",
             flexGrow: 1, // Crucial for connecting vertical lines
         },
         tableCellText: {
@@ -69,18 +55,18 @@ export default function ExportToPdfDialog({
             fontSize: 7,
             paddingVertical: 4,
             paddingHorizontal: 2,
-            textAlign: 'center',
+            textAlign: "center",
         },
-        headerGroup: { flexDirection: 'column', padding: 0 },
+        headerGroup: { flexDirection: "column", padding: 0 },
         footerContainer: {
             marginTop: 20,
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
         },
         footerBlock: {
-            width: '20%', // Slightly less than 25% to allow for gaps
-            flexDirection: 'column',
+            width: "20%", // Slightly less than 25% to allow for gaps
+            flexDirection: "column",
         },
         footerLabel: {
             fontSize: 7,
@@ -88,43 +74,43 @@ export default function ExportToPdfDialog({
         },
         footerNameLine: {
             borderBottomWidth: 1,
-            borderColor: 'black',
+            borderColor: "black",
             marginBottom: 2,
         },
         footerTitle: {
             fontSize: 6.5,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            textTransform: 'uppercase',
+            fontWeight: "bold",
+            textAlign: "center",
+            textTransform: "uppercase",
         },
     });
 
     const formatNumber = (value: any) => {
         const num = parseFloat(value);
-        if (!value || isNaN(num) || num === 0) return '-';
-        return new Intl.NumberFormat('en-US', {
+        if (!value || isNaN(num) || num === 0) return "-";
+        return new Intl.NumberFormat("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         }).format(num);
     };
 
     const formatDate = (value: string | null | undefined) => {
-        if (!value) return '-';
-        const parts = value.split('-');
+        if (!value) return "-";
+        const parts = value.split("-");
         if (parts.length === 3) {
             const shortMonths = [
-                'Jan',
-                'Feb',
-                'Mar',
-                'Apr',
-                'May',
-                'Jun',
-                'Jul',
-                'Aug',
-                'Sep',
-                'Oct',
-                'Nov',
-                'Dec',
+                "Jan",
+                "Feb",
+                "Mar",
+                "Apr",
+                "May",
+                "Jun",
+                "Jul",
+                "Aug",
+                "Sep",
+                "Oct",
+                "Nov",
+                "Dec",
             ];
             const monthName = shortMonths[parseInt(parts[1]) - 1];
             const day = parseInt(parts[2]);
@@ -152,18 +138,16 @@ export default function ExportToPdfDialog({
                 displayTitle = `${letter}. ${displayTitle}`;
                 rootCounter++;
             } else {
-                const outlineString = path.join('.');
-                const suffix = level === 1 ? '.' : '';
+                const outlineString = path.join(".");
+                const suffix = level === 1 ? "." : "";
                 displayTitle = `${outlineString}${suffix} ${displayTitle}`;
             }
 
             let aipEntry = item.aip_entries?.[0];
             const activeAips = item.aip_entries || [];
-            let fundingSources = activeAips.flatMap(
-                (aip) => aip.ppa_funding_sources || [],
-            );
+            let fundingSources = activeAips.flatMap((aip) => aip.ppa_funding_sources || []);
 
-            if (currentScope?.scope === 'combined') {
+            if (currentScope?.scope === "combined") {
                 const grouped = new Map<number, any>();
                 fundingSources.forEach((src) => {
                     const id = src.funding_source_id;
@@ -184,39 +168,24 @@ export default function ExportToPdfDialog({
                     base.mooe_amount += parseFloat(src.mooe_amount || 0);
                     base.co_amount += parseFloat(src.co_amount || 0);
                     base.fe_amount += parseFloat(src.fe_amount || 0);
-                    base.ccet_adaptation += parseFloat(
-                        src.ccet_adaptation || 0,
-                    );
-                    base.ccet_mitigation += parseFloat(
-                        src.ccet_mitigation || 0,
-                    );
+                    base.ccet_adaptation += parseFloat(src.ccet_adaptation || 0);
+                    base.ccet_mitigation += parseFloat(src.ccet_mitigation || 0);
                 });
 
                 fundingSources = Array.from(grouped.values()).map((src) => ({
                     ...src,
-                    ps_amount:
-                        src.ps_amount > 0 ? src.ps_amount.toString() : '',
-                    mooe_amount:
-                        src.mooe_amount > 0 ? src.mooe_amount.toString() : '',
-                    co_amount:
-                        src.co_amount > 0 ? src.co_amount.toString() : '',
-                    fe_amount:
-                        src.fe_amount > 0 ? src.fe_amount.toString() : '',
-                    ccet_adaptation:
-                        src.ccet_adaptation > 0
-                            ? src.ccet_adaptation.toString()
-                            : '',
-                    ccet_mitigation:
-                        src.ccet_mitigation > 0
-                            ? src.ccet_mitigation.toString()
-                            : '',
+                    ps_amount: src.ps_amount > 0 ? src.ps_amount.toString() : "",
+                    mooe_amount: src.mooe_amount > 0 ? src.mooe_amount.toString() : "",
+                    co_amount: src.co_amount > 0 ? src.co_amount.toString() : "",
+                    fe_amount: src.fe_amount > 0 ? src.fe_amount.toString() : "",
+                    ccet_adaptation: src.ccet_adaptation > 0 ? src.ccet_adaptation.toString() : "",
+                    ccet_mitigation: src.ccet_mitigation > 0 ? src.ccet_mitigation.toString() : "",
                 }));
 
                 // Use the latest SAIP entry for non-numeric fields
                 const latestEntry = [...activeAips].sort(
                     (a: any, b: any) =>
-                        (b.supplemental_aip_id ?? -1) -
-                        (a.supplemental_aip_id ?? -1),
+                        (b.supplemental_aip_id ?? -1) - (a.supplemental_aip_id ?? -1),
                 )[0];
                 if (latestEntry) {
                     aipEntry = latestEntry;
@@ -228,11 +197,7 @@ export default function ExportToPdfDialog({
             }
 
             result.push(
-                <View
-                    key={`${item.id}-${level}`}
-                    style={{ flexDirection: 'row' }}
-                    wrap={false}
-                >
+                <View key={`${item.id}-${level}`} style={{ flexDirection: "row" }} wrap={false}>
                     {/* LEFT SIDE: Columns 0 to 5 (Static per PPA) */}
                     {COLUMN_WIDTHS.slice(0, 6).map((width, colIndex) => (
                         <View
@@ -242,9 +207,7 @@ export default function ExportToPdfDialog({
                                 {
                                     width: `${width}%`,
                                     borderLeftWidth: colIndex === 0 ? 1 : 0,
-                                    alignItems: [2, 3, 4].includes(colIndex)
-                                        ? 'center'
-                                        : 'stretch',
+                                    alignItems: [2, 3, 4].includes(colIndex) ? "center" : "stretch",
                                 },
                             ]}
                         >
@@ -252,42 +215,29 @@ export default function ExportToPdfDialog({
                                 style={[
                                     styles.tableCellText,
                                     colIndex === 0 ? { fontSize: 4.5 } : {},
-                                    [1, 5].includes(colIndex)
-                                        ? { textAlign: 'left' }
-                                        : {},
+                                    [1, 5].includes(colIndex) ? { textAlign: "left" } : {},
                                     colIndex === 1
                                         ? {
-                                              fontWeight:
-                                                  level <= 1
-                                                      ? 'bold'
-                                                      : 'normal',
+                                              fontWeight: level <= 1 ? "bold" : "normal",
                                               paddingLeft: level * 6,
                                           }
                                         : {},
                                 ]}
                             >
                                 {(() => {
-                                    if (colIndex === 0)
-                                        return item.full_code || '-';
-                                    if (colIndex === 1)
-                                        return displayTitle || '-';
+                                    if (colIndex === 0) return item.full_code || "-";
+                                    if (colIndex === 1) return displayTitle || "-";
                                     if (colIndex === 2) {
                                         const office = item.office;
-                                        if (
-                                            office?.parent?.acronym &&
-                                            office?.acronym
-                                        ) {
+                                        if (office?.parent?.acronym && office?.acronym) {
                                             return `${office.parent.acronym}/${office.acronym}`;
                                         }
-                                        return office?.acronym || '-';
+                                        return office?.acronym || "-";
                                     }
-                                    if (colIndex === 3)
-                                        return formatDate(aipEntry?.start_date);
-                                    if (colIndex === 4)
-                                        return formatDate(aipEntry?.end_date);
-                                    if (colIndex === 5)
-                                        return aipEntry?.expected_output || '-';
-                                    return '-';
+                                    if (colIndex === 3) return formatDate(aipEntry?.start_date);
+                                    if (colIndex === 4) return formatDate(aipEntry?.end_date);
+                                    if (colIndex === 5) return aipEntry?.expected_output || "-";
+                                    return "-";
                                 })()}
                             </Text>
                         </View>
@@ -297,7 +247,7 @@ export default function ExportToPdfDialog({
                     <View
                         style={{
                             width: `${COLUMN_WIDTHS.slice(6, 15).reduce((a, b) => a + b, 0)}%`,
-                            flexDirection: 'column',
+                            flexDirection: "column",
                         }}
                     >
                         {fundingSources.map((fs: any, fsIndex) => {
@@ -312,93 +262,64 @@ export default function ExportToPdfDialog({
                                 <View
                                     key={fsIndex}
                                     style={{
-                                        flexDirection: 'row',
+                                        flexDirection: "row",
                                         flexGrow: 1,
                                     }}
                                 >
-                                    {COLUMN_WIDTHS.slice(6, 15).map(
-                                        (width, subIndex) => {
-                                            const colIndex = subIndex + 6;
-                                            const containerWidth =
-                                                COLUMN_WIDTHS.slice(
-                                                    6,
-                                                    15,
-                                                ).reduce((a, b) => a + b, 0);
-                                            const relativeWidth =
-                                                (width / containerWidth) * 100;
+                                    {COLUMN_WIDTHS.slice(6, 15).map((width, subIndex) => {
+                                        const colIndex = subIndex + 6;
+                                        const containerWidth = COLUMN_WIDTHS.slice(6, 15).reduce(
+                                            (a, b) => a + b,
+                                            0,
+                                        );
+                                        const relativeWidth = (width / containerWidth) * 100;
 
-                                            return (
-                                                <View
-                                                    key={colIndex}
+                                        return (
+                                            <View
+                                                key={colIndex}
+                                                style={[
+                                                    styles.tableCellContainer,
+                                                    {
+                                                        width: `${relativeWidth}%`,
+                                                        alignItems:
+                                                            colIndex >= 7 && colIndex <= 13
+                                                                ? "flex-end"
+                                                                : "stretch",
+                                                    },
+                                                ]}
+                                            >
+                                                <Text
                                                     style={[
-                                                        styles.tableCellContainer,
-                                                        {
-                                                            width: `${relativeWidth}%`,
-                                                            alignItems:
-                                                                colIndex >= 7 &&
-                                                                colIndex <= 13
-                                                                    ? 'flex-end'
-                                                                    : 'stretch',
-                                                        },
+                                                        styles.tableCellText,
+                                                        { width: "100%" },
                                                     ]}
                                                 >
-                                                    <Text
-                                                        style={[
-                                                            styles.tableCellText,
-                                                            { width: '100%' },
-                                                        ]}
-                                                    >
-                                                        {(() => {
-                                                            if (colIndex === 6)
-                                                                return (
-                                                                    fs
-                                                                        .funding_source
-                                                                        ?.code ||
-                                                                    '-'
-                                                                );
-                                                            if (colIndex === 7)
-                                                                return formatNumber(
-                                                                    fs.ps_amount,
-                                                                );
-                                                            if (colIndex === 8)
-                                                                return formatNumber(
-                                                                    fs.mooe_amount,
-                                                                );
-                                                            if (colIndex === 9)
-                                                                return formatNumber(
-                                                                    fs.fe_amount,
-                                                                );
-                                                            if (colIndex === 10)
-                                                                return formatNumber(
-                                                                    fs.co_amount,
-                                                                );
-                                                            if (colIndex === 11)
-                                                                return formatNumber(
-                                                                    total,
-                                                                );
-                                                            if (colIndex === 12)
-                                                                return formatNumber(
-                                                                    fs.ccet_adaptation,
-                                                                );
-                                                            if (colIndex === 13)
-                                                                return formatNumber(
-                                                                    fs.ccet_mitigation,
-                                                                );
-                                                            // Always return something for Col 14 to keep vertical line intact
-                                                            if (colIndex === 14)
-                                                                return (
-                                                                    fs
-                                                                        ?.cc_typology
-                                                                        ?.code ||
-                                                                    '-'
-                                                                );
-                                                            return '-';
-                                                        })()}
-                                                    </Text>
-                                                </View>
-                                            );
-                                        },
-                                    )}
+                                                    {(() => {
+                                                        if (colIndex === 6)
+                                                            return fs.funding_source?.code || "-";
+                                                        if (colIndex === 7)
+                                                            return formatNumber(fs.ps_amount);
+                                                        if (colIndex === 8)
+                                                            return formatNumber(fs.mooe_amount);
+                                                        if (colIndex === 9)
+                                                            return formatNumber(fs.fe_amount);
+                                                        if (colIndex === 10)
+                                                            return formatNumber(fs.co_amount);
+                                                        if (colIndex === 11)
+                                                            return formatNumber(total);
+                                                        if (colIndex === 12)
+                                                            return formatNumber(fs.ccet_adaptation);
+                                                        if (colIndex === 13)
+                                                            return formatNumber(fs.ccet_mitigation);
+                                                        // Always return something for Col 14 to keep vertical line intact
+                                                        if (colIndex === 14)
+                                                            return fs?.cc_typology?.code || "-";
+                                                        return "-";
+                                                    })()}
+                                                </Text>
+                                            </View>
+                                        );
+                                    })}
                                 </View>
                             );
                         })}
@@ -433,12 +354,12 @@ export default function ExportToPdfDialog({
             items.forEach((item) => {
                 const entry = item.aip_entries?.[0];
                 entry?.ppa_funding_sources?.forEach((fs) => {
-                    totals.ps += parseFloat(fs.ps_amount || '0');
-                    totals.mooe += parseFloat(fs.mooe_amount || '0');
-                    totals.fe += parseFloat(fs.fe_amount || '0');
-                    totals.co += parseFloat(fs.co_amount || '0');
-                    totals.adaptation += parseFloat(fs.ccet_adaptation || '0');
-                    totals.mitigation += parseFloat(fs.ccet_mitigation || '0');
+                    totals.ps += parseFloat(fs.ps_amount || "0");
+                    totals.mooe += parseFloat(fs.mooe_amount || "0");
+                    totals.fe += parseFloat(fs.fe_amount || "0");
+                    totals.co += parseFloat(fs.co_amount || "0");
+                    totals.adaptation += parseFloat(fs.ccet_adaptation || "0");
+                    totals.mitigation += parseFloat(fs.ccet_mitigation || "0");
                 });
 
                 if (item.children) traverse(item.children);
@@ -450,18 +371,14 @@ export default function ExportToPdfDialog({
         return { ...totals, grandTotal };
     };
 
-    const RenderTotalRow = ({
-        totals,
-    }: {
-        totals: ReturnType<typeof calculateTotals>;
-    }) => {
+    const RenderTotalRow = ({ totals }: { totals: ReturnType<typeof calculateTotals> }) => {
         // Width for the label side (Cols 1-7)
         const labelWidth = COLUMN_WIDTHS.slice(0, 7).reduce((a, b) => a + b, 0);
 
         return (
             <View
                 style={{
-                    flexDirection: 'row',
+                    flexDirection: "row",
                     borderTopWidth: 1,
                     borderBottomWidth: 1,
                 }}
@@ -478,8 +395,8 @@ export default function ExportToPdfDialog({
                         style={[
                             styles.tableCellText,
                             {
-                                fontWeight: 'bold',
-                                textAlign: 'right',
+                                fontWeight: "bold",
+                                textAlign: "right",
                                 paddingRight: 10,
                             },
                         ]}
@@ -504,28 +421,18 @@ export default function ExportToPdfDialog({
                             styles.tableCellContainer,
                             {
                                 width: `${COLUMN_WIDTHS[7 + i]}%`,
-                                alignItems: 'flex-end',
+                                alignItems: "flex-end",
                             },
                         ]}
                     >
-                        <Text
-                            style={[
-                                styles.tableCellText,
-                                { fontWeight: 'bold' },
-                            ]}
-                        >
+                        <Text style={[styles.tableCellText, { fontWeight: "bold" }]}>
                             {formatNumber(val)}
                         </Text>
                     </View>
                 ))}
 
                 {/* Empty space for Typology Code col */}
-                <View
-                    style={[
-                        styles.tableCellContainer,
-                        { width: `${COLUMN_WIDTHS[14]}%` },
-                    ]}
-                >
+                <View style={[styles.tableCellContainer, { width: `${COLUMN_WIDTHS[14]}%` }]}>
                     <Text style={styles.tableCellText}>-</Text>
                 </View>
             </View>
@@ -537,43 +444,37 @@ export default function ExportToPdfDialog({
 
         return (
             <Document>
-                <Page
-                    size={[612, 936]}
-                    orientation="landscape"
-                    style={styles.page}
-                >
+                <Page size={[612, 936]} orientation="landscape" style={styles.page}>
                     <View fixed>
                         <View
                             style={{
                                 marginBottom: 10,
                                 marginTop: 5,
-                                textAlign: 'center',
+                                textAlign: "center",
                             }}
                         >
-                            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
-                                {currentScope?.scope === 'supplemental'
+                            <Text style={{ fontSize: 10, fontWeight: "bold" }}>
+                                {currentScope?.scope === "supplemental"
                                     ? `CY ${fiscalYear.year} Supplemental Annual Investment Program (SAIP)`
                                     : `CY ${fiscalYear.year} Annual Investment Program (AIP)`}
                             </Text>
 
-                            <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
+                            <Text style={{ fontSize: 9, fontWeight: "bold" }}>
                                 By Program / Project / Activity - by Sector
                             </Text>
                         </View>
 
-                        <View style={{ marginBottom: 5, textAlign: 'left' }}>
-                            <Text style={{ fontSize: 8, fontWeight: 'bold' }}>
+                        <View style={{ marginBottom: 5, textAlign: "left" }}>
+                            <Text style={{ fontSize: 8, fontWeight: "bold" }}>
                                 {`OFFICE: `}
-                                <Text
-                                    style={{ textDecoration: 'underline' }}
-                                >{`${office}`}</Text>
+                                <Text style={{ textDecoration: "underline" }}>{`${office}`}</Text>
                             </Text>
                         </View>
 
                         {/* Table Headers */}
                         <View
                             style={{
-                                flexDirection: 'row',
+                                flexDirection: "row",
                                 borderTopWidth: 1,
                                 borderBottomWidth: 1,
                             }}
@@ -583,19 +484,17 @@ export default function ExportToPdfDialog({
                                     width: `${COLUMN_WIDTHS[0]}%`,
                                     borderLeftWidth: 1,
                                     borderRightWidth: 1,
-                                    justifyContent: 'center',
+                                    justifyContent: "center",
                                 }}
                             >
-                                <Text style={styles.tableHeaderCell}>
-                                    AIP REF. CODE
-                                </Text>
+                                <Text style={styles.tableHeaderCell}>AIP REF. CODE</Text>
                             </View>
 
                             <View
                                 style={{
                                     width: `${COLUMN_WIDTHS[1]}%`,
                                     borderRightWidth: 1,
-                                    justifyContent: 'center',
+                                    justifyContent: "center",
                                 }}
                             >
                                 <Text style={styles.tableHeaderCell}>
@@ -607,7 +506,7 @@ export default function ExportToPdfDialog({
                                 style={{
                                     width: `${COLUMN_WIDTHS[2]}%`,
                                     borderRightWidth: 1,
-                                    justifyContent: 'center',
+                                    justifyContent: "center",
                                 }}
                             >
                                 <Text style={styles.tableHeaderCell}>
@@ -618,7 +517,7 @@ export default function ExportToPdfDialog({
                             <View
                                 style={{
                                     width: `${COLUMN_WIDTHS[3] + COLUMN_WIDTHS[4]}%`,
-                                    flexDirection: 'column',
+                                    flexDirection: "column",
                                 }}
                             >
                                 <View
@@ -626,7 +525,7 @@ export default function ExportToPdfDialog({
                                         borderBottomWidth: 1,
                                         borderRightWidth: 1,
                                         flex: 1,
-                                        justifyContent: 'center',
+                                        justifyContent: "center",
                                     }}
                                 >
                                     <Text style={styles.tableHeaderCell}>
@@ -634,27 +533,23 @@ export default function ExportToPdfDialog({
                                     </Text>
                                 </View>
 
-                                <View style={{ flexDirection: 'row', flex: 1 }}>
+                                <View style={{ flexDirection: "row", flex: 1 }}>
                                     <View
                                         style={{
-                                            width: '50%',
+                                            width: "50%",
                                             borderRightWidth: 1,
                                         }}
                                     >
-                                        <Text style={styles.tableHeaderCell}>
-                                            STARTING DATE
-                                        </Text>
+                                        <Text style={styles.tableHeaderCell}>STARTING DATE</Text>
                                     </View>
 
                                     <View
                                         style={{
-                                            width: '50%',
+                                            width: "50%",
                                             borderRightWidth: 1,
                                         }}
                                     >
-                                        <Text style={styles.tableHeaderCell}>
-                                            COMPLETION DATE
-                                        </Text>
+                                        <Text style={styles.tableHeaderCell}>COMPLETION DATE</Text>
                                     </View>
                                 </View>
                             </View>
@@ -663,37 +558,33 @@ export default function ExportToPdfDialog({
                                 style={{
                                     width: `${COLUMN_WIDTHS[5]}%`,
                                     borderRightWidth: 1,
-                                    justifyContent: 'center',
+                                    justifyContent: "center",
                                 }}
                             >
-                                <Text style={styles.tableHeaderCell}>
-                                    EXPECTED OUTPUTS
-                                </Text>
+                                <Text style={styles.tableHeaderCell}>EXPECTED OUTPUTS</Text>
                             </View>
 
                             <View
                                 style={{
                                     width: `${COLUMN_WIDTHS[6]}%`,
                                     borderRightWidth: 1,
-                                    justifyContent: 'center',
+                                    justifyContent: "center",
                                 }}
                             >
-                                <Text style={styles.tableHeaderCell}>
-                                    FUNDING SOURCE
-                                </Text>
+                                <Text style={styles.tableHeaderCell}>FUNDING SOURCE</Text>
                             </View>
 
                             <View
                                 style={{
                                     width: `${COLUMN_WIDTHS.slice(7, 12).reduce((a, b) => a + b, 0)}%`,
-                                    flexDirection: 'column',
+                                    flexDirection: "column",
                                 }}
                             >
                                 <View
                                     style={{
                                         borderRightWidth: 1,
                                         borderBottomWidth: 1,
-                                        justifyContent: 'center',
+                                        justifyContent: "center",
                                         flex: 1,
                                     }}
                                 >
@@ -702,13 +593,13 @@ export default function ExportToPdfDialog({
                                     </Text>
                                 </View>
 
-                                <View style={{ flexDirection: 'row' }}>
+                                <View style={{ flexDirection: "row" }}>
                                     {[
-                                        'PERSONAL SERVICES (PS)',
-                                        'MAINTENANCE & OTHER OPERATING EXPENSES (MOOE)',
-                                        'FINANCIAL EPENCES (FE)',
-                                        'CAPITAL OUTALY (CO)',
-                                        'TOTAL',
+                                        "PERSONAL SERVICES (PS)",
+                                        "MAINTENANCE & OTHER OPERATING EXPENSES (MOOE)",
+                                        "FINANCIAL EPENCES (FE)",
+                                        "CAPITAL OUTALY (CO)",
+                                        "TOTAL",
                                     ].map((label, i) => (
                                         <View
                                             key={label}
@@ -717,11 +608,7 @@ export default function ExportToPdfDialog({
                                                 borderRightWidth: 1,
                                             }}
                                         >
-                                            <Text
-                                                style={styles.tableHeaderCell}
-                                            >
-                                                {label}
-                                            </Text>
+                                            <Text style={styles.tableHeaderCell}>{label}</Text>
                                         </View>
                                     ))}
                                 </View>
@@ -730,41 +617,35 @@ export default function ExportToPdfDialog({
                             <View
                                 style={{
                                     width: `${COLUMN_WIDTHS.slice(12, 14).reduce((a, b) => a + b, 0)}%`,
-                                    flexDirection: 'column',
+                                    flexDirection: "column",
                                 }}
                             >
                                 <View
                                     style={{
                                         borderRightWidth: 1,
                                         borderBottomWidth: 1,
-                                        justifyContent: 'center',
+                                        justifyContent: "center",
                                     }}
                                 >
                                     <Text style={styles.tableHeaderCell}>
-                                        AMOUNT of Climate Change Expenditure (in
-                                        thousand pesos)
+                                        AMOUNT of Climate Change Expenditure (in thousand pesos)
                                     </Text>
                                 </View>
 
-                                <View style={{ flexDirection: 'row' }}>
-                                    {[
-                                        'Climate Change Adaptation',
-                                        'Climate Change Mitigation',
-                                    ].map((label, i) => (
-                                        <View
-                                            key={label}
-                                            style={{
-                                                width: `${(COLUMN_WIDTHS[12 + i] / COLUMN_WIDTHS.slice(12, 14).reduce((a, b) => a + b, 0)) * 100}%`,
-                                                borderRightWidth: 1,
-                                            }}
-                                        >
-                                            <Text
-                                                style={styles.tableHeaderCell}
+                                <View style={{ flexDirection: "row" }}>
+                                    {["Climate Change Adaptation", "Climate Change Mitigation"].map(
+                                        (label, i) => (
+                                            <View
+                                                key={label}
+                                                style={{
+                                                    width: `${(COLUMN_WIDTHS[12 + i] / COLUMN_WIDTHS.slice(12, 14).reduce((a, b) => a + b, 0)) * 100}%`,
+                                                    borderRightWidth: 1,
+                                                }}
                                             >
-                                                {label}
-                                            </Text>
-                                        </View>
-                                    ))}
+                                                <Text style={styles.tableHeaderCell}>{label}</Text>
+                                            </View>
+                                        ),
+                                    )}
                                 </View>
                             </View>
 
@@ -772,19 +653,17 @@ export default function ExportToPdfDialog({
                                 style={{
                                     width: `${COLUMN_WIDTHS[14]}%`,
                                     borderRightWidth: 1,
-                                    justifyContent: 'center',
+                                    justifyContent: "center",
                                 }}
                             >
-                                <Text style={styles.tableHeaderCell}>
-                                    CC Typology Code
-                                </Text>
+                                <Text style={styles.tableHeaderCell}>CC Typology Code</Text>
                             </View>
                         </View>
 
                         {/* Column Numbers */}
                         <View
                             style={{
-                                flexDirection: 'row',
+                                flexDirection: "row",
                                 borderBottomWidth: 1,
                             }}
                         >
@@ -797,9 +676,7 @@ export default function ExportToPdfDialog({
                                         borderLeftWidth: index === 0 ? 1 : 0,
                                     }}
                                 >
-                                    <Text style={styles.tableHeaderCell}>
-                                        {index + 1}
-                                    </Text>
+                                    <Text style={styles.tableHeaderCell}>{index + 1}</Text>
                                 </View>
                             ))}
                         </View>
@@ -815,8 +692,8 @@ export default function ExportToPdfDialog({
                         fixed
                         style={{
                             borderTopWidth: 1,
-                            borderColor: 'black',
-                            width: '100%',
+                            borderColor: "black",
+                            width: "100%",
                             marginTop: -1, // Pulls it up to touch the vertical lines perfectly
                         }}
                     />
@@ -835,27 +712,21 @@ export default function ExportToPdfDialog({
                         <View style={styles.footerBlock}>
                             <Text style={styles.footerLabel}>Reviewed by:</Text>
                             <View style={styles.footerNameLine} />
-                            <Text style={styles.footerTitle}>
-                                Provincial Budget Officer
-                            </Text>
+                            <Text style={styles.footerTitle}>Provincial Budget Officer</Text>
                         </View>
 
                         {/* 3. Approved By */}
                         <View style={styles.footerBlock}>
                             <Text style={styles.footerLabel}>Approved by:</Text>
                             <View style={styles.footerNameLine} />
-                            <Text style={styles.footerTitle}>
-                                Provincial Governor
-                            </Text>
+                            <Text style={styles.footerTitle}>Provincial Governor</Text>
                         </View>
 
                         {/* 4. Conforme */}
                         <View style={styles.footerBlock}>
                             <Text style={styles.footerLabel}>Conforme:</Text>
                             <View style={styles.footerNameLine} />
-                            <Text style={styles.footerTitle}>
-                                Unit Head, {officeLabel}
-                            </Text>
+                            <Text style={styles.footerTitle}>Unit Head, {officeLabel}</Text>
                         </View>
                     </View>
 
@@ -863,7 +734,7 @@ export default function ExportToPdfDialog({
                         fixed
                         style={{
                             fontSize: 10,
-                            textAlign: 'center',
+                            textAlign: "center",
                             paddingTop: 10,
                         }}
                         render={({ pageNumber }) => `${pageNumber}`}
@@ -878,9 +749,7 @@ export default function ExportToPdfDialog({
             <DialogContent className="m-0 flex h-full flex-col gap-0 rounded-none bg-[#3c3c3c] p-0 text-white sm:max-w-full">
                 <div className="p-4 pb-0">
                     <DialogTitle>PDF Preview</DialogTitle>
-                    <DialogDescription className="sr-only">
-                        AIP Report Preview
-                    </DialogDescription>
+                    <DialogDescription className="sr-only">AIP Report Preview</DialogDescription>
                 </div>
                 <div className="h-full bg-white">
                     <PDFViewer width="100%" height="100%" showToolbar={true}>

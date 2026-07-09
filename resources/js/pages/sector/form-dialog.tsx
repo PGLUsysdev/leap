@@ -1,20 +1,14 @@
-import { useEffect, useState } from 'react';
-import type { Sector } from '@/types/global';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm } from 'react-hook-form';
-import * as z from 'zod';
-import {
-    Field,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-    FieldContent,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { router, usePage } from '@inertiajs/react';
-import { FormDialogShell } from '@/components/form-dialog-shell';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import { useEffect, useState } from "react";
+import type { Sector } from "@/types";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
+import { Field, FieldError, FieldGroup, FieldLabel, FieldContent } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { router, usePage } from "@inertiajs/react";
+import { FormDialogShell } from "@/components/form-dialog-shell";
+import { AlertErrorDialog } from "@/components/alert-error-dialog";
 
 interface FormDialogProps {
     open: boolean;
@@ -26,21 +20,17 @@ const formSchema = z.object({
     code: z
         .string()
         .trim()
-        .min(1, { message: 'Code is required' })
-        .max(4, { message: 'Code must be at most 4 characters' })
-        .regex(/^\d+$/, { message: 'Code must contain only numbers' }),
+        .min(1, { message: "Code is required" })
+        .max(4, { message: "Code must be at most 4 characters" })
+        .regex(/^\d+$/, { message: "Code must contain only numbers" }),
     name: z
         .string()
         .trim()
-        .min(1, { message: 'Title is required' })
-        .max(50, { message: 'Title must be at most 50 characters' }),
+        .min(1, { message: "Title is required" })
+        .max(50, { message: "Title must be at most 50 characters" }),
 });
 
-export default function FormDialog({
-    open,
-    setOpen,
-    initialData,
-}: FormDialogProps) {
+export default function FormDialog({ open, setOpen, initialData }: FormDialogProps) {
     console.log(usePage().props.errors);
 
     const [isLoading, setIsLoading] = useState(false);
@@ -53,8 +43,8 @@ export default function FormDialog({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            code: '',
-            name: '',
+            code: "",
+            name: "",
         },
     });
 
@@ -62,8 +52,8 @@ export default function FormDialog({
         if (open) {
             form.reset(
                 initialData ?? {
-                    code: '',
-                    name: '',
+                    code: "",
+                    name: "",
                 },
             );
         }
@@ -102,7 +92,7 @@ export default function FormDialog({
                 onError: (errors) => {
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: 'server',
+                            type: "server",
                             message: errors[key],
                         });
                     });
@@ -110,7 +100,7 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post('/sectors', data, {
+            router.post("/sectors", data, {
                 preserveState: true,
                 preserveScroll: true,
                 onStart: () => setIsLoading(true),
@@ -118,7 +108,7 @@ export default function FormDialog({
                 onError: (errors) => {
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: 'server',
+                            type: "server",
                             message: errors[key],
                         });
                     });
@@ -133,42 +123,30 @@ export default function FormDialog({
             <FormDialogShell
                 open={open}
                 onOpenChange={setOpen}
-                title={
-                    isEditing ? 'Edit Funding Source' : 'Add New Funding Source'
-                }
+                title={isEditing ? "Edit Funding Source" : "Add New Funding Source"}
                 description={
                     isEditing
-                        ? 'Modify the details of the existing funding source below.'
-                        : 'Fill in the information to create a new funding record.'
+                        ? "Modify the details of the existing funding source below."
+                        : "Fill in the information to create a new funding record."
                 }
                 isLoading={isLoading}
                 formId="funding-source-form"
                 onCancel={() => setOpen(false)}
-                submitLabel={isEditing ? 'Save Changes' : 'Create Source'}
-                submittingLabel={
-                    isEditing ? 'Saving Changes' : 'Creating Source'
-                }
+                submitLabel={isEditing ? "Save Changes" : "Create Source"}
+                submittingLabel={isEditing ? "Saving Changes" : "Creating Source"}
                 className="sm:max-w-sm"
             >
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
-                        <form
-                            id="funding-source-form"
-                            onSubmit={form.handleSubmit(onSubmit)}
-                        >
+                        <form id="funding-source-form" onSubmit={form.handleSubmit(onSubmit)}>
                             <FieldGroup>
                                 <Controller
                                     name="code"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Code
                                                     {/*<span className="text-red-500">
                                                     *
@@ -182,25 +160,18 @@ export default function FormDialog({
                                                     maxLength={4}
                                                     onChange={(e) => {
                                                         // Regex to remove any non-numeric characters
-                                                        const value =
-                                                            e.target.value.replace(
-                                                                /\D/g,
-                                                                '',
-                                                            );
+                                                        const value = e.target.value.replace(
+                                                            /\D/g,
+                                                            "",
+                                                        );
                                                         field.onChange(value);
                                                     }}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -211,14 +182,9 @@ export default function FormDialog({
                                     name="name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
-                                                <FieldLabel
-                                                    htmlFor={field.name}
-                                                    className="gap-1"
-                                                >
+                                                <FieldLabel htmlFor={field.name} className="gap-1">
                                                     Title
                                                     {/*<span className="text-red-500">
                                                     *
@@ -228,19 +194,13 @@ export default function FormDialog({
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                     placeholder="Enter sector name..."
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
+                                                    <FieldError errors={[fieldState.error]} />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -252,11 +212,7 @@ export default function FormDialog({
                 </div>
             </FormDialogShell>
 
-            <AlertErrorDialog
-                open={showError}
-                onOpenChange={setShowError}
-                error={errorMessage}
-            />
+            <AlertErrorDialog open={showError} onOpenChange={setShowError} error={errorMessage} />
         </>
     );
 }

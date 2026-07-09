@@ -1,24 +1,18 @@
-import { useState } from 'react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/price-list/form-dialog';
-import { DeleteDialog } from '@/components/delete-dialog';
-import MoveDialog from './move-dialog';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import { router } from '@inertiajs/react';
-import { DataTable } from '@/components/data-table';
-import columns from './columns/columns';
-import type {
-    PriceList,
-    ChartOfAccount,
-    PpmpCategory,
-    PaginatedResponse,
-    Filter,
-} from '@/types/global';
-import { index } from '@/routes/price-lists';
+import { useState } from "react";
+import AppLayout from "@/layouts/app-layout";
+import { type BreadcrumbItem } from "@/types";
+import { Button } from "@/components/ui/button";
+import FormDialog from "@/pages/price-list/form-dialog";
+import { DeleteDialog } from "@/components/delete-dialog";
+import MoveDialog from "./move-dialog";
+import { AlertErrorDialog } from "@/components/alert-error-dialog";
+import { router } from "@inertiajs/react";
+import { DataTable } from "@/components/data-table";
+import columns from "./columns/columns";
+import type { PriceList, ChartOfAccount, PpmpCategory, PaginatedResponse, Filter } from "@/types";
+import { index } from "@/routes/price-lists";
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Price Lists', href: '#' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Price Lists", href: "#" }];
 
 interface PriceListPageProps {
     paginatedPriceList: PaginatedResponse<PriceList>;
@@ -43,8 +37,7 @@ export default function PriceListPage({
     can,
 }: PriceListPageProps) {
     const [openEdit, setOpenEdit] = useState(false);
-    const [selectedPriceList, setSelectedPriceList] =
-        useState<PriceList | null>(null);
+    const [selectedPriceList, setSelectedPriceList] = useState<PriceList | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -79,15 +72,14 @@ export default function PriceListPage({
             preserveScroll: true,
             onStart: () => setIsLoading(true),
             onSuccess: () => {
-                console.log('Success:', 'Record deleted');
+                console.log("Success:", "Record deleted");
 
                 setIsDeleteDialogOpen(false);
                 setSelectedPriceList(null);
             },
             onError: (errors) => {
-                const errorMessage =
-                    errors.database || 'An unknown error occurred';
-                console.error('Delete Error:', errorMessage);
+                const errorMessage = errors.database || "An unknown error occurred";
+                console.error("Delete Error:", errorMessage);
                 setError(errorMessage);
                 setIsErrorDialogOpen(true);
             },
@@ -97,7 +89,7 @@ export default function PriceListPage({
 
     function handleReorder(activeId: string, overId: string) {
         router.post(
-            '/price-lists/reorder',
+            "/price-lists/reorder",
             {
                 active_id: activeId,
                 over_id: overId,
@@ -114,7 +106,7 @@ export default function PriceListPage({
 
     function handleMove(data: PriceList) {
         router.visit(index(), {
-            only: ['paginatedDialogPriceList'],
+            only: ["paginatedDialogPriceList"],
             preserveState: true,
             onSuccess: () => {
                 setSelectedItem(data);
@@ -127,11 +119,7 @@ export default function PriceListPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="pt-4">
                 <DataTable
-                    columns={columns(
-                        can?.edit ?? false,
-                        can?.delete ?? false,
-                        can?.move ?? false,
-                    )}
+                    columns={columns(can?.edit ?? false, can?.delete ?? false, can?.move ?? false)}
                     data={paginatedPriceList.data}
                     withSearch={true}
                     onEdit={handleEdit}
@@ -140,12 +128,10 @@ export default function PriceListPage({
                     onMove={handleMove}
                     paginationObj={paginatedPriceList}
                     negativeHeight={10.7}
-                    onlyKeys={['paginatedPriceList', 'filters']}
+                    onlyKeys={["paginatedPriceList", "filters"]}
                     filters={filters}
                 >
-                    {can?.add && (
-                        <Button onClick={handleAdd}>Add Price List</Button>
-                    )}
+                    {can?.add && <Button onClick={handleAdd}>Add Price List</Button>}
                 </DataTable>
             </div>
 
@@ -171,7 +157,7 @@ export default function PriceListPage({
                 title="Delete Price List?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
+                        Are you sure you want to remove{" "}
                         <span className="font-bold text-foreground">
                             "{selectedPriceList?.description}"
                         </span>

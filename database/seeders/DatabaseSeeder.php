@@ -2,64 +2,24 @@
 
 namespace Database\Seeders;
 
-use App\Models\FundingSource;
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
+    use WithoutModelEvents;
+
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // // User::factory(10)->create();
+        // User::factory(10)->create();
 
-        // User::firstOrCreate(
-        //     ['email' => 'test@example.com'],
-        //     [
-        //         'name' => 'Test User',
-        //         'password' => 'password',
-        //         'email_verified_at' => now(),
-        //     ],
-        // );
-
-        // DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-
-        // $this->call([
-        //     PermissionSeeder::class,
-        //     RoleSeeder::class,
-
-        //     FiscalYearSeeder::class,
-        //     PsRateSeeder::class,
-        //     SectorSeeder::class,
-        //     LguLevelSeeder::class,
-        //     OfficeTypeSeeder::class,
-        //     FundingSourceSeeder::class,
-        //     PpmpCategorySeeder::class,
-        //     ChartOfAccountSeeder::class,
-
-        //     OfficeSeeder::class,
-        //     PositionSeeder::class,
-
-        //     UserSeeder::class,
-        //     SalaryStandardSeeder::class,
-        //     PpaSeeder::class,
-
-        //     AipEntrySeeder::class,
-        //     PpaFundingSourceSeeder::class,
-        //     PpmpPriceListSeeder::class,
-
-        //     PpmpSeeder::class,
-
-        //     AllotmentClassSeeder::class,
-        //     AccountGroupSeeder::class,
-        // ]);
-
-        // DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
-        // disabled for now
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
     }
 }

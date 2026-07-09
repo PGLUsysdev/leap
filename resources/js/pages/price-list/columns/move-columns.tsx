@@ -1,14 +1,14 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, Trash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import type { PriceList } from '@/types/global';
-import { Checkbox } from '@/components/ui/checkbox';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Pencil, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { PriceList } from "@/types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const columnHelper = createColumnHelper<PriceList>();
 
 const columns = [
     columnHelper.display({
-        id: 'select',
+        id: "select",
         size: 50,
         cell: ({ row, table }) => {
             const meta = table.options.meta;
@@ -28,19 +28,15 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor('item_number', {
-        header: 'Item Number',
+    columnHelper.accessor("item_number", {
+        header: "Item Number",
         size: 80,
         cell: (value) => {
-            return (
-                <div className="wrap-break-words whitespace-normal">
-                    {value.getValue()}
-                </div>
-            );
+            return <div className="wrap-break-words whitespace-normal">{value.getValue()}</div>;
         },
     }),
-    columnHelper.accessor('description', {
-        header: 'Description',
+    columnHelper.accessor("description", {
+        header: "Description",
         size: 300,
         cell: (value) => {
             return (
@@ -50,14 +46,14 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor('unit_of_measurement', {
-        header: 'UOM',
+    columnHelper.accessor("unit_of_measurement", {
+        header: "UOM",
         size: 100,
         cell: (value) => {
             return <div className="whitespace-normal">{value.getValue()}</div>;
         },
     }),
-    columnHelper.accessor('price', {
+    columnHelper.accessor("price", {
         header: () => {
             return (
                 <div className="pr-8 text-end">
@@ -69,38 +65,29 @@ const columns = [
         cell: (value) => {
             return (
                 <div className="pr-8 text-end">
-                    <span className="font-mono tabular-nums">
-                        {value.getValue()}
-                    </span>
+                    <span className="font-mono tabular-nums">{value.getValue()}</span>
                 </div>
             );
         },
     }),
-    columnHelper.accessor('chart_of_account_ppmp_category.ppmp_category.name', {
-        header: 'PPMP Category',
+    columnHelper.accessor("chart_of_account_ppmp_category.ppmp_category.name", {
+        header: "PPMP Category",
         size: 180,
         cell: (value) => {
+            return <div className="leading-tight whitespace-normal">{value.getValue()}</div>;
+        },
+    }),
+    columnHelper.accessor("chart_of_account_ppmp_category.chart_of_account.account_title", {
+        header: "Expense Account",
+        size: 250,
+        cell: (value) => {
             return (
-                <div className="leading-tight whitespace-normal">
+                <div className="wrap-break-words text-xs leading-tight whitespace-normal">
                     {value.getValue()}
                 </div>
             );
         },
     }),
-    columnHelper.accessor(
-        'chart_of_account_ppmp_category.chart_of_account.account_title',
-        {
-            header: 'Expense Account',
-            size: 250,
-            cell: (value) => {
-                return (
-                    <div className="wrap-break-words text-xs leading-tight whitespace-normal">
-                        {value.getValue()}
-                    </div>
-                );
-            },
-        },
-    ),
     // columnHelper.display({
     //     id: 'action',
     //     size: 82,

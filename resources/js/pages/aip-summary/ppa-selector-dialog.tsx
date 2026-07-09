@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { router } from '@inertiajs/react';
+import { useState, useMemo } from "react";
+import { router } from "@inertiajs/react";
 import {
     Dialog,
     DialogContent,
@@ -7,14 +7,14 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { DataTable } from '@/components/data-table';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Spinner } from '@/components/ui/spinner';
-import { ChevronRight, Home, Info } from 'lucide-react';
-import columns from './columns/import-columns';
-import type { Ppa, PaginatedResponse, Filter } from '@/types/global';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/data-table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Spinner } from "@/components/ui/spinner";
+import { ChevronRight, Home, Info } from "lucide-react";
+import columns from "./columns/import-columns";
+import type { Ppa, PaginatedResponse, Filter } from "@/types";
 
 interface PpaSelectorDialogProps {
     isOpen: boolean;
@@ -37,15 +37,10 @@ export default function PpaSelectorDialog({
     existingPpaIds = [],
     supplementalAipId = null,
 }: PpaSelectorDialogProps) {
-    const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
-        new Map(),
-    );
+    const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(new Map());
     const [loading, setLoading] = useState(false);
 
-    const existingIdsSet = useMemo(
-        () => new Set(existingPpaIds),
-        [existingPpaIds],
-    );
+    const existingIdsSet = useMemo(() => new Set(existingPpaIds), [existingPpaIds]);
 
     // useEffect(() => {
     //     if (!isOpen) {
@@ -76,13 +71,8 @@ export default function PpaSelectorDialog({
         setSelectedItems(new Map());
 
         // 2. Perform your navigation/cleanup logic
-        const {
-            dialog_id,
-            dialog_page,
-            dialog_search,
-            dialog_boundary_id,
-            ...mainFilters
-        } = filters;
+        const { dialog_id, dialog_page, dialog_search, dialog_boundary_id, ...mainFilters } =
+            filters;
 
         // router.get(window.location.pathname, mainFilters, {
         //     preserveState: true,
@@ -134,8 +124,7 @@ export default function PpaSelectorDialog({
                     // Add ancestors for each
                     if (dialogCurrent) {
                         dialogCurrent.forEach((anc) => {
-                            if (!existingIdsSet.has(anc.id))
-                                next.set(anc.id, anc);
+                            if (!existingIdsSet.has(anc.id)) next.set(anc.id, anc);
                         });
                     }
                 } else {
@@ -169,7 +158,7 @@ export default function PpaSelectorDialog({
             {
                 preserveState: true,
                 preserveScroll: true,
-                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                only: ["dialogPpaTree", "dialogCurrent", "filters"],
             },
         );
     };
@@ -178,7 +167,7 @@ export default function PpaSelectorDialog({
         const ids = Array.from(selectedItems.keys());
         router.post(
             `/aip/${fiscalYearId}/import`,
-            { 
+            {
                 ppa_ids: ids,
                 supplemental_aip_id: supplementalAipId,
             },
@@ -211,8 +200,7 @@ export default function PpaSelectorDialog({
                 <DialogHeader>
                     <DialogTitle>Library Navigator</DialogTitle>
                     <DialogDescription className="sr-only">
-                        Select items to import. Selections are preserved across
-                        folders.
+                        Select items to import. Selections are preserved across folders.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -221,7 +209,7 @@ export default function PpaSelectorDialog({
                     <Button
                         variant="ghost"
                         size="sm"
-                        className={`h-7 px-2 ${filters.dialog_boundary_id ? 'cursor-not-allowed opacity-50' : ''}`}
+                        className={`h-7 px-2 ${filters.dialog_boundary_id ? "cursor-not-allowed opacity-50" : ""}`}
                         onClick={() => handleNavigate(null)}
                         disabled={!!filters.dialog_boundary_id}
                     >
@@ -233,28 +221,20 @@ export default function PpaSelectorDialog({
                         const isAncestor =
                             boundaryId &&
                             item.id !== boundaryId &&
-                            dialogCurrent.findIndex(
-                                (i) => i.id === boundaryId,
-                            ) >
-                                dialogCurrent.findIndex(
-                                    (i) => i.id === item.id,
-                                );
+                            dialogCurrent.findIndex((i) => i.id === boundaryId) >
+                                dialogCurrent.findIndex((i) => i.id === item.id);
 
                         return (
-                            <div
-                                key={item.id}
-                                className="flex min-w-0 items-center gap-2"
-                            >
+                            <div key={item.id} className="flex min-w-0 items-center gap-2">
                                 <ChevronRight className="h-4 w-4 opacity-30" />
 
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className={`block h-7 flex-1 truncate px-2 ${isAncestor ? 'cursor-not-allowed opacity-50' : ''}`}
+                                    className={`block h-7 flex-1 truncate px-2 ${isAncestor ? "cursor-not-allowed opacity-50" : ""}`}
                                     onClick={() => handleNavigate(item.id)}
                                     disabled={
-                                        !!isAncestor ||
-                                        item.id.toString() === filters.dialog_id
+                                        !!isAncestor || item.id.toString() === filters.dialog_id
                                     }
                                 >
                                     {item.name}
@@ -277,11 +257,7 @@ export default function PpaSelectorDialog({
                                 pageKey="dialog_page"
                                 negativeHeight={24}
                                 filters={filters}
-                                onlyKeys={[
-                                    'dialogPpaTree',
-                                    'dialogCurrent',
-                                    'filters',
-                                ]}
+                                onlyKeys={["dialogPpaTree", "dialogCurrent", "filters"]}
                                 meta={{
                                     selectedIds: new Set(selectedItems.keys()),
                                     existingIds: existingIdsSet,
@@ -302,11 +278,7 @@ export default function PpaSelectorDialog({
                         </div>
 
                         <div className="flex gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={onClose}
-                                disabled={loading}
-                            >
+                            <Button variant="outline" onClick={onClose} disabled={loading}>
                                 Cancel
                             </Button>
 

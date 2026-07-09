@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo } from 'react';
-import { Library, FileDown, FileText, Plus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState, useCallback, useMemo } from "react";
+import { Library, FileDown, FileText, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
     AlertDialog,
     AlertDialogContent,
@@ -8,20 +8,20 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import AppLayout from '@/layouts/app-layout';
-import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
-import { DeleteDialog } from '@/components/delete-dialog';
-import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
-import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
-import { exportToExcel } from '@/pages/aip-summary/export-to-excel';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+} from "@/components/ui/dropdown-menu";
+import AppLayout from "@/layouts/app-layout";
+import PpaSelectorDialog from "@/pages/aip-summary/ppa-selector-dialog";
+import { DeleteDialog } from "@/components/delete-dialog";
+import AipEntryFormDialog from "@/pages/aip-summary/aip-entry-form-dialog";
+import ExportToPdfDialog from "@/pages/aip-summary/export-to-pdf-dialog";
+import { exportToExcel } from "@/pages/aip-summary/export-to-excel";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
     FiscalYear,
     Ppa,
@@ -34,13 +34,13 @@ import type {
     ChartOfAccount,
     PriceList,
     PpmpCategory,
-} from '@/types/global';
-import { type BreadcrumbItem } from '@/types';
-import { router, usePage } from '@inertiajs/react';
-import { DataTable } from '@/components/data-table';
+} from "@/types";
+import { type BreadcrumbItem } from "@/types";
+import { router, usePage } from "@inertiajs/react";
+import { DataTable } from "@/components/data-table";
 // import columns from './columns/columns';
-import columns from './columns/columns';
-import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
+import columns from "./columns/columns";
+import ExportSummaryToPdfDialog from "@/pages/aip-summary/export-summary-to-pdf-dialog";
 
 interface AipSummaryTableProps {
     fiscalYear: FiscalYear;
@@ -78,9 +78,7 @@ interface AipSummaryTableProps {
     psPoolPpaId?: number | null;
 }
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Annual Investment Programs', href: '/aip' },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Annual Investment Programs", href: "/aip" }];
 
 const existingPpaIds = (aipEntries: Ppa[]) => {
     const ppaIds: Set<number> = new Set();
@@ -115,7 +113,7 @@ export default function AipSummaryTable({
     dialogPpaTree,
     dialogCurrent,
     supplementalAips = [],
-    currentScope = { scope: 'original', supplemental_aip_id: null },
+    currentScope = { scope: "original", supplemental_aip_id: null },
     chartOfAccounts,
     priceLists,
     ppmpCategories,
@@ -166,17 +164,14 @@ export default function AipSummaryTable({
     const [isDeleteSaipDialogOpen, setIsDeleteSaipDialogOpen] = useState(false);
 
     const currentSaip =
-        currentScope?.scope === 'supplemental' &&
-        currentScope.supplemental_aip_id
-            ? supplementalAips.find(
-                  (s: any) => s.id === currentScope.supplemental_aip_id,
-              )
+        currentScope?.scope === "supplemental" && currentScope.supplemental_aip_id
+            ? supplementalAips.find((s: any) => s.id === currentScope.supplemental_aip_id)
             : null;
     const canDeleteSaip = currentSaip?.can?.deleteSaip ?? false;
 
     const updatedBreadcrumbs = [
         ...breadcrumbs,
-        { title: `AIP Summary FY ${fiscalYear.year}`, href: '#' },
+        { title: `AIP Summary FY ${fiscalYear.year}`, href: "#" },
     ];
 
     const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): any[] => {
@@ -186,11 +181,9 @@ export default function AipSummaryTable({
                 : [];
 
             const activeAips = ppa.aip_entries || [];
-            let sources = activeAips.flatMap(
-                (aip) => aip.ppa_funding_sources || [],
-            );
+            let sources = activeAips.flatMap((aip) => aip.ppa_funding_sources || []);
 
-            if (currentScope?.scope === 'combined') {
+            if (currentScope?.scope === "combined") {
                 // Group sources by funding_source_id
                 const grouped = new Map<number, typeof sources>();
                 sources.forEach((src) => {
@@ -209,12 +202,12 @@ export default function AipSummaryTable({
                         ccet_ad = 0,
                         ccet_mit = 0;
                     list.forEach((item) => {
-                        ps += parseFloat(item.ps_amount || '0');
-                        mooe += parseFloat(item.mooe_amount || '0');
-                        co += parseFloat(item.co_amount || '0');
-                        fe += parseFloat(item.fe_amount || '0');
-                        ccet_ad += parseFloat(item.ccet_adaptation || '0');
-                        ccet_mit += parseFloat(item.ccet_mitigation || '0');
+                        ps += parseFloat(item.ps_amount || "0");
+                        mooe += parseFloat(item.mooe_amount || "0");
+                        co += parseFloat(item.co_amount || "0");
+                        fe += parseFloat(item.fe_amount || "0");
+                        ccet_ad += parseFloat(item.ccet_adaptation || "0");
+                        ccet_mit += parseFloat(item.ccet_mitigation || "0");
                     });
                     base.ps_amount = ps.toString();
                     base.mooe_amount = mooe.toString();
@@ -224,16 +217,13 @@ export default function AipSummaryTable({
                     base.ccet_mitigation = ccet_mit.toString();
                     // Point to the latest SAIP entry so non-numeric fields
                     // (office, dates, expected output) resolve correctly
-                    const entryIds = [
-                        ...new Set(list.map((s) => s.aip_entry_id)),
-                    ];
+                    const entryIds = [...new Set(list.map((s) => s.aip_entry_id))];
                     const latestEntry = entryIds
                         .map((id) => activeAips.find((a) => a.id === id))
                         .filter(Boolean)
                         .sort(
                             (a: any, b: any) =>
-                                (b.supplemental_aip_id ?? -1) -
-                                (a.supplemental_aip_id ?? -1),
+                                (b.supplemental_aip_id ?? -1) - (a.supplemental_aip_id ?? -1),
                         )[0];
                     if (latestEntry) {
                         base.aip_entry_id = latestEntry.id;
@@ -245,8 +235,7 @@ export default function AipSummaryTable({
             if (sources.length === 0) {
                 const latestAip = [...activeAips].sort(
                     (a: any, b: any) =>
-                        (b.supplemental_aip_id ?? -1) -
-                        (a.supplemental_aip_id ?? -1),
+                        (b.supplemental_aip_id ?? -1) - (a.supplemental_aip_id ?? -1),
                 )[0];
                 return [
                     {
@@ -263,9 +252,7 @@ export default function AipSummaryTable({
             }
 
             return sources.map((fs, index) => {
-                const parentAip =
-                    activeAips.find((aip) => aip.id === fs.aip_entry_id) ||
-                    null;
+                const parentAip = activeAips.find((aip) => aip.id === fs.aip_entry_id) || null;
 
                 return {
                     ...ppa,
@@ -286,33 +273,25 @@ export default function AipSummaryTable({
     }, []);
 
     // Custom Filter logic specific to the PPA Flat-Tree
-    const customGlobalFilterFn = useCallback(
-        (row: any, columnId: string, filterValue: any) => {
-            const searchStr = String(filterValue).toLowerCase();
+    const customGlobalFilterFn = useCallback((row: any, columnId: string, filterValue: any) => {
+        const searchStr = String(filterValue).toLowerCase();
 
-            // Standard check
-            const cellValue = row.getValue(columnId);
-            if (
-                cellValue != null &&
-                String(cellValue).toLowerCase().includes(searchStr)
-            ) {
+        // Standard check
+        const cellValue = row.getValue(columnId);
+        if (cellValue != null && String(cellValue).toLowerCase().includes(searchStr)) {
+            return true;
+        }
+
+        // Deep child check for PPA preservation
+        const original = row.original as any;
+        if (original.children && original.children.length > 0) {
+            const childrenText = JSON.stringify(original.children).toLowerCase();
+            if (childrenText.includes(searchStr)) {
                 return true;
             }
-
-            // Deep child check for PPA preservation
-            const original = row.original as any;
-            if (original.children && original.children.length > 0) {
-                const childrenText = JSON.stringify(
-                    original.children,
-                ).toLowerCase();
-                if (childrenText.includes(searchStr)) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        [],
-    );
+        }
+        return false;
+    }, []);
 
     const handleScopeChange = (newScope: string, newSaipId?: number | null) => {
         router.get(
@@ -336,7 +315,7 @@ export default function AipSummaryTable({
     const handleCreateSaipConfirm = () => {
         setIsLoading(true);
         router.post(
-            '/supplemental-aips',
+            "/supplemental-aips",
             {
                 fiscal_year_id: fiscalYear.id,
             },
@@ -369,19 +348,16 @@ export default function AipSummaryTable({
     const handleDeleteSaipConfirm = () => {
         if (!currentScope.supplemental_aip_id) return;
         setIsLoading(true);
-        router.delete(
-            `/supplemental-aips/${currentScope.supplemental_aip_id}`,
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    handleScopeChange('original');
-                },
-                onFinish: () => {
-                    setIsLoading(false);
-                    setIsDeleteSaipDialogOpen(false);
-                },
+        router.delete(`/supplemental-aips/${currentScope.supplemental_aip_id}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                handleScopeChange("original");
             },
-        );
+            onFinish: () => {
+                setIsLoading(false);
+                setIsDeleteSaipDialogOpen(false);
+            },
+        });
     };
 
     const handleImportLibrary = () => {
@@ -390,8 +366,7 @@ export default function AipSummaryTable({
             {
                 ...filters,
                 scope: currentScope.scope,
-                supplemental_aip_id:
-                    currentScope.supplemental_aip_id || undefined,
+                supplemental_aip_id: currentScope.supplemental_aip_id || undefined,
                 dialog_id: null,
                 dialog_boundary_id: null,
                 dialog_page: 1,
@@ -399,7 +374,7 @@ export default function AipSummaryTable({
             {
                 preserveState: true,
                 preserveScroll: true,
-                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                only: ["dialogPpaTree", "dialogCurrent", "filters"],
                 onSuccess: () => {
                     setIsSelectorOpen(true);
                 },
@@ -414,8 +389,7 @@ export default function AipSummaryTable({
                 {
                     ...filters,
                     scope: currentScope.scope,
-                    supplemental_aip_id:
-                        currentScope.supplemental_aip_id || undefined,
+                    supplemental_aip_id: currentScope.supplemental_aip_id || undefined,
                     dialog_id: entry.id,
                     dialog_boundary_id: entry.id,
                     dialog_page: 1,
@@ -423,7 +397,7 @@ export default function AipSummaryTable({
                 {
                     preserveState: true,
                     preserveScroll: true,
-                    only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                    only: ["dialogPpaTree", "dialogCurrent", "filters"],
                     onSuccess: () => {
                         setIsSelectorOpen(true);
                     },
@@ -445,7 +419,7 @@ export default function AipSummaryTable({
 
     const handlePpmpItemAdded = () => {
         router.visit(window.location.href, {
-            only: ['aipEntries'],
+            only: ["aipEntries"],
             preserveState: true,
             preserveScroll: true,
         });
@@ -463,7 +437,7 @@ export default function AipSummaryTable({
                 setSelectedEntryId(null);
             },
             onFinish: () => setIsLoading(false),
-            onError: (error) => console.error('error', error),
+            onError: (error) => console.error("error", error),
         });
     }
 
@@ -472,7 +446,7 @@ export default function AipSummaryTable({
     }
 
     async function handleExportToExcel() {
-        const officeName = auth.user.office?.name || '';
+        const officeName = auth.user.office?.name || "";
 
         await exportToExcel({
             aipEntries,
@@ -483,7 +457,7 @@ export default function AipSummaryTable({
     }
 
     const activeTabValue =
-        currentScope.scope === 'supplemental'
+        currentScope.scope === "supplemental"
             ? `saip-${currentScope.supplemental_aip_id}`
             : currentScope.scope;
 
@@ -496,11 +470,11 @@ export default function AipSummaryTable({
                     <Tabs
                         value={activeTabValue}
                         onValueChange={(val) => {
-                            if (val === 'original' || val === 'combined') {
+                            if (val === "original" || val === "combined") {
                                 handleScopeChange(val);
-                            } else if (val.startsWith('saip-')) {
-                                const id = parseInt(val.split('-')[1]);
-                                handleScopeChange('supplemental', id);
+                            } else if (val.startsWith("saip-")) {
+                                const id = parseInt(val.split("-")[1]);
+                                handleScopeChange("supplemental", id);
                             }
                         }}
                         // className="w-auto"
@@ -535,16 +509,11 @@ export default function AipSummaryTable({
                     </Tabs>
 
                     <div className="flex items-center gap-2">
-                        {currentScope.scope === 'supplemental' &&
-                            canDeleteSaip && (
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={handleDeleteSaip}
-                                >
-                                    Delete Plan
-                                </Button>
-                            )}
+                        {currentScope.scope === "supplemental" && canDeleteSaip && (
+                            <Button variant="destructive" size="sm" onClick={handleDeleteSaip}>
+                                Delete Plan
+                            </Button>
+                        )}
 
                         {can.createSaip && (
                             <Button
@@ -574,7 +543,7 @@ export default function AipSummaryTable({
                     globalFilterFn={customGlobalFilterFn}
                     negativeHeight={9.98}
                     meta={{
-                        readOnly: currentScope.scope === 'combined',
+                        readOnly: currentScope.scope === "combined",
                         canSetPsPool: can?.setPsPool ?? false,
                         psPoolPpaId,
                         onSetAsPsPool: handleSetAsPsPool,
@@ -585,24 +554,16 @@ export default function AipSummaryTable({
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline">
-                                        <FileDown className="mr-2 h-4 w-4" />{' '}
-                                        Export
+                                        <FileDown className="mr-2 h-4 w-4" /> Export
                                     </Button>
                                 </DropdownMenuTrigger>
 
-                                <DropdownMenuContent
-                                    align="end"
-                                    className="w-max min-w-max"
-                                >
-                                    <DropdownMenuItem
-                                        onClick={handlePrintPreview}
-                                    >
+                                <DropdownMenuContent align="end" className="w-max min-w-max">
+                                    <DropdownMenuItem onClick={handlePrintPreview}>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4" />
 
-                                            <span className="whitespace-nowrap">
-                                                Print Preview
-                                            </span>
+                                            <span className="whitespace-nowrap">Print Preview</span>
                                         </div>
                                     </DropdownMenuItem>
 
@@ -618,11 +579,7 @@ export default function AipSummaryTable({
                                         </div>
                                     </DropdownMenuItem>*/}
 
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            setIsSummaryExportOpen(true)
-                                        }
-                                    >
+                                    <DropdownMenuItem onClick={() => setIsSummaryExportOpen(true)}>
                                         <div className="flex items-center">
                                             <FileText className="mr-2 h-4 w-4" />
 
@@ -635,10 +592,9 @@ export default function AipSummaryTable({
                             </DropdownMenu>
                         )}
 
-                        {can.import && currentScope.scope !== 'combined' && (
+                        {can.import && currentScope.scope !== "combined" && (
                             <Button onClick={handleImportLibrary}>
-                                <Library className="mr-2 h-4 w-4" /> Import from
-                                Library
+                                <Library className="mr-2 h-4 w-4" /> Import from Library
                             </Button>
                         )}
                     </div>
@@ -683,19 +639,14 @@ export default function AipSummaryTable({
                 title="Remove from AIP Summary?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
-                        <span className="font-bold text-foreground">
-                            "{selectedEntry?.name}"
-                        </span>
-                        ?
-                        {selectedEntry?.children &&
-                            selectedEntry.children.length > 0 && (
-                                <span className="mt-2 block font-semibold text-destructive italic">
-                                    Warning: This will also remove all nested
-                                    sub-PPAs and activities including all their
-                                    PPMPs.
-                                </span>
-                            )}
+                        Are you sure you want to remove{" "}
+                        <span className="font-bold text-foreground">"{selectedEntry?.name}"</span>?
+                        {selectedEntry?.children && selectedEntry.children.length > 0 && (
+                            <span className="mt-2 block font-semibold text-destructive italic">
+                                Warning: This will also remove all nested sub-PPAs and activities
+                                including all their PPMPs.
+                            </span>
+                        )}
                     </>
                 }
                 onConfirm={handleDelete}
@@ -722,19 +673,13 @@ export default function AipSummaryTable({
                 fiscalYear={fiscalYear}
             />
 
-            <AlertDialog
-                open={isCreateSaipDialogOpen}
-                onOpenChange={setIsCreateSaipDialogOpen}
-            >
+            <AlertDialog open={isCreateSaipDialogOpen} onOpenChange={setIsCreateSaipDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Create Supplemental AIP?
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Create Supplemental AIP?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to create a new Supplemental
-                            Annual Investment Program (SAIP) for this office and
-                            fiscal year?
+                            Are you sure you want to create a new Supplemental Annual Investment
+                            Program (SAIP) for this office and fiscal year?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -745,30 +690,23 @@ export default function AipSummaryTable({
                         >
                             Cancel
                         </Button>
-                        <Button
-                            onClick={handleCreateSaipConfirm}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Creating...' : 'Create'}
+                        <Button onClick={handleCreateSaipConfirm} disabled={isLoading}>
+                            {isLoading ? "Creating..." : "Create"}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
 
-            <AlertDialog
-                open={isDeleteSaipDialogOpen}
-                onOpenChange={setIsDeleteSaipDialogOpen}
-            >
+            <AlertDialog open={isDeleteSaipDialogOpen} onOpenChange={setIsDeleteSaipDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-destructive">
                             Delete Supplemental AIP?
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete this Supplemental AIP
-                            and all of its associated PPAs, funding allocations,
-                            and Supplemental PPMP items. This action cannot be
-                            undone.
+                            This will permanently delete this Supplemental AIP and all of its
+                            associated PPAs, funding allocations, and Supplemental PPMP items. This
+                            action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -784,7 +722,7 @@ export default function AipSummaryTable({
                             onClick={handleDeleteSaipConfirm}
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Deleting...' : 'Delete'}
+                            {isLoading ? "Deleting..." : "Delete"}
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -1,3 +1,5 @@
+import { Link } from "@inertiajs/react";
+import { Fragment } from "react";
 import {
     Breadcrumb,
     BreadcrumbItem,
@@ -5,16 +7,10 @@ import {
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { type BreadcrumbItem as BreadcrumbItemType } from '@/types';
-import { Link } from '@inertiajs/react';
-import { Fragment } from 'react';
+} from "@/components/ui/breadcrumb";
+import type { BreadcrumbItem as BreadcrumbItemType } from "@/types";
 
-export function Breadcrumbs({
-    breadcrumbs,
-}: {
-    breadcrumbs: BreadcrumbItemType[];
-}) {
+export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[] }) {
     return (
         <>
             {breadcrumbs.length > 0 && (
@@ -22,33 +18,15 @@ export function Breadcrumbs({
                     <BreadcrumbList>
                         {breadcrumbs.map((item, index) => {
                             const isLast = index === breadcrumbs.length - 1;
+
                             return (
                                 <Fragment key={index}>
                                     <BreadcrumbItem>
-                                        {/* {isLast ? (
-                                            <BreadcrumbPage>
-                                                {item.title}
-                                            </BreadcrumbPage>
+                                        {isLast ? (
+                                            <BreadcrumbPage>{item.title}</BreadcrumbPage>
                                         ) : (
                                             <BreadcrumbLink asChild>
-                                                <Link href={item.href}>
-                                                    {item.title}
-                                                </Link>
-                                            </BreadcrumbLink>
-                                        )} */}
-                                        {isLast || !item.href ? ( // If it's the last one OR href is null
-                                            <BreadcrumbPage className="max-w-80 truncate">
-                                                {item.title}
-                                            </BreadcrumbPage>
-                                        ) : (
-                                            <BreadcrumbLink asChild>
-                                                {/* Only render Link if item.href is a valid string */}
-                                                <Link
-                                                    href={item.href}
-                                                    className="max-w-80 truncate"
-                                                >
-                                                    {item.title}
-                                                </Link>
+                                                <Link href={item.href}>{item.title}</Link>
                                             </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>
