@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PpmpCategory;
 use App\Http\Requests\StorePpmpCategoryRequest;
 use App\Http\Requests\UpdatePpmpCategoryRequest;
 use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountPpmpCategory;
+use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class PpmpCategoryController extends Controller
@@ -17,7 +18,7 @@ class PpmpCategoryController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', PpmpCategory::class);
+        Gate::authorize('viewAny', PpmpCategory::class);
 
         $ppmpCategories = PpmpCategory::with(
             'chartOfAccountPpmpCategories',
@@ -28,10 +29,10 @@ class PpmpCategoryController extends Controller
             'chartOfAccounts' => ChartOfAccount::all(),
             'can' => [
                 'add' => request()->user()->can('create', PpmpCategory::class),
-                'edit' => request()->user()->can('update', new PpmpCategory()),
+                'edit' => request()->user()->can('update', new PpmpCategory),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new PpmpCategory()),
+                    ->can('delete', new PpmpCategory),
             ],
         ]);
     }
@@ -49,7 +50,7 @@ class PpmpCategoryController extends Controller
      */
     public function store(StorePpmpCategoryRequest $request)
     {
-        $this->authorize('create', PpmpCategory::class);
+        Gate::authorize('create', PpmpCategory::class);
 
         $validated = $request->validated();
 
@@ -89,7 +90,7 @@ class PpmpCategoryController extends Controller
         UpdatePpmpCategoryRequest $request,
         PpmpCategory $ppmpCategory,
     ) {
-        $this->authorize('update', $ppmpCategory);
+        Gate::authorize('update', $ppmpCategory);
 
         $validated = $request->validated();
 
@@ -112,10 +113,9 @@ class PpmpCategoryController extends Controller
             return $pivot->ppmpPriceLists()->exists();
         });
 
-        if ($hasDependents && !request('force')) {
+        if ($hasDependents && ! request('force')) {
             return back()->withErrors([
-                'force_delete' =>
-                    'Some chart of accounts being removed have dependent PPMP price list items.',
+                'force_delete' => 'Some chart of accounts being removed have dependent PPMP price list items.',
             ]);
         }
 
@@ -137,7 +137,7 @@ class PpmpCategoryController extends Controller
                 'chart_of_account_id',
                 $coaId,
             );
-            if (!$existingPivot) {
+            if (! $existingPivot) {
                 ChartOfAccountPpmpCategory::create([
                     'chart_of_account_id' => $coaId,
                     'ppmp_category_id' => $ppmpCategory->id,
@@ -151,17 +151,16 @@ class PpmpCategoryController extends Controller
      */
     public function destroy(PpmpCategory $ppmpCategory)
     {
-        $this->authorize('delete', $ppmpCategory);
+        Gate::authorize('delete', $ppmpCategory);
 
         $hasDependents = $ppmpCategory
             ->chartOfAccountPpmpCategories()
             ->whereHas('ppmpPriceLists')
             ->exists();
 
-        if ($hasDependents && !request('force')) {
+        if ($hasDependents && ! request('force')) {
             return back()->withErrors([
-                'force_delete' =>
-                    'This category has dependent PPMP price list items.',
+                'force_delete' => 'This category has dependent PPMP price list items.',
             ]);
         }
 

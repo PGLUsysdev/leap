@@ -2,20 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AipEntry;
-use App\Models\FundingSource;
-use App\Models\FiscalYear;
-use App\Models\Ppa;
-use App\Models\Office;
-use App\Models\Ppmp;
-use App\Models\PsBreakdownItem;
-
 use App\Http\Requests\StoreAipEntryRequest;
 use App\Http\Requests\UpdateAipEntryRequest;
-
-use Illuminate\Support\Facades\DB;
+use App\Models\AipEntry;
+use App\Models\CcTypology;
+use App\Models\ChartOfAccount;
+use App\Models\FiscalYear;
+use App\Models\FundingSource;
+use App\Models\Office;
+use App\Models\Ppa;
+use App\Models\Ppmp;
+use App\Models\PpmpCategory;
+use App\Models\PpmpPriceList;
+use App\Models\PsBreakdownItem;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class AipEntryController extends Controller
@@ -25,7 +28,7 @@ class AipEntryController extends Controller
      */
     public function index(Request $request, FiscalYear $fiscalYear)
     {
-        $this->authorize('viewAny', AipEntry::class);
+        Gate::authorize('viewAny', AipEntry::class);
 
         $user = auth()->user();
         $user->loadMissing('role.permissionRoles.permission');
@@ -46,7 +49,7 @@ class AipEntryController extends Controller
 
         if ($scope === 'supplemental' && $saipId) {
             $supplementalAip = \App\Models\SupplementalAip::findOrFail($saipId);
-            $this->authorize('view', $supplementalAip);
+            Gate::authorize('view', $supplementalAip);
         }
 
         $fundingSourceFilter = function ($query) use ($scope, $saipId) {
@@ -114,24 +117,23 @@ class AipEntryController extends Controller
             ->get()
             ->map(function ($aipEntries) use (
                 $request,
-                $supplementalAip,
                 $scope,
                 $saipId,
             ) {
                 $aipEntry = $aipEntries->aip_entries?->first();
 
-                if (!$aipEntry) {
-                    $aipEntry = \App\Models\AipEntry::where(
+                if (! $aipEntry) {
+                    $aipEntry = AipEntry::where(
                         'ppa_id',
                         $aipEntries->id,
                     )
                         ->when(
                             $scope === 'original',
-                            fn($q) => $q->whereNull('supplemental_aip_id'),
+                            fn ($q) => $q->whereNull('supplemental_aip_id'),
                         )
                         ->when(
                             $scope === 'supplemental' && $saipId,
-                            fn($q) => $q->where('supplemental_aip_id', $saipId),
+                            fn ($q) => $q->where('supplemental_aip_id', $saipId),
                         )
                         ->first();
                 }
@@ -166,18 +168,18 @@ class AipEntryController extends Controller
                 ) {
                     $childEntry = $child->aip_entries?->first();
 
-                    if (!$childEntry) {
-                        $childEntry = \App\Models\AipEntry::where(
+                    if (! $childEntry) {
+                        $childEntry = AipEntry::where(
                             'ppa_id',
                             $child->id,
                         )
                             ->when(
                                 $scope === 'original',
-                                fn($q) => $q->whereNull('supplemental_aip_id'),
+                                fn ($q) => $q->whereNull('supplemental_aip_id'),
                             )
                             ->when(
                                 $scope === 'supplemental' && $saipId,
-                                fn($q) => $q->where(
+                                fn ($q) => $q->where(
                                     'supplemental_aip_id',
                                     $saipId,
                                 ),
@@ -217,20 +219,20 @@ class AipEntryController extends Controller
                     ) {
                         $child2Entry = $child2->aip_entries?->first();
 
-                        if (!$child2Entry) {
-                            $child2Entry = \App\Models\AipEntry::where(
+                        if (! $child2Entry) {
+                            $child2Entry = AipEntry::where(
                                 'ppa_id',
                                 $child2->id,
                             )
                                 ->when(
                                     $scope === 'original',
-                                    fn($q) => $q->whereNull(
+                                    fn ($q) => $q->whereNull(
                                         'supplemental_aip_id',
                                     ),
                                 )
                                 ->when(
                                     $scope === 'supplemental' && $saipId,
-                                    fn($q) => $q->where(
+                                    fn ($q) => $q->where(
                                         'supplemental_aip_id',
                                         $saipId,
                                     ),
@@ -276,20 +278,20 @@ class AipEntryController extends Controller
                         ) {
                             $child3Entry = $child3->aip_entries?->first();
 
-                            if (!$child3Entry) {
-                                $child3Entry = \App\Models\AipEntry::where(
+                            if (! $child3Entry) {
+                                $child3Entry = AipEntry::where(
                                     'ppa_id',
                                     $child3->id,
                                 )
                                     ->when(
                                         $scope === 'original',
-                                        fn($q) => $q->whereNull(
+                                        fn ($q) => $q->whereNull(
                                             'supplemental_aip_id',
                                         ),
                                     )
                                     ->when(
                                         $scope === 'supplemental' && $saipId,
-                                        fn($q) => $q->where(
+                                        fn ($q) => $q->where(
                                             'supplemental_aip_id',
                                             $saipId,
                                         ),
@@ -361,12 +363,12 @@ class AipEntryController extends Controller
         $crawlPpas($aipEntries);
         $allPfsIds = $allPfsIds->unique()->values();
 
-        \Illuminate\Support\Facades\Log::info('PFS IDs', [
+        Log::info('PFS IDs', [
             'ids' => $allPfsIds->toArray(),
         ]);
 
         // Aggregate PPMP amounts per ppa_funding_source_id and chart_of_account_id
-        $ppmpCoaTotals = \App\Models\Ppmp::whereIn(
+        $ppmpCoaTotals = Ppmp::whereIn(
             'ppa_funding_source_id',
             $allPfsIds,
         )
@@ -403,12 +405,12 @@ class AipEntryController extends Controller
             ->get()
             ->groupBy('ppa_funding_source_id')
             ->map(
-                fn($items) => $items
+                fn ($items) => $items
                     ->keyBy('chart_of_account_id')
-                    ->map(fn($item) => (float) $item->total),
+                    ->map(fn ($item) => (float) $item->total),
             );
 
-        \Illuminate\Support\Facades\Log::info('PPMP COA totals raw', [
+        Log::info('PPMP COA totals raw', [
             'data' => $ppmpCoaTotals->toArray(),
         ]);
 
@@ -426,7 +428,7 @@ class AipEntryController extends Controller
                 )
                 : [],
             'fundingSources' => FundingSource::all(),
-            'chartOfAccounts' => \App\Models\ChartOfAccount::select(
+            'chartOfAccounts' => ChartOfAccount::select(
                 'id',
                 'account_number',
                 'account_title',
@@ -434,16 +436,16 @@ class AipEntryController extends Controller
             )
                 ->orderBy('account_number')
                 ->get(),
-            'priceLists' => \App\Models\PpmpPriceList::with([
+            'priceLists' => PpmpPriceList::with([
                 'chartOfAccountPpmpCategory.chartOfAccount',
                 'chartOfAccountPpmpCategory.ppmpCategory',
             ])
                 ->orderBy('sort_order', 'asc')
                 ->get(),
-            'ppmpCategories' => \App\Models\PpmpCategory::with([
+            'ppmpCategories' => PpmpCategory::with([
                 'chartOfAccountPpmpCategories.chartOfAccount',
             ])->get(),
-            'ccTypologies' => \App\Models\CcTypology::select(
+            'ccTypologies' => CcTypology::select(
                 'id',
                 'code',
                 'description',
@@ -469,6 +471,7 @@ class AipEntryController extends Controller
                         'viewSaip' => $request->user()->can('view', $saip),
                         'deleteSaip' => $request->user()->can('delete', $saip),
                     ];
+
                     return $saip;
                 }),
             'currentScope' => [
@@ -607,7 +610,7 @@ class AipEntryController extends Controller
             'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
         ]);
 
-        $this->authorize('import', [AipEntry::class, $validated['ppa_ids']]);
+        Gate::authorize('import', [AipEntry::class, $validated['ppa_ids']]);
 
         $saipId = $validated['supplemental_aip_id'] ?? null;
 
@@ -619,8 +622,8 @@ class AipEntryController extends Controller
                         'supplemental_aip_id' => $saipId ?: null,
                     ],
                     [
-                        'start_date' => $fiscalYear->year . '-01-01',
-                        'end_date' => $fiscalYear->year . '-12-31',
+                        'start_date' => $fiscalYear->year.'-01-01',
+                        'end_date' => $fiscalYear->year.'-12-31',
                         'expected_output' => '-',
                         'is_supplemental' => (bool) $saipId,
                     ],
@@ -659,7 +662,7 @@ class AipEntryController extends Controller
         $validated = $request->validated();
         $ppa = $aipEntry->ppa;
 
-        if (!$ppa) {
+        if (! $ppa) {
             abort(404, 'Associated PPA not found.');
         }
 
@@ -680,15 +683,15 @@ class AipEntryController extends Controller
             $saipId,
         );
 
-        if ($detailsChanged && !$canEdit) {
+        if ($detailsChanged && ! $canEdit) {
             abort(403, 'You do not have permission to edit AIP entry details.');
         }
 
-        if ($fundingChanged && !$canEditFunding) {
+        if ($fundingChanged && ! $canEditFunding) {
             abort(403, 'You do not have permission to edit funding sources.');
         }
 
-        if (!$detailsChanged && !$fundingChanged) {
+        if (! $detailsChanged && ! $fundingChanged) {
             abort(403, 'No changes detected.');
         }
 
@@ -761,12 +764,9 @@ class AipEntryController extends Controller
                             'mooe_amount' => $source['mooe_amount'],
                             'fe_amount' => $source['fe_amount'],
                             'co_amount' => $source['co_amount'],
-                            'ccet_adaptation' =>
-                                $source['ccet_adaptation'] ?? 0,
-                            'ccet_mitigation' =>
-                                $source['ccet_mitigation'] ?? 0,
-                            'cc_typology_id' =>
-                                $source['cc_typology_id'] ?? null,
+                            'ccet_adaptation' => $source['ccet_adaptation'] ?? 0,
+                            'ccet_mitigation' => $source['ccet_mitigation'] ?? 0,
+                            'cc_typology_id' => $source['cc_typology_id'] ?? null,
                             'is_supplemental' => (bool) $saipId,
                         ],
                     );
@@ -790,8 +790,8 @@ class AipEntryController extends Controller
     ): bool {
         $current = $aipEntry
             ->ppaFundingSources()
-            ->when($saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
-            ->when(!$saipId, fn($q) => $q->whereNull('supplemental_aip_id'))
+            ->when($saipId, fn ($q) => $q->where('supplemental_aip_id', $saipId))
+            ->when(! $saipId, fn ($q) => $q->whereNull('supplemental_aip_id'))
             ->get();
 
         if ($current->count() !== count($submittedSources)) {
@@ -803,7 +803,7 @@ class AipEntryController extends Controller
                 'funding_source_id',
                 $source['funding_source_id'],
             );
-            if (!$match) {
+            if (! $match) {
                 return true;
             }
             if ((float) $match->ps_amount !== (float) $source['ps_amount']) {
@@ -848,7 +848,7 @@ class AipEntryController extends Controller
      */
     public function destroy(AipEntry $aipEntry)
     {
-        $this->authorize('delete', $aipEntry);
+        Gate::authorize('delete', $aipEntry);
 
         try {
             DB::beginTransaction();
@@ -877,7 +877,7 @@ class AipEntryController extends Controller
                 ->pluck('id')
                 ->toArray();
 
-            if (!empty($aipEntryIdsToDelete)) {
+            if (! empty($aipEntryIdsToDelete)) {
                 // 1. REFACTORED: Delete PPMP records
                 // We find PPMPs that belong to the PpaFundingSources linked to these AipEntries
                 Ppmp::whereHas('ppaFundingSource', function ($query) use (
@@ -896,14 +896,16 @@ class AipEntryController extends Controller
             }
 
             DB::commit();
+
             return back()->with(
                 'success',
                 'Successfully removed from AIP summary.',
             );
         } catch (\Exception $e) {
             DB::rollBack();
+
             return back()->withErrors([
-                'error' => 'Failed: ' . $e->getMessage(),
+                'error' => 'Failed: '.$e->getMessage(),
             ]);
         }
     }

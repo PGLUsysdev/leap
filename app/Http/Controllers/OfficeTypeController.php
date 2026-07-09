@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OfficeType;
 use App\Http\Requests\StoreOfficeTypeRequest;
 use App\Http\Requests\UpdateOfficeTypeRequest;
+use App\Models\OfficeType;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class OfficeTypeController extends Controller
@@ -14,14 +15,14 @@ class OfficeTypeController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', OfficeType::class);
+        Gate::authorize('viewAny', OfficeType::class);
 
         return Inertia::render('office-type/index', [
             'officeTypes' => OfficeType::all(),
             'can' => [
                 'add' => request()->user()->can('create', OfficeType::class),
-                'edit' => request()->user()->can('update', new OfficeType()),
-                'delete' => request()->user()->can('delete', new OfficeType()),
+                'edit' => request()->user()->can('update', new OfficeType),
+                'delete' => request()->user()->can('delete', new OfficeType),
             ],
         ]);
     }
@@ -39,7 +40,7 @@ class OfficeTypeController extends Controller
      */
     public function store(StoreOfficeTypeRequest $request)
     {
-        $this->authorize('create', OfficeType::class);
+        Gate::authorize('create', OfficeType::class);
 
         $validated = $request->validated();
 
@@ -69,7 +70,7 @@ class OfficeTypeController extends Controller
         UpdateOfficeTypeRequest $request,
         OfficeType $officeType,
     ) {
-        $this->authorize('update', $officeType);
+        Gate::authorize('update', $officeType);
 
         $validated = $request->validated();
 
@@ -81,12 +82,11 @@ class OfficeTypeController extends Controller
      */
     public function destroy(OfficeType $officeType)
     {
-        $this->authorize('delete', $officeType);
+        Gate::authorize('delete', $officeType);
 
         if ($officeType->offices()->exists()) {
             return back()->withErrors([
-                'message' =>
-                    'Cannot delete this sector because it is currently assigned to one or more offices.',
+                'message' => 'Cannot delete this sector because it is currently assigned to one or more offices.',
             ]);
         }
 

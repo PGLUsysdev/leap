@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FiscalYear;
-use App\Models\AipEntry;
-use App\Models\Ppmp;
-use App\Models\PpmpCategory;
-use App\Models\ChartOfAccount;
-use App\Models\PpmpPriceList;
-use App\Models\FundingSource;
-use App\Models\PpaFundingSource;
 use App\Http\Requests\StorePpmpRequest;
 use App\Http\Requests\UpdatePpmpRequest;
+use App\Models\AipEntry;
+use App\Models\ChartOfAccount;
+use App\Models\FiscalYear;
+use App\Models\FundingSource;
+use App\Models\PpaFundingSource;
+use App\Models\Ppmp;
+use App\Models\PpmpCategory;
+use App\Models\PpmpPriceList;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class PpmpController extends Controller
@@ -25,7 +26,7 @@ class PpmpController extends Controller
         FiscalYear $fiscalYear,
         AipEntry $aipEntry,
     ) {
-        $this->authorize('viewAny', [Ppmp::class, $aipEntry]);
+        Gate::authorize('viewAny', [Ppmp::class, $aipEntry]);
 
         $selectedAipEntry = AipEntry::with(['ppa', 'ppaFundingSources'])->find(
             $aipEntry->id,
@@ -33,7 +34,7 @@ class PpmpController extends Controller
 
         $tab = $request->query('tab');
 
-        $isSupplemental = !is_null($selectedAipEntry->supplemental_aip_id);
+        $isSupplemental = ! is_null($selectedAipEntry->supplemental_aip_id);
 
         // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
         $allAipEntries = AipEntry::where('ppa_id', $selectedAipEntry->ppa_id)
@@ -42,7 +43,7 @@ class PpmpController extends Controller
 
         // Check viewSupplemental whenever supplemental entries exist
         $hasSupplementalAipEntries = $allAipEntries->contains(
-            fn($entry) => !is_null($entry->supplemental_aip_id),
+            fn ($entry) => ! is_null($entry->supplemental_aip_id),
         );
 
         $canViewSupplemental = request()
@@ -52,7 +53,7 @@ class PpmpController extends Controller
         if (
             $tab &&
             str_starts_with($tab, 'supplemental_') &&
-            !$canViewSupplemental
+            ! $canViewSupplemental
         ) {
             $tab = 'original';
         }
@@ -166,8 +167,7 @@ class PpmpController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'fundingSources' => $fundingSources,
-            'currentTab' =>
-                $tab ?:
+            'currentTab' => $tab ?:
                 ($selectedAipEntry->supplemental_aip_id
                     ? "supplemental_{$selectedAipEntry->id}"
                     : 'original'),
@@ -192,7 +192,7 @@ class PpmpController extends Controller
      */
     public function store(StorePpmpRequest $request)
     {
-        $this->authorize('addPriceList', Ppmp::class);
+        Gate::authorize('addPriceList', Ppmp::class);
 
         $validated = $request->validated();
 
@@ -205,8 +205,8 @@ class PpmpController extends Controller
 
         // If month and quantity are provided, set the monthly quantity
         if ($request->filled('month') && $request->filled('quantity')) {
-            $monthQty = $validated['month'] . '_qty';
-            $monthAmount = $validated['month'] . '_amount';
+            $monthQty = $validated['month'].'_qty';
+            $monthAmount = $validated['month'].'_amount';
             $unitPrice = $ppmp->ppmpPriceList?->price ?? 0;
             $newQty = (int) round($validated['quantity']);
 
@@ -228,7 +228,7 @@ class PpmpController extends Controller
 
     public function updateMonthlyQuantity(Request $request, Ppmp $ppmp)
     {
-        $this->authorize('editPriceListQuantity', $ppmp);
+        Gate::authorize('editPriceListQuantity', $ppmp);
 
         $validated = $request->validate([
             'month' => 'required|string',
@@ -276,7 +276,7 @@ class PpmpController extends Controller
      */
     public function destroy(Ppmp $ppmp)
     {
-        $this->authorize('deletePriceList', $ppmp);
+        Gate::authorize('deletePriceList', $ppmp);
 
         $bridge = $ppmp->ppaFundingSource;
         $expenseClass =
@@ -302,7 +302,7 @@ class PpmpController extends Controller
 
         $targetColumn = $columnMap[$expenseClass] ?? null;
 
-        if (!$targetColumn) {
+        if (! $targetColumn) {
             return;
         }
 

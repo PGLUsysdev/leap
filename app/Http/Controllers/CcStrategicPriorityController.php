@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CcStrategicPriority;
 use App\Http\Requests\StoreCcStrategicPriorityRequest;
 use App\Http\Requests\UpdateCcStrategicPriorityRequest;
+use App\Models\CcStrategicPriority;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class CcStrategicPriorityController extends Controller
@@ -15,7 +16,7 @@ class CcStrategicPriorityController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', CcStrategicPriority::class);
+        Gate::authorize('viewAny', CcStrategicPriority::class);
 
         return Inertia::render('cc-strategic-priority/index', [
             'strategicPriorities' => CcStrategicPriority::all(),
@@ -25,10 +26,10 @@ class CcStrategicPriorityController extends Controller
                     ->can('create', CcStrategicPriority::class),
                 'edit' => request()
                     ->user()
-                    ->can('update', new CcStrategicPriority()),
+                    ->can('update', new CcStrategicPriority),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new CcStrategicPriority()),
+                    ->can('delete', new CcStrategicPriority),
             ],
         ]);
     }
@@ -46,7 +47,7 @@ class CcStrategicPriorityController extends Controller
      */
     public function store(StoreCcStrategicPriorityRequest $request)
     {
-        $this->authorize('create', CcStrategicPriority::class);
+        Gate::authorize('create', CcStrategicPriority::class);
 
         CcStrategicPriority::create($request->validated());
 
@@ -76,7 +77,7 @@ class CcStrategicPriorityController extends Controller
         UpdateCcStrategicPriorityRequest $request,
         CcStrategicPriority $ccStrategicPriority,
     ) {
-        $this->authorize('update', $ccStrategicPriority);
+        Gate::authorize('update', $ccStrategicPriority);
 
         $ccStrategicPriority->update($request->validated());
 
@@ -88,7 +89,7 @@ class CcStrategicPriorityController extends Controller
      */
     public function destroy(CcStrategicPriority $ccStrategicPriority)
     {
-        $this->authorize('delete', $ccStrategicPriority);
+        Gate::authorize('delete', $ccStrategicPriority);
 
         try {
             $ccStrategicPriority->delete();
@@ -99,8 +100,7 @@ class CcStrategicPriorityController extends Controller
                 return redirect()
                     ->back()
                     ->withErrors([
-                        'message' =>
-                            'Cannot delete this strategic priority because it is linked to existing sub-sectors or typologies.',
+                        'message' => 'Cannot delete this strategic priority because it is linked to existing sub-sectors or typologies.',
                     ]);
             }
 

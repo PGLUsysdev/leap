@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\PsBreakdownController;
+use App\Http\Requests\StorePositionRequest;
+use App\Http\Requests\UpdatePositionRequest;
 use App\Models\FiscalYear;
 use App\Models\Ios;
 use App\Models\Office;
 use App\Models\Position;
 use App\Models\SalaryStandard;
-use App\Http\Requests\StorePositionRequest;
-use App\Http\Requests\UpdatePositionRequest;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class PositionController extends Controller
@@ -19,7 +19,7 @@ class PositionController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', Position::class);
+        Gate::authorize('viewAny', Position::class);
 
         $currentFiscalYear = FiscalYear::where('status', 'open')->first();
         $budgetFiscalYear = FiscalYear::where('status', 'draft')->first();
@@ -46,8 +46,8 @@ class PositionController extends Controller
                 : [],
             'can' => [
                 'add' => request()->user()->can('create', Position::class),
-                'edit' => request()->user()->can('update', new Position()),
-                'delete' => request()->user()->can('delete', new Position()),
+                'edit' => request()->user()->can('update', new Position),
+                'delete' => request()->user()->can('delete', new Position),
                 'export' => request()->user()->can('export', Position::class),
             ],
         ]);

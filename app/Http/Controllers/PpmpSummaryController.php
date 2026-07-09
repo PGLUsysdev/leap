@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ppmp;
 use App\Models\FiscalYear;
-use App\Models\PpmpSummary;
+use App\Models\Ppmp;
 use App\Models\PpmpPriceList;
+use App\Models\PpmpSummary;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class PpmpSummaryController extends Controller
@@ -15,7 +16,7 @@ class PpmpSummaryController extends Controller
      */
     public function index(FiscalYear $fiscalYear)
     {
-        $this->authorize('viewAny', PpmpSummary::class);
+        Gate::authorize('viewAny', PpmpSummary::class);
 
         $priceLists = PpmpPriceList::query()
             ->whereHas('ppmps.ppaFundingSource.aipEntry.ppa', function (

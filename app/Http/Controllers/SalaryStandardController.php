@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\SalaryStandard;
-use App\Models\FiscalYear;
 use App\Http\Requests\StoreSalaryStandardRequest;
 use App\Http\Requests\UpdateSalaryStandardRequest;
+use App\Models\FiscalYear;
+use App\Models\SalaryStandard;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class SalaryStandardController extends Controller
@@ -15,7 +16,7 @@ class SalaryStandardController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', SalaryStandard::class);
+        Gate::authorize('viewAny', SalaryStandard::class);
 
         return Inertia::render('salary-standard/index', [
             'salaryStandtards' => SalaryStandard::get(),

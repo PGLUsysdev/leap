@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Inertia\Inertia;
 use App\Http\Requests\StoreFundingSourceRequest;
 use App\Http\Requests\UpdateFundingSourceRequest;
-
 use App\Models\FundingSource;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class FundingSourceController extends Controller
 {
@@ -15,14 +15,16 @@ class FundingSourceController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', FundingSource::class);
+        Gate::authorize('viewAny', FundingSource::class);
 
         return Inertia::render('funding-source/index', [
             'fundingSources' => FundingSource::all(),
             'can' => [
                 'add' => request()->user()->can('create', FundingSource::class),
-                'edit' => request()->user()->can('update', new FundingSource()),
-                'delete' => request()->user()->can('delete', new FundingSource()),
+                'edit' => request()->user()->can('update', new FundingSource),
+                'delete' => request()
+                    ->user()
+                    ->can('delete', new FundingSource),
             ],
         ]);
     }
@@ -40,7 +42,7 @@ class FundingSourceController extends Controller
      */
     public function store(StoreFundingSourceRequest $request)
     {
-        $this->authorize('create', FundingSource::class);
+        Gate::authorize('create', FundingSource::class);
 
         $validated = $request->validated();
 
@@ -70,7 +72,7 @@ class FundingSourceController extends Controller
         UpdateFundingSourceRequest $request,
         FundingSource $fundingSource,
     ) {
-        $this->authorize('update', $fundingSource);
+        Gate::authorize('update', $fundingSource);
 
         $validated = $request->validated();
 
@@ -82,7 +84,7 @@ class FundingSourceController extends Controller
      */
     public function destroy(FundingSource $fundingSource)
     {
-        $this->authorize('delete', $fundingSource);
+        Gate::authorize('delete', $fundingSource);
 
         $fundingSource->delete();
     }

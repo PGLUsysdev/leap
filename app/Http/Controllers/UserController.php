@@ -2,18 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\PsBreakdownController;
-use Illuminate\Support\Facades\Request;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-
-use Inertia\Inertia;
-
 use App\Models\Office;
 use App\Models\Position;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
@@ -22,7 +19,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', User::class);
+        Gate::authorize('viewAny', User::class);
 
         $user = Auth::user();
         $user->loadMissing('role.permissionRoles.permission');
@@ -30,7 +27,7 @@ class UserController extends Controller
 
         $usersQuery = User::with(['office', 'role', 'position.ios']);
 
-        if (!$permissions->contains('user.show.all')) {
+        if (! $permissions->contains('user.show.all')) {
             $usersQuery->where('office_id', $user->office_id);
         }
 
@@ -98,7 +95,7 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-        $this->authorize('update', $user);
+        Gate::authorize('update', $user);
 
         $data = $request->validated();
 
@@ -122,8 +119,8 @@ class UserController extends Controller
                 ($permissions->contains('user.edit.role.own') &&
                     $authUser->office_id === $user->office_id);
 
-            $officeOk = !array_key_exists('office_id', $data) || $canOffice;
-            $roleOk = !array_key_exists('role_id', $data) || $canRole;
+            $officeOk = ! array_key_exists('office_id', $data) || $canOffice;
+            $roleOk = ! array_key_exists('role_id', $data) || $canRole;
 
             abort_unless($officeOk && $roleOk, 403);
         }

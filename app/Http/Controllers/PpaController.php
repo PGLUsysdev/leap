@@ -4,19 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePpaRequest;
 use App\Http\Requests\UpdatePpaRequest;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-
-use App\Models\Ppa;
-use App\Models\Office;
-use App\Models\Sector;
-use App\Models\LguLevel;
-use App\Models\OfficeType;
-use App\Models\FiscalYear;
 use App\Models\AipEntry;
+use App\Models\FiscalYear;
+use App\Models\Office;
+use App\Models\Ppa;
 use App\Services\PSPoolService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class PpaController extends Controller
 {
@@ -37,7 +34,7 @@ class PpaController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorize('viewAny', Ppa::class);
+        Gate::authorize('viewAny', Ppa::class);
 
         $user = request()->user();
         $user->loadMissing('role.permissionRoles.permission');
@@ -70,6 +67,7 @@ class PpaController extends Controller
                         'delete' => $user->can('delete', $ppa),
                         'move' => $user->can('move', $ppa),
                     ];
+
                     return $ppa;
                 }),
 
@@ -105,6 +103,7 @@ class PpaController extends Controller
                 if ($mode === 'import') {
                     return $this->getPreviousYearPpas($request, $userOfficeId);
                 }
+
                 return $this->getPpaQuery(
                     $request,
                     $userOfficeId,
@@ -119,17 +118,19 @@ class PpaController extends Controller
                             'delete' => $user->can('delete', $ppa),
                             'move' => $user->can('move', $ppa),
                         ];
+
                         return $ppa;
                     });
             }),
 
             'dialogCurrent' => Inertia::lazy(function () use ($request) {
                 $id = $request->query('dialog_id');
-                if (!$id) {
+                if (! $id) {
                     return [];
                 }
 
                 $ppa = Ppa::with('parent.parent')->find($id);
+
                 return $ppa ? $this->flattenAncestors($ppa) : [];
             }),
         ]);
@@ -144,8 +145,8 @@ class PpaController extends Controller
 
         return Ppa::when(
             $officeId,
-            fn($q) => $q->where('office_id', $officeId),
-            fn($q) => $q->whereNull('id'),
+            fn ($q) => $q->where('office_id', $officeId),
+            fn ($q) => $q->whereNull('id'),
         )
             ->where('fiscal_year_id', $fiscalYearId)
             ->when(
@@ -196,8 +197,8 @@ class PpaController extends Controller
         // get ppa null first
         return Ppa::when(
             $userOfficeId,
-            fn($q) => $q->where('office_id', $userOfficeId),
-            fn($q) => $q->whereNull('id'),
+            fn ($q) => $q->where('office_id', $userOfficeId),
+            fn ($q) => $q->whereNull('id'),
         )
             ->where('fiscal_year_id', $prevYearId)
             ->when(
@@ -265,7 +266,7 @@ class PpaController extends Controller
      */
     public function store(StorePpaRequest $request)
     {
-        $this->authorize('create', Ppa::class);
+        Gate::authorize('create', Ppa::class);
 
         $validated = $request->validated();
         $parentId = $validated['parent_id'] ?? null;
@@ -279,7 +280,7 @@ class PpaController extends Controller
 
         if ($parentId) {
             $parent = Ppa::findOrFail($parentId);
-            abort_if(!$showAll && $parent->office_id !== $user->office_id, 403);
+            abort_if(! $showAll && $parent->office_id !== $user->office_id, 403);
             $officeId = $parent->office_id;
         } else {
             $officeId = $showAll ? $validated['office_id'] : $user->office_id;
@@ -333,7 +334,7 @@ class PpaController extends Controller
      */
     public function update(UpdatePpaRequest $request, Ppa $ppa)
     {
-        $this->authorize('update', $ppa);
+        Gate::authorize('update', $ppa);
 
         $validated = $request->validated();
         $ppa->update($validated);
@@ -341,7 +342,7 @@ class PpaController extends Controller
 
     public function move(Request $request, Ppa $ppa)
     {
-        $this->authorize('move', $ppa);
+        Gate::authorize('move', $ppa);
 
         $target = Ppa::findOrFail($request->target_id);
         $direction = $request->direction;
@@ -366,7 +367,7 @@ class PpaController extends Controller
             // 1. Move to new parent with a globally unique temp suffix
             $ppa->update([
                 'parent_id' => $newParentId,
-                'code_suffix' => 'MOVING_' . $ppa->id,
+                'code_suffix' => 'MOVING_'.$ppa->id,
                 'sort_order' => $isSibling
                     ? ($direction === 'top'
                         ? $target->sort_order - 0.5
@@ -420,7 +421,7 @@ class PpaController extends Controller
 
         // Pass 1: Set temporary values to avoid collision with other years/items
         foreach ($siblings as $sibling) {
-            $sibling->update(['code_suffix' => 'TEMP_' . $sibling->id]);
+            $sibling->update(['code_suffix' => 'TEMP_'.$sibling->id]);
         }
 
         // Pass 2: Final sequential numbering (01, 02, 03...)
@@ -462,13 +463,13 @@ class PpaController extends Controller
      */
     public function destroy(Ppa $ppa)
     {
-        $this->authorize('delete', $ppa);
+        Gate::authorize('delete', $ppa);
 
         // Get a flat array of all IDs in this branch (Parent + all children)
         $allIds = $this->getAllDescendantIds($ppa);
 
         // 3. Check for AIP Entry dependencies across the entire branch
-        $hasDependencies = \App\Models\AipEntry::whereIn(
+        $hasDependencies = AipEntry::whereIn(
             'ppa_id',
             $allIds,
         )->exists();
@@ -477,8 +478,7 @@ class PpaController extends Controller
             return redirect()
                 ->back()
                 ->withErrors([
-                    'error' =>
-                        'Cannot delete: This PPA or its sub-items are linked to existing AIP entries.',
+                    'error' => 'Cannot delete: This PPA or its sub-items are linked to existing AIP entries.',
                 ]);
         }
 
@@ -511,12 +511,14 @@ class PpaController extends Controller
             ->back()
             ->with('success', 'PPA and all sub-items deleted successfully.');
     }
+
     private function getAllDescendantIds($ppa, &$ids = [])
     {
         $ids[] = $ppa->id;
         foreach ($ppa->children as $child) {
             $this->getAllDescendantIds($child, $ids);
         }
+
         return $ids;
     }
 
@@ -544,7 +546,7 @@ class PpaController extends Controller
      */
     public function importFromPreviousYear(Request $request)
     {
-        $this->authorize('importLastYearPpa', Ppa::class);
+        Gate::authorize('importLastYearPpa', Ppa::class);
 
         $request->validate([
             'ppa_ids' => 'required|array',
@@ -560,26 +562,26 @@ class PpaController extends Controller
             : $user->office_id;
         $currentFiscalYearId = session('active_fiscal_year_id');
 
-        if (!$currentFiscalYearId) {
+        if (! $currentFiscalYearId) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'No active fiscal year set']);
         }
 
         // Get previous fiscal year by querying the database
-        $currentFiscalYear = \App\Models\FiscalYear::find($currentFiscalYearId);
-        if (!$currentFiscalYear) {
+        $currentFiscalYear = FiscalYear::find($currentFiscalYearId);
+        if (! $currentFiscalYear) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Current fiscal year not found']);
         }
 
-        $previousFiscalYear = \App\Models\FiscalYear::where(
+        $previousFiscalYear = FiscalYear::where(
             'year',
             $currentFiscalYear->year - 1,
         )->first();
 
-        if (!$previousFiscalYear) {
+        if (! $previousFiscalYear) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Previous fiscal year not found']);
@@ -669,14 +671,14 @@ class PpaController extends Controller
             return redirect()
                 ->back()
                 ->withErrors([
-                    'error' => 'Error importing PPAs: ' . $e->getMessage(),
+                    'error' => 'Error importing PPAs: '.$e->getMessage(),
                 ]);
         }
     }
 
     public function setAsPsPool(Ppa $ppa, PSPoolService $poolService)
     {
-        $this->authorize('setPsPool', AipEntry::class);
+        Gate::authorize('setPsPool', AipEntry::class);
 
         try {
             // Find the current pool before we switch

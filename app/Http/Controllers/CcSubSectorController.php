@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CcStrategicPriority;
-use App\Models\CcSubSector;
 use App\Http\Requests\StoreCcSubSectorRequest;
 use App\Http\Requests\UpdateCcSubSectorRequest;
+use App\Models\CcStrategicPriority;
+use App\Models\CcSubSector;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class CcSubSectorController extends Controller
@@ -16,15 +17,15 @@ class CcSubSectorController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', CcSubSector::class);
+        Gate::authorize('viewAny', CcSubSector::class);
 
         return Inertia::render('cc-sub-sector/index', [
             'subSectors' => CcSubSector::with('strategicPriority')->get(),
             'strategicPriorities' => CcStrategicPriority::all(),
             'can' => [
                 'add' => request()->user()->can('create', CcSubSector::class),
-                'edit' => request()->user()->can('update', new CcSubSector()),
-                'delete' => request()->user()->can('delete', new CcSubSector()),
+                'edit' => request()->user()->can('update', new CcSubSector),
+                'delete' => request()->user()->can('delete', new CcSubSector),
             ],
         ]);
     }
@@ -42,7 +43,7 @@ class CcSubSectorController extends Controller
      */
     public function store(StoreCcSubSectorRequest $request)
     {
-        $this->authorize('create', CcSubSector::class);
+        Gate::authorize('create', CcSubSector::class);
 
         CcSubSector::create($request->validated());
 
@@ -72,7 +73,7 @@ class CcSubSectorController extends Controller
         UpdateCcSubSectorRequest $request,
         CcSubSector $ccSubSector,
     ) {
-        $this->authorize('update', $ccSubSector);
+        Gate::authorize('update', $ccSubSector);
 
         $ccSubSector->update($request->validated());
 
@@ -84,7 +85,7 @@ class CcSubSectorController extends Controller
      */
     public function destroy(CcSubSector $ccSubSector)
     {
-        $this->authorize('delete', $ccSubSector);
+        Gate::authorize('delete', $ccSubSector);
 
         try {
             $ccSubSector->delete();
@@ -95,8 +96,7 @@ class CcSubSectorController extends Controller
                 return redirect()
                     ->back()
                     ->withErrors([
-                        'message' =>
-                            'Cannot delete this sub sector because it is linked to existing typologies.',
+                        'message' => 'Cannot delete this sub sector because it is linked to existing typologies.',
                     ]);
             }
 

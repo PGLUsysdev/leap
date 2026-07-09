@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ChartOfAccount;
 use App\Http\Requests\StoreChartOfAccountRequest;
 use App\Http\Requests\UpdateChartOfAccountRequest;
+use App\Models\ChartOfAccount;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class ChartOfAccountController extends Controller
@@ -14,7 +15,7 @@ class ChartOfAccountController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', ChartOfAccount::class);
+        Gate::authorize('viewAny', ChartOfAccount::class);
 
         return Inertia::render('chart-of-account/index', [
             'chartOfAccounts' => ChartOfAccount::all(),
@@ -24,10 +25,10 @@ class ChartOfAccountController extends Controller
                     ->can('create', ChartOfAccount::class),
                 'edit' => request()
                     ->user()
-                    ->can('update', new ChartOfAccount()),
+                    ->can('update', new ChartOfAccount),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new ChartOfAccount()),
+                    ->can('delete', new ChartOfAccount),
             ],
         ]);
     }
@@ -45,7 +46,7 @@ class ChartOfAccountController extends Controller
      */
     public function store(StoreChartOfAccountRequest $request)
     {
-        $this->authorize('create', ChartOfAccount::class);
+        Gate::authorize('create', ChartOfAccount::class);
 
         $validated = $request->validated();
 
@@ -75,7 +76,7 @@ class ChartOfAccountController extends Controller
         UpdateChartOfAccountRequest $request,
         ChartOfAccount $chartOfAccount,
     ) {
-        $this->authorize('update', $chartOfAccount);
+        Gate::authorize('update', $chartOfAccount);
 
         $validated = $request->validated();
 
@@ -87,7 +88,7 @@ class ChartOfAccountController extends Controller
      */
     public function destroy(ChartOfAccount $chartOfAccount)
     {
-        $this->authorize('delete', $chartOfAccount);
+        Gate::authorize('delete', $chartOfAccount);
 
         $chartOfAccount->delete();
     }

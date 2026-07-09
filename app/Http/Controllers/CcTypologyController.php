@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CcTypology;
-use App\Models\CcStrategicPriority;
-use App\Models\CcSubSector;
 use App\Http\Requests\StoreCcTypologyRequest;
 use App\Http\Requests\UpdateCcTypologyRequest;
+use App\Models\CcStrategicPriority;
+use App\Models\CcSubSector;
+use App\Models\CcTypology;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class CcTypologyController extends Controller
@@ -17,7 +18,7 @@ class CcTypologyController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', CcTypology::class);
+        Gate::authorize('viewAny', CcTypology::class);
 
         return Inertia::render('cc-typology/index', [
             // 'ccTypologies' => CcTypology::all(),
@@ -29,8 +30,8 @@ class CcTypologyController extends Controller
             'subSectors' => CcSubSector::all(),
             'can' => [
                 'add' => request()->user()->can('create', CcTypology::class),
-                'edit' => request()->user()->can('update', new CcTypology()),
-                'delete' => request()->user()->can('delete', new CcTypology()),
+                'edit' => request()->user()->can('update', new CcTypology),
+                'delete' => request()->user()->can('delete', new CcTypology),
             ],
         ]);
     }
@@ -48,7 +49,7 @@ class CcTypologyController extends Controller
      */
     public function store(StoreCcTypologyRequest $request)
     {
-        $this->authorize('create', CcTypology::class);
+        Gate::authorize('create', CcTypology::class);
 
         $priority = CcStrategicPriority::findOrFail(
             $request->strategic_priority_id,
@@ -58,11 +59,11 @@ class CcTypologyController extends Controller
             : null;
 
         $code =
-            $request->response_type .
-            $priority->code .
-            ($subSector?->code ?? '1') .
-            $request->category_code .
-            '-' .
+            $request->response_type.
+            $priority->code.
+            ($subSector?->code ?? '1').
+            $request->category_code.
+            '-'.
             str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
 
         try {
@@ -114,7 +115,7 @@ class CcTypologyController extends Controller
         UpdateCcTypologyRequest $request,
         CcTypology $ccTypology,
     ) {
-        $this->authorize('update', $ccTypology);
+        Gate::authorize('update', $ccTypology);
 
         $priority = CcStrategicPriority::findOrFail(
             $request->strategic_priority_id,
@@ -124,11 +125,11 @@ class CcTypologyController extends Controller
             : null;
 
         $code =
-            $request->response_type .
-            $priority->code .
-            ($subSector?->code ?? '1') .
-            $request->category_code .
-            '-' .
+            $request->response_type.
+            $priority->code.
+            ($subSector?->code ?? '1').
+            $request->category_code.
+            '-'.
             str_pad($request->item_num, 2, '0', STR_PAD_LEFT);
 
         try {
@@ -162,7 +163,7 @@ class CcTypologyController extends Controller
      */
     public function destroy(CcTypology $ccTypology)
     {
-        $this->authorize('delete', $ccTypology);
+        Gate::authorize('delete', $ccTypology);
 
         $ccTypology->delete();
 

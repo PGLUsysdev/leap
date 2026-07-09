@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FiscalYear;
-use App\Models\AipEntry;
-use App\Models\Ppa;
-use App\Models\Office;
-use App\Models\Ppmp;
 use App\Http\Requests\StoreFiscalYearRequest;
 use App\Http\Requests\UpdateFiscalYearRequest;
+use App\Models\AipEntry;
+use App\Models\FiscalYear;
+use App\Models\Office;
+use App\Models\Ppmp;
 use App\Models\PpmpSummary;
-use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class FiscalYearController extends Controller
 {
@@ -20,7 +20,7 @@ class FiscalYearController extends Controller
      */
     public function index(Request $request)
     {
-        $this->authorize('viewAny', FiscalYear::class);
+        Gate::authorize('viewAny', FiscalYear::class);
 
         $user = $request->user();
         $canGenerateAppAll = $user->can('generateAppAll', FiscalYear::class);
@@ -36,7 +36,7 @@ class FiscalYearController extends Controller
                 'add' => request()->user()->can('create', FiscalYear::class),
                 'updateStatus' => request()
                     ->user()
-                    ->can('updateStatus', new FiscalYear()),
+                    ->can('updateStatus', new FiscalYear),
                 'showSummaryAll' => $canShowSummaryAll,
                 'showSummaryOwn' => $canShowSummaryOwn,
                 'generateAppAll' => $canGenerateAppAll,
@@ -52,7 +52,7 @@ class FiscalYearController extends Controller
             ) {
                 $id = $request->query('fiscal_year_id'); // fiscal_year_id = 4
 
-                if (!$id) {
+                if (! $id) {
                     return null;
                 }
 
@@ -105,6 +105,7 @@ class FiscalYearController extends Controller
                             $item->{"{$m}_qty"} = $group->sum("{$m}_qty");
                             $item->{"{$m}_amount"} = $group->sum("{$m}_amount");
                         }
+
                         return $item;
                     });
 
@@ -123,13 +124,13 @@ class FiscalYearController extends Controller
 
                             $item->$qtyKey = array_reduce(
                                 $mths,
-                                fn($carry, $m) => $carry +
+                                fn ($carry, $m) => $carry +
                                     (float) $item->{"{$m}_qty"},
                                 0,
                             );
                             $item->$amtKey = array_reduce(
                                 $mths,
-                                fn($carry, $m) => $carry +
+                                fn ($carry, $m) => $carry +
                                     (float) $item->{"{$m}_amount"},
                                 0,
                             );
@@ -176,7 +177,7 @@ class FiscalYearController extends Controller
      */
     public function store(StoreFiscalYearRequest $request)
     {
-        $this->authorize('create', FiscalYear::class);
+        Gate::authorize('create', FiscalYear::class);
 
         FiscalYear::create($request->validated());
     }
@@ -210,7 +211,7 @@ class FiscalYearController extends Controller
     // update fiscal year status
     public function updateStatus(Request $request, FiscalYear $fiscalYear)
     {
-        $this->authorize('updateStatus', $fiscalYear);
+        Gate::authorize('updateStatus', $fiscalYear);
 
         $validated = $request->validate([
             'status' => 'required|string|in:draft,open,locked,archived',

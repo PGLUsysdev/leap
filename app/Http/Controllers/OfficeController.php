@@ -2,16 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Office;
-use App\Models\Sector;
-use App\Models\LguLevel;
-use App\Models\OfficeType;
 use App\Http\Requests\StoreOfficeRequest;
 use App\Http\Requests\UpdateOfficeRequest;
-use Inertia\Inertia;
-use Illuminate\Validation\Rule;
+use App\Models\LguLevel;
+use App\Models\Office;
+use App\Models\OfficeType;
+use App\Models\Sector;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class OfficeController extends Controller
 {
@@ -20,7 +20,7 @@ class OfficeController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', Office::class);
+        Gate::authorize('viewAny', Office::class);
 
         $user = auth()->user();
         $user->loadMissing('role.permissionRoles.permission');
@@ -63,9 +63,15 @@ class OfficeController extends Controller
                 'can' => [
                     'addSubUnit' => $user->can('createSubUnit', $office),
                     'editOffice' => $user->can('updateOffice', $office),
-                    'editSubUnit' => $user->can('updateSubUnit', $office->parent ?? $office),
+                    'editSubUnit' => $user->can(
+                        'updateSubUnit',
+                        $office->parent ?? $office,
+                    ),
                     'deleteOffice' => $user->can('deleteOffice', $office),
-                    'deleteSubUnit' => $user->can('deleteSubUnit', $office->parent ?? $office),
+                    'deleteSubUnit' => $user->can(
+                        'deleteSubUnit',
+                        $office->parent ?? $office,
+                    ),
                 ],
             ];
         };
@@ -97,15 +103,15 @@ class OfficeController extends Controller
     {
         $validated = $request->validated();
 
-        if (!empty($validated['parent_id'])) {
+        if (! empty($validated['parent_id'])) {
             // Find the target parent office they want to add a sub-unit to
             $parentOffice = Office::findOrFail($validated['parent_id']);
 
             // Authorize using the parent office instance
-            $this->authorize('createSubUnit', $parentOffice);
+            Gate::authorize('createSubUnit', $parentOffice);
         } else {
             // No parent_id means it's a main office. Authorize against the class globally.
-            $this->authorize('createOffice', Office::class);
+            Gate::authorize('createOffice', Office::class);
         }
 
         Office::create($validated);
@@ -137,15 +143,15 @@ class OfficeController extends Controller
         Log::info($validated);
 
         // checks if its an office or sub-unit then applies different authorizations
-        if (!empty($validated['parent_id'])) {
+        if (! empty($validated['parent_id'])) {
             // sub-unit
             // find the main office of this sub-unit
             $parentOffice = Office::findOrFail($validated['parent_id']);
 
-            $this->authorize('updateSubUnit', $parentOffice);
+            Gate::authorize('updateSubUnit', $parentOffice);
         } else {
             // office
-            $this->authorize('updateOffice', $office);
+            Gate::authorize('updateOffice', $office);
         }
 
         // Check if account code fields have changed
@@ -178,11 +184,11 @@ class OfficeController extends Controller
     {
         // Log::info($office);
 
-        if (!empty($office['parent_id'])) {
+        if (! empty($office['parent_id'])) {
             $parentOffice = Office::findOrFail($office['parent_id']);
-            $this->authorize('deleteSubUnit', $parentOffice);
+            Gate::authorize('deleteSubUnit', $parentOffice);
         } else {
-            $this->authorize('deleteOffice', $office);
+            Gate::authorize('deleteOffice', $office);
         }
 
         $officeName = $office->name;
@@ -210,11 +216,11 @@ class OfficeController extends Controller
         }
 
         // 3. Construct the message
-        if (!empty($blockers)) {
+        if (! empty($blockers)) {
             $reason =
                 count($blockers) > 1
-                    ? implode(', ', array_slice($blockers, 0, -1)) .
-                        ' and ' .
+                    ? implode(', ', array_slice($blockers, 0, -1)).
+                        ' and '.
                         end($blockers)
                     : $blockers[0];
 

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Ios;
-use App\Models\SalaryStandard;
 use App\Http\Requests\StoreIosRequest;
 use App\Http\Requests\UpdateIosRequest;
+use App\Models\FiscalYear;
+use App\Models\Ios;
+use App\Models\SalaryStandard;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class IosController extends Controller
@@ -15,9 +17,9 @@ class IosController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', Ios::class);
+        Gate::authorize('viewAny', Ios::class);
 
-        $activeYear = \App\Models\FiscalYear::find(
+        $activeYear = FiscalYear::find(
             request()->session()->get('active_fiscal_year_id'),
         );
 
@@ -40,8 +42,8 @@ class IosController extends Controller
             'salaryGrades' => $salaryGrades,
             'can' => [
                 'add' => request()->user()->can('create', Ios::class),
-                'edit' => request()->user()->can('update', new Ios()),
-                'delete' => request()->user()->can('delete', new Ios()),
+                'edit' => request()->user()->can('update', new Ios),
+                'delete' => request()->user()->can('delete', new Ios),
             ],
         ]);
     }
@@ -59,7 +61,7 @@ class IosController extends Controller
      */
     public function store(StoreIosRequest $request)
     {
-        $this->authorize('create', Ios::class);
+        Gate::authorize('create', Ios::class);
 
         Ios::create($request->validated());
 
@@ -87,7 +89,7 @@ class IosController extends Controller
      */
     public function update(UpdateIosRequest $request, Ios $ios)
     {
-        $this->authorize('update', $ios);
+        Gate::authorize('update', $ios);
 
         $ios->update($request->validated());
 
@@ -99,7 +101,7 @@ class IosController extends Controller
      */
     public function destroy(Ios $ios)
     {
-        $this->authorize('delete', $ios);
+        Gate::authorize('delete', $ios);
 
         $ios->delete();
 

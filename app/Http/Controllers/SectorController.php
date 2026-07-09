@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sector;
 use App\Http\Requests\StoreSectorRequest;
 use App\Http\Requests\UpdateSectorRequest;
+use App\Models\Sector;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class SectorController extends Controller
@@ -14,14 +15,14 @@ class SectorController extends Controller
      */
     public function index()
     {
-        $this->authorize('viewAny', Sector::class);
+        Gate::authorize('viewAny', Sector::class);
 
         return Inertia::render('sector/index', [
             'sectors' => Sector::all(),
             'can' => [
                 'add' => request()->user()->can('create', Sector::class),
-                'edit' => request()->user()->can('update', new Sector()),
-                'delete' => request()->user()->can('delete', new Sector()),
+                'edit' => request()->user()->can('update', new Sector),
+                'delete' => request()->user()->can('delete', new Sector),
             ],
         ]);
     }
@@ -39,7 +40,7 @@ class SectorController extends Controller
      */
     public function store(StoreSectorRequest $request)
     {
-        $this->authorize('create', Sector::class);
+        Gate::authorize('create', Sector::class);
 
         $validated = $request->validated();
 
@@ -67,7 +68,7 @@ class SectorController extends Controller
      */
     public function update(UpdateSectorRequest $request, Sector $sector)
     {
-        $this->authorize('update', $sector);
+        Gate::authorize('update', $sector);
 
         $validated = $request->validated();
 
@@ -79,12 +80,11 @@ class SectorController extends Controller
      */
     public function destroy(Sector $sector)
     {
-        $this->authorize('delete', $sector);
+        Gate::authorize('delete', $sector);
 
         if ($sector->offices()->exists()) {
             return back()->withErrors([
-                'message' =>
-                    'Cannot delete this sector because it is currently assigned to one or more offices.',
+                'message' => 'Cannot delete this sector because it is currently assigned to one or more offices.',
             ]);
         }
 

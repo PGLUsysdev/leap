@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ppmp;
 use App\Models\SupplementalAip;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class SupplementalAipController extends Controller
 {
     public function store(Request $request)
     {
-        $this->authorize('create', SupplementalAip::class);
+        Gate::authorize('create', SupplementalAip::class);
 
         $validated = $request->validate([
             'fiscal_year_id' => 'required|exists:fiscal_years,id',
@@ -36,7 +38,7 @@ class SupplementalAipController extends Controller
             ->where('office_id', $officeId)
             ->count();
 
-        $name = 'Supplemental AIP No. ' . ($count + 1);
+        $name = 'Supplemental AIP No. '.($count + 1);
 
         $saip = SupplementalAip::create([
             'fiscal_year_id' => $validated['fiscal_year_id'],
@@ -52,13 +54,13 @@ class SupplementalAipController extends Controller
         $fiscalYearId = $supplementalAip->fiscal_year_id;
         $officeId = $supplementalAip->office_id;
 
-        $this->authorize('delete', $supplementalAip);
+        Gate::authorize('delete', $supplementalAip);
 
         DB::transaction(function () use ($supplementalAip) {
             $fundingSourceIds = $supplementalAip
                 ->ppaFundingSources()
                 ->pluck('id');
-            \App\Models\Ppmp::whereIn(
+            Ppmp::whereIn(
                 'ppa_funding_source_id',
                 $fundingSourceIds,
             )->delete();
@@ -75,15 +77,19 @@ class SupplementalAipController extends Controller
             ->first();
 
         if ($latestSaip) {
-            return redirect()->route('aip.summary', [
-                'fiscalYear' => $fiscalYearId,
-                'scope' => 'supplemental',
-                'supplemental_aip_id' => $latestSaip->id,
-            ])->with('success', 'Supplemental AIP deleted successfully.');
+            return redirect()
+                ->route('aip.summary', [
+                    'fiscalYear' => $fiscalYearId,
+                    'scope' => 'supplemental',
+                    'supplemental_aip_id' => $latestSaip->id,
+                ])
+                ->with('success', 'Supplemental AIP deleted successfully.');
         }
 
-        return redirect()->route('aip.summary', [
-            'fiscalYear' => $fiscalYearId,
-        ])->with('success', 'Supplemental AIP deleted successfully.');
+        return redirect()
+            ->route('aip.summary', [
+                'fiscalYear' => $fiscalYearId,
+            ])
+            ->with('success', 'Supplemental AIP deleted successfully.');
     }
 }

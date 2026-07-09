@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\AipEntry;
 use App\Models\ChartOfAccount;
 use App\Models\FiscalYear;
+use App\Models\Office;
 use App\Models\Position;
+use App\Models\Ppa;
 use App\Models\PpaFundingSource;
 use App\Models\PsBreakdownItem;
 use App\Models\PsRate;
-use App\Models\Ppa;
 use App\Models\SalaryStandard;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 class PsBreakdownController extends Controller
@@ -103,7 +105,7 @@ class PsBreakdownController extends Controller
         int $budgetFyId,
     ): array {
         $budgetFy = FiscalYear::find($budgetFyId);
-        if (!$budgetFy) {
+        if (! $budgetFy) {
             return [];
         }
 
@@ -133,12 +135,12 @@ class PsBreakdownController extends Controller
             $sg = $pos->ios?->salary_grade;
 
             $currentStd = $salaryStandards->firstWhere(
-                fn($s) => $s->fiscal_year_id == $currentFy?->id &&
+                fn ($s) => $s->fiscal_year_id == $currentFy?->id &&
                     $s->salary_grade == $sg &&
                     $s->step_increment == $step,
             );
             $budgetStd = $salaryStandards->firstWhere(
-                fn($s) => $s->fiscal_year_id == $budgetFyId &&
+                fn ($s) => $s->fiscal_year_id == $budgetFyId &&
                     $s->salary_grade == $sg &&
                     $s->step_increment == $step,
             );
@@ -168,7 +170,7 @@ class PsBreakdownController extends Controller
     ): void {
         $ppa = $aipEntry->ppa;
 
-        if (!$ppa || !$ppa->is_ps_pool) {
+        if (! $ppa || ! $ppa->is_ps_pool) {
             return;
         }
 
@@ -196,8 +198,8 @@ class PsBreakdownController extends Controller
             ->where('id', '!=', $gfSource->id)
             ->when(
                 $saipId,
-                fn($q) => $q->where('supplemental_aip_id', $saipId),
-                fn($q) => $q->whereNull('supplemental_aip_id'),
+                fn ($q) => $q->where('supplemental_aip_id', $saipId),
+                fn ($q) => $q->whereNull('supplemental_aip_id'),
             )
             ->update(['ps_amount' => 0]);
     }
@@ -209,16 +211,16 @@ class PsBreakdownController extends Controller
     public static function recalculateOfficePsAmounts(int $officeId): void
     {
         $draftYear = FiscalYear::where('status', 'draft')->first();
-        if (!$draftYear) {
+        if (! $draftYear) {
             return;
         }
 
-        $psPoolPpa = \App\Models\Ppa::where('office_id', $officeId)
+        $psPoolPpa = Ppa::where('office_id', $officeId)
             ->where('fiscal_year_id', $draftYear->id)
             ->where('is_ps_pool', true)
             ->first();
 
-        if (!$psPoolPpa) {
+        if (! $psPoolPpa) {
             return;
         }
 
@@ -229,7 +231,7 @@ class PsBreakdownController extends Controller
 
     public function index($fiscalYear, $aipEntry)
     {
-        $this->authorize('viewAny', PsBreakdownItem::class);
+        Gate::authorize('viewAny', PsBreakdownItem::class);
 
         AipEntry::findOrFail($aipEntry);
         $fy = FiscalYear::findOrFail($fiscalYear);
@@ -286,12 +288,12 @@ class PsBreakdownController extends Controller
                     $sg = $pos->ios?->salary_grade;
 
                     $currentStd = $salaryStandards->firstWhere(
-                        fn($s) => $s->fiscal_year_id == $currentFy?->id &&
+                        fn ($s) => $s->fiscal_year_id == $currentFy?->id &&
                             $s->salary_grade == $sg &&
                             $s->step_increment == $step,
                     );
                     $budgetStd = $salaryStandards->firstWhere(
-                        fn($s) => $s->fiscal_year_id == $budgetFyId &&
+                        fn ($s) => $s->fiscal_year_id == $budgetFyId &&
                             $s->salary_grade == $sg &&
                             $s->step_increment == $step,
                     );
@@ -328,8 +330,8 @@ class PsBreakdownController extends Controller
             'positions' => $positions,
             'annualRateMap' => $annualRateMap,
             'officeId' => $officeId,
-            'offices' => \App\Models\Office::all(['id', 'name', 'acronym']),
-            'fiscalYears' => \App\Models\FiscalYear::all(['id', 'year']),
+            'offices' => Office::all(['id', 'name', 'acronym']),
+            'fiscalYears' => FiscalYear::all(['id', 'year']),
             'can' => [
                 'export' => request()
                     ->user()
@@ -349,7 +351,7 @@ class PsBreakdownController extends Controller
 
         $coa = ChartOfAccount::findOrFail($validated['chart_of_account_id']);
 
-        if (!$coa->is_manual) {
+        if (! $coa->is_manual) {
             $autoValues = $this->computeAutoPsValues(
                 $validated['ppa_funding_source_id'],
                 [],
@@ -385,6 +387,7 @@ class PsBreakdownController extends Controller
         $ppaFundingSourceId = $psBreakdownItem->ppa_funding_source_id;
         $psBreakdownItem->delete();
         $this->syncPsAmount($ppaFundingSourceId);
+
         return redirect()->back();
     }
 
@@ -423,12 +426,12 @@ class PsBreakdownController extends Controller
                 $step = $pos->user?->step ?? 1;
                 $sg = $pos->ios?->salary_grade;
                 $currentStd = $salaryStandards->firstWhere(
-                    fn($s) => $s->fiscal_year_id == $currentFy?->id &&
+                    fn ($s) => $s->fiscal_year_id == $currentFy?->id &&
                         $s->salary_grade == $sg &&
                         $s->step_increment == $step,
                 );
                 $budgetStd = $salaryStandards->firstWhere(
-                    fn($s) => $s->fiscal_year_id == $budgetFyId &&
+                    fn ($s) => $s->fiscal_year_id == $budgetFyId &&
                         $s->salary_grade == $sg &&
                         $s->step_increment == $step,
                 );
@@ -453,7 +456,7 @@ class PsBreakdownController extends Controller
                 'account_number',
                 $accountNumber,
             )->first();
-            if (!$coa) {
+            if (! $coa) {
                 continue;
             }
             PsBreakdownItem::updateOrCreate(
@@ -470,6 +473,7 @@ class PsBreakdownController extends Controller
         }
 
         $this->syncPsAmount($ppaFundingSourceId);
+
         return redirect()->back();
     }
 
