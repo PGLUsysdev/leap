@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\PlantillaPosition;
 use App\Http\Requests\StorePlantillaPositionRequest;
 use App\Http\Requests\UpdatePlantillaPositionRequest;
+use App\Models\FiscalYear;
+use App\Models\GovSalarySchedule;
+use App\Models\Office;
+use App\Models\PlantillaPosition;
 use Inertia\Inertia;
 
 class PlantillaPositionController extends Controller
@@ -16,9 +19,9 @@ class PlantillaPositionController extends Controller
     {
         return Inertia::render('plantilla-position/index', [
             'plantillaPositions' => PlantillaPosition::with(['office', 'fiscalYear'])->get(),
-            'offices' => \App\Models\Office::all(['id', 'name', 'acronym']),
-            'fiscalYears' => \App\Models\FiscalYear::all(['id', 'year']),
-            'govSalarySchedules' => \App\Models\GovSalarySchedule::all(['fiscal_year_id', 'salary_grade', 'step', 'annual_rate']),
+            'offices' => Office::all(['id', 'name', 'acronym']),
+            'fiscalYears' => FiscalYear::all(['id', 'year']),
+            'govSalarySchedules' => GovSalarySchedule::all(['fiscal_year_id', 'salary_grade', 'step', 'annual_rate']),
         ]);
     }
 

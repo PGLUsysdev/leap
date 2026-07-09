@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateOfficeTypeRequest extends FormRequest
@@ -17,7 +18,7 @@ class UpdateOfficeTypeRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -29,7 +30,7 @@ class UpdateOfficeTypeRequest extends FormRequest
                 'string',
                 'max:2',
                 // Ignore current ID so validation doesn't fail on the record being edited
-                'unique:office_types,code,' .
+                'unique:office_types,code,'.
                 ($officeType ? $officeType->id : 'NULL'),
             ],
             'name' => ['required', 'string', 'max:50'],

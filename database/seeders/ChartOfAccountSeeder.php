@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\ChartOfAccount;
+use Illuminate\Database\Seeder;
 
 class ChartOfAccountSeeder extends Seeder
 {
@@ -419,8 +418,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-03-080',
-                'account_title' =>
-                    'Medical, Dental and Laboratory Supplies Expenses',
+                'account_title' => 'Medical, Dental and Laboratory Supplies Expenses',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -447,8 +445,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-03-110',
-                'account_title' =>
-                    'Textbooks and Instructional Materials Expenses',
+                'account_title' => 'Textbooks and Instructional Materials Expenses',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -457,8 +454,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-03-120',
-                'account_title' =>
-                    'Military, Police and Traffic Supplies Expenses',
+                'account_title' => 'Military, Police and Traffic Supplies Expenses',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -476,8 +472,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-03-210',
-                'account_title' =>
-                    'Semi-Expendable Machinery and Equipment Expenses',
+                'account_title' => 'Semi-Expendable Machinery and Equipment Expenses',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -486,8 +481,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-03-220',
-                'account_title' =>
-                    'Semi-Expendable Furniture, Fixtures and Books Expenses',
+                'account_title' => 'Semi-Expendable Furniture, Fixtures and Books Expenses',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -550,8 +544,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-05-040',
-                'account_title' =>
-                    'Cable, Satellite, Telegraph and Radio Expenses',
+                'account_title' => 'Cable, Satellite, Telegraph and Radio Expenses',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -587,8 +580,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-07-020',
-                'account_title' =>
-                    'Research, Exploration and Development Expense',
+                'account_title' => 'Research, Exploration and Development Expense',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -615,8 +607,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-09-010',
-                'account_title' =>
-                    'Generation, Transmission and Distribution Expenses',
+                'account_title' => 'Generation, Transmission and Distribution Expenses',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -724,8 +715,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-13-010',
-                'account_title' =>
-                    'Repair and Maintenance - Investment Property',
+                'account_title' => 'Repair and Maintenance - Investment Property',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -743,8 +733,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-13-030',
-                'account_title' =>
-                    'Repair and Maintenance - Infrastructure Asset',
+                'account_title' => 'Repair and Maintenance - Infrastructure Asset',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -753,8 +742,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-13-040',
-                'account_title' =>
-                    'Repair and Maintenance - Buildings and Other Structures',
+                'account_title' => 'Repair and Maintenance - Buildings and Other Structures',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -763,8 +751,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-13-050',
-                'account_title' =>
-                    'Repair and Maintenance - Machinery and Equipment',
+                'account_title' => 'Repair and Maintenance - Machinery and Equipment',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -773,8 +760,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-13-060',
-                'account_title' =>
-                    'Repair and Maintenance - Transportation Equipment',
+                'account_title' => 'Repair and Maintenance - Transportation Equipment',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -783,8 +769,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-13-070',
-                'account_title' =>
-                    'Repair and Maintenance - Furniture and Fixtures',
+                'account_title' => 'Repair and Maintenance - Furniture and Fixtures',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -802,8 +787,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-13-090',
-                'account_title' =>
-                    'Repair and Maintenance - Leased Assets Improvements',
+                'account_title' => 'Repair and Maintenance - Leased Assets Improvements',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -812,8 +796,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-13-990',
-                'account_title' =>
-                    'Repair and Maintenance - Other Property, Plant & Equipment',
+                'account_title' => 'Repair and Maintenance - Other Property, Plant & Equipment',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -849,8 +832,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-14-070',
-                'account_title' =>
-                    'Subsidy to General Fund Proper/Special accounts',
+                'account_title' => 'Subsidy to General Fund Proper/Special accounts',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -859,8 +841,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-14-080',
-                'account_title' =>
-                    'Subsidy to Local Economic Enterprise / Public Utilities',
+                'account_title' => 'Subsidy to Local Economic Enterprise / Public Utilities',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -878,8 +859,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-15-010',
-                'account_title' =>
-                    'Transfers of Unspent Current Year DRRM funds to Trust Fund',
+                'account_title' => 'Transfers of Unspent Current Year DRRM funds to Trust Fund',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -888,8 +868,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-15-020',
-                'account_title' =>
-                    'Transfers for Project Equity Share / LGU Counterpart',
+                'account_title' => 'Transfers for Project Equity Share / LGU Counterpart',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -943,8 +922,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '5-02-99-030',
-                'account_title' =>
-                    'Representation Expenses (ex. meals and snacks)',
+                'account_title' => 'Representation Expenses (ex. meals and snacks)',
                 'expense_class' => 'MOOE',
                 'account_series' => null,
                 'parent_number' => null,
@@ -1198,8 +1176,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'account_number' => '1-07-05-030',
-                'account_title' =>
-                    'Information and Communication Technology Equip.',
+                'account_title' => 'Information and Communication Technology Equip.',
                 'expense_class' => 'CO',
                 'account_series' => null,
                 'parent_number' => null,

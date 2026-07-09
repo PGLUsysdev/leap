@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\FiscalYear;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class FiscalYearPolicy
 {
@@ -15,6 +14,7 @@ class FiscalYearPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('fiscal-year.view');
     }
 
@@ -33,6 +33,7 @@ class FiscalYearPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('fiscal-year.create');
     }
 
@@ -43,6 +44,7 @@ class FiscalYearPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('fiscal-year.edit');
     }
 
@@ -58,6 +60,7 @@ class FiscalYearPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('fiscal-year.edit.status');
     }
 
@@ -65,6 +68,7 @@ class FiscalYearPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('fiscal-year.generate-app.all');
     }
 
@@ -72,6 +76,7 @@ class FiscalYearPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('fiscal-year.generate-app.own');
     }
 

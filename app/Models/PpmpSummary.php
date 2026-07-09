@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Database\Factories\PpmpSummaryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class PpmpSummary extends Model
 {
-    /** @use HasFactory<\Database\Factories\PpmpSummaryFactory> */
+    /** @use HasFactory<PpmpSummaryFactory> */
     use HasFactory;
 }

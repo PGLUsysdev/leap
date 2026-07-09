@@ -2,13 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Office;
+use App\Models\Position;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
-use App\Models\User;
-use App\Models\Role;
-use App\Models\Position;
-use App\Models\Office;
 
 class UserSeeder extends Seeder
 {

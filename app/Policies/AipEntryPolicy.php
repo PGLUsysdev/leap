@@ -6,7 +6,6 @@ use App\Models\AipEntry;
 use App\Models\Office;
 use App\Models\Ppa;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class AipEntryPolicy
 {
@@ -14,6 +13,7 @@ class AipEntryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('aip-summary.view');
     }
 
@@ -32,7 +32,7 @@ class AipEntryPolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        if (!$permissions->contains('aip-summary.edit')) {
+        if (! $permissions->contains('aip-summary.edit')) {
             return false;
         }
 
@@ -52,7 +52,7 @@ class AipEntryPolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        if (!$permissions->contains('aip-summary.delete')) {
+        if (! $permissions->contains('aip-summary.delete')) {
             return false;
         }
 
@@ -72,7 +72,7 @@ class AipEntryPolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        if (!$permissions->contains('aip-summary.edit.funding-source')) {
+        if (! $permissions->contains('aip-summary.edit.funding-source')) {
             return false;
         }
 
@@ -92,7 +92,7 @@ class AipEntryPolicy
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        if (!$permissions->contains('aip-summary.import')) {
+        if (! $permissions->contains('aip-summary.import')) {
             return false;
         }
 
@@ -103,7 +103,7 @@ class AipEntryPolicy
 
         $allowedOfficeIds = $this->getOfficeHierarchyIds($user->office_id);
 
-        return !Ppa::whereIn('id', $ppaIds)
+        return ! Ppa::whereIn('id', $ppaIds)
             ->whereNotIn('office_id', $allowedOfficeIds)
             ->exists();
     }
@@ -112,6 +112,7 @@ class AipEntryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('aip-summary.show.all');
     }
 
@@ -119,6 +120,7 @@ class AipEntryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('aip-summary.show.own');
     }
 
@@ -126,6 +128,7 @@ class AipEntryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('aip-summary.export');
     }
 
@@ -133,6 +136,7 @@ class AipEntryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('aip-summary.set.ps-pool');
     }
 
@@ -150,6 +154,7 @@ class AipEntryPolicy
     {
         $officeIds = [$officeId];
         $childOfficeIds = $this->getChildOfficeIds($officeId);
+
         return array_merge($officeIds, $childOfficeIds);
     }
 
@@ -177,7 +182,7 @@ class AipEntryPolicy
 
         while ($current) {
             $parentId = Office::where('id', $current)->value('parent_id');
-            if (!$parentId) {
+            if (! $parentId) {
                 break;
             }
             $ids[] = $parentId;

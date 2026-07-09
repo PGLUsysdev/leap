@@ -1,15 +1,11 @@
-import { useState } from "react";
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import type { FundingSource } from "@/types";
-import { Button } from "@/components/ui/button";
-import FormDialog from "@/pages/funding-source/form-dialog";
-import { DeleteDialog } from "@/components/delete-dialog";
-import { router } from "@inertiajs/react";
-import { DataTable } from "@/components/data-table";
-import columns from "./columns/columns";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Funding Source", href: "#" }];
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { Button } from '@/components/ui/button';
+import FormDialog from '@/pages/funding-source/form-dialog';
+import type { FundingSource } from '@/types';
+import columns from './columns/columns';
 
 interface FundingSourcePageProps {
     fundingSources: FundingSource[];
@@ -20,13 +16,16 @@ interface FundingSourcePageProps {
     };
 }
 
-export default function FundingSourcePage({ fundingSources, can }: FundingSourcePageProps) {
+export default function FundingSourcePage({
+    fundingSources,
+    can,
+}: FundingSourcePageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedSource, setSelectedSource] = useState<FundingSource | null>(null);
+    const [selectedSource, setSelectedSource] = useState<FundingSource | null>(
+        null,
+    );
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    console.log(selectedSource);
 
     function handleAdd() {
         setSelectedSource(null);
@@ -35,7 +34,10 @@ export default function FundingSourcePage({ fundingSources, can }: FundingSource
 
     function handleDialogOpenChange(isOpen: boolean) {
         setOpen(isOpen);
-        if (!isOpen) setSelectedSource(null);
+
+        if (!isOpen) {
+            setSelectedSource(null);
+        }
     }
 
     function handleEdit(source: FundingSource) {
@@ -69,7 +71,7 @@ export default function FundingSourcePage({ fundingSources, can }: FundingSource
     const cols = columns(can?.edit ?? false, can?.delete ?? false);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={cols}
@@ -81,13 +83,19 @@ export default function FundingSourcePage({ fundingSources, can }: FundingSource
                 >
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add Funding Source</Button>
+                            <Button onClick={handleAdd}>
+                                Add Funding Source
+                            </Button>
                         </div>
                     )}
                 </DataTable>
             </div>
 
-            <FormDialog open={open} setOpen={handleDialogOpenChange} initialData={selectedSource} />
+            <FormDialog
+                open={open}
+                setOpen={handleDialogOpenChange}
+                initialData={selectedSource}
+            />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
@@ -95,8 +103,10 @@ export default function FundingSourcePage({ fundingSources, can }: FundingSource
                 title="Delete Funding Source?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">"{selectedSource?.title}"</span>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedSource?.title}"
+                        </span>
                         ?
                     </>
                 }
@@ -107,6 +117,10 @@ export default function FundingSourcePage({ fundingSources, can }: FundingSource
                 }}
                 isLoading={isLoading}
             />
-        </AppLayout>
+        </>
     );
 }
+
+FundingSourcePage.layout = {
+    breadcrumbs: [{ title: 'Funding Source', href: '#' }],
+};

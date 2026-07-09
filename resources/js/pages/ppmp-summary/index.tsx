@@ -1,9 +1,8 @@
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { DataTable } from '@/components/data-table';
-import { getPriceListColumns } from './columns/columns';
+// import { type BreadcrumbItem } from '@/types';
 import { useMemo } from 'react';
-import { index } from '@/routes/aip';
+import { DataTable } from '@/components/data-table';
+import { index as aipIndex } from '@/routes/aip';
+import { getPriceListColumns } from './columns/columns';
 
 interface PpmpSummaryPageProps {
     priceLists: any[];
@@ -12,14 +11,9 @@ interface PpmpSummaryPageProps {
 
 export default function PpmpSummaryPage({
     priceLists,
-    fiscalYear: _fiscalYear,
+    fiscalYear: fiscalYear,
 }: PpmpSummaryPageProps) {
     // console.log(priceLists);
-
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Annual Investment Programs', href: index().url },
-        { title: `PPMP Summary for ${_fiscalYear?.year}`, href: '#' },
-    ];
 
     const columns = useMemo(
         () => getPriceListColumns(priceLists),
@@ -27,7 +21,7 @@ export default function PpmpSummaryPage({
     );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div
                 // className="flex flex-col gap-4 p-4"
                 className="pt-4"
@@ -40,6 +34,13 @@ export default function PpmpSummaryPage({
                     negativeHeight={7}
                 />
             </div>
-        </AppLayout>
+        </>
     );
 }
+
+PpmpSummaryPage.layout = {
+    breadcrumbs: [
+        { title: 'Annual Investment Programs', href: aipIndex() },
+        { title: `PPMP Summary`, href: '#' },
+    ],
+};

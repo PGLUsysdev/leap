@@ -4,8 +4,6 @@ namespace App\Policies;
 
 use App\Models\Office;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OfficePolicy
 {
@@ -44,6 +42,7 @@ class OfficePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('office.create.office');
     }
 
@@ -84,6 +83,7 @@ class OfficePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('office.delete.office');
     }
 
@@ -91,6 +91,7 @@ class OfficePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('office.delete.sub-unit.all') ||
             ($permissions->contains('office.delete.sub-unit.own') && $user->office_id === $parentOffice->id);
     }

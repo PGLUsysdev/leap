@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Ios;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class IosPolicy
 {
@@ -15,6 +14,7 @@ class IosPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ios.view');
     }
 
@@ -33,6 +33,7 @@ class IosPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ios.add');
     }
 
@@ -43,6 +44,7 @@ class IosPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ios.edit');
     }
 
@@ -53,6 +55,7 @@ class IosPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ios.delete');
     }
 

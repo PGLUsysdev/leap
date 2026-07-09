@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use App\Models\Ppa;
 use App\Models\Office;
+use App\Models\Ppa;
+use Illuminate\Database\Seeder;
 
 class PpaSeeder extends Seeder
 {
@@ -16,10 +15,11 @@ class PpaSeeder extends Seeder
     {
         $office = Office::find(18);
 
-        if (!$office) {
+        if (! $office) {
             $this->command->error(
                 'No Office found. Please seed offices first.',
             );
+
             return;
         }
 
@@ -38,8 +38,7 @@ class PpaSeeder extends Seeder
                 'type' => 'Program',
                 'children' => [
                     [
-                        'name' =>
-                            'Development, Deployment, and Maintenance of Information Systems',
+                        'name' => 'Development, Deployment, and Maintenance of Information Systems',
                         'type' => 'Project',
                     ],
                     [
@@ -47,8 +46,7 @@ class PpaSeeder extends Seeder
                         'type' => 'Project',
                     ],
                     [
-                        'name' =>
-                            'PGLU Infrastructure and Connectivity Management',
+                        'name' => 'PGLU Infrastructure and Connectivity Management',
                         'type' => 'Project',
                     ],
                     [
@@ -72,13 +70,11 @@ class PpaSeeder extends Seeder
                 'type' => 'Program',
                 'children' => [
                     [
-                        'name' =>
-                            'AgriDigitization (Agri-Marketplace) LU Ordinance No. 423-2023 SP Resolution 194-2022',
+                        'name' => 'AgriDigitization (Agri-Marketplace) LU Ordinance No. 423-2023 SP Resolution 194-2022',
                         'type' => 'Project',
                     ],
                     [
-                        'name' =>
-                            'La Union ICT Council (LUICTC) LU Ordinance No. 443-2024',
+                        'name' => 'La Union ICT Council (LUICTC) LU Ordinance No. 443-2024',
                         'type' => 'Project',
                     ],
                 ],
@@ -90,13 +86,11 @@ class PpaSeeder extends Seeder
                 'type' => 'Program',
                 'children' => [
                     [
-                        'name' =>
-                            'Capacity Development Program for ICTU Personnel and Attendance to ICT Commits, Conferences, and Awarding Ceremony',
+                        'name' => 'Capacity Development Program for ICTU Personnel and Attendance to ICT Commits, Conferences, and Awarding Ceremony',
                         'type' => 'Project',
                     ],
                     [
-                        'name' =>
-                            'Conduct of Benchmarking and Best ICT Sharing',
+                        'name' => 'Conduct of Benchmarking and Best ICT Sharing',
                         'type' => 'Project',
                     ],
                 ],
@@ -431,9 +425,8 @@ class PpaSeeder extends Seeder
                         Ppa::create([
                             'office_id' => $office->id,
                             'parent_id' => $project->id,
-                            'name' =>
-                                "Mock Activity $k for " .
-                                substr($projectData['name'], 0, 30) .
+                            'name' => "Mock Activity $k for ".
+                                substr($projectData['name'], 0, 30).
                                 '...',
                             'type' => 'Activity',
                             'code_suffix' => str_pad($k, 2, '0', STR_PAD_LEFT),

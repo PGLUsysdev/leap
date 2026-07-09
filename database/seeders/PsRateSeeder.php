@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\PsRate;
 use App\Models\FiscalYear;
+use App\Models\PsRate;
+use Illuminate\Database\Seeder;
 
 class PsRateSeeder extends Seeder
 {
@@ -12,10 +12,11 @@ class PsRateSeeder extends Seeder
     {
         $fiscalYear = FiscalYear::where('year', 2027)->first();
 
-        if (!$fiscalYear) {
+        if (! $fiscalYear) {
             $this->command->error(
                 'Fiscal year 2027 not found. Please create it first.',
             );
+
             return;
         }
 
@@ -49,6 +50,6 @@ class PsRateSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('PS Rates seeded for FY ' . $fiscalYear->year);
+        $this->command->info('PS Rates seeded for FY '.$fiscalYear->year);
     }
 }

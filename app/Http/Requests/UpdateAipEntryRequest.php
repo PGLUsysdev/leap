@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateAipEntryRequest extends FormRequest
@@ -17,7 +18,7 @@ class UpdateAipEntryRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -27,8 +28,7 @@ class UpdateAipEntryRequest extends FormRequest
             'start_date' => 'sometimes|required|date',
             'end_date' => 'sometimes|required|date',
             'ppa_funding_sources' => 'nullable|array',
-            'ppa_funding_sources.*.funding_source_id' =>
-                'required|exists:funding_sources,id',
+            'ppa_funding_sources.*.funding_source_id' => 'required|exists:funding_sources,id',
             // Validate amounts are numeric even if sent as strings
             'ppa_funding_sources.*.ps_amount' => 'required|numeric',
             'ppa_funding_sources.*.mooe_amount' => 'required|numeric',
@@ -36,8 +36,7 @@ class UpdateAipEntryRequest extends FormRequest
             'ppa_funding_sources.*.co_amount' => 'required|numeric',
             'ppa_funding_sources.*.ccet_adaptation' => 'nullable|numeric',
             'ppa_funding_sources.*.ccet_mitigation' => 'nullable|numeric',
-            'ppa_funding_sources.*.cc_typology_id' =>
-                'nullable|exists:cc_typologies,id',
+            'ppa_funding_sources.*.cc_typology_id' => 'nullable|exists:cc_typologies,id',
             'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
         ];
     }

@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\LguLevel;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\LguLevel>
+ * @extends Factory<LguLevel>
  */
 class LguLevelFactory extends Factory
 {

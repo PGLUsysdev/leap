@@ -1,15 +1,11 @@
-import { useState } from "react";
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import type { ChartOfAccount } from "@/types";
-import { Button } from "@/components/ui/button";
-import FormDialog from "@/pages/chart-of-account/form-dialog";
-import { DeleteDialog } from "@/components/delete-dialog";
-import { router } from "@inertiajs/react";
-import { DataTable } from "@/components/data-table";
-import columns from "./columns/columns";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Chart of Accounts", href: "#" }];
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { Button } from '@/components/ui/button';
+import FormDialog from '@/pages/chart-of-account/form-dialog';
+import type { ChartOfAccount } from '@/types';
+import columns from './columns/columns';
 
 interface ChartOfAccountPageProps {
     chartOfAccounts: ChartOfAccount[];
@@ -20,13 +16,15 @@ interface ChartOfAccountPageProps {
     };
 }
 
-export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAccountPageProps) {
+export default function ChartOfAccountPage({
+    chartOfAccounts,
+    can,
+}: ChartOfAccountPageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedAccount, setSelectedAccount] = useState<ChartOfAccount | null>(null);
+    const [selectedAccount, setSelectedAccount] =
+        useState<ChartOfAccount | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    console.log(selectedAccount);
 
     function handleAdd() {
         setSelectedAccount(null);
@@ -35,7 +33,10 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
 
     function handleDialogOpenChange(isOpen: boolean) {
         setOpen(isOpen);
-        if (!isOpen) setSelectedAccount(null);
+
+        if (!isOpen) {
+            setSelectedAccount(null);
+        }
     }
 
     function handleEdit(account: ChartOfAccount) {
@@ -70,7 +71,7 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
     const cols = columns(can?.edit ?? false, can?.delete ?? false);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={cols}
@@ -82,7 +83,9 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
                 >
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add Chart of Account</Button>
+                            <Button onClick={handleAdd}>
+                                Add Chart of Account
+                            </Button>
                         </div>
                     )}
                 </DataTable>
@@ -100,7 +103,7 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
                 title="Delete Chart of Account?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
+                        Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
                             "{selectedAccount?.account_title}"
                         </span>
@@ -114,6 +117,10 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
                 }}
                 isLoading={isLoading}
             />
-        </AppLayout>
+        </>
     );
 }
+
+ChartOfAccountPage.layout = {
+    breadcrumbs: [{ title: 'Chart of Accounts', href: '#' }],
+};

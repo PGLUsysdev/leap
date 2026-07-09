@@ -1,15 +1,11 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import FormDialog from "./form-dialog";
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import { DeleteDialog } from "@/components/delete-dialog";
-import { router } from "@inertiajs/react";
-import type { LguLevel } from "@/types";
-import { DataTable } from "@/components/data-table";
-import columns from "./columns/columns";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "LGU Levels", href: "#" }];
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { Button } from '@/components/ui/button';
+import type { LguLevel } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
 
 interface LguLevelPageProps {
     lguLevels: LguLevel[];
@@ -22,7 +18,9 @@ interface LguLevelPageProps {
 
 export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedLguLevel, setSelectedLguLevel] = useState<LguLevel | null>(null);
+    const [selectedLguLevel, setSelectedLguLevel] = useState<LguLevel | null>(
+        null,
+    );
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -33,7 +31,10 @@ export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
 
     function handleDialogOpenChange(isOpen: boolean) {
         setOpen(isOpen);
-        if (!isOpen) setSelectedLguLevel(null);
+
+        if (!isOpen) {
+            setSelectedLguLevel(null);
+        }
     }
 
     function handleEdit(data: LguLevel) {
@@ -62,7 +63,7 @@ export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
     const cols = columns(can?.edit ?? false, can?.delete ?? false);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={cols}
@@ -92,7 +93,7 @@ export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
                 title="Delete LGU Level?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
+                        Are you sure you want to remove{' '}
                         <span className="font-bold text-foreground">
                             "{selectedLguLevel?.name}"
                         </span>
@@ -106,6 +107,8 @@ export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
                 }}
                 isLoading={isLoading}
             />
-        </AppLayout>
+        </>
     );
 }
+
+LguLevelPage.layout = { breadcrumbs: [{ title: 'LGU Levels', href: '#' }] };

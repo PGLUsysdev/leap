@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Program;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\Program;
 
 class PpaListController extends Controller
 {

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Database\Factories\IosFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Ios extends Model
 {
-    /** @use HasFactory<\Database\Factories\IosFactory> */
+    /** @use HasFactory<IosFactory> */
     use HasFactory;
 
     protected $fillable = [

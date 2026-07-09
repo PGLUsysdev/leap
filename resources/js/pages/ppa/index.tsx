@@ -1,33 +1,38 @@
-import { useState } from "react";
-import { router, usePage } from "@inertiajs/react";
+import { useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
 
 // Layouts & UI Components
-import AppLayout from "@/layouts/app-layout";
-import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/data-table";
-import { DeleteDialog } from "@/components/delete-dialog";
-import { AlertErrorDialog } from "@/components/alert-error-dialog";
-import { CommandSelect } from "@/components/command-select";
+import { Button } from '@/components/ui/button';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import { CommandSelect } from '@/components/command-select';
 
 // Page-Specific Components
-import PpaFormDialog from "@/pages/ppa/form-dialog";
-import PpaMoveDialog from "@/pages/ppa/move-dialog";
-import PpaImportDialog from "@/pages/ppa/ppa-import-dialog";
-import columns from "./columns/columns";
+import PpaFormDialog from '@/pages/ppa/form-dialog';
+import PpaMoveDialog from '@/pages/ppa/move-dialog';
+import PpaImportDialog from '@/pages/ppa/ppa-import-dialog';
+import columns from './columns/columns';
 
 // Routes & API
-import { index, reorder } from "@/routes/ppa";
-import { destroy } from "@/routes/ppas";
+import { index, reorder } from '@/routes/ppa';
+import { destroy } from '@/routes/ppas';
 
 // Types
-import { type BreadcrumbItem } from "@/types";
-import type { Ppa, Office, SharedData, PaginatedResponse, Filter } from "@/types";
+// import { type BreadcrumbItem } from "@/types";
+import type {
+    Ppa,
+    Office,
+    SharedData,
+    PaginatedResponse,
+    Filter,
+} from '@/types';
 
-const NEXT_TYPE_MAP: Record<Ppa["type"], Ppa["type"]> = {
-    Program: "Project",
-    Project: "Activity",
-    Activity: "Sub-Activity",
-    "Sub-Activity": "Sub-Activity",
+const NEXT_TYPE_MAP: Record<Ppa['type'], Ppa['type']> = {
+    Program: 'Project',
+    Project: 'Activity',
+    Activity: 'Sub-Activity',
+    'Sub-Activity': 'Sub-Activity',
 };
 
 interface PpaPageProps {
@@ -62,8 +67,8 @@ export default function PpaPage({
 
     // Form Dialog States
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [formMode, setFormMode] = useState<"add" | "edit">("add");
-    const [targetType, setTargetType] = useState<Ppa["type"]>("Program");
+    const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
+    const [targetType, setTargetType] = useState<Ppa['type']>('Program');
 
     // Explicitly separated states for "Parent" (Add) and "Self" (Edit)
     const [parentPpa, setParentPpa] = useState<Ppa | null>(null);
@@ -83,29 +88,9 @@ export default function PpaPage({
     const [isErrorOpen, setIsErrorOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // breadcrumbs
-    const breadcrumbs: BreadcrumbItem[] = [
-        {
-            title: "PPA Master Library",
-            href: index().url,
-        },
-    ];
-
-    const dynamicItems =
-        current?.toReversed().map((item) => ({
-            title: item.name,
-            href: index({
-                query: {
-                    id: item.id,
-                },
-            }).url,
-        })) || [];
-
-    const finalBreadcrumbs = [...breadcrumbs, ...dynamicItems];
-
     // Handlers
-    function handleAddChild(parent: Ppa, childType: Ppa["type"]) {
-        setFormMode("add");
+    function handleAddChild(parent: Ppa, childType: Ppa['type']) {
+        setFormMode('add');
         setTargetType(childType);
         setParentPpa(parent);
         setEditPpa(null);
@@ -121,7 +106,7 @@ export default function PpaPage({
     }
 
     function handleEdit(item: Ppa) {
-        setFormMode("edit");
+        setFormMode('edit');
         setTargetType(item.type);
         setEditPpa(item);
         setParentPpa(null);
@@ -148,7 +133,9 @@ export default function PpaPage({
                     setErrorMessage(errors.error);
                     setIsErrorOpen(true);
                 } else {
-                    setErrorMessage("An unexpected error occurred while deleting.");
+                    setErrorMessage(
+                        'An unexpected error occurred while deleting.',
+                    );
                     setIsErrorOpen(true);
                 }
             },
@@ -176,14 +163,14 @@ export default function PpaPage({
             index({
                 query: {
                     ...filters,
-                    dialog_mode: "move",
+                    dialog_mode: 'move',
                     dialog_id: filters.id,
                     dialog_page: 1,
                 },
             }),
             {
                 preserveState: true,
-                only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
                     setMovePpa(ppa);
                     setIsMoveDialogOpen(true);
@@ -197,13 +184,13 @@ export default function PpaPage({
             index({
                 query: {
                     ...filters,
-                    dialog_mode: "import",
+                    dialog_mode: 'import',
                     dialog_page: 1,
                 },
             }),
             {
                 preserveState: true,
-                only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
                     setIsImportDialogOpen(true);
                 },
@@ -215,7 +202,7 @@ export default function PpaPage({
         router.visit(
             index({
                 query: {
-                    selected_office_id: officeId?.toString() ?? "",
+                    selected_office_id: officeId?.toString() ?? '',
                 },
             }),
             {},
@@ -234,15 +221,16 @@ export default function PpaPage({
         );
     }
 
-    const nextType = current.length > 0 ? NEXT_TYPE_MAP[current[0].type] : "Program";
+    const nextType =
+        current.length > 0 ? NEXT_TYPE_MAP[current[0].type] : 'Program';
 
     function handleAddNew() {
-        setFormMode("add");
+        setFormMode('add');
         setEditPpa(null);
 
         if (current.length === 0) {
             // We are at the very top - create root Program
-            setTargetType("Program");
+            setTargetType('Program');
             setParentPpa(null);
         } else {
             // We are viewing children of current - create child of next type under current
@@ -254,7 +242,7 @@ export default function PpaPage({
     }
 
     return (
-        <AppLayout breadcrumbs={finalBreadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={columns(ppaTree.data)}
@@ -269,7 +257,7 @@ export default function PpaPage({
                     paginationObj={ppaTree}
                     negativeHeight={10.7}
                     filters={filters}
-                    onlyKeys={["ppaTree", "filters", "current"]}
+                    onlyKeys={['ppaTree', 'filters', 'current']}
                     searchKey="search"
                     pageKey="page"
                 >
@@ -282,7 +270,7 @@ export default function PpaPage({
                                     options={parentOffices}
                                     getOptionValue={(office) => office.id}
                                     getOptionSearchText={(office) =>
-                                        `${office.acronym ?? ""} ${office.name}`
+                                        `${office.acronym ?? ''} ${office.name}`
                                     }
                                     renderTrigger={(office) => (
                                         <span className="truncate">
@@ -292,7 +280,7 @@ export default function PpaPage({
                                     renderOption={(office) => (
                                         <div className="grid w-full grid-cols-12 gap-2 text-sm">
                                             <span className="col-span-3 font-medium">
-                                                {office.acronym ?? "-"}
+                                                {office.acronym ?? '-'}
                                             </span>
                                             <span className="col-span-9 whitespace-normal text-muted-foreground">
                                                 {office.name}
@@ -308,13 +296,19 @@ export default function PpaPage({
                         )}
 
                         {can?.import && (
-                            <Button variant="outline" onClick={() => handleImportOpen()}>
+                            <Button
+                                variant="outline"
+                                onClick={() => handleImportOpen()}
+                            >
                                 Import from Last Year
                             </Button>
                         )}
                         {can?.add &&
-                            (current.length === 0 || current[0].type !== "Sub-Activity") && (
-                                <Button onClick={handleAddNew}>New {nextType}</Button>
+                            (current.length === 0 ||
+                                current[0].type !== 'Sub-Activity') && (
+                                <Button onClick={handleAddNew}>
+                                    New {nextType}
+                                </Button>
                             )}
                     </div>
                 </DataTable>
@@ -359,8 +353,11 @@ export default function PpaPage({
                     <span className="grid gap-2">
                         {/* Fixed: span is valid inside <p> */}
                         <span>
-                            Are you sure you want to remove{" "}
-                            <span className="font-bold text-foreground">"{deletePpa?.name}"</span>?
+                            Are you sure you want to remove{' '}
+                            <span className="font-bold text-foreground">
+                                "{deletePpa?.name}"
+                            </span>
+                            ?
                         </span>
                         <span className="text-destructive">
                             This will also delete all Sub-PPAs.
@@ -377,6 +374,15 @@ export default function PpaPage({
                 onOpenChange={setIsErrorOpen}
                 error={errorMessage}
             />
-        </AppLayout>
+        </>
     );
 }
+
+PpaPage.layout = {
+    breadcrumbs: [
+        {
+            title: 'PPA Master Library',
+            href: index().url,
+        },
+    ],
+};

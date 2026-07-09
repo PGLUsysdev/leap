@@ -2,10 +2,14 @@
 
 namespace Database\Factories;
 
+use App\Models\LguLevel;
+use App\Models\Office;
+use App\Models\OfficeType;
+use App\Models\Sector;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Office>
+ * @extends Factory<Office>
  */
 class OfficeFactory extends Factory
 {
@@ -21,9 +25,9 @@ class OfficeFactory extends Factory
             'code' => $this->faker->unique()->bothify('OFF-###'), // The missing NOT NULL column
 
             // Relationships you already fixed
-            'lgu_level_id' => \App\Models\LguLevel::factory(),
-            'sector_id' => \App\Models\Sector::factory(),
-            'office_type_id' => \App\Models\OfficeType::factory(),
+            'lgu_level_id' => LguLevel::factory(),
+            'sector_id' => Sector::factory(),
+            'office_type_id' => OfficeType::factory(),
         ];
     }
 }

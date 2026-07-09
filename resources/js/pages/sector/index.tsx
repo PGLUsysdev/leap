@@ -1,15 +1,11 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import FormDialog from "./form-dialog";
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import { DeleteDialog } from "@/components/delete-dialog";
-import { router } from "@inertiajs/react";
-import type { Sector } from "@/types";
-import { DataTable } from "@/components/data-table";
-import columns from "./columns/columns";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Sectors", href: "#" }];
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { Button } from '@/components/ui/button';
+import type { Sector } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
 
 interface SectorPageProps {
     sectors: Sector[];
@@ -33,7 +29,10 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
 
     function handleDialogOpenChange(isOpen: boolean) {
         setOpen(isOpen);
-        if (!isOpen) setSelectedSector(null);
+
+        if (!isOpen) {
+            setSelectedSector(null);
+        }
     }
 
     function handleEdit(data: Sector) {
@@ -62,7 +61,7 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
     const cols = columns(can?.edit ?? false, can?.delete ?? false);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={cols}
@@ -80,7 +79,11 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
                 </DataTable>
             </div>
 
-            <FormDialog open={open} setOpen={handleDialogOpenChange} initialData={selectedSector} />
+            <FormDialog
+                open={open}
+                setOpen={handleDialogOpenChange}
+                initialData={selectedSector}
+            />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
@@ -88,8 +91,11 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
                 title="Delete Sector?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">"{selectedSector?.name}"</span>?
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedSector?.name}"
+                        </span>
+                        ?
                     </>
                 }
                 onConfirm={handleDelete}
@@ -99,6 +105,8 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
                 }}
                 isLoading={isLoading}
             />
-        </AppLayout>
+        </>
     );
 }
+
+SectorPage.layout = { breadcrumbs: [{ title: 'Sectors', href: '#' }] };

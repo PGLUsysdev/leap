@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\ChartOfAccount;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class ChartOfAccountPolicy
 {
@@ -15,6 +14,7 @@ class ChartOfAccountPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('chart-of-account.view');
     }
 
@@ -33,6 +33,7 @@ class ChartOfAccountPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('chart-of-account.add');
     }
 
@@ -43,6 +44,7 @@ class ChartOfAccountPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('chart-of-account.edit');
     }
 
@@ -53,6 +55,7 @@ class ChartOfAccountPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('chart-of-account.delete');
     }
 

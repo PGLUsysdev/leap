@@ -1,16 +1,12 @@
-import { useState } from "react";
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import type { Role } from "@/types";
-import { DataTable } from "@/components/data-table";
-import columns from "./columns/columns";
-import FormDialog from "./form-dialog";
-import PermissionDialog from "./permission-dialog";
-import { DeleteDialog } from "@/components/delete-dialog";
-import { router } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Roles", href: "#" }];
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { Button } from '@/components/ui/button';
+import type { Role } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
+import PermissionDialog from './permission-dialog';
 
 interface RolePageProps {
     roles: Role[];
@@ -62,10 +58,14 @@ export default function RolePage({ roles, can }: RolePageProps) {
         });
     }
 
-    const cols = columns(can?.edit ?? false, can?.managePermissions ?? false, can?.delete ?? false);
+    const cols = columns(
+        can?.edit ?? false,
+        can?.managePermissions ?? false,
+        can?.delete ?? false,
+    );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={cols}
@@ -84,9 +84,17 @@ export default function RolePage({ roles, can }: RolePageProps) {
                 </DataTable>
             </div>
 
-            <FormDialog open={openForm} onOpenChange={setOpenForm} data={selectedRole} />
+            <FormDialog
+                open={openForm}
+                onOpenChange={setOpenForm}
+                data={selectedRole}
+            />
 
-            <PermissionDialog open={openPerms} onOpenChange={setOpenPerms} role={selectedRole} />
+            <PermissionDialog
+                open={openPerms}
+                onOpenChange={setOpenPerms}
+                role={selectedRole}
+            />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
@@ -94,8 +102,11 @@ export default function RolePage({ roles, can }: RolePageProps) {
                 title="Delete Role?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">"{selectedRole?.name}"</span>?
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedRole?.name}"
+                        </span>
+                        ?
                     </>
                 }
                 onConfirm={handleDelete}
@@ -105,6 +116,8 @@ export default function RolePage({ roles, can }: RolePageProps) {
                 }}
                 isLoading={isLoading}
             />
-        </AppLayout>
+        </>
     );
 }
+
+RolePage.layout = { breadcrumbs: [{ title: 'Roles', href: '#' }] };

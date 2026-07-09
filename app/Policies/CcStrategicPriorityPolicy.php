@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\CcStrategicPriority;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class CcStrategicPriorityPolicy
 {
@@ -15,6 +14,7 @@ class CcStrategicPriorityPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-strategic-priority.view');
     }
 
@@ -35,6 +35,7 @@ class CcStrategicPriorityPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-strategic-priority.create');
     }
 
@@ -47,6 +48,7 @@ class CcStrategicPriorityPolicy
     ): bool {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-strategic-priority.edit');
     }
 
@@ -59,6 +61,7 @@ class CcStrategicPriorityPolicy
     ): bool {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-strategic-priority.delete');
     }
 

@@ -50,7 +50,7 @@ class PSPoolService
     {
         $pool = $this->getPoolForFiscalYear($fiscalYearId);
 
-        if (!$pool) {
+        if (! $pool) {
             throw new \Exception('No PS pool designated for this fiscal year. Set a pool first.');
         }
 
@@ -61,7 +61,7 @@ class PSPoolService
 
             $nonPoolAipEntryIds = Ppa::where('fiscal_year_id', $fiscalYearId)
                 ->where('id', '!=', $pool->id)
-                ->whereHas('aipEntries', fn($q) => $q->whereNull('supplemental_aip_id'))
+                ->whereHas('aipEntries', fn ($q) => $q->whereNull('supplemental_aip_id'))
                 ->pluck('id');
 
             $totalPsToMove = PpaFundingSource::whereIn('aip_entry_id', $nonPoolAipEntryIds)

@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\PpmpPriceList;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PpmpPriceList>
+ * @extends Factory<PpmpPriceList>
  */
 class PpmpPriceListFactory extends Factory
 {

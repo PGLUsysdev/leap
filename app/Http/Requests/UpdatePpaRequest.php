@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Ppa;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePpaRequest extends FormRequest
 {
@@ -18,7 +19,7 @@ class UpdatePpaRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -46,7 +47,7 @@ class UpdatePpaRequest extends FormRequest
             if ($parentId !== null && $type) {
                 $parent = Ppa::find($parentId);
 
-                if (!$parent) {
+                if (! $parent) {
                     return;
                 }
 
@@ -58,6 +59,7 @@ class UpdatePpaRequest extends FormRequest
                             'parent_id',
                             'Cannot move to a descendant of itself.',
                         );
+
                     return;
                 }
 
@@ -70,7 +72,7 @@ class UpdatePpaRequest extends FormRequest
                     default => [],
                 };
 
-                if (!in_array($parent->type, $validParentTypes)) {
+                if (! in_array($parent->type, $validParentTypes)) {
                     $expectedParent = match ($type) {
                         'Project' => 'Program',
                         'Activity' => 'Project',
@@ -99,7 +101,7 @@ class UpdatePpaRequest extends FormRequest
         while (
             $current &&
             $current->parent_id &&
-            !in_array($current->id, $visited)
+            ! in_array($current->id, $visited)
         ) {
             $visited[] = $current->id;
 

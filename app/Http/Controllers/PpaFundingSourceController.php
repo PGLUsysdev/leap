@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePpaFundingSourceRequest;
 use App\Models\AipEntry;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
-use App\Http\Requests\StorePpaFundingSourceRequest;
-use App\Http\Requests\UpdatePpaFundingSourceRequest;
 
 class PpaFundingSourceController extends Controller
 {
@@ -45,7 +44,7 @@ class PpaFundingSourceController extends Controller
     ) {
         $user = auth()->user();
 
-        if (!$user->can('editFundingSources', $aipEntry)) {
+        if (! $user->can('editFundingSources', $aipEntry)) {
             abort(403, 'You do not have permission to edit funding sources.');
         }
 

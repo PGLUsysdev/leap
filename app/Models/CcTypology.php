@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\CcTypologyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CcTypology extends Model
 {
-    /** @use HasFactory<\Database\Factories\CcTypologyFactory> */
+    /** @use HasFactory<CcTypologyFactory> */
     use HasFactory;
 
     protected $fillable = [

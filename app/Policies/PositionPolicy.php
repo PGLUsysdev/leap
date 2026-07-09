@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Position;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PositionPolicy
 {
@@ -15,6 +14,7 @@ class PositionPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('position.view');
     }
 
@@ -33,6 +33,7 @@ class PositionPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('position.add');
     }
 
@@ -43,6 +44,7 @@ class PositionPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('position.edit');
     }
 
@@ -53,6 +55,7 @@ class PositionPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('position.delete');
     }
 
@@ -60,6 +63,7 @@ class PositionPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('position.export');
     }
 

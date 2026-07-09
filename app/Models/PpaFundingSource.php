@@ -2,17 +2,15 @@
 
 namespace App\Models;
 
+use Database\Factories\PpaFundingSourceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\FundingSource;
-use App\Models\CcTypology;
-use App\Models\Ppmp;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PpaFundingSource extends Model
 {
-    /** @use HasFactory<\Database\Factories\PpaFundingSourceFactory> */
+    /** @use HasFactory<PpaFundingSourceFactory> */
     use HasFactory;
 
     protected static function boot()
@@ -25,7 +23,7 @@ class PpaFundingSource extends Model
                 $model->loadMissing('aipEntry.ppa');
                 $ppa = $model->aipEntry?->ppa;
 
-                if (!$ppa || !$ppa->is_ps_pool) {
+                if (! $ppa || ! $ppa->is_ps_pool) {
                     throw new \Exception(
                         'Personal Services (PS) can only be allocated to the designated PS pool Program.',
                     );

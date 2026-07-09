@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\PpmpCategory;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PpmpCategoryPolicy
 {
@@ -15,6 +14,7 @@ class PpmpCategoryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp-category.view');
     }
 
@@ -33,6 +33,7 @@ class PpmpCategoryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp-category.add');
     }
 
@@ -43,6 +44,7 @@ class PpmpCategoryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp-category.edit');
     }
 
@@ -53,6 +55,7 @@ class PpmpCategoryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp-category.delete');
     }
 

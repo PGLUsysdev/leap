@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
 use App\Models\LguLevel;
 use App\Models\Office;
 use App\Models\OfficeType;
 use App\Models\Sector;
+use Inertia\Inertia;
 
 class AipRefCodeController extends Controller
 {

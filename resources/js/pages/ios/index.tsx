@@ -1,12 +1,6 @@
-import { useState } from "react";
-import { router } from "@inertiajs/react";
-import { DataTable } from "@/components/data-table";
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import type { Ios, PaginatedResponse, SalaryStandard } from "@/types";
-import { Button } from "@/components/ui/button";
-import columns from "./columns/columns";
-import FormDialog from "./form-dialog";
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,9 +10,11 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Index of Occupational Services", href: "#" }];
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import type { Ios, PaginatedResponse, SalaryStandard } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
 
 interface IosPageProps {
     ios: PaginatedResponse<Ios>;
@@ -46,7 +42,10 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
     }
 
     function confirmDelete() {
-        if (!selectedData) return;
+        if (!selectedData) {
+            return;
+        }
+
         router.delete(`/ios/${selectedData.id}`, {
             preserveState: true,
             preserveScroll: true,
@@ -58,7 +57,7 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={columns({
@@ -87,7 +86,10 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
                 open={openForm}
                 onOpenChange={(open) => {
                     setOpenForm(open);
-                    if (!open) setSelectedData(null);
+
+                    if (!open) {
+                        setSelectedData(null);
+                    }
                 }}
                 data={selectedData}
                 salaryGrades={salaryGrades}
@@ -98,18 +100,25 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete IOS</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this IOS record? This action cannot be
-                            undone.
+                            Are you sure you want to delete this IOS record?
+                            This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={confirmDelete}
+                        >
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </AppLayout>
+        </>
     );
 }
+
+IosPage.layout = {
+    breadcrumbs: [{ title: 'Index of Occupational Services', href: '#' }],
+};

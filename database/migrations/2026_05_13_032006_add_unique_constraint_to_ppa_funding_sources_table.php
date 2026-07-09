@@ -2,10 +2,11 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // Check for duplicates; if any exist, abort with a clear message.
@@ -16,9 +17,9 @@ return new class extends Migration {
             ->count();
 
         if ($duplicateCount > 0) {
-            throw new \RuntimeException(
-                'Cannot add unique constraint to ppa_funding_sources: ' .
-                    "there are {$duplicateCount} groups of duplicates. " .
+            throw new RuntimeException(
+                'Cannot add unique constraint to ppa_funding_sources: '.
+                    "there are {$duplicateCount} groups of duplicates. ".
                     "Please resolve duplicates (e.g. run 'php artisan funding:deduplicate') and then re‑run this migration.",
             );
         }

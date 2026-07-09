@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\AipEntry;
+use App\Models\PpaItemizedCost;
+use Illuminate\Http\Request;
 
 class AipCostingController extends Controller
 {
@@ -38,7 +39,7 @@ class AipCostingController extends Controller
     {
         // Find the item (Assuming the model name is PpaItemizedCost)
         // We use the ID passed from your React handleDelete(item.id)
-        $item = \App\Models\PpaItemizedCost::findOrFail($id);
+        $item = PpaItemizedCost::findOrFail($id);
 
         // Delete it.
         // This triggers the 'static::deleted' hook in your booted method!

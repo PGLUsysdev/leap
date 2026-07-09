@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\FiscalYear;
 use App\Models\SalaryStandard;
+use Illuminate\Database\Seeder;
 
 class SalaryStandardSeeder extends Seeder
 {
@@ -19,10 +18,11 @@ class SalaryStandardSeeder extends Seeder
         $fy2026 = FiscalYear::where('year', 2026)->value('id');
         $fy2027 = FiscalYear::where('year', 2027)->value('id');
 
-        if (!$fy2024 || !$fy2025 || !$fy2026 || !$fy2027) {
+        if (! $fy2024 || ! $fy2025 || ! $fy2026 || ! $fy2027) {
             $this->command->error(
                 'One or more Fiscal Years (2024-2027) not found. Seeding aborted.',
             );
+
             return;
         }
 

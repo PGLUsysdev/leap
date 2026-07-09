@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\PpmpSummary;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PpmpSummaryPolicy
 {
@@ -15,6 +14,7 @@ class PpmpSummaryPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp-summary.view');
     }
 

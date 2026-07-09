@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\PsBreakdownItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PsBreakdownItem extends Model
 {
-    /** @use HasFactory<\Database\Factories\PsBreakdownItemFactory> */
+    /** @use HasFactory<PsBreakdownItemFactory> */
     use HasFactory;
 
     protected $fillable = [

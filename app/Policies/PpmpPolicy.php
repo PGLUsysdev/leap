@@ -3,10 +3,8 @@
 namespace App\Policies;
 
 use App\Models\AipEntry;
-use App\Models\Office;
 use App\Models\Ppmp;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PpmpPolicy
 {
@@ -25,6 +23,7 @@ class PpmpPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp.view.supplemental');
     }
 
@@ -32,6 +31,7 @@ class PpmpPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp.export');
     }
 
@@ -39,6 +39,7 @@ class PpmpPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp.generate-summary');
     }
 
@@ -46,6 +47,7 @@ class PpmpPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp.add.price-list');
     }
 
@@ -53,6 +55,7 @@ class PpmpPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp.edit.price-list-quantity');
     }
 
@@ -60,6 +63,7 @@ class PpmpPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppmp.delete.price-list');
     }
 

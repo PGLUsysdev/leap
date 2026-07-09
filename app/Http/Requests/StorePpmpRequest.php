@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePpmpRequest extends FormRequest
@@ -17,15 +18,14 @@ class StorePpmpRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'ppa_funding_source_id' => 'required|exists:ppa_funding_sources,id',
             'ppmp_price_list_id' => 'required|exists:ppmp_price_lists,id',
-            'month' =>
-                'nullable|string|in:jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec',
+            'month' => 'nullable|string|in:jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec',
             'quantity' => 'nullable|numeric|min:0',
         ];
     }

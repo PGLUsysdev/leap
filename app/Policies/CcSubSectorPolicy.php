@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\CcSubSector;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class CcSubSectorPolicy
 {
@@ -15,6 +14,7 @@ class CcSubSectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-sub-sector.view');
     }
 
@@ -33,6 +33,7 @@ class CcSubSectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-sub-sector.create');
     }
 
@@ -43,6 +44,7 @@ class CcSubSectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-sub-sector.edit');
     }
 
@@ -53,6 +55,7 @@ class CcSubSectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-sub-sector.delete');
     }
 

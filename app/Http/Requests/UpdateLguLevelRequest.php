@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateLguLevelRequest extends FormRequest
@@ -17,7 +18,7 @@ class UpdateLguLevelRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -28,7 +29,7 @@ class UpdateLguLevelRequest extends FormRequest
                 'required',
                 'string',
                 'digits:1',
-                'unique:lgu_levels,code,' .
+                'unique:lgu_levels,code,'.
                 ($lguLevel ? $lguLevel->id : 'NULL'),
             ],
             'name' => ['required', 'string', 'max:50'],

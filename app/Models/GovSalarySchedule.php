@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\GovSalaryScheduleFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GovSalarySchedule extends Model
 {
-    /** @use HasFactory<\Database\Factories\GovSalaryScheduleFactory> */
+    /** @use HasFactory<GovSalaryScheduleFactory> */
     use HasFactory;
 
     protected $fillable = [

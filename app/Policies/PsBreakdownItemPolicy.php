@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\PsBreakdownItem;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PsBreakdownItemPolicy
 {
@@ -15,6 +14,7 @@ class PsBreakdownItemPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ps-breakdown.view');
     }
 
@@ -25,6 +25,7 @@ class PsBreakdownItemPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ps-breakdown.export');
     }
 

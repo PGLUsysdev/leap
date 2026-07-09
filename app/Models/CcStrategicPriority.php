@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\CcStrategicPriorityFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CcStrategicPriority extends Model
 {
-    /** @use HasFactory<\Database\Factories\CcStrategicPriorityFactory> */
+    /** @use HasFactory<CcStrategicPriorityFactory> */
     use HasFactory;
 
     protected $fillable = ['id', 'code', 'name'];

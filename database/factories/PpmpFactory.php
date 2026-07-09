@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\Ppmp;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Ppmp>
+ * @extends Factory<Ppmp>
  */
 class PpmpFactory extends Factory
 {

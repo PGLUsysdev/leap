@@ -3,8 +3,6 @@
 namespace App\Policies;
 
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
-use Illuminate\Support\Facades\Log;
 
 class UserPolicy
 {
@@ -15,6 +13,7 @@ class UserPolicy
     {
         $user->loadmissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('user.view');
     }
 

@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\SalaryStandard;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class SalaryStandardPolicy
 {
@@ -15,6 +14,7 @@ class SalaryStandardPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('salary-standard.view');
     }
 

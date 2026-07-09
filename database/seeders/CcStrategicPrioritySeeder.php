@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use App\Models\CcStrategicPriority; // Imported your Eloquent model
+use App\Models\CcStrategicPriority;
+use Illuminate\Database\Seeder; // Imported your Eloquent model
 
 class CcStrategicPrioritySeeder extends Seeder
 {

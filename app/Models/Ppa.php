@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
+use Database\Factories\PpaFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Ppa extends Model
 {
-    /** @use HasFactory<\Database\Factories\PpaFactory> */
+    /** @use HasFactory<PpaFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -43,7 +44,7 @@ class Ppa extends Model
                         : $this->parent()->first();
 
                     if ($parent) {
-                        return $parent->full_code . '-' . $suffix;
+                        return $parent->full_code.'-'.$suffix;
                     }
                 }
 
@@ -54,7 +55,7 @@ class Ppa extends Model
                     : $this->office()->first();
                 $officePrefix = $office?->full_code ?? '0000-0-00-000';
 
-                return $officePrefix . '-' . $suffix;
+                return $officePrefix.'-'.$suffix;
             },
         );
     }

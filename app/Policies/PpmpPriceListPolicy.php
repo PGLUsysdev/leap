@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\PpmpPriceList;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PpmpPriceListPolicy
 {
@@ -15,6 +14,7 @@ class PpmpPriceListPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('price-list.view');
     }
 
@@ -33,6 +33,7 @@ class PpmpPriceListPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('price-list.add');
     }
 
@@ -43,6 +44,7 @@ class PpmpPriceListPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('price-list.edit');
     }
 
@@ -53,6 +55,7 @@ class PpmpPriceListPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('price-list.delete');
     }
 
@@ -76,6 +79,7 @@ class PpmpPriceListPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('price-list.move');
     }
 }

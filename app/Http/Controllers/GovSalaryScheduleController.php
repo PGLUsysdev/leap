@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\GovSalarySchedule;
 use App\Http\Requests\StoreGovSalaryScheduleRequest;
 use App\Http\Requests\UpdateGovSalaryScheduleRequest;
+use App\Models\GovSalarySchedule;
 use Inertia\Inertia;
 
 class GovSalaryScheduleController extends Controller
@@ -18,7 +18,7 @@ class GovSalaryScheduleController extends Controller
 
         $maxStep = $schedules->max('step') ?? 8;
 
-        $grouped = $schedules->groupBy(fn($item) => $item->fiscal_year_id . '-' . $item->salary_grade);
+        $grouped = $schedules->groupBy(fn ($item) => $item->fiscal_year_id.'-'.$item->salary_grade);
 
         $matrix = $grouped->map(function ($items, $key) use ($maxStep) {
             $first = $items->first();

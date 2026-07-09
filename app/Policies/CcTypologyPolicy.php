@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\CcTypology;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class CcTypologyPolicy
 {
@@ -15,6 +14,7 @@ class CcTypologyPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-typology.view');
     }
 
@@ -33,6 +33,7 @@ class CcTypologyPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-typology.create');
     }
 
@@ -43,6 +44,7 @@ class CcTypologyPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-typology.edit');
     }
 
@@ -53,6 +55,7 @@ class CcTypologyPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('cc-typology.delete');
     }
 

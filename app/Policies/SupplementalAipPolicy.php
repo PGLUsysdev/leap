@@ -11,6 +11,7 @@ class SupplementalAipPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('aip-summary.view.supplemental') &&
             $user->office_id === $supplementalAip->office_id;
     }
@@ -19,6 +20,7 @@ class SupplementalAipPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('aip-summary.create.supplemental');
     }
 
@@ -26,6 +28,7 @@ class SupplementalAipPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('aip-summary.delete.supplemental') &&
             $user->office_id === $supplementalAip->office_id;
     }

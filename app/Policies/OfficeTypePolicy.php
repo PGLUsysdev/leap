@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\OfficeType;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class OfficeTypePolicy
 {
@@ -15,6 +14,7 @@ class OfficeTypePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('office-type.view');
     }
 
@@ -33,6 +33,7 @@ class OfficeTypePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('office-type.add');
     }
 
@@ -43,6 +44,7 @@ class OfficeTypePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('office-type.edit');
     }
 
@@ -53,6 +55,7 @@ class OfficeTypePolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('office-type.delete');
     }
 

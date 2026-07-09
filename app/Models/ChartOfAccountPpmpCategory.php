@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Database\Factories\ChartOfAccountPpmpCategoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChartOfAccountPpmpCategory extends Model
 {
-    /** @use HasFactory<\Database\Factories\ChartOfAccountPpmpCategoryFactory> */
+    /** @use HasFactory<ChartOfAccountPpmpCategoryFactory> */
     use HasFactory;
 
     protected $fillable = ['chart_of_account_id', 'ppmp_category_id'];

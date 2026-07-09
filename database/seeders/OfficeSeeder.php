@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Office;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
 class OfficeSeeder extends Seeder
@@ -122,8 +121,7 @@ class OfficeSeeder extends Seeder
                 'lgu_level_id' => 1,
                 'office_type_id' => 1,
                 'code' => '010',
-                'name' =>
-                    'Office of the Provincial Planning and Development Coordinator',
+                'name' => 'Office of the Provincial Planning and Development Coordinator',
                 'acronym' => 'OPPDC',
             ],
             [
@@ -163,8 +161,7 @@ class OfficeSeeder extends Seeder
                 'lgu_level_id' => 1,
                 'office_type_id' => 3,
                 'code' => '009',
-                'name' =>
-                    'Provincial Information and Communications Technology Office',
+                'name' => 'Provincial Information and Communications Technology Office',
                 'acronym' => 'PICTO',
             ],
             [
@@ -172,8 +169,7 @@ class OfficeSeeder extends Seeder
                 'lgu_level_id' => 1,
                 'office_type_id' => 3,
                 'code' => '010',
-                'name' =>
-                    'Provincial Human Resource Mangement and Development Office',
+                'name' => 'Provincial Human Resource Mangement and Development Office',
                 'acronym' => 'PHRMDO',
             ],
 
@@ -207,8 +203,7 @@ class OfficeSeeder extends Seeder
                 'lgu_level_id' => 1,
                 'office_type_id' => 3,
                 'code' => '011',
-                'name' =>
-                    'Provincial Youth, Education, Sports Development Office',
+                'name' => 'Provincial Youth, Education, Sports Development Office',
                 'acronym' => 'PYESDO',
             ],
             [
@@ -306,8 +301,7 @@ class OfficeSeeder extends Seeder
                 'lgu_level_id' => 1,
                 'office_type_id' => 2,
                 'code' => '002',
-                'name' =>
-                    'Provincial Government Environment and Natural Resource Office',
+                'name' => 'Provincial Government Environment and Natural Resource Office',
                 'acronym' => 'PG-ENRO',
             ],
             [
@@ -315,8 +309,7 @@ class OfficeSeeder extends Seeder
                 'lgu_level_id' => 1,
                 'office_type_id' => 3,
                 'code' => '001',
-                'name' =>
-                    'Provincial Disaster Risk Reduction and Management Office',
+                'name' => 'Provincial Disaster Risk Reduction and Management Office',
                 'acronym' => 'PDRRMO',
             ],
             [
@@ -332,8 +325,7 @@ class OfficeSeeder extends Seeder
                 'lgu_level_id' => 1,
                 'office_type_id' => 3,
                 'code' => '008',
-                'name' =>
-                    'Local Economic Enterprise and Investments Promotion Office',
+                'name' => 'Local Economic Enterprise and Investments Promotion Office',
                 'acronym' => 'LEEIPO',
             ],
         ];

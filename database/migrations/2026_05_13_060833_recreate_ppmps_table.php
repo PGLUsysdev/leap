@@ -2,18 +2,19 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // Safety net: abort if there are existing PPMP records that would be lost
         if (Schema::hasTable('ppmps') && DB::table('ppmps')->count() > 0) {
             $count = DB::table('ppmps')->count();
             throw new RuntimeException(
-                "The 'ppmps' table contains {$count} records. " .
-                    'This migration drops and recreates the table with a new structure. ' .
+                "The 'ppmps' table contains {$count} records. ".
+                    'This migration drops and recreates the table with a new structure. '.
                     'Please back up and manually migrate the data, then empty the table before re-running.',
             );
         }

@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\AipEntry;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\AipEntry>
+ * @extends Factory<AipEntry>
  */
 class AipEntryFactory extends Factory
 {

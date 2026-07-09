@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Ppa;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -17,6 +16,7 @@ class PpaPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppa.view');
     }
 
@@ -35,6 +35,7 @@ class PpaPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('ppa.create');
     }
 
@@ -106,6 +107,7 @@ class PpaPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         // Log::info($permissions);
         return $permissions->contains('ppa.import');
     }

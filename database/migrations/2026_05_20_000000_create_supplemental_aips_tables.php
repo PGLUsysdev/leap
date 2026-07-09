@@ -4,7 +4,8 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // 1. Create supplemental_aips table
@@ -32,10 +33,10 @@ return new class extends Migration {
         Schema::table('ppa_funding_sources', function (Blueprint $table) {
             $table->foreignId('supplemental_aip_id')->nullable()->constrained('supplemental_aips')->nullOnDelete();
             $table->boolean('is_supplemental')->default(false);
-            
+
             // Drop old unique constraint
             $table->dropUnique('pfs_aip_funding_unique');
-            
+
             // Create new unique constraint including supplemental_aip_id
             $table->unique(
                 ['aip_entry_id', 'funding_source_id', 'supplemental_aip_id'],

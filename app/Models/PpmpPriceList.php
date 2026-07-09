@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use Database\Factories\PpmpPriceListFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PpmpPriceList extends Model
 {
-    /** @use HasFactory<\Database\Factories\PpmpPriceListFactory> */
+    /** @use HasFactory<PpmpPriceListFactory> */
     use HasFactory;
 
     protected $fillable = [

@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AllotmentClass;
 use App\Http\Requests\StoreAllotmentClassRequest;
 use App\Http\Requests\UpdateAllotmentClassRequest;
+use App\Models\AllotmentClass;
 
 class AllotmentClassController extends Controller
 {

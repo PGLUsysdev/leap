@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\FundingSource;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class FundingSourcePolicy
 {
@@ -15,6 +14,7 @@ class FundingSourcePolicy
     {
         $user->loadmissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('funding-source.view');
     }
 
@@ -33,6 +33,7 @@ class FundingSourcePolicy
     {
         $user->loadmissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('funding-source.add');
     }
 
@@ -43,6 +44,7 @@ class FundingSourcePolicy
     {
         $user->loadmissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('funding-source.edit');
     }
 
@@ -53,6 +55,7 @@ class FundingSourcePolicy
     {
         $user->loadmissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('funding-source.delete');
     }
 

@@ -1,12 +1,8 @@
-import { useState } from "react";
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import type { Office, Position, Role, User } from "@/types";
-import { DataTable } from "@/components/data-table";
-import columns from "./columns/columns";
-import FormDialog from "./form-dialog";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Users", href: "#" }];
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
+import type { Office, Position, Role, User } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
 
 interface UsersIndexProps {
     users: User[] | null;
@@ -24,10 +20,13 @@ interface UsersIndexProps {
     };
 }
 
-export default function UsersIndex({ users, roles, offices, positions, can }: UsersIndexProps) {
-    // console.log({ users, can });
-    console.log(offices);
-
+export default function UsersIndex({
+    users,
+    roles,
+    offices,
+    positions,
+    can,
+}: UsersIndexProps) {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [openFormDialog, setOpenFormDialog] = useState(false);
 
@@ -43,7 +42,7 @@ export default function UsersIndex({ users, roles, offices, positions, can }: Us
     });
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={cols}
@@ -67,6 +66,8 @@ export default function UsersIndex({ users, roles, offices, positions, can }: Us
                 onOpenChange={setOpenFormDialog}
                 data={selectedUser}
             />
-        </AppLayout>
+        </>
     );
 }
+
+UsersIndex.layout = { breadcrumbs: [{ title: 'Users', href: '#' }] };

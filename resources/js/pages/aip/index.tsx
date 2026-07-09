@@ -1,22 +1,19 @@
-import { useState } from "react";
-import AppLayout from "@/layouts/app-layout";
-import FormDialog from "@/pages/aip/form-dialog";
-import { type BreadcrumbItem } from "@/types";
-import type { FiscalYear, FiscalYearStatus, App, Office, SharedData } from "@/types";
-import { router, usePage } from "@inertiajs/react";
-import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/data-table";
-import columns from "./columns/columns";
-import PdfPreviewDialog from "./pdf-preview-dialog";
-import { index } from "@/routes/ppmp-summaries";
-import { CommandSelect } from "@/components/command-select";
-
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: "Annual Investment Programs",
-        href: "#",
-    },
-];
+import { router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import { CommandSelect } from '@/components/command-select';
+import { DataTable } from '@/components/data-table';
+import { Button } from '@/components/ui/button';
+import FormDialog from '@/pages/aip/form-dialog';
+import { index } from '@/routes/ppmp-summaries';
+import type {
+    FiscalYear,
+    FiscalYearStatus,
+    App,
+    Office,
+    SharedData,
+} from '@/types';
+import columns from './columns/columns';
+import PdfPreviewDialog from './pdf-preview-dialog';
 
 interface AipProps {
     fiscalYears: FiscalYear[];
@@ -33,9 +30,12 @@ interface AipProps {
     };
 }
 
-export default function AipPage({ fiscalYears, app, offices = [], can }: AipProps) {
-    console.log(can);
-
+export default function AipPage({
+    fiscalYears,
+    app,
+    offices = [],
+    can,
+}: AipProps) {
     const { auth } = usePage<SharedData>().props;
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
@@ -44,19 +44,22 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
 
     const params = new URLSearchParams(window.location.search);
     const [selectedOfficeId, setSelectedOfficeId] = useState<string>(
-        params.get("selected_office_id") ?? "",
+        params.get('selected_office_id') ?? '',
     );
 
     const canOpenAip = can?.showSummaryOwn || can?.showSummaryAll;
     const isOpenAipDisabled = can?.showSummaryAll && !selectedOfficeId;
 
-    // Standard Handlers (Ensure these exist if DataTable uses them)
     function onUpdateStatus(data: FiscalYear, status: FiscalYearStatus) {
-        router.patch(`/aip/${data.id}/status`, { status }, { preserveScroll: true });
+        router.patch(
+            `/aip/${data.id}/status`,
+            { status },
+            { preserveScroll: true },
+        );
     }
 
     function handleOfficeChange(officeId: string | number | null) {
-        const id = officeId?.toString() ?? "";
+        const id = officeId?.toString() ?? '';
         setSelectedOfficeId(id);
         router.visit(window.location.pathname, {
             data: { selected_office_id: id },
@@ -66,9 +69,11 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
 
     function handleOpenAipSummary(data: FiscalYear) {
         const query: Record<string, string> = {};
+
         if (selectedOfficeId) {
             query.selected_office_id = selectedOfficeId;
         }
+
         const qs = new URLSearchParams(query).toString();
         router.get(`/aip/${data.id}/summary?${qs}`);
     }
@@ -77,37 +82,36 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
         setOpenFormDialog(true);
     }
 
-    // Trigger PDF generation
-    // This loads the initial data (Consolidated for BACSU, Office-only for others)
     function handleGeneratePdf(selectedYearId: FiscalYear) {
         setSelectedYear(selectedYearId);
 
         const data: Record<string, any> = { fiscal_year_id: selectedYearId.id };
+
         if (!can?.generateAppAll && can?.generateAppOwn) {
             data.office_id = auth.user.office_id;
         }
 
         router.reload({
-            only: ["app"],
+            only: ['app'],
             data,
             onSuccess: () => setOpenPdfPreviewDialog(true),
         });
     }
 
     function handleOpenPpmpSummary(data: FiscalYear) {
-        // finalized redirecting route
         router.visit(index({ fiscalYear: data.id }));
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={columns(
                         can?.updateStatus ?? false,
                         canOpenAip ?? false,
                         isOpenAipDisabled,
-                        (can?.generateAppAll ?? false) || (can?.generateAppOwn ?? false),
+                        (can?.generateAppAll ?? false) ||
+                            (can?.generateAppOwn ?? false),
                         can?.openPpmpSummary ?? false,
                     )}
                     data={fiscalYears}
@@ -125,9 +129,11 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
                                     value={selectedOfficeId}
                                     onChange={handleOfficeChange}
                                     options={offices}
-                                    getOptionValue={(office) => office.id.toString()}
+                                    getOptionValue={(office) =>
+                                        office.id.toString()
+                                    }
                                     getOptionSearchText={(office) =>
-                                        `${office.acronym ?? ""} ${office.name}`
+                                        `${office.acronym ?? ''} ${office.name}`
                                     }
                                     renderTrigger={(office) => (
                                         <span className="truncate">
@@ -137,7 +143,7 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
                                     renderOption={(office) => (
                                         <div className="grid w-full grid-cols-4 gap-4">
                                             <span className="col-span-1">
-                                                {office.acronym ?? "-"}
+                                                {office.acronym ?? '-'}
                                             </span>
                                             <span className="col-span-3 whitespace-normal">
                                                 {office.name}
@@ -152,7 +158,11 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
                             </div>
                         )}
 
-                        {can?.add && <Button onClick={handleOpenFormDialog}>Initialize AIP</Button>}
+                        {can?.add && (
+                            <Button onClick={handleOpenFormDialog}>
+                                Initialize AIP
+                            </Button>
+                        )}
                     </div>
                 </DataTable>
             </div>
@@ -168,6 +178,15 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
                 auth={auth}
                 canGenerateAppAll={can?.generateAppAll}
             />
-        </AppLayout>
+        </>
     );
 }
+
+AipPage.layout = {
+    breadcrumbs: [
+        {
+            title: 'Annual Investment Programs',
+            href: '#',
+        },
+    ],
+};

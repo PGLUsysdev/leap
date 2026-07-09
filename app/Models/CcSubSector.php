@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use Database\Factories\CcSubSectorFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CcSubSector extends Model
 {
-    /** @use HasFactory<\Database\Factories\CcSubSectorFactory> */
+    /** @use HasFactory<CcSubSectorFactory> */
     use HasFactory;
 
     protected $fillable = ['id', 'strategic_priority_id', 'code', 'name'];

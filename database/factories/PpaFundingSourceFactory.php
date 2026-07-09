@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\PpaFundingSource;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PpaFundingSource>
+ * @extends Factory<PpaFundingSource>
  */
 class PpaFundingSourceFactory extends Factory
 {

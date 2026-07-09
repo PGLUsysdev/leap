@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\LguLevelFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LguLevel extends Model
 {
-    /** @use HasFactory<\Database\Factories\LguLevelFactory> */
+    /** @use HasFactory<LguLevelFactory> */
     use HasFactory;
 
     protected $fillable = ['code', 'name'];

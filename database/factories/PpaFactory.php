@@ -54,8 +54,7 @@ class PpaFactory extends Factory
                 'type' => 'Sub-Activity',
                 'office_id' => 18,
                 'code_suffix' => $this->faker->numerify('##'),
-                'parent_id' =>
-                    $parentId ?? $this->getOrCreateParent('Activity'),
+                'parent_id' => $parentId ?? $this->getOrCreateParent('Activity'),
             ];
         });
     }

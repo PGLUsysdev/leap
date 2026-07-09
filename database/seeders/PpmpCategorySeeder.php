@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\PpmpCategory;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class PpmpCategorySeeder extends Seeder
@@ -29,8 +29,7 @@ class PpmpCategorySeeder extends Seeder
             // Traveling Expenses - Foreign
             [
                 'id' => 26,
-                'name' =>
-                    'Non-Procurement Items - Traveling Expenses - Foreign',
+                'name' => 'Non-Procurement Items - Traveling Expenses - Foreign',
                 // 'chart_of_account_id' => 29,
                 'is_non_procurement' => true,
             ],
@@ -197,8 +196,7 @@ class PpmpCategorySeeder extends Seeder
             // Semi-Expendable Furniture, Fixtures and Book Expenses
             [
                 'id' => 40,
-                'name' =>
-                    'Semi-Expendable Furniture, Fixtures and Book Expenses',
+                'name' => 'Semi-Expendable Furniture, Fixtures and Book Expenses',
                 // 'chart_of_account_id' => 46,
             ],
 
@@ -458,8 +456,7 @@ class PpmpCategorySeeder extends Seeder
             // Repair and Maintenance - Buildings and Other Structures
             [
                 'id' => 70,
-                'name' =>
-                    'Repair and Maintenance - Buildings and Other Structures',
+                'name' => 'Repair and Maintenance - Buildings and Other Structures',
                 // 'chart_of_account_id' => 75,
             ],
 
@@ -500,16 +497,14 @@ class PpmpCategorySeeder extends Seeder
             // Repair and Maintenance - Other Property, Plant and Equipment
             [
                 'id' => 76,
-                'name' =>
-                    'Repair and Maintenance - Other Property, Plant and Equipment',
+                'name' => 'Repair and Maintenance - Other Property, Plant and Equipment',
                 // 'chart_of_account_id' => 81,
             ],
 
             // Subsidy to National Government Agencies
             [
                 'id' => 77,
-                'name' =>
-                    'Non-Procurement Items - Subsidy to National Government Agenices ',
+                'name' => 'Non-Procurement Items - Subsidy to National Government Agenices ',
                 // 'chart_of_account_id' => 82,
                 'is_non_procurement' => true,
             ],
@@ -517,8 +512,7 @@ class PpmpCategorySeeder extends Seeder
             // Subsidy to Other Local Government Units
             [
                 'id' => 78,
-                'name' =>
-                    'Non-Procurement Items - Subsidy to Other Local Government Units',
+                'name' => 'Non-Procurement Items - Subsidy to Other Local Government Units',
                 // 'chart_of_account_id' => 83,
                 'is_non_procurement' => true,
             ],
@@ -534,8 +528,7 @@ class PpmpCategorySeeder extends Seeder
             // Subsidy to General Fund Proper/Special Accounts
             [
                 'id' => 80,
-                'name' =>
-                    'Non-Procurement Items - Subsidy to General Fund Proper/Special Accounts',
+                'name' => 'Non-Procurement Items - Subsidy to General Fund Proper/Special Accounts',
                 // 'chart_of_account_id' => 85,
                 'is_non_procurement' => true,
             ],
@@ -543,8 +536,7 @@ class PpmpCategorySeeder extends Seeder
             // Subsidy to Local Economic Enterprises/Public Utilities
             [
                 'id' => 81,
-                'name' =>
-                    'Non-Procurement Items - Subsidy to Local Economic Enterprises/Public Utilities',
+                'name' => 'Non-Procurement Items - Subsidy to Local Economic Enterprises/Public Utilities',
                 // 'chart_of_account_id' => 86,
                 'is_non_procurement' => true,
             ],
@@ -560,8 +552,7 @@ class PpmpCategorySeeder extends Seeder
             // Transfers of Unspent Current Year DRRM Funds to the Trust Funds
             [
                 'id' => 83,
-                'name' =>
-                    'Non-Procurement Items - Transfers of Unspent Current Year DRRM Funds to the Trust Funds',
+                'name' => 'Non-Procurement Items - Transfers of Unspent Current Year DRRM Funds to the Trust Funds',
                 // 'chart_of_account_id' => 88,
                 'is_non_procurement' => true,
             ],
@@ -569,8 +560,7 @@ class PpmpCategorySeeder extends Seeder
             // Transfers for Project Equity Share/LGU Counterpart
             [
                 'id' => 84,
-                'name' =>
-                    'Non-Procurement Items - Transfers for Project Equity Share/LGU Counterpart',
+                'name' => 'Non-Procurement Items - Transfers for Project Equity Share/LGU Counterpart',
                 // 'chart_of_account_id' => 89,
                 'is_non_procurement' => true,
             ],
@@ -644,8 +634,7 @@ class PpmpCategorySeeder extends Seeder
             // Membership Dues and Contributions to Organizations
             [
                 'id' => 92,
-                'name' =>
-                    'Non-Procurement Items - Membership Dues and Contributions to Organizations',
+                'name' => 'Non-Procurement Items - Membership Dues and Contributions to Organizations',
                 // 'chart_of_account_id' => 98,
                 'is_non_procurement' => true,
             ],
@@ -666,8 +655,7 @@ class PpmpCategorySeeder extends Seeder
             // Other Maintenance and Operating Expenses
             [
                 'id' => 95,
-                'name' =>
-                    'Non-Procurement Items - Other Maintenance and Operating Expenses',
+                'name' => 'Non-Procurement Items - Other Maintenance and Operating Expenses',
                 // 'chart_of_account_id' => 101,
                 'is_non_procurement' => true,
             ],
@@ -932,8 +920,7 @@ class PpmpCategorySeeder extends Seeder
                 [
                     'name' => $category['name'],
                     // 'chart_of_account_id' => $category['chart_of_account_id'],
-                    'is_non_procurement' =>
-                        $category['is_non_procurement'] ?? false,
+                    'is_non_procurement' => $category['is_non_procurement'] ?? false,
                 ],
             );
         }

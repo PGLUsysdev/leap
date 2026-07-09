@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Office;
 use App\Models\FiscalYear;
+use App\Models\Office;
 use App\Models\PlantillaPosition;
+use Illuminate\Database\Seeder;
 
 class PlantillaPositionSeeder extends Seeder
 {
@@ -16,7 +16,7 @@ class PlantillaPositionSeeder extends Seeder
         // Get the first office (or create one if none exists)
         $office = Office::first();
 
-        if (!$office) {
+        if (! $office) {
             $office = Office::create([
                 'code' => '001',
                 'name' => 'Office of the Mayor',
@@ -28,7 +28,7 @@ class PlantillaPositionSeeder extends Seeder
 
         // Get or create fiscal year 2027
         $fiscalYear = FiscalYear::where('year', 2027)->first();
-        if (!$fiscalYear) {
+        if (! $fiscalYear) {
             $fiscalYear = FiscalYear::create([
                 'year' => 2027,
                 'status' => 'open',
@@ -159,6 +159,6 @@ class PlantillaPositionSeeder extends Seeder
         }
 
         $this->command->info('Plantilla positions seeded successfully!');
-        $this->command->info('Total positions: ' . count($positions));
+        $this->command->info('Total positions: '.count($positions));
     }
 }

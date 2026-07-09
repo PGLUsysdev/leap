@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\AipEntry;
 use App\Models\FiscalYear;
 use App\Models\Ppa;
-use App\Models\AipEntry;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class AipEntrySeeder extends Seeder
 {
@@ -22,10 +22,11 @@ class AipEntrySeeder extends Seeder
         $ppas = Ppa::all();
 
         // Safety check
-        if (!$fiscalYear || $ppas->isEmpty()) {
+        if (! $fiscalYear || $ppas->isEmpty()) {
             $this->command->error(
                 'Error: No Fiscal Year or PPAs found. Please seed those tables first.',
             );
+
             return;
         }
 
@@ -40,9 +41,8 @@ class AipEntrySeeder extends Seeder
                 'start_date' => Carbon::createFromDate($year, 1, 1),
                 'end_date' => Carbon::createFromDate($year, 12, 31),
 
-                'expected_output' =>
-                    'Successfully implemented ' .
-                    $ppa->title .
+                'expected_output' => 'Successfully implemented '.
+                    $ppa->title.
                     ' with 100% utilization rate.',
 
                 // Financial and CCET columns removed as requested

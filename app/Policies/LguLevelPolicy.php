@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\LguLevel;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class LguLevelPolicy
 {
@@ -15,6 +14,7 @@ class LguLevelPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('lgu-level.view');
     }
 
@@ -33,6 +33,7 @@ class LguLevelPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('lgu-level.add');
     }
 
@@ -43,6 +44,7 @@ class LguLevelPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('lgu-level.edit');
     }
 
@@ -53,6 +55,7 @@ class LguLevelPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('lgu-level.delete');
     }
 

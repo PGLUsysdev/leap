@@ -1,11 +1,9 @@
-import { useMemo, useState } from "react";
-import { DataTable } from "@/components/data-table";
-import { Button } from "@/components/ui/button";
-import AppLayout from "@/layouts/app-layout";
-import type { BreadcrumbItem } from "@/types";
-import type { ChartOfAccount, Position, PsBreakdownItem } from "@/types";
-import getPsBreakdownCols from "./columns/ps-breakdown-cols";
-import PreviewPdfDialog from "./pdf-preview-dialog";
+import { useMemo, useState } from 'react';
+import { DataTable } from '@/components/data-table';
+import { index as aipIndex, summary } from '@/routes/aip';
+import type { ChartOfAccount, Position, PsBreakdownItem } from '@/types';
+import getPsBreakdownCols from './columns/ps-breakdown-cols';
+import PreviewPdfDialog from './pdf-preview-dialog';
 
 interface PsBreakdownProps {
     chartOfAccounts: ChartOfAccount[];
@@ -36,18 +34,6 @@ export default function PsBreakdown({
 }: PsBreakdownProps) {
     const [openPdfPreview, setOpenPdfPreview] = useState(false);
 
-    const breadcrumbs: BreadcrumbItem[] = useMemo(
-        () => [
-            { title: "Annual Investment Programs", href: "/aip" },
-            {
-                title: `AIP Summary FY ${fiscalYear.year}`,
-                href: `/aip/${fiscalYear.id}/summary`,
-            },
-            { title: "Personnel Services Breakdown", href: "#" },
-        ],
-        [fiscalYear],
-    );
-
     const psBreakdownCols = useMemo(
         () =>
             getPsBreakdownCols(
@@ -57,23 +43,29 @@ export default function PsBreakdown({
                 rates,
                 annualRateMap,
             ),
-        [chartOfAccounts, breakdownItems, ppaFundingSourceId, rates, annualRateMap],
+        [
+            chartOfAccounts,
+            breakdownItems,
+            ppaFundingSourceId,
+            rates,
+            annualRateMap,
+        ],
     );
 
     // Build sections for the PDF preview — PS is computed from raw data;
     // MOOE/FE/CO have no data in this context.
     const pdfSections = useMemo(
         () => ({
-            ps: { total: "0.00", coas: [] },
-            mooe: { total: "0.00", coas: [] },
-            fe: { total: "0.00", coas: [] },
-            co: { total: "0.00", coas: [] },
+            ps: { total: '0.00', coas: [] },
+            mooe: { total: '0.00', coas: [] },
+            fe: { total: '0.00', coas: [] },
+            co: { total: '0.00', coas: [] },
         }),
         [],
     );
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     data={positions}
@@ -106,6 +98,17 @@ export default function PsBreakdown({
                     annualRateMap,
                 }}
             />
-        </AppLayout>
+        </>
     );
 }
+
+PsBreakdown.layout = ({ fiscalYear }: PsBreakdownProps) => ({
+    breadcrumbs: [
+        { title: 'Annual Investment Programs', href: aipIndex() },
+        {
+            title: `AIP Summary FY ${fiscalYear.year}`,
+            href: summary({ fiscalYear: fiscalYear.id }),
+        },
+        { title: 'Personnel Services Breakdown', href: '#' },
+    ],
+});

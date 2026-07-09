@@ -94,7 +94,7 @@ class PpaController extends Controller
                 'selected_office_id',
             ]),
 
-            'dialogPpaTree' => Inertia::lazy(function () use (
+            'dialogPpaTree' => Inertia::optional(function () use (
                 $request,
                 $userOfficeId,
                 $user,
@@ -123,9 +123,9 @@ class PpaController extends Controller
                     });
             }),
 
-            'dialogCurrent' => Inertia::lazy(function () use ($request) {
+            'dialogCurrent' => Inertia::optional(function () use ($request) {
                 $id = $request->query('dialog_id');
-                if (! $id) {
+                if (!$id) {
                     return [];
                 }
 
@@ -145,8 +145,8 @@ class PpaController extends Controller
 
         return Ppa::when(
             $officeId,
-            fn ($q) => $q->where('office_id', $officeId),
-            fn ($q) => $q->whereNull('id'),
+            fn($q) => $q->where('office_id', $officeId),
+            fn($q) => $q->whereNull('id'),
         )
             ->where('fiscal_year_id', $fiscalYearId)
             ->when(
@@ -197,8 +197,8 @@ class PpaController extends Controller
         // get ppa null first
         return Ppa::when(
             $userOfficeId,
-            fn ($q) => $q->where('office_id', $userOfficeId),
-            fn ($q) => $q->whereNull('id'),
+            fn($q) => $q->where('office_id', $userOfficeId),
+            fn($q) => $q->whereNull('id'),
         )
             ->where('fiscal_year_id', $prevYearId)
             ->when(
@@ -280,7 +280,7 @@ class PpaController extends Controller
 
         if ($parentId) {
             $parent = Ppa::findOrFail($parentId);
-            abort_if(! $showAll && $parent->office_id !== $user->office_id, 403);
+            abort_if(!$showAll && $parent->office_id !== $user->office_id, 403);
             $officeId = $parent->office_id;
         } else {
             $officeId = $showAll ? $validated['office_id'] : $user->office_id;
@@ -367,7 +367,7 @@ class PpaController extends Controller
             // 1. Move to new parent with a globally unique temp suffix
             $ppa->update([
                 'parent_id' => $newParentId,
-                'code_suffix' => 'MOVING_'.$ppa->id,
+                'code_suffix' => 'MOVING_' . $ppa->id,
                 'sort_order' => $isSibling
                     ? ($direction === 'top'
                         ? $target->sort_order - 0.5
@@ -421,7 +421,7 @@ class PpaController extends Controller
 
         // Pass 1: Set temporary values to avoid collision with other years/items
         foreach ($siblings as $sibling) {
-            $sibling->update(['code_suffix' => 'TEMP_'.$sibling->id]);
+            $sibling->update(['code_suffix' => 'TEMP_' . $sibling->id]);
         }
 
         // Pass 2: Final sequential numbering (01, 02, 03...)
@@ -469,16 +469,14 @@ class PpaController extends Controller
         $allIds = $this->getAllDescendantIds($ppa);
 
         // 3. Check for AIP Entry dependencies across the entire branch
-        $hasDependencies = AipEntry::whereIn(
-            'ppa_id',
-            $allIds,
-        )->exists();
+        $hasDependencies = AipEntry::whereIn('ppa_id', $allIds)->exists();
 
         if ($hasDependencies) {
             return redirect()
                 ->back()
                 ->withErrors([
-                    'error' => 'Cannot delete: This PPA or its sub-items are linked to existing AIP entries.',
+                    'error' =>
+                        'Cannot delete: This PPA or its sub-items are linked to existing AIP entries.',
                 ]);
         }
 
@@ -562,7 +560,7 @@ class PpaController extends Controller
             : $user->office_id;
         $currentFiscalYearId = session('active_fiscal_year_id');
 
-        if (! $currentFiscalYearId) {
+        if (!$currentFiscalYearId) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'No active fiscal year set']);
@@ -570,7 +568,7 @@ class PpaController extends Controller
 
         // Get previous fiscal year by querying the database
         $currentFiscalYear = FiscalYear::find($currentFiscalYearId);
-        if (! $currentFiscalYear) {
+        if (!$currentFiscalYear) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Current fiscal year not found']);
@@ -581,7 +579,7 @@ class PpaController extends Controller
             $currentFiscalYear->year - 1,
         )->first();
 
-        if (! $previousFiscalYear) {
+        if (!$previousFiscalYear) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Previous fiscal year not found']);
@@ -671,7 +669,7 @@ class PpaController extends Controller
             return redirect()
                 ->back()
                 ->withErrors([
-                    'error' => 'Error importing PPAs: '.$e->getMessage(),
+                    'error' => 'Error importing PPAs: ' . $e->getMessage(),
                 ]);
         }
     }

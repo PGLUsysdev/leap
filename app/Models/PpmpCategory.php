@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Database\Factories\PpmpCategoryFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PpmpCategory extends Model
 {
-    /** @use HasFactory<\Database\Factories\PpmpCategoryFactory> */
+    /** @use HasFactory<PpmpCategoryFactory> */
     use HasFactory;
 
     protected $fillable = ['name', 'is_non_procurement'];

@@ -1,15 +1,11 @@
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import FormDialog from "./form-dialog";
-import type { Office, Sector, LguLevel, OfficeType } from "@/types";
-import { DeleteDialog } from "@/components/delete-dialog";
-import { router } from "@inertiajs/react";
-import { DataTable } from "@/components/data-table";
-import columns from "./columns/columns";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Offices", href: "#" }];
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { Button } from '@/components/ui/button';
+import type { LguLevel, Office, OfficeType, Sector } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
 
 interface OfficesPageProps {
     offices: Office[];
@@ -29,11 +25,10 @@ export default function OfficesPage({
     officeTypes,
     can,
 }: OfficesPageProps) {
-    console.log({ offices, can });
-
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
-    const [selectedParentOffice, setSelectedParentOffice] = useState<Office | null>(null);
+    const [selectedParentOffice, setSelectedParentOffice] =
+        useState<Office | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -51,6 +46,7 @@ export default function OfficesPage({
 
     function handleDialogOpenChange(isOpen: boolean) {
         setIsDialogOpen(isOpen);
+
         if (!isOpen) {
             setSelectedOffice(null);
             setSelectedParentOffice(null);
@@ -84,14 +80,8 @@ export default function OfficesPage({
     const cols = columns();
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
-                {/*<div className="mb-2 text-xs text-muted-foreground">
-                    {can?.showAllOffices
-                        ? 'Showing all offices'
-                        : 'Showing your office'}
-                </div>*/}
-
                 <DataTable
                     columns={cols}
                     data={offices}
@@ -101,7 +91,9 @@ export default function OfficesPage({
                     onDelete={handleDeleteDialogOpen}
                     negativeHeight={7}
                 >
-                    {can?.addOffice && <Button onClick={handleCreate}>Add Office</Button>}
+                    {can?.addOffice && (
+                        <Button onClick={handleCreate}>Add Office</Button>
+                    )}
                 </DataTable>
             </div>
 
@@ -119,18 +111,30 @@ export default function OfficesPage({
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title={selectedOffice?.parent_id ? "Delete Sub Unit?" : "Delete Office?"}
+                title={
+                    selectedOffice?.parent_id
+                        ? 'Delete Sub Unit?'
+                        : 'Delete Office?'
+                }
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">"{selectedOffice?.name}"</span>?
-                        {selectedOffice?.children && selectedOffice.children.length > 0 && (
-                            <>
-                                {" "}
-                                This will also delete all sub-units under this{" "}
-                                {selectedOffice?.parent_id ? "sub unit" : "office"}.
-                            </>
-                        )}
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedOffice?.name}"
+                        </span>
+                        ?
+                        {selectedOffice?.children &&
+                            selectedOffice.children.length > 0 && (
+                                <>
+                                    {' '}
+                                    This will also delete all sub-units under
+                                    this{' '}
+                                    {selectedOffice?.parent_id
+                                        ? 'sub unit'
+                                        : 'office'}
+                                    .
+                                </>
+                            )}
                     </>
                 }
                 onConfirm={handleDelete}
@@ -140,6 +144,15 @@ export default function OfficesPage({
                 }}
                 isLoading={isLoading}
             />
-        </AppLayout>
+        </>
     );
 }
+
+OfficesPage.layout = {
+    breadcrumbs: [
+        {
+            title: 'Offices',
+            href: '#',
+        },
+    ],
+};

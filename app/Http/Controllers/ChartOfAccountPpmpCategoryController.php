@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ChartOfAccountPpmpCategory;
 use App\Http\Requests\StoreChartOfAccountPpmpCategoryRequest;
 use App\Http\Requests\UpdateChartOfAccountPpmpCategoryRequest;
+use App\Models\ChartOfAccountPpmpCategory;
 
 class ChartOfAccountPpmpCategoryController extends Controller
 {

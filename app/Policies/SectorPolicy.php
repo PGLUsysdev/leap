@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Sector;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class SectorPolicy
 {
@@ -15,6 +14,7 @@ class SectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('sector.view');
     }
 
@@ -33,6 +33,7 @@ class SectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('sector.add');
     }
 
@@ -43,6 +44,7 @@ class SectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('sector.edit');
     }
 
@@ -53,6 +55,7 @@ class SectorPolicy
     {
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
+
         return $permissions->contains('sector.delete');
     }
 

@@ -1,13 +1,6 @@
-import { useState } from "react";
-import { router, usePage } from "@inertiajs/react";
-import { DataTable } from "@/components/data-table";
-import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
-import type { FiscalYear, Ios, Office, Position, SalaryStandard, SharedData } from "@/types";
-import columns from "./columns/position-cols";
-import { Button } from "@/components/ui/button";
-import FormDialog from "./form-dailog";
-import PreviewPdfDialog from "./pdf-preview-dialog";
+import { router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
+import { DataTable } from '@/components/data-table';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -17,9 +10,19 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Positions", href: "#" }];
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import type {
+    FiscalYear,
+    Ios,
+    Office,
+    Position,
+    SalaryStandard,
+    SharedData,
+} from '@/types';
+import columns from './columns/position-cols';
+import FormDialog from './form-dailog';
+import PreviewPdfDialog from './pdf-preview-dialog';
 
 interface PositionPageProps {
     positions: Position[];
@@ -53,10 +56,14 @@ export default function PositionPage({
     const officePositions = userOfficeId
         ? positions.filter((p) => p.office_id === userOfficeId)
         : positions;
-    const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
+    const [selectedPosition, setSelectedPosition] = useState<Position | null>(
+        null,
+    );
     const [openForm, setOpenForm] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
-    const [pdfFormType, setPdfFormType] = useState<"permanent" | "casual" | null>(null);
+    const [pdfFormType, setPdfFormType] = useState<
+        'permanent' | 'casual' | null
+    >(null);
     const openPdfPreview = pdfFormType !== null;
 
     function handleEdit(data: Position) {
@@ -70,7 +77,10 @@ export default function PositionPage({
     }
 
     function confirmDelete() {
-        if (!selectedPosition) return;
+        if (!selectedPosition) {
+            return;
+        }
+
         router.delete(`/position/${selectedPosition.id}`, {
             preserveState: true,
             preserveScroll: true,
@@ -83,11 +93,14 @@ export default function PositionPage({
 
     function handleDialogOpenChange(isOpen: boolean) {
         setOpenForm(isOpen);
-        if (!isOpen) setSelectedPosition(null);
+
+        if (!isOpen) {
+            setSelectedPosition(null);
+        }
     }
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <>
             <div className="pt-4">
                 <DataTable
                     columns={columns({
@@ -105,13 +118,13 @@ export default function PositionPage({
                             <>
                                 <Button
                                     variant="secondary"
-                                    onClick={() => setPdfFormType("permanent")}
+                                    onClick={() => setPdfFormType('permanent')}
                                 >
                                     Generate LBP Form No. 3
                                 </Button>
                                 <Button
                                     variant="secondary"
-                                    onClick={() => setPdfFormType("casual")}
+                                    onClick={() => setPdfFormType('casual')}
                                 >
                                     Generate LBP Form No. 3a
                                 </Button>
@@ -143,10 +156,18 @@ export default function PositionPage({
             <PreviewPdfDialog
                 open={openPdfPreview}
                 onOpenChange={(isOpen) => {
-                    if (!isOpen) setPdfFormType(null);
+                    if (!isOpen) {
+                        setPdfFormType(null);
+                    }
                 }}
-                positions={officePositions.filter((p) => p.employment_type === pdfFormType)}
-                title={pdfFormType === "permanent" ? "LBP Form No. 3" : "LBP Form No. 3a"}
+                positions={officePositions.filter(
+                    (p) => p.employment_type === pdfFormType,
+                )}
+                title={
+                    pdfFormType === 'permanent'
+                        ? 'LBP Form No. 3'
+                        : 'LBP Form No. 3a'
+                }
                 currentStandards={currentStandards}
                 budgetStandards={budgetStandards}
                 currentFiscalYear={currentFiscalYear}
@@ -160,24 +181,31 @@ export default function PositionPage({
                         <AlertDialogDescription>
                             {selectedPosition?.user ? (
                                 <>
-                                    This position is currently assigned to{" "}
-                                    <strong>{selectedPosition.user.name}</strong>. Continuing will
-                                    unassign this user from the position. This action cannot be
-                                    undone.
+                                    This position is currently assigned to{' '}
+                                    <strong>
+                                        {selectedPosition.user.name}
+                                    </strong>
+                                    . Continuing will unassign this user from
+                                    the position. This action cannot be undone.
                                 </>
                             ) : (
-                                "Are you sure you want to delete this position? This action cannot be undone."
+                                'Are you sure you want to delete this position? This action cannot be undone.'
                             )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={confirmDelete}
+                        >
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </AppLayout>
+        </>
     );
 }
+
+PositionPage.layout = { breadcrumbs: [{ title: 'Positions', href: '#' }] };
