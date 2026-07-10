@@ -1,8 +1,8 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, ExternalLink, FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { ChartOfAccount, FiscalYear, FundingSource, PriceList } from "@/types";
-import { Badge } from "@/components/ui/badge";
+import { createColumnHelper } from '@tanstack/react-table';
+// import type { RowData } from '@tanstack/react-table';
+import { Pencil, ExternalLink, FileText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -10,33 +10,44 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
+import type {
+    // ChartOfAccount,
+    FiscalYear,
+    // FundingSource,
+    // PriceList,
+} from '@/types';
 
-import type { RowData } from "@tanstack/react-table";
+// declare module '@tanstack/react-table' {
+//     interface TableMeta<TData extends RowData> {
+//         onUpdate?: (data: TData) => void;
+//         onEdit?: (data: TData) => void;
+//         onDelete?: (data: TData) => void;
 
-declare module "@tanstack/react-table" {
-    interface TableMeta<TData extends RowData> {
-        onEdit?: (data: TData) => void;
-        onDelete?: (data: TData) => void;
-
-        onAdd?: (data: TData, type?: "Program" | "Project" | "Activity" | "Sub-Activity") => void;
-        onUpdateStatus?: (data: TData, status: "draft" | "open" | "locked" | "archived") => void;
-        onOpen?: (data: TData) => void;
-        onGeneratePdf?: (data: TData) => void;
-        onOpenPpmpSummary?: (data: TData) => void;
-        onReorder?: (activeId: string, overId: string) => void;
-        onShowChildren?: (data: TData) => void;
-        onMove?: (data: TData) => void;
-        onSelect?: (data: TData, boolean: boolean) => void;
-        onEditPerms?: () => void;
-        meta?: {
-            priceLists?: PriceList[];
-            chartOfAccounts?: ChartOfAccount[];
-            fundingSources?: FundingSource[];
-        };
-        selectedItemToMove: TData;
-    }
-}
+//         onAdd?: (
+//             data: TData,
+//             type?: 'Program' | 'Project' | 'Activity' | 'Sub-Activity',
+//         ) => void;
+//         onUpdateStatus?: (
+//             data: TData,
+//             status: 'draft' | 'open' | 'locked' | 'archived',
+//         ) => void;
+//         onOpen?: (data: TData) => void;
+//         onGeneratePdf?: (data: TData) => void;
+//         onOpenPpmpSummary?: (data: TData) => void;
+//         onReorder?: (activeId: string, overId: string) => void;
+//         onShowChildren?: (data: TData) => void;
+//         onMove?: (data: TData) => void;
+//         onSelect?: (data: TData, boolean: boolean) => void;
+//         onEditPerms?: () => void;
+//         meta?: {
+//             priceLists?: PriceList[];
+//             chartOfAccounts?: ChartOfAccount[];
+//             fundingSources?: FundingSource[];
+//         };
+//         selectedItemToMove: TData;
+//     }
+// }
 
 const columnHelper = createColumnHelper<FiscalYear>();
 
@@ -48,28 +59,30 @@ const columns = (
     canOpenPpmpSummary: boolean,
 ) => {
     const cols = [
-        columnHelper.accessor("year", {
-            header: "Fiscal Year",
-            cell: (value) => <span className="text-wrap">{value.getValue()}</span>,
+        columnHelper.accessor('year', {
+            header: 'Fiscal Year',
+            cell: (value) => (
+                <span className="text-wrap">{value.getValue()}</span>
+            ),
         }),
-        columnHelper.accessor("status", {
-            header: "Status",
+        columnHelper.accessor('status', {
+            header: 'Status',
             cell: (info) => {
                 const status = info.getValue();
 
                 const STATUS_MAP = {
-                    draft: { label: "Draft", variant: "secondary" as const },
-                    open: { label: "Open", variant: "default" as const },
-                    locked: { label: "Locked", variant: "outline" as const },
+                    draft: { label: 'Draft', variant: 'secondary' as const },
+                    open: { label: 'Open', variant: 'default' as const },
+                    locked: { label: 'Locked', variant: 'outline' as const },
                     archived: {
-                        label: "Archived",
-                        variant: "outline" as const,
+                        label: 'Archived',
+                        variant: 'outline' as const,
                     },
                 } as const;
 
                 const config = STATUS_MAP[status] || {
                     label: status,
-                    variant: "secondary",
+                    variant: 'secondary',
                 };
 
                 return (
@@ -79,38 +92,41 @@ const columns = (
                 );
             },
         }),
-        columnHelper.accessor("created_at", {
-            header: "Created At",
+        columnHelper.accessor('created_at', {
+            header: 'Created At',
             cell: (info) => {
                 const rawValue = info.getValue();
                 const date = new Date(String(rawValue));
-                const formattedDate = date.toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
                 });
 
                 return <span className="text-wrap">{formattedDate}</span>;
             },
         }),
-        columnHelper.accessor("updated_at", {
-            header: "Updated At",
+        columnHelper.accessor('updated_at', {
+            header: 'Updated At',
             cell: (info) => {
                 const rawValue = info.getValue();
                 const date = new Date(String(rawValue));
-                const formattedDate = date.toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
                 });
 
                 return <span className="text-wrap">{formattedDate}</span>;
             },
         }),
-        ...(canUpdateStatus || canOpenAip || canGenerateApp || canOpenPpmpSummary
+        ...(canUpdateStatus ||
+        canOpenAip ||
+        canGenerateApp ||
+        canOpenPpmpSummary
             ? [
                   columnHelper.display({
-                      id: "action",
+                      id: 'action',
                       size: (() => {
                           const count = [
                               canUpdateStatus,
@@ -118,6 +134,7 @@ const columns = (
                               canGenerateApp,
                               canOpenPpmpSummary,
                           ].filter(Boolean).length;
+
                           return count === 0
                               ? 0
                               : count === 1
@@ -141,7 +158,9 @@ const columns = (
                                                   size="icon"
                                                   title="Change AIP status"
                                                   onClick={() =>
-                                                      table.options.meta?.onEdit?.(row.original)
+                                                      table.options.meta?.onEdit?.(
+                                                          row.original,
+                                                      )
                                                   }
                                               >
                                                   <Pencil />
@@ -156,10 +175,13 @@ const columns = (
                                                       onClick={() =>
                                                           table.options.meta?.onUpdateStatus?.(
                                                               row.original,
-                                                              "draft",
+                                                              'draft',
                                                           )
                                                       }
-                                                      disabled={initialStatus === "draft"}
+                                                      disabled={
+                                                          initialStatus ===
+                                                          'draft'
+                                                      }
                                                   >
                                                       Draft
                                                   </DropdownMenuItem>
@@ -167,10 +189,13 @@ const columns = (
                                                       onClick={() =>
                                                           table.options.meta?.onUpdateStatus?.(
                                                               row.original,
-                                                              "open",
+                                                              'open',
                                                           )
                                                       }
-                                                      disabled={initialStatus === "open"}
+                                                      disabled={
+                                                          initialStatus ===
+                                                          'open'
+                                                      }
                                                   >
                                                       Open
                                                   </DropdownMenuItem>
@@ -178,10 +203,13 @@ const columns = (
                                                       onClick={() =>
                                                           table.options.meta?.onUpdateStatus?.(
                                                               row.original,
-                                                              "locked",
+                                                              'locked',
                                                           )
                                                       }
-                                                      disabled={initialStatus === "locked"}
+                                                      disabled={
+                                                          initialStatus ===
+                                                          'locked'
+                                                      }
                                                   >
                                                       Locked
                                                   </DropdownMenuItem>
@@ -189,10 +217,13 @@ const columns = (
                                                       onClick={() =>
                                                           table.options.meta?.onUpdateStatus?.(
                                                               row.original,
-                                                              "archived",
+                                                              'archived',
                                                           )
                                                       }
-                                                      disabled={initialStatus === "archived"}
+                                                      disabled={
+                                                          initialStatus ===
+                                                          'archived'
+                                                      }
                                                   >
                                                       Archived
                                                   </DropdownMenuItem>
@@ -207,7 +238,9 @@ const columns = (
                                           title="Generate APP"
                                           size="icon"
                                           onClick={() => {
-                                              table.options.meta?.onGeneratePdf?.(row.original);
+                                              table.options.meta?.onGeneratePdf?.(
+                                                  row.original,
+                                              );
                                           }}
                                       >
                                           <FileText />
@@ -220,7 +253,11 @@ const columns = (
                                           size="icon"
                                           title="Open AIP"
                                           disabled={disableOpenAip}
-                                          onClick={() => table.options.meta?.onOpen?.(row.original)}
+                                          onClick={() =>
+                                              table.options.meta?.onOpen?.(
+                                                  row.original,
+                                              )
+                                          }
                                       >
                                           <ExternalLink />
                                       </Button>
@@ -232,7 +269,9 @@ const columns = (
                                           title="Open PPMP Summary"
                                           size="icon"
                                           onClick={() => {
-                                              table.options.meta?.onOpenPpmpSummary?.(row.original);
+                                              table.options.meta?.onOpenPpmpSummary?.(
+                                                  row.original,
+                                              );
                                           }}
                                       >
                                           <ExternalLink />

@@ -1,4 +1,3 @@
-// import { ScrollArea } from '@base-ui/react/scroll-area';
 import {
     useReactTable,
     getCoreRowModel,
@@ -6,7 +5,7 @@ import {
     // getFacetedMinMaxValues,
     // getFacetedRowModel,
     // getFacetedUniqueValues,
-    // getFilteredRowModel,
+    getFilteredRowModel,
     // getGroupedRowModel,
     // getPaginationRowModel,
     // getSortedRowModel,
@@ -18,8 +17,13 @@ import type {
     Table,
     TableMeta,
 } from '@tanstack/react-table';
-import type { CSSProperties } from 'react';
-import { ScrollArea, ScrollBar } from '@/components/base-ui/scroll-area';
+import { useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     Table as DataTable,
     TableHeader,
@@ -28,7 +32,7 @@ import {
     TableRow,
     TableHead,
     TableCell,
-} from '@/components/base-ui/table';
+} from '@/components/base-ui-components/ui/table';
 import { cn } from '@/lib/utils';
 
 // ---
@@ -38,6 +42,7 @@ interface TableProps<TData> {
     columns: ColumnDef<TData, any>[];
     // meta?: Partial<TableMeta<TData>>;
     meta?: TableMeta<TData>;
+    children: ReactNode;
 }
 
 // ---
@@ -81,27 +86,24 @@ export default function Table<TData>({
     data,
     columns,
     meta,
+    children,
 }: TableProps<TData>) {
+    const [globalFilter, setGlobalFilter] = useState<any>([]);
+
     const table = useReactTable({
         columns: columns,
         data: data,
+
+        // row models
         getCoreRowModel: getCoreRowModel(),
         // getExpandedRowModel: getExpandedRowModel(),
         // getFacetedMinMaxValues: getFacetedMinMaxValues(),
         // getFacetedRowModel: getFacetedRowModel(),
         // getFacetedUniqueValues: getFacetedUniqueValues(),
-        // getFilteredRowModel: getFilteredRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
         // getGroupedRowModel: getGroupedRowModel(),
         // getPaginationRowModel: getPaginationRowModel(),
         // getSortedRowModel: getSortedRowModel(),
-
-        // for table
-        // defaultColumn: {
-        //     size: 110,
-        // },
-
-        // column pinning
-        enableColumnPinning: true,
 
         // states
         initialState: {
@@ -110,123 +112,150 @@ export default function Table<TData>({
             },
         },
 
+        state: {
+            globalFilter,
+        },
+
+        onGlobalFilterChange: setGlobalFilter,
+        enableColumnPinning: true,
+        // for table
+        // defaultColumn: {
+        //     size: 110,
+        // },
+
         meta: meta,
     });
 
     return (
-        <ScrollArea className="h-100">
-            <div>
-                <DataTable
-                    style={{
-                        tableLayout: 'fixed',
-                        // tableLayout: 'auto',
-                        width: '100%',
-                        minWidth: `${table.getCenterTotalSize()}px`,
-                        // minWidth: `${table.getTotalSize()}px`,
-                    }}
-                >
-                    <TableHeader className="sticky top-0 z-2">
-                        {table.getHeaderGroups().map((headerGroup) => {
-                            return (
-                                <TableRow
-                                    key={headerGroup.id}
-                                    className="shadow-[inset_0_-1px_0_0_var(--border)]"
-                                >
-                                    {headerGroup.headers.map((header) => {
-                                        return (
-                                            <TableHead
-                                                key={header.id}
-                                                // colSpan={header.colSpan}
-                                                className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
-                                                style={{
-                                                    width: `${header.getSize()}px`,
-                                                    ...getCommonPinningStyles(
-                                                        header.column,
-                                                        table,
-                                                    ),
-                                                }}
-                                            >
-                                                {flexRender(
-                                                    header.column.columnDef
-                                                        .header,
-                                                    header.getContext(),
-                                                )}
-                                            </TableHead>
-                                        );
-                                    })}
-                                </TableRow>
-                            );
-                        })}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows.map((row) => {
-                            return (
-                                <TableRow key={row.id}>
-                                    {row.getVisibleCells().map((cell) => {
-                                        return (
-                                            <TableCell
-                                                key={cell.id}
-                                                style={{
-                                                    width: `${cell.column.getSize()}px`,
-                                                    ...getCommonPinningStyles(
-                                                        cell.column,
-                                                        table,
-                                                    ),
-                                                }}
-                                                className={cn(
-                                                    'border p-1 first:border-l-0 last:border-r-0',
-                                                    cell.column.getIsPinned() &&
-                                                        'bg-background/95',
-                                                )}
-                                            >
-                                                {flexRender(
-                                                    cell.column.columnDef.cell,
-                                                    cell.getContext(),
-                                                )}
-                                            </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                    <TableFooter className="sticky bottom-0 z-2">
-                        {table.getFooterGroups().map((footerGroup) => {
-                            return (
-                                <TableRow
-                                    key={footerGroup.id}
-                                    className="shadow-[inset_0_1px_0_0_var(--border)]"
-                                >
-                                    {footerGroup.headers.map((header) => {
-                                        return (
-                                            <TableCell
-                                                key={header.id}
-                                                className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
-                                                style={{
-                                                    width: `${header.getSize()}px`,
-                                                    ...getCommonPinningStyles(
-                                                        header.column,
-                                                        table,
-                                                    ),
-                                                }}
-                                            >
-                                                {flexRender(
-                                                    header.column.columnDef
-                                                        .footer,
-                                                    header.getContext(),
-                                                )}
-                                            </TableCell>
-                                        );
-                                    })}
-                                </TableRow>
-                            );
-                        })}
-                    </TableFooter>
-                </DataTable>
+        <div>
+            <div className="flex justify-between p-4">
+                <Input
+                    value={globalFilter}
+                    onChange={(e) =>
+                        table.setGlobalFilter(String(e.target.value))
+                    }
+                    placeholder="Search..."
+                    className="w-100"
+                />
+
+                {children}
             </div>
 
-            <ScrollBar orientation="vertical" className="z-2" />
-            <ScrollBar orientation="horizontal" className="z-2" />
-        </ScrollArea>
+            <ScrollArea className="h-150">
+                <div>
+                    <DataTable
+                        style={{
+                            tableLayout: 'fixed',
+                            // tableLayout: 'auto',
+                            width: '100%',
+                            minWidth: `${table.getCenterTotalSize()}px`,
+                            // minWidth: `${table.getTotalSize()}px`,
+                        }}
+                    >
+                        <TableHeader className="sticky top-0 z-2">
+                            {table.getHeaderGroups().map((headerGroup) => {
+                                return (
+                                    <TableRow
+                                        key={headerGroup.id}
+                                        className="shadow-[inset_0_-1px_0_0_var(--border)]"
+                                    >
+                                        {headerGroup.headers.map((header) => {
+                                            return (
+                                                <TableHead
+                                                    key={header.id}
+                                                    // colSpan={header.colSpan}
+                                                    className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
+                                                    style={{
+                                                        width: `${header.getSize()}px`,
+                                                        ...getCommonPinningStyles(
+                                                            header.column,
+                                                            table,
+                                                        ),
+                                                    }}
+                                                >
+                                                    {flexRender(
+                                                        header.column.columnDef
+                                                            .header,
+                                                        header.getContext(),
+                                                    )}
+                                                </TableHead>
+                                            );
+                                        })}
+                                    </TableRow>
+                                );
+                            })}
+                        </TableHeader>
+                        <TableBody>
+                            {table.getRowModel().rows.map((row) => {
+                                return (
+                                    <TableRow key={row.id}>
+                                        {row.getVisibleCells().map((cell) => {
+                                            return (
+                                                <TableCell
+                                                    key={cell.id}
+                                                    style={{
+                                                        width: `${cell.column.getSize()}px`,
+                                                        ...getCommonPinningStyles(
+                                                            cell.column,
+                                                            table,
+                                                        ),
+                                                    }}
+                                                    className={cn(
+                                                        'border p-1 first:border-l-0 last:border-r-0',
+                                                        cell.column.getIsPinned() &&
+                                                            'bg-background/95',
+                                                    )}
+                                                >
+                                                    {flexRender(
+                                                        cell.column.columnDef
+                                                            .cell,
+                                                        cell.getContext(),
+                                                    )}
+                                                </TableCell>
+                                            );
+                                        })}
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                        <TableFooter className="sticky bottom-0 z-2">
+                            {table.getFooterGroups().map((footerGroup) => {
+                                return (
+                                    <TableRow
+                                        key={footerGroup.id}
+                                        className="shadow-[inset_0_1px_0_0_var(--border)]"
+                                    >
+                                        {footerGroup.headers.map((header) => {
+                                            return (
+                                                <TableCell
+                                                    key={header.id}
+                                                    className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
+                                                    style={{
+                                                        width: `${header.getSize()}px`,
+                                                        ...getCommonPinningStyles(
+                                                            header.column,
+                                                            table,
+                                                        ),
+                                                    }}
+                                                >
+                                                    {flexRender(
+                                                        header.column.columnDef
+                                                            .footer,
+                                                        header.getContext(),
+                                                    )}
+                                                </TableCell>
+                                            );
+                                        })}
+                                    </TableRow>
+                                );
+                            })}
+                        </TableFooter>
+                    </DataTable>
+                </div>
+
+                <ScrollBar orientation="vertical" className="z-2" />
+                <ScrollBar orientation="horizontal" className="z-2" />
+            </ScrollArea>
+        </div>
     );
 }

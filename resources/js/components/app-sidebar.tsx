@@ -23,8 +23,6 @@ import {
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 // import { NavFooter } from "@/components/nav-footer";
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
@@ -33,7 +31,9 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/ui/sidebar';
+} from '@/components/base-ui-components/ui/sidebar';
+import { NavMain } from '@/components/nav-main';
+import { NavUser } from '@/components/nav-user';
 import { dashboard } from '@/routes';
 import { index as aipIndex } from '@/routes/aip';
 import { index as ccStrategicPriorityIndex } from '@/routes/cc-strategic-priority';
@@ -234,10 +234,16 @@ export function AppSidebar() {
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        {/*<SidebarMenuButton size="lg" asChild>
                             <Link href={dashboard()} prefetch>
                                 <AppLogo />
                             </Link>
+                        </SidebarMenuButton>*/}
+                        <SidebarMenuButton
+                            size="lg"
+                            render={<Link href={dashboard()} prefetch />}
+                        >
+                            <AppLogo />
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

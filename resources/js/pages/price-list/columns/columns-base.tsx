@@ -108,7 +108,7 @@ const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
                                 size="icon"
                                 variant="outline"
                                 onClick={() =>
-                                    table.options.meta?.onEdit?.(row.original)
+                                    table.options.meta?.onUpdate?.(row.original)
                                 }
                             >
                                 <Pencil className="h-4 w-4" />

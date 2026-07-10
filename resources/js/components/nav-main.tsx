@@ -1,12 +1,15 @@
 import { Link } from '@inertiajs/react';
-import { ScrollArea, ScrollBar } from '@/components/base-ui/scroll-area';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/ui/sidebar';
+} from '@/components/base-ui-components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import type { NavItem } from '@/types';
 
@@ -50,7 +53,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                         );
                     })}
 
-                    <ScrollBar orientation="vertical" />
+                    {/*<ScrollBar orientation="vertical" />*/}
                 </ScrollArea>
             </SidebarMenu>
         </SidebarGroup>

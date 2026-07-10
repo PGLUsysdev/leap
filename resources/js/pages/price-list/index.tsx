@@ -1,7 +1,8 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-// import NewTable from '@/components/base-ui-components/data-table';
+import NewTable from '@/components/base-ui-components/data-table';
+import { Button as BaseButton } from '@/components/base-ui-components/ui/button';
 import { DataTable } from '@/components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import type {
     Filter,
 } from '@/types';
 import columns from './columns/columns';
+import columnsBase from './columns/columns-base';
 import MoveDialog from './move-dialog';
 
 interface PriceListPageProps {
@@ -149,14 +151,35 @@ export default function PriceListPage({
                 </DataTable>
             </div>
 
-            {/*<NewTable
-                data={paginatedPriceList.data}
-                columns={columns(
-                    can?.edit ?? false,
-                    can?.delete ?? false,
-                    can?.move ?? false,
-                )}
-            ></NewTable>*/}
+            <div className="pt-4">
+                <NewTable
+                    data={paginatedPriceList.data}
+                    columns={columnsBase(
+                        can?.edit ?? false,
+                        can?.delete ?? false,
+                        can?.move ?? false,
+                    )}
+                    meta={{
+                        onMove: () => {
+                            console.log('move');
+                        },
+                        onUpdate: () => {
+                            console.log('update');
+                        },
+                        onDelete: () => {
+                            console.log('delete');
+                        },
+                    }}
+                >
+                    <BaseButton
+                        onClick={() => {
+                            console.log('create');
+                        }}
+                    >
+                        Create Item
+                    </BaseButton>
+                </NewTable>
+            </div>
 
             <FormDialog
                 open={openEdit}
