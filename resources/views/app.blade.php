@@ -43,6 +43,8 @@
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">
-        <x-inertia::app />
+        <div class="root">
+            <x-inertia::app />
+        </div>
     </body>
 </html>

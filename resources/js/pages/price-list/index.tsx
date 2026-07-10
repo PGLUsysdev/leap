@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
+// import NewTable from '@/components/base-ui-components/data-table';
 import { DataTable } from '@/components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
@@ -147,6 +148,15 @@ export default function PriceListPage({
                     )}
                 </DataTable>
             </div>
+
+            {/*<NewTable
+                data={paginatedPriceList.data}
+                columns={columns(
+                    can?.edit ?? false,
+                    can?.delete ?? false,
+                    can?.move ?? false,
+                )}
+            ></NewTable>*/}
 
             <FormDialog
                 open={openEdit}
