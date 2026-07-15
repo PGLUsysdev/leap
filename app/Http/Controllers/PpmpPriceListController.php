@@ -67,19 +67,29 @@ class PpmpPriceListController extends Controller
         $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
             'MOOE',
             'CO',
-        ])->get();
+        ])
+            ->select(
+                'id',
+                'account_number',
+                'account_title',
+                'expense_class',
+                'description',
+            )
+            ->get();
 
-        // $ppmpCategory = PpmpCategory::with(
-        //     'chartOfAccounts:id,account_title,account_number',
-        // )->get();
-        $ppmpCategory = PpmpCategory::with(
-            'chartOfAccountPpmpCategories.chartOfAccount:id,account_title,account_number',
-        )->get();
+        $ppmpCategory = PpmpCategory::get(['id', 'name']);
+
+        $coaCategoryPairs = ChartOfAccountPpmpCategory::get([
+            'id',
+            'chart_of_account_id',
+            'ppmp_category_id',
+        ]);
 
         return Inertia::render('price-list/index', [
             'paginatedPriceList' => $priceList,
             'chartOfAccounts' => $chartOfAccounts,
-            'ppmpCategory' => $ppmpCategory,
+            'ppmpCategories' => $ppmpCategory,
+            'coaCategoryPairs' => $coaCategoryPairs,
             'can' => [
                 'add' => request()->user()->can('create', PpmpPriceList::class),
                 'edit' => request()->user()->can('update', new PpmpPriceList()),
@@ -171,21 +181,20 @@ class PpmpPriceListController extends Controller
 
         $validated = $request->validated();
 
-        // Auto-assign sort_order and item_number as the next available number
+        $junction = ChartOfAccountPpmpCategory::where([
+            'chart_of_account_id' => $validated['coaId'],
+            'ppmp_category_id' => $validated['categoryId'],
+        ])->firstOrFail();
+
         $maxSortOrder = PpmpPriceList::max('sort_order') ?? 0;
         $nextSortOrder = $maxSortOrder + 1;
-
-        $junction = ChartOfAccountPpmpCategory::firstOrCreate([
-            'chart_of_account_id' => $validated['expenseAccount'],
-            'ppmp_category_id' => $validated['category'],
-        ]);
 
         PpmpPriceList::create([
             'chart_of_account_ppmp_category_id' => $junction->id,
             'sort_order' => $nextSortOrder,
             'item_number' => $nextSortOrder,
-            'description' => $validated['description'],
-            'unit_of_measurement' => $validated['unitOfMeasurement'],
+            'description' => $validated['itemDescription'],
+            'unit_of_measurement' => $validated['uom'],
             'price' => $validated['price'],
         ]);
     }
@@ -217,15 +226,15 @@ class PpmpPriceListController extends Controller
 
         $validated = $request->validated();
 
-        $junction = ChartOfAccountPpmpCategory::firstOrCreate([
-            'chart_of_account_id' => $validated['expenseAccount'],
-            'ppmp_category_id' => $validated['category'],
-        ]);
+        $junction = ChartOfAccountPpmpCategory::where([
+            'chart_of_account_id' => $validated['coaId'],
+            'ppmp_category_id' => $validated['categoryId'],
+        ])->firstOrFail();
 
         $ppmpPriceList->update([
             'chart_of_account_ppmp_category_id' => $junction->id,
-            'description' => $validated['description'],
-            'unit_of_measurement' => $validated['unitOfMeasurement'],
+            'description' => $validated['itemDescription'],
+            'unit_of_measurement' => $validated['uom'],
             'price' => $validated['price'],
         ]);
     }

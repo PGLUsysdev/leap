@@ -23,10 +23,10 @@ class UpdatePpmpPriceListRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'expenseAccount' => 'required|integer|exists:chart_of_accounts,id',
-            'category' => 'required|integer|exists:ppmp_categories,id',
-            'description' => 'required|string|max:255',
-            'unitOfMeasurement' => 'required|string|max:50',
+            'coaId' => 'required|integer|exists:chart_of_accounts,id',
+            'categoryId' => 'required|integer|exists:ppmp_categories,id',
+            'itemDescription' => 'required|string|max:255',
+            'uom' => 'required|string|max:50',
             'price' => 'required|numeric|min:0',
         ];
     }

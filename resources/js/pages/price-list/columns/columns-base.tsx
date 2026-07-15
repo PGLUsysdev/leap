@@ -99,7 +99,7 @@ const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
     if (canEdit || canDelete) {
         cols.push(
             columnHelper.display({
-                id: 'action',
+                id: 'actions',
                 size: canEdit && canDelete ? 82 : 48,
                 cell: ({ row, table }) => (
                     <div className="flex items-center gap-1">

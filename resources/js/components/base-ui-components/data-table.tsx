@@ -42,7 +42,11 @@ interface TableProps<TData> {
     columns: ColumnDef<TData, any>[];
     // meta?: Partial<TableMeta<TData>>;
     meta?: TableMeta<TData>;
-    children: ReactNode;
+    children?: ReactNode;
+    variant?: 'table' | 'select';
+    onRowClick?: (row: TData) => void;
+    selectedKey?: keyof TData;
+    selectedValue?: string;
 }
 
 // ---
@@ -87,6 +91,10 @@ export default function Table<TData>({
     columns,
     meta,
     children,
+    variant = 'table',
+    onRowClick,
+    selectedKey,
+    selectedValue,
 }: TableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState<any>([]);
 
@@ -127,8 +135,8 @@ export default function Table<TData>({
     });
 
     return (
-        <div>
-            <div className="flex justify-between p-4">
+        <div className="flex h-[calc(100vh-2.9rem)] min-h-0 flex-col pr-2">
+            <div className="flex flex-none justify-between p-4">
                 <Input
                     value={globalFilter}
                     onChange={(e) =>
@@ -141,7 +149,7 @@ export default function Table<TData>({
                 {children}
             </div>
 
-            <ScrollArea className="h-150">
+            <ScrollArea className="min-h-0 flex-1">
                 <div>
                     <DataTable
                         style={{
@@ -187,8 +195,27 @@ export default function Table<TData>({
                         </TableHeader>
                         <TableBody>
                             {table.getRowModel().rows.map((row) => {
+                                const isSelected =
+                                    selectedKey &&
+                                    selectedValue &&
+                                    String(row.original[selectedKey]) ===
+                                        selectedValue;
+
                                 return (
-                                    <TableRow key={row.id}>
+                                    <TableRow
+                                        key={row.id}
+                                        className={cn(
+                                            variant === 'select' &&
+                                                'cursor-pointer hover:bg-accent',
+                                            isSelected && 'bg-primary',
+                                        )}
+                                        onClick={() => {
+                                            if (variant === 'select') {
+                                                console.log('table-select');
+                                                onRowClick?.(row.original);
+                                            }
+                                        }}
+                                    >
                                         {row.getVisibleCells().map((cell) => {
                                             return (
                                                 <TableCell
