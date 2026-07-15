@@ -54,6 +54,7 @@ interface TableProps<TData> {
     onRowClick?: (row: TData) => void;
     selectedKey?: keyof TData;
     selectedValue?: string;
+    className?: string;
 }
 
 // ---
@@ -102,6 +103,7 @@ export default function Table<TData>({
     onRowClick,
     selectedKey,
     selectedValue,
+    className,
 }: TableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState<any>([]);
 
@@ -142,7 +144,7 @@ export default function Table<TData>({
     });
 
     return (
-        <div className="flex h-full min-h-0 flex-col pr-3">
+        <div className={cn('flex h-full min-h-0 flex-col pr-3', className)}>
             <div className="flex flex-none justify-between p-4">
                 <Input
                     value={globalFilter}

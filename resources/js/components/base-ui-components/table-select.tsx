@@ -7,6 +7,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/base-ui-components/ui/dialog';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 
 interface TableSelectProps<TData> {
     data: TData[];
@@ -19,32 +23,27 @@ interface TableSelectProps<TData> {
 }
 
 export function TableSelect<TData>({
-    columns,
     data,
+    columns,
     open,
     onOpenChange,
     onRowSelect,
     value,
     valueKey,
 }: TableSelectProps<TData>) {
-    // Find the currently selected object to display its label on the trigger button
-    // const selectedItem = data.find(
-    //     (item) => String(item[rowIdKey]) === String(value),
-    // );
-    // const buttonLabel = selectedItem
-    //     ? getDisplayValue(selectedItem)
-    //     : placeholder;
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-full max-w-3xl">
-                <DialogHeader>
+            <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-96">
+                <DialogHeader className="flex-none">
                     <DialogTitle>Title</DialogTitle>
                     <DialogDescription>desc...</DialogDescription>
                 </DialogHeader>
 
-                <div className="w-full overflow-hidden">
+                {/*<div className="h-[calc(100vh-3rem)] w-full">*/}
+                <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
                     <NewTable
+                        // className="min-h-0 flex-1"
+                        className="h-1000"
                         data={data}
                         columns={columns}
                         variant="select"
@@ -54,14 +53,6 @@ export function TableSelect<TData>({
                         }}
                         selectedValue={value}
                         selectedKey={valueKey}
-                        // selectedValue={value}
-                        // selectedKey={rowIdKey}
-                        // meta={{
-                        //     onRowClick: (row: TData) => {
-                        //         onValueChange(String(row[rowIdKey]));
-                        //         setIsOpen(false);
-                        //     },
-                        // }}
                     />
                 </div>
             </DialogContent>
