@@ -45,6 +45,6 @@ declare module '@tanstack/react-table' {
             chartOfAccounts?: ChartOfAccount[];
             fundingSources?: FundingSource[];
         };
-        selectedItemToMove: TData;
+        selectedItemToMove?: TData;
     }
 }

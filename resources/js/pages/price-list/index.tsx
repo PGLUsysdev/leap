@@ -22,17 +22,26 @@ import {
 } from '@/components/base-ui-components/ui/dialog';
 import {
     Field,
-    FieldDescription,
+    // FieldDescription,
     FieldError,
-    FieldGroup,
+    // FieldGroup,
     FieldLabel,
 } from '@/components/base-ui-components/ui/field';
 import { Input } from '@/components/base-ui-components/ui/input';
-import { DataTable } from '@/components/data-table';
+// import { DataTable } from '@/components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/price-list/form-dialog';
-import { index, store, update, reorder } from '@/routes/price-lists';
+// import FormDialog from '@/pages/price-list/form-dialog';
+import {
+    // index,
+    store,
+    update,
+    reorder,
+} from '@/routes/price-lists';
 import type {
     PriceList,
     ChartOfAccount,
@@ -41,15 +50,11 @@ import type {
     Filter,
     ChartOfAccountPpmpCategory,
 } from '@/types';
-import columns from './columns/category-cols-base';
+// import columns from './columns/category-cols-base';
 import categoryCols from './columns/category-cols-base';
 import coaCols from './columns/coa-cols-base';
 import columnsBase from './columns/columns-base';
-import MoveDialog from './move-dialog';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+// import MoveDialog from './move-dialog';
 
 interface PriceListPageProps {
     paginatedPriceList: PaginatedResponse<PriceList>;
@@ -81,21 +86,21 @@ export default function PriceListPage({
     paginatedPriceList,
     chartOfAccounts,
     ppmpCategories,
-    filters,
-    paginatedDialogPriceList,
+    // filters,
+    // paginatedDialogPriceList,
     can,
     coaCategoryPairs,
 }: PriceListPageProps) {
     // console.log('coaCategoryPairs', coaCategoryPairs);
 
-    const [openEdit, setOpenEdit] = useState(false);
+    // const [openEdit, setOpenEdit] = useState(false);
     const [selectedPriceList, setSelectedPriceList] =
         useState<PriceList | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
-    const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+    // const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<PriceList | null>(null);
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
@@ -105,10 +110,6 @@ export default function PriceListPage({
 
     const [openMoveDialog, setOpenMoveDialog] = useState(false);
     const [moveTarget, setMoveTarget] = useState<PriceList | null>(null);
-
-    useEffect(() => {
-        if (!openMoveDialog) setMoveTarget(null);
-    }, [openMoveDialog]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -192,20 +193,20 @@ export default function PriceListPage({
         }
     }
 
-    function handleAdd() {
-        setSelectedPriceList(null);
+    // function handleAdd() {
+    //     setSelectedPriceList(null);
 
-        setOpenEdit(true);
-    }
+    //     setOpenEdit(true);
+    // }
 
     function handleEdit(data: PriceList) {
         setSelectedPriceList(data);
         setOpenFormDialog(true);
     }
 
-    function handleMove() {
-        setOpenMoveDialog(true);
-    }
+    // function handleMove() {
+    //     setOpenMoveDialog(true);
+    // }
 
     function handleDialogOpenChange(isOpen: boolean) {
         setOpenFormDialog(isOpen);
@@ -315,7 +316,9 @@ export default function PriceListPage({
     );
 
     function handleMoveItem(position: 'up' | 'down') {
-        if (!selectedItem || !moveTarget) return;
+        if (!selectedItem || !moveTarget) {
+            return;
+        }
 
         router.post(
             reorder().url,
@@ -386,11 +389,15 @@ export default function PriceListPage({
             <Dialog open={openFormDialog} onOpenChange={handleDialogOpenChange}>
                 <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-md">
                     <DialogHeader className="flex-none">
-                        <DialogTitle>Are you absolutely sure?</DialogTitle>
+                        <DialogTitle>
+                            {selectedPriceList
+                                ? 'Edit Price List'
+                                : 'Create Price List'}
+                        </DialogTitle>
                         <DialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete your account and remove your data from our
-                            servers.
+                            {selectedPriceList
+                                ? 'Update the details for this price list item.'
+                                : 'Fill in the details to add a new price list item.'}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -404,7 +411,7 @@ export default function PriceListPage({
                                 <Controller
                                     name="coa_id"
                                     control={form.control}
-                                    render={({ field, fieldState }) => (
+                                    render={({ fieldState }) => (
                                         <Field
                                             data-invalid={fieldState.invalid}
                                         >
@@ -443,6 +450,10 @@ export default function PriceListPage({
                                                     onClick={() =>
                                                         form.resetField(
                                                             'coa_id',
+                                                            {
+                                                                defaultValue:
+                                                                    '',
+                                                            },
                                                         )
                                                     }
                                                 >
@@ -460,7 +471,7 @@ export default function PriceListPage({
                                 <Controller
                                     name="category_id"
                                     control={form.control}
-                                    render={({ field, fieldState }) => (
+                                    render={({ fieldState }) => (
                                         <Field
                                             data-invalid={fieldState.invalid}
                                         >
@@ -498,6 +509,10 @@ export default function PriceListPage({
                                                     onClick={() =>
                                                         form.resetField(
                                                             'category_id',
+                                                            {
+                                                                defaultValue:
+                                                                    '',
+                                                            },
                                                         )
                                                     }
                                                 >
@@ -603,7 +618,26 @@ export default function PriceListPage({
                         <Button
                             variant="outline"
                             onClick={() => {
-                                form.reset();
+                                if (selectedPriceList) {
+                                    form.reset({
+                                        coa_id: String(
+                                            selectedPriceList
+                                                .chart_of_account_ppmp_category
+                                                ?.chart_of_account_id ?? '',
+                                        ),
+                                        category_id: String(
+                                            selectedPriceList
+                                                .chart_of_account_ppmp_category
+                                                ?.ppmp_category_id ?? '',
+                                        ),
+                                        item_name:
+                                            selectedPriceList.description,
+                                        uom: selectedPriceList.unit_of_measurement,
+                                        price: selectedPriceList.price,
+                                    });
+                                } else {
+                                    form.reset();
+                                }
                             }}
                         >
                             Reset
@@ -634,6 +668,9 @@ export default function PriceListPage({
                 }}
                 value={watchCoaId}
                 valueKey="id"
+                className="sm:max-w-175"
+                title="Select Chart of Account"
+                description="Choose the chart of account for this price list item."
             ></TableSelect>
 
             <TableSelect
@@ -648,52 +685,83 @@ export default function PriceListPage({
                 }}
                 value={watchCategoryId}
                 valueKey="id"
+                // className="sm:max-w-[700px]"
+                title="Select Category"
+                description="Choose the category for this price list item."
             ></TableSelect>
 
-            <Dialog open={openMoveDialog} onOpenChange={setOpenMoveDialog}>
-                <DialogContent className="w-full max-w-3xl">
-                    <div className="rounded-lg border bg-muted/50 p-3 text-sm">
-                        <span className="text-muted-foreground">Moving: </span>
-                        <span className="font-medium">
-                            {selectedItem?.description}
-                        </span>
+            <Dialog
+                open={openMoveDialog}
+                onOpenChange={(open) => {
+                    setOpenMoveDialog(open);
+
+                    if (!open) {
+                        setMoveTarget(null);
+                    }
+                }}
+            >
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 p-0 sm:max-w-300">
+                    <DialogHeader className="flex-none px-4 pt-4">
+                        <DialogTitle>Move Price List Item</DialogTitle>
+                        <DialogDescription>
+                            Select a target position for "
+                            {selectedItem?.description}" and click Move Down.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="p-4">
+                        <div className="rounded-lg border bg-muted/50 p-3 text-sm">
+                            <span className="text-muted-foreground">
+                                Moving:{' '}
+                            </span>
+                            <span className="font-medium">
+                                {selectedItem?.description}
+                            </span>
+                        </div>
                     </div>
-                    <div className="w-full overflow-hidden">
+
+                    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
                         <NewTable
+                            className="h-1000"
                             columns={columnsBase(false, false, false)}
                             data={paginatedPriceList.data}
                             variant="select"
                             onRowClick={(row) => setMoveTarget(row)}
                             selectedValue={String(moveTarget?.id ?? '')}
                             selectedKey="id"
+                            disabledValue={String(selectedItem?.id ?? '')}
+                            disabledKey="id"
                         ></NewTable>
                     </div>
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setMoveTarget(null)}
-                        >
-                            Reset
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => setOpenMoveDialog(false)}
-                        >
-                            Close
-                        </Button>
-                        <Button
-                            disabled={!moveTarget}
-                            onClick={() => handleMoveItem('down')}
-                        >
-                            Move Down
-                        </Button>
-                        <Button
-                            disabled={!moveTarget}
-                            onClick={() => handleMoveItem('up')}
-                        >
-                            Move Up
-                        </Button>
-                    </DialogFooter>
+
+                    <div className="p-4 pt-0">
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => setMoveTarget(null)}
+                            >
+                                Reset
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={() => setOpenMoveDialog(false)}
+                            >
+                                Close
+                            </Button>
+                            <Button
+                                disabled={!moveTarget}
+                                onClick={() => handleMoveItem('down')}
+                            >
+                                Move Down
+                            </Button>
+                            <Button
+                                disabled={!moveTarget}
+                                onClick={() => handleMoveItem('up')}
+                            >
+                                Move Up
+                            </Button>
+                        </DialogFooter>
+                    </div>
                 </DialogContent>
             </Dialog>
 

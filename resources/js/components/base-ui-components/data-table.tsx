@@ -55,6 +55,8 @@ interface TableProps<TData> {
     selectedKey?: keyof TData;
     selectedValue?: string;
     className?: string;
+    disabledKey?: keyof TData;
+    disabledValue?: string;
 }
 
 // ---
@@ -104,6 +106,8 @@ export default function Table<TData>({
     selectedKey,
     selectedValue,
     className,
+    disabledKey,
+    disabledValue,
 }: TableProps<TData>) {
     const [globalFilter, setGlobalFilter] = useState<any>([]);
 
@@ -144,8 +148,19 @@ export default function Table<TData>({
     });
 
     return (
-        <div className={cn('flex h-full min-h-0 flex-col pr-3', className)}>
-            <div className="flex flex-none justify-between p-4">
+        <div
+            className={cn(
+                'flex h-full min-h-0 flex-col',
+                variant !== 'select' && 'pr-3',
+                className,
+            )}
+        >
+            <div
+                className={cn(
+                    'flex flex-none justify-between p-4',
+                    variant === 'select' && 'pt-0',
+                )}
+            >
                 <Input
                     value={globalFilter}
                     onChange={(e) =>
@@ -158,7 +173,7 @@ export default function Table<TData>({
                 {children}
             </div>
 
-            <ScrollArea className="min-h-0 flex-1">
+            <ScrollArea className="min-h-0 flex-1 border-y">
                 <div>
                     <DataTable
                         style={{
@@ -209,6 +224,11 @@ export default function Table<TData>({
                                     selectedValue &&
                                     String(row.original[selectedKey]) ===
                                         selectedValue;
+                                const isDisabled =
+                                    disabledKey &&
+                                    disabledValue &&
+                                    String(row.original[disabledKey]) ===
+                                        disabledValue;
 
                                 return (
                                     <TableRow
@@ -217,10 +237,14 @@ export default function Table<TData>({
                                             variant === 'select' &&
                                                 'cursor-pointer hover:bg-accent',
                                             isSelected && 'bg-primary',
+                                            isDisabled &&
+                                                'cursor-not-allowed opacity-50',
                                         )}
                                         onClick={() => {
-                                            if (variant === 'select') {
-                                                console.log('table-select');
+                                            if (
+                                                variant === 'select' &&
+                                                !isDisabled
+                                            ) {
                                                 onRowClick?.(row.original);
                                             }
                                         }}

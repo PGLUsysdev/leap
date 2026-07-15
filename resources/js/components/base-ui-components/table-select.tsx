@@ -11,6 +11,7 @@ import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface TableSelectProps<TData> {
     data: TData[];
@@ -20,6 +21,9 @@ interface TableSelectProps<TData> {
     onRowSelect: (row: TData) => void;
     value?: string;
     valueKey?: keyof TData;
+    className?: string;
+    title?: string;
+    description?: string;
 }
 
 export function TableSelect<TData>({
@@ -30,20 +34,29 @@ export function TableSelect<TData>({
     onRowSelect,
     value,
     valueKey,
+    className,
+    title,
+    description,
 }: TableSelectProps<TData>) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-96">
-                <DialogHeader className="flex-none">
-                    <DialogTitle>Title</DialogTitle>
-                    <DialogDescription>desc...</DialogDescription>
+            <DialogContent
+                className={cn(
+                    'flex max-h-[calc(100dvh-2rem)] flex-col p-0 sm:max-w-96',
+                    className,
+                )}
+            >
+                <DialogHeader className="flex-none px-4 pt-4">
+                    <DialogTitle>{title ?? 'Title'}</DialogTitle>
+                    <DialogDescription>
+                        {description ?? 'desc...'}
+                    </DialogDescription>
                 </DialogHeader>
 
-                {/*<div className="h-[calc(100vh-3rem)] w-full">*/}
-                <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
+                <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
                     <NewTable
                         // className="min-h-0 flex-1"
-                        className="h-1000"
+                        className="h-150"
                         data={data}
                         columns={columns}
                         variant="select"
