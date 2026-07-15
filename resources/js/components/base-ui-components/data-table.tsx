@@ -17,8 +17,15 @@ import type {
     Table,
     TableMeta,
 } from '@tanstack/react-table';
+import {
+    ChevronRight,
+    ChevronLeft,
+    ChevronsRight,
+    ChevronsLeft,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { Button } from '@/components/base-ui-components/ui/button';
 import { Input } from '@/components/base-ui-components/ui/input';
 import {
     ScrollArea,
@@ -135,7 +142,7 @@ export default function Table<TData>({
     });
 
     return (
-        <div className="flex h-[calc(100vh-2.9rem)] min-h-0 flex-col pr-2">
+        <div className="flex h-full min-h-0 flex-col pr-3">
             <div className="flex flex-none justify-between p-4">
                 <Input
                     value={globalFilter}
@@ -245,44 +252,67 @@ export default function Table<TData>({
                                 );
                             })}
                         </TableBody>
-                        <TableFooter className="sticky bottom-0 z-2">
-                            {table.getFooterGroups().map((footerGroup) => {
-                                return (
-                                    <TableRow
-                                        key={footerGroup.id}
-                                        className="shadow-[inset_0_1px_0_0_var(--border)]"
-                                    >
-                                        {footerGroup.headers.map((header) => {
-                                            return (
-                                                <TableCell
-                                                    key={header.id}
-                                                    className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
-                                                    style={{
-                                                        width: `${header.getSize()}px`,
-                                                        ...getCommonPinningStyles(
-                                                            header.column,
-                                                            table,
-                                                        ),
-                                                    }}
-                                                >
-                                                    {flexRender(
-                                                        header.column.columnDef
-                                                            .footer,
-                                                        header.getContext(),
-                                                    )}
-                                                </TableCell>
-                                            );
-                                        })}
-                                    </TableRow>
-                                );
-                            })}
-                        </TableFooter>
+                        {false && (
+                            <TableFooter className="sticky bottom-0 z-2">
+                                {table.getFooterGroups().map((footerGroup) => {
+                                    return (
+                                        <TableRow
+                                            key={footerGroup.id}
+                                            className="shadow-[inset_0_1px_0_0_var(--border)]"
+                                        >
+                                            {footerGroup.headers.map(
+                                                (header) => {
+                                                    return (
+                                                        <TableCell
+                                                            key={header.id}
+                                                            className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
+                                                            style={{
+                                                                width: `${header.getSize()}px`,
+                                                                ...getCommonPinningStyles(
+                                                                    header.column,
+                                                                    table,
+                                                                ),
+                                                            }}
+                                                        >
+                                                            {flexRender(
+                                                                header.column
+                                                                    .columnDef
+                                                                    .footer,
+                                                                header.getContext(),
+                                                            )}
+                                                        </TableCell>
+                                                    );
+                                                },
+                                            )}
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableFooter>
+                        )}
                     </DataTable>
                 </div>
 
                 <ScrollBar orientation="vertical" className="z-2" />
                 <ScrollBar orientation="horizontal" className="z-2" />
             </ScrollArea>
+
+            {true && (
+                <div className="flex gap-1 bg-background px-4 py-2">
+                    <Button variant="outline" size="icon">
+                        <ChevronsLeft />
+                    </Button>
+                    <Button variant="outline" size="icon">
+                        <ChevronLeft />
+                    </Button>
+                    <Input className="w-20"></Input>
+                    <Button variant="outline" size="icon">
+                        <ChevronRight />
+                    </Button>
+                    <Button variant="outline" size="icon">
+                        <ChevronsRight />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

@@ -347,7 +347,7 @@ export default function PriceListPage({
 
     return (
         <>
-            <ScrollArea className="h-[calc(100vh-3rem)]">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <div>Title</div>
                 <div>Title</div>
                 <div>Title</div>
@@ -384,8 +384,8 @@ export default function PriceListPage({
             </ScrollArea>
 
             <Dialog open={openFormDialog} onOpenChange={handleDialogOpenChange}>
-                <DialogContent>
-                    <DialogHeader>
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-md">
+                    <DialogHeader className="flex-none">
                         <DialogTitle>Are you absolutely sure?</DialogTitle>
                         <DialogDescription>
                             This action cannot be undone. This will permanently
@@ -394,173 +394,210 @@ export default function PriceListPage({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form
-                        id="form-price-list"
-                        onSubmit={form.handleSubmit(onSubmit)}
-                    >
-                        <Controller
-                            name="coa_id"
-                            control={form.control}
-                            render={({ field, fieldState }) => (
-                                <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor="form-price-list-coa-id">
-                                        Chart of Accounts
-                                    </FieldLabel>
+                    <div className="flex min-h-0 flex-1">
+                        <ScrollArea className="w-full pr-3">
+                            <form
+                                id="form-price-list"
+                                onSubmit={form.handleSubmit(onSubmit)}
+                                className="flex flex-col gap-4 py-1"
+                            >
+                                <Controller
+                                    name="coa_id"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldLabel htmlFor="form-price-list-coa-id">
+                                                Chart of Accounts
+                                            </FieldLabel>
 
-                                    <ButtonGroup className="w-full">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
-                                            onClick={() => {
-                                                setOpenCoaTableSelect(true);
-                                            }}
-                                            aria-invalid={fieldState.invalid}
+                                            <ButtonGroup className="w-full">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
+                                                    onClick={() => {
+                                                        setOpenCoaTableSelect(
+                                                            true,
+                                                        );
+                                                    }}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <span className="truncate">
+                                                        {selectedCoa?.account_title ??
+                                                            'Select Chart of Account'}
+                                                    </span>
+                                                    <ChevronsUpDown />
+                                                </Button>
+                                                <ButtonGroupSeparator />
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    aria-label="clear selection"
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    onClick={() =>
+                                                        form.resetField(
+                                                            'coa_id',
+                                                        )
+                                                    }
+                                                >
+                                                    <Delete />
+                                                </Button>
+                                            </ButtonGroup>
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
+                                    )}
+                                />
+                                <Controller
+                                    name="category_id"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
                                         >
-                                            <span className="truncate">
-                                                {selectedCoa?.account_title ??
-                                                    'Select Chart of Account'}
-                                            </span>
-                                            <ChevronsUpDown />
-                                        </Button>
-                                        <ButtonGroupSeparator />
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            aria-label="clear selection"
-                                            aria-invalid={fieldState.invalid}
-                                            onClick={() =>
-                                                form.resetField('coa_id')
-                                            }
+                                            <FieldLabel htmlFor="form-price-list-category-id">
+                                                Catgory
+                                            </FieldLabel>
+                                            <ButtonGroup className="w-full">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
+                                                    onClick={() => {
+                                                        setOpenCategoryTableSelect(
+                                                            true,
+                                                        );
+                                                    }}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <span className="truncate">
+                                                        {selectedCategory?.name ??
+                                                            'Select Category'}
+                                                    </span>
+                                                    <ChevronsUpDown />
+                                                </Button>
+                                                <ButtonGroupSeparator />
+                                                <Button
+                                                    type="button"
+                                                    variant="secondary"
+                                                    aria-label="clear selection"
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    onClick={() =>
+                                                        form.resetField(
+                                                            'category_id',
+                                                        )
+                                                    }
+                                                >
+                                                    <Delete />
+                                                </Button>
+                                            </ButtonGroup>
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
+                                    )}
+                                />
+                                <Controller
+                                    name="item_name"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
                                         >
-                                            <Delete />
-                                        </Button>
-                                    </ButtonGroup>
-                                    {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                            <FieldLabel htmlFor="form-price-list-item-name">
+                                                Item Name
+                                            </FieldLabel>
+                                            <Input
+                                                {...field}
+                                                id="form-price-list-item-name"
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                placeholder="Login button not working on mobile"
+                                                autoComplete="off"
+                                            />
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
                                     )}
-                                </Field>
-                            )}
-                        />
-                        <Controller
-                            name="category_id"
-                            control={form.control}
-                            render={({ field, fieldState }) => (
-                                <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor="form-price-list-category-id">
-                                        Catgory
-                                    </FieldLabel>
-                                    <ButtonGroup className="w-full">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
-                                            onClick={() => {
-                                                setOpenCategoryTableSelect(
-                                                    true,
-                                                );
-                                            }}
-                                            aria-invalid={fieldState.invalid}
+                                />
+                                <Controller
+                                    name="uom"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
                                         >
-                                            <span className="truncate">
-                                                {selectedCategory?.name ??
-                                                    'Select Category'}
-                                            </span>
-                                            <ChevronsUpDown />
-                                        </Button>
-                                        <ButtonGroupSeparator />
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            aria-label="clear selection"
-                                            aria-invalid={fieldState.invalid}
-                                            onClick={() =>
-                                                form.resetField('category_id')
-                                            }
+                                            <FieldLabel htmlFor="form-price-list-uom">
+                                                Unit of Measurement
+                                            </FieldLabel>
+                                            <Input
+                                                {...field}
+                                                id="form-price-list-uom"
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                placeholder="Login button not working on mobile"
+                                                autoComplete="off"
+                                            />
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
+                                    )}
+                                />
+                                <Controller
+                                    name="price"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
                                         >
-                                            <Delete />
-                                        </Button>
-                                    </ButtonGroup>
-                                    {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                            <FieldLabel htmlFor="form-price-list-price">
+                                                Price
+                                            </FieldLabel>
+                                            <Input
+                                                {...field}
+                                                id="form-price-list-price"
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                placeholder="Login button not working on mobile"
+                                                autoComplete="off"
+                                            />
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
                                     )}
-                                </Field>
-                            )}
-                        />
-                        <Controller
-                            name="item_name"
-                            control={form.control}
-                            render={({ field, fieldState }) => (
-                                <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor="form-price-list-item-name">
-                                        Item Name
-                                    </FieldLabel>
-                                    <Input
-                                        {...field}
-                                        id="form-price-list-item-name"
-                                        aria-invalid={fieldState.invalid}
-                                        placeholder="Login button not working on mobile"
-                                        autoComplete="off"
-                                    />
-                                    {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
-                                    )}
-                                </Field>
-                            )}
-                        />
-                        <Controller
-                            name="uom"
-                            control={form.control}
-                            render={({ field, fieldState }) => (
-                                <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor="form-price-list-uom">
-                                        Unit of Measurement
-                                    </FieldLabel>
-                                    <Input
-                                        {...field}
-                                        id="form-price-list-uom"
-                                        aria-invalid={fieldState.invalid}
-                                        placeholder="Login button not working on mobile"
-                                        autoComplete="off"
-                                    />
-                                    {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
-                                    )}
-                                </Field>
-                            )}
-                        />
-                        <Controller
-                            name="price"
-                            control={form.control}
-                            render={({ field, fieldState }) => (
-                                <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor="form-price-list-price">
-                                        Price
-                                    </FieldLabel>
-                                    <Input
-                                        {...field}
-                                        id="form-price-list-price"
-                                        aria-invalid={fieldState.invalid}
-                                        placeholder="Login button not working on mobile"
-                                        autoComplete="off"
-                                    />
-                                    {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
-                                    )}
-                                </Field>
-                            )}
-                        />
-                    </form>
+                                />
+                            </form>
+
+                            <ScrollBar orientation="vertical" />
+                        </ScrollArea>
+                    </div>
 
                     <DialogFooter>
                         <Button
