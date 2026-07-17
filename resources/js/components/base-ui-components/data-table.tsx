@@ -54,7 +54,8 @@ import type {
 // ---
 
 interface TableProps<TData> {
-    data: PaginatedResponse<TData> | TData[];
+    data: TData[];
+    paginationData?: Omit<PaginatedResponse<TData>, 'data'>;
     columns: ColumnDef<TData, any>[];
     // meta?: Partial<TableMeta<TData>>;
     meta?: TableMeta<TData>;
@@ -69,6 +70,7 @@ interface TableProps<TData> {
     pageParamName?: string;
     perPageParamName?: string;
     searchParamName?: string;
+    only?: string[];
 }
 
 // ---
@@ -110,6 +112,7 @@ const getCommonPinningStyles = <TData,>(
 
 export default function Table<TData>({
     data,
+    paginationData,
     columns,
     meta,
     children,
@@ -123,11 +126,13 @@ export default function Table<TData>({
     pageParamName = 'page',
     perPageParamName = 'per_page',
     searchParamName = 'search',
+    only,
 }: TableProps<TData>) {
-    const paginatedData = Array.isArray(data) ? null : data;
-    const tableData = Array.isArray(data) ? data : data.data;
-
     const { url } = usePage();
+
+    const params = Object.fromEntries(
+        new URLSearchParams(window.location.search),
+    );
 
     const [globalFilter, setGlobalFilter] = useState<string>(() => {
         const params = new URLSearchParams(window.location.search);
@@ -137,19 +142,19 @@ export default function Table<TData>({
 
     // pagination
     const [searchValue, setSearchValue] = useState<string>(() => {
-        return paginatedData ? String(paginatedData.current_page) : '';
+        return paginationData ? String(paginationData.current_page) : '';
     });
 
     useEffect(() => {
-        if (paginatedData) {
-            setSearchValue(String(paginatedData.current_page));
+        if (paginationData) {
+            setSearchValue(String(paginationData.current_page));
         }
-    }, [paginatedData]);
+    }, [paginationData]);
 
     // table
     const table = useReactTable({
         columns: columns,
-        data: tableData,
+        data,
 
         // row models
         getCoreRowModel: getCoreRowModel(),
@@ -183,8 +188,9 @@ export default function Table<TData>({
 
         meta: meta,
 
-        // manualPagination: isPaginated,
-        // rowCount: isPaginated ? data.total : undefined,
+        manualPagination: !!paginationData,
+        pageCount: paginationData?.last_page,
+        rowCount: paginationData?.total,
 
         manualFiltering: true,
     });
@@ -364,7 +370,7 @@ export default function Table<TData>({
                 <ScrollBar orientation="horizontal" className="z-2" />
             </ScrollArea>
 
-            {paginatedData && (
+            {paginationData && (
                 <div className="flex items-center gap-1 bg-background px-4 py-2">
                     <Button
                         variant="ghost"
@@ -372,16 +378,17 @@ export default function Table<TData>({
                         onClick={() => {
                             router.visit(url, {
                                 data: {
-                                    page:
-                                        paginatedData.current_page -
-                                        (paginatedData.current_page - 1),
+                                    [pageParamName]:
+                                        paginationData.current_page -
+                                        (paginationData.current_page - 1),
                                 },
+                                only,
                                 preserveState: true,
                                 preserveScroll: true,
                                 replace: true,
                             });
                         }}
-                        disabled={paginatedData.current_page === 1}
+                        disabled={paginationData.current_page === 1}
                     >
                         <ChevronsLeft />
                     </Button>
@@ -390,13 +397,18 @@ export default function Table<TData>({
                         size="icon"
                         onClick={() => {
                             router.visit(url, {
-                                data: { page: paginatedData.current_page - 1 },
+                                data: {
+                                    ...params,
+                                    [pageParamName]:
+                                        paginationData.current_page - 1,
+                                },
+                                only,
                                 preserveState: true,
                                 preserveScroll: true,
                                 replace: true,
                             });
                         }}
-                        disabled={paginatedData.current_page === 1}
+                        disabled={paginationData.current_page === 1}
                     >
                         <ChevronLeft />
                     </Button>
@@ -420,7 +432,8 @@ export default function Table<TData>({
                                 setSearchValue(value);
 
                                 router.visit(url, {
-                                    data: { page: value },
+                                    data: { ...params, page: value },
+                                    only,
                                     preserveState: true,
                                     preserveScroll: true,
                                     replace: true,
@@ -429,7 +442,7 @@ export default function Table<TData>({
                             onBlur={() => {
                                 if (searchValue === '') {
                                     setSearchValue(
-                                        String(paginatedData.current_page),
+                                        String(paginationData.current_page),
                                     );
 
                                     return;
@@ -438,22 +451,27 @@ export default function Table<TData>({
                             autoComplete="off"
                         ></Input>
                         <span>/</span>
-                        <span>{paginatedData.last_page}</span>
+                        <span>{paginationData.last_page}</span>
                     </div>
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => {
                             router.visit(url, {
-                                data: { page: paginatedData.current_page + 1 },
+                                data: {
+                                    ...params,
+                                    [pageParamName]:
+                                        paginationData.current_page + 1,
+                                },
+                                only,
                                 preserveState: true,
                                 preserveScroll: true,
                                 replace: true,
                             });
                         }}
                         disabled={
-                            paginatedData.current_page ===
-                            paginatedData.last_page
+                            paginationData.current_page ===
+                            paginationData.last_page
                         }
                     >
                         <ChevronRight />
@@ -463,15 +481,19 @@ export default function Table<TData>({
                         size="icon"
                         onClick={() => {
                             router.visit(url, {
-                                data: { page: paginatedData.last_page },
+                                data: {
+                                    ...params,
+                                    [pageParamName]: paginationData.last_page,
+                                },
+                                only,
                                 preserveState: true,
                                 preserveScroll: true,
                                 replace: true,
                             });
                         }}
                         disabled={
-                            paginatedData.current_page ===
-                            paginatedData.last_page
+                            paginationData.current_page ===
+                            paginationData.last_page
                         }
                     >
                         <ChevronsRight />

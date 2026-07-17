@@ -91,8 +91,14 @@ export default function PriceListPage({
     can,
     coaCategoryPairs,
 }: PriceListPageProps) {
-    console.log('paginatedPriceList', paginatedPriceList);
-    console.log('paginatedDialogPriceList', paginatedDialogPriceList);
+    const { data: pageData, ...pagePaginationData } = paginatedPriceList;
+
+    const dialogData = paginatedDialogPriceList?.data ?? [];
+    const dialogPaginationData = paginatedDialogPriceList
+        ? (({ data, ...rest }) => rest)(paginatedDialogPriceList)
+        : undefined;
+
+    console.log(paginatedDialogPriceList);
 
     // const [openEdit, setOpenEdit] = useState(false);
     const [selectedPriceList, setSelectedPriceList] =
@@ -205,9 +211,27 @@ export default function PriceListPage({
         setOpenFormDialog(true);
     }
 
-    // function handleMove() {
-    //     setOpenMoveDialog(true);
-    // }
+    function handleMove(data: PriceList) {
+        setSelectedItem(data);
+
+        if (!paginatedDialogPriceList) {
+            const params = new URLSearchParams(window.location.search);
+            const nextParams = Object.fromEntries(params.entries());
+            nextParams.dialog_page = '1';
+
+            router.get(window.location.pathname, nextParams, {
+                only: ['paginatedDialogPriceList'],
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+                onSuccess: () => {
+                    setOpenMoveDialog(true);
+                },
+            });
+        } else {
+            setOpenMoveDialog(true);
+        }
+    }
 
     function handleDialogOpenChange(isOpen: boolean) {
         setOpenFormDialog(isOpen);
@@ -229,7 +253,7 @@ export default function PriceListPage({
             preserveScroll: true,
             onStart: () => setIsLoading(true),
             onSuccess: () => {
-                console.log('Success:', 'Record deleted');
+                // console.log('Success:', 'Record deleted');
 
                 setIsDeleteDialogOpen(false);
                 setSelectedPriceList(null);
@@ -358,26 +382,24 @@ export default function PriceListPage({
                 <div>Title</div>
 
                 <NewTable
-                    data={paginatedPriceList}
-                    // data={paginatedPriceList.data}
+                    data={pageData}
+                    paginationData={pagePaginationData}
                     columns={columnsBase(
                         can?.edit ?? false,
                         can?.delete ?? false,
                         can?.move ?? false,
                     )}
                     meta={{
-                        onMove: (data: PriceList) => {
-                            setSelectedItem(data);
-                            setOpenMoveDialog(true);
-                        },
+                        onMove: handleMove,
                         onUpdate: (data: PriceList) => handleEdit(data),
                         onDelete: (data: PriceList) =>
                             handleDeleteDialogOpen(data),
                     }}
+                    pageParamName="price_list_page"
                 >
                     <BaseButton
                         onClick={() => {
-                            console.log('create');
+                            // console.log('create');
                             handleCreate();
                         }}
                     >
@@ -697,21 +719,6 @@ export default function PriceListPage({
                 onOpenChange={(open) => {
                     setOpenMoveDialog(open);
 
-                    if (open && !paginatedDialogPriceList) {
-                        const params = new URLSearchParams(
-                            window.location.search,
-                        );
-                        const nextParams = Object.fromEntries(params.entries());
-                        nextParams.dialog_page = '1';
-
-                        router.get(window.location.pathname, nextParams, {
-                            only: ['paginatedDialogPriceList'],
-                            preserveState: true,
-                            preserveScroll: true,
-                            replace: true,
-                        });
-                    }
-
                     if (!open) {
                         setMoveTarget(null);
                     }
@@ -739,9 +746,10 @@ export default function PriceListPage({
 
                     <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
                         <NewTable
-                            className="h-1000"
+                            data={dialogData}
+                            paginationData={dialogPaginationData}
                             columns={columnsBase(false, false, false)}
-                            data={paginatedDialogPriceList}
+                            className="h-1000"
                             variant="select"
                             onRowClick={(row) => setMoveTarget(row)}
                             selectedValue={String(moveTarget?.id ?? '')}
@@ -751,6 +759,7 @@ export default function PriceListPage({
                             pageParamName="dialog_page"
                             perPageParamName="dialog_per_page"
                             searchParamName="dialog_search"
+                            only={['paginatedDialogPriceList']}
                         ></NewTable>
                     </div>
 

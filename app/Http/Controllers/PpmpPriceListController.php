@@ -68,7 +68,9 @@ class PpmpPriceListController extends Controller
             });
         }
 
-        $priceList = $query->paginate(100)->withQueryString();
+        $priceList = $query
+            ->paginate(100, ['*'], 'price_list_page')
+            ->withQueryString();
 
         $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
             'MOOE',
@@ -114,7 +116,7 @@ class PpmpPriceListController extends Controller
                 'dialog_mode',
             ]),
             // 'filters' => $request->all(),
-            'paginatedDialogPriceList' => Inertia::defer(function () use (
+            'paginatedDialogPriceList' => Inertia::optional(function () use (
                 $request,
             ) {
                 $query = PpmpPriceList::query()
