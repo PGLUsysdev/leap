@@ -1,3 +1,4 @@
+import { router, usePage } from '@inertiajs/react';
 import {
     useReactTable,
     getCoreRowModel,
@@ -23,7 +24,7 @@ import {
     ChevronsRight,
     ChevronsLeft,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Input } from '@/components/base-ui-components/ui/input';
@@ -41,11 +42,19 @@ import {
     TableCell,
 } from '@/components/base-ui-components/ui/table';
 import { cn } from '@/lib/utils';
+import type {
+    // PriceList,
+    // ChartOfAccount,
+    // PpmpCategory,
+    PaginatedResponse,
+    // Filter,
+    // ChartOfAccountPpmpCategory,
+} from '@/types';
 
 // ---
 
 interface TableProps<TData> {
-    data: TData[];
+    data: PaginatedResponse<TData> | TData[];
     columns: ColumnDef<TData, any>[];
     // meta?: Partial<TableMeta<TData>>;
     meta?: TableMeta<TData>;
@@ -57,6 +66,9 @@ interface TableProps<TData> {
     className?: string;
     disabledKey?: keyof TData;
     disabledValue?: string;
+    pageParamName?: string;
+    perPageParamName?: string;
+    searchParamName?: string;
 }
 
 // ---
@@ -108,12 +120,36 @@ export default function Table<TData>({
     className,
     disabledKey,
     disabledValue,
+    pageParamName = 'page',
+    perPageParamName = 'per_page',
+    searchParamName = 'search',
 }: TableProps<TData>) {
-    const [globalFilter, setGlobalFilter] = useState<any>([]);
+    const paginatedData = Array.isArray(data) ? null : data;
+    const tableData = Array.isArray(data) ? data : data.data;
 
+    const { url } = usePage();
+
+    const [globalFilter, setGlobalFilter] = useState<string>(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        return params.get(searchParamName) || '';
+    });
+
+    // pagination
+    const [searchValue, setSearchValue] = useState<string>(() => {
+        return paginatedData ? String(paginatedData.current_page) : '';
+    });
+
+    useEffect(() => {
+        if (paginatedData) {
+            setSearchValue(String(paginatedData.current_page));
+        }
+    }, [paginatedData]);
+
+    // table
     const table = useReactTable({
         columns: columns,
-        data: data,
+        data: tableData,
 
         // row models
         getCoreRowModel: getCoreRowModel(),
@@ -139,12 +175,18 @@ export default function Table<TData>({
 
         onGlobalFilterChange: setGlobalFilter,
         enableColumnPinning: true,
+
         // for table
         // defaultColumn: {
         //     size: 110,
         // },
 
         meta: meta,
+
+        // manualPagination: isPaginated,
+        // rowCount: isPaginated ? data.total : undefined,
+
+        manualFiltering: true,
     });
 
     return (
@@ -162,7 +204,7 @@ export default function Table<TData>({
                 )}
             >
                 <Input
-                    value={globalFilter}
+                    value={globalFilter ?? ''}
                     onChange={(e) =>
                         table.setGlobalFilter(String(e.target.value))
                     }
@@ -322,19 +364,116 @@ export default function Table<TData>({
                 <ScrollBar orientation="horizontal" className="z-2" />
             </ScrollArea>
 
-            {true && (
-                <div className="flex gap-1 bg-background px-4 py-2">
-                    <Button variant="outline" size="icon">
+            {paginatedData && (
+                <div className="flex items-center gap-1 bg-background px-4 py-2">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                            router.visit(url, {
+                                data: {
+                                    page:
+                                        paginatedData.current_page -
+                                        (paginatedData.current_page - 1),
+                                },
+                                preserveState: true,
+                                preserveScroll: true,
+                                replace: true,
+                            });
+                        }}
+                        disabled={paginatedData.current_page === 1}
+                    >
                         <ChevronsLeft />
                     </Button>
-                    <Button variant="outline" size="icon">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                            router.visit(url, {
+                                data: { page: paginatedData.current_page - 1 },
+                                preserveState: true,
+                                preserveScroll: true,
+                                replace: true,
+                            });
+                        }}
+                        disabled={paginatedData.current_page === 1}
+                    >
                         <ChevronLeft />
                     </Button>
-                    <Input className="w-20"></Input>
-                    <Button variant="outline" size="icon">
+                    <div className="flex w-24 items-center justify-between pr-2">
+                        <Input
+                            className="w-12"
+                            value={searchValue}
+                            onChange={(e) => {
+                                const value = e.currentTarget.value;
+
+                                if (value === '') {
+                                    setSearchValue('');
+
+                                    return;
+                                }
+
+                                if (!/^\d+$/.test(value)) {
+                                    return;
+                                }
+
+                                setSearchValue(value);
+
+                                router.visit(url, {
+                                    data: { page: value },
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                    replace: true,
+                                });
+                            }}
+                            onBlur={() => {
+                                if (searchValue === '') {
+                                    setSearchValue(
+                                        String(paginatedData.current_page),
+                                    );
+
+                                    return;
+                                }
+                            }}
+                            autoComplete="off"
+                        ></Input>
+                        <span>/</span>
+                        <span>{paginatedData.last_page}</span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                            router.visit(url, {
+                                data: { page: paginatedData.current_page + 1 },
+                                preserveState: true,
+                                preserveScroll: true,
+                                replace: true,
+                            });
+                        }}
+                        disabled={
+                            paginatedData.current_page ===
+                            paginatedData.last_page
+                        }
+                    >
                         <ChevronRight />
                     </Button>
-                    <Button variant="outline" size="icon">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                            router.visit(url, {
+                                data: { page: paginatedData.last_page },
+                                preserveState: true,
+                                preserveScroll: true,
+                                replace: true,
+                            });
+                        }}
+                        disabled={
+                            paginatedData.current_page ===
+                            paginatedData.last_page
+                        }
+                    >
                         <ChevronsRight />
                     </Button>
                 </div>

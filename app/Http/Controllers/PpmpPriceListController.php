@@ -24,7 +24,7 @@ class PpmpPriceListController extends Controller
     {
         Gate::authorize('viewAny', PpmpPriceList::class);
 
-        $mode = $request->query('dialog_mode');
+        // $mode = $request->query('dialog_mode');
 
         $query = PpmpPriceList::query()
             ->with(
@@ -33,33 +33,39 @@ class PpmpPriceListController extends Controller
             )
             ->orderBy('sort_order');
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $searchTerm = $request->query('search');
-            $query = $query
-                ->where('unit_of_measurement', 'like', '%' . $searchTerm . '%')
-                ->orWhere('description', 'like', '%' . $searchTerm . '%')
-                ->orWhere('item_number', 'like', '%' . $searchTerm . '%')
-                ->orWhere('price', 'like', '%' . $searchTerm . '%')
-                ->orWhereHas(
-                    'chartOfAccountPpmpCategory.ppmpCategory',
-                    function ($subQuery) use ($searchTerm) {
-                        $subQuery->where(
-                            'name',
-                            'like',
-                            '%' . $searchTerm . '%',
-                        );
-                    },
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where(
+                    'unit_of_measurement',
+                    'like',
+                    '%' . $searchTerm . '%',
                 )
-                ->orWhereHas(
-                    'chartOfAccountPpmpCategory.chartOfAccount',
-                    function ($subQuery) use ($searchTerm) {
-                        $subQuery->where(
-                            'account_title',
-                            'like',
-                            '' . $searchTerm . '',
-                        );
-                    },
-                );
+                    ->orWhere('description', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('item_number', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('price', 'like', '%' . $searchTerm . '%')
+                    ->orWhereHas(
+                        'chartOfAccountPpmpCategory.ppmpCategory',
+                        function ($subQuery) use ($searchTerm) {
+                            $subQuery->where(
+                                'name',
+                                'like',
+                                '%' . $searchTerm . '%',
+                            );
+                        },
+                    )
+                    ->orWhereHas(
+                        'chartOfAccountPpmpCategory.chartOfAccount',
+                        function ($subQuery) use ($searchTerm) {
+                            // Corrected missing % wildcards
+                            $subQuery->where(
+                                'account_title',
+                                'like',
+                                '%' . $searchTerm . '%',
+                            );
+                        },
+                    );
+            });
         }
 
         $priceList = $query->paginate(100)->withQueryString();
@@ -108,7 +114,7 @@ class PpmpPriceListController extends Controller
                 'dialog_mode',
             ]),
             // 'filters' => $request->all(),
-            'paginatedDialogPriceList' => Inertia::optional(function () use (
+            'paginatedDialogPriceList' => Inertia::defer(function () use (
                 $request,
             ) {
                 $query = PpmpPriceList::query()
@@ -118,7 +124,7 @@ class PpmpPriceListController extends Controller
                     )
                     ->orderBy('sort_order');
 
-                if ($request->has('dialog_search')) {
+                if ($request->filled('dialog_search')) {
                     $searchTerm = $request->query('dialog_search');
                     $query = $query
                         ->where(
@@ -159,7 +165,9 @@ class PpmpPriceListController extends Controller
                         );
                 }
 
-                return $query->paginate(100);
+                return $query
+                    ->paginate(100, ['*'], 'dialog_page')
+                    ->withQueryString();
             }),
         ]);
     }

@@ -34,6 +34,11 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// debug
+Route::get('/debug-php', function () {
+    return phpinfo();
+});
+
 Route::redirect('/', '/login');
 
 Route::inertia('/', 'welcome')->name('home');
@@ -42,13 +47,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name(
         'dashboard',
     );
-    Route::get('home', fn () => Inertia::render('home'));
+    Route::get('home', fn() => Inertia::render('home'));
 
     // Test Routes
     Route::get('test-table', [TestDataTableController::class, 'index'])->name(
         'test-table.index',
     );
-    Route::get('test-combobox', fn () => Inertia::render('test-combobox'));
+    Route::get('test-combobox', fn() => Inertia::render('test-combobox'));
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -491,4 +496,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

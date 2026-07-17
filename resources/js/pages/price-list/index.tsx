@@ -86,12 +86,13 @@ export default function PriceListPage({
     paginatedPriceList,
     chartOfAccounts,
     ppmpCategories,
-    // filters,
-    // paginatedDialogPriceList,
+    filters,
+    paginatedDialogPriceList,
     can,
     coaCategoryPairs,
 }: PriceListPageProps) {
-    // console.log('coaCategoryPairs', coaCategoryPairs);
+    console.log('paginatedPriceList', paginatedPriceList);
+    console.log('paginatedDialogPriceList', paginatedDialogPriceList);
 
     // const [openEdit, setOpenEdit] = useState(false);
     const [selectedPriceList, setSelectedPriceList] =
@@ -357,7 +358,8 @@ export default function PriceListPage({
                 <div>Title</div>
 
                 <NewTable
-                    data={paginatedPriceList.data}
+                    data={paginatedPriceList}
+                    // data={paginatedPriceList.data}
                     columns={columnsBase(
                         can?.edit ?? false,
                         can?.delete ?? false,
@@ -695,6 +697,21 @@ export default function PriceListPage({
                 onOpenChange={(open) => {
                     setOpenMoveDialog(open);
 
+                    if (open && !paginatedDialogPriceList) {
+                        const params = new URLSearchParams(
+                            window.location.search,
+                        );
+                        const nextParams = Object.fromEntries(params.entries());
+                        nextParams.dialog_page = '1';
+
+                        router.get(window.location.pathname, nextParams, {
+                            only: ['paginatedDialogPriceList'],
+                            preserveState: true,
+                            preserveScroll: true,
+                            replace: true,
+                        });
+                    }
+
                     if (!open) {
                         setMoveTarget(null);
                     }
@@ -724,13 +741,16 @@ export default function PriceListPage({
                         <NewTable
                             className="h-1000"
                             columns={columnsBase(false, false, false)}
-                            data={paginatedPriceList.data}
+                            data={paginatedDialogPriceList}
                             variant="select"
                             onRowClick={(row) => setMoveTarget(row)}
                             selectedValue={String(moveTarget?.id ?? '')}
                             selectedKey="id"
                             disabledValue={String(selectedItem?.id ?? '')}
                             disabledKey="id"
+                            pageParamName="dialog_page"
+                            perPageParamName="dialog_per_page"
+                            searchParamName="dialog_search"
                         ></NewTable>
                     </div>
 
