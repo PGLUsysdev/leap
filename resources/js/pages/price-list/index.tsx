@@ -54,7 +54,7 @@ import type {
 import categoryCols from './columns/category-cols-base';
 import coaCols from './columns/coa-cols-base';
 import columnsBase from './columns/columns-base';
-// import MoveDialog from './move-dialog';
+import MoveDialog from './move-dialog-base';
 
 interface PriceListPageProps {
     paginatedPriceList: PaginatedResponse<PriceList>;
@@ -714,93 +714,17 @@ export default function PriceListPage({
                 description="Choose the category for this price list item."
             ></TableSelect>
 
-            <Dialog
+            <MoveDialog
                 open={openMoveDialog}
-                onOpenChange={(open) => {
-                    setOpenMoveDialog(open);
-
-                    if (!open) {
-                        setMoveTarget(null);
-                    }
-                }}
-            >
-                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 p-0 sm:max-w-300">
-                    <DialogHeader className="flex-none px-4 pt-4">
-                        <DialogTitle>Move Price List Item</DialogTitle>
-                        <DialogDescription>
-                            Select a target position for "
-                            {selectedItem?.description}" and click Move Down.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="p-4">
-                        <div className="rounded-lg border bg-muted/50 p-3 text-sm">
-                            <span className="text-muted-foreground">
-                                Moving:{' '}
-                            </span>
-                            <span className="font-medium">
-                                {selectedItem?.description}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
-                        <NewTable
-                            data={dialogData}
-                            paginationData={dialogPaginationData}
-                            columns={columnsBase(false, false, false)}
-                            className="h-1000"
-                            variant="select"
-                            onRowClick={(row) => setMoveTarget(row)}
-                            selectedValue={String(moveTarget?.id ?? '')}
-                            selectedKey="id"
-                            disabledValue={String(selectedItem?.id ?? '')}
-                            disabledKey="id"
-                            pageParamName="dialog_page"
-                            perPageParamName="dialog_per_page"
-                            searchParamName="dialog_search"
-                            only={['paginatedDialogPriceList']}
-                        ></NewTable>
-                    </div>
-
-                    <div className="p-4 pt-0">
-                        <DialogFooter>
-                            <Button
-                                variant="outline"
-                                onClick={() => setMoveTarget(null)}
-                            >
-                                Reset
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setOpenMoveDialog(false)}
-                            >
-                                Close
-                            </Button>
-                            <Button
-                                disabled={!moveTarget}
-                                onClick={() => handleMoveItem('down')}
-                            >
-                                Move Down
-                            </Button>
-                            <Button
-                                disabled={!moveTarget}
-                                onClick={() => handleMoveItem('up')}
-                            >
-                                Move Up
-                            </Button>
-                        </DialogFooter>
-                    </div>
-                </DialogContent>
-            </Dialog>
-
-            {/* <MoveDialog
-                open={isMoveDialogOpen}
-                onOpenChange={setIsMoveDialogOpen}
-                paginatedDialogPriceList={paginatedDialogPriceList}
-                filters={filters}
-                selectedItemToMove={selectedItem}
-            /> */}
+                onOpenChange={setOpenMoveDialog}
+                selectedItem={selectedItem}
+                moveTarget={moveTarget}
+                onMoveTargetChange={setMoveTarget}
+                dialogData={dialogData}
+                dialogPaginationData={dialogPaginationData}
+                onMoveItem={handleMoveItem}
+                columns={columnsBase}
+            />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
