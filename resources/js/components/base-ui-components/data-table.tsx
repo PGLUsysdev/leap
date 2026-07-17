@@ -51,8 +51,6 @@ import type {
     // ChartOfAccountPpmpCategory,
 } from '@/types';
 
-// ---
-
 interface TableProps<TData> {
     data: TData[];
     paginationData?: Omit<PaginatedResponse<TData>, 'data'>;
@@ -72,8 +70,6 @@ interface TableProps<TData> {
     searchParamName?: string;
     only?: string[];
 }
-
-// ---
 
 const getCommonPinningStyles = <TData,>(
     column: Column<TData>,
@@ -108,8 +104,6 @@ const getCommonPinningStyles = <TData,>(
     };
 };
 
-// ---
-
 export default function Table<TData>({
     data,
     paginationData,
@@ -141,15 +135,60 @@ export default function Table<TData>({
     });
 
     // pagination
-    const [searchValue, setSearchValue] = useState<string>(() => {
+    const [pageInput, setPageInput] = useState<string>(() => {
         return paginationData ? String(paginationData.current_page) : '';
     });
 
     useEffect(() => {
         if (paginationData) {
-            setSearchValue(String(paginationData.current_page));
+            setPageInput(String(paginationData.current_page));
         }
     }, [paginationData]);
+
+    const goToPage = (page: number) => {
+        if (!paginationData) {
+            return;
+        }
+
+        page = Math.max(1, Math.min(page, paginationData.last_page));
+
+        if (page === paginationData.current_page) {
+            return;
+        }
+
+        router.visit(url, {
+            data: {
+                ...params,
+                [pageParamName]: page,
+            },
+            only,
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
+    useEffect(() => {
+        if (!paginationData) {
+            return;
+        }
+
+        if (pageInput === '') {
+            return;
+        }
+
+        const page = Number(pageInput);
+
+        if (Number.isNaN(page)) {
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            goToPage(page);
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [pageInput, paginationData]);
 
     // table
     const table = useReactTable({
@@ -375,19 +414,7 @@ export default function Table<TData>({
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                            router.visit(url, {
-                                data: {
-                                    [pageParamName]:
-                                        paginationData.current_page -
-                                        (paginationData.current_page - 1),
-                                },
-                                only,
-                                preserveState: true,
-                                preserveScroll: true,
-                                replace: true,
-                            });
-                        }}
+                        onClick={() => goToPage(1)}
                         disabled={paginationData.current_page === 1}
                     >
                         <ChevronsLeft />
@@ -395,19 +422,9 @@ export default function Table<TData>({
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                            router.visit(url, {
-                                data: {
-                                    ...params,
-                                    [pageParamName]:
-                                        paginationData.current_page - 1,
-                                },
-                                only,
-                                preserveState: true,
-                                preserveScroll: true,
-                                replace: true,
-                            });
-                        }}
+                        onClick={() =>
+                            goToPage(paginationData.current_page - 1)
+                        }
                         disabled={paginationData.current_page === 1}
                     >
                         <ChevronLeft />
@@ -415,12 +432,12 @@ export default function Table<TData>({
                     <div className="flex w-24 items-center justify-between pr-2">
                         <Input
                             className="w-12"
-                            value={searchValue}
+                            value={pageInput}
                             onChange={(e) => {
                                 const value = e.currentTarget.value;
 
                                 if (value === '') {
-                                    setSearchValue('');
+                                    setPageInput('');
 
                                     return;
                                 }
@@ -429,25 +446,30 @@ export default function Table<TData>({
                                     return;
                                 }
 
-                                setSearchValue(value);
-
-                                router.visit(url, {
-                                    data: { ...params, page: value },
-                                    only,
-                                    preserveState: true,
-                                    preserveScroll: true,
-                                    replace: true,
-                                });
+                                setPageInput(value);
                             }}
                             onBlur={() => {
-                                if (searchValue === '') {
-                                    setSearchValue(
+                                if (pageInput === '') {
+                                    setPageInput(
                                         String(paginationData.current_page),
                                     );
 
                                     return;
                                 }
+
+                                const page = Math.max(
+                                    1,
+                                    Math.min(
+                                        Number(pageInput),
+                                        paginationData.last_page,
+                                    ),
+                                );
+
+                                setPageInput(String(page));
                             }}
+                            onFocus={(e) => e.target.select()}
+                            pattern="[0-9]*"
+                            inputMode="numeric"
                             autoComplete="off"
                         ></Input>
                         <span>/</span>
@@ -456,19 +478,9 @@ export default function Table<TData>({
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                            router.visit(url, {
-                                data: {
-                                    ...params,
-                                    [pageParamName]:
-                                        paginationData.current_page + 1,
-                                },
-                                only,
-                                preserveState: true,
-                                preserveScroll: true,
-                                replace: true,
-                            });
-                        }}
+                        onClick={() =>
+                            goToPage(paginationData.current_page + 1)
+                        }
                         disabled={
                             paginationData.current_page ===
                             paginationData.last_page
@@ -479,18 +491,7 @@ export default function Table<TData>({
                     <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                            router.visit(url, {
-                                data: {
-                                    ...params,
-                                    [pageParamName]: paginationData.last_page,
-                                },
-                                only,
-                                preserveState: true,
-                                preserveScroll: true,
-                                replace: true,
-                            });
-                        }}
+                        onClick={() => goToPage(paginationData.last_page)}
                         disabled={
                             paginationData.current_page ===
                             paginationData.last_page
