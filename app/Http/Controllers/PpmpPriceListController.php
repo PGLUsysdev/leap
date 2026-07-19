@@ -161,7 +161,7 @@ class PpmpPriceListController extends Controller
                                 $subQuery->where(
                                     'account_title',
                                     'like',
-                                    '' . $searchTerm . '',
+                                    '%' . $searchTerm . '%',
                                 );
                             },
                         );

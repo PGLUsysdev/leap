@@ -145,6 +145,31 @@ export default function Table<TData>({
         }
     }, [paginationData]);
 
+    useEffect(() => {
+        if (!paginationData) {
+            return;
+        }
+
+        const timeout = setTimeout(() => {
+            router.get(
+                url,
+                {
+                    ...params,
+                    [searchParamName]: globalFilter || undefined,
+                    [pageParamName]: 1, // reset to first page on search
+                },
+                {
+                    only,
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [globalFilter]);
+
     const goToPage = (page: number) => {
         if (!paginationData) {
             return;
@@ -201,7 +226,7 @@ export default function Table<TData>({
         // getFacetedMinMaxValues: getFacetedMinMaxValues(),
         // getFacetedRowModel: getFacetedRowModel(),
         // getFacetedUniqueValues: getFacetedUniqueValues(),
-        getFilteredRowModel: getFilteredRowModel(),
+        // getFilteredRowModel: getFilteredRowModel(),
         // getGroupedRowModel: getGroupedRowModel(),
         // getPaginationRowModel: getPaginationRowModel(),
         // getSortedRowModel: getSortedRowModel(),

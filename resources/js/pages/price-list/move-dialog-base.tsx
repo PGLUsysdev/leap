@@ -20,6 +20,8 @@ interface MoveDialogProps {
     dialogData: PriceList[];
     dialogPaginationData?: Omit<PaginatedResponse<PriceList>, 'data'>;
     onMoveItem: (position: 'up' | 'down') => void;
+    title: string;
+    description: string;
 }
 
 export default function MoveDialog({
@@ -31,6 +33,8 @@ export default function MoveDialog({
     dialogData,
     dialogPaginationData,
     onMoveItem,
+    title,
+    description,
 }: MoveDialogProps) {
     const handleOpenChange = (nextOpen: boolean) => {
         onOpenChange(nextOpen);
@@ -44,11 +48,13 @@ export default function MoveDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 p-0 sm:max-w-300">
                 <DialogHeader className="flex-none px-4 pt-4">
-                    <DialogTitle>Move Price List Item</DialogTitle>
+                    {/*<DialogTitle>Move Price List Item</DialogTitle>
                     <DialogDescription>
                         Select a target position for "
                         {selectedItem?.description}" and click Move Down.
-                    </DialogDescription>
+                    </DialogDescription>*/}
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
                 </DialogHeader>
 
                 <div className="p-4">

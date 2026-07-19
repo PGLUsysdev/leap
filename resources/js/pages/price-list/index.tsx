@@ -679,6 +679,21 @@ export default function PriceListPage({
                 </DialogContent>
             </Dialog>
 
+            {/* move dialog */}
+            <MoveDialog
+                open={openMoveDialog}
+                onOpenChange={setOpenMoveDialog}
+                selectedItem={selectedItem}
+                moveTarget={moveTarget}
+                onMoveTargetChange={setMoveTarget}
+                dialogData={dialogData}
+                dialogPaginationData={dialogPaginationData}
+                onMoveItem={handleMoveItem}
+                columns={columnsBase}
+                title="Move Price List Item"
+                description={`Select a target position for "${selectedItem?.description}" and click Move Down.`}
+            />
+
             {/* table select */}
             <TableSelect
                 columns={coaCols}
@@ -713,18 +728,6 @@ export default function PriceListPage({
                 title="Select Category"
                 description="Choose the category for this price list item."
             ></TableSelect>
-
-            <MoveDialog
-                open={openMoveDialog}
-                onOpenChange={setOpenMoveDialog}
-                selectedItem={selectedItem}
-                moveTarget={moveTarget}
-                onMoveTargetChange={setMoveTarget}
-                dialogData={dialogData}
-                dialogPaginationData={dialogPaginationData}
-                onMoveItem={handleMoveItem}
-                columns={columnsBase}
-            />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
