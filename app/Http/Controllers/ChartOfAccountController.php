@@ -18,17 +18,30 @@ class ChartOfAccountController extends Controller
         Gate::authorize('viewAny', ChartOfAccount::class);
 
         return Inertia::render('chart-of-account/index', [
-            'chartOfAccounts' => ChartOfAccount::all(),
+            'chartOfAccounts' => ChartOfAccount::select([
+                'id',
+                'account_number',
+                'account_title',
+                'account_type',
+                'expense_class',
+                'account_series',
+                'parent_id',
+                'level',
+                'is_postable',
+                'is_active',
+                'normal_balance',
+                'description',
+            ])->get(),
             'can' => [
                 'add' => request()
                     ->user()
                     ->can('create', ChartOfAccount::class),
                 'edit' => request()
                     ->user()
-                    ->can('update', new ChartOfAccount),
+                    ->can('update', new ChartOfAccount()),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new ChartOfAccount),
+                    ->can('delete', new ChartOfAccount()),
             ],
         ]);
     }

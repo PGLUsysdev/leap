@@ -1,9 +1,14 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+// import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/chart-of-account/form-dialog';
+import FormDialog from '@/pages/chart-of-account/form-dialog-base';
 import type { ChartOfAccount } from '@/types';
 import columns from './columns/columns';
 
@@ -72,15 +77,18 @@ export default function ChartOfAccountPage({
 
     return (
         <>
-            <div className="pt-4">
-                <DataTable
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                {/*<DataTable
                     columns={cols}
                     data={chartOfAccounts}
                     withSearch={true}
                     onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
-                    negativeHeight={7}
+                    negativeHeight={7}s
                 >
+                </DataTable>*/}
+
+                <DataTable columns={cols} data={chartOfAccounts} meta={{ onEdit: handleEdit, onDelete: handleDeleteDialogOpen }}>
                     {can?.add && (
                         <div className="flex justify-end">
                             <Button onClick={handleAdd}>
@@ -89,11 +97,13 @@ export default function ChartOfAccountPage({
                         </div>
                     )}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={open}
-                setOpen={handleDialogOpenChange}
+                onOpenChange={handleDialogOpenChange}
                 initialData={selectedAccount}
             />
 
