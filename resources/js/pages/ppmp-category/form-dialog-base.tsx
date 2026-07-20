@@ -3,6 +3,7 @@ import { router, usePage } from '@inertiajs/react';
 import { useState, useEffect, useMemo } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { TableSelect } from '@/components/base-ui-components/table-select';
 import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
@@ -23,18 +24,12 @@ import {
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Command,
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
 import type { ChartOfAccount, PpmpCategory } from '@/types';
-import { TableSelect } from '@/components/base-ui-components/table-select';
 import coaCols from './columns/coa-cols';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+} from '@/components/base-ui-components/ui/toggle-group';
 
 interface FormDialogProps {
     open: boolean;
@@ -58,11 +53,13 @@ export default function FormDialog({
     console.log('chartOfAccounts', chartOfAccounts);
 
     const [isLoading, setIsLoading] = useState(false);
-    const [openCoaCommand, setOpenCoaCommand] = useState(false);
+    const [openCoaTableSelect, setOpenCoaTableSelect] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
     const [showForceDeleteDialog, setShowForceDeleteDialog] = useState(false);
     const { errors } = usePage().props;
+
+    console.log('initialData', initialData);
 
     const isEditing = !!initialData;
 
@@ -80,10 +77,11 @@ export default function FormDialog({
             form.reset(
                 initialData
                     ? {
-                          ...initialData,
+                          name: initialData.name,
+                          is_non_procurement: initialData.is_non_procurement,
                           chart_of_accounts:
-                              initialData.chart_of_accounts?.map(
-                                  (account) => account.id,
+                              initialData.chart_of_account_ppmp_categories?.map(
+                                  (pivot) => pivot.chart_of_account_id,
                               ) || [],
                       }
                     : {
@@ -98,7 +96,10 @@ export default function FormDialog({
 
     const formValues = form.watch();
     const initialChartOfAccounts = useMemo(
-        () => initialData?.chart_of_accounts?.map((a) => a.id) || [],
+        () =>
+            initialData?.chart_of_account_ppmp_categories?.map(
+                (pivot) => pivot.chart_of_account_id,
+            ) || [],
         [initialData],
     );
 
@@ -190,7 +191,7 @@ export default function FormDialog({
     return (
         <>
             <Dialog open={open} onOpenChange={handleOpenChange}>
-                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl">
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-3xl">
                     <DialogHeader className="flex-none">
                         <DialogTitle>
                             {isEditing
@@ -211,36 +212,101 @@ export default function FormDialog({
                                 onSubmit={form.handleSubmit(onSubmit)}
                                 className="flex flex-col gap-4 py-1"
                             >
-                                <Controller
-                                    name="name"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldLabel htmlFor={field.name}>
-                                                Name{' '}
-                                                <span className="text-red-500">
-                                                    *
-                                                </span>
-                                            </FieldLabel>
-                                            <Input
-                                                {...field}
-                                                id={field.name}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                placeholder="Category name..."
-                                                autoComplete="off"
-                                            />
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                <div className="flex gap-4">
+                                    <div className="flex-1">
+                                        <Controller
+                                            name="name"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
+                                                        Name
+                                                    </FieldLabel>
+                                                    <Input
+                                                        {...field}
+                                                        id={field.name}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                        placeholder="Category name..."
+                                                        autoComplete="off"
+                                                    />
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </Field>
                                             )}
-                                        </Field>
-                                    )}
-                                />
+                                        />
+                                    </div>
+
+                                    <div className="flex-1">
+                                        <Controller
+                                            name="is_non_procurement"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                        className="font-normal"
+                                                    >
+                                                        Procurement Type
+                                                    </FieldLabel>
+
+                                                    <ToggleGroup
+                                                        value={[
+                                                            field.value
+                                                                ? 'non_procurement'
+                                                                : 'procurement',
+                                                        ]}
+                                                        onValueChange={(
+                                                            value,
+                                                        ) => {
+                                                            if (
+                                                                value.length > 0
+                                                            ) {
+                                                                field.onChange(
+                                                                    value[0] ===
+                                                                        'non_procurement',
+                                                                );
+                                                            }
+                                                        }}
+                                                        orientation="horizontal"
+                                                    >
+                                                        <ToggleGroupItem
+                                                            value="procurement"
+                                                            aria-label="Procurement"
+                                                            className="flex-1"
+                                                        >
+                                                            Procurement
+                                                        </ToggleGroupItem>
+
+                                                        <ToggleGroupItem
+                                                            value="non_procurement"
+                                                            aria-label="Non-Procurement"
+                                                            className="flex-1"
+                                                        >
+                                                            Non-Procurement
+                                                        </ToggleGroupItem>
+                                                    </ToggleGroup>
+                                                </Field>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
 
                                 <Controller
                                     name="chart_of_accounts"
@@ -257,7 +323,7 @@ export default function FormDialog({
                                                 type="button"
                                                 variant="outline"
                                                 onClick={() =>
-                                                    setOpenCoaCommand(true)
+                                                    setOpenCoaTableSelect(true)
                                                 }
                                                 className="w-full justify-start"
                                             >
@@ -323,90 +389,6 @@ export default function FormDialog({
                                                 </ul>
                                             )}
 
-                                            <CommandDialog
-                                                open={openCoaCommand}
-                                                onOpenChange={setOpenCoaCommand}
-                                                className="flex max-h-[90vh] flex-col"
-                                            >
-                                                <Command>
-                                                    <CommandInput placeholder="Search chart of account..." />
-                                                    <CommandList className="max-h-none flex-1">
-                                                        <CommandEmpty>
-                                                            No chart of account
-                                                            found.
-                                                        </CommandEmpty>
-                                                        <CommandGroup heading="Chart of Accounts">
-                                                            {chartOfAccounts.map(
-                                                                (coa) => (
-                                                                    <CommandItem
-                                                                        key={
-                                                                            coa.id
-                                                                        }
-                                                                        value={`${coa.account_number} ${coa.account_title}`}
-                                                                        className="items-center gap-4"
-                                                                    >
-                                                                        <Checkbox
-                                                                            checked={
-                                                                                field.value?.includes(
-                                                                                    coa.id,
-                                                                                ) ||
-                                                                                false
-                                                                            }
-                                                                            onCheckedChange={(
-                                                                                checked,
-                                                                            ) => {
-                                                                                const newValue =
-                                                                                    checked
-                                                                                        ? [
-                                                                                              ...(field.value ||
-                                                                                                  []),
-                                                                                              coa.id,
-                                                                                          ]
-                                                                                        : field.value?.filter(
-                                                                                              (
-                                                                                                  id,
-                                                                                              ) =>
-                                                                                                  id !==
-                                                                                                  coa.id,
-                                                                                          ) ||
-                                                                                          [];
-                                                                                field.onChange(
-                                                                                    newValue,
-                                                                                );
-                                                                            }}
-                                                                        />
-                                                                        <div className="grid w-full grid-cols-6 gap-4">
-                                                                            <span className="col-span-2">
-                                                                                {coa.account_number ??
-                                                                                    '-'}
-                                                                            </span>
-                                                                            <span className="col-span-4 whitespace-normal">
-                                                                                {
-                                                                                    coa.account_title
-                                                                                }
-                                                                            </span>
-                                                                        </div>
-                                                                    </CommandItem>
-                                                                ),
-                                                            )}
-                                                        </CommandGroup>
-                                                    </CommandList>
-                                                </Command>
-                                                <div className="border-t p-4">
-                                                    <Button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            setOpenCoaCommand(
-                                                                false,
-                                                            )
-                                                        }
-                                                        className="w-full"
-                                                    >
-                                                        Save Selected
-                                                    </Button>
-                                                </div>
-                                            </CommandDialog>
-
                                             {fieldState.invalid && (
                                                 <FieldError
                                                     errors={[fieldState.error]}
@@ -416,7 +398,7 @@ export default function FormDialog({
                                     )}
                                 />
 
-                                <Controller
+                                {/*<Controller
                                     name="is_non_procurement"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
@@ -437,7 +419,7 @@ export default function FormDialog({
                                             </FieldLabel>
                                         </div>
                                     )}
-                                />
+                                />*/}
                             </form>
 
                             <ScrollBar orientation="vertical" />
@@ -448,11 +430,25 @@ export default function FormDialog({
                         <Button
                             variant="outline"
                             onClick={() => {
-                                form.reset({
-                                    name: '',
-                                    chart_of_accounts: [],
-                                    is_non_procurement: false,
-                                });
+                                if (initialData) {
+                                    form.reset({
+                                        name: initialData.name,
+                                        is_non_procurement:
+                                            initialData.is_non_procurement,
+                                        chart_of_accounts:
+                                            initialData.chart_of_account_ppmp_categories?.map(
+                                                (pivot) =>
+                                                    pivot.chart_of_account_id,
+                                            ) || [],
+                                    });
+                                    setHasUnsavedChanges(false);
+                                } else {
+                                    form.reset({
+                                        name: '',
+                                        chart_of_accounts: [],
+                                        is_non_procurement: false,
+                                    });
+                                }
                             }}
                         >
                             Reset
@@ -534,19 +530,22 @@ export default function FormDialog({
 
             <TableSelect
                 columns={coaCols}
-                data={chartOfAccounts}
+                data={chartOfAccounts.filter(
+                    (coa) =>
+                        !form.getValues('chart_of_accounts')?.includes(coa.id),
+                )}
                 open={openCoaTableSelect}
                 onOpenChange={setOpenCoaTableSelect}
                 onRowSelect={(row) => {
-                    form.setValue('coa_id', String(row.id), {
-                        shouldValidate: true,
+                    const current = form.getValues('chart_of_accounts') || [];
+                    form.setValue('chart_of_accounts', [...current, row.id], {
+                        shouldDirty: true,
                     });
+                    setOpenCoaTableSelect(false);
                 }}
-                value={watchCoaId}
-                valueKey="id"
                 className="sm:max-w-175"
                 title="Select Chart of Account"
-                description="Choose the chart of account for this price list item."
+                description="Choose a chart of account to add to this category."
             />
         </>
     );
