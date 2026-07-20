@@ -55,8 +55,6 @@ export default function FormDialog({
     initialData,
     chartOfAccounts,
 }: FormDialogProps) {
-    console.log(initialData);
-
     const [isLoading, setIsLoading] = useState(false);
     const [openCoaCommand, setOpenCoaCommand] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -142,7 +140,6 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            console.log('post');
             router.post('/ppmp-categories', data, {
                 preserveScroll: true,
                 preserveState: true,
@@ -266,7 +263,6 @@ export default function FormDialog({
                                     name="chart_of_accounts"
                                     control={form.control}
                                     render={({ field, fieldState }) => {
-                                        // console.log(field.value);
                                         return (
                                             <FieldSet>
                                                 <FieldContent>
@@ -443,8 +439,6 @@ export default function FormDialog({
                                     name="is_non_procurement"
                                     control={form.control}
                                     render={({ field, fieldState }) => {
-                                        console.log(field.value);
-
                                         return (
                                             <FieldSet>
                                                 <FieldContent>

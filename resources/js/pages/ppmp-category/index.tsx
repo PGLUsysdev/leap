@@ -2,12 +2,12 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 // import { DataTable } from '@/components/data-table';
 import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { Button } from '@/components/ui/button';
 import type { PpmpCategory, ChartOfAccount } from '@/types';
 import columns from './columns/columns';
 import FormDialog from './form-dialog-base';
@@ -27,20 +27,18 @@ export default function PpmpCategoryPage({
     chartOfAccounts,
     can,
 }: PpmpCategoryPageProps) {
-    console.log('ppmpCategories', ppmpCategories);
-
-    const categoriesWithAccounts = ppmpCategories.map((category) => ({
-        ...category,
-        chart_of_accounts:
-            category.chart_of_account_ppmp_categories
-                ?.map((pivot) =>
-                    chartOfAccounts.find(
-                        (coa) => coa.id === pivot.chart_of_account_id,
-                    ),
-                )
-                .filter((coa): coa is ChartOfAccount => coa !== undefined) ||
-            [],
-    }));
+    // const categoriesWithAccounts = ppmpCategories.map((category) => ({
+    //     ...category,
+    //     chart_of_accounts:
+    //         category.chart_of_account_ppmp_categories
+    //             ?.map((pivot) =>
+    //                 chartOfAccounts.find(
+    //                     (coa) => coa.id === pivot.chart_of_account_id,
+    //                 ),
+    //             )
+    //             .filter((coa): coa is ChartOfAccount => coa !== undefined) ||
+    //         [],
+    // }));
 
     const [open, setOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] =
@@ -108,23 +106,6 @@ export default function PpmpCategoryPage({
     return (
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
-                {/*<DataTable
-                    columns={columns(can?.edit ?? false, can?.delete ?? false)}
-                    data={categoriesWithAccounts}
-                    withSearch={true}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteDialogOpen}
-                    negativeHeight={7}
-                >
-                    {can?.add && (
-                        <div className="flex justify-end">
-                            <Button onClick={handleAdd}>
-                                Add PPMP Category
-                            </Button>
-                        </div>
-                    )}
-                </DataTable>*/}
-
                 {/* additional content here */}
 
                 <DataTable

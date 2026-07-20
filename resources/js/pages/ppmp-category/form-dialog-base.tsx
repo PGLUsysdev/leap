@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, usePage } from '@inertiajs/react';
+import { ChevronsUpDown } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import { TableSelect } from '@/components/base-ui-components/table-select';
 import { Button } from '@/components/base-ui-components/ui/button';
@@ -23,13 +24,12 @@ import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
-import type { ChartOfAccount, PpmpCategory } from '@/types';
-import coaCols from './columns/coa-cols';
 import {
     ToggleGroup,
     ToggleGroupItem,
 } from '@/components/base-ui-components/ui/toggle-group';
+import type { ChartOfAccount, PpmpCategory } from '@/types';
+import coaCols from './columns/coa-cols';
 
 interface FormDialogProps {
     open: boolean;
@@ -41,7 +41,9 @@ interface FormDialogProps {
 const formSchema = z.object({
     name: z.string().trim().min(1, { message: 'Name is required' }),
     is_non_procurement: z.boolean(),
-    chart_of_accounts: z.array(z.number()),
+    chart_of_accounts: z
+        .array(z.number())
+        .min(1, { message: 'Select at least one chart of account' }),
 });
 
 export default function FormDialog({
@@ -50,16 +52,12 @@ export default function FormDialog({
     initialData,
     chartOfAccounts,
 }: FormDialogProps) {
-    console.log('chartOfAccounts', chartOfAccounts);
-
     const [isLoading, setIsLoading] = useState(false);
     const [openCoaTableSelect, setOpenCoaTableSelect] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
     const [showForceDeleteDialog, setShowForceDeleteDialog] = useState(false);
     const { errors } = usePage().props;
-
-    console.log('initialData', initialData);
 
     const isEditing = !!initialData;
 
@@ -289,7 +287,7 @@ export default function FormDialog({
                                                         <ToggleGroupItem
                                                             value="procurement"
                                                             aria-label="Procurement"
-                                                            className="flex-1"
+                                                            className="flex-1 border"
                                                         >
                                                             Procurement
                                                         </ToggleGroupItem>
@@ -297,7 +295,7 @@ export default function FormDialog({
                                                         <ToggleGroupItem
                                                             value="non_procurement"
                                                             aria-label="Non-Procurement"
-                                                            className="flex-1"
+                                                            className="flex-1 border"
                                                         >
                                                             Non-Procurement
                                                         </ToggleGroupItem>
@@ -326,10 +324,17 @@ export default function FormDialog({
                                                     setOpenCoaTableSelect(true)
                                                 }
                                                 className="w-full justify-start"
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
                                             >
-                                                {field.value.length > 0
-                                                    ? `${field.value.length} selected`
-                                                    : 'Select chart of accounts'}
+                                                <div className="flex w-full items-center justify-between">
+                                                    {field.value.length > 0
+                                                        ? `${field.value.length} selected`
+                                                        : 'Select chart of accounts'}
+
+                                                    <ChevronsUpDown />
+                                                </div>
                                             </Button>
 
                                             {field.value.length > 0 && (
@@ -540,6 +545,7 @@ export default function FormDialog({
                     const current = form.getValues('chart_of_accounts') || [];
                     form.setValue('chart_of_accounts', [...current, row.id], {
                         shouldDirty: true,
+                        shouldValidate: true,
                     });
                     setOpenCoaTableSelect(false);
                 }}
