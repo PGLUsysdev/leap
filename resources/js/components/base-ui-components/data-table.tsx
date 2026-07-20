@@ -122,6 +122,8 @@ export default function Table<TData>({
     searchParamName = 'search',
     only,
 }: TableProps<TData>) {
+    const isServer = !!paginationData;
+
     const { url } = usePage();
 
     const params = Object.fromEntries(
@@ -133,6 +135,7 @@ export default function Table<TData>({
 
         return params.get(searchParamName) || '';
     });
+    // const [globalFilter, setGlobalFilter] = useState<string>('');
 
     // pagination
     const [pageInput, setPageInput] = useState<string>(() => {
@@ -146,7 +149,7 @@ export default function Table<TData>({
     }, [paginationData]);
 
     useEffect(() => {
-        if (!paginationData) {
+        if (!isServer) {
             return;
         }
 
@@ -171,7 +174,7 @@ export default function Table<TData>({
     }, [globalFilter]);
 
     const goToPage = (page: number) => {
-        if (!paginationData) {
+        if (!isServer) {
             return;
         }
 
@@ -217,7 +220,7 @@ export default function Table<TData>({
 
     // table
     const table = useReactTable({
-        columns: columns,
+        columns,
         data,
 
         // row models
@@ -226,46 +229,50 @@ export default function Table<TData>({
         // getFacetedMinMaxValues: getFacetedMinMaxValues(),
         // getFacetedRowModel: getFacetedRowModel(),
         // getFacetedUniqueValues: getFacetedUniqueValues(),
+        getFilteredRowModel: !isServer ? getFilteredRowModel() : undefined,
         // getFilteredRowModel: getFilteredRowModel(),
         // getGroupedRowModel: getGroupedRowModel(),
         // getPaginationRowModel: getPaginationRowModel(),
         // getSortedRowModel: getSortedRowModel(),
 
-        // states
         initialState: {
             columnPinning: {
                 right: ['actions'],
             },
         },
-
         state: {
             globalFilter,
         },
-
-        onGlobalFilterChange: setGlobalFilter,
-        enableColumnPinning: true,
 
         // for table
         // defaultColumn: {
         //     size: 110,
         // },
 
-        meta: meta,
+        enableColumnPinning: true,
 
-        manualPagination: !!paginationData,
+        onGlobalFilterChange: setGlobalFilter,
+
+        manualFiltering: isServer,
+        manualPagination: isServer,
         pageCount: paginationData?.last_page,
         rowCount: paginationData?.total,
 
-        manualFiltering: true,
+        meta: meta,
     });
 
     return (
         <div
             className={cn(
                 'flex h-full min-h-0 flex-col',
-                variant !== 'select' && 'pr-3',
+                // variant !== 'select' && 'pr-3',
                 className,
             )}
+            // className={cn(
+            //     'flex h-full min-h-0 flex-col',
+            //     variant !== 'select' && 'pr-3',
+            //     className,
+            // )}
         >
             <div
                 className={cn(

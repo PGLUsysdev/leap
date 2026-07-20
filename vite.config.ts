@@ -14,12 +14,12 @@ import { defineConfig } from 'vite';
 // const appVersion = packageJson.version;
 
 export default defineConfig({
-    // server: {
-    //     host: true,
-    //     hmr: {
-    //         host: '10.10.26.228',
-    //     },
-    // },
+    server: {
+        host: true,
+        hmr: {
+            host: '10.10.26.228',
+        },
+    },
     // define: {
     //     '__APP_VERSION__': JSON.stringify(appVersion),
     // },

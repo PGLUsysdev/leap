@@ -1,44 +1,46 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, Trash } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { PpmpCategory } from "@/types";
-import { Badge } from "@/components/ui/badge";
+import { createColumnHelper } from '@tanstack/react-table';
+import { Pencil, Trash } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import type { PpmpCategory } from '@/types';
 
 const columnHelper = createColumnHelper<PpmpCategory>();
 
 const columns = (canEdit: boolean, canDelete: boolean) => {
     const cols = [
-        columnHelper.accessor("name", {
+        columnHelper.accessor('name', {
             header: () => <div>Category Name</div>,
             size: 300,
-            cell: (value) => <div className="text-wrap">{value.getValue()}</div>,
+            cell: (value) => (
+                <div className="text-wrap">{value.getValue()}</div>
+            ),
         }),
-        columnHelper.accessor("is_non_procurement", {
+        columnHelper.accessor('is_non_procurement', {
             header: () => <div>Procurement Type</div>,
             size: 300,
             cell: (value) => (
                 <div className="text-wrap">
-                    {value.getValue() ? "Non-Procurement" : "Procurement"}
+                    {value.getValue() ? 'Non-Procurement' : 'Procurement'}
                 </div>
             ),
         }),
-        columnHelper.accessor("chart_of_accounts", {
-            header: () => <div>Chart of Accounts</div>,
-            size: 300,
-            cell: ({ getValue }) => (
-                <div className="flex flex-wrap gap-2">
-                    {getValue().map((account) => (
-                        <Badge key={account.id}>{account.account_title}</Badge>
-                    ))}
-                </div>
-            ),
-        }),
+        // columnHelper.accessor('chart_of_accounts', {
+        //     header: () => <div>Chart of Accounts</div>,
+        //     size: 300,
+        //     cell: ({ getValue }) => (
+        //         <div className="flex flex-wrap gap-2">
+        //             {getValue().map((account) => (
+        //                 <Badge key={account.id}>{account.account_title}</Badge>
+        //             ))}
+        //         </div>
+        //     ),
+        // }),
     ];
 
     if (canEdit || canDelete) {
         cols.push(
             columnHelper.display({
-                id: "action",
+                id: 'action',
                 size: canEdit && canDelete ? 82 : 48,
                 cell: ({ row, table }) => (
                     <div className="flex items-center gap-1">
@@ -46,7 +48,9 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
                             <Button
                                 size="icon"
                                 variant="outline"
-                                onClick={() => table.options.meta?.onEdit?.(row.original)}
+                                onClick={() =>
+                                    table.options.meta?.onEdit?.(row.original)
+                                }
                             >
                                 <Pencil />
                             </Button>
@@ -56,7 +60,9 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
                             <Button
                                 size="icon"
                                 variant="destructive"
-                                onClick={() => table.options.meta?.onDelete?.(row.original)}
+                                onClick={() =>
+                                    table.options.meta?.onDelete?.(row.original)
+                                }
                             >
                                 <Trash />
                             </Button>

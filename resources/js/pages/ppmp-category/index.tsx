@@ -1,6 +1,11 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+// import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 import FormDialog from '@/pages/ppmp-category/form-dialog';
@@ -22,6 +27,8 @@ export default function PpmpCategoryPage({
     chartOfAccounts,
     can,
 }: PpmpCategoryPageProps) {
+    console.log('ppmpCategories', ppmpCategories);
+
     const categoriesWithAccounts = ppmpCategories.map((category) => ({
         ...category,
         chart_of_accounts:
@@ -100,8 +107,8 @@ export default function PpmpCategoryPage({
 
     return (
         <>
-            <div className="pt-4">
-                <DataTable
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                {/*<DataTable
                     columns={columns(can?.edit ?? false, can?.delete ?? false)}
                     data={categoriesWithAccounts}
                     withSearch={true}
@@ -116,10 +123,19 @@ export default function PpmpCategoryPage({
                             </Button>
                         </div>
                     )}
-                </DataTable>
-            </div>
+                </DataTable>*/}
 
-            <FormDialog
+                {/* additional content here */}
+
+                <DataTable
+                    columns={columns(can?.edit ?? false, can?.delete ?? false)}
+                    data={ppmpCategories}
+                ></DataTable>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
+
+            {/*<FormDialog
                 open={open}
                 setOpen={handleDialogOpenChange}
                 initialData={selectedCategory}
@@ -165,7 +181,7 @@ export default function PpmpCategoryPage({
                     setSelectedCategory(null);
                 }}
                 isLoading={isLoading}
-            />
+            />*/}
         </>
     );
 }

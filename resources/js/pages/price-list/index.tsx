@@ -376,10 +376,10 @@ export default function PriceListPage({
     return (
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                {/*<div>Title</div>
                 <div>Title</div>
                 <div>Title</div>
-                <div>Title</div>
-                <div>Title</div>
+                <div>Title</div>*/}
 
                 <NewTable
                     data={pageData}
