@@ -54,10 +54,11 @@ export default function FormDialog({
 }: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [openCoaTableSelect, setOpenCoaTableSelect] = useState(false);
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-    const [showForceDeleteDialog, setShowForceDeleteDialog] = useState(false);
     const { errors } = usePage().props;
+    const [showForceDeleteDialog, setShowForceDeleteDialog] = useState(
+        !!(errors as Record<string, string> | undefined)?.force_delete,
+    );
 
     const isEditing = !!initialData;
 
@@ -88,11 +89,13 @@ export default function FormDialog({
                           is_non_procurement: false,
                       },
             );
-            setHasUnsavedChanges(false);
         }
     }, [initialData, open, form]);
 
-    const formValues = form.watch();
+    const watchedCoaIds = useWatch({
+        control: form.control,
+        name: 'chart_of_accounts',
+    });
     const initialChartOfAccounts = useMemo(
         () =>
             initialData?.chart_of_account_ppmp_categories?.map(
@@ -101,21 +104,14 @@ export default function FormDialog({
         [initialData],
     );
 
-    useEffect(() => {
-        const currentChartOfAccounts = formValues.chart_of_accounts || [];
-        const hasChanges =
-            JSON.stringify(
-                [...currentChartOfAccounts].sort((a, b) => a - b),
-            ) !==
-            JSON.stringify([...initialChartOfAccounts].sort((a, b) => a - b));
-        setHasUnsavedChanges(hasChanges);
-    }, [formValues.chart_of_accounts, initialChartOfAccounts]);
+    const hasUnsavedChanges = useMemo(() => {
+        const current = watchedCoaIds || [];
 
-    useEffect(() => {
-        if (errors && (errors as Record<string, string>).force_delete) {
-            setShowForceDeleteDialog(true);
-        }
-    }, [errors]);
+        return (
+            JSON.stringify([...current].sort((a, b) => a - b)) !==
+            JSON.stringify([...initialChartOfAccounts].sort((a, b) => a - b))
+        );
+    }, [watchedCoaIds, initialChartOfAccounts]);
 
     function handleOpenChange(isOpen: boolean) {
         if (!isOpen && hasUnsavedChanges) {
@@ -127,7 +123,6 @@ export default function FormDialog({
 
     function handleUnsavedConfirm() {
         setShowUnsavedDialog(false);
-        setHasUnsavedChanges(false);
         onOpenChange(false);
     }
 
@@ -142,7 +137,6 @@ export default function FormDialog({
                 preserveState: true,
                 onStart: () => setIsLoading(true),
                 onSuccess: () => {
-                    setHasUnsavedChanges(false);
                     onOpenChange(false);
                 },
                 onError: (submitErrors) => {
@@ -178,7 +172,6 @@ export default function FormDialog({
             preserveState: true,
             onStart: () => setIsLoading(true),
             onSuccess: () => {
-                setHasUnsavedChanges(false);
                 setShowForceDeleteDialog(false);
                 onOpenChange(false);
             },
@@ -339,7 +332,7 @@ export default function FormDialog({
 
                                             {field.value.length > 0 && (
                                                 <ul className="mt-2 space-y-1">
-                                                    {field.value
+                                                    {[...new Set(field.value)]
                                                         .map((id) =>
                                                             chartOfAccounts.find(
                                                                 (coa) =>
@@ -446,7 +439,6 @@ export default function FormDialog({
                                                     pivot.chart_of_account_id,
                                             ) || [],
                                     });
-                                    setHasUnsavedChanges(false);
                                 } else {
                                     form.reset({
                                         name: '',
@@ -537,13 +529,13 @@ export default function FormDialog({
                 columns={coaCols}
                 data={chartOfAccounts.filter(
                     (coa) =>
-                        !form.getValues('chart_of_accounts')?.includes(coa.id),
+                        !watchedCoaIds?.includes(coa.id),
                 )}
                 open={openCoaTableSelect}
                 onOpenChange={setOpenCoaTableSelect}
                 onRowSelect={(row) => {
                     const current = form.getValues('chart_of_accounts') || [];
-                    form.setValue('chart_of_accounts', [...current, row.id], {
+                    form.setValue('chart_of_accounts', [...new Set([...current, row.id])], {
                         shouldDirty: true,
                         shouldValidate: true,
                     });
