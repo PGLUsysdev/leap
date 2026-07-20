@@ -1,30 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from '@/components/ui/dialog';
-import type { PpmpCategory, ChartOfAccount } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { router, usePage } from '@inertiajs/react';
+import { useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { FormDialogShell } from '@/components/form-dialog-shell';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { router, usePage } from '@inertiajs/react';
-import {
-    Field,
-    FieldContent,
-    FieldError,
-    FieldGroup,
-    FieldLabel,
-    FieldLegend,
-    FieldSet,
-} from '@/components/ui/field';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Command,
@@ -35,6 +15,26 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import {
+    Field,
+    FieldContent,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+    FieldLegend,
+    FieldSet,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import type { PpmpCategory, ChartOfAccount } from '@/types';
 
 interface FormDialogProps {
     open: boolean;
@@ -121,8 +121,6 @@ export default function FormDialog({
     }, [errors]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        console.log('data', data);
-
         if (isEditing) {
             router.patch(`/ppmp-categories/${initialData.id}`, data, {
                 preserveScroll: true,

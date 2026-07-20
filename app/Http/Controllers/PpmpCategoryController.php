@@ -20,24 +20,26 @@ class PpmpCategoryController extends Controller
     {
         Gate::authorize('viewAny', PpmpCategory::class);
 
-        // $ppmpCategories = PpmpCategory::with(
-        //     'chartOfAccountPpmpCategories.chartOfAccount',
-        // )->get();
-
-        $ppmpCategories = PpmpCategory::select([
-            'id',
-            'name',
-            'is_non_procurement',
-        ])
-            ->with([
-                'chartOfAccountPpmpCategories:id,chart_of_account_id,ppmp_category_id',
-                'chartOfAccountPpmpCategories.chartOfAccount:id,account_number,account_title,expense_class,description',
-            ])
-            ->get();
-
         return Inertia::render('ppmp-category/index', [
-            'ppmpCategories' => $ppmpCategories,
-            'chartOfAccounts' => ChartOfAccount::all(),
+            'ppmpCategories' => PpmpCategory::select([
+                'id',
+                'name',
+                'is_non_procurement',
+            ])
+                ->with([
+                    'chartOfAccountPpmpCategories:id,chart_of_account_id,ppmp_category_id',
+                    'chartOfAccountPpmpCategories.chartOfAccount:id,account_number,account_title,expense_class,description',
+                ])
+                ->get(),
+
+            'chartOfAccounts' => ChartOfAccount::select([
+                'id',
+                'account_number',
+                'account_title',
+                'expense_class',
+                'description',
+            ])->get(),
+
             'can' => [
                 'add' => request()->user()->can('create', PpmpCategory::class),
                 'edit' => request()->user()->can('update', new PpmpCategory()),

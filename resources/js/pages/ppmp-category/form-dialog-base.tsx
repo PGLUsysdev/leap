@@ -1,0 +1,553 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router, usePage } from '@inertiajs/react';
+import { useState, useEffect, useMemo } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/base-ui-components/ui/dialog';
+import {
+    Field,
+    FieldError,
+    FieldLabel,
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Command,
+    CommandDialog,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
+import type { ChartOfAccount, PpmpCategory } from '@/types';
+import { TableSelect } from '@/components/base-ui-components/table-select';
+import coaCols from './columns/coa-cols';
+
+interface FormDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    initialData: PpmpCategory | null;
+    chartOfAccounts: ChartOfAccount[];
+}
+
+const formSchema = z.object({
+    name: z.string().trim().min(1, { message: 'Name is required' }),
+    is_non_procurement: z.boolean(),
+    chart_of_accounts: z.array(z.number()),
+});
+
+export default function FormDialog({
+    open,
+    onOpenChange,
+    initialData,
+    chartOfAccounts,
+}: FormDialogProps) {
+    console.log('chartOfAccounts', chartOfAccounts);
+
+    const [isLoading, setIsLoading] = useState(false);
+    const [openCoaCommand, setOpenCoaCommand] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+    const [showForceDeleteDialog, setShowForceDeleteDialog] = useState(false);
+    const { errors } = usePage().props;
+
+    const isEditing = !!initialData;
+
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            name: '',
+            chart_of_accounts: [],
+            is_non_procurement: false,
+        },
+    });
+
+    useEffect(() => {
+        if (open) {
+            form.reset(
+                initialData
+                    ? {
+                          ...initialData,
+                          chart_of_accounts:
+                              initialData.chart_of_accounts?.map(
+                                  (account) => account.id,
+                              ) || [],
+                      }
+                    : {
+                          name: '',
+                          chart_of_accounts: [],
+                          is_non_procurement: false,
+                      },
+            );
+            setHasUnsavedChanges(false);
+        }
+    }, [initialData, open, form]);
+
+    const formValues = form.watch();
+    const initialChartOfAccounts = useMemo(
+        () => initialData?.chart_of_accounts?.map((a) => a.id) || [],
+        [initialData],
+    );
+
+    useEffect(() => {
+        const currentChartOfAccounts = formValues.chart_of_accounts || [];
+        const hasChanges =
+            JSON.stringify(
+                [...currentChartOfAccounts].sort((a, b) => a - b),
+            ) !==
+            JSON.stringify([...initialChartOfAccounts].sort((a, b) => a - b));
+        setHasUnsavedChanges(hasChanges);
+    }, [formValues.chart_of_accounts, initialChartOfAccounts]);
+
+    useEffect(() => {
+        if (errors && (errors as Record<string, string>).force_delete) {
+            setShowForceDeleteDialog(true);
+        }
+    }, [errors]);
+
+    function handleOpenChange(isOpen: boolean) {
+        if (!isOpen && hasUnsavedChanges) {
+            setShowUnsavedDialog(true);
+        } else {
+            onOpenChange(isOpen);
+        }
+    }
+
+    function handleUnsavedConfirm() {
+        setShowUnsavedDialog(false);
+        setHasUnsavedChanges(false);
+        onOpenChange(false);
+    }
+
+    function handleUnsavedCancel() {
+        setShowUnsavedDialog(false);
+    }
+
+    function onSubmit(data: z.infer<typeof formSchema>) {
+        if (isEditing) {
+            router.patch(`/ppmp-categories/${initialData.id}`, data, {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setIsLoading(true),
+                onSuccess: () => {
+                    setHasUnsavedChanges(false);
+                    onOpenChange(false);
+                },
+                onError: (submitErrors) => {
+                    if (
+                        submitErrors &&
+                        typeof submitErrors === 'object' &&
+                        'force_delete' in submitErrors
+                    ) {
+                        setShowForceDeleteDialog(true);
+                    }
+                },
+                onFinish: () => setIsLoading(false),
+            });
+        } else {
+            router.post('/ppmp-categories', data, {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setIsLoading(true),
+                onSuccess: () => onOpenChange(false),
+                onFinish: () => setIsLoading(false),
+            });
+        }
+    }
+
+    function handleForceSave() {
+        if (!initialData) {
+            return;
+        }
+
+        const data = form.getValues();
+        router.patch(`/ppmp-categories/${initialData.id}?force=1`, data, {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setHasUnsavedChanges(false);
+                setShowForceDeleteDialog(false);
+                onOpenChange(false);
+            },
+            onFinish: () => setIsLoading(false),
+        });
+    }
+
+    return (
+        <>
+            <Dialog open={open} onOpenChange={handleOpenChange}>
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl">
+                    <DialogHeader className="flex-none">
+                        <DialogTitle>
+                            {isEditing
+                                ? 'Edit PPMP Category'
+                                : 'Add New PPMP Category'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {isEditing
+                                ? 'Modify the details of the existing PPMP category below.'
+                                : 'Fill in the information to create a new PPMP category record.'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex min-h-0 flex-1">
+                        <ScrollArea className="w-full pr-3">
+                            <form
+                                id="ppmp-category-form"
+                                onSubmit={form.handleSubmit(onSubmit)}
+                                className="flex flex-col gap-4 py-1"
+                            >
+                                <Controller
+                                    name="name"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldLabel htmlFor={field.name}>
+                                                Name{' '}
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            </FieldLabel>
+                                            <Input
+                                                {...field}
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                placeholder="Category name..."
+                                                autoComplete="off"
+                                            />
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
+                                    )}
+                                />
+
+                                <Controller
+                                    name="chart_of_accounts"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldLabel>
+                                                Chart of Accounts
+                                            </FieldLabel>
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setOpenCoaCommand(true)
+                                                }
+                                                className="w-full justify-start"
+                                            >
+                                                {field.value.length > 0
+                                                    ? `${field.value.length} selected`
+                                                    : 'Select chart of accounts'}
+                                            </Button>
+
+                                            {field.value.length > 0 && (
+                                                <ul className="mt-2 space-y-1">
+                                                    {field.value
+                                                        .map((id) =>
+                                                            chartOfAccounts.find(
+                                                                (coa) =>
+                                                                    coa.id ===
+                                                                    id,
+                                                            ),
+                                                        )
+                                                        .filter(
+                                                            (
+                                                                coa,
+                                                            ): coa is ChartOfAccount =>
+                                                                Boolean(coa),
+                                                        )
+                                                        .map((coa) => (
+                                                            <li
+                                                                key={coa.id}
+                                                                className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                                                            >
+                                                                <span>
+                                                                    <code className="mr-2 rounded bg-muted px-1 py-0.5 text-xs">
+                                                                        {
+                                                                            coa.account_number
+                                                                        }
+                                                                    </code>
+                                                                    {
+                                                                        coa.account_title
+                                                                    }
+                                                                </span>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="xs"
+                                                                    onClick={() => {
+                                                                        const newValue =
+                                                                            field.value?.filter(
+                                                                                (
+                                                                                    id,
+                                                                                ) =>
+                                                                                    id !==
+                                                                                    coa.id,
+                                                                            ) ||
+                                                                            [];
+                                                                        field.onChange(
+                                                                            newValue,
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    ×
+                                                                </Button>
+                                                            </li>
+                                                        ))}
+                                                </ul>
+                                            )}
+
+                                            <CommandDialog
+                                                open={openCoaCommand}
+                                                onOpenChange={setOpenCoaCommand}
+                                                className="flex max-h-[90vh] flex-col"
+                                            >
+                                                <Command>
+                                                    <CommandInput placeholder="Search chart of account..." />
+                                                    <CommandList className="max-h-none flex-1">
+                                                        <CommandEmpty>
+                                                            No chart of account
+                                                            found.
+                                                        </CommandEmpty>
+                                                        <CommandGroup heading="Chart of Accounts">
+                                                            {chartOfAccounts.map(
+                                                                (coa) => (
+                                                                    <CommandItem
+                                                                        key={
+                                                                            coa.id
+                                                                        }
+                                                                        value={`${coa.account_number} ${coa.account_title}`}
+                                                                        className="items-center gap-4"
+                                                                    >
+                                                                        <Checkbox
+                                                                            checked={
+                                                                                field.value?.includes(
+                                                                                    coa.id,
+                                                                                ) ||
+                                                                                false
+                                                                            }
+                                                                            onCheckedChange={(
+                                                                                checked,
+                                                                            ) => {
+                                                                                const newValue =
+                                                                                    checked
+                                                                                        ? [
+                                                                                              ...(field.value ||
+                                                                                                  []),
+                                                                                              coa.id,
+                                                                                          ]
+                                                                                        : field.value?.filter(
+                                                                                              (
+                                                                                                  id,
+                                                                                              ) =>
+                                                                                                  id !==
+                                                                                                  coa.id,
+                                                                                          ) ||
+                                                                                          [];
+                                                                                field.onChange(
+                                                                                    newValue,
+                                                                                );
+                                                                            }}
+                                                                        />
+                                                                        <div className="grid w-full grid-cols-6 gap-4">
+                                                                            <span className="col-span-2">
+                                                                                {coa.account_number ??
+                                                                                    '-'}
+                                                                            </span>
+                                                                            <span className="col-span-4 whitespace-normal">
+                                                                                {
+                                                                                    coa.account_title
+                                                                                }
+                                                                            </span>
+                                                                        </div>
+                                                                    </CommandItem>
+                                                                ),
+                                                            )}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                                <div className="border-t p-4">
+                                                    <Button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setOpenCoaCommand(
+                                                                false,
+                                                            )
+                                                        }
+                                                        className="w-full"
+                                                    >
+                                                        Save Selected
+                                                    </Button>
+                                                </div>
+                                            </CommandDialog>
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
+                                    )}
+                                />
+
+                                <Controller
+                                    name="is_non_procurement"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <div className="flex items-center gap-2">
+                                            <Checkbox
+                                                id={field.name}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="font-normal"
+                                            >
+                                                Non-Procurement
+                                            </FieldLabel>
+                                        </div>
+                                    )}
+                                />
+                            </form>
+
+                            <ScrollBar orientation="vertical" />
+                        </ScrollArea>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                form.reset({
+                                    name: '',
+                                    chart_of_accounts: [],
+                                    is_non_procurement: false,
+                                });
+                            }}
+                        >
+                            Reset
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => handleOpenChange(false)}
+                        >
+                            Close
+                        </Button>
+                        <Button type="submit" form="ppmp-category-form">
+                            {isEditing ? 'Save Changes' : 'Create Category'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={showUnsavedDialog}
+                onOpenChange={setShowUnsavedDialog}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Unsaved Changes</DialogTitle>
+                        <DialogDescription>
+                            You have unsaved changes to the chart of accounts.
+                            Do you want to discard these changes?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={handleUnsavedCancel}>
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleUnsavedConfirm}
+                        >
+                            Discard Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={showForceDeleteDialog}
+                onOpenChange={setShowForceDeleteDialog}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Remove Chart of Accounts?</DialogTitle>
+                        <DialogDescription>
+                            Some of the chart of accounts you removed have
+                            dependent PPMP price list items. Continuing will
+                            delete those price list items as well. This action
+                            cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowForceDeleteDialog(false);
+                                onOpenChange(false);
+                            }}
+                            disabled={isLoading}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleForceSave}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Saving...' : 'Continue'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <TableSelect
+                columns={coaCols}
+                data={chartOfAccounts}
+                open={openCoaTableSelect}
+                onOpenChange={setOpenCoaTableSelect}
+                onRowSelect={(row) => {
+                    form.setValue('coa_id', String(row.id), {
+                        shouldValidate: true,
+                    });
+                }}
+                value={watchCoaId}
+                valueKey="id"
+                className="sm:max-w-175"
+                title="Select Chart of Account"
+                description="Choose the chart of account for this price list item."
+            />
+        </>
+    );
+}

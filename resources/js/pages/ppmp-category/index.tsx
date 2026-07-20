@@ -8,9 +8,9 @@ import {
 } from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/ppmp-category/form-dialog';
 import type { PpmpCategory, ChartOfAccount } from '@/types';
 import columns from './columns/columns';
+import FormDialog from './form-dialog-base';
 
 interface PpmpCategoryPageProps {
     ppmpCategories: PpmpCategory[];
@@ -149,7 +149,7 @@ export default function PpmpCategoryPage({
 
             <FormDialog
                 open={open}
-                setOpen={handleDialogOpenChange}
+                onOpenChange={handleDialogOpenChange}
                 initialData={selectedCategory}
                 chartOfAccounts={chartOfAccounts}
             />
