@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -6,16 +6,16 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from "@/components/ui/dialog";
-import type { PpmpCategory, ChartOfAccount } from "@/types";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { FormDialogShell } from "@/components/form-dialog-shell";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { router, usePage } from "@inertiajs/react";
+} from '@/components/ui/dialog';
+import type { PpmpCategory, ChartOfAccount } from '@/types';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { FormDialogShell } from '@/components/form-dialog-shell';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { router, usePage } from '@inertiajs/react';
 import {
     Field,
     FieldContent,
@@ -24,8 +24,8 @@ import {
     FieldLabel,
     FieldLegend,
     FieldSet,
-} from "@/components/ui/field";
-import { Checkbox } from "@/components/ui/checkbox";
+} from '@/components/ui/field';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Command,
     CommandDialog,
@@ -34,7 +34,7 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 
 interface FormDialogProps {
     open: boolean;
@@ -44,7 +44,7 @@ interface FormDialogProps {
 }
 
 const formSchema = z.object({
-    name: z.string().trim().min(1, { message: "Name is required" }),
+    name: z.string().trim().min(1, { message: 'Name is required' }),
     is_non_procurement: z.boolean(),
     chart_of_accounts: z.array(z.number()),
 });
@@ -70,7 +70,7 @@ export default function FormDialog({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: "",
+            name: '',
             chart_of_accounts: [],
             is_non_procurement: false,
         },
@@ -83,10 +83,12 @@ export default function FormDialog({
                     ? {
                           ...initialData,
                           chart_of_accounts:
-                              initialData.chart_of_accounts?.map((account) => account.id) || [],
+                              initialData.chart_of_accounts?.map(
+                                  (account) => account.id,
+                              ) || [],
                       }
                     : {
-                          name: "",
+                          name: '',
                           chart_of_accounts: [],
                           is_non_procurement: false,
                       },
@@ -104,7 +106,9 @@ export default function FormDialog({
     useEffect(() => {
         const currentChartOfAccounts = formValues.chart_of_accounts || [];
         const hasChanges =
-            JSON.stringify([...currentChartOfAccounts].sort((a, b) => a - b)) !==
+            JSON.stringify(
+                [...currentChartOfAccounts].sort((a, b) => a - b),
+            ) !==
             JSON.stringify([...initialChartOfAccounts].sort((a, b) => a - b));
         setHasUnsavedChanges(hasChanges);
     }, [formValues.chart_of_accounts, initialChartOfAccounts]);
@@ -117,6 +121,8 @@ export default function FormDialog({
     }, [errors]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
+        console.log('data', data);
+
         if (isEditing) {
             router.patch(`/ppmp-categories/${initialData.id}`, data, {
                 preserveScroll: true,
@@ -129,8 +135,8 @@ export default function FormDialog({
                 onError: (submitErrors) => {
                     if (
                         submitErrors &&
-                        typeof submitErrors === "object" &&
-                        "force_delete" in submitErrors
+                        typeof submitErrors === 'object' &&
+                        'force_delete' in submitErrors
                     ) {
                         setShowForceDeleteDialog(true);
                     }
@@ -138,7 +144,8 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post("/ppmp-categories", data, {
+            console.log('post');
+            router.post('/ppmp-categories', data, {
                 preserveScroll: true,
                 preserveState: true,
                 onStart: () => setIsLoading(true),
@@ -149,7 +156,10 @@ export default function FormDialog({
     }
 
     function handleForceSave() {
-        if (!initialData) return;
+        if (!initialData) {
+            return;
+        }
+
         const data = form.getValues();
         router.patch(`/ppmp-categories/${initialData.id}?force=1`, data, {
             preserveScroll: true,
@@ -190,44 +200,64 @@ export default function FormDialog({
             <FormDialogShell
                 open={open}
                 onOpenChange={handleOpenChange}
-                title={isEditing ? "Edit PPMP Category" : "Add New PPMP Category"}
+                title={
+                    isEditing ? 'Edit PPMP Category' : 'Add New PPMP Category'
+                }
                 description={
                     isEditing
-                        ? "Modify the details of the existing PPMP category below."
-                        : "Fill in the information to create a new PPMP category record."
+                        ? 'Modify the details of the existing PPMP category below.'
+                        : 'Fill in the information to create a new PPMP category record.'
                 }
                 isLoading={isLoading}
                 formId="ppmp-category-form"
                 onCancel={() => setOpen(false)}
-                submitLabel={isEditing ? "Save Changes" : "Create Category"}
-                submittingLabel={isEditing ? "Saving Changes" : "Creating Category"}
+                submitLabel={isEditing ? 'Save Changes' : 'Create Category'}
+                submittingLabel={
+                    isEditing ? 'Saving Changes' : 'Creating Category'
+                }
                 className="sm:max-w-2xl"
             >
                 <div className="flex min-h-0">
                     <ScrollArea className="w-full">
-                        <form id="ppmp-category-form" onSubmit={form.handleSubmit(onSubmit)}>
+                        <form
+                            id="ppmp-category-form"
+                            onSubmit={form.handleSubmit(onSubmit)}
+                        >
                             <FieldGroup className="pb-4">
                                 <Controller
                                     name="name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
                                             <FieldContent>
-                                                <FieldLabel htmlFor={field.name} className="gap-1">
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                    className="gap-1"
+                                                >
                                                     Name
-                                                    <span className="text-red-500">*</span>
+                                                    <span className="text-red-500">
+                                                        *
+                                                    </span>
                                                 </FieldLabel>
 
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={fieldState.invalid}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
                                                     placeholder="Category name..."
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -248,7 +278,11 @@ export default function FormDialog({
 
                                                     <Button
                                                         type="button"
-                                                        onClick={() => setOpenCoaCommand(true)}
+                                                        onClick={() =>
+                                                            setOpenCoaCommand(
+                                                                true,
+                                                            )
+                                                        }
                                                     >
                                                         Add Chart of Account
                                                     </Button>
@@ -257,18 +291,29 @@ export default function FormDialog({
                                                         {field.value
                                                             ?.map((id) =>
                                                                 chartOfAccounts.find(
-                                                                    (coa) => coa.id === id,
+                                                                    (coa) =>
+                                                                        coa.id ===
+                                                                        id,
                                                                 ),
                                                             )
-                                                            .filter((coa): coa is ChartOfAccount =>
-                                                                Boolean(coa),
+                                                            .filter(
+                                                                (
+                                                                    coa,
+                                                                ): coa is ChartOfAccount =>
+                                                                    Boolean(
+                                                                        coa,
+                                                                    ),
                                                             )
                                                             .map((coa) => (
                                                                 <li
                                                                     key={coa.id}
                                                                     className="flex items-center justify-between gap-2"
                                                                 >
-                                                                    <span>{coa.account_title}</span>
+                                                                    <span>
+                                                                        {
+                                                                            coa.account_title
+                                                                        }
+                                                                    </span>
                                                                     <Button
                                                                         type="button"
                                                                         variant="ghost"
@@ -276,10 +321,13 @@ export default function FormDialog({
                                                                         onClick={() => {
                                                                             const newValue =
                                                                                 field.value?.filter(
-                                                                                    (id) =>
+                                                                                    (
+                                                                                        id,
+                                                                                    ) =>
                                                                                         id !==
                                                                                         coa.id,
-                                                                                ) || [];
+                                                                                ) ||
+                                                                                [];
                                                                             field.onChange(
                                                                                 newValue,
                                                                             );
@@ -293,64 +341,75 @@ export default function FormDialog({
 
                                                     <CommandDialog
                                                         open={openCoaCommand}
-                                                        onOpenChange={setOpenCoaCommand}
+                                                        onOpenChange={
+                                                            setOpenCoaCommand
+                                                        }
                                                         className="flex max-h-[90vh] flex-col"
                                                     >
                                                         <Command>
                                                             <CommandInput placeholder="Search chart of account..." />
                                                             <CommandList className="max-h-none flex-1">
                                                                 <CommandEmpty>
-                                                                    No chart of account found.
+                                                                    No chart of
+                                                                    account
+                                                                    found.
                                                                 </CommandEmpty>
                                                                 <CommandGroup heading="Chart of Accounts">
-                                                                    {chartOfAccounts.map((coa) => (
-                                                                        <CommandItem
-                                                                            key={coa.id}
-                                                                            value={`${coa.account_number} ${coa.account_title}`}
-                                                                            className="items-center gap-4"
-                                                                        >
-                                                                            <Checkbox
-                                                                                checked={
-                                                                                    field.value?.includes(
-                                                                                        coa.id,
-                                                                                    ) || false
+                                                                    {chartOfAccounts.map(
+                                                                        (
+                                                                            coa,
+                                                                        ) => (
+                                                                            <CommandItem
+                                                                                key={
+                                                                                    coa.id
                                                                                 }
-                                                                                onCheckedChange={(
-                                                                                    checked,
-                                                                                ) => {
-                                                                                    const newValue =
-                                                                                        checked
-                                                                                            ? [
-                                                                                                  ...(field.value ||
-                                                                                                      []),
-                                                                                                  coa.id,
-                                                                                              ]
-                                                                                            : field.value?.filter(
-                                                                                                  (
-                                                                                                      id,
-                                                                                                  ) =>
-                                                                                                      id !==
-                                                                                                      coa.id,
-                                                                                              ) ||
-                                                                                              [];
-                                                                                    field.onChange(
-                                                                                        newValue,
-                                                                                    );
-                                                                                }}
-                                                                            />
-                                                                            <div className="grid w-full grid-cols-6 gap-4">
-                                                                                <span className="col-span-2">
-                                                                                    {coa.account_number ??
-                                                                                        "-"}
-                                                                                </span>
-                                                                                <span className="col-span-4 whitespace-normal">
-                                                                                    {
-                                                                                        coa.account_title
+                                                                                value={`${coa.account_number} ${coa.account_title}`}
+                                                                                className="items-center gap-4"
+                                                                            >
+                                                                                <Checkbox
+                                                                                    checked={
+                                                                                        field.value?.includes(
+                                                                                            coa.id,
+                                                                                        ) ||
+                                                                                        false
                                                                                     }
-                                                                                </span>
-                                                                            </div>
-                                                                        </CommandItem>
-                                                                    ))}
+                                                                                    onCheckedChange={(
+                                                                                        checked,
+                                                                                    ) => {
+                                                                                        const newValue =
+                                                                                            checked
+                                                                                                ? [
+                                                                                                      ...(field.value ||
+                                                                                                          []),
+                                                                                                      coa.id,
+                                                                                                  ]
+                                                                                                : field.value?.filter(
+                                                                                                      (
+                                                                                                          id,
+                                                                                                      ) =>
+                                                                                                          id !==
+                                                                                                          coa.id,
+                                                                                                  ) ||
+                                                                                                  [];
+                                                                                        field.onChange(
+                                                                                            newValue,
+                                                                                        );
+                                                                                    }}
+                                                                                />
+                                                                                <div className="grid w-full grid-cols-6 gap-4">
+                                                                                    <span className="col-span-2">
+                                                                                        {coa.account_number ??
+                                                                                            '-'}
+                                                                                    </span>
+                                                                                    <span className="col-span-4 whitespace-normal">
+                                                                                        {
+                                                                                            coa.account_title
+                                                                                        }
+                                                                                    </span>
+                                                                                </div>
+                                                                            </CommandItem>
+                                                                        ),
+                                                                    )}
                                                                 </CommandGroup>
                                                             </CommandList>
                                                         </Command>
@@ -358,7 +417,9 @@ export default function FormDialog({
                                                             <Button
                                                                 type="button"
                                                                 onClick={() =>
-                                                                    setOpenCoaCommand(false)
+                                                                    setOpenCoaCommand(
+                                                                        false,
+                                                                    )
                                                                 }
                                                                 className="w-full"
                                                             >
@@ -368,7 +429,11 @@ export default function FormDialog({
                                                     </CommandDialog>
 
                                                     {fieldState.invalid && (
-                                                        <FieldError errors={[fieldState.error]} />
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
                                                     )}
                                                 </FieldContent>
                                             </FieldSet>
@@ -392,17 +457,27 @@ export default function FormDialog({
                                                     <FieldGroup>
                                                         <Field
                                                             orientation="horizontal"
-                                                            data-invalid={fieldState.invalid}
+                                                            data-invalid={
+                                                                fieldState.invalid
+                                                            }
                                                         >
                                                             <Checkbox
                                                                 id={field.name}
-                                                                aria-invalid={fieldState.invalid}
-                                                                checked={field.value}
-                                                                onCheckedChange={field.onChange}
+                                                                aria-invalid={
+                                                                    fieldState.invalid
+                                                                }
+                                                                checked={
+                                                                    field.value
+                                                                }
+                                                                onCheckedChange={
+                                                                    field.onChange
+                                                                }
                                                             />
 
                                                             <FieldLabel
-                                                                htmlFor={field.name}
+                                                                htmlFor={
+                                                                    field.name
+                                                                }
                                                                 className="font-normal"
                                                             >
                                                                 Non-Procurement
@@ -411,7 +486,11 @@ export default function FormDialog({
                                                     </FieldGroup>
 
                                                     {fieldState.invalid && (
-                                                        <FieldError errors={[fieldState.error]} />
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
                                                     )}
                                                 </FieldContent>
                                             </FieldSet>
@@ -424,34 +503,44 @@ export default function FormDialog({
                 </div>
             </FormDialogShell>
 
-            <Dialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+            <Dialog
+                open={showUnsavedDialog}
+                onOpenChange={setShowUnsavedDialog}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Unsaved Changes</DialogTitle>
                         <DialogDescription>
-                            You have unsaved changes to the chart of accounts. Do you want to
-                            discard these changes?
+                            You have unsaved changes to the chart of accounts.
+                            Do you want to discard these changes?
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={handleUnsavedCancel}>
                             Cancel
                         </Button>
-                        <Button variant="destructive" onClick={handleUnsavedConfirm}>
+                        <Button
+                            variant="destructive"
+                            onClick={handleUnsavedConfirm}
+                        >
                             Discard Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={showForceDeleteDialog} onOpenChange={setShowForceDeleteDialog}>
+            <Dialog
+                open={showForceDeleteDialog}
+                onOpenChange={setShowForceDeleteDialog}
+            >
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Remove Chart of Accounts?</DialogTitle>
                         <DialogDescription>
-                            Some of the chart of accounts you removed have dependent PPMP price list
-                            items. Continuing will delete those price list items as well. This
-                            action cannot be undone.
+                            Some of the chart of accounts you removed have
+                            dependent PPMP price list items. Continuing will
+                            delete those price list items as well. This action
+                            cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -470,7 +559,7 @@ export default function FormDialog({
                             onClick={handleForceSave}
                             disabled={isLoading}
                         >
-                            {isLoading ? "Saving..." : "Continue"}
+                            {isLoading ? 'Saving...' : 'Continue'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

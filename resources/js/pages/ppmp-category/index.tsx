@@ -130,12 +130,24 @@ export default function PpmpCategoryPage({
                 <DataTable
                     columns={columns(can?.edit ?? false, can?.delete ?? false)}
                     data={ppmpCategories}
-                ></DataTable>
+                    meta={{
+                        onEdit: handleEdit,
+                        onDelete: handleDeleteDialogOpen,
+                    }}
+                >
+                    {can?.add && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>
+                                Add PPMP Category
+                            </Button>
+                        </div>
+                    )}
+                </DataTable>
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
-            {/*<FormDialog
+            <FormDialog
                 open={open}
                 setOpen={handleDialogOpenChange}
                 initialData={selectedCategory}
@@ -181,7 +193,7 @@ export default function PpmpCategoryPage({
                     setSelectedCategory(null);
                 }}
                 isLoading={isLoading}
-            />*/}
+            />
         </>
     );
 }
