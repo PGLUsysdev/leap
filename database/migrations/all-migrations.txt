@@ -1,0 +1,1644 @@
+================================================================================
+FILE: 2026_05_04_000000_create_initial_schema.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // ----------------------------------------------------------------
+        // 1. Independent / base tables (no foreign keys to other new tables)
+        // ----------------------------------------------------------------
+
+        Schema::create('sectors', function (Blueprint $table) {
+            $table->id();
+            $table->string('code', 4)->unique();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        Schema::create('lgu_levels', function (Blueprint $table) {
+            $table->id();
+            $table->string('code', 1)->unique();
+            $table->string('name', 20);
+            $table->timestamps();
+        });
+
+        Schema::create('office_types', function (Blueprint $table) {
+            $table->id();
+            $table->string('code', 2)->unique();
+            $table->string('name', 20);
+            $table->timestamps();
+        });
+
+        Schema::create('fiscal_years', function (Blueprint $table) {
+            $table->id();
+            $table->year('year')->unique();
+            $table
+                ->enum('status', ['active', 'inactive', 'closed'])
+                ->default('inactive');
+            $table->timestamps();
+        });
+
+        Schema::create('funding_sources', function (Blueprint $table) {
+            $table->id();
+            $table->string('fund_type', 50);
+            $table->string('code', 50);
+            $table->text('title');
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('chart_of_accounts', function (Blueprint $table) {
+            $table->id();
+            $table->string('account_number')->unique();
+            $table->string('account_title');
+            $table->enum('account_type', [
+                'ASSET',
+                'LIABILITY',
+                'EQUITY',
+                'REVENUE',
+                'EXPENSE',
+            ]);
+            $table->enum('expense_class', ['PS', 'MOOE', 'FE', 'CO']);
+            $table->string('account_series')->nullable();
+            $table
+                ->foreignId('parent_id')
+                ->nullable()
+                ->constrained('chart_of_accounts')
+                ->onDelete('set null')
+                ->onUpdate('cascade');
+            $table->tinyInteger('level')->default(1);
+            $table->boolean('is_postable')->default(true);
+            $table->boolean('is_active')->default(true);
+            $table->enum('normal_balance', ['DEBIT', 'CREDIT']);
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('ppmp_categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('name', 100);
+            $table->timestamps();
+            $table->boolean('is_non_procurement')->default(false);
+        });
+
+        Schema::create('account_groups', function (Blueprint $table) {
+            $table->id();
+            $table->string('uacs_digit', 1)->unique();
+            $table->string('name');
+            $table->enum('normal_balance', ['debit', 'credit']);
+            $table->timestamps();
+        });
+
+        Schema::create('allotment_classes', function (Blueprint $table) {
+            $table->id();
+            $table->string('code', 10)->unique();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration');
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration');
+        });
+
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
+        });
+
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // this table is not being used
+        Schema::create('ppmp_summaries', function (Blueprint $table) {
+            $table->id();
+            $table->timestamps();
+        });
+
+        // ----------------------------------------------------------------
+        // 2. Tables that depend on the base tables
+        // ----------------------------------------------------------------
+
+        Schema::create('offices', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('sector_id')->nullable()->constrained();
+            $table->foreignId('lgu_level_id')->constrained();
+            $table->foreignId('office_type_id')->constrained();
+            $table->foreignId('parent_id')->nullable()->constrained('offices');
+            $table->string('code', 3);
+            $table->string('name', 100);
+            $table->string('acronym', 100)->nullable();
+            $table->boolean('is_lee')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->timestamp('two_factor_confirmed_at')->nullable();
+            $table->string('status')->default('pending');
+            $table->string('role')->default('user');
+            $table->rememberToken();
+            $table->timestamps();
+            $table
+                ->foreignId('office_id')
+                ->nullable()
+                ->constrained()
+                ->cascadeOnDelete();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+
+        Schema::create('ppas', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('office_id')->constrained();
+            $table
+                ->foreignId('parent_id')
+                ->nullable()
+                ->constrained('ppas')
+                ->cascadeOnDelete();
+            $table->string('name');
+            $table->enum('type', [
+                'Program',
+                'Project',
+                'Activity',
+                'Sub-Activity',
+            ]);
+            $table->string('code_suffix', 20);
+            $table->boolean('is_active')->default(true);
+            $table->decimal('sort_order', 10, 2)->default(0);
+            $table->timestamps();
+            $table->foreignId('fiscal_year_id')->nullable()->constrained();
+
+            $table->unique(
+                ['office_id', 'parent_id', 'code_suffix', 'type'],
+                'ppa_unique_index',
+            );
+            $table->index('parent_id');
+        });
+
+        Schema::create('aip_entries', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('ppa_id')->constrained('ppas')->cascadeOnDelete();
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->text('expected_output')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('ppa_funding_sources', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('aip_entry_id')->constrained();
+            $table->foreignId('funding_source_id')->constrained();
+            $table->decimal('ps_amount', 19, 2)->default(0);
+            $table->decimal('mooe_amount', 19, 2)->default(0);
+            $table->decimal('fe_amount', 19, 2)->default(0);
+            $table->decimal('co_amount', 19, 2)->default(0);
+            $table->decimal('ccet_adaptation', 19, 2)->default(0);
+            $table->decimal('ccet_mitigation', 19, 2)->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('chart_of_account_ppmp_categories', function (
+            Blueprint $table,
+        ) {
+            $table->id();
+            $table->foreignId('chart_of_account_id')->constrained();
+            $table->foreignId('ppmp_category_id')->constrained();
+            $table->timestamps();
+        });
+
+        Schema::create('ppmp_price_lists', function (Blueprint $table) {
+            $table->id();
+            $table->integer('item_number');
+            $table->integer('sort_order')->default(0);
+            $table->text('description');
+            $table->string('unit_of_measurement', 20);
+            $table->decimal('price', 19, 2);
+            $table->foreignId('ppmp_category_id')->constrained();
+            $table->foreignId('chart_of_account_id')->constrained();
+            $table->timestamps();
+        });
+
+        Schema::create('ppmps', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('aip_entry_id')->constrained();
+            $table->foreignId('ppmp_price_list_id')->nullable()->constrained();
+            $table->foreignId('funding_source_id')->constrained();
+
+            $table->integer('jan_qty')->default(0);
+            $table->decimal('jan_amount', 15, 2)->default(0);
+            $table->integer('feb_qty')->default(0);
+            $table->decimal('feb_amount', 15, 2)->default(0);
+            $table->integer('mar_qty')->default(0);
+            $table->decimal('mar_amount', 15, 2)->default(0);
+            $table->integer('apr_qty')->default(0);
+            $table->decimal('apr_amount', 15, 2)->default(0);
+            $table->integer('may_qty')->default(0);
+            $table->decimal('may_amount', 15, 2)->default(0);
+            $table->integer('jun_qty')->default(0);
+            $table->decimal('jun_amount', 15, 2)->default(0);
+            $table->integer('jul_qty')->default(0);
+            $table->decimal('jul_amount', 15, 2)->default(0);
+            $table->integer('aug_qty')->default(0);
+            $table->decimal('aug_amount', 15, 2)->default(0);
+            $table->integer('sep_qty')->default(0);
+            $table->decimal('sep_amount', 15, 2)->default(0);
+            $table->integer('oct_qty')->default(0);
+            $table->decimal('oct_amount', 15, 2)->default(0);
+            $table->integer('nov_qty')->default(0);
+            $table->decimal('nov_amount', 15, 2)->default(0);
+            $table->integer('dec_qty')->default(0);
+            $table->decimal('dec_amount', 15, 2)->default(0);
+
+            $table->timestamps();
+
+            $table->unique(
+                ['aip_entry_id', 'ppmp_price_list_id', 'funding_source_id'],
+                'ppmps_aip_entry_id_ppmp_price_list_id_funding_source_id_unique',
+            );
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('ppmps');
+        Schema::dropIfExists('ppmp_price_lists');
+        Schema::dropIfExists('chart_of_account_ppmp_categories');
+        Schema::dropIfExists('ppa_funding_sources');
+        Schema::dropIfExists('aip_entries');
+        Schema::dropIfExists('ppas');
+        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('offices');
+        Schema::dropIfExists('ppmp_summaries');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('failed_jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('cache_locks');
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('allotment_classes');
+        Schema::dropIfExists('account_groups');
+        Schema::dropIfExists('ppmp_categories');
+        Schema::dropIfExists('chart_of_accounts');
+        Schema::dropIfExists('funding_sources');
+        Schema::dropIfExists('fiscal_years');
+        Schema::dropIfExists('office_types');
+        Schema::dropIfExists('lgu_levels');
+        Schema::dropIfExists('sectors');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_05_12_062244_alter_sectors_table_increase_lengths.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('sectors', function (Blueprint $table) {
+            // Increase code to 10 and name to 100
+            $table->string('code', 10)->change();
+            $table->string('name', 100)->change();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('sectors', function (Blueprint $table) {
+            // Revert back to original lengths
+            $table->string('code', 4)->change();
+            $table->string('name', 255)->change(); // Default string length is usually 255
+        });
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_05_12_062722_alter_lgu_levels_table_increase_lengths.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('lgu_levels', function (Blueprint $table) {
+            // Increase code to 10 and name to 100
+            $table->string('code', 10)->change();
+            $table->string('name', 100)->change();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('lgu_levels', function (Blueprint $table) {
+            // Revert back to original lengths
+            $table->string('code', 1)->change();
+            $table->string('name', 20)->change();
+        });
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_05_12_062914_alter_office_types_table_increase_lengths.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('office_types', function (Blueprint $table) {
+            // Increase code to 10 and name to 100
+            $table->string('code', 10)->change();
+            $table->string('name', 100)->change();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('office_types', function (Blueprint $table) {
+            // Revert back to original lengths (code: 2, name: 20)
+            $table->string('code', 2)->change();
+            $table->string('name', 20)->change();
+        });
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_05_12_082718_fix_office_foreign_key_constraints.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        // 1. Fix Users Table: Change cascade to restrict
+        Schema::table('users', function (Blueprint $table) {
+            // Drop existing foreign key constraint
+            // Laravel default name is usually 'users_office_id_foreign'
+            $table->dropForeign(['office_id']);
+
+            // Add it back with restrictOnDelete()
+            $table
+                ->foreign('office_id')
+                ->references('id')
+                ->on('offices')
+                ->restrictOnDelete();
+        });
+
+        // 2. Fix Offices Table: Ensure parent_id is explicitly restricted
+        Schema::table('offices', function (Blueprint $table) {
+            // Drop existing foreign key constraint
+            $table->dropForeign(['parent_id']);
+
+            // Add it back with restrictOnDelete()
+            $table
+                ->foreign('parent_id')
+                ->references('id')
+                ->on('offices')
+                ->restrictOnDelete();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        // Reverting back to original states if needed
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['office_id']);
+            $table
+                ->foreign('office_id')
+                ->references('id')
+                ->on('offices')
+                ->cascadeOnDelete();
+        });
+
+        Schema::table('offices', function (Blueprint $table) {
+            $table->dropForeign(['parent_id']);
+            $table->foreign('parent_id')->references('id')->on('offices'); // Default
+        });
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_05_13_011831_change_ppa_foreign_keys_to_restrict.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        // 1. Update 'ppas' table to cascadeOnDelete()
+        Schema::table('ppas', function (Blueprint $table) {
+            $table->dropForeign(['parent_id']);
+            $table
+                ->foreign('parent_id')
+                ->references('id')
+                ->on('ppas')
+                ->cascadeOnDelete();
+        });
+
+        // 2. Update 'aip_entries' table to restrict PPA deletes
+        Schema::table('aip_entries', function (Blueprint $table) {
+            $table->dropForeign(['ppa_id']);
+            $table
+                ->foreign('ppa_id')
+                ->references('id')
+                ->on('ppas')
+                ->restrictOnDelete();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        // Revert 'ppas' back to CASCADE
+        Schema::table('ppas', function (Blueprint $table) {
+            $table->dropForeign(['parent_id']);
+            $table
+                ->foreign('parent_id')
+                ->references('id')
+                ->on('ppas')
+                ->onDelete('cascade');
+        });
+
+        // Revert 'aip_entries' back to CASCADE
+        Schema::table('aip_entries', function (Blueprint $table) {
+            $table->dropForeign(['ppa_id']);
+            $table
+                ->foreign('ppa_id')
+                ->references('id')
+                ->on('ppas')
+                ->onDelete('cascade');
+        });
+    }
+};
+
+// safe to migrate all in one go up to here - no conflicts
+// before running next migration do this first
+
+// SELECT aip_entry_id, funding_source_id, COUNT(*)
+// FROM ppa_funding_sources
+// GROUP BY aip_entry_id, funding_source_id
+// HAVING COUNT(*) > 1;
+
+// If it returns zero rows, you’re safe to migrate immediately.
+// if not run this
+// Deduplication SQL script
+
+// -- 1. Drop temporary table if it exists (to avoid "already exists" error)
+// DROP TEMPORARY TABLE IF EXISTS tmp_duplicates;
+
+// -- 2. Create temporary table to hold keeper IDs and sums
+// CREATE TEMPORARY TABLE tmp_duplicates (
+//     keeper_id BIGINT UNSIGNED NOT NULL,
+//     aip_entry_id BIGINT UNSIGNED NOT NULL,
+//     funding_source_id BIGINT UNSIGNED NOT NULL,
+//     sum_ps DECIMAL(19,2) DEFAULT 0,
+//     sum_mooe DECIMAL(19,2) DEFAULT 0,
+//     sum_fe DECIMAL(19,2) DEFAULT 0,
+//     sum_co DECIMAL(19,2) DEFAULT 0,
+//     sum_ccet_adapt DECIMAL(19,2) DEFAULT 0,
+//     sum_ccet_miti DECIMAL(19,2) DEFAULT 0
+// );
+
+// -- 3. Insert the keeper ID and the aggregated sums from non‑keeper rows
+// INSERT INTO tmp_duplicates
+//     (keeper_id, aip_entry_id, funding_source_id,
+//      sum_ps, sum_mooe, sum_fe, sum_co, sum_ccet_adapt, sum_ccet_miti)
+// SELECT
+//     keepers.keeper_id,
+//     d.aip_entry_id,
+//     d.funding_source_id,
+//     SUM(d.ps_amount) AS sum_ps,
+//     SUM(d.mooe_amount) AS sum_mooe,
+//     SUM(d.fe_amount) AS sum_fe,
+//     SUM(d.co_amount) AS sum_co,
+//     SUM(d.ccet_adaptation) AS sum_ccet_adapt,
+//     SUM(d.ccet_mitigation) AS sum_ccet_miti
+// FROM ppa_funding_sources d
+// JOIN (
+//     -- Subquery: for each duplicate group, get the minimum id as keeper
+//     SELECT aip_entry_id, funding_source_id, MIN(id) AS keeper_id
+//     FROM ppa_funding_sources
+//     GROUP BY aip_entry_id, funding_source_id
+//     HAVING COUNT(*) > 1
+// ) keepers
+//     ON d.aip_entry_id = keepers.aip_entry_id
+//     AND d.funding_source_id = keepers.funding_source_id
+//     AND d.id != keepers.keeper_id   -- exclude the keeper row
+// GROUP BY keepers.keeper_id, d.aip_entry_id, d.funding_source_id;
+
+// -- 4. Update the keeper rows by adding the aggregated sums
+// UPDATE ppa_funding_sources p
+// JOIN tmp_duplicates t ON p.id = t.keeper_id
+// SET
+//     p.ps_amount = p.ps_amount + t.sum_ps,
+//     p.mooe_amount = p.mooe_amount + t.sum_mooe,
+//     p.fe_amount = p.fe_amount + t.sum_fe,
+//     p.co_amount = p.co_amount + t.sum_co,
+//     p.ccet_adaptation = p.ccet_adaptation + t.sum_ccet_adapt,
+//     p.ccet_mitigation = p.ccet_mitigation + t.sum_ccet_miti;
+
+// -- 5. Delete the non‑keeper duplicates
+// DELETE p
+// FROM ppa_funding_sources p
+// JOIN tmp_duplicates t
+//     ON p.aip_entry_id = t.aip_entry_id
+//     AND p.funding_source_id = t.funding_source_id
+//     AND p.id != t.keeper_id;
+
+// -- 6. Clean up
+// DROP TEMPORARY TABLE IF EXISTS tmp_duplicates;
+
+
+
+
+================================================================================
+FILE: 2026_05_13_032006_add_unique_constraint_to_ppa_funding_sources_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Check for duplicates; if any exist, abort with a clear message.
+        $duplicateCount = DB::table('ppa_funding_sources')
+            ->select('aip_entry_id', 'funding_source_id')
+            ->groupBy('aip_entry_id', 'funding_source_id')
+            ->havingRaw('COUNT(*) > 1')
+            ->count();
+
+        if ($duplicateCount > 0) {
+            throw new RuntimeException(
+                'Cannot add unique constraint to ppa_funding_sources: '.
+                    "there are {$duplicateCount} groups of duplicates. ".
+                    "Please resolve duplicates (e.g. run 'php artisan funding:deduplicate') and then re‑run this migration.",
+            );
+        }
+
+        Schema::table('ppa_funding_sources', function (Blueprint $table) {
+            $table->unique(
+                ['aip_entry_id', 'funding_source_id'],
+                'pfs_aip_funding_unique',
+            );
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('ppa_funding_sources', function (Blueprint $table) {
+            $table->dropUnique('pfs_aip_funding_unique');
+        });
+    }
+};
+
+// run this before migrating the next migration
+// Verify: Is the ppmps table empty?
+
+// SELECT COUNT(*) AS row_count FROM ppmps;
+
+
+
+
+================================================================================
+FILE: 2026_05_13_060833_recreate_ppmps_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Safety net: abort if there are existing PPMP records that would be lost
+        if (Schema::hasTable('ppmps') && DB::table('ppmps')->count() > 0) {
+            $count = DB::table('ppmps')->count();
+            throw new RuntimeException(
+                "The 'ppmps' table contains {$count} records. ".
+                    'This migration drops and recreates the table with a new structure. '.
+                    'Please back up and manually migrate the data, then empty the table before re-running.',
+            );
+        }
+
+        // 1. Force drop the current messy table
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        Schema::dropIfExists('ppmps');
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+        // 2. Create the clean, normalized table
+        Schema::create('ppmps', function (Blueprint $table) {
+            $table->id();
+
+            // This is now the ONLY link to the Activity and the Fund
+            $table
+                ->foreignId('ppa_funding_source_id')
+                ->constrained('ppa_funding_sources')
+                ->restrictOnDelete();
+
+            $table
+                ->foreignId('ppmp_price_list_id')
+                ->nullable()
+                ->constrained('ppmp_price_lists')
+                ->nullOnDelete();
+
+            // Monthly breakdown
+            $months = [
+                'jan',
+                'feb',
+                'mar',
+                'apr',
+                'may',
+                'jun',
+                'jul',
+                'aug',
+                'sep',
+                'oct',
+                'nov',
+                'dec',
+            ];
+            foreach ($months as $month) {
+                $table->integer("{$month}_qty")->default(0);
+                $table->decimal("{$month}_amount", 15, 2)->default(0);
+            }
+
+            $table->timestamps();
+
+            // Prevent duplicate items for the same activity/fund link
+            $table->unique(
+                ['ppa_funding_source_id', 'ppmp_price_list_id'],
+                'ppmps_price_list_unique',
+            );
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('ppmps');
+    }
+};
+
+// Run this query to see if any (chart_of_account_id, ppmp_category_id) appears more than once:
+
+// SELECT
+//     chart_of_account_id,
+//     ppmp_category_id,
+//     COUNT(*) AS duplicate_count
+// FROM chart_of_account_ppmp_categories
+// GROUP BY chart_of_account_id, ppmp_category_id
+// HAVING COUNT(*) > 1;
+
+// No rows returned → skip run the migration directly.
+// Rows returned → proceed to deduplicate.
+
+// -- ==========================================================================
+// -- DEDUPLICATION SCRIPT for chart_of_account_ppmp_categories
+// -- Keeps the row with the lowest `id` per unique (chart_of_account_id, ppmp_category_id) pair.
+// -- ==========================================================================
+
+// -- 2a. Delete duplicates, keeping the smallest ID
+// DELETE t1
+// FROM chart_of_account_ppmp_categories t1
+// INNER JOIN chart_of_account_ppmp_categories t2
+//     ON t1.chart_of_account_id = t2.chart_of_account_id
+//     AND t1.ppmp_category_id = t2.ppmp_category_id
+//     AND t1.id > t2.id;   -- keep the smaller id
+
+// -- 2b. Verify all duplicates are gone (should return 0 rows)
+// SELECT chart_of_account_id, ppmp_category_id, COUNT(*) AS remaining_count
+// FROM chart_of_account_ppmp_categories
+// GROUP BY chart_of_account_id, ppmp_category_id
+// HAVING COUNT(*) > 1;
+
+
+
+
+================================================================================
+FILE: 2026_05_17_101013_prepare_ppmp_price_lists_for_junction.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // 1. Unique constraint on junction table (fails if duplicates exist)
+        Schema::table('chart_of_account_ppmp_categories', function (
+            Blueprint $table,
+        ) {
+            $table->unique(
+                ['chart_of_account_id', 'ppmp_category_id'],
+                'coa_ppmp_cat_unique_pair',
+            );
+        });
+
+        // 2. Add nullable FK column to price list
+        Schema::table('ppmp_price_lists', function (Blueprint $table) {
+            $table
+                ->unsignedBigInteger('chart_of_account_ppmp_category_id')
+                ->nullable()
+                ->after('ppmp_category_id'); // place it logically after old columns
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('ppmp_price_lists', function (Blueprint $table) {
+            $table->dropColumn('chart_of_account_ppmp_category_id');
+        });
+
+        Schema::table('chart_of_account_ppmp_categories', function (
+            Blueprint $table,
+        ) {
+            $table->dropUnique('coa_ppmp_cat_unique_pair');
+        });
+    }
+};
+
+// do this Manual data script (SQL) before migrating the next migration
+
+// -- ==========================================================================
+// -- DATA MIGRATION SCRIPT
+// -- Populates the new chart_of_account_ppmp_category_id column in ppmp_price_lists
+// -- ==========================================================================
+
+// -- 1. Insert any (chart_of_account_id, ppmp_category_id) pairs from price lists
+// --    that are missing in the junction table
+// INSERT INTO chart_of_account_ppmp_categories
+//     (chart_of_account_id, ppmp_category_id, created_at, updated_at)
+// SELECT
+//     ppl.chart_of_account_id,
+//     ppl.ppmp_category_id,
+//     NOW(),
+//     NOW()
+// FROM ppmp_price_lists ppl
+// LEFT JOIN chart_of_account_ppmp_categories j
+//     ON j.chart_of_account_id = ppl.chart_of_account_id
+//     AND j.ppmp_category_id = ppl.ppmp_category_id
+// WHERE j.id IS NULL;
+
+// -- 2. Populate the new column with the correct junction ID
+// UPDATE ppmp_price_lists ppl
+// JOIN chart_of_account_ppmp_categories j
+//     ON j.chart_of_account_id = ppl.chart_of_account_id
+//     AND j.ppmp_category_id = ppl.ppmp_category_id
+// SET ppl.chart_of_account_ppmp_category_id = j.id;
+
+// -- 3. Safety check – MUST return 0
+// SELECT COUNT(*) AS null_count
+// FROM ppmp_price_lists
+// WHERE chart_of_account_ppmp_category_id IS NULL;
+
+
+
+
+================================================================================
+FILE: 2026_05_17_103030_finalize_ppmp_price_lists_junction.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('ppmp_price_lists', function (Blueprint $table) {
+            // Drop old foreign keys first
+            $table->dropForeign(['ppmp_category_id']);
+            $table->dropForeign(['chart_of_account_id']);
+
+            // Drop old columns
+            $table->dropColumn('ppmp_category_id');
+            $table->dropColumn('chart_of_account_id');
+
+            // Make the new column required
+            $table
+                ->unsignedBigInteger('chart_of_account_ppmp_category_id')
+                ->nullable(false)
+                ->change();
+
+            // Add final foreign key
+            $table
+                ->foreign('chart_of_account_ppmp_category_id')
+                ->references('id')
+                ->on('chart_of_account_ppmp_categories')
+                ->restrictOnDelete();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('ppmp_price_lists', function (Blueprint $table) {
+            // 1. Remove new FK and column
+            $table->dropForeign(['chart_of_account_ppmp_category_id']);
+            $table->dropColumn('chart_of_account_ppmp_category_id');
+
+            // 2. Re‑add old columns as nullable (data cannot be restored automatically)
+            $table->foreignId('ppmp_category_id')->nullable();
+            $table->foreignId('chart_of_account_id')->nullable();
+
+            // 3. Re‑add old foreign keys
+            $table
+                ->foreign('ppmp_category_id')
+                ->references('id')
+                ->on('ppmp_categories');
+            $table
+                ->foreign('chart_of_account_id')
+                ->references('id')
+                ->on('chart_of_accounts');
+        });
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_05_20_000000_create_supplemental_aips_tables.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // 1. Create supplemental_aips table
+        Schema::create('supplemental_aips', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('fiscal_year_id')->constrained('fiscal_years')->restrictOnDelete();
+            $table->foreignId('office_id')->constrained('offices')->restrictOnDelete();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        // 2. Add columns to ppas
+        Schema::table('ppas', function (Blueprint $table) {
+            $table->foreignId('supplemental_aip_id')->nullable()->constrained('supplemental_aips')->nullOnDelete();
+            $table->boolean('is_supplemental')->default(false);
+        });
+
+        // 3. Add columns to aip_entries
+        Schema::table('aip_entries', function (Blueprint $table) {
+            $table->foreignId('supplemental_aip_id')->nullable()->constrained('supplemental_aips')->nullOnDelete();
+            $table->boolean('is_supplemental')->default(false);
+        });
+
+        // 4. Add columns and modify unique constraint in ppa_funding_sources
+        Schema::table('ppa_funding_sources', function (Blueprint $table) {
+            $table->foreignId('supplemental_aip_id')->nullable()->constrained('supplemental_aips')->nullOnDelete();
+            $table->boolean('is_supplemental')->default(false);
+
+            // Drop old unique constraint
+            $table->dropUnique('pfs_aip_funding_unique');
+
+            // Create new unique constraint including supplemental_aip_id
+            $table->unique(
+                ['aip_entry_id', 'funding_source_id', 'supplemental_aip_id'],
+                'pfs_aip_funding_supplemental_unique'
+            );
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('ppa_funding_sources', function (Blueprint $table) {
+            $table->dropUnique('pfs_aip_funding_supplemental_unique');
+            $table->unique(
+                ['aip_entry_id', 'funding_source_id'],
+                'pfs_aip_funding_unique'
+            );
+            $table->dropConstrainedForeignId('supplemental_aip_id');
+            $table->dropColumn('is_supplemental');
+        });
+
+        Schema::table('aip_entries', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('supplemental_aip_id');
+            $table->dropColumn('is_supplemental');
+        });
+
+        Schema::table('ppas', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('supplemental_aip_id');
+            $table->dropColumn('is_supplemental');
+        });
+
+        Schema::dropIfExists('supplemental_aips');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_05_26_082227_add_rbac_tables.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('roles', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->timestamps();
+        });
+
+        Schema::create('permissions', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->timestamps();
+        });
+
+        Schema::create('permission_role', function (Blueprint $table) {
+            $table->id();
+            $table
+                ->foreignId('role_id')
+                ->constrained(table: 'roles')
+                ->cascadeOnDelete();
+            $table
+                ->foreignId('permission_id')
+                ->constrained(table: 'permissions')
+                ->cascadeOnDelete();
+            $table->timestamps();
+
+            $table->unique(['role_id', 'permission_id']);
+        });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('role');
+            $table
+                ->foreignId('role_id')
+                ->nullable()
+                ->constrained(table: 'roles')
+                ->restrictOnDelete();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['role_id']);
+            $table->dropColumn('role_id');
+            $table->string('role')->default('user');
+        });
+        Schema::dropIfExists('permission_role');
+        Schema::dropIfExists('permissions');
+        Schema::dropIfExists('roles');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_08_063623_create_climate_change_expenditure_tables.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        // 1. Create Climate Change Strategic Priorities Table
+        Schema::create('cc_strategic_priorities', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedInteger('code')->unique(); // Stores JMC Priority Code (1 through 8)
+            $table->string('name', 150);
+            $table->timestamps();
+        });
+
+        // 2. Create Climate Change Sub-Sectors Table (depends on cc_strategic_priorities)
+        Schema::create('cc_sub_sectors', function (Blueprint $table) {
+            $table->id();
+            $table
+                ->foreignId('strategic_priority_id')
+                ->constrained('cc_strategic_priorities')
+                ->restrictOnDelete();
+            $table->unsignedInteger('code'); // Stores Sector Code (e.g., 1 for Agriculture, 2 for Fisheries)
+            $table->string('name', 150);
+
+            // Unique constraint to ensure no duplicate sector codes under the same priority
+            $table->unique(['strategic_priority_id', 'code']);
+            $table->timestamps();
+        });
+
+        // 3. Create Climate Change Typologies Table (using category ENUM)
+        Schema::create('cc_typologies', function (Blueprint $table) {
+            $table->id();
+            $table->string('code', 10)->unique(); // Stores complete Typology Code, e.g., 'A114-01'
+            $table->text('description');
+
+            // A = Adaptation, M = Mitigation
+            $table->enum('response_type', ['A', 'M']);
+
+            $table
+                ->foreignId('strategic_priority_id')
+                ->constrained('cc_strategic_priorities')
+                ->restrictOnDelete();
+            $table
+                ->foreignId('sub_sector_id')
+                ->nullable()
+                ->constrained('cc_sub_sectors')
+                ->restrictOnDelete();
+
+            // 1 = Policy Development and Governance, 2 = Research, Development and Extension, 3 = Knowledge Sharing and Capacity Building, 4 = Service Delivery
+            $table->enum('category_code', ['1', '2', '3', '4']);
+
+            $table->unsignedInteger('item_num'); // The serial/item number after the dash (e.g., 1, 2)
+            $table->boolean('is_nccap_activity')->default(false);
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cc_typologies');
+        Schema::dropIfExists('cc_sub_sectors');
+        Schema::dropIfExists('cc_strategic_priorities');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_09_063250_add_cc_typology_id_to_ppa_funding_sources.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('ppa_funding_sources', function (Blueprint $table) {
+            $table
+                ->foreignId('cc_typology_id')
+                ->nullable()
+                ->constrained('cc_typologies')
+                ->restrictOnDelete();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('ppa_funding_sources', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('cc_typology_id');
+        });
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_16_023529_create_salary_standards_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('salary_standards', function (Blueprint $table) {
+            $table->id();
+            $table
+                ->foreignId('fiscal_year_id')
+                ->constrained('fiscal_years')
+                ->onDelete('cascade');
+            $table->integer('salary_grade');
+            $table->integer('step_increment');
+            $table->decimal('monthly_rate', 15, 2); // 15 for scalability
+            $table->timestamps();
+
+            $table->unique(
+                ['fiscal_year_id', 'salary_grade', 'step_increment'],
+                'salary_standards_unique',
+            );
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('salary_standards');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_16_023539_create_ios_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('ios', function (Blueprint $table) {
+            $table->id();
+            $table->string('occupational_service_code');
+            $table->string('occupational_group_code');
+            $table->string('class_id');
+            $table->string('class');
+            $table->integer('salary_grade');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('ios');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_16_033520_create_positions_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('positions', function (Blueprint $table) {
+            $table->id();
+
+            $table->string('item_number', 50)->unique();
+            $table
+                ->foreignId('office_id')
+                ->constrained('offices')
+                ->onDelete('cascade');
+            $table
+                ->foreignId('ios_id')
+                ->constrained('ios')
+                ->onDelete('restrict');
+            $table
+                ->enum('employment_type', [
+                    'permanent',
+                    'casual',
+                    'contractual',
+                    'job_order',
+                ])
+                ->default('permanent');
+            $table->boolean('is_funded')->default(true);
+            $table
+                ->enum('status', ['occupied', 'vacant', 'abolished'])
+                ->default('vacant');
+
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('positions');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_16_033525_add_position_id_to_users_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table
+                ->foreignId('position_id')
+                ->nullable()
+                ->constrained('positions')
+                ->onDelete('restrict');
+            $table->integer('step')->nullable();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['position_id']);
+            $table->dropColumn(['position_id', 'step']);
+        });
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_16_033535_alter_fiscal_years_status_enum.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('fiscal_years', function (Blueprint $table) {
+            $table->dropColumn('status');
+        });
+
+        Schema::table('fiscal_years', function (Blueprint $table) {
+            $table
+                ->enum('status', ['draft', 'open', 'locked', 'archived'])
+                ->default('draft');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('fiscal_years', function (Blueprint $table) {
+            $table->dropColumn('status');
+        });
+
+        Schema::table('fiscal_years', function (Blueprint $table) {
+            $table
+                ->enum('status', ['active', 'inactive', 'closed'])
+                ->default('inactive')
+                ->after('year');
+        });
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_16_033545_create_ps_rates_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('ps_rates', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('fiscal_year_id')
+                ->constrained('fiscal_years')
+                ->onDelete('cascade');
+            $table->string('rate_key');
+            $table->decimal('rate_value', 12, 2);
+            $table->timestamps();
+
+            $table->unique(['fiscal_year_id', 'rate_key']);
+            $table->index(['fiscal_year_id', 'rate_key']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('ps_rates');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_16_064826_create_ps_breakdown_items_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('ps_breakdown_items', function (Blueprint $table) {
+            $table->id();
+
+            $table
+                ->foreignId('ppa_funding_source_id')
+                ->constrained('ppa_funding_sources')
+                ->cascadeOnDelete();
+            $table
+                ->foreignId('chart_of_account_id')
+                ->constrained('chart_of_accounts')
+                ->cascadeOnDelete();
+            $table
+                ->foreignId('position_id')
+                ->nullable()
+                ->constrained('positions')
+                ->cascadeOnDelete();
+
+            $table->decimal('amount', 15, 2)->default(0);
+            $table->boolean('is_manual')->default(false);
+
+            $table->timestamps();
+
+            $table->unique(
+                ['ppa_funding_source_id', 'chart_of_account_id', 'position_id'],
+                'uq_ps_breakdown_fs_coa_pos',
+            );
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('ps_breakdown_items');
+    }
+};
+
+
+
+
+================================================================================
+FILE: 2026_06_29_012301_add_is_ps_pool_to_ppas_table.php
+================================================================================
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('ppas', function (Blueprint $table) {
+            $table->boolean('is_ps_pool')->nullable()->after('is_supplemental');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('ppas', function (Blueprint $table) {
+            $table->dropColumn('is_ps_pool');
+        });
+    }
+};
+
+
+
+

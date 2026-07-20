@@ -20,19 +20,30 @@ class PpmpCategoryController extends Controller
     {
         Gate::authorize('viewAny', PpmpCategory::class);
 
-        $ppmpCategories = PpmpCategory::with(
-            'chartOfAccountPpmpCategories',
-        )->get();
+        // $ppmpCategories = PpmpCategory::with(
+        //     'chartOfAccountPpmpCategories.chartOfAccount',
+        // )->get();
+
+        $ppmpCategories = PpmpCategory::select([
+            'id',
+            'name',
+            'is_non_procurement',
+        ])
+            ->with([
+                'chartOfAccountPpmpCategories:id,chart_of_account_id,ppmp_category_id',
+                'chartOfAccountPpmpCategories.chartOfAccount:id,account_number,account_title,expense_class,description',
+            ])
+            ->get();
 
         return Inertia::render('ppmp-category/index', [
             'ppmpCategories' => $ppmpCategories,
             'chartOfAccounts' => ChartOfAccount::all(),
             'can' => [
                 'add' => request()->user()->can('create', PpmpCategory::class),
-                'edit' => request()->user()->can('update', new PpmpCategory),
+                'edit' => request()->user()->can('update', new PpmpCategory()),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new PpmpCategory),
+                    ->can('delete', new PpmpCategory()),
             ],
         ]);
     }
@@ -113,9 +124,10 @@ class PpmpCategoryController extends Controller
             return $pivot->ppmpPriceLists()->exists();
         });
 
-        if ($hasDependents && ! request('force')) {
+        if ($hasDependents && !request('force')) {
             return back()->withErrors([
-                'force_delete' => 'Some chart of accounts being removed have dependent PPMP price list items.',
+                'force_delete' =>
+                    'Some chart of accounts being removed have dependent PPMP price list items.',
             ]);
         }
 
@@ -137,7 +149,7 @@ class PpmpCategoryController extends Controller
                 'chart_of_account_id',
                 $coaId,
             );
-            if (! $existingPivot) {
+            if (!$existingPivot) {
                 ChartOfAccountPpmpCategory::create([
                     'chart_of_account_id' => $coaId,
                     'ppmp_category_id' => $ppmpCategory->id,
@@ -158,9 +170,10 @@ class PpmpCategoryController extends Controller
             ->whereHas('ppmpPriceLists')
             ->exists();
 
-        if ($hasDependents && ! request('force')) {
+        if ($hasDependents && !request('force')) {
             return back()->withErrors([
-                'force_delete' => 'This category has dependent PPMP price list items.',
+                'force_delete' =>
+                    'This category has dependent PPMP price list items.',
             ]);
         }
 

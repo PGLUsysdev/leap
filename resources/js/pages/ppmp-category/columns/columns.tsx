@@ -24,17 +24,23 @@ const columns = (canEdit: boolean, canDelete: boolean) => {
                 </div>
             ),
         }),
-        // columnHelper.accessor('chart_of_accounts', {
-        //     header: () => <div>Chart of Accounts</div>,
-        //     size: 300,
-        //     cell: ({ getValue }) => (
-        //         <div className="flex flex-wrap gap-2">
-        //             {getValue().map((account) => (
-        //                 <Badge key={account.id}>{account.account_title}</Badge>
-        //             ))}
-        //         </div>
-        //     ),
-        // }),
+        columnHelper.accessor('chart_of_account_ppmp_categories', {
+            header: () => <div>Chart of Accounts</div>,
+            size: 300,
+            cell: ({ getValue }) => {
+                return (
+                    <div className="flex flex-wrap gap-2">
+                        {getValue().map((item) => {
+                            return (
+                                <Badge key={item.id}>
+                                    {item.chart_of_account?.account_title}
+                                </Badge>
+                            );
+                        })}
+                    </div>
+                );
+            },
+        }),
     ];
 
     if (canEdit || canDelete) {

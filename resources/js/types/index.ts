@@ -231,11 +231,10 @@ export interface ChartOfAccount {
     description: string | null;
     created_at: string | null;
     updated_at: string | null;
-    is_manual: boolean;
 
     parent_id: number | null;
 
-    ppmp_price_lists?: PriceList[];
+    // ppmp_price_lists?: PriceList[];
 }
 
 export interface Ppmp {
@@ -298,11 +297,12 @@ export interface PpmpCategory {
     id: number;
     name: string;
     is_non_procurement: boolean;
+
     created_at: string | null;
     updated_at: string | null;
 
     chart_of_account_ppmp_categories: ChartOfAccountPpmpCategory[];
-    chart_of_accounts: ChartOfAccount[];
+    // chart_of_accounts: ChartOfAccount[];
 }
 
 export interface ChartOfAccountPpmpCategory {
@@ -313,8 +313,8 @@ export interface ChartOfAccountPpmpCategory {
     chart_of_account_id: number;
     ppmp_category_id: number;
 
-    chart_of_account?: ChartOfAccount;
     ppmp_category?: PpmpCategory;
+    chart_of_account?: ChartOfAccount;
 }
 
 export interface AipSummary {
