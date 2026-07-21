@@ -1,15 +1,15 @@
 import { router } from '@inertiajs/react';
 import { useState, useCallback } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { Button } from '@/components/ui/button';
-import type { CcTypology, CcStrategicPriority, CcSubSector } from '@/types';
-import createColumns from './columns/cc-typology-cols';
-import FormDialog from './form-dialog';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import type { CcTypology, CcStrategicPriority, CcSubSector } from '@/types';
+import createColumns from './columns/cc-typology-cols';
+import FormDialog from './form-dialog-base';
 
 interface CcTypologyPageProps {
     ccTypologies: CcTypology[];
@@ -53,7 +53,10 @@ export default function CcTypologyPage({
     }, []);
 
     const handleDeleteConfirm = useCallback(() => {
-        if (!deletingTypology) return;
+        if (!deletingTypology) {
+            return;
+        }
+
         setIsDeleting(true);
         router.delete(`/cc-typology/${deletingTypology.id}`, {
             preserveState: true,
@@ -72,16 +75,16 @@ export default function CcTypologyPage({
         setEditingTypology(null);
     }, []);
 
-    const columns = createColumns({
-        onEdit: handleEdit,
-        onDelete: handleDelete,
-        can,
-    });
+    const columns = createColumns();
 
     return (
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
-                <DataTable columns={columns} data={ccTypologies}>
+                <DataTable
+                    columns={columns}
+                    data={ccTypologies}
+                    meta={{ onEdit: handleEdit, onDelete: handleDelete, can }}
+                >
                     {can?.add && (
                         <Button onClick={handleCreate}>
                             Create CC Typology
@@ -94,7 +97,7 @@ export default function CcTypologyPage({
 
             <FormDialog
                 open={dialogOpen}
-                setOpen={handleClose}
+                onOpenChange={handleClose}
                 initialData={editingTypology}
                 strategicPriorities={strategicPriorities}
                 subSectors={subSectors}

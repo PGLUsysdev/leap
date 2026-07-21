@@ -40,6 +40,11 @@ declare module '@tanstack/react-table' {
         onMove?: (data: TData) => void;
         onSelect?: (data: TData, boolean: boolean) => void;
         onEditPerms?: () => void;
+        can?: {
+            add?: boolean;
+            edit?: boolean;
+            delete?: boolean;
+        };
         meta?: {
             priceLists?: PriceList[];
             chartOfAccounts?: ChartOfAccount[];

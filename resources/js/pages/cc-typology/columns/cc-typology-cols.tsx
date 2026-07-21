@@ -17,7 +17,7 @@ const categoryLabels: Record<string, string> = {
     '4': 'Service Delivery',
 };
 
-export interface ColumnActions {
+interface CcTypologyTableMeta {
     onEdit: (typology: CcTypology) => void;
     onDelete: (typology: CcTypology) => void;
     can?: {
@@ -27,7 +27,7 @@ export interface ColumnActions {
     };
 }
 
-export default function columns({ onEdit, onDelete, can }: ColumnActions) {
+export default function columns() {
     return [
         columnHelper.accessor('code', {
             header: 'Code',
@@ -84,28 +84,32 @@ export default function columns({ onEdit, onDelete, can }: ColumnActions) {
             ),
         }),
         columnHelper.display({
-            id: 'action',
+            id: 'actions',
             size: 84,
-            cell: (info) => (
-                <div className="flex gap-1">
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        disabled={!can?.edit}
-                        onClick={() => onEdit(info.row.original)}
-                    >
-                        <Pencil />
-                    </Button>
-                    <Button
-                        size="icon"
-                        variant="destructive"
-                        disabled={!can?.delete}
-                        onClick={() => onDelete(info.row.original)}
-                    >
-                        <Trash />
-                    </Button>
-                </div>
-            ),
+            cell: (info) => {
+                const meta = info.table.options.meta as CcTypologyTableMeta;
+
+                return (
+                    <div className="flex gap-1">
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            disabled={!meta?.can?.edit}
+                            onClick={() => meta?.onEdit?.(info.row.original)}
+                        >
+                            <Pencil />
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="destructive"
+                            disabled={!meta?.can?.delete}
+                            onClick={() => meta?.onDelete?.(info.row.original)}
+                        >
+                            <Trash />
+                        </Button>
+                    </div>
+                );
+            },
         }),
     ];
 }
