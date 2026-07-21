@@ -1,11 +1,15 @@
 import { router } from '@inertiajs/react';
 import { useState, useCallback } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 import type { CcTypology, CcStrategicPriority, CcSubSector } from '@/types';
 import createColumns from './columns/cc-typology-cols';
 import FormDialog from './form-dialog';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 
 interface CcTypologyPageProps {
     ccTypologies: CcTypology[];
@@ -76,20 +80,17 @@ export default function CcTypologyPage({
 
     return (
         <>
-            <div className="pt-4">
-                <DataTable
-                    columns={columns}
-                    data={ccTypologies}
-                    withSearch
-                    negativeHeight={7}
-                >
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                <DataTable columns={columns} data={ccTypologies}>
                     {can?.add && (
                         <Button onClick={handleCreate}>
                             Create CC Typology
                         </Button>
                     )}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={dialogOpen}
