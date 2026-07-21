@@ -1,6 +1,10 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 import FormDialog from '@/pages/funding-source/form-dialog';
@@ -72,8 +76,9 @@ export default function FundingSourcePage({
 
     return (
         <>
-            <div className="pt-4">
-                <DataTable
+            {/*<div className="pt-4">*/}
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                {/*<DataTable
                     columns={cols}
                     data={fundingSources}
                     withSearch={true}
@@ -88,8 +93,27 @@ export default function FundingSourcePage({
                             </Button>
                         </div>
                     )}
+                </DataTable>*/}
+
+                <DataTable
+                    columns={cols}
+                    data={fundingSources}
+                    meta={{
+                        onEdit: handleEdit,
+                        onDelete: handleDeleteDialogOpen,
+                    }}
+                >
+                    {can?.add && (
+                        <div className="flex justify-end">
+                            <Button onClick={handleAdd}>
+                                Add Funding Source
+                            </Button>
+                        </div>
+                    )}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={open}
