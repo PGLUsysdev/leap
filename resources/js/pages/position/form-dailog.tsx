@@ -1,11 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createColumnHelper } from '@tanstack/react-table';
 import { router } from '@inertiajs/react';
-import { Search } from 'lucide-react';
+import { ChevronsUpDown, Delete } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+} from '@/components/base-ui-components/ui/button-group';
 import {
     Dialog,
     DialogContent,
@@ -312,31 +316,48 @@ export default function FormDialog({
                                                     IOS Classification
                                                 </FieldLabel>
 
-                                                <button
-                                                    type="button"
-                                                    className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-left text-sm hover:bg-accent"
-                                                    onClick={() =>
-                                                        setOpenIosSelect(true)
-                                                    }
-                                                >
-                                                    <Search className="size-4 shrink-0 text-muted-foreground" />
-
-                                                    {selectedIos ? (
-                                                        <span className="truncate">
-                                                            {selectedIos.class}{' '}
-                                                            (SG{' '}
-                                                            {
-                                                                selectedIos.salary_grade
-                                                            }
+                                                <ButtonGroup className="w-full">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
+                                                        onClick={() =>
+                                                            setOpenIosSelect(
+                                                                true,
                                                             )
+                                                        }
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    >
+                                                        <span className="truncate">
+                                                            {selectedIos
+                                                                ? `${selectedIos.class} (SG ${selectedIos.salary_grade})`
+                                                                : 'Select IOS classification'}
                                                         </span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground">
-                                                            Select IOS
-                                                            classification
-                                                        </span>
-                                                    )}
-                                                </button>
+                                                        <ChevronsUpDown />
+                                                    </Button>
+                                                    <ButtonGroupSeparator />
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        aria-label="clear selection"
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                        onClick={() =>
+                                                            form.resetField(
+                                                                'ios_id',
+                                                                {
+                                                                    defaultValue:
+                                                                        '',
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        <Delete />
+                                                    </Button>
+                                                </ButtonGroup>
 
                                                 {fieldState.invalid && (
                                                     <FieldError
