@@ -1,12 +1,16 @@
 import { router } from '@inertiajs/react';
 import { useState, useCallback } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { Button } from '@/components/ui/button';
 import type { CcStrategicPriority, CcSubSector } from '@/types';
 import columns from './columns/cc-sub-sector-cols';
-import FormDialog from './form-dialog';
+import FormDialog from './form-dialog-base';
 
 interface CcSubSectorPageProps {
     subSectors: CcSubSector[];
@@ -77,15 +81,15 @@ export default function CcSubSectorPage({
 
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
                     columns={columns}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteRequest}
                     data={subSectors}
-                    withSearch
-                    negativeHeight={7}
-                    meta={{ can }}
+                    meta={{
+                        onEdit: handleEdit,
+                        onDelete: handleDeleteRequest,
+                        can,
+                    }}
                 >
                     {can?.add && (
                         <Button onClick={handleCreate}>
@@ -93,11 +97,13 @@ export default function CcSubSectorPage({
                         </Button>
                     )}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={dialogOpen}
-                setOpen={handleClose}
+                onOpenChange={handleClose}
                 initialData={editingSubSector}
                 strategicPriorities={strategicPriorities}
             />
