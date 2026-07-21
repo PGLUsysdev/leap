@@ -21,6 +21,7 @@ import type {
     FiscalYear,
     Ios,
     Office,
+    PaginatedResponse,
     Position,
     SalaryStandard,
 } from '@/types';
@@ -31,7 +32,7 @@ import PreviewPdfDialog from './pdf-preview-dialog';
 interface PositionPageProps {
     positions: Position[];
     offices: Office[];
-    iosList: Ios[];
+    iosList: PaginatedResponse<Ios>;
     currentFiscalYear: FiscalYear | null;
     budgetFiscalYear: FiscalYear | null;
     currentStandards: SalaryStandard[];

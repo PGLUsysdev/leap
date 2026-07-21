@@ -9,6 +9,7 @@ use App\Models\Ios;
 use App\Models\Office;
 use App\Models\Position;
 use App\Models\SalaryStandard;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -17,19 +18,29 @@ class PositionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', Position::class);
 
         $currentFiscalYear = FiscalYear::where('status', 'open')->first();
         $budgetFiscalYear = FiscalYear::where('status', 'draft')->first();
 
+        $iosQuery = Ios::select(['id', 'class', 'salary_grade', 'class_id']);
+
+        if ($request->filled('search')) {
+            $searchTerm = $request->query('search');
+            $iosQuery->where(function ($q) use ($searchTerm) {
+                $q->where('class_id', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('class', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
         return Inertia::render('position/index', [
             'positions' => Position::with('office', 'ios', 'user')->get(),
             // ->paginate(100)
             // ->withQueryString(),
             'offices' => Office::all(['id', 'name', 'acronym']),
-            'iosList' => Ios::all(['id', 'class', 'salary_grade']),
+            'iosList' => $iosQuery->paginate(100)->withQueryString(),
             'currentFiscalYear' => $currentFiscalYear,
             'budgetFiscalYear' => $budgetFiscalYear,
             'currentStandards' => $currentFiscalYear

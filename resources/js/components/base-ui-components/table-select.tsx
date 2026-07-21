@@ -12,6 +12,7 @@ import {
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import type { PaginatedResponse } from '@/types';
 
 interface TableSelectProps<TData> {
     data: TData[];
@@ -24,6 +25,8 @@ interface TableSelectProps<TData> {
     className?: string;
     title?: string;
     description?: string;
+    paginationData?: Omit<PaginatedResponse<TData>, 'data'>;
+    only?: string[];
 }
 
 export function TableSelect<TData>({
@@ -37,6 +40,8 @@ export function TableSelect<TData>({
     className,
     title,
     description,
+    paginationData,
+    only,
 }: TableSelectProps<TData>) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -55,11 +60,12 @@ export function TableSelect<TData>({
 
                 <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
                     <NewTable
-                        // className="min-h-0 flex-1"
                         className="h-150"
                         data={data}
                         columns={columns}
                         variant="select"
+                        paginationData={paginationData}
+                        only={only}
                         onRowClick={(row) => {
                             onRowSelect(row);
                             onOpenChange(false);

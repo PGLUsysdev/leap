@@ -1,5 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { createColumnHelper } from '@tanstack/react-table';
 import { router } from '@inertiajs/react';
+import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import * as z from 'zod';
@@ -30,8 +32,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/base-ui-components/ui/select';
+import { TableSelect } from '@/components/base-ui-components/table-select';
 import { CommandSelect } from '@/components/command-select';
-import type { Ios, Office, Position } from '@/types';
+import type { Ios, Office, PaginatedResponse, Position } from '@/types';
 
 const formSchema = z.object({
     item_number: z.string().min(1, 'Item number is required'),
@@ -54,9 +57,26 @@ interface FormDialogProps {
     onOpenChange: (open: boolean) => void;
     data: Position | null;
     offices: Office[];
-    iosList: Ios[];
+    iosList: PaginatedResponse<Ios>;
     userOfficeId?: number;
 }
+
+const columnHelper = createColumnHelper<Ios>();
+
+const selectColumns = [
+    columnHelper.accessor('class_id', {
+        header: 'Class ID',
+        cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor('class', {
+        header: 'Class',
+        cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor('salary_grade', {
+        header: 'SG',
+        cell: (info) => info.getValue(),
+    }),
+];
 
 export default function FormDialog({
     open,
@@ -67,6 +87,7 @@ export default function FormDialog({
     userOfficeId,
 }: FormDialogProps) {
     const [submitting, setSubmitting] = useState(false);
+    const [openIosSelect, setOpenIosSelect] = useState(false);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -106,7 +127,9 @@ export default function FormDialog({
 
     useEffect(() => {
         if (watchedEmploymentType === 'casual') {
-            const laborerI = iosList.find((ios) => ios.class === 'Laborer I');
+            const laborerI = iosList.data.find(
+                (ios) => ios.class === 'Laborer I',
+            );
 
             if (laborerI) {
                 form.setValue('ios_id', String(laborerI.id));
@@ -171,6 +194,7 @@ export default function FormDialog({
     const isEditing = !!data;
 
     return (
+        <>
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg">
                 <DialogHeader>
@@ -272,51 +296,59 @@ export default function FormDialog({
                             <Controller
                                 name="ios_id"
                                 control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                IOS Classification
-                                            </FieldLabel>
-                                            <CommandSelect<Ios>
-                                                value={field.value}
-                                                onChange={(value) =>
-                                                    field.onChange(value)
-                                                }
-                                                options={iosList}
-                                                getOptionValue={(ios) =>
-                                                    String(ios.id)
-                                                }
-                                                getOptionSearchText={(ios) =>
-                                                    ios.class
-                                                }
-                                                renderTrigger={(ios) => (
-                                                    <span className="truncate">
-                                                        {ios.class} (SG{' '}
-                                                        {ios.salary_grade})
-                                                    </span>
+                                render={({ field, fieldState }) => {
+                                    const selectedIos = iosList.data.find(
+                                        (ios) => String(ios.id) === field.value,
+                                    );
+
+                                    return (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    IOS Classification
+                                                </FieldLabel>
+
+                                                <button
+                                                    type="button"
+                                                    className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-2 text-left text-sm hover:bg-accent"
+                                                    onClick={() =>
+                                                        setOpenIosSelect(true)
+                                                    }
+                                                >
+                                                    <Search className="size-4 shrink-0 text-muted-foreground" />
+
+                                                    {selectedIos ? (
+                                                        <span className="truncate">
+                                                            {selectedIos.class}{' '}
+                                                            (SG{' '}
+                                                            {
+                                                                selectedIos.salary_grade
+                                                            }
+                                                            )
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            Select IOS
+                                                            classification
+                                                        </span>
+                                                    )}
+                                                </button>
+
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
-                                                renderOption={(ios) => (
-                                                    <span>
-                                                        {ios.class} (SG{' '}
-                                                        {ios.salary_grade})
-                                                    </span>
-                                                )}
-                                                placeholder="Select IOS"
-                                                searchPlaceholder="Search IOS classifications..."
-                                                heading="IOS Classifications"
-                                                onClear={() =>
-                                                    field.onChange('')
-                                                }
-                                            />
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    );
+                                }}
                             />
 
                             <Controller
@@ -477,7 +509,25 @@ export default function FormDialog({
                               : 'Add Position'}
                     </Button>
                 </DialogFooter>
+
             </DialogContent>
         </Dialog>
+
+        <TableSelect<Ios>
+            data={iosList.data}
+            columns={selectColumns}
+            open={openIosSelect}
+            onOpenChange={setOpenIosSelect}
+            paginationData={iosList}
+            only={['iosList']}
+            onRowSelect={(row) => {
+                form.setValue('ios_id', String(row.id));
+            }}
+            value={form.watch('ios_id')}
+            valueKey="id"
+            title="Select IOS Classification"
+            description="Search and select an IOS classification"
+        />
+        </>
     );
 }
