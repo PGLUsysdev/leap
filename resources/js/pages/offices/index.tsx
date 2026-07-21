@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 import type { LguLevel, Office, OfficeType, Sector } from '@/types';
@@ -85,11 +85,12 @@ export default function OfficesPage({
                 <DataTable
                     columns={cols}
                     data={offices}
-                    withSearch={true}
-                    onAdd={handleCreateChild}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteDialogOpen}
-                    negativeHeight={7}
+                    meta={{
+                        onAdd: handleCreateChild,
+                        onEdit: handleEdit,
+                        onDelete: handleDeleteDialogOpen,
+                    }}
+                    getSubRows={(row) => row.children}
                 >
                     {can?.addOffice && (
                         <Button onClick={handleCreate}>Add Office</Button>

@@ -2,7 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import {
     useReactTable,
     getCoreRowModel,
-    // getExpandedRowModel,
+    getExpandedRowModel,
     // getFacetedMinMaxValues,
     // getFacetedRowModel,
     // getFacetedUniqueValues,
@@ -69,6 +69,7 @@ interface TableProps<TData> {
     perPageParamName?: string;
     searchParamName?: string;
     only?: string[];
+    getSubRows?: (row: TData) => TData[] | undefined;
 }
 
 const getCommonPinningStyles = <TData,>(
@@ -118,9 +119,10 @@ export default function Table<TData>({
     disabledKey,
     disabledValue,
     pageParamName = 'page',
-    perPageParamName = 'per_page',
+    // perPageParamName = 'per_page',
     searchParamName = 'search',
     only,
+    getSubRows,
 }: TableProps<TData>) {
     const isServer = !!paginationData;
 
@@ -225,7 +227,7 @@ export default function Table<TData>({
 
         // row models
         getCoreRowModel: getCoreRowModel(),
-        // getExpandedRowModel: getExpandedRowModel(),
+        getExpandedRowModel: getSubRows ? getExpandedRowModel() : undefined,
         // getFacetedMinMaxValues: getFacetedMinMaxValues(),
         // getFacetedRowModel: getFacetedRowModel(),
         // getFacetedUniqueValues: getFacetedUniqueValues(),
@@ -235,6 +237,9 @@ export default function Table<TData>({
         // getPaginationRowModel: getPaginationRowModel(),
         // getSortedRowModel: getSortedRowModel(),
 
+        getSubRows,
+        filterFromLeafRows: true,
+
         initialState: {
             columnPinning: {
                 right: ['actions'],
@@ -242,6 +247,7 @@ export default function Table<TData>({
         },
         state: {
             globalFilter,
+            expanded: getSubRows ? true : undefined,
         },
 
         // for table
