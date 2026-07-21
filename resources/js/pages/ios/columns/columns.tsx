@@ -5,6 +5,7 @@ import type { Ios } from '@/types';
 
 const columnHelper = createColumnHelper<Ios>();
 
+const columns = [
     columnHelper.accessor('occupational_service_code', {
         header: 'Occupational Service Code',
         size: 200,
