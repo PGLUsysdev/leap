@@ -1,5 +1,8 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { router } from "@inertiajs/react";
+import { router } from '@inertiajs/react';
+import { ChevronRight, Home, Info, Download } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { DataTable } from '@/components/data-table';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -7,15 +10,12 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/data-table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Spinner } from "@/components/ui/spinner";
-import { ChevronRight, Home, Info, Download } from "lucide-react";
-import columns from "./columns/import-columns";
-import type { Ppa, PaginatedResponse, Filter } from "@/types";
-import { index, previousYear } from "@/routes/ppa";
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Spinner } from '@/components/ui/spinner';
+import { index, previousYear } from '@/routes/ppa';
+import type { Ppa, PaginatedResponse, Filter } from '@/types';
+import columns from './columns/import-columns';
 
 interface PpaImportDialogProps {
     isOpen: boolean;
@@ -36,15 +36,20 @@ export default function PpaImportDialog({
     onClose,
     selectedOfficeId,
 }: PpaImportDialogProps) {
-    const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(new Map());
+    const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
+        new Map(),
+    );
     const [loading, setLoading] = useState(false);
 
     const existingPpaIds: number[] = [];
-    const existingIdsSet = useMemo(() => new Set(existingPpaIds), [existingPpaIds]);
+    const existingIdsSet = useMemo(
+        () => new Set(existingPpaIds),
+        [existingPpaIds],
+    );
 
     useEffect(() => {
         if (isOpen) {
-            router.reload({ only: ["dialogPpaTree"] });
+            router.reload({ only: ['dialogPpaTree'] });
         }
 
         if (!isOpen) {
@@ -156,7 +161,7 @@ export default function PpaImportDialog({
         setLoading(true);
 
         router.post(
-            "/ppa/import-from-previous-year",
+            '/ppa/import-from-previous-year',
             {
                 ppa_ids: ids,
                 office_id: selectedOfficeId,
@@ -184,32 +189,32 @@ export default function PpaImportDialog({
 
     const handleShowChildren = (ppa: Ppa) => {
         router.get(
-            "ppa",
+            'ppa',
             {
                 ...filters,
-                dialog_mode: "import",
+                dialog_mode: 'import',
                 dialog_id: ppa.id,
                 dialog_page: 1,
             },
             {
                 preserveState: true,
-                only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
             },
         );
     };
 
     function navigateToBreadcrumb(id: number | null) {
         router.get(
-            "ppa",
+            'ppa',
             {
                 ...filters,
-                dialog_mode: "import",
+                dialog_mode: 'import',
                 dialog_id: id,
                 dialog_page: 1,
             },
             {
                 preserveState: true,
-                only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
             },
         );
     }
@@ -220,8 +225,8 @@ export default function PpaImportDialog({
                 <DialogHeader>
                     <DialogTitle>Import from Previous Year</DialogTitle>
                     <DialogDescription>
-                        Select PPAs from last year to import into the current master list.
-                        Selections are preserved across folders.
+                        Select PPAs from last year to import into the current
+                        master list. Selections are preserved across folders.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -238,12 +243,17 @@ export default function PpaImportDialog({
 
                     {dialogCurrent &&
                         [...dialogCurrent].reverse().map((item) => (
-                            <div key={item.id} className="flex min-w-0 items-center gap-2">
+                            <div
+                                key={item.id}
+                                className="flex min-w-0 items-center gap-2"
+                            >
                                 <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => navigateToBreadcrumb(item.id)}
+                                    onClick={() =>
+                                        navigateToBreadcrumb(item.id)
+                                    }
                                     className={`block h-7 flex-1 truncate px-2`}
                                 >
                                     {item.name}
@@ -265,7 +275,11 @@ export default function PpaImportDialog({
                                 pageKey="dialog_page"
                                 filters={filters}
                                 negativeHeight={24}
-                                onlyKeys={["dialogPpaTree", "dialogCurrent", "filters"]}
+                                onlyKeys={[
+                                    'dialogPpaTree',
+                                    'dialogCurrent',
+                                    'filters',
+                                ]}
                                 meta={{
                                     selectedIds: new Set(selectedItems.keys()),
                                     existingIds: existingIdsSet,
@@ -286,7 +300,11 @@ export default function PpaImportDialog({
                         </div>
 
                         <div className="flex gap-2">
-                            <Button variant="outline" onClick={onClose} disabled={loading}>
+                            <Button
+                                variant="outline"
+                                onClick={onClose}
+                                disabled={loading}
+                            >
                                 Cancel
                             </Button>
 

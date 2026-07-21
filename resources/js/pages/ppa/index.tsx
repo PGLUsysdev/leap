@@ -1,18 +1,17 @@
-import { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 
 // Layouts & UI Components
-import { Button } from '@/components/ui/button';
-import { DataTable } from '@/components/data-table';
-import { DeleteDialog } from '@/components/delete-dialog';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import { CommandSelect } from '@/components/command-select';
+import { DataTable } from '@/components/data-table';
+import { DeleteDialog } from '@/components/delete-dialog';
+import { Button } from '@/components/ui/button';
 
 // Page-Specific Components
 import PpaFormDialog from '@/pages/ppa/form-dialog';
 import PpaMoveDialog from '@/pages/ppa/move-dialog';
 import PpaImportDialog from '@/pages/ppa/ppa-import-dialog';
-import columns from './columns/columns';
 
 // Routes & API
 import { index, reorder } from '@/routes/ppa';
@@ -27,6 +26,7 @@ import type {
     PaginatedResponse,
     Filter,
 } from '@/types';
+import columns from './columns/columns';
 
 const NEXT_TYPE_MAP: Record<Ppa['type'], Ppa['type']> = {
     Program: 'Project',
@@ -99,6 +99,7 @@ export default function PpaPage({
 
     function handleDialogOpenChange(isOpen: boolean) {
         setIsFormOpen(isOpen);
+
         if (!isOpen) {
             setParentPpa(null);
             setEditPpa(null);
@@ -118,7 +119,9 @@ export default function PpaPage({
     }
 
     function handleDelete() {
-        if (!deletePpa) return;
+        if (!deletePpa) {
+            return;
+        }
 
         router.visit(destroy(deletePpa.id), {
             preserveState: true,

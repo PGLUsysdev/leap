@@ -1,10 +1,14 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, FolderOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { Ppa } from "@/types";
-import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "@/components/ui/button-group";
+import { createColumnHelper } from '@tanstack/react-table';
+import { CheckCircle2, FolderOpen } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+    ButtonGroupText,
+} from '@/components/ui/button-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import type { Ppa } from '@/types';
 
 type SelectablePpa = Ppa & { _isSelected?: boolean; _isAdded?: boolean };
 
@@ -12,7 +16,7 @@ const columnHelper = createColumnHelper<SelectablePpa>();
 
 const columns = [
     columnHelper.display({
-        id: "select",
+        id: 'select',
         size: 50,
         header: ({ table }) => {
             const meta = table.options.meta as any;
@@ -28,12 +32,16 @@ const columns = [
 
             // If some (but not all) are checked, show indeterminate state
             const isSomeSelected =
-                selectableRows.some((row) => row.original._isSelected) && !isAllSelected;
+                selectableRows.some((row) => row.original._isSelected) &&
+                !isAllSelected;
 
             return (
                 <div className="flex items-center justify-center">
                     <Checkbox
-                        checked={isAllSelected || (isSomeSelected ? "indeterminate" : false)}
+                        checked={
+                            isAllSelected ||
+                            (isSomeSelected ? 'indeterminate' : false)
+                        }
                         onCheckedChange={(checked) =>
                             meta.onToggleAll?.(
                                 selectableRows.map((r) => r.original),
@@ -66,30 +74,38 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor("full_code", {
-        header: "Code",
+    columnHelper.accessor('full_code', {
+        header: 'Code',
         cell: (info) => <code className="text-xs">{info.getValue()}</code>,
     }),
-    columnHelper.accessor("name", {
-        header: "Description",
+    columnHelper.accessor('name', {
+        header: 'Description',
         size: 500,
         cell: ({ row }) => {
             const ppa = row.original;
             const isAdded = ppa._isAdded;
 
             return (
-                <div className={`flex flex-col py-1 ${isAdded ? "opacity-50" : ""}`}>
+                <div
+                    className={`flex flex-col py-1 ${isAdded ? 'opacity-50' : ''}`}
+                >
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-muted-foreground uppercase">
                             {ppa.type}
                         </span>
                         {isAdded && (
-                            <Badge variant="outline" className="h-4 px-1 text-[9px]">
-                                <CheckCircle2 className="mr-1 h-2 w-2" /> ALREADY IMPORTED
+                            <Badge
+                                variant="outline"
+                                className="h-4 px-1 text-[9px]"
+                            >
+                                <CheckCircle2 className="mr-1 h-2 w-2" />{' '}
+                                ALREADY IMPORTED
                             </Badge>
                         )}
                     </div>
-                    <span className="text-sm leading-tight font-medium text-wrap">{ppa.name}</span>
+                    <span className="text-sm leading-tight font-medium text-wrap">
+                        {ppa.name}
+                    </span>
                 </div>
             );
         },
@@ -107,13 +123,13 @@ const columns = [
     //     },
     // }),
     columnHelper.display({
-        id: "action",
+        id: 'action',
         size: 74,
         // header: 'Open',
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
             const ppa = row.original;
-            const canOpen = ppa.type !== "Sub-Activity";
+            const canOpen = ppa.type !== 'Sub-Activity';
             const childrenCount = ppa.children_count;
 
             return (
@@ -129,7 +145,11 @@ const columns = [
                 // </Button>
 
                 <ButtonGroup>
-                    <Button variant="outline" className="w-7 shrink overflow-hidden px-0" disabled>
+                    <Button
+                        variant="outline"
+                        className="w-7 shrink overflow-hidden px-0"
+                        disabled
+                    >
                         {childrenCount}
                     </Button>
                     <Button
