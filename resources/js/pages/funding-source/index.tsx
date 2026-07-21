@@ -1,13 +1,13 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { Button } from '@/components/ui/button';
-import FormDialog from '@/pages/funding-source/form-dialog';
+import FormDialog from '@/pages/funding-source/form-dialog-base';
 import type { FundingSource } from '@/types';
 import columns from './columns/columns';
 
@@ -117,7 +117,7 @@ export default function FundingSourcePage({
 
             <FormDialog
                 open={open}
-                setOpen={handleDialogOpenChange}
+                onOpenChange={handleDialogOpenChange}
                 initialData={selectedSource}
             />
 

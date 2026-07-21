@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/base-ui-components/ui/button';
-import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -24,39 +23,20 @@ import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/base-ui-components/ui/select';
 import { Textarea } from '@/components/base-ui-components/ui/textarea';
-import type { ChartOfAccount } from '@/types';
+import type { FundingSource } from '@/types';
 
 interface FormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    initialData: ChartOfAccount | null;
+    initialData: FundingSource | null;
 }
 
 const formSchema = z.object({
-    account_number: z.string().trim().min(1, 'Account number is required'),
-    account_title: z.string().trim().min(1, 'Account title is required'),
-    account_type: z.enum(
-        ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'],
-        { message: 'Account type is required' },
-    ),
-    expense_class: z.enum(['PS', 'MOOE', 'FE', 'CO'], {
-        message: 'Expense class is required',
-    }),
-    account_series: z.string().trim().nullable().or(z.literal('')),
-    is_postable: z.boolean(),
-    is_active: z.boolean(),
-    normal_balance: z.enum(['DEBIT', 'CREDIT'], {
-        message: 'Normal balance is required',
-    }),
-    description: z.string().trim().nullable().or(z.literal('')),
+    fund_type: z.string().trim().min(1, { message: 'Fund type is required' }),
+    code: z.string().trim().min(1, { message: 'Code is required' }),
+    title: z.string().trim().min(1, { message: 'Title is required' }),
+    description: z.string().trim().nullable(),
 });
 
 export default function FormDialog({
@@ -65,104 +45,47 @@ export default function FormDialog({
     initialData,
 }: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
-    const [alertOpen, setAlertOpen] = useState(false);
-    const [alertMessage, setAlertMessage] = useState<string | null>(null);
 
     const isEditing = !!initialData;
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            account_number: '',
-            account_title: '',
-            account_type: 'ASSET',
-            expense_class: 'MOOE',
-            account_series: '',
-            is_postable: true,
-            is_active: true,
-            normal_balance: 'DEBIT',
+            fund_type: '',
+            code: '',
+            title: '',
             description: '',
         },
     });
 
     useEffect(() => {
         if (open) {
-            form.reset({
-                account_number: initialData?.account_number ?? '',
-                account_title: initialData?.account_title ?? '',
-                account_type: (initialData?.account_type as any) ?? 'ASSET',
-                expense_class: (initialData?.expense_class as any) ?? 'MOOE',
-                account_series: initialData?.account_series ?? '',
-                is_postable: initialData?.is_postable ?? true,
-                is_active: initialData?.is_active ?? true,
-                normal_balance: (initialData?.normal_balance as any) ?? 'DEBIT',
-                description: initialData?.description ?? '',
-            });
+            form.reset(
+                initialData ?? {
+                    fund_type: '',
+                    code: '',
+                    title: '',
+                    description: '',
+                },
+            );
         }
     }, [initialData, open, form]);
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        const data = {
-            ...values,
-            account_series:
-                values.account_series === '' ? null : values.account_series,
-            description: values.description === '' ? null : values.description,
-        };
-
+    function onSubmit(data: z.infer<typeof formSchema>) {
         if (isEditing) {
-            router.patch(`/chart-of-accounts/${initialData.id}`, data, {
+            router.patch(`/funding-sources/${initialData.id}`, data, {
                 preserveScroll: true,
                 preserveState: true,
                 onStart: () => setIsLoading(true),
-                onSuccess: () => {
-                    onOpenChange(false);
-                    form.reset();
-                },
-                onError: (errors: any) => {
-                    const messages = Object.values(errors).flat();
-                    const combinedMessage =
-                        messages.length > 0
-                            ? messages.join(' ')
-                            : 'An unexpected error occurred.';
-
-                    setAlertMessage(combinedMessage);
-                    setAlertOpen(true);
-
-                    Object.keys(errors).forEach((key) => {
-                        form.setError(key as any, {
-                            type: 'server',
-                            message: errors[key],
-                        });
-                    });
-                },
+                onSuccess: () => onOpenChange(false),
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post('/chart-of-accounts', data, {
+            router.post('/funding-sources', data, {
                 preserveScroll: true,
                 preserveState: true,
                 onStart: () => setIsLoading(true),
-                onSuccess: () => {
-                    onOpenChange(false);
-                    form.reset();
-                },
-                onError: (errors: any) => {
-                    const messages = Object.values(errors).flat();
-                    const combinedMessage =
-                        messages.length > 0
-                            ? messages.join(' ')
-                            : 'An unexpected error occurred.';
-
-                    setAlertMessage(combinedMessage);
-                    setAlertOpen(true);
-
-                    Object.keys(errors).forEach((key) => {
-                        form.setError(key as any, {
-                            type: 'server',
-                            message: errors[key],
-                        });
-                    });
-                },
+                onSuccess: () => onOpenChange(false),
                 onFinish: () => setIsLoading(false),
             });
         }
@@ -175,23 +98,25 @@ export default function FormDialog({
                     <DialogHeader>
                         <DialogTitle>
                             {isEditing
-                                ? 'Edit Chart of Account'
-                                : 'Add New Chart of Account'}
+                                ? 'Edit Funding Source'
+                                : 'Add New Funding Source'}
                         </DialogTitle>
                         <DialogDescription>
-                            Modify or create chart of account details.
+                            {isEditing
+                                ? 'Modify the details of the existing funding source below.'
+                                : 'Fill in the information to create a new funding record.'}
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="flex min-h-0">
                         <ScrollArea className="w-full pr-3">
                             <form
-                                id="chart-of-account-form"
+                                id="funding-source-form"
                                 onSubmit={form.handleSubmit(onSubmit)}
                                 className="flex flex-col gap-4 py-1"
                             >
                                 <Controller
-                                    name="account_number"
+                                    name="fund_type"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field data-invalid={fieldState.invalid}>
@@ -200,7 +125,7 @@ export default function FormDialog({
                                                     htmlFor={field.name}
                                                     className="gap-1"
                                                 >
-                                                    Account Number{' '}
+                                                    Fund Type
                                                     <span className="text-red-500">
                                                         *
                                                     </span>
@@ -212,7 +137,7 @@ export default function FormDialog({
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
-                                                    placeholder="e.g., 5-02-03-010"
+                                                    placeholder="Fund type..."
                                                     autoComplete="off"
                                                 />
 
@@ -229,7 +154,7 @@ export default function FormDialog({
                                 />
 
                                 <Controller
-                                    name="account_title"
+                                    name="code"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field data-invalid={fieldState.invalid}>
@@ -238,7 +163,7 @@ export default function FormDialog({
                                                     htmlFor={field.name}
                                                     className="gap-1"
                                                 >
-                                                    Account Title{' '}
+                                                    Code
                                                     <span className="text-red-500">
                                                         *
                                                     </span>
@@ -250,7 +175,7 @@ export default function FormDialog({
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
-                                                    placeholder="e.g., Office Supplies"
+                                                    placeholder="Code..."
                                                     autoComplete="off"
                                                 />
 
@@ -267,192 +192,31 @@ export default function FormDialog({
                                 />
 
                                 <Controller
-                                    name="account_type"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
-                                            <FieldContent>
-                                                <FieldLabel className="gap-1">
-                                                    Account Type{' '}
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Select
-                                                    value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                >
-                                                    <SelectTrigger
-                                                        className="w-full"
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                    >
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-
-                                                    <SelectContent>
-                                                        {[
-                                                            'ASSET',
-                                                            'LIABILITY',
-                                                            'EQUITY',
-                                                            'REVENUE',
-                                                            'EXPENSE',
-                                                        ].map((v) => (
-                                                            <SelectItem
-                                                                key={v}
-                                                                value={v}
-                                                            >
-                                                                {v}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="expense_class"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
-                                            <FieldContent>
-                                                <FieldLabel className="gap-1">
-                                                    Expense Class{' '}
-                                                    <span className="text-red-500">
-                                                        *
-                                                    </span>
-                                                </FieldLabel>
-
-                                                <Select
-                                                    value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                >
-                                                    <SelectTrigger
-                                                        className="w-full"
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                    >
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-
-                                                    <SelectContent>
-                                                        {[
-                                                            'PS',
-                                                            'MOOE',
-                                                            'FE',
-                                                            'CO',
-                                                        ].map((v) => (
-                                                            <SelectItem
-                                                                key={v}
-                                                                value={v}
-                                                            >
-                                                                {v}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="account_series"
+                                    name="title"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field data-invalid={fieldState.invalid}>
                                             <FieldContent>
                                                 <FieldLabel
                                                     htmlFor={field.name}
+                                                    className="gap-1"
                                                 >
-                                                    Account Series
-                                                </FieldLabel>
-
-                                                <Input
-                                                    {...field}
-                                                    id={field.name}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    value={field.value ?? ''}
-                                                    autoComplete="off"
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError
-                                                        errors={[
-                                                            fieldState.error,
-                                                        ]}
-                                                    />
-                                                )}
-                                            </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="normal_balance"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
-                                            <FieldContent>
-                                                <FieldLabel className="gap-1">
-                                                    Normal Balance{' '}
+                                                    Title
                                                     <span className="text-red-500">
                                                         *
                                                     </span>
                                                 </FieldLabel>
 
-                                                <Select
-                                                    value={field.value}
-                                                    onValueChange={
-                                                        field.onChange
+                                                <Textarea
+                                                    {...field}
+                                                    id={field.name}
+                                                    aria-invalid={
+                                                        fieldState.invalid
                                                     }
-                                                >
-                                                    <SelectTrigger
-                                                        className="w-full"
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                    >
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-
-                                                    <SelectContent>
-                                                        <SelectItem value="DEBIT">
-                                                            DEBIT
-                                                        </SelectItem>
-
-                                                        <SelectItem value="CREDIT">
-                                                            CREDIT
-                                                        </SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                    placeholder="Title..."
+                                                    autoComplete="off"
+                                                    className="min-h-15"
+                                                />
 
                                                 {fieldState.invalid && (
                                                     <FieldError
@@ -480,11 +244,12 @@ export default function FormDialog({
 
                                                 <Textarea
                                                     {...field}
+                                                    value={field.value ?? ''}
                                                     id={field.name}
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
-                                                    value={field.value ?? ''}
+                                                    placeholder="Description..."
                                                     autoComplete="off"
                                                     className="min-h-15"
                                                 />
@@ -497,46 +262,6 @@ export default function FormDialog({
                                                     />
                                                 )}
                                             </FieldContent>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="is_postable"
-                                    control={form.control}
-                                    render={({ field }) => (
-                                        <Field orientation="horizontal">
-                                            <Checkbox
-                                                id={field.name}
-                                                checked={field.value}
-                                                onCheckedChange={
-                                                    field.onChange
-                                                }
-                                            />
-
-                                            <FieldLabel htmlFor={field.name}>
-                                                Is Postable
-                                            </FieldLabel>
-                                        </Field>
-                                    )}
-                                />
-
-                                <Controller
-                                    name="is_active"
-                                    control={form.control}
-                                    render={({ field }) => (
-                                        <Field orientation="horizontal">
-                                            <Checkbox
-                                                id={field.name}
-                                                checked={field.value}
-                                                onCheckedChange={
-                                                    field.onChange
-                                                }
-                                            />
-
-                                            <FieldLabel htmlFor={field.name}>
-                                                Is Active
-                                            </FieldLabel>
                                         </Field>
                                     )}
                                 />
@@ -557,7 +282,7 @@ export default function FormDialog({
 
                         <Button
                             type="submit"
-                            form="chart-of-account-form"
+                            form="funding-source-form"
                             disabled={isLoading}
                         >
                             {isLoading
@@ -566,25 +291,7 @@ export default function FormDialog({
                                     : 'Creating...'
                                 : isEditing
                                   ? 'Save Changes'
-                                  : 'Create Account'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Error</DialogTitle>
-                        <DialogDescription>{alertMessage}</DialogDescription>
-                    </DialogHeader>
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => setAlertOpen(false)}
-                        >
-                            Close
+                                  : 'Create Source'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
