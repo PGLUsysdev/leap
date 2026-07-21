@@ -1,18 +1,34 @@
-import { useEffect, useState } from "react";
-import type { OfficeType } from "@/types";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
-import * as z from "zod";
-import { Field, FieldError, FieldGroup, FieldLabel, FieldContent } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { router, usePage } from "@inertiajs/react";
-import { FormDialogShell } from "@/components/form-dialog-shell";
-import { AlertErrorDialog } from "@/components/alert-error-dialog";
+import { useEffect, useState } from 'react';
+import type { OfficeType } from '@/types';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Controller, useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/base-ui-components/ui/dialog';
+import {
+    Field,
+    FieldError,
+    FieldLabel,
+    FieldContent,
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { router, usePage } from '@inertiajs/react';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
 
 interface FormDialogProps {
     open: boolean;
-    setOpen: (open: boolean) => void;
+    onOpenChange: (open: boolean) => void;
     initialData: OfficeType | null;
 }
 
@@ -20,20 +36,22 @@ const formSchema = z.object({
     code: z
         .string()
         .trim()
-        .min(1, { message: "Code is required" })
-        .max(2, { message: "Code must not exceed 2 characters" })
-        .regex(/^\d+$/, { message: "Code must contain only numbers" }),
+        .min(1, { message: 'Code is required' })
+        .max(2, { message: 'Code must not exceed 2 characters' })
+        .regex(/^\d+$/, { message: 'Code must contain only numbers' }),
     name: z
         .string()
         .trim()
-        .min(1, { message: "Type is required" })
-        .max(50, { message: "Type must not exceed 50 characters" }),
+        .min(1, { message: 'Type is required' })
+        .max(50, { message: 'Type must not exceed 50 characters' }),
 });
 
-export default function FormDialog({ open, setOpen, initialData }: FormDialogProps) {
-    console.log(initialData);
-
-    const [isLoading, setIsLoading] = useState(false);
+export default function FormDialog({
+    open,
+    onOpenChange,
+    initialData,
+}: FormDialogProps) {
+    const [submitting, setSubmitting] = useState(false);
     const isEditing = !!initialData;
 
     const { errors } = usePage().props;
@@ -43,8 +61,8 @@ export default function FormDialog({ open, setOpen, initialData }: FormDialogPro
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            code: "",
-            name: "",
+            code: '',
+            name: '',
         },
     });
 
@@ -52,110 +70,115 @@ export default function FormDialog({ open, setOpen, initialData }: FormDialogPro
         if (open) {
             form.reset(
                 initialData ?? {
-                    code: "",
-                    name: "",
+                    code: '',
+                    name: '',
                 },
             );
         }
     }, [initialData, open, form]);
 
     useEffect(() => {
-        if (errors.message) {
-            setErrorMessage(errors.message as string);
+        if ((errors as any).message) {
+            setErrorMessage((errors as any).message as string);
             setShowError(true);
         }
     }, [errors]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        console.log(data);
+        setSubmitting(true);
+
+        const options = {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                setSubmitting(false);
+                onOpenChange(false);
+            },
+            onError: (errs: any) => {
+                setSubmitting(false);
+                Object.keys(errs).forEach((key) => {
+                    form.setError(key as any, {
+                        type: 'server',
+                        message: errs[key],
+                    });
+                });
+            },
+            onFinish: () => setSubmitting(false),
+        };
 
         if (isEditing) {
-            router.patch(`/office-types/${initialData.id}`, data, {
-                preserveScroll: true,
-                preserveState: true,
-                onStart: () => setIsLoading(true),
-                onSuccess: () => setOpen(false),
-                onError: (errors: any) => {
-                    Object.keys(errors).forEach((key) => {
-                        form.setError(key as any, {
-                            type: "server",
-                            message: errors[key],
-                        });
-                    });
-                },
-                onFinish: () => setIsLoading(false),
-            });
+            router.patch(`/office-types/${initialData.id}`, data, options);
         } else {
-            router.post("/office-types", data, {
-                preserveScroll: true,
-                preserveState: true,
-                onStart: () => setIsLoading(true),
-                onSuccess: () => setOpen(false),
-                onError: (errors: any) => {
-                    Object.keys(errors).forEach((key) => {
-                        form.setError(key as any, {
-                            type: "server",
-                            message: errors[key],
-                        });
-                    });
-                },
-                onFinish: () => setIsLoading(false),
-            });
+            router.post('/office-types', data, options);
         }
     }
 
     return (
         <>
-            <FormDialogShell
-                open={open}
-                onOpenChange={setOpen}
-                title={isEditing ? "Edit Office Type" : "Add New Office Type"}
-                description={
-                    isEditing
-                        ? "Modify the details of the existing office type below."
-                        : "Fill in the information to create a new office type."
-                }
-                isLoading={isLoading}
-                formId="office-type-form"
-                onCancel={() => setOpen(false)}
-                submitLabel={isEditing ? "Save Changes" : "Create Type"}
-                submittingLabel={isEditing ? "Saving Changes" : "Creating Type"}
-                className="sm:max-w-sm"
-            >
-                <div className="flex min-h-0">
-                    <ScrollArea className="w-full">
-                        <form id="office-type-form" onSubmit={form.handleSubmit(onSubmit)}>
-                            <FieldGroup className="pb-4">
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {isEditing
+                                ? 'Edit Office Type'
+                                : 'Add New Office Type'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {isEditing
+                                ? 'Modify the details of the existing office type below.'
+                                : 'Fill in the information to create a new office type.'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex min-h-0">
+                        <ScrollArea className="w-full">
+                            <form
+                                id="office-type-form"
+                                onSubmit={form.handleSubmit(onSubmit)}
+                                className="flex flex-col gap-4 py-1"
+                            >
                                 <Controller
                                     name="code"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
                                             <FieldContent>
-                                                <FieldLabel htmlFor={field.name} className="gap-1">
-                                                    Code
-                                                    <span className="text-red-500">*</span>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Code{' '}
+                                                    <span className="text-red-500">
+                                                        *
+                                                    </span>
                                                 </FieldLabel>
 
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={fieldState.invalid}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
                                                     placeholder="Code..."
                                                     autoComplete="off"
                                                     maxLength={2}
                                                     onChange={(e) => {
-                                                        // Regex to remove any non-numeric characters
-                                                        const value = e.target.value.replace(
-                                                            /\D/g,
-                                                            "",
-                                                        );
+                                                        const value =
+                                                            e.target.value.replace(
+                                                                /\D/g,
+                                                                '',
+                                                            );
                                                         field.onChange(value);
                                                     }}
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -166,35 +189,80 @@ export default function FormDialog({ open, setOpen, initialData }: FormDialogPro
                                     name="name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
                                             <FieldContent>
-                                                <FieldLabel htmlFor={field.name} className="gap-1">
-                                                    Title
-                                                    <span className="text-red-500">*</span>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Title{' '}
+                                                    <span className="text-red-500">
+                                                        *
+                                                    </span>
                                                 </FieldLabel>
 
                                                 <Input
                                                     {...field}
                                                     id={field.name}
-                                                    aria-invalid={fieldState.invalid}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
                                                     placeholder="Title..."
                                                     autoComplete="off"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
                                             </FieldContent>
                                         </Field>
                                     )}
                                 />
-                            </FieldGroup>
-                        </form>
-                    </ScrollArea>
-                </div>
-            </FormDialogShell>
+                            </form>
 
-            <AlertErrorDialog open={showError} onOpenChange={setShowError} error={errorMessage} />
+                            <ScrollBar orientation="vertical" />
+                        </ScrollArea>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                onOpenChange(false);
+                                form.reset();
+                            }}
+                            disabled={submitting}
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            type="submit"
+                            form="office-type-form"
+                            disabled={submitting}
+                        >
+                            {submitting
+                                ? isEditing
+                                    ? 'Saving Changes'
+                                    : 'Creating Type'
+                                : isEditing
+                                  ? 'Save Changes'
+                                  : 'Create Type'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <AlertErrorDialog
+                open={showError}
+                onOpenChange={setShowError}
+                error={errorMessage}
+            />
         </>
     );
 }
