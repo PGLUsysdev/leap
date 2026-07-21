@@ -1,8 +1,12 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { Button } from '@/components/ui/button';
 import type { LguLevel } from '@/types';
 import columns from './columns/columns';
 import FormDialog from './form-dialog';
@@ -60,30 +64,28 @@ export default function LguLevelPage({ lguLevels, can }: LguLevelPageProps) {
         });
     }
 
-    const cols = columns(can?.edit ?? false, can?.delete ?? false);
-
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={cols}
+                    columns={columns}
                     data={lguLevels}
-                    withSearch={true}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteDialogOpen}
-                    negativeHeight={7}
+                    meta={{
+                        onEdit: handleEdit,
+                        onDelete: handleDeleteDialogOpen,
+                        canEdit: can?.edit ?? false,
+                        canDelete: can?.delete ?? false,
+                    }}
                 >
-                    {can?.add && (
-                        <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add LGU Level</Button>
-                        </div>
-                    )}
+                    {can?.add && <Button onClick={handleAdd}>Add LGU Level</Button>}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={open}
-                setOpen={handleDialogOpenChange}
+                onOpenChange={handleDialogOpenChange}
                 initialData={selectedLguLevel}
             />
 
