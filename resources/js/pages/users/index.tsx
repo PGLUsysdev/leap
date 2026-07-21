@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import type { Office, Position, Role, User } from '@/types';
 import columns from './columns/columns';
 import FormDialog from './form-dialog';
@@ -35,23 +39,22 @@ export default function UsersIndex({
         setOpenFormDialog(true);
     }
 
-    const cols = columns({
-        editAll: can?.editAll ?? false,
-        editOwn: can?.editOwn ?? false,
-        userOfficeId: can?.userOfficeId ?? null,
-    });
-
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={cols}
+                    columns={columns}
                     data={users ?? []}
-                    withSearch={true}
-                    onEdit={handleOpenFormDialog}
-                    negativeHeight={7}
+                    meta={{
+                        onEdit: handleOpenFormDialog,
+                        editAll: can?.editAll ?? false,
+                        editOwn: can?.editOwn ?? false,
+                        userOfficeId: can?.userOfficeId ?? null,
+                    }}
                 />
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 roles={roles}
