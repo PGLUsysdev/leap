@@ -1,8 +1,12 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { Button } from '@/components/ui/button';
 import type { LguLevel, Office, OfficeType, Sector } from '@/types';
 import columns from './columns/columns';
 import FormDialog from './form-dialog';
@@ -77,13 +81,11 @@ export default function OfficesPage({
         });
     }
 
-    const cols = columns();
-
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={cols}
+                    columns={columns}
                     data={offices}
                     meta={{
                         onAdd: handleCreateChild,
@@ -96,7 +98,9 @@ export default function OfficesPage({
                         <Button onClick={handleCreate}>Add Office</Button>
                     )}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={isDialogOpen}
