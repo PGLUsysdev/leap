@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Middleware;
+use App\Models\FiscalYear;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -43,14 +44,33 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
-                'permissions' => $request
-                    ->user()
-                    ?->loadMissing('role.permissionRoles.permission')
-                    ?->role?->permissionRoles?->pluck('permission.name') ??
+                'permissions' =>
+                    $request
+                        ->user()
+                        ?->loadMissing('role.permissionRoles.permission')
+                        ?->role?->permissionRoles?->pluck('permission.name') ??
                     [],
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') ||
+            'sidebarOpen' =>
+                !$request->hasCookie('sidebar_state') ||
                 $request->cookie('sidebar_state') === 'true',
+            'activeFiscalYear' => function () use ($request) {
+                $id = $request->session()->get('active_fiscal_year_id');
+
+                if (!$id) {
+                    $year = FiscalYear::where('status', 'draft')
+                        ->latest('created_at')
+                        ->first();
+                    if ($year) {
+                        $request
+                            ->session()
+                            ->put('active_fiscal_year_id', $year->id);
+                    }
+                    return $year;
+                }
+
+                return FiscalYear::find($id);
+            },
         ];
     }
 }

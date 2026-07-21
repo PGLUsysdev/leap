@@ -1,6 +1,11 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -11,10 +16,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import type { Ios, PaginatedResponse, SalaryStandard } from '@/types';
 import columns from './columns/columns';
-import FormDialog from './form-dialog';
+import FormDialog from './form-dialog-base';
 
 interface IosPageProps {
     ios: PaginatedResponse<Ios>;
@@ -27,6 +31,8 @@ interface IosPageProps {
 }
 
 export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
+    console.log(ios);
+
     const [selectedData, setSelectedData] = useState<Ios | null>(null);
     const [openForm, setOpenForm] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
@@ -58,16 +64,16 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
 
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={columns({
+                    columns={columns}
+                    data={ios.data}
+                    paginationData={ios}
+                    meta={{
                         onEdit: can?.edit ? handleEdit : undefined,
                         onDelete: can?.delete ? handleDelete : undefined,
-                    })}
-                    data={ios.data}
-                    paginationObj={ios}
-                    withSearch={true}
-                    negativeHeight={10.8}
+                    }}
+                    only={['ios']}
                 >
                     {can?.add && (
                         <Button
@@ -80,7 +86,9 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
                         </Button>
                     )}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={openForm}

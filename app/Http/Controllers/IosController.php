@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateIosRequest;
 use App\Models\FiscalYear;
 use App\Models\Ios;
 use App\Models\SalaryStandard;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -15,19 +16,17 @@ class IosController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         Gate::authorize('viewAny', Ios::class);
 
-        $activeYear = FiscalYear::find(
-            request()->session()->get('active_fiscal_year_id'),
-        );
+        $activeYearId = session('active_fiscal_year_id');
 
         $salaryGrades = collect();
-        if ($activeYear) {
+        if ($activeYearId) {
             $salaryGrades = SalaryStandard::where(
                 'fiscal_year_id',
-                $activeYear->id,
+                $activeYearId,
             )
                 ->selectRaw(
                     'salary_grade, MIN(monthly_rate) as min_rate, MAX(monthly_rate) as max_rate',
@@ -37,13 +36,33 @@ class IosController extends Controller
                 ->get();
         }
 
+        $query = Ios::query();
+
+        if ($request->filled('search')) {
+            $searchTerm = $request->query('search');
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where(
+                    'occupational_service_code',
+                    'like',
+                    '%' . $searchTerm . '%',
+                )
+                    ->orWhere(
+                        'occupational_group_code',
+                        'like',
+                        '%' . $searchTerm . '%',
+                    )
+                    ->orWhere('class_id', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('class', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
         return Inertia::render('ios/index', [
-            'ios' => Ios::query()->paginate(100)->withQueryString(),
+            'ios' => $query->paginate(100)->withQueryString(),
             'salaryGrades' => $salaryGrades,
             'can' => [
                 'add' => request()->user()->can('create', Ios::class),
-                'edit' => request()->user()->can('update', new Ios),
-                'delete' => request()->user()->can('delete', new Ios),
+                'edit' => request()->user()->can('update', new Ios()),
+                'delete' => request()->user()->can('delete', new Ios()),
             ],
         ]);
     }
