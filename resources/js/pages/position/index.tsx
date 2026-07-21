@@ -1,6 +1,12 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import type { SharedData } from '@/types';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -11,14 +17,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import type {
     FiscalYear,
     Ios,
     Office,
     Position,
     SalaryStandard,
-    SharedData,
 } from '@/types';
 import columns from './columns/position-cols';
 import FormDialog from './form-dailog';
@@ -56,6 +60,7 @@ export default function PositionPage({
     const officePositions = userOfficeId
         ? positions.filter((p) => p.office_id === userOfficeId)
         : positions;
+
     const [selectedPosition, setSelectedPosition] = useState<Position | null>(
         null,
     );
@@ -101,17 +106,14 @@ export default function PositionPage({
 
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={columns({
+                    columns={columns}
+                    data={officePositions}
+                    meta={{
                         onEdit: can?.edit ? handleEdit : undefined,
                         onDelete: can?.delete ? handleDelete : undefined,
-                    })}
-                    data={officePositions}
-                    // paginationObj={positions}
-                    withSearch={true}
-                    onEdit={handleEdit}
-                    negativeHeight={7}
+                    }}
                 >
                     <div className="flex gap-1">
                         {can?.export && (
@@ -142,7 +144,9 @@ export default function PositionPage({
                         )}
                     </div>
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={openForm}
