@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import type { CcStrategicPriority, CcSubSector } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/base-ui-components/ui/button';
@@ -30,7 +30,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/base-ui-components/ui/select';
-import { router } from '@inertiajs/react';
+import type { CcStrategicPriority, CcSubSector } from '@/types';
 
 interface FormDialogProps {
     open: boolean;
@@ -231,10 +231,10 @@ export default function FormDialog({
                                                 placeholder="1"
                                                 autoComplete="off"
                                                 onChange={(e) => {
-                                                    const digits = e.target
-                                                        .value
-                                                        .replace(/\D/g, '')
-                                                        .slice(0, 1);
+                                                    const digits =
+                                                        e.target.value
+                                                            .replace(/\D/g, '')
+                                                            .slice(0, 1);
                                                     field.onChange(digits);
                                                 }}
                                             />

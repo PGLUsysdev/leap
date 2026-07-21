@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -7,8 +11,7 @@ import {
     SelectItem,
     SelectLabel,
     SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+} from '@/components/base-ui-components/ui/select';
 import type {
     FiscalYear,
     SalaryStandard,
@@ -125,14 +128,9 @@ export default function SalaryStandard({
 
     return (
         <>
-            <div className="pt-4">
-                <DataTable
-                    columns={columns}
-                    data={matrixData}
-                    withSearch={true}
-                    negativeHeight={8}
-                >
-                    <div className="flex flex-wrap items-center gap-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                <DataTable columns={columns} data={matrixData}>
+                    <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-semibold whitespace-nowrap">
                                 Salary Standards
@@ -141,6 +139,7 @@ export default function SalaryStandard({
                                 {trancheLabel && ` (${trancheLabel})`}
                             </h2>
                         </div>
+
                         <Select
                             value={String(selectedFiscalYearId)}
                             onValueChange={(value) =>
@@ -148,7 +147,9 @@ export default function SalaryStandard({
                             }
                         >
                             <SelectTrigger className="w-full max-w-48">
-                                <SelectValue placeholder="Select Fiscal Year" />
+                                <span className="flex flex-1 text-left">
+                                    {selectedFiscalYear?.year ?? 'Select Fiscal Year'}
+                                </span>
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectGroup>
@@ -165,14 +166,16 @@ export default function SalaryStandard({
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                    {/*<div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
                         <span>2024 — First Tranche</span>
                         <span>2025 — Second Tranche</span>
                         <span>2026 — Third Tranche</span>
                         <span>2027 — Fourth Tranche</span>
-                    </div>
+                    </div>*/}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
         </>
     );
 }
