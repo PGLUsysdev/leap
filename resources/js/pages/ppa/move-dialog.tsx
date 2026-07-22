@@ -9,9 +9,9 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { DataTable } from '@/components/data-table';
+import NewTable from '@/components/base-ui-components/data-table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/base-ui-components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
@@ -20,12 +20,10 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from '@/components/base-ui-components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
 import type { Ppa, PaginatedResponse, Filter } from '@/types';
 import columns from './columns/move-columns';
-// import { index } from '@/routes/ppa';
 
 interface PpaMoveDialogProps {
     isOpen: boolean;
@@ -200,16 +198,6 @@ export default function PpaMoveDialog({
         );
     }
 
-    const displayData = useMemo(() => {
-        if (!dialogPpaTree || Array.isArray(dialogPpaTree)) return [];
-
-        return dialogPpaTree.data.map((ppa) => ({
-            ...ppa,
-            // Inject the selection state into the object
-            _isSelected: selectedTarget?.id === ppa.id,
-        }));
-    }, [dialogPpaTree, selectedTarget]);
-
     const handleOpenChange = (open: boolean) => {
         // If the dialog is closing (open is false)
         if (!open) {
@@ -241,42 +229,47 @@ export default function PpaMoveDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-            <DialogContent className="flex max-h-[95vh] flex-col border-none shadow-2xl sm:max-w-[85%]">
-                <DialogHeader>
+            <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 p-0 py-4 sm:max-w-[85%] [&>*:not(:nth-last-child(-n+3))]:pb-4">
+                <DialogHeader className="flex-none px-4">
                     <DialogTitle>Move PPA</DialogTitle>
-                    <DialogDescription className="sr-only">
+                    <DialogDescription>
                         Navigate the library to find a destination.
                     </DialogDescription>
                 </DialogHeader>
 
-                <Card>
-                    <CardContent>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="rounded-md bg-primary p-2 text-primary-foreground shadow-sm">
-                                    <Move />
+                <div className="px-4">
+                    <Card className="py-2">
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="rounded-md bg-primary p-2 text-primary-foreground shadow-sm">
+                                        <Move />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold tracking-wider text-primary/70 uppercase">
+                                            Currently Moving
+                                        </p>
+                                        <p className="max-w-[400px] truncate text-sm font-bold">
+                                            {ppaToMove?.name}
+                                        </p>
+                                        <p className="font-mono text-[10px] opacity-60">
+                                            {ppaToMove?.full_code}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-bold tracking-wider text-primary/70 uppercase">
-                                        Currently Moving
-                                    </p>
-                                    <p className="max-w-[400px] truncate text-sm font-bold">
-                                        {ppaToMove?.name}
-                                    </p>
-                                    <p className="font-mono text-[10px] opacity-60">
-                                        {ppaToMove?.full_code}
-                                    </p>
-                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className="bg-background"
+                                >
+                                    {ppaToMove?.type}
+                                </Badge>
                             </div>
-                            <Badge variant="outline" className="bg-background">
-                                {ppaToMove?.type}
-                            </Badge>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* breadcrumbs */}
-                <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
+                <div className="p-4">
                     <Button
                         variant="ghost"
                         size="sm"
@@ -305,109 +298,107 @@ export default function PpaMoveDialog({
                     ))}
                 </div>
 
-                <div className="flex min-h-0">
-                    <ScrollArea className="w-full pr-3">
-                        {/* <div className="w-full overflow-x-auto"> */}
-                        {!Array.isArray(dialogPpaTree) && (
-                            <DataTable
-                                // key={`move-table-${filters?.dialog_id}`}
-                                columns={columns}
-                                data={displayData}
-                                withSearch
-                                onShowChildren={handleShowChildren}
-                                paginationObj={dialogPpaTree}
-                                negativeHeight={30}
-                                filters={filters}
-                                searchKey="dialog_search"
-                                pageKey="dialog_page"
-                                onlyKeys={[
-                                    'dialogPpaTree',
-                                    'dialogCurrent',
-                                    'filters',
-                                ]}
-                                meta={{
+                <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
+                    {!Array.isArray(dialogPpaTree) && (
+                        <NewTable
+                            columns={columns}
+                            data={dialogPpaTree.data}
+                            paginationData={(() => {
+                                const { data, ...rest } = dialogPpaTree;
+
+                                return rest;
+                            })()}
+                            pageParamName="dialog_page"
+                            searchParamName="dialog_search"
+                            only={['dialogPpaTree', 'dialogCurrent', 'filters']}
+                            meta={
+                                {
                                     ppaToMove: ppaToMove,
+                                    onShowChildren: handleShowChildren,
                                     selectedId: selectedTarget?.id,
                                     onSelect: (ppa: Ppa | null) =>
                                         setSelectedTarget(ppa),
-                                }}
-                                isDialog={true}
-                            />
-                        )}
-                        {/* </div> */}
-                    </ScrollArea>
+                                } as any
+                            }
+                            className="h-1000"
+                        ></NewTable>
+                    )}
                 </div>
 
-                <DialogFooter className="mt-4 flex items-center justify-between border-t bg-background pt-4">
-                    <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground italic">
-                        <Info className="h-4 w-4 text-primary/50" />
-                        {selectedTarget ? (
-                            <span className="flex animate-in gap-1 fade-in slide-in-from-left-2">
-                                <span>Moving relative to:</span>
-                                <strong className="block max-w-[400px] truncate text-foreground">
-                                    {selectedTarget.name}
-                                </strong>
-                            </span>
-                        ) : (
-                            <span>Select a folder or sibling above</span>
-                        )}
-                    </div>
+                <div className="px-4">
+                    <DialogFooter className="flex items-center justify-between">
+                        <div className="flex flex-1 items-center gap-2 text-sm text-muted-foreground italic">
+                            <Info className="h-4 w-4 text-primary/50" />
+                            {selectedTarget ? (
+                                <span className="flex animate-in gap-1 fade-in slide-in-from-left-2">
+                                    <span>Moving relative to:</span>
+                                    <strong className="block max-w-[400px] truncate text-foreground">
+                                        {selectedTarget.name}
+                                    </strong>
+                                </span>
+                            ) : (
+                                <span>Select a folder or sibling above</span>
+                            )}
+                        </div>
 
-                    <div className="flex gap-2">
-                        <Button
-                            variant="ghost"
-                            onClick={() => onOpenChange(false)}
-                            disabled={loading}
-                        >
-                            Cancel
-                        </Button>
-
-                        {/* CONDITION A: Show "Move Above / Move Below Sibling" buttons */}
-                        {buttonLabels.showSiblingButtons && (
-                            <>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleMove('top')}
-                                    disabled={
-                                        !buttonLabels.siblingEnabled || loading
-                                    }
-                                >
-                                    <ArrowUpToLine className="mr-2 h-4 w-4" />{' '}
-                                    Move Above Sibling
-                                </Button>
-                                <Button
-                                    onClick={() => handleMove('bottom')}
-                                    disabled={
-                                        !buttonLabels.siblingEnabled || loading
-                                    }
-                                >
-                                    <ArrowDownToLine className="mr-2 h-4 w-4" />{' '}
-                                    Move Below Sibling
-                                </Button>
-                            </>
-                        )}
-
-                        {/* CONDITION B: Show single dynamic "Move Here" / "Move Into Folder" action button */}
-                        {buttonLabels.showMoveHereButton && (
+                        <div className="flex gap-2">
                             <Button
-                                onClick={() => handleMove('into')}
-                                disabled={
-                                    !buttonLabels.moveHereEnabled || loading
-                                }
-                                className="gap-2"
+                                variant="ghost"
+                                onClick={() => onOpenChange(false)}
+                                disabled={loading}
                             >
-                                {loading ? (
-                                    <Spinner />
-                                ) : (
-                                    <>
-                                        {buttonLabels.moveHereIcon}
-                                        {buttonLabels.moveHereLabel}
-                                    </>
-                                )}
+                                Cancel
                             </Button>
-                        )}
-                    </div>
-                </DialogFooter>
+
+                            {/* CONDITION A: Show "Move Above / Move Below Sibling" buttons */}
+                            {buttonLabels.showSiblingButtons && (
+                                <>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => handleMove('top')}
+                                        disabled={
+                                            !buttonLabels.siblingEnabled ||
+                                            loading
+                                        }
+                                    >
+                                        <ArrowUpToLine className="mr-2 h-4 w-4" />{' '}
+                                        Move Above Sibling
+                                    </Button>
+                                    <Button
+                                        onClick={() => handleMove('bottom')}
+                                        disabled={
+                                            !buttonLabels.siblingEnabled ||
+                                            loading
+                                        }
+                                    >
+                                        <ArrowDownToLine className="mr-2 h-4 w-4" />{' '}
+                                        Move Below Sibling
+                                    </Button>
+                                </>
+                            )}
+
+                            {/* CONDITION B: Show single dynamic "Move Here" / "Move Into Folder" action button */}
+                            {buttonLabels.showMoveHereButton && (
+                                <Button
+                                    onClick={() => handleMove('into')}
+                                    disabled={
+                                        !buttonLabels.moveHereEnabled || loading
+                                    }
+                                    className="gap-2"
+                                >
+                                    {loading ? (
+                                        <Spinner />
+                                    ) : (
+                                        <>
+                                            {buttonLabels.moveHereIcon}
+                                            {buttonLabels.moveHereLabel}
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+                        </div>
+                    </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );

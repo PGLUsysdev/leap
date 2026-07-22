@@ -1,13 +1,12 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { FolderOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     ButtonGroup,
     ButtonGroupSeparator,
-    ButtonGroupText,
-} from '@/components/ui/button-group';
-import { Checkbox } from '@/components/ui/checkbox';
+} from '@/components/base-ui-components/ui/button-group';
+import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
 import type { Ppa } from '@/types';
 
 const columnHelper = createColumnHelper<Ppa>();
@@ -78,7 +77,7 @@ const columns = [
             const isSelf = String(target.id) === String(source.id);
             const isDisabled = (!isSibling && !isParent) || isSelf;
 
-            const isChecked = !!target._isSelected;
+            const isChecked = meta.selectedId === target.id;
 
             return (
                 <div className="flex items-center justify-center">
