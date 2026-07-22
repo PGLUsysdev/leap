@@ -91,6 +91,7 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                             (sum, p) => sum + Number(p.total_amount || 0),
                             0,
                         );
+
                         return (
                             <span className="font-bold text-blue-600">
                                 {total.toLocaleString('en-US', {
@@ -110,6 +111,7 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                 ),
                             0,
                         );
+
                         return (
                             <span className="font-bold text-blue-600">
                                 {grandTotal.toLocaleString('en-US', {
@@ -147,6 +149,7 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                                         .aip_entry.ppa.id ===
                                                     ppa.id,
                                             );
+
                                         return entries.reduce(
                                             (sum, e) =>
                                                 sum +
@@ -179,6 +182,7 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                                 ),
                                             0,
                                         );
+
                                         return Number(amount).toLocaleString(
                                             undefined,
                                             { minimumFractionDigits: 2 },
@@ -194,6 +198,7 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                                                 .aip_entry.ppa
                                                                 .id === ppa.id,
                                                     );
+
                                                 return (
                                                     sum +
                                                     entries.reduce(
@@ -210,6 +215,7 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                             },
                                             0,
                                         );
+
                                         return quarterTotal.toLocaleString(
                                             undefined,
                                             { minimumFractionDigits: 2 },

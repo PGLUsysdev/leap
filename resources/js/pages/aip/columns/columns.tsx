@@ -126,7 +126,7 @@ const columns = (
         canOpenPpmpSummary
             ? [
                   columnHelper.display({
-                      id: 'action',
+                      id: 'actions',
                       size: (() => {
                           const count = [
                               canUpdateStatus,

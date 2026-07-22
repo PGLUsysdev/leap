@@ -9,9 +9,7 @@ import {
 } from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
-import {
-    reorder,
-} from '@/routes/price-lists';
+import { reorder } from '@/routes/price-lists';
 import type {
     PriceList,
     ChartOfAccount,

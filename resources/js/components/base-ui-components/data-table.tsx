@@ -70,6 +70,7 @@ interface TableProps<TData> {
     searchParamName?: string;
     only?: string[];
     getSubRows?: (row: TData) => TData[] | undefined;
+    showFooter?: boolean;
 }
 
 const getCommonPinningStyles = <TData,>(
@@ -123,6 +124,7 @@ export default function Table<TData>({
     searchParamName = 'search',
     only,
     getSubRows,
+    showFooter = false,
 }: TableProps<TData>) {
     const isServer = !!paginationData;
 
@@ -328,7 +330,7 @@ export default function Table<TData>({
                                             return (
                                                 <TableHead
                                                     key={header.id}
-                                                    // colSpan={header.colSpan}
+                                                    colSpan={header.colSpan}
                                                     className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
                                                     style={{
                                                         width: `${header.getSize()}px`,
@@ -338,11 +340,14 @@ export default function Table<TData>({
                                                         ),
                                                     }}
                                                 >
-                                                    {flexRender(
-                                                        header.column.columnDef
-                                                            .header,
-                                                        header.getContext(),
-                                                    )}
+                                                    {header.isPlaceholder
+                                                        ? null
+                                                        : flexRender(
+                                                              header.column
+                                                                  .columnDef
+                                                                  .header,
+                                                              header.getContext(),
+                                                          )}
                                                 </TableHead>
                                             );
                                         })}
@@ -411,17 +416,65 @@ export default function Table<TData>({
                                 );
                             })}
                         </TableBody>
-                        {false && (
+                        {showFooter && (
                             <TableFooter className="sticky bottom-0 z-2">
-                                {table.getFooterGroups().map((footerGroup) => {
-                                    return (
-                                        <TableRow
-                                            key={footerGroup.id}
-                                            className="shadow-[inset_0_1px_0_0_var(--border)]"
-                                        >
-                                            {footerGroup.headers.map(
-                                                (header) => {
-                                                    return (
+                                {table
+                                    .getFooterGroups()
+                                    .filter((group) =>
+                                        group.headers.some(
+                                            (header) =>
+                                                !header.isPlaceholder &&
+                                                header.column.columnDef.footer,
+                                        ),
+                                    )
+                                    .map((footerGroup) => {
+                                        return (
+                                            <TableRow
+                                                key={footerGroup.id}
+                                                className="shadow-[inset_0_1px_0_0_var(--border)]"
+                                            >
+                                                {footerGroup.headers.map(
+                                                    (header) => {
+                                                        return (
+                                                            <TableCell
+                                                                key={header.id}
+                                                                className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
+                                                                style={{
+                                                                    width: `${header.getSize()}px`,
+                                                                    ...getCommonPinningStyles(
+                                                                        header.column,
+                                                                        table,
+                                                                    ),
+                                                                }}
+                                                            >
+                                                                {header.isPlaceholder
+                                                                    ? null
+                                                                    : flexRender(
+                                                                          header
+                                                                              .column
+                                                                              .columnDef
+                                                                              .footer,
+                                                                          header.getContext(),
+                                                                      )}
+                                                            </TableCell>
+                                                        );
+                                                    },
+                                                )}
+                                            </TableRow>
+                                        );
+                                    })}
+                            </TableFooter>
+                        )}
+                        {/* {showFooter && (
+                            <TableFooter className="sticky bottom-0 z-2">
+                                {[table.getFooterGroups().at(-1)].map(
+                                    (footerGroup) => {
+                                        console.log(footerGroup);
+
+                                        return (
+                                            <TableRow key={footerGroup.id}>
+                                                {footerGroup.headers.map(
+                                                    (header) => (
                                                         <TableCell
                                                             key={header.id}
                                                             className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
@@ -433,21 +486,24 @@ export default function Table<TData>({
                                                                 ),
                                                             }}
                                                         >
-                                                            {flexRender(
-                                                                header.column
-                                                                    .columnDef
-                                                                    .footer,
-                                                                header.getContext(),
-                                                            )}
+                                                            {header.isPlaceholder
+                                                                ? null
+                                                                : flexRender(
+                                                                      header
+                                                                          .column
+                                                                          .columnDef
+                                                                          .footer,
+                                                                      header.getContext(),
+                                                                  )}
                                                         </TableCell>
-                                                    );
-                                                },
-                                            )}
-                                        </TableRow>
-                                    );
-                                })}
+                                                    ),
+                                                )}
+                                            </TableRow>
+                                        );
+                                    },
+                                )}
                             </TableFooter>
-                        )}
+                        )} */}
                     </DataTable>
                 </div>
 

@@ -1,6 +1,10 @@
 // import { type BreadcrumbItem } from '@/types';
 import { useMemo } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { index as aipIndex } from '@/routes/aip';
 import { getPriceListColumns } from './columns/columns';
 
@@ -22,18 +26,17 @@ export default function PpmpSummaryPage({
 
     return (
         <>
-            <div
-                // className="flex flex-col gap-4 p-4"
-                className="pt-4"
-            >
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
                     columns={columns}
                     data={priceLists}
-                    withSearch={true}
-                    withFooter={true}
-                    negativeHeight={7}
+                    // withSearch={true}
+                    showFooter={true}
+                    // negativeHeight={7}
                 />
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
         </>
     );
 }
