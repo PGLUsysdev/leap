@@ -123,7 +123,7 @@ const columns = [
     //     },
     // }),
     columnHelper.display({
-        id: 'action',
+        id: 'actions',
         size: 74,
         // header: 'Open',
         cell: ({ row, table }) => {

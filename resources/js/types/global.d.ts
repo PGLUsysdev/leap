@@ -40,6 +40,10 @@ declare module '@tanstack/react-table' {
         onMove?: (data: TData) => void;
         onSelect?: (data: TData, boolean: boolean) => void;
         onEditPerms?: () => void;
+        onToggle?: (data: TData) => void;
+        onToggleAll?: (data: TData[], isChecked: boolean) => void;
+        selectedIds?: Set<number>;
+        existingIds?: Set<number>;
         can?: {
             add?: boolean;
             edit?: boolean;
