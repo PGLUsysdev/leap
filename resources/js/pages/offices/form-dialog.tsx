@@ -81,7 +81,6 @@ export default function FormDialog({
     const isAddingChild = !isEditing && !!parentOffice;
 
     const { errors } = usePage().props;
-    console.log(usePage());
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 

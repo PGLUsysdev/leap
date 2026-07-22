@@ -6,7 +6,6 @@ import {
     ButtonGroup,
     ButtonGroupSeparator,
 } from '@/components/base-ui-components/ui/button-group';
-import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
 import type { Ppa } from '@/types';
 
 const columnHelper = createColumnHelper<Ppa>();
@@ -58,41 +57,6 @@ const canNavigateInto = (targetType: string, sourceType: string): boolean => {
 };
 
 const columns = [
-    columnHelper.display({
-        id: 'select-target',
-        size: 80,
-        cell: ({ row, table }) => {
-            const meta = table.options.meta as any;
-            const source = meta.ppaToMove;
-            const target = row.original as any;
-
-            if (!source) {
-                return (
-                    <div className="h-4 w-4 rounded border border-dashed opacity-20" />
-                );
-            }
-
-            const isSibling = target.type === source.type;
-            const isParent = isValidParentType(target.type, source.type);
-            const isSelf = String(target.id) === String(source.id);
-            const isDisabled = (!isSibling && !isParent) || isSelf;
-
-            const isChecked = meta.selectedId === target.id;
-
-            return (
-                <div className="flex items-center justify-center">
-                    <Checkbox
-                        key={`cb-${target.id}-${isChecked}`}
-                        checked={isChecked}
-                        onCheckedChange={(checked) => {
-                            meta.onSelect(checked ? target : null);
-                        }}
-                        disabled={isDisabled}
-                    />
-                </div>
-            );
-        },
-    }),
     columnHelper.accessor('full_code', {
         header: 'AIP Reference Code',
         size: 180,

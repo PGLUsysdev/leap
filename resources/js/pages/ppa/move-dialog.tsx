@@ -308,6 +308,35 @@ export default function PpaMoveDialog({
 
                                 return rest;
                             })()}
+                            variant="select"
+                            onRowClick={(ppa: Ppa) => {
+                                const isSelf =
+                                    ppa.id === ppaToMove?.id;
+                                const isSibling =
+                                    ppa.type === ppaToMove?.type;
+                                const isParent = isValidParentType(
+                                    ppa.type,
+                                    ppaToMove?.type ?? '',
+                                );
+                                if (
+                                    (isSibling || isParent) &&
+                                    !isSelf
+                                ) {
+                                    setSelectedTarget(ppa);
+                                }
+                            }}
+                            selectedValue={
+                                selectedTarget
+                                    ? String(selectedTarget.id)
+                                    : ''
+                            }
+                            selectedKey="id"
+                            disabledValue={
+                                ppaToMove
+                                    ? String(ppaToMove.id)
+                                    : ''
+                            }
+                            disabledKey="id"
                             pageParamName="dialog_page"
                             searchParamName="dialog_search"
                             only={['dialogPpaTree', 'dialogCurrent', 'filters']}
@@ -315,9 +344,6 @@ export default function PpaMoveDialog({
                                 {
                                     ppaToMove: ppaToMove,
                                     onShowChildren: handleShowChildren,
-                                    selectedId: selectedTarget?.id,
-                                    onSelect: (ppa: Ppa | null) =>
-                                        setSelectedTarget(ppa),
                                 } as any
                             }
                             className="h-1000"
