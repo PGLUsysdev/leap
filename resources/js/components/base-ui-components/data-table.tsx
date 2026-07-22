@@ -24,7 +24,7 @@ import {
     ChevronsRight,
     ChevronsLeft,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Input } from '@/components/base-ui-components/ui/input';
@@ -150,10 +150,18 @@ export default function Table<TData>({
         }
     }, [paginationData]);
 
+    const prevGlobalFilter = useRef(globalFilter);
+
     useEffect(() => {
         if (!isServer) {
             return;
         }
+
+        if (globalFilter === prevGlobalFilter.current) {
+            return;
+        }
+
+        prevGlobalFilter.current = globalFilter;
 
         const timeout = setTimeout(() => {
             router.get(
