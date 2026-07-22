@@ -13,9 +13,9 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+} from '@/components/base-ui-components/ui/alert-dialog';
+import { Button } from '@/components/base-ui-components/ui/button';
+import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
 import {
     Command,
     CommandDialog,
@@ -32,7 +32,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/base-ui-components/ui/dialog';
 import {
     Field,
     FieldContent,
@@ -44,14 +44,13 @@ import {
     // FieldSeparator,
     FieldSet,
     // FieldTitle,
-} from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
+import { Textarea } from '@/components/base-ui-components/ui/textarea';
 import { cn } from '@/lib/utils';
 
-import type { Office, Ppa, AuthData } from '@/types';
+import type { Office, Ppa, Auth } from '@/types';
 
 const formSchema = z.object({
     office_id: z.string().min(1, 'Implementing office is required'),
@@ -71,7 +70,7 @@ interface PpaFormDialogProps {
     parentPpa: Ppa | null;
     editPpa: Ppa | null;
     offices: Office[];
-    auth: AuthData;
+    auth: Auth;
     selectedOfficeId?: number | null;
 }
 

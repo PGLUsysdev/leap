@@ -5,8 +5,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '@/components/base-ui-components/ui/dialog';
+import { Button } from '@/components/base-ui-components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
@@ -45,33 +45,12 @@ export function FormDialogShell({
     extraFooter,
 }: FormDialogShellProps) {
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={onOpenChange} modal={isLoading}>
             <DialogContent
                 className={cn(
                     'flex max-h-[90vh] flex-col sm:max-w-2xl',
                     className,
                 )}
-                onPointerDownOutside={(e) => {
-                    const target = e.target as HTMLElement;
-
-                    // If submitting, always prevent closing
-                    if (isLoading) {
-                        e.preventDefault();
-                        return;
-                    }
-
-                    // Ignore pointer events from Radix portal elements
-                    // (Select dropdowns, Tooltips, etc.) — they render outside
-                    // DialogContent and would otherwise trigger an outside click.
-                    if (
-                        target?.closest('[data-radix-select-content]') ||
-                        target?.closest('[role="listbox"]') ||
-                        target?.closest('.z-50')
-                    ) {
-                        e.preventDefault();
-                    }
-                }}
-                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
             >
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>

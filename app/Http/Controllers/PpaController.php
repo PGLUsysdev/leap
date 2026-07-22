@@ -59,7 +59,7 @@ class PpaController extends Controller
                 'id',
                 'search',
             )
-                ->paginate(100)
+                ->paginate(10)
                 ->withQueryString()
                 ->through(function ($ppa) use ($user) {
                     $ppa->can = [

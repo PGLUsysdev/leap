@@ -68,6 +68,8 @@ export default function PpaPage({
     selectedOfficeId,
     parentOffices,
 }: PpaPageProps) {
+    const { data, ...paginationData } = ppaTree;
+
     const { auth } = usePage<SharedData>().props;
 
     // Form Dialog States
@@ -253,8 +255,9 @@ export default function PpaPage({
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={columns(ppaTree.data)}
-                    data={ppaTree.data}
+                    columns={columns(data)}
+                    data={data}
+                    paginationData={paginationData}
                     meta={{
                         onAdd: handleAddChild,
                         onEdit: handleEdit,
@@ -383,11 +386,119 @@ export default function PpaPage({
     );
 }
 
-PpaPage.layout = {
-    breadcrumbs: [
-        {
-            title: 'PPA Master Library',
-            href: index().url,
-        },
-    ],
+// PpaPage.layout = {
+//     breadcrumbs: [
+//         // shows all programs
+//         {
+//             title: 'PPA Master Library',
+//             href: index().url,
+//         },
+
+//         // shows all project of selected program
+//         {
+//             title: "[program name]'s Projects",
+//             href: index().url, // put in id of program
+//         },
+
+//         // shows all activities of selected project
+//         {
+//             title: "[activity name]'s Activities",
+//             href: index().url, // put in id of project
+//         },
+
+//         // shows all subactivities of selected activity
+//         {
+//             title: "[activity name]'s Subactivities",
+//             href: index().url, // put in id of activity
+//         },
+//     ],
+// };
+
+PpaPage.layout = (props: PpaPageProps) => {
+    // current = [currentPpa, parent, grandparent, ...] (deepest first)
+    // reversed = [grandparent, parent, currentPpa] (root first)
+    const ancestors = [...props.current].reverse();
+
+    return {
+        breadcrumbs: [
+            // Root — shows all programs
+            { title: 'PPA Master Library', href: index().url },
+
+            // Program level — shows all projects of selected program
+            ...(ancestors[0]
+                ? [
+                      {
+                          title: `${ancestors[0].name}'s Projects`,
+                          href: index({
+                              query: {
+                                  id: ancestors[0].id,
+                                  selected_office_id:
+                                      props.filters?.selected_office_id,
+                              },
+                          }).url,
+                      },
+                  ]
+                : []),
+
+            // Project level — shows all activities of selected project
+            ...(ancestors[1]
+                ? [
+                      {
+                          title: `${ancestors[1].name}'s Activities`,
+                          href: index({
+                              query: {
+                                  id: ancestors[1].id,
+                                  selected_office_id:
+                                      props.filters?.selected_office_id,
+                              },
+                          }).url,
+                      },
+                  ]
+                : []),
+
+            // Activity level — shows all subactivities of selected activity
+            ...(ancestors[2]
+                ? [
+                      {
+                          title: `${ancestors[2].name}'s Subactivities`,
+                          href: index({
+                              query: {
+                                  id: ancestors[2].id,
+                                  selected_office_id:
+                                      props.filters?.selected_office_id,
+                              },
+                          }).url,
+                      },
+                  ]
+                : []),
+        ],
+    };
 };
+
+// example: /ppa?id=1&page=1
+
+// PpaPage.layout = (props: PpaPageProps) => {
+//     const items: BreadcrumbItem[] = [
+//         { title: 'PPA Master Library', href: index().url },
+//     ];
+
+//     // props.current = [current, parent, grandparent, root] — deepest first
+//     const ancestors = [...props.current].reverse(); // root → ... → current
+
+//     ancestors.forEach((ppa, i) => {
+//         const childType = NEXT_TYPE_MAP[ppa.type]; // Program→Project, Project→Activity, etc.
+//         const isLast = i === ancestors.length - 1;
+
+//         items.push({
+//             title: isLast ? `${ppa.name}'s ${childType}s` : ppa.name,
+//             href: index({
+//                 query: {
+//                     id: ppa.id,
+//                     selected_office_id: props.filters?.selected_office_id,
+//                 },
+//             }).url,
+//         });
+//     });
+
+//     return { breadcrumbs: items };
+// };
