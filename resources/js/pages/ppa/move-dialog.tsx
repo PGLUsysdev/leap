@@ -10,9 +10,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import NewTable from '@/components/base-ui-components/data-table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/base-ui-components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -21,6 +19,8 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/base-ui-components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import type { Ppa, PaginatedResponse, Filter } from '@/types';
 import columns from './columns/move-columns';
@@ -85,13 +85,16 @@ export default function PpaMoveDialog({
             targetId: null as number | null,
         };
 
-        if (!ppaToMove) return defaultState;
+        if (!ppaToMove) {
+            return defaultState;
+        }
 
         // RULE 1: ROOT PROGRAMS OR MOVING WITHIN THE SAME FOLDER
         // Must ONLY allow "Move Above / Below" sibling actions, kept disabled until selected
         if (isProgram || isSameFolder) {
             const isSelectedSibling =
                 selectedTarget && selectedTarget.type === ppaToMove.type;
+
             return {
                 showSiblingButtons: true,
                 siblingEnabled: !!isSelectedSibling,
@@ -106,6 +109,7 @@ export default function PpaMoveDialog({
         // RULE 2: ROW IN TABLE IS MANUALLY SELECTED
         if (selectedTarget) {
             const isSibling = selectedTarget.type === ppaToMove.type;
+
             if (isSibling) {
                 return {
                     showSiblingButtons: true,
@@ -136,6 +140,7 @@ export default function PpaMoveDialog({
                 currentFolder.type,
                 ppaToMove.type,
             );
+
             return {
                 showSiblingButtons: false,
                 siblingEnabled: false,
@@ -156,7 +161,10 @@ export default function PpaMoveDialog({
 
     const handleMove = (direction: 'top' | 'bottom' | 'into') => {
         const finalTargetId = buttonLabels.targetId;
-        if (!finalTargetId || !ppaToMove) return;
+
+        if (!finalTargetId || !ppaToMove) {
+            return;
+        }
 
         router.post(
             `/ppas/${ppaToMove.id}/move`,
@@ -237,8 +245,38 @@ export default function PpaMoveDialog({
                     </DialogDescription>
                 </DialogHeader>
 
+                {/* breadcrumbs */}
+                <div className="flex gap-2 px-4">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2"
+                        onClick={() => navigateToBreadcrumb(null)}
+                    >
+                        <Home className="mr-1 h-4 w-4" /> Root
+                    </Button>
+
+                    {[...dialogCurrent].reverse().map((item) => (
+                        <div
+                            key={item.id}
+                            className="flex min-w-0 items-center gap-2"
+                        >
+                            <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigateToBreadcrumb(item.id)}
+                                className={`block h-7 flex-1 truncate px-2`}
+                            >
+                                {item.name}
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+
                 <div className="px-4">
-                    <Card className="py-2">
+                    <Card className="py-2 shadow-none">
                         <CardContent>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -268,36 +306,6 @@ export default function PpaMoveDialog({
                     </Card>
                 </div>
 
-                {/* breadcrumbs */}
-                <div className="p-4">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2"
-                        onClick={() => navigateToBreadcrumb(null)}
-                    >
-                        <Home className="mr-1 h-4 w-4" /> Root
-                    </Button>
-
-                    {[...dialogCurrent].reverse().map((item) => (
-                        <div
-                            key={item.id}
-                            className="flex min-w-0 items-center gap-2"
-                        >
-                            <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />
-
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => navigateToBreadcrumb(item.id)}
-                                className={`block h-7 flex-1 truncate px-2`}
-                            >
-                                {item.name}
-                            </Button>
-                        </div>
-                    ))}
-                </div>
-
                 <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
                     {!Array.isArray(dialogPpaTree) && (
                         <NewTable
@@ -310,31 +318,23 @@ export default function PpaMoveDialog({
                             })()}
                             variant="select"
                             onRowClick={(ppa: Ppa) => {
-                                const isSelf =
-                                    ppa.id === ppaToMove?.id;
-                                const isSibling =
-                                    ppa.type === ppaToMove?.type;
+                                const isSelf = ppa.id === ppaToMove?.id;
+                                const isSibling = ppa.type === ppaToMove?.type;
                                 const isParent = isValidParentType(
                                     ppa.type,
                                     ppaToMove?.type ?? '',
                                 );
-                                if (
-                                    (isSibling || isParent) &&
-                                    !isSelf
-                                ) {
+
+                                if ((isSibling || isParent) && !isSelf) {
                                     setSelectedTarget(ppa);
                                 }
                             }}
                             selectedValue={
-                                selectedTarget
-                                    ? String(selectedTarget.id)
-                                    : ''
+                                selectedTarget ? String(selectedTarget.id) : ''
                             }
                             selectedKey="id"
                             disabledValue={
-                                ppaToMove
-                                    ? String(ppaToMove.id)
-                                    : ''
+                                ppaToMove ? String(ppaToMove.id) : ''
                             }
                             disabledKey="id"
                             pageParamName="dialog_page"

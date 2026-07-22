@@ -1,11 +1,11 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { FolderOpen } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/base-ui-components/ui/button';
 import {
     ButtonGroup,
     ButtonGroupSeparator,
 } from '@/components/base-ui-components/ui/button-group';
+import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types';
 
 const columnHelper = createColumnHelper<Ppa>();
@@ -153,7 +153,7 @@ const columns = [
         },
     }),
     columnHelper.display({
-        id: 'action',
+        id: 'actions',
         size: 74,
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
