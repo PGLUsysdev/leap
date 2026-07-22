@@ -118,7 +118,7 @@ const columns = (ppaData: Ppa[]) => {
             },
         }),
         columnHelper.display({
-            id: 'action',
+            id: 'actions',
             size: actionSize,
             cell: ({ row, table }) => {
                 const childrenCount = row.original.children_count;

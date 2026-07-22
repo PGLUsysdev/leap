@@ -3,8 +3,13 @@ import { useState } from 'react';
 
 // Layouts & UI Components
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { CommandSelect } from '@/components/command-select';
-import { DataTable } from '@/components/data-table';
+// import { DataTable } from '@/components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 
@@ -246,23 +251,18 @@ export default function PpaPage({
 
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
                     columns={columns(ppaTree.data)}
                     data={ppaTree.data}
-                    withSearch={true}
-                    onAdd={handleAddChild}
-                    onEdit={handleEdit}
-                    onDelete={handleDeleteOpen}
-                    onReorder={handleReorder}
-                    onMove={handleMoveOpen}
-                    onShowChildren={handleShowChildren}
-                    paginationObj={ppaTree}
-                    negativeHeight={10.7}
-                    filters={filters}
-                    onlyKeys={['ppaTree', 'filters', 'current']}
-                    searchKey="search"
-                    pageKey="page"
+                    meta={{
+                        onAdd: handleAddChild,
+                        onEdit: handleEdit,
+                        onDelete: handleDeleteOpen,
+                        onReorder: handleReorder,
+                        onMove: handleMoveOpen,
+                        onShowChildren: handleShowChildren,
+                    }}
                 >
                     <div className="flex items-center gap-2">
                         {showAllOffices && parentOffices && (
@@ -315,7 +315,9 @@ export default function PpaPage({
                             )}
                     </div>
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <PpaFormDialog
                 isOpen={isFormOpen}
