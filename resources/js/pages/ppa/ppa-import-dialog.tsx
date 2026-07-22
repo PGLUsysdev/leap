@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { ChevronRight, Home, Info, Download } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
 import {
     Dialog,
@@ -12,14 +12,12 @@ import {
 } from '@/components/base-ui-components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { index } from '@/routes/ppa';
 import type { Ppa, PaginatedResponse, Filter } from '@/types';
 import columns from './columns/import-columns';
 
 interface PpaImportDialogProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    onClose: () => void;
     dialogPpaTree: PaginatedResponse<Ppa> | [];
     dialogCurrent: Ppa[];
     filters: Filter;
@@ -32,7 +30,6 @@ export default function PpaImportDialog({
     filters,
     dialogPpaTree,
     dialogCurrent,
-    onClose,
     selectedOfficeId,
 }: PpaImportDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
@@ -46,28 +43,10 @@ export default function PpaImportDialog({
         [existingPpaIds],
     );
 
-    useEffect(() => {
-        if (isOpen) {
-            router.reload({ only: ['dialogPpaTree'] });
-        }
-
-        if (!isOpen) {
-            const {
-                dialog_id,
-                dialog_page,
-                dialog_search,
-                is_dialog_open,
-                dialog_mode,
-                ...mainFilters
-            } = filters;
-
-            router.visit(index({ query: mainFilters }), {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-            });
-        }
-    }, [isOpen]);
+    const handleOpenChange = (open: boolean) => {
+        if (!open) setSelectedItems(new Map());
+        onOpenChange(open);
+    };
 
     const handleToggle = (ppa: Ppa) => {
         setSelectedItems((prev) => {
@@ -147,11 +126,6 @@ export default function PpaImportDialog({
         });
     };
 
-    const handleClose = () => {
-        onClose();
-        setSelectedItems(new Map());
-    };
-
     const handleImport = async () => {
         const ids = Array.from(selectedItems.keys());
 
@@ -168,8 +142,7 @@ export default function PpaImportDialog({
             {
                 onStart: () => setLoading(true),
                 onSuccess: () => {
-                    handleClose();
-                    // router.reload();
+                    handleOpenChange(false);
                 },
                 onFinish: () => setLoading(false),
             },
@@ -227,7 +200,7 @@ export default function PpaImportDialog({
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
             <DialogContent className="flex max-h-[95vh] flex-col gap-0 p-0 py-4 sm:max-w-[85%] [&>*:not(:nth-last-child(-n+3))]:pb-4">
                 <div className="px-4">
                     <DialogHeader>
@@ -303,7 +276,7 @@ export default function PpaImportDialog({
                             <div className="flex gap-2">
                                 <Button
                                     variant="outline"
-                                    onClick={onClose}
+                                    onClick={() => handleOpenChange(false)}
                                     disabled={loading}
                                 >
                                     Cancel

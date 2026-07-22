@@ -207,31 +207,8 @@ export default function PpaMoveDialog({
     }
 
     const handleOpenChange = (open: boolean) => {
-        // If the dialog is closing (open is false)
-        if (!open) {
-            setSelectedTarget(null);
+        if (!open) setSelectedTarget(null);
 
-            const {
-                dialog_id,
-                dialog_page,
-                dialog_search,
-                is_dialog_open,
-                dialog_mode,
-                ...mainFilters
-            } = filters;
-
-            // Use router.visit with 'only: []' to update the URL
-            // without triggering a data fetch from the server.
-            router.visit(window.location.pathname, {
-                data: mainFilters,
-                preserveState: true,
-                preserveScroll: true,
-                replace: true,
-                only: [], // Tells Inertia NOT to fetch any props
-            });
-        }
-
-        // Call the parent's handler to actually close the dialog
         onOpenChange(open);
     };
 

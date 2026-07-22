@@ -349,7 +349,6 @@ export default function PpaPage({
                 filters={filters}
                 dialogPpaTree={dialogPpaTree}
                 dialogCurrent={dialogCurrent}
-                onClose={() => setIsImportDialogOpen(false)}
                 selectedOfficeId={selectedOfficeId}
             />
 
