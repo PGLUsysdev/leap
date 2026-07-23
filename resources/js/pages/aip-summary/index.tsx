@@ -674,7 +674,70 @@ export default function AipSummaryTable({
                     }}
 
                     className="pr-3"
-                ></DataTable>
+                >
+                    <div className="flex gap-2">
+                        {can.export && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <FileDown className="mr-2 h-4 w-4" />{' '}
+                                        Export
+                                    </Button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-max min-w-max"
+                                >
+                                    <DropdownMenuItem
+                                        onClick={handlePrintPreview}
+                                    >
+                                        <div className="flex items-center">
+                                            <FileText className="mr-2 h-4 w-4" />
+
+                                            <span className="whitespace-nowrap">
+                                                Print Preview
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
+
+                                    {/*<DropdownMenuItem
+                                        onClick={handleExportToExcel}
+                                    >
+                                        <div className="flex items-center">
+                                            <FileDown className="mr-2 h-4 w-4" />
+
+                                            <span className="whitespace-nowrap">
+                                                Export to Excel
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>*/}
+
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            setIsSummaryExportOpen(true)
+                                        }
+                                    >
+                                        <div className="flex items-center">
+                                            <FileText className="mr-2 h-4 w-4" />
+
+                                            <span className="whitespace-nowrap">
+                                                Export Summary (Totals)
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+
+                        {can.import && currentScope.scope !== 'combined' && (
+                            <Button onClick={handleImportLibrary}>
+                                <Library className="mr-2 h-4 w-4" /> Import from
+                                Library
+                            </Button>
+                        )}
+                    </div>
+                </DataTable>
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>

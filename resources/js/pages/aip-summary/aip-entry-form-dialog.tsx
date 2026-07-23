@@ -6,7 +6,6 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import { CommandSelect } from '@/components/command-select';
-import { FormDialogShell } from '@/components/form-dialog-shell';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -14,8 +13,8 @@ import {
     AlertDialogTitle,
     AlertDialogDescription,
     AlertDialogFooter,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+} from '@/components/base-ui-components/ui/alert-dialog';
+import { Button } from '@/components/base-ui-components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
     Dialog,
@@ -24,7 +23,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/base-ui-components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -35,18 +34,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     Field,
-    FieldContent,
     FieldError,
     FieldLabel,
-} from '@/components/ui/field';
-import { Form } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/base-ui-components/ui/scroll-area';
 import {
     Table,
     TableBody,
@@ -54,8 +51,8 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
+} from '@/components/base-ui-components/ui/table';
+import { Textarea } from '@/components/base-ui-components/ui/textarea';
 import PpmpFormDialog from '@/pages/ppmp/form-dialog';
 import PreviewPdfDialog from '@/pages/ps-breakdown/pdf-preview-dialog';
 import { index } from '@/routes/aip/summary/ppmp';
@@ -601,45 +598,21 @@ export default function AipEntryFormDialog({
 
     return (
         <>
-            <FormDialogShell
-                open={open}
-                onOpenChange={handleOpenChange}
-                title={isEdit ? 'Edit PPA' : 'Add to AIP Summary'}
-                description={
-                    <>
-                        Manage implementation details and budget allocation for
-                        <span className="mx-1 font-semibold text-foreground italic">
-                            "{data?.name}"
-                        </span>
-                        for the Fiscal Year {fiscalYear.year}.
-                    </>
-                }
-                isLoading={isLoading}
-                formId="aip-form"
-                onCancel={cleanupAndClose}
-                submitDisabled={!canEdit || !hasSaveWorthyChanges}
-                submitLabel={isEdit ? 'Save Changes' : 'Add Entry'}
-                submittingLabel="Saving..."
-                className="sm:max-w-[80%]"
-                extraFooter={
-                    <div className="flex flex-1 items-center gap-2 self-center text-left">
-                        {isDirty ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                                Unsaved changes
+            <Dialog open={open} onOpenChange={handleOpenChange} modal={isLoading}>
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-[80%]">
+                    <DialogHeader>
+                        <DialogTitle>{isEdit ? 'Edit PPA' : 'Add to AIP Summary'}</DialogTitle>
+                        <DialogDescription>
+                            Manage implementation details and budget allocation for
+                            <span className="mx-1 font-semibold text-foreground italic">
+                                "{data?.name}"
                             </span>
-                        ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                Saved
-                            </span>
-                        )}
-                    </div>
-                }
-            >
-                <div className="flex min-h-0">
-                    <ScrollArea className="w-full">
-                        <Form {...form}>
+                            for the Fiscal Year {fiscalYear.year}.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex min-h-0 flex-1">
+                        <ScrollArea className="w-full pr-3">
                             <form
                                 id="aip-form"
                                 onSubmit={form.handleSubmit(onSubmit)}
@@ -648,32 +621,28 @@ export default function AipEntryFormDialog({
                                 <div className="space-y-4 px-4">
                                     <div className="grid grid-cols-5 gap-6">
                                         <Field className="col-span-1">
-                                            <FieldContent>
-                                                <FieldLabel>
-                                                    AIP Reference Code
-                                                </FieldLabel>
+                                            <FieldLabel>
+                                                AIP Reference Code
+                                            </FieldLabel>
 
-                                                <Input
-                                                    value={data?.full_code}
-                                                    readOnly
-                                                    disabled
-                                                    placeholder="AUTO-GENERATED"
-                                                />
-                                            </FieldContent>
+                                            <Input
+                                                value={data?.full_code}
+                                                readOnly
+                                                disabled
+                                                placeholder="AUTO-GENERATED"
+                                            />
                                         </Field>
 
                                         <Field className="col-span-2">
-                                            <FieldContent>
-                                                <FieldLabel>
-                                                    PPA Title
-                                                </FieldLabel>
+                                            <FieldLabel>
+                                                PPA Title
+                                            </FieldLabel>
 
-                                                <Input
-                                                    value={data?.name || ''}
-                                                    readOnly
-                                                    disabled
-                                                />
-                                            </FieldContent>
+                                            <Input
+                                                value={data?.name || ''}
+                                                readOnly
+                                                disabled
+                                            />
                                         </Field>
 
                                         <div className="col-span-2">
@@ -689,82 +658,78 @@ export default function AipEntryFormDialog({
                                                             fieldState.invalid
                                                         }
                                                     >
-                                                        <FieldContent>
-                                                            <FieldLabel
-                                                                htmlFor={
-                                                                    field.name
-                                                                }
-                                                            >
-                                                                Office
-                                                            </FieldLabel>
+                                                        <FieldLabel>
+                                                            Office
+                                                        </FieldLabel>
 
-                                                            <CommandSelect
-                                                                disabled={
-                                                                    !canEdit
-                                                                }
-                                                                options={
-                                                                    filteredOffices
-                                                                }
-                                                                value={
-                                                                    field.value
-                                                                }
-                                                                onChange={(
-                                                                    val,
-                                                                ) =>
-                                                                    field.onChange(
-                                                                        String(
-                                                                            val,
-                                                                        ),
-                                                                    )
-                                                                }
-                                                                showClear={
-                                                                    false
-                                                                }
-                                                                placeholder="Select implementing office..."
-                                                                searchPlaceholder="Type to search..."
-                                                                getOptionValue={(
-                                                                    office,
-                                                                ) =>
+                                                        <CommandSelect
+                                                            disabled={
+                                                                !canEdit
+                                                            }
+                                                            options={
+                                                                filteredOffices
+                                                            }
+                                                            value={
+                                                                field.value
+                                                            }
+                                                            onChange={(
+                                                                val,
+                                                            ) =>
+                                                                field.onChange(
                                                                     String(
-                                                                        office.id,
-                                                                    )
-                                                                }
-                                                                getOptionSearchText={(
-                                                                    office,
-                                                                ) =>
-                                                                    `${office.acronym} ${office.name}`
-                                                                }
-                                                                renderTrigger={(
-                                                                    office,
-                                                                ) => (
-                                                                    <span className="truncate">
-                                                                        {
-                                                                            office.name
-                                                                        }
+                                                                        val,
+                                                                    ),
+                                                                )
+                                                            }
+                                                            showClear={
+                                                                false
+                                                            }
+                                                            placeholder="Select implementing office..."
+                                                            searchPlaceholder="Type to search..."
+                                                            getOptionValue={(
+                                                                office,
+                                                            ) =>
+                                                                String(
+                                                                    office.id,
+                                                                )
+                                                            }
+                                                            getOptionSearchText={(
+                                                                office,
+                                                            ) =>
+                                                                `${office.acronym} ${office.name}`
+                                                            }
+                                                            renderTrigger={(
+                                                                office,
+                                                            ) => (
+                                                                <span className="truncate">
+                                                                    {
+                                                                        office.name
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                            renderOption={(
+                                                                office,
+                                                            ) => (
+                                                                <div className="grid w-full grid-cols-[80px_1fr] items-center gap-4 py-1 text-sm">
+                                                                    <span className="font-bold text-muted-foreground uppercase">
+                                                                        {office.acronym ||
+                                                                            '-'}
                                                                     </span>
-                                                                )}
-                                                                renderOption={(
-                                                                    office,
-                                                                ) => (
-                                                                    <div className="grid w-full grid-cols-[80px_1fr] items-center gap-4 py-1 text-sm">
-                                                                        <span className="font-bold text-muted-foreground uppercase">
-                                                                            {office.acronym ||
-                                                                                '-'}
-                                                                        </span>
-                                                                        <span className="truncate">
-                                                                            {office.name ||
-                                                                                '-'}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            />
+                                                                    <span className="truncate">
+                                                                        {office.name ||
+                                                                            '-'}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        />
 
+                                                        {fieldState.invalid && (
                                                             <FieldError
                                                                 errors={[
                                                                     fieldState.error,
                                                                 ]}
                                                             />
-                                                        </FieldContent>
+                                                        )}
                                                     </Field>
                                                 )}
                                             />
@@ -782,50 +747,50 @@ export default function AipEntryFormDialog({
                                                     fieldState,
                                                 }) => (
                                                     <Field
-                                                        data-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                    >
-                                                        <FieldContent>
-                                                            <FieldLabel>
-                                                                Expected Output
-                                                            </FieldLabel>
+                                                         data-invalid={
+                                                             fieldState.invalid
+                                                         }
+                                                     >
+                                                         <FieldLabel htmlFor="expected-output">
+                                                             Expected Output
+                                                         </FieldLabel>
 
-                                                            <Textarea
-                                                                {...field}
-                                                                className="min-h-25"
-                                                                disabled={
-                                                                    !canEdit
-                                                                }
-                                                            />
+                                                         <Textarea
+                                                             {...field}
+                                                             id="expected-output"
+                                                             className="min-h-25"
+                                                             disabled={
+                                                                 !canEdit
+                                                             }
+                                                         />
 
-                                                            <FieldError
-                                                                errors={[
-                                                                    fieldState.error,
-                                                                ]}
-                                                            />
-                                                        </FieldContent>
-                                                    </Field>
-                                                )}
-                                            />
-                                        </div>
+                                                          {fieldState.invalid && (
+                                                              <FieldError
+                                                                  errors={[
+                                                                     fieldState.error,
+                                                                 ]}
+                                                              />
+                                                          )}
+                                                      </Field>
+                                                  )}
+                                              />
+                                         </div>
 
-                                        <div className="col-span-2 space-y-4">
-                                            {['start_date', 'end_date'].map(
-                                                (key) => (
-                                                    <Controller
-                                                        key={key}
-                                                        name={key as any}
-                                                        control={form.control}
-                                                        render={({ field }) => (
-                                                            <Field>
-                                                                <FieldContent>
-                                                                    <FieldLabel className="capitalize">
-                                                                        {key.replace(
-                                                                            '_',
-                                                                            ' ',
-                                                                        )}
-                                                                    </FieldLabel>
+                                         <div className="col-span-2 space-y-4">
+                                             {['start_date', 'end_date'].map(
+                                                 (key) => (
+                                                     <Controller
+                                                         key={key}
+                                                         name={key as any}
+                                                         control={form.control}
+                                                         render={({ field }) => (
+                                                             <Field>
+                                                                 <FieldLabel className="capitalize">
+                                                                     {key.replace(
+                                                                         '_',
+                                                                         ' ',
+                                                                     )}
+                                                                 </FieldLabel>
 
                                                                     <Popover>
                                                                         <PopoverTrigger
@@ -874,23 +839,21 @@ export default function AipEntryFormDialog({
                                                                                 }
                                                                             />
                                                                         </PopoverContent>
-                                                                    </Popover>
-                                                                </FieldContent>
-                                                            </Field>
-                                                        )}
-                                                    />
-                                                ),
-                                            )}
-                                        </div>
-                                    </div>
+                                                                     </Popover>
+                                                             </Field>
+                                                         )}
+                                                     />
+                                                 ),
+                                             )}
+                                         </div>
+                                     </div>
 
-                                    {/* Funding Table */}
-                                    <Field>
-                                        <FieldContent>
-                                            <div className="flex items-end justify-between">
-                                                <FieldLabel>
-                                                    Funding Distribution
-                                                </FieldLabel>
+                                     {/* Funding Table */}
+                                     <Field>
+                                         <div className="flex items-end justify-between">
+                                             <FieldLabel>
+                                                 Funding Distribution
+                                             </FieldLabel>
                                                 <Button
                                                     type="button"
                                                     size="sm"
@@ -1493,14 +1456,43 @@ export default function AipEntryFormDialog({
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </div>
-                                        </FieldContent>
                                     </Field>
                                 </div>
                             </form>
-                        </Form>
-                    </ScrollArea>
-                </div>
-            </FormDialogShell>
+                        </ScrollArea>
+                    </div>
+
+                    <DialogFooter>
+                        <div className="flex flex-1 items-center gap-2 self-center text-left">
+                            {isDirty ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                    Unsaved changes
+                                </span>
+                            ) : (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    Saved
+                                </span>
+                            )}
+                        </div>
+
+                        <Button type="button" variant="outline" onClick={cleanupAndClose} disabled={isLoading}>
+                            Cancel
+                        </Button>
+
+                        <Button type="submit" form="aip-form" disabled={isLoading || !canEdit || !hasSaveWorthyChanges}>
+                            {isLoading ? (
+                                <span className="flex items-center gap-1">
+                                    Saving...
+                                </span>
+                            ) : (
+                                isEdit ? 'Save Changes' : 'Add Entry'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {ppmpDialogOpen && watchedSources?.[ppmpSourceIndex] && (
                 <PpmpFormDialog
