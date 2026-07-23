@@ -23,11 +23,17 @@ import {
     ChevronLeft,
     ChevronsRight,
     ChevronsLeft,
+    SearchIcon,
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from '@/components/base-ui-components/ui/input-group';
 import {
     ScrollArea,
     ScrollBar,
@@ -304,32 +310,25 @@ export default function Table<TData>({
     }, [rows]);
 
     return (
-        <div
-            className={cn(
-                'flex h-full min-h-0 flex-col',
-                // variant !== 'select' && 'pr-3',
-                className,
-            )}
-            // className={cn(
-            //     'flex h-full min-h-0 flex-col',
-            //     variant !== 'select' && 'pr-3',
-            //     className,
-            // )}
-        >
+        <div className={cn('flex h-full min-h-0 flex-col', className)}>
             <div
                 className={cn(
-                    'flex flex-none justify-between p-4',
+                    'flex flex-none justify-between gap-2 p-4',
                     variant === 'select' && 'pt-0',
                 )}
             >
-                <Input
-                    value={globalFilter ?? ''}
-                    onChange={(e) =>
-                        table.setGlobalFilter(String(e.target.value))
-                    }
-                    placeholder="Search..."
-                    className="w-100"
-                />
+                <InputGroup className="w-100">
+                    <InputGroupInput
+                        value={globalFilter ?? ''}
+                        onChange={(e) =>
+                            table.setGlobalFilter(String(e.target.value))
+                        }
+                        placeholder="Search..."
+                    />
+                    <InputGroupAddon>
+                        <SearchIcon />
+                    </InputGroupAddon>
+                </InputGroup>
 
                 {children}
             </div>
@@ -582,95 +581,97 @@ export default function Table<TData>({
             </ScrollArea>
 
             {paginationData && (
-                <div className="flex items-center gap-1 bg-background px-4 py-2">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => goToPage(1)}
-                        disabled={paginationData.current_page === 1}
-                    >
-                        <ChevronsLeft />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                            goToPage(paginationData.current_page - 1)
-                        }
-                        disabled={paginationData.current_page === 1}
-                    >
-                        <ChevronLeft />
-                    </Button>
-                    <div className="flex w-24 items-center justify-between pr-2">
-                        <Input
-                            className="w-12"
-                            value={pageInput}
-                            onChange={(e) => {
-                                const value = e.currentTarget.value;
+                <div className="flex w-full justify-center bg-background">
+                    <div className="flex gap-1 px-4 py-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => goToPage(1)}
+                            disabled={paginationData.current_page === 1}
+                        >
+                            <ChevronsLeft />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                                goToPage(paginationData.current_page - 1)
+                            }
+                            disabled={paginationData.current_page === 1}
+                        >
+                            <ChevronLeft />
+                        </Button>
+                        <div className="flex w-24 items-center justify-between pr-2">
+                            <Input
+                                className="w-12"
+                                value={pageInput}
+                                onChange={(e) => {
+                                    const value = e.currentTarget.value;
 
-                                if (value === '') {
-                                    setPageInput('');
+                                    if (value === '') {
+                                        setPageInput('');
 
-                                    return;
-                                }
+                                        return;
+                                    }
 
-                                if (!/^\d+$/.test(value)) {
-                                    return;
-                                }
+                                    if (!/^\d+$/.test(value)) {
+                                        return;
+                                    }
 
-                                setPageInput(value);
-                            }}
-                            onBlur={() => {
-                                if (pageInput === '') {
-                                    setPageInput(
-                                        String(paginationData.current_page),
+                                    setPageInput(value);
+                                }}
+                                onBlur={() => {
+                                    if (pageInput === '') {
+                                        setPageInput(
+                                            String(paginationData.current_page),
+                                        );
+
+                                        return;
+                                    }
+
+                                    const page = Math.max(
+                                        1,
+                                        Math.min(
+                                            Number(pageInput),
+                                            paginationData.last_page,
+                                        ),
                                     );
 
-                                    return;
-                                }
-
-                                const page = Math.max(
-                                    1,
-                                    Math.min(
-                                        Number(pageInput),
-                                        paginationData.last_page,
-                                    ),
-                                );
-
-                                setPageInput(String(page));
-                            }}
-                            onFocus={(e) => e.target.select()}
-                            pattern="[0-9]*"
-                            inputMode="numeric"
-                            autoComplete="off"
-                        ></Input>
-                        <span>/</span>
-                        <span>{paginationData.last_page}</span>
+                                    setPageInput(String(page));
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                pattern="[0-9]*"
+                                inputMode="numeric"
+                                autoComplete="off"
+                            ></Input>
+                            <span>/</span>
+                            <span>{paginationData.last_page}</span>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                                goToPage(paginationData.current_page + 1)
+                            }
+                            disabled={
+                                paginationData.current_page ===
+                                paginationData.last_page
+                            }
+                        >
+                            <ChevronRight />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => goToPage(paginationData.last_page)}
+                            disabled={
+                                paginationData.current_page ===
+                                paginationData.last_page
+                            }
+                        >
+                            <ChevronsRight />
+                        </Button>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                            goToPage(paginationData.current_page + 1)
-                        }
-                        disabled={
-                            paginationData.current_page ===
-                            paginationData.last_page
-                        }
-                    >
-                        <ChevronRight />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => goToPage(paginationData.last_page)}
-                        disabled={
-                            paginationData.current_page ===
-                            paginationData.last_page
-                        }
-                    >
-                        <ChevronsRight />
-                    </Button>
                 </div>
             )}
         </div>
