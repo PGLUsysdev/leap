@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
 import { index as aipIndex, summary } from '@/routes/aip';
 import type { ChartOfAccount, Position, PsBreakdownItem } from '@/types';
 import getPsBreakdownCols from './columns/ps-breakdown-cols';
@@ -70,9 +70,7 @@ export default function PsBreakdown({
                 <DataTable
                     data={positions}
                     columns={psBreakdownCols}
-                    withFooter={true}
-                    withSearch={true}
-                    negativeHeight={7}
+                    showFooter={true}
                 >
                     {/*<div>
                         {can?.export && (

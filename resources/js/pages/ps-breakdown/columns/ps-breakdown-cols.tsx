@@ -1,6 +1,6 @@
 import { router } from "@inertiajs/react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/base-ui-components/ui/input";
 import { getCellNumericValue } from "@/lib/ps-calculations";
 import type { ChartOfAccount, Position } from "@/types";
 import type { PsBreakdownItem } from "@/types";
