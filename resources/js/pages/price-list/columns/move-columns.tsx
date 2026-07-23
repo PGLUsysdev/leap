@@ -1,8 +1,8 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { Pencil, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { PriceList } from "@/types";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { PriceList } from "@/types";
 
 const columnHelper = createColumnHelper<PriceList>();
 

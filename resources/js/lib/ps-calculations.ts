@@ -56,15 +56,20 @@ export function computePsCoaTotals(
     const totals: Record<string, number> = {};
 
     for (const coa of chartOfAccounts) {
-        if (coa.expense_class !== "PS") continue;
+        if (coa.expense_class !== "PS") {
+continue;
+}
 
         let total = 0;
+
         for (const pos of positions) {
             const val = getCellNumericValue(pos, coa, rates, annualRateMap);
+
             if (val !== null) {
                 total += val;
             }
         }
+
         totals[coa.account_number] = total;
     }
 

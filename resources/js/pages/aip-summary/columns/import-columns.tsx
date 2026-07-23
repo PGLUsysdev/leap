@@ -1,10 +1,10 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { FolderOpen, CheckCircle2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Ppa } from "@/types";
 import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "@/components/ui/button-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { Ppa } from "@/types";
 
 type SelectablePpa = Ppa & { _isSelected?: boolean; _isAdded?: boolean };
 

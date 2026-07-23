@@ -1,4 +1,7 @@
+import { router } from "@inertiajs/react";
 import { useState } from "react";
+import { DataTable } from "@/components/data-table";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -7,14 +10,6 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
-import type { PaginatedResponse, Filter, PriceList } from "@/types";
-import columns from "./columns/move-columns";
-import { DataTable } from "@/components/data-table";
-import { Button } from "@/components/ui/button";
-import { router } from "@inertiajs/react";
-import { reorder } from "@/routes/price-lists";
-import { Spinner } from "@/components/ui/spinner";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Item,
     ItemActions,
@@ -23,6 +18,11 @@ import {
     ItemMedia,
     ItemTitle,
 } from "@/components/ui/item";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Spinner } from "@/components/ui/spinner";
+import { reorder } from "@/routes/price-lists";
+import type { PaginatedResponse, Filter, PriceList } from "@/types";
+import columns from "./columns/move-columns";
 
 interface MoveDialogProps {
     open: boolean;
@@ -54,7 +54,9 @@ export default function MoveDialog({
     }
 
     function handleMoveItem(item: PriceList, moveTo: PriceList | null, position: "up" | "down") {
-        if (!moveTo) return;
+        if (!moveTo) {
+return;
+}
 
         router.visit(
             reorder({

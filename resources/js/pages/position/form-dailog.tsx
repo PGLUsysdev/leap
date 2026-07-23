@@ -1,10 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createColumnHelper } from '@tanstack/react-table';
 import { router } from '@inertiajs/react';
+import { createColumnHelper } from '@tanstack/react-table';
 import { ChevronsUpDown, Delete } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import * as z from 'zod';
+import { TableSelect } from '@/components/base-ui-components/table-select';
 import { Button } from '@/components/base-ui-components/ui/button';
 import {
     ButtonGroup,
@@ -36,7 +37,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/base-ui-components/ui/select';
-import { TableSelect } from '@/components/base-ui-components/table-select';
 import { CommandSelect } from '@/components/command-select';
 import type { Ios, Office, PaginatedResponse, Position } from '@/types';
 

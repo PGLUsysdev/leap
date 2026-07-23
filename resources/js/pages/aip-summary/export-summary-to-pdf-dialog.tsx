@@ -1,6 +1,6 @@
 // resources/js/pages/aip-summary/export-summary-to-pdf-dialog.tsx
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Page, Text, View, Document, StyleSheet, PDFViewer } from "@react-pdf/renderer";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import type { FiscalYear, Ppa } from "@/types";
 
 interface Props {
@@ -21,11 +21,15 @@ const collectAllFundingSources = (ppas: Ppa[]) => {
                     sources.push(...aip.ppa_funding_sources);
                 }
             }
-            if (ppa.children) traverse(ppa.children);
+
+            if (ppa.children) {
+traverse(ppa.children);
+}
         }
     };
 
     traverse(ppas);
+
     return sources;
 };
 
@@ -35,6 +39,7 @@ const computeTotals = (fundingSources: any[]) => {
 
     for (const fs of fundingSources) {
         const id = fs.funding_source_id;
+
         if (!map.has(id)) {
             map.set(id, {
                 funding_source: fs.funding_source,
@@ -46,6 +51,7 @@ const computeTotals = (fundingSources: any[]) => {
                 ccet_mitigation: 0,
             });
         }
+
         const entry = map.get(id);
         entry.ps_amount += parseFloat(fs.ps_amount || 0);
         entry.mooe_amount += parseFloat(fs.mooe_amount || 0);
@@ -64,6 +70,7 @@ const computeTotals = (fundingSources: any[]) => {
             acc.co_amount += row.co_amount;
             acc.ccet_adaptation += row.ccet_adaptation;
             acc.ccet_mitigation += row.ccet_mitigation;
+
             return acc;
         },
         {
@@ -122,7 +129,10 @@ export default function ExportSummaryToPdfDialog({
     });
 
     const formatNumber = (value: number) => {
-        if (!value) return "-";
+        if (!value) {
+return "-";
+}
+
         return value.toLocaleString("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,

@@ -1,3 +1,5 @@
+import { Page, Text, View, Document, PDFViewer } from "@react-pdf/renderer";
+import { useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -6,8 +8,6 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import type { AipEntry, FundingSource, Ppmp } from "@/types";
-import { Page, Text, View, Document, PDFViewer } from "@react-pdf/renderer";
-import { useMemo } from "react";
 
 interface ExpenseAccountSummaryDialogProps {
     open: boolean;
@@ -33,6 +33,7 @@ const sumMonths = (priceLists: any[], months: string[]) => {
             (mAcc, m) => mAcc + (parseFloat(item[`${m}_amount`]) || 0),
             0,
         );
+
         return acc + itemSum;
     }, 0);
 };
@@ -44,18 +45,27 @@ const groupByChartOfAccount = (ppmps: Ppmp[]) => {
 
     for (const ppmp of ppmps) {
         const coa = ppmp.ppmp_price_list?.chart_of_account_ppmp_category?.chart_of_account;
-        if (!coa) continue;
+
+        if (!coa) {
+continue;
+}
+
         const expenseClass = coa.expense_class;
-        if (expenseClass !== "MOOE" && expenseClass !== "CO") continue; // only MOOE and CO
+
+        if (expenseClass !== "MOOE" && expenseClass !== "CO") {
+continue;
+} // only MOOE and CO
 
         const targetMap = expenseClass === "MOOE" ? mooeMap : coMap;
         const coaId = coa.id;
+
         if (!targetMap[coaId]) {
             targetMap[coaId] = {
                 ...coa,
                 price_lists: [],
             };
         }
+
         targetMap[coaId].price_lists.push({
             ...ppmp.ppmp_price_list,
             ...ppmp,

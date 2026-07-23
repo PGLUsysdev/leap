@@ -55,6 +55,7 @@ describe('formSchema Validation Suite', () => {
                 const invalidData = { ...validMock, [field]: 0 };
                 const result = formSchema.safeParse(invalidData);
                 expect(result.success).toBe(false);
+
                 if (!result.success) {
                     const issue = result.error.issues.find((i) =>
                         i.path.includes(field),
@@ -81,6 +82,7 @@ describe('formSchema Validation Suite', () => {
                 price: '1,200.00',
             });
             expect(result.success).toBe(false);
+
             if (!result.success) {
                 expect(result.error.issues[0].message).toBe(
                     'Price must contain only numeric characters',

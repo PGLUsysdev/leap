@@ -1,7 +1,7 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import type { Ppa } from "@/types";
-import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import type { Ppa } from "@/types";
 
 const columnHelper = createColumnHelper<Ppa>();
 
@@ -16,6 +16,7 @@ const columns = [
         size: 300,
         cell: (info) => {
             const ppa = info.row.original;
+
             return (
                 <div
                     style={{ paddingLeft: `${info.row.depth * 24}px` }}
@@ -44,6 +45,7 @@ const columns = [
         header: "Status",
         cell: (value) => {
             const active = value.getValue<boolean>();
+
             return active ? (
                 <Badge variant="default">
                     <CheckCircle2 className="mr-1 h-3 w-3" /> Active

@@ -48,6 +48,7 @@ const SidebarContext = React.createContext<SidebarContextProps | null>(null);
 
 function useSidebar() {
     const context = React.useContext(SidebarContext);
+
     if (!context) {
         throw new Error('useSidebar must be used within a SidebarProvider.');
     }
@@ -78,6 +79,7 @@ function SidebarProvider({
     const setOpen = React.useCallback(
         (value: boolean | ((value: boolean) => boolean)) => {
             const openState = typeof value === 'function' ? value(open) : value;
+
             if (setOpenProp) {
                 setOpenProp(openState);
             } else {
@@ -110,6 +112,7 @@ function SidebarProvider({
         };
 
         window.addEventListener('keydown', handleKeyDown);
+
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [toggleSidebar]);
 

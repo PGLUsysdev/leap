@@ -44,7 +44,10 @@ export default function PpaImportDialog({
     );
 
     const handleOpenChange = (open: boolean) => {
-        if (!open) setSelectedItems(new Map());
+        if (!open) {
+setSelectedItems(new Map());
+}
+
         onOpenChange(open);
     };
 
@@ -80,6 +83,7 @@ export default function PpaImportDialog({
                     });
                 }
             }
+
             return next;
         });
     };
@@ -92,6 +96,7 @@ export default function PpaImportDialog({
                 // --- SELECT ALL ---
                 ppas.forEach((ppa) => {
                     next.set(ppa.id, ppa);
+
                     // Upward selection
                     if (dialogCurrent && dialogCurrent.length > 0) {
                         dialogCurrent.forEach((ancestor) => {
@@ -129,7 +134,9 @@ export default function PpaImportDialog({
     const handleImport = async () => {
         const ids = Array.from(selectedItems.keys());
 
-        if (ids.length === 0) return;
+        if (ids.length === 0) {
+return;
+}
 
         setLoading(true);
 
@@ -150,7 +157,9 @@ export default function PpaImportDialog({
     };
 
     const paginationData = useMemo(() => {
-        if (!dialogPpaTree || Array.isArray(dialogPpaTree)) return undefined;
+        if (!dialogPpaTree || Array.isArray(dialogPpaTree)) {
+return undefined;
+}
 
         const { data, ...rest } = dialogPpaTree;
 
@@ -158,7 +167,9 @@ export default function PpaImportDialog({
     }, [dialogPpaTree]);
 
     const displayData = useMemo(() => {
-        if (!dialogPpaTree || Array.isArray(dialogPpaTree)) return [];
+        if (!dialogPpaTree || Array.isArray(dialogPpaTree)) {
+return [];
+}
 
         return dialogPpaTree.data.map((ppa) => ({
             ...ppa,

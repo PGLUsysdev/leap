@@ -1,12 +1,31 @@
-import { type ReactElement, useState, useRef, useMemo, useEffect } from "react";
+import { router } from '@inertiajs/react';
 import {
-    type ColumnDef,
     flexRender,
     getCoreRowModel,
     useReactTable,
     getExpandedRowModel,
     getFilteredRowModel,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import {
+    ChevronFirst,
+    ChevronLast,
+    ChevronLeft,
+    ChevronRight,
+    SearchIcon,
+} from 'lucide-react';
+import { useState, useRef, useMemo, useEffect } from 'react';
+import type { ReactElement } from 'react';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from '@/components/ui/input-group';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Table,
     TableBody,
@@ -15,17 +34,9 @@ import {
     TableHeader,
     TableRow,
     TableFooter,
-} from "@/components/ui/table";
-import { getCommonPinningStyles } from "@/pages/utils/column-pinning-styles";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useVirtualizer } from "@tanstack/react-virtual";
-import { AlertErrorDialog } from "@/components/alert-error-dialog";
-import { router } from "@inertiajs/react";
-import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, SearchIcon } from "lucide-react";
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import type { PaginatedResponse, Filter } from "@/types";
+} from '@/components/ui/table';
+import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
+import type { PaginatedResponse, Filter } from '@/types';
 
 interface DataTableProps<TData extends { id: unknown }> {
     columns: ColumnDef<TData, any>[];
@@ -38,7 +49,10 @@ interface DataTableProps<TData extends { id: unknown }> {
     onEdit?: (data: TData) => void;
     onDelete?: (data: TData) => void;
     onAdd?: (parent: TData, childType: any) => void;
-    onUpdateStatus?: (data: TData, status: "draft" | "open" | "locked" | "archived") => void;
+    onUpdateStatus?: (
+        data: TData,
+        status: 'draft' | 'open' | 'locked' | 'archived',
+    ) => void;
     onOpen?: (data: TData) => void;
     onGeneratePdf?: (data: TData) => void;
     onOpenPpmpSummary?: (data: TData) => void;
@@ -87,8 +101,8 @@ export function DataTable<TData extends { id: unknown }>({
     withFooter = false,
     negativeHeight = 8,
     onlyKeys = [],
-    searchKey = "search",
-    pageKey = "page",
+    searchKey = 'search',
+    pageKey = 'page',
     meta,
 }: DataTableProps<TData>) {
     const [errorDialogOpen, setErrorDialogOpen] = useState(false);
@@ -98,7 +112,7 @@ export function DataTable<TData extends { id: unknown }>({
     const [rowSelection, setRowSelection] = useState({});
 
     // for global search
-    const [searchValue, setSearchValue] = useState("");
+    const [searchValue, setSearchValue] = useState('');
 
     // logic for server-side filtering ex. search
     const isServerSide = useMemo(() => {
@@ -107,7 +121,7 @@ export function DataTable<TData extends { id: unknown }>({
 
     // sync local state with props when url changes via browser back/forward
     useEffect(() => {
-        const urlSearchValue = filters?.[searchKey] || "";
+        const urlSearchValue = filters?.[searchKey] || '';
 
         if (searchValue !== urlSearchValue) {
             setSearchValue(urlSearchValue);
@@ -116,10 +130,12 @@ export function DataTable<TData extends { id: unknown }>({
 
     // Debounce and Trigger Inertia
     useEffect(() => {
-        if (!isServerSide) return;
+        if (!isServerSide) {
+            return;
+        }
 
         const delayDebounceFn = setTimeout(() => {
-            const currentFilterValue = filters?.[searchKey] || "";
+            const currentFilterValue = filters?.[searchKey] || '';
 
             if (searchValue !== currentFilterValue) {
                 router.get(
@@ -134,7 +150,9 @@ export function DataTable<TData extends { id: unknown }>({
                         replace: true,
                         preserveScroll: true,
                         only:
-                            onlyKeys && Array.isArray(onlyKeys) && onlyKeys.length > 0
+                            onlyKeys &&
+                            Array.isArray(onlyKeys) &&
+                            onlyKeys.length > 0
                                 ? onlyKeys
                                 : undefined,
                     },
@@ -153,7 +171,7 @@ export function DataTable<TData extends { id: unknown }>({
         getCoreRowModel: getCoreRowModel(),
 
         initialState: {
-            columnPinning: { right: ["action"] },
+            columnPinning: { right: ['action'] },
         },
 
         // server-side search
@@ -204,7 +222,9 @@ export function DataTable<TData extends { id: unknown }>({
                         ? paginationObj.current_page - 1
                         : 0,
                 pageSize:
-                    paginationObj && paginationObj !== undefined && !Array.isArray(paginationObj)
+                    paginationObj &&
+                    paginationObj !== undefined &&
+                    !Array.isArray(paginationObj)
                         ? paginationObj.per_page
                         : 0,
             },
@@ -216,7 +236,9 @@ export function DataTable<TData extends { id: unknown }>({
         // for pagination
         manualPagination: isServerSide,
         pageCount:
-            paginationObj && paginationObj !== undefined && !Array.isArray(paginationObj)
+            paginationObj &&
+            paginationObj !== undefined &&
+            !Array.isArray(paginationObj)
                 ? paginationObj.last_page
                 : undefined,
 
@@ -232,7 +254,7 @@ export function DataTable<TData extends { id: unknown }>({
         count: rows.length,
         getScrollElement: () =>
             tableContainerRef.current?.querySelector(
-                "[data-radix-scroll-area-viewport]",
+                '[data-radix-scroll-area-viewport]',
             ) as HTMLElement,
         estimateSize: () => 50,
         overscan: 10,
@@ -243,12 +265,18 @@ export function DataTable<TData extends { id: unknown }>({
     const virtualRows = rowVirtualizer.getVirtualItems();
     const totalSize = rowVirtualizer.getTotalSize();
 
-    const paddingTop = virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
+    const paddingTop =
+        virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
     const paddingBottom =
-        virtualRows.length > 0 ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0) : 0;
+        virtualRows.length > 0
+            ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0)
+            : 0;
 
     const navigate = (url: string | null) => {
-        if (!url) return;
+        if (!url) {
+            return;
+        }
+
         router.get(
             url,
             {},
@@ -271,9 +299,11 @@ export function DataTable<TData extends { id: unknown }>({
 
         rows.forEach((row, index) => {
             const id = (row.original as any).id;
+
             if (firstIndexes[id] === undefined) {
                 firstIndexes[id] = index;
             }
+
             counts[id] = (counts[id] || 0) + 1;
         });
 
@@ -291,6 +321,7 @@ export function DataTable<TData extends { id: unknown }>({
             if (firstVisibleIdx[id] === undefined) {
                 firstVisibleIdx[id] = index;
             }
+
             // Count how many funding source rows for this PPA are currently visible
             visibleCounts[id] = (visibleCounts[id] || 0) + 1;
         });
@@ -332,46 +363,49 @@ export function DataTable<TData extends { id: unknown }>({
                 >
                     <Table
                         style={{
-                            tableLayout: "fixed",
+                            tableLayout: 'fixed',
                             minWidth: `${table.getCenterTotalSize()}px`,
-                            width: "100%",
+                            width: '100%',
                         }}
                     >
                         <TableHeader>
-                            {table.getHeaderGroups().map((headerGroup, groupIndex) => (
-                                <TableRow
-                                    key={headerGroup.id}
-                                    className="sticky bg-background"
-                                    style={{
-                                        top: `${groupIndex * 40}px`,
-                                        zIndex: 5 - groupIndex,
-                                    }}
-                                >
-                                    {headerGroup.headers.map((header) => (
-                                        <TableHead
-                                            key={header.id}
-                                            colSpan={header.colSpan}
-                                            className="bg-background"
-                                            style={{
-                                                width: `${header.getSize()}px`,
-                                                ...getCommonPinningStyles(
-                                                    header.column,
-                                                    table,
-                                                    false,
-                                                    true,
-                                                ),
-                                            }}
-                                        >
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                      header.column.columnDef.header,
-                                                      header.getContext(),
-                                                  )}
-                                        </TableHead>
-                                    ))}
-                                </TableRow>
-                            ))}
+                            {table
+                                .getHeaderGroups()
+                                .map((headerGroup, groupIndex) => (
+                                    <TableRow
+                                        key={headerGroup.id}
+                                        className="sticky bg-background"
+                                        style={{
+                                            top: `${groupIndex * 40}px`,
+                                            zIndex: 5 - groupIndex,
+                                        }}
+                                    >
+                                        {headerGroup.headers.map((header) => (
+                                            <TableHead
+                                                key={header.id}
+                                                colSpan={header.colSpan}
+                                                className="bg-background"
+                                                style={{
+                                                    width: `${header.getSize()}px`,
+                                                    ...getCommonPinningStyles(
+                                                        header.column,
+                                                        table,
+                                                        false,
+                                                        true,
+                                                    ),
+                                                }}
+                                            >
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                          header.column
+                                                              .columnDef.header,
+                                                          header.getContext(),
+                                                      )}
+                                            </TableHead>
+                                        ))}
+                                    </TableRow>
+                                ))}
                         </TableHeader>
 
                         <TableBody>
@@ -395,65 +429,90 @@ export function DataTable<TData extends { id: unknown }>({
                                         <TableRow
                                             key={`${row.id}-${virtualRow.index}`}
                                             data-index={virtualRow.index}
-                                            ref={(node) => rowVirtualizer.measureElement(node)}
-                                            data-state={row.getIsSelected() && "selected"}
+                                            ref={(node) =>
+                                                rowVirtualizer.measureElement(
+                                                    node,
+                                                )
+                                            }
+                                            data-state={
+                                                row.getIsSelected() &&
+                                                'selected'
+                                            }
                                             className={
-                                                row.original.id === selectedItemToMove?.id
-                                                    ? "group text-muted transition-colors data-[state=selected]:bg-muted"
-                                                    : "group transition-colors data-[state=selected]:bg-muted"
+                                                row.original.id ===
+                                                selectedItemToMove?.id
+                                                    ? 'group text-muted transition-colors data-[state=selected]:bg-muted'
+                                                    : 'group transition-colors data-[state=selected]:bg-muted'
                                             }
                                         >
-                                            {row.getVisibleCells().map((cell) => {
-                                                const columnMeta = cell.column.columnDef
-                                                    .meta as any;
-                                                const isSpannedCol =
-                                                    withRowSpan && columnMeta?.rowSpan;
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell) => {
+                                                    const columnMeta = cell
+                                                        .column.columnDef
+                                                        .meta as any;
+                                                    const isSpannedCol =
+                                                        withRowSpan &&
+                                                        columnMeta?.rowSpan;
 
-                                                // const hasSpanningData =
-                                                //     typeof rowData.isFirstInGroup !==
-                                                //     'undefined';
-                                                // const activeSpan =
-                                                //     isSpannedCol &&
-                                                //     hasSpanningData;
+                                                    // const hasSpanningData =
+                                                    //     typeof rowData.isFirstInGroup !==
+                                                    //     'undefined';
+                                                    // const activeSpan =
+                                                    //     isSpannedCol &&
+                                                    //     hasSpanningData;
 
-                                                const rowData = row.original as any;
-                                                const ppaId = rowData.id;
+                                                    const rowData =
+                                                        row.original as any;
+                                                    const ppaId = rowData.id;
 
-                                                // Use our map to figure out if THIS specific row is the first visible one for this PPA
-                                                const isFirstVisible =
-                                                    visibleSpans.firstVisibleIdx[ppaId] ===
-                                                    virtualRow.index;
-                                                const spanSize = visibleSpans.visibleCounts[ppaId];
+                                                    // Use our map to figure out if THIS specific row is the first visible one for this PPA
+                                                    const isFirstVisible =
+                                                        visibleSpans
+                                                            .firstVisibleIdx[
+                                                            ppaId
+                                                        ] === virtualRow.index;
+                                                    const spanSize =
+                                                        visibleSpans
+                                                            .visibleCounts[
+                                                            ppaId
+                                                        ];
 
-                                                if (isSpannedCol) {
-                                                    // If it's a spanned column (like AIP Code) but not the first visible row, don't draw it
-                                                    if (!isFirstVisible) {
-                                                        return null;
+                                                    if (isSpannedCol) {
+                                                        // If it's a spanned column (like AIP Code) but not the first visible row, don't draw it
+                                                        if (!isFirstVisible) {
+                                                            return null;
+                                                        }
                                                     }
-                                                }
 
-                                                return (
-                                                    <TableCell
-                                                        key={cell.id}
-                                                        rowSpan={isSpannedCol ? spanSize : 1}
-                                                        style={{
-                                                            width: `${cell.column.getSize()}px`,
-                                                            ...getCommonPinningStyles(
-                                                                cell.column,
-                                                                table,
-                                                                false,
-                                                                false,
-                                                            ),
-                                                        }}
-                                                        className="py-2"
-                                                    >
-                                                        {flexRender(
-                                                            cell.column.columnDef.cell,
-                                                            cell.getContext(),
-                                                        )}
-                                                    </TableCell>
-                                                );
-                                            })}
+                                                    return (
+                                                        <TableCell
+                                                            key={cell.id}
+                                                            rowSpan={
+                                                                isSpannedCol
+                                                                    ? spanSize
+                                                                    : 1
+                                                            }
+                                                            style={{
+                                                                width: `${cell.column.getSize()}px`,
+                                                                ...getCommonPinningStyles(
+                                                                    cell.column,
+                                                                    table,
+                                                                    false,
+                                                                    false,
+                                                                ),
+                                                            }}
+                                                            className="py-2"
+                                                        >
+                                                            {flexRender(
+                                                                cell.column
+                                                                    .columnDef
+                                                                    .cell,
+                                                                cell.getContext(),
+                                                            )}
+                                                        </TableCell>
+                                                    );
+                                                })}
                                         </TableRow>
                                     );
                                 })
@@ -488,14 +547,21 @@ export function DataTable<TData extends { id: unknown }>({
                                             key={column.id}
                                             style={{
                                                 width: `${column.getSize()}px`,
-                                                ...getCommonPinningStyles(column, table, true),
+                                                ...getCommonPinningStyles(
+                                                    column,
+                                                    table,
+                                                    true,
+                                                ),
                                             }}
                                         >
                                             {column.columnDef.footer
-                                                ? flexRender(column.columnDef.footer, {
-                                                      column,
-                                                      table,
-                                                  } as any)
+                                                ? flexRender(
+                                                      column.columnDef.footer,
+                                                      {
+                                                          column,
+                                                          table,
+                                                      } as any,
+                                                  )
                                                 : null}
                                         </TableCell>
                                     ))}
@@ -510,51 +576,65 @@ export function DataTable<TData extends { id: unknown }>({
                         <ScrollBar orientation="horizontal" /> */}
                 </ScrollArea>
 
-                {paginationObj && paginationObj !== undefined && !Array.isArray(paginationObj) && (
-                    <div className="flex items-center gap-1 px-4">
-                        <Button
-                            size="icon"
-                            onClick={() => navigate(paginationObj.first_page_url)}
-                            disabled={paginationObj.current_page === 1}
-                        >
-                            <ChevronFirst />
-                        </Button>
+                {paginationObj &&
+                    paginationObj !== undefined &&
+                    !Array.isArray(paginationObj) && (
+                        <div className="flex items-center gap-1 px-4">
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    navigate(paginationObj.first_page_url)
+                                }
+                                disabled={paginationObj.current_page === 1}
+                            >
+                                <ChevronFirst />
+                            </Button>
 
-                        <Button
-                            size="icon"
-                            onClick={() =>
-                                paginationObj.prev_page_url && navigate(paginationObj.prev_page_url)
-                            }
-                            disabled={paginationObj.current_page === 1}
-                        >
-                            <ChevronLeft />
-                        </Button>
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    paginationObj.prev_page_url &&
+                                    navigate(paginationObj.prev_page_url)
+                                }
+                                disabled={paginationObj.current_page === 1}
+                            >
+                                <ChevronLeft />
+                            </Button>
 
-                        <Input
-                            value={paginationObj.current_page}
-                            disabled
-                            className="w-10 text-center"
-                        />
+                            <Input
+                                value={paginationObj.current_page}
+                                disabled
+                                className="w-10 text-center"
+                            />
 
-                        <Button
-                            size="icon"
-                            onClick={() =>
-                                paginationObj.next_page_url && navigate(paginationObj.next_page_url)
-                            }
-                            disabled={paginationObj.current_page === paginationObj.last_page}
-                        >
-                            <ChevronRight />
-                        </Button>
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    paginationObj.next_page_url &&
+                                    navigate(paginationObj.next_page_url)
+                                }
+                                disabled={
+                                    paginationObj.current_page ===
+                                    paginationObj.last_page
+                                }
+                            >
+                                <ChevronRight />
+                            </Button>
 
-                        <Button
-                            size="icon"
-                            onClick={() => navigate(paginationObj.last_page_url)}
-                            disabled={paginationObj.current_page === paginationObj.last_page}
-                        >
-                            <ChevronLast />
-                        </Button>
-                    </div>
-                )}
+                            <Button
+                                size="icon"
+                                onClick={() =>
+                                    navigate(paginationObj.last_page_url)
+                                }
+                                disabled={
+                                    paginationObj.current_page ===
+                                    paginationObj.last_page
+                                }
+                            >
+                                <ChevronLast />
+                            </Button>
+                        </div>
+                    )}
             </div>
 
             <AlertErrorDialog

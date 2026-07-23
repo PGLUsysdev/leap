@@ -1,42 +1,11 @@
-import { useEffect, useState, useMemo, useRef } from "react";
-import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { router } from "@inertiajs/react";
 import { format, parseISO } from "date-fns";
 import { CalendarIcon, Plus, Trash2, ListPlus, FileText } from "lucide-react";
-import { router } from "@inertiajs/react";
-import { Form } from "@/components/ui/form";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form";
+import * as z from "zod";
+import { CommandSelect } from "@/components/command-select";
 import { FormDialogShell } from "@/components/form-dialog-shell";
 import {
     AlertDialog,
@@ -46,7 +15,42 @@ import {
     AlertDialogDescription,
     AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
-import { CommandSelect } from "@/components/command-select";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field";
+import { Form } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import PpmpFormDialog from "@/pages/ppmp/form-dialog";
+import PreviewPdfDialog from "@/pages/ps-breakdown/pdf-preview-dialog";
+import { index } from "@/routes/aip/summary/ppmp";
+import { index as psBreakdownIndex } from "@/routes/ps-breakdown";
 import type {
     FiscalYear,
     Ppa,
@@ -57,10 +61,6 @@ import type {
     PriceList,
     PpmpCategory,
 } from "@/types";
-import { index } from "@/routes/aip/summary/ppmp";
-import PpmpFormDialog from "@/pages/ppmp/form-dialog";
-import { index as psBreakdownIndex } from "@/routes/ps-breakdown";
-import PreviewPdfDialog from "@/pages/ps-breakdown/pdf-preview-dialog";
 
 interface AipEntryFormDialogProps {
     open: boolean;
@@ -172,12 +172,18 @@ export default function AipEntryFormDialog({
     const isPsPool = data?.id === psPoolPpaId;
 
     const filteredOffices = useMemo(() => {
-        if (!userOfficeId) return offices;
+        if (!userOfficeId) {
+return offices;
+}
 
         const userOffice = offices.find((o) => o.id === userOfficeId);
-        if (!userOffice) return offices;
+
+        if (!userOffice) {
+return offices;
+}
 
         const userOfficeChildren = offices.filter((o) => o.parent_id === userOfficeId);
+
         return [userOffice, ...userOfficeChildren];
     }, [offices, userOfficeId]);
 
@@ -211,14 +217,19 @@ export default function AipEntryFormDialog({
         const sumCoaAmount = (coaId: number) => {
             const result = (watchedSources || [])
                 .reduce((s, src: any) => {
-                    if (!src.id) return s;
+                    if (!src.id) {
+return s;
+}
+
                     console.log(
                         `src.id=${src.id}, coaId=${coaId}, lookup=${ppmpCoaTotals[src.id]?.[coaId]}`,
                     );
+
                     return s + (ppmpCoaTotals[src.id]?.[coaId] ?? 0);
                 }, 0)
                 .toFixed(2);
             console.log(`sumCoaAmount(${coaId}) = ${result}`);
+
             return result;
         };
 
@@ -244,6 +255,7 @@ export default function AipEntryFormDialog({
                 const computedTotal = coas
                     .reduce((sum, coa) => sum + parseFloat(coa.amount), 0)
                     .toFixed(2);
+
                 return { total: computedTotal, coas };
             }
 
@@ -289,17 +301,23 @@ export default function AipEntryFormDialog({
     const handleOpenChange = (newOpen: boolean) => {
         if (!newOpen && isDirty) {
             setShowCloseConfirm(true);
+
             return;
         }
+
         onOpenChange(newOpen);
     };
 
     const cleanupNewSources = async () => {
-        if (!isEdit || !canEditFunding || !entry) return;
+        if (!isEdit || !canEditFunding || !entry) {
+return;
+}
 
         const toDelete = [...new Set([...removedNewSourceIds.current])];
 
-        if (toDelete.length === 0) return;
+        if (toDelete.length === 0) {
+return;
+}
 
         await Promise.all(
             toDelete.map((id) =>
@@ -336,6 +354,7 @@ export default function AipEntryFormDialog({
 
     function handleRemoveSource(index: number) {
         const source = watchedSources?.[index];
+
         if (source?.id) {
             setRemoveSourceIndex(index);
         } else {
@@ -346,23 +365,30 @@ export default function AipEntryFormDialog({
     function confirmRemoveSource() {
         if (removeSourceIndex !== null) {
             const source = watchedSources?.[removeSourceIndex];
+
             if (source?.id && !baselineSourceIds.current.has(source.id)) {
                 removedNewSourceIds.current.add(source.id);
             }
+
             remove(removeSourceIndex);
             setRemoveSourceIndex(null);
         }
     }
 
     const handleQuickAddPpmp = (index: number, expenseClass: "MOOE" | "CO") => {
-        if (!canEdit || !canViewPpmp) return;
+        if (!canEdit || !canViewPpmp) {
+return;
+}
+
         setPpmpSourceIndex(index);
         setPpmpExpenseClass(expenseClass);
         setPpmpDialogOpen(true);
     };
 
     const handleGoToPpmp = (ppaFundingSourceId: number | undefined, choice: "MOOE" | "CO") => {
-        if (!entry || !canViewPpmp) return;
+        if (!entry || !canViewPpmp) {
+return;
+}
 
         const query: Record<string, any> = {
             choice: choice,
@@ -404,6 +430,7 @@ export default function AipEntryFormDialog({
                 ccet_mitigation: "0.00",
                 cc_typology_id: null,
             });
+
             return;
         }
 
@@ -502,12 +529,21 @@ export default function AipEntryFormDialog({
     }, [data, open, form, supplementalAipId]);
 
     const handleGoToPsBreakdown = (sourceIndex: number) => {
-        if (!entry) return;
+        if (!entry) {
+return;
+}
+
         const sourceId = watchedSources?.[sourceIndex]?.id;
 
         const query: Record<string, any> = {};
-        if (sourceId) query.ppa_funding_source_id = sourceId;
-        if (canShowSummaryAll && selectedOfficeId) query.selected_office_id = selectedOfficeId;
+
+        if (sourceId) {
+query.ppa_funding_source_id = sourceId;
+}
+
+        if (canShowSummaryAll && selectedOfficeId) {
+query.selected_office_id = selectedOfficeId;
+}
 
         router.visit(
             psBreakdownIndex({ fiscalYear: fiscalYear.id, aipEntry: entry.id }, { query }),
@@ -1307,9 +1343,16 @@ export default function AipEntryFormDialog({
                     mode="quick-add"
                     onItemAdded={onPpmpItemAdded}
                     existingPpmps={(() => {
-                        if (!data) return undefined;
+                        if (!data) {
+return undefined;
+}
+
                         const fsId = watchedSources[ppmpSourceIndex]?.id;
-                        if (!fsId) return undefined;
+
+                        if (!fsId) {
+return undefined;
+}
+
                         for (const ae of data.aip_entries ?? []) {
                             for (const fs of ae.ppa_funding_sources ?? []) {
                                 if (fs.id === fsId) {
@@ -1317,6 +1360,7 @@ export default function AipEntryFormDialog({
                                 }
                             }
                         }
+
                         return undefined;
                     })()}
                 />

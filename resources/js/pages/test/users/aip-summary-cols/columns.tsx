@@ -1,12 +1,16 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Plus, Pencil, Trash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Decimal } from 'decimal.js';
+import { Plus, Pencil, Trash } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 const formatNumber = (val: string | null) => {
-    if (!val) return '-';
+    if (!val) {
+return '-';
+}
+
     const num = parseFloat(val);
+
     return num
         ? num.toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -31,6 +35,7 @@ const formatDate = (dateString: string) => {
         'Dec',
     ];
     const dateSplit = dateString.split('-');
+
     return `${months[Number(dateSplit[1]) - 1]}-${dateSplit[2]}`;
 };
 
@@ -169,11 +174,16 @@ const columns = [
                 header: () => <div className="text-right font-bold">Total</div>,
                 cell: ({ row }) => {
                     const fs = row.original.current_fs;
-                    if (!fs) return <div className="text-right">-</div>;
+
+                    if (!fs) {
+return <div className="text-right">-</div>;
+}
+
                     const total = new Decimal(fs.co_amount || 0)
                         .plus(fs.fe_amount || 0)
                         .plus(fs.mooe_amount || 0)
                         .plus(fs.ps_amount || 0);
+
                     return (
                         <div className="text-right font-bold">
                             {formatNumber(total.toString())}

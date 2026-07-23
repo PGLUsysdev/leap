@@ -4,7 +4,6 @@ import { ChevronsUpDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { FormDialogShell } from '@/components/form-dialog-shell';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -16,15 +15,6 @@ import {
 } from '@/components/base-ui-components/ui/alert-dialog';
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
-import {
-    Command,
-    CommandDialog,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
 import {
     Dialog,
     DialogContent,
@@ -48,6 +38,16 @@ import {
 import { Input } from '@/components/base-ui-components/ui/input';
 import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
 import { Textarea } from '@/components/base-ui-components/ui/textarea';
+import { FormDialogShell } from '@/components/form-dialog-shell';
+import {
+    Command,
+    CommandDialog,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 
 import type { Office, Ppa, Auth } from '@/types';
@@ -111,7 +111,9 @@ export default function PpaFormDialog({
     const codeSuffix = form.watch('code_suffix');
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+return;
+}
 
         if (isEditing && editPpa) {
             form.reset({
@@ -149,6 +151,7 @@ export default function PpaFormDialog({
         if (!isEditing) {
             // Determine placeholder based on type
             let suffix: string;
+
             switch (targetType) {
                 case 'Program':
                     suffix = 'XXX'; // 3 digits
@@ -173,6 +176,7 @@ export default function PpaFormDialog({
             const officeFullCode = offices.find(
                 (o) => o.id === watchedOfficeId,
             )?.full_code;
+
             return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
         }
 
@@ -184,12 +188,14 @@ export default function PpaFormDialog({
                 .split('-')
                 .slice(0, -1)
                 .join('-');
+
             return `${baseCode}-${suffix}`;
         }
 
         const officeFullCode = offices.find(
             (o) => o.id === watchedOfficeId,
         )?.full_code;
+
         return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
     };
 
@@ -216,6 +222,7 @@ export default function PpaFormDialog({
             if (isAddingChild && parentPpa) {
                 payload.parent_id = parentPpa.id;
             }
+
             router.post('/ppas', payload, {
                 only: ['ppaTree'],
                 preserveState: true,

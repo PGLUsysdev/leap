@@ -1,12 +1,12 @@
+import { router } from "@inertiajs/react";
 import { createColumnHelper } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import type { Ppmp } from "@/types";
 import { Decimal } from "decimal.js";
 import { Trash } from "lucide-react";
 import { useState, useEffect } from "react";
-import { router } from "@inertiajs/react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { Ppmp } from "@/types";
 
 interface EditableCellProps {
     getValue: () => any;
@@ -17,6 +17,7 @@ interface EditableCellProps {
 
 const formatNumber = (val: string | number) => {
     const num = typeof val === "string" ? parseFloat(val) : val;
+
     return isNaN(num) || num === null
         ? "0.00"
         : num.toLocaleString(undefined, {
@@ -28,7 +29,9 @@ const formatNumber = (val: string | number) => {
 const formatInteger = (val: string | number) => {
     const num = typeof val === "string" ? parseFloat(val.replace(/,/g, "")) : val;
 
-    if (isNaN(num) || num === null) return "0";
+    if (isNaN(num) || num === null) {
+return "0";
+}
 
     return num.toLocaleString(undefined, {
         minimumFractionDigits: 0,
@@ -63,6 +66,7 @@ const EditableCell: React.FC<EditableCellProps> = ({ getValue, row, column, tabl
 
         if (cleanValue === cleanInitial) {
             setLocalValue(formatInteger(cleanValue));
+
             return;
         }
 
@@ -245,6 +249,7 @@ const columns = [
         enableGlobalFilter: true,
         cell: ({ row, getValue }) => {
             const ppmp = row.original;
+
             return (
                 <div className="flex flex-col py-1">
                     <span className="font-medium text-wrap">{getValue()}</span>
@@ -304,6 +309,7 @@ const columns = [
                 (sum, month) => sum + (Number(ppmp[month.qtyKey]) || 0),
                 0,
             );
+
             return <div className="text-right">{formatInteger(totalQty.toString())}</div>;
         },
     }),
@@ -327,6 +333,7 @@ const columns = [
                         (acc, row) => acc.plus(row.getValue<number>("total_amount") || 0),
                         new Decimal(0),
                     );
+
                 return <div className="text-right">{formatNumber(sum.toString())}</div>;
             },
         },

@@ -1,13 +1,13 @@
+import { DataTable } from "@/components/data-table";
 import AppLayout from "@/layouts/app-layout";
-import { type BreadcrumbItem } from "@/types";
+import type {BreadcrumbItem} from "@/types";
 import type { User, Ppa } from "@/types";
 
-import { DataTable } from "@/components/data-table";
 
-import columns from "./data-table/columns";
-import twoColumns from "./data-table-two/columns";
-import threeColumns from "./data-table-three/columns";
 import AipSummaryCols from "./aip-summary-cols/columns";
+import columns from "./data-table/columns";
+import threeColumns from "./data-table-three/columns";
+import twoColumns from "./data-table-two/columns";
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Test Table", href: "#" }];
 

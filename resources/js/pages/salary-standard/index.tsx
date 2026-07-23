@@ -118,6 +118,7 @@ export default function SalaryStandard({
                 if (a.fiscal_year_id !== b.fiscal_year_id) {
                     return a.fiscal_year_id - b.fiscal_year_id;
                 }
+
                 return a.salary_grade - b.salary_grade;
             });
 

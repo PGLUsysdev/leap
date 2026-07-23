@@ -1,23 +1,6 @@
-import { PDFViewer, Page, Text, View, Document, StyleSheet } from "@react-pdf/renderer";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import type { App, AuthData, FiscalYear, Office } from "@/types";
-
-import { useState } from "react";
-// import {
-//     Select,
-//     SelectContent,
-//     SelectItem,
-//     SelectTrigger,
-//     SelectValue,
-// } from '@/components/ui/select';
 import { router } from "@inertiajs/react";
-import { Spinner } from "@/components/ui/spinner";
+import { PDFViewer, Page, Text, View, Document, StyleSheet } from "@react-pdf/renderer";
+import { useState } from "react";
 import {
     Command,
     // CommandDialog,
@@ -29,6 +12,23 @@ import {
     CommandSeparator,
     // CommandShortcut,
 } from "@/components/ui/command";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
+import type { App, AuthData, FiscalYear, Office } from "@/types";
+
+// import {
+//     Select,
+//     SelectContent,
+//     SelectItem,
+//     SelectTrigger,
+//     SelectValue,
+// } from '@/components/ui/select';
 
 interface PdfPreviewDialogProps {
     open: boolean;
@@ -99,9 +99,16 @@ const styles = StyleSheet.create({
 });
 
 const formatNumber = (value: number | string | undefined) => {
-    if (value === undefined || value === null) return "-";
+    if (value === undefined || value === null) {
+return "-";
+}
+
     const num = typeof value === "string" ? parseFloat(value) : value;
-    if (isNaN(num) || num === 0) return "-";
+
+    if (isNaN(num) || num === 0) {
+return "-";
+}
+
     return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
@@ -446,6 +453,7 @@ const MyDocument = ({
                                             (a, b) => a + b,
                                             0,
                                         );
+
                                         return (
                                             <View
                                                 key={q}
@@ -952,6 +960,7 @@ const MyDocument = ({
                                 const categoryItems = Object.values(
                                     chartOfAccounts,
                                 ).flat() as any[];
+
                                 return {
                                     amt: categoryItems.reduce(
                                         (sum, item) => sum + (Number(item.total_amount) || 0),
@@ -1392,7 +1401,10 @@ export default function PdfPreviewDialog({
     const [selectedOfficeId, setSelectedOfficeId] = useState<string>(defaultOfficeId);
 
     const handleOfficeChange = (officeId: string) => {
-        if (!fiscalYear) return;
+        if (!fiscalYear) {
+return;
+}
+
         setSelectedOfficeId(officeId);
         setIsReloading(true);
         router.reload({
@@ -1403,10 +1415,13 @@ export default function PdfPreviewDialog({
     };
 
     const getOfficeLabel = () => {
-        if (!canGenerateAppAll) return `${auth.user.office?.name || "My Office"}`;
+        if (!canGenerateAppAll) {
+return `${auth.user.office?.name || "My Office"}`;
+}
 
         if (selectedOfficeId === "all") {
             const mainOffice = offices.find((o) => o.id === 1);
+
             return mainOffice?.name ?? "All Offices";
         }
 
@@ -1415,7 +1430,9 @@ export default function PdfPreviewDialog({
         return selected?.acronym ?? "";
     };
 
-    if (!fiscalYear) return null;
+    if (!fiscalYear) {
+return null;
+}
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

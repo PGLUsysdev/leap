@@ -1,7 +1,7 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import type { Role } from "@/types";
-import { Button } from "@/components/ui/button";
 import { Pencil, Shield, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { Role } from "@/types";
 
 const columnHelper = createColumnHelper<Role>();
 

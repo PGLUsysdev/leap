@@ -69,8 +69,10 @@ const columns = [
                     "nov_amount",
                     "dec_amount",
                 ]);
+
                 return sum + rowTotal;
             }, 0);
+
             return <div className="font-bold">{total.toFixed(2)}</div>;
         },
         cell: ({ row }) => {
@@ -88,6 +90,7 @@ const columns = [
                 "nov_amount",
                 "dec_amount",
             ]);
+
             return total.toFixed(2);
         },
     }),
@@ -101,8 +104,10 @@ const columns = [
                     "feb_amount",
                     "mar_amount",
                 ]);
+
                 return sum + rowTotal;
             }, 0);
+
             return <div className="font-bold">{total.toFixed(2)}</div>;
         },
         cell: ({ row }) => {
@@ -111,6 +116,7 @@ const columns = [
                 "feb_amount",
                 "mar_amount",
             ]);
+
             return total.toFixed(2);
         },
     }),
@@ -124,8 +130,10 @@ const columns = [
                     "may_amount",
                     "jun_amount",
                 ]);
+
                 return sum + rowTotal;
             }, 0);
+
             return <div className="font-bold">{total.toFixed(2)}</div>;
         },
         cell: ({ row }) => {
@@ -134,6 +142,7 @@ const columns = [
                 "may_amount",
                 "jun_amount",
             ]);
+
             return total.toFixed(2);
         },
     }),
@@ -147,8 +156,10 @@ const columns = [
                     "aug_amount",
                     "sep_amount",
                 ]);
+
                 return sum + rowTotal;
             }, 0);
+
             return <div className="font-bold">{total.toFixed(2)}</div>;
         },
         cell: ({ row }) => {
@@ -157,6 +168,7 @@ const columns = [
                 "aug_amount",
                 "sep_amount",
             ]);
+
             return total.toFixed(2);
         },
     }),
@@ -170,8 +182,10 @@ const columns = [
                     "nov_amount",
                     "dec_amount",
                 ]);
+
                 return sum + rowTotal;
             }, 0);
+
             return <div className="font-bold">{total.toFixed(2)}</div>;
         },
         cell: ({ row }) => {
@@ -180,6 +194,7 @@ const columns = [
                 "nov_amount",
                 "dec_amount",
             ]);
+
             return total.toFixed(2);
         },
     }),

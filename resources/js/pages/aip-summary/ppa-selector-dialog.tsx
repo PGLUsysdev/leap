@@ -1,5 +1,8 @@
-import { useState, useMemo } from "react";
 import { router } from "@inertiajs/react";
+import { ChevronRight, Home, Info } from "lucide-react";
+import { useState, useMemo } from "react";
+import { DataTable } from "@/components/data-table";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -8,13 +11,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/data-table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
-import { ChevronRight, Home, Info } from "lucide-react";
-import columns from "./columns/import-columns";
 import type { Ppa, PaginatedResponse, Filter } from "@/types";
+import columns from "./columns/import-columns";
 
 interface PpaSelectorDialogProps {
     isOpen: boolean;
@@ -103,6 +103,7 @@ export default function PpaSelectorDialog({
             } else {
                 // --- UPWARD SELECT (Recursive) ---
                 next.set(ppa.id, ppa);
+
                 if (dialogCurrent && dialogCurrent.length > 0) {
                     dialogCurrent.forEach((ancestor) => {
                         if (!existingIdsSet.has(ancestor.id)) {
@@ -111,6 +112,7 @@ export default function PpaSelectorDialog({
                     });
                 }
             }
+
             return next;
         });
     };
@@ -121,10 +123,13 @@ export default function PpaSelectorDialog({
             ppas.forEach((ppa) => {
                 if (isChecked) {
                     next.set(ppa.id, ppa);
+
                     // Add ancestors for each
                     if (dialogCurrent) {
                         dialogCurrent.forEach((anc) => {
-                            if (!existingIdsSet.has(anc.id)) next.set(anc.id, anc);
+                            if (!existingIdsSet.has(anc.id)) {
+next.set(anc.id, anc);
+}
                         });
                     }
                 } else {
@@ -142,6 +147,7 @@ export default function PpaSelectorDialog({
                     idsToRemove.forEach((id) => next.delete(id));
                 }
             });
+
             return next;
         });
     };
@@ -183,7 +189,9 @@ export default function PpaSelectorDialog({
     };
 
     const displayData = useMemo(() => {
-        if (Array.isArray(dialogPpaTree) || !dialogPpaTree) return [];
+        if (Array.isArray(dialogPpaTree) || !dialogPpaTree) {
+return [];
+}
 
         return dialogPpaTree.data.map((ppa) => ({
             ...ppa,

@@ -7,8 +7,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import type { ChartOfAccount, Position } from "@/types";
 import { getCellNumericValue } from "@/lib/ps-calculations";
+import type { ChartOfAccount, Position } from "@/types";
 
 interface CoaRow {
     account_number: string;
@@ -185,8 +185,15 @@ const styles = StyleSheet.create({
 
 const fmt = (v: string) => {
     const num = parseFloat(v || "0");
-    if (isNaN(num) || !isFinite(num)) return "-";
-    if (num === 0) return "-";
+
+    if (isNaN(num) || !isFinite(num)) {
+return "-";
+}
+
+    if (num === 0) {
+return "-";
+}
+
     return num.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
@@ -212,17 +219,24 @@ const MyDocument = ({ sections, psComputationData }: MyDocumentProps) => {
     // If psComputationData is provided, compute PS section dynamically to
     // match the same per-position logic used in the PS Breakdown table.
     const effectivePsSection: SectionData = (() => {
-        if (!psComputationData) return sections.ps;
+        if (!psComputationData) {
+return sections.ps;
+}
 
         const { positions, chartOfAccounts, rates, annualRateMap } = psComputationData;
         const psCoas = chartOfAccounts.filter((coa) => coa.expense_class === "PS");
 
         const coas: CoaRow[] = psCoas.map((coa) => {
             let total = 0;
+
             for (const pos of positions) {
                 const val = getCellNumericValue(pos, coa, rates, annualRateMap);
-                if (val !== null) total += val;
+
+                if (val !== null) {
+total += val;
+}
             }
+
             return {
                 account_number: coa.account_number,
                 account_title: coa.account_title,
@@ -238,6 +252,7 @@ const MyDocument = ({ sections, psComputationData }: MyDocumentProps) => {
     const totalAll = sectionConfigs
         .reduce((sum, cfg) => {
             const sec = cfg.key === "ps" ? effectivePsSection : sections[cfg.key];
+
             return sum + parseFloat(sec?.total || "0");
         }, 0)
         .toFixed(2);

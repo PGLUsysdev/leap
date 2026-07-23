@@ -1,13 +1,13 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { router } from "@inertiajs/react";
 import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { router } from "@inertiajs/react";
 
+import { FormDialogShell } from "@/components/form-dialog-shell";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { FormDialogShell } from "@/components/form-dialog-shell";
 import type { Role } from "@/types";
 
 const formSchema = z.object({

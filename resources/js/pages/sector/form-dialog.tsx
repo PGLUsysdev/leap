@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import type { Sector } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { router, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
@@ -23,8 +24,7 @@ import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
-import { router, usePage } from '@inertiajs/react';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import type { Sector } from '@/types';
 
 interface FormDialogProps {
     open: boolean;

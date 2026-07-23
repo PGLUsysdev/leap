@@ -207,7 +207,9 @@ export default function PpaMoveDialog({
     }
 
     const handleOpenChange = (open: boolean) => {
-        if (!open) setSelectedTarget(null);
+        if (!open) {
+setSelectedTarget(null);
+}
 
         onOpenChange(open);
     };

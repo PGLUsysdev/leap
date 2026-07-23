@@ -2,7 +2,6 @@ import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
 import { Button } from '@/components/base-ui-components/ui/button';
-import type { SharedData } from '@/types';
 import {
     ScrollArea,
     ScrollBar,
@@ -17,6 +16,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import type { SharedData } from '@/types';
 import type {
     FiscalYear,
     Ios,

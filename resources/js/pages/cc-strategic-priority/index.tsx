@@ -54,7 +54,10 @@ export default function CcStrategicPriorityPage({
     }, []);
 
     const handleDeleteConfirm = useCallback(() => {
-        if (!deletingPriority) return;
+        if (!deletingPriority) {
+return;
+}
+
         setIsDeleting(true);
         router.delete(`/cc-strategic-priority/${deletingPriority.id}`, {
             preserveState: true,

@@ -1,5 +1,5 @@
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Page, Text, View, Document, StyleSheet, PDFViewer, Font } from "@react-pdf/renderer";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import type { FiscalYear, Ppa, AuthData } from "@/types";
 
 interface ExportToPdfDialogProps {
@@ -87,7 +87,11 @@ export default function ExportToPdfDialog({
 
     const formatNumber = (value: any) => {
         const num = parseFloat(value);
-        if (!value || isNaN(num) || num === 0) return "-";
+
+        if (!value || isNaN(num) || num === 0) {
+return "-";
+}
+
         return new Intl.NumberFormat("en-US", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -95,8 +99,12 @@ export default function ExportToPdfDialog({
     };
 
     const formatDate = (value: string | null | undefined) => {
-        if (!value) return "-";
+        if (!value) {
+return "-";
+}
+
         const parts = value.split("-");
+
         if (parts.length === 3) {
             const shortMonths = [
                 "Jan",
@@ -114,8 +122,10 @@ export default function ExportToPdfDialog({
             ];
             const monthName = shortMonths[parseInt(parts[1]) - 1];
             const day = parseInt(parts[2]);
+
             return `${monthName}-${day}`;
         }
+
         return value;
     };
 
@@ -133,6 +143,7 @@ export default function ExportToPdfDialog({
             const { item, level, path } = stack.pop()!;
 
             let displayTitle = item.name;
+
             if (level === 0) {
                 const letter = String.fromCharCode(65 + rootCounter);
                 displayTitle = `${letter}. ${displayTitle}`;
@@ -151,7 +162,11 @@ export default function ExportToPdfDialog({
                 const grouped = new Map<number, any>();
                 fundingSources.forEach((src) => {
                     const id = src.funding_source_id;
-                    if (!id) return;
+
+                    if (!id) {
+return;
+}
+
                     if (!grouped.has(id)) {
                         grouped.set(id, {
                             ...src,
@@ -163,6 +178,7 @@ export default function ExportToPdfDialog({
                             ccet_mitigation: 0,
                         });
                     }
+
                     const base = grouped.get(id);
                     base.ps_amount += parseFloat(src.ps_amount || 0);
                     base.mooe_amount += parseFloat(src.mooe_amount || 0);
@@ -187,6 +203,7 @@ export default function ExportToPdfDialog({
                     (a: any, b: any) =>
                         (b.supplemental_aip_id ?? -1) - (a.supplemental_aip_id ?? -1),
                 )[0];
+
                 if (latestEntry) {
                     aipEntry = latestEntry;
                 }
@@ -225,18 +242,36 @@ export default function ExportToPdfDialog({
                                 ]}
                             >
                                 {(() => {
-                                    if (colIndex === 0) return item.full_code || "-";
-                                    if (colIndex === 1) return displayTitle || "-";
+                                    if (colIndex === 0) {
+return item.full_code || "-";
+}
+
+                                    if (colIndex === 1) {
+return displayTitle || "-";
+}
+
                                     if (colIndex === 2) {
                                         const office = item.office;
+
                                         if (office?.parent?.acronym && office?.acronym) {
                                             return `${office.parent.acronym}/${office.acronym}`;
                                         }
+
                                         return office?.acronym || "-";
                                     }
-                                    if (colIndex === 3) return formatDate(aipEntry?.start_date);
-                                    if (colIndex === 4) return formatDate(aipEntry?.end_date);
-                                    if (colIndex === 5) return aipEntry?.expected_output || "-";
+
+                                    if (colIndex === 3) {
+return formatDate(aipEntry?.start_date);
+}
+
+                                    if (colIndex === 4) {
+return formatDate(aipEntry?.end_date);
+}
+
+                                    if (colIndex === 5) {
+return aipEntry?.expected_output || "-";
+}
+
                                     return "-";
                                 })()}
                             </Text>
@@ -295,25 +330,43 @@ export default function ExportToPdfDialog({
                                                     ]}
                                                 >
                                                     {(() => {
-                                                        if (colIndex === 6)
-                                                            return fs.funding_source?.code || "-";
-                                                        if (colIndex === 7)
-                                                            return formatNumber(fs.ps_amount);
-                                                        if (colIndex === 8)
-                                                            return formatNumber(fs.mooe_amount);
-                                                        if (colIndex === 9)
-                                                            return formatNumber(fs.fe_amount);
-                                                        if (colIndex === 10)
-                                                            return formatNumber(fs.co_amount);
-                                                        if (colIndex === 11)
-                                                            return formatNumber(total);
-                                                        if (colIndex === 12)
-                                                            return formatNumber(fs.ccet_adaptation);
-                                                        if (colIndex === 13)
-                                                            return formatNumber(fs.ccet_mitigation);
+                                                        if (colIndex === 6) {
+return fs.funding_source?.code || "-";
+}
+
+                                                        if (colIndex === 7) {
+return formatNumber(fs.ps_amount);
+}
+
+                                                        if (colIndex === 8) {
+return formatNumber(fs.mooe_amount);
+}
+
+                                                        if (colIndex === 9) {
+return formatNumber(fs.fe_amount);
+}
+
+                                                        if (colIndex === 10) {
+return formatNumber(fs.co_amount);
+}
+
+                                                        if (colIndex === 11) {
+return formatNumber(total);
+}
+
+                                                        if (colIndex === 12) {
+return formatNumber(fs.ccet_adaptation);
+}
+
+                                                        if (colIndex === 13) {
+return formatNumber(fs.ccet_mitigation);
+}
+
                                                         // Always return something for Col 14 to keep vertical line intact
-                                                        if (colIndex === 14)
-                                                            return fs?.cc_typology?.code || "-";
+                                                        if (colIndex === 14) {
+return fs?.cc_typology?.code || "-";
+}
+
                                                         return "-";
                                                     })()}
                                                 </Text>
@@ -337,11 +390,12 @@ export default function ExportToPdfDialog({
                 }
             }
         }
+
         return result;
     };
 
     const calculateTotals = (data: Ppa[]) => {
-        let totals = {
+        const totals = {
             ps: 0,
             mooe: 0,
             fe: 0,
@@ -362,12 +416,15 @@ export default function ExportToPdfDialog({
                     totals.mitigation += parseFloat(fs.ccet_mitigation || "0");
                 });
 
-                if (item.children) traverse(item.children);
+                if (item.children) {
+traverse(item.children);
+}
             });
         };
 
         traverse(data);
         const grandTotal = totals.ps + totals.mooe + totals.fe + totals.co;
+
         return { ...totals, grandTotal };
     };
 

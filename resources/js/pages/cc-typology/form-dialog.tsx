@@ -63,6 +63,7 @@ function createFormSchema(subSectors: CcSubSector[]) {
                         String(ss.strategic_priority_id) ===
                         data.strategic_priority_id,
                 );
+
                 if (
                     prioritySubSectors.length > 0 &&
                     (!data.sub_sector_id ||
@@ -125,6 +126,7 @@ export default function FormDialog({
     useEffect(() => {
         if (open) {
             setFormError(null);
+
             if (initialData) {
                 form.reset({
                     strategic_priority_id: String(
@@ -175,12 +177,15 @@ export default function FormDialog({
         if (!watchedStrategicPriority) {
             return '_';
         }
+
         if (selectedSubSector?.code) {
             return selectedSubSector.code;
         }
+
         if (filteredSubSectors.length === 0) {
             return '1';
         }
+
         return '_';
     }, [watchedStrategicPriority, selectedSubSector, filteredSubSectors]);
 
@@ -201,8 +206,10 @@ export default function FormDialog({
         function handleError(errors: Record<string, string>) {
             if (errors.message) {
                 setFormError(errors.message as string);
+
                 return;
             }
+
             Object.keys(errors).forEach((key) => {
                 form.setError(key as any, {
                     type: 'server',

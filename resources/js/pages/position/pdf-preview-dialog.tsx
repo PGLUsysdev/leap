@@ -143,6 +143,7 @@ function formatCurrency(n: string | number): string {
     const abs = Math.abs(num);
     const parts = abs.toFixed(2).split(".");
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
     return sign + parts.join(".");
 }
 
@@ -366,6 +367,7 @@ const MyDocument = ({
                             const curAnnual = curMonthly * 12;
                             const budAnnual = budMonthly * 12;
                             const increase = budAnnual - curAnnual;
+
                             return (
                                 <View key={pos.id} style={[styles.rowGroup, styles.borderTop]}>
                                     <View style={[styles.borderRight, { width: "7%" }]}>

@@ -1,14 +1,15 @@
+import { router } from "@inertiajs/react";
 import { createColumnHelper } from "@tanstack/react-table";
+import { Input } from "@/components/ui/input";
+import { getCellNumericValue } from "@/lib/ps-calculations";
 import type { ChartOfAccount, Position } from "@/types";
 import type { PsBreakdownItem } from "@/types";
-import { Input } from "@/components/ui/input";
-import { router } from "@inertiajs/react";
-import { getCellNumericValue } from "@/lib/ps-calculations";
 
 const columnHelper = createColumnHelper<Position>();
 
 const currency = (value: string | number | null | undefined) => {
     const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
+
     return num.toLocaleString("en-US", {
         style: "currency",
         currency: "PHP",
@@ -24,6 +25,7 @@ export default function getColumns(
     annualRateMap: Record<number, { current: number; budget: number }> = {},
 ) {
     const manualLookup = new Map<string, string>();
+
     for (const item of breakdownItems) {
         const key = `${item.chart_of_account_id}_${item.plantilla_position_id ?? ""}`;
         manualLookup.set(key, item.amount);
@@ -58,12 +60,14 @@ export default function getColumns(
             size: 140,
             cell: ({ row }) => {
                 const monthly = (annualRateMap[row.original.id]?.budget ?? 0) / 12;
+
                 return <span className="text-sm tabular-nums">{currency(monthly)}</span>;
             },
             footer: ({ table }) => {
                 const total = table.getCoreRowModel().rows.reduce((sum, row) => {
                     return sum + (annualRateMap[row.original.id]?.budget ?? 0) / 12;
                 }, 0);
+
                 return <span className="font-semibold tabular-nums">{currency(total)}</span>;
             },
         }),
@@ -79,12 +83,14 @@ export default function getColumns(
             size: 150,
             cell: ({ row }) => {
                 const annual = annualRateMap[row.original.id]?.budget ?? 0;
+
                 return <span className="text-sm tabular-nums">{currency(annual)}</span>;
             },
             footer: ({ table }) => {
                 const total = table.getCoreRowModel().rows.reduce((sum, row) => {
                     return sum + (annualRateMap[row.original.id]?.budget ?? 0);
                 }, 0);
+
                 return <span className="font-semibold tabular-nums">{currency(total)}</span>;
             },
         }),
@@ -152,6 +158,7 @@ export default function getColumns(
                                 rates,
                                 annualRateMap,
                             );
+
                             return sum + (val ?? 0);
                         }, 0);
                     }

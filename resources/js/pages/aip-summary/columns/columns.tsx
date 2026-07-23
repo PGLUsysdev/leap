@@ -1,13 +1,17 @@
 import { createColumnHelper } from "@tanstack/react-table";
-import { Plus, Pencil, Trash, ShieldCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Decimal } from "decimal.js";
+import { Plus, Pencil, Trash, ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import type { FlattenedPpa, PpaFundingSource } from "@/types";
 
 export const formatNumber = (val: string | null) => {
-    if (!val) return "-";
+    if (!val) {
+return "-";
+}
+
     const num = parseFloat(val);
+
     return num
         ? num.toLocaleString(undefined, {
               minimumFractionDigits: 2,
@@ -32,6 +36,7 @@ export const formatDate = (dateString: string) => {
         "Dec",
     ];
     const dateSplit = dateString.split("-");
+
     return `${months[Number(dateSplit[1]) - 1]}-${dateSplit[2]}`;
 };
 
@@ -39,6 +44,7 @@ const sumField = (rows: any[], field: keyof PpaFundingSource) => {
     return rows.reduce((sum, row) => {
         const value = row.original.current_fs?.[field];
         const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
+
         return sum + (isNaN(num) ? 0 : num);
     }, 0);
 };
@@ -102,9 +108,11 @@ const columns = () => {
             size: 150,
             cell: ({ row }) => {
                 const office = row.original.office;
+
                 if (office?.parent?.acronym && office?.acronym) {
                     return `${office.parent.acronym}/${office.acronym}`;
                 }
+
                 return office?.acronym || "-";
             },
             meta: { rowSpan: true },
@@ -160,6 +168,7 @@ const columns = () => {
                     footer: ({ table }) => {
                         const rows = table.getFilteredRowModel().flatRows;
                         const total = sumField(rows, "ps_amount");
+
                         return (
                             <div className="text-right font-bold">
                                 {formatNumber(total.toString())}
@@ -193,6 +202,7 @@ const columns = () => {
                     footer: ({ table }) => {
                         const rows = table.getFilteredRowModel().flatRows;
                         const total = sumField(rows, "fe_amount");
+
                         return (
                             <div className="text-right font-bold">
                                 {formatNumber(total.toString())}
@@ -209,6 +219,7 @@ const columns = () => {
                     footer: ({ table }) => {
                         const rows = table.getFilteredRowModel().flatRows;
                         const total = sumField(rows, "co_amount");
+
                         return (
                             <div className="text-right font-bold">
                                 {formatNumber(total.toString())}
@@ -221,11 +232,16 @@ const columns = () => {
                     header: () => <div className="text-right font-bold">Total</div>,
                     cell: ({ row }) => {
                         const fs = row.original.current_fs;
-                        if (!fs) return <div className="text-right">-</div>;
+
+                        if (!fs) {
+return <div className="text-right">-</div>;
+}
+
                         const total = new Decimal(fs.co_amount || 0)
                             .plus(fs.fe_amount || 0)
                             .plus(fs.mooe_amount || 0)
                             .plus(fs.ps_amount || 0);
+
                         return (
                             <div className="text-right font-bold">
                                 {formatNumber(total.toString())}
@@ -236,13 +252,19 @@ const columns = () => {
                         const rows = table.getFilteredRowModel().flatRows;
                         const total = rows.reduce((sum, row) => {
                             const fs = row.original.current_fs;
-                            if (!fs) return sum;
+
+                            if (!fs) {
+return sum;
+}
+
                             const rowTotal = new Decimal(fs.co_amount || 0)
                                 .plus(fs.fe_amount || 0)
                                 .plus(fs.mooe_amount || 0)
                                 .plus(fs.ps_amount || 0);
+
                             return sum + rowTotal.toNumber();
                         }, 0);
+
                         return (
                             <div className="text-right font-bold">
                                 {formatNumber(total.toString())}
@@ -268,6 +290,7 @@ const columns = () => {
                     footer: ({ table }) => {
                         const rows = table.getFilteredRowModel().flatRows;
                         const total = sumField(rows, "ccet_adaptation");
+
                         return (
                             <div className="text-right font-bold">
                                 {formatNumber(total.toString())}
@@ -300,6 +323,7 @@ const columns = () => {
             header: () => <div className="pl-4 text-left">Typology</div>,
             cell: (info) => {
                 const code = info.getValue();
+
                 return <div className="pl-4">{code || "-"}</div>;
             },
             footer: () => <div className="pl-4 font-medium">-</div>,

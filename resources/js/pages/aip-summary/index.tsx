@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Library, FileDown, FileText, Plus } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
 import { DataTable } from '@/components/data-table';
+import BaseDataTable from '@/components/base-ui-components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import {
     AlertDialog,
@@ -637,6 +638,11 @@ export default function AipSummaryTable({
                         )}
                     </div>
                 </DataTable>
+
+                <BaseDataTable
+                    columns={cols}
+                    data={expandPpaByFundingSource(aipEntries)}
+                ></BaseDataTable>
             </div>
 
             <PpaSelectorDialog

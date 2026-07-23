@@ -64,9 +64,11 @@ const expandPpaByFundingSource = (ppas: Ppa[], depth = 0, currentScope?: any): F
                         (a: any, b: any) =>
                             (b.supplemental_aip_id ?? -1) - (a.supplemental_aip_id ?? -1),
                     )[0];
+
                 if (latestEntry) {
                     base.aip_entry_id = latestEntry.id;
                 }
+
                 return base;
             });
         }
@@ -76,6 +78,7 @@ const expandPpaByFundingSource = (ppas: Ppa[], depth = 0, currentScope?: any): F
             const latestAip = [...activeAips].sort(
                 (a: any, b: any) => (b.supplemental_aip_id ?? -1) - (a.supplemental_aip_id ?? -1),
             )[0];
+
             return [
                 {
                     ...ppa,
@@ -112,8 +115,12 @@ const expandPpaByFundingSource = (ppas: Ppa[], depth = 0, currentScope?: any): F
 
 // Format date to MM-DD format
 const formatDate = (value: string | null | undefined) => {
-    if (!value) return "-";
+    if (!value) {
+return "-";
+}
+
     const parts = value.split("-");
+
     if (parts.length === 3) {
         const shortMonths = [
             "Jan",
@@ -131,15 +138,21 @@ const formatDate = (value: string | null | undefined) => {
         ];
         const monthName = shortMonths[parseInt(parts[1]) - 1];
         const day = parseInt(parts[2]);
+
         return `${monthName}-${day}`;
     }
+
     return value;
 };
 
 // Format number with 2 decimal places
 const formatNumber = (value: any) => {
     const num = parseFloat(value);
-    if (!value || isNaN(num) || num === 0) return "-";
+
+    if (!value || isNaN(num) || num === 0) {
+return "-";
+}
+
     return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
@@ -266,6 +279,7 @@ export async function exportToExcel({
         const { item, level, path } = stack.pop()!;
 
         let displayTitle = item.name;
+
         if (level === 0) {
             const letter = String.fromCharCode(65 + rootCounter);
             displayTitle = `${letter}. ${displayTitle}`;
@@ -301,6 +315,7 @@ export async function exportToExcel({
 
         // Format office acronym
         let officeAcronym = "-";
+
         if (item.office?.parent?.acronym && item.office?.acronym) {
             officeAcronym = `${item.office.parent.acronym}/${item.office.acronym}`;
         } else if (item.office?.acronym) {
@@ -330,6 +345,7 @@ export async function exportToExcel({
 
         // Apply indentation to description column
         const currentRow = worksheet.getRow(worksheet.rowCount);
+
         if (showPpaDetails && level > 0) {
             const descriptionCell = currentRow.getCell("description");
             descriptionCell.alignment = { indent: level * 2 };

@@ -103,6 +103,7 @@ export default function FormDialog({
             const isValid = selectedService.groups.some(
                 (g) => g.group_code === currentGroup,
             );
+
             if (!isValid) {
                 form.setValue('occupational_group_code', '');
             }

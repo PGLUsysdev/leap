@@ -1,12 +1,12 @@
+import { router } from "@inertiajs/react";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import { useState, useCallback, useEffect } from "react";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ChevronRight, ChevronDown } from "lucide-react";
-import { router } from "@inertiajs/react";
-import { permissionTree } from "@/lib/permissions";
 import { FormDialogShell } from "@/components/form-dialog-shell";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { permissionTree } from "@/lib/permissions";
 import type { PermissionNode } from "@/lib/permissions";
 import type { Role } from "@/types";
 
@@ -22,11 +22,13 @@ function usePermissionState() {
     const toggle = useCallback((key: string) => {
         setSelected((prev) => {
             const next = new Set(prev);
+
             if (next.has(key)) {
                 next.delete(key);
             } else {
                 next.add(key);
             }
+
             return next;
         });
     }, []);
@@ -34,6 +36,7 @@ function usePermissionState() {
     const toggleAll = useCallback((keys: string[], checked: boolean) => {
         setSelected((prev) => {
             const next = new Set(prev);
+
             for (const key of keys) {
                 if (checked) {
                     next.add(key);
@@ -41,6 +44,7 @@ function usePermissionState() {
                     next.delete(key);
                 }
             }
+
             return next;
         });
     }, []);
@@ -48,12 +52,15 @@ function usePermissionState() {
     const toggleSingle = useCallback((groupKeys: string[], selectedKey: string) => {
         setSelected((prev) => {
             const next = new Set(prev);
+
             for (const k of groupKeys) {
                 next.delete(k);
             }
+
             if (selectedKey) {
                 next.add(selectedKey);
             }
+
             return next;
         });
     }, []);
@@ -63,7 +70,11 @@ function usePermissionState() {
 
 function getScopedPermissionKeys(node: PermissionNode): string[] {
     const keys: string[] = [];
-    if (!node.scopedPermissions) return keys;
+
+    if (!node.scopedPermissions) {
+return keys;
+}
+
     for (const sp of node.scopedPermissions) {
         if (sp.scopes.length === 0) {
             keys.push(`${node.key}.${sp.key}`);
@@ -73,6 +84,7 @@ function getScopedPermissionKeys(node: PermissionNode): string[] {
             }
         }
     }
+
     return keys;
 }
 
@@ -111,7 +123,10 @@ function PermissionRow({
     const isOwnMode = hasShowToggle ? selected.has(`${node.key}.show.own`) : false;
 
     useEffect(() => {
-        if (!viewKey) return;
+        if (!viewKey) {
+return;
+}
+
         const viewOn = selected.has(viewKey);
         const scopedKeys = getScopedPermissionKeys(node);
         const hasScoped = scopedKeys.some((k) => selected.has(k));
@@ -120,6 +135,7 @@ function PermissionRow({
             if (hasScoped) {
                 onToggleAll(scopedKeys, false);
             }
+
             return;
         }
 
@@ -138,6 +154,7 @@ function PermissionRow({
                     .filter((sp) => sp.scopes.length === 0 && sp.key !== "view")
                     .map((sp) => `${node.key}.${sp.key}`);
                 const hasGlobal = globalKeys.some((k) => selected.has(k));
+
                 if (hasGlobal) {
                     onToggleAll(globalKeys, false);
                 }
@@ -146,6 +163,7 @@ function PermissionRow({
                     .filter((sp) => sp.disableOption)
                     .map((sp) => `${node.key}.${sp.key}.all`);
                 const hasSubUnitAll = subUnitAllKeys.some((k) => selected.has(k));
+
                 if (hasSubUnitAll) {
                     onToggleAll(subUnitAllKeys, false);
                 }
@@ -186,6 +204,7 @@ function PermissionRow({
                             (sp.scopes.length === 2 &&
                                 sp.scopes.includes("own") &&
                                 sp.scopes.includes("all"));
+
                         return isToggleScope;
                     })
                     .map((sp) => {
@@ -194,6 +213,7 @@ function PermissionRow({
                             : sp.scopes;
 
                         let currentSelected: string;
+
                         if (sp.scopes.length === 0) {
                             const key = `${node.key}.${sp.key}`;
                             currentSelected = selected.has(key) ? "enable" : "";
@@ -219,9 +239,13 @@ function PermissionRow({
                                             : "")
                                     }
                                     onValueChange={(value) => {
-                                        if (sp.key === "show" && !value) return;
+                                        if (sp.key === "show" && !value) {
+return;
+}
+
                                         if (sp.scopes.length === 0) {
                                             const key = `${node.key}.${sp.key}`;
+
                                             if (value === "enable" && !selected.has(key)) {
                                                 onToggle(key);
                                             } else if (value === "disabled" && selected.has(key)) {
@@ -246,6 +270,7 @@ function PermissionRow({
                                                 : scope === "enable"
                                                   ? "Enable"
                                                   : scope;
+
                                         return (
                                             <ToggleGroupItem
                                                 key={scope}
@@ -306,7 +331,9 @@ export default function PermissionDialog({ open, onOpenChange, role }: Permissio
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        if (!open || !role) return;
+        if (!open || !role) {
+return;
+}
 
         setIsLoading(true);
         fetch(`/roles/${role.id}/permissions`, {
@@ -320,7 +347,9 @@ export default function PermissionDialog({ open, onOpenChange, role }: Permissio
     }, [open, role, setSelected]);
 
     const handleSave = useCallback(() => {
-        if (!role) return;
+        if (!role) {
+return;
+}
 
         setIsLoading(true);
         router.post(
@@ -345,11 +374,13 @@ export default function PermissionDialog({ open, onOpenChange, role }: Permissio
     const handleToggleExpand = useCallback((key: string) => {
         setExpandedKeys((prev) => {
             const next = new Set(prev);
+
             if (next.has(key)) {
                 next.delete(key);
             } else {
                 next.add(key);
             }
+
             return next;
         });
     }, []);

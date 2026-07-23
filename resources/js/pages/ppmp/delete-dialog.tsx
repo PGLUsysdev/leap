@@ -1,3 +1,5 @@
+import { router } from "@inertiajs/react";
+import { useState } from "react";
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -7,11 +9,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { Ppmp } from "@/types";
-import { router } from "@inertiajs/react";
-import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { Spinner } from "@/components/ui/spinner";
+import type { Ppmp } from "@/types";
 
 interface DeleteDialogProps {
     open: boolean;

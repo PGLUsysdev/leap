@@ -2,6 +2,8 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { centuryGothicBase64 } from "@/fonts/CenturyGothic";
+import { centuryGothicBoldBase64 } from "@/fonts/CenturyGothicBold";
 import type {
     Ppmp,
     PriceList,
@@ -12,8 +14,6 @@ import type {
     FiscalYear,
     AuthData,
 } from "@/types";
-import { centuryGothicBase64 } from "@/fonts/CenturyGothic";
-import { centuryGothicBoldBase64 } from "@/fonts/CenturyGothicBold";
 
 interface ExportToExcelProps {
     filteredPpmpItems: Ppmp[];
@@ -98,6 +98,7 @@ export async function exportToExcel({
         const coaPivot = priceList?.chart_of_account_ppmp_category;
         const coa = coaPivot?.chart_of_account;
         const category = coaPivot?.ppmp_category;
+
         return {
             ...item,
             priceList,
@@ -110,8 +111,13 @@ export async function exportToExcel({
     const groupedByProcurementType = itemsWithCategory.reduce(
         (acc, item) => {
             const key = item.is_non_procurement ? "true" : "false";
-            if (!acc[key]) acc[key] = [];
+
+            if (!acc[key]) {
+acc[key] = [];
+}
+
             acc[key].push(item);
+
             return acc;
         },
         {} as Record<string, typeof itemsWithCategory>,
@@ -151,8 +157,13 @@ export async function exportToExcel({
 
             const groupedByCategory = items.reduce((acc: any, item) => {
                 const key = item.category?.id?.toString() || "undefined";
-                if (!acc[key]) acc[key] = [];
+
+                if (!acc[key]) {
+acc[key] = [];
+}
+
                 acc[key].push(item);
+
                 return acc;
             }, {});
 
@@ -162,12 +173,18 @@ export async function exportToExcel({
                         const subGrouped = value.reduce(
                             (acc: Record<string, typeof itemsWithCategory>, item) => {
                                 const subKey = item.coa?.id?.toString() || "undefined";
-                                if (!acc[subKey]) acc[subKey] = [];
+
+                                if (!acc[subKey]) {
+acc[subKey] = [];
+}
+
                                 acc[subKey].push(item);
+
                                 return acc;
                             },
                             {} as Record<string, typeof itemsWithCategory>,
                         );
+
                         return [key, subGrouped];
                     },
                 ),
@@ -496,6 +513,7 @@ export async function exportToPrint({
         const coaPivot = priceList?.chart_of_account_ppmp_category;
         const coa = coaPivot?.chart_of_account;
         const category = coaPivot?.ppmp_category;
+
         return {
             ...item,
             priceList,
@@ -508,8 +526,13 @@ export async function exportToPrint({
     const groupedByProcurementType = itemsWithCategory.reduce(
         (acc, item) => {
             const key = item.is_non_procurement ? "true" : "false";
-            if (!acc[key]) acc[key] = [];
+
+            if (!acc[key]) {
+acc[key] = [];
+}
+
             acc[key].push(item);
+
             return acc;
         },
         {} as Record<string, typeof itemsWithCategory>,
@@ -525,7 +548,7 @@ export async function exportToPrint({
         const procurementType =
             isNonProcurement === "true" ? "NON-PROCUREMENT ITEMS" : "PROCUREMENT ITEMS";
         let procurementTypeTotalAmount = 0;
-        let procurementTypeMonthlyTotals = Array(12).fill(0);
+        const procurementTypeMonthlyTotals = Array(12).fill(0);
 
         tableBody.push({
             isProcurementType: true,
@@ -536,8 +559,13 @@ export async function exportToPrint({
 
         const groupedByCategory = items.reduce((acc: any, item) => {
             const key = item.category?.id?.toString() || "undefined";
-            if (!acc[key]) acc[key] = [];
+
+            if (!acc[key]) {
+acc[key] = [];
+}
+
             acc[key].push(item);
+
             return acc;
         }, {});
 
@@ -556,8 +584,13 @@ export async function exportToPrint({
 
             const groupedByAccount = categoryItems.reduce((acc: any, item: any) => {
                 const key = item.coa?.id?.toString() || "undefined";
-                if (!acc[key]) acc[key] = [];
+
+                if (!acc[key]) {
+acc[key] = [];
+}
+
                 acc[key].push(item);
+
                 return acc;
             }, {});
 
@@ -658,26 +691,36 @@ export async function exportToPrint({
                 data: Array(31)
                     .fill("")
                     .map((_, i) => {
-                        if (i === 2) return `${categoryName} - TOTAL`;
-                        if (i === 4)
-                            return categoryTotalPrice.toLocaleString(undefined, {
+                        if (i === 2) {
+return `${categoryName} - TOTAL`;
+}
+
+                        if (i === 4) {
+return categoryTotalPrice.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
-                        if (i === 6)
-                            return categoryTotalAmount.toLocaleString(undefined, {
+}
+
+                        if (i === 6) {
+return categoryTotalAmount.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
+}
+
                         const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+
                         if (monthAmtCols.includes(i)) {
                             const monthIdx = (i - 8) / 2;
                             const value = categoryMonthlyTotals[monthIdx] || 0;
+
                             return value.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
                         }
+
                         return "";
                     }),
             });
@@ -693,21 +736,29 @@ export async function exportToPrint({
             data: Array(31)
                 .fill("")
                 .map((_, i) => {
-                    if (i === 2) return `TOTAL - FOR ${procurementType}`;
-                    if (i === 6)
-                        return procurementTypeTotalAmount.toLocaleString(undefined, {
+                    if (i === 2) {
+return `TOTAL - FOR ${procurementType}`;
+}
+
+                    if (i === 6) {
+return procurementTypeTotalAmount.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         });
+}
+
                     const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+
                     if (monthAmtCols.includes(i)) {
                         const monthIdx = (i - 8) / 2;
                         const value = procurementTypeMonthlyTotals[monthIdx] || 0;
+
                         return value.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         });
                     }
+
                     return "";
                 }),
         });
@@ -731,21 +782,29 @@ export async function exportToPrint({
         data: Array(31)
             .fill("")
             .map((_, i) => {
-                if (i === 2) return "GRAND TOTAL - FOR THE AIP/PPA";
-                if (i === 6)
-                    return grandTotalAmount.toLocaleString(undefined, {
+                if (i === 2) {
+return "GRAND TOTAL - FOR THE AIP/PPA";
+}
+
+                if (i === 6) {
+return grandTotalAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     });
+}
+
                 const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+
                 if (monthAmtCols.includes(i)) {
                     const monthIdx = (i - 8) / 2;
                     const value = grandMonthlyTotals[monthIdx] || 0;
+
                     return value.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     });
                 }
+
                 return "";
             }),
     });
@@ -895,39 +954,48 @@ export async function exportToPrint({
             if (data.section === "head" && data.row.index <= 4) {
                 data.cell.styles.lineWidth = 0;
             }
+
             if (data.section === "head" && data.row.index === 5) {
                 data.cell.styles.fontSize = 5;
                 data.cell.styles.fontStyle = "bold";
                 data.cell.styles.fillColor = [222, 234, 246];
             }
+
             if (data.section === "body") {
                 const rowMeta = tableBody[data.row.index];
                 const greenCols = [5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29];
+
                 if (greenCols.includes(data.column.index)) {
                     data.cell.styles.fillColor = [146, 208, 80];
                 }
+
                 if (rowMeta?.isProcurementType) {
                     data.cell.styles.fillColor = [255, 255, 255];
                     data.cell.styles.fontStyle = "bold";
                     data.cell.styles.fontSize = 6;
                 }
+
                 if (rowMeta?.isCategory) {
                     data.cell.styles.fillColor = [208, 206, 206];
                     data.cell.styles.fontStyle = "bold";
                 }
+
                 if (rowMeta?.isAccount) {
                     data.cell.styles.fillColor = [251, 228, 213];
                     data.cell.styles.fontStyle = "bold";
                 }
+
                 if (rowMeta?.isTotal) {
                     data.cell.styles.fillColor = [254, 242, 203];
                     data.cell.styles.fontStyle = "bold";
                 }
+
                 if (rowMeta?.isProcurementTypeTotal) {
                     data.cell.styles.fillColor = [255, 255, 0];
                     data.cell.styles.fontStyle = "bold";
                     data.cell.styles.fontSize = 5;
                 }
+
                 if (rowMeta?.isGrandTotal) {
                     data.cell.styles.fillColor = [0, 176, 80];
                     data.cell.styles.textColor = [0, 0, 0];
@@ -977,6 +1045,7 @@ export async function exportToPDF({
         const coaPivot = priceList?.chart_of_account_ppmp_category;
         const coa = coaPivot?.chart_of_account;
         const category = coaPivot?.ppmp_category;
+
         return {
             ...item,
             priceList,
@@ -989,8 +1058,13 @@ export async function exportToPDF({
     const groupedByProcurementType = itemsWithCategory.reduce(
         (acc, item) => {
             const key = item.is_non_procurement ? "true" : "false";
-            if (!acc[key]) acc[key] = [];
+
+            if (!acc[key]) {
+acc[key] = [];
+}
+
             acc[key].push(item);
+
             return acc;
         },
         {} as Record<string, typeof itemsWithCategory>,
@@ -1006,7 +1080,7 @@ export async function exportToPDF({
         const procurementType =
             isNonProcurement === "true" ? "NON-PROCUREMENT ITEMS" : "PROCUREMENT ITEMS";
         let procurementTypeTotalAmount = 0;
-        let procurementTypeMonthlyTotals = Array(12).fill(0);
+        const procurementTypeMonthlyTotals = Array(12).fill(0);
 
         tableBody.push({
             isProcurementType: true,
@@ -1017,8 +1091,13 @@ export async function exportToPDF({
 
         const groupedByCategory = items.reduce((acc: any, item) => {
             const key = item.category?.id?.toString() || "undefined";
-            if (!acc[key]) acc[key] = [];
+
+            if (!acc[key]) {
+acc[key] = [];
+}
+
             acc[key].push(item);
+
             return acc;
         }, {});
 
@@ -1037,8 +1116,13 @@ export async function exportToPDF({
 
             const groupedByAccount = categoryItems.reduce((acc: any, item: any) => {
                 const key = item.coa?.id?.toString() || "undefined";
-                if (!acc[key]) acc[key] = [];
+
+                if (!acc[key]) {
+acc[key] = [];
+}
+
                 acc[key].push(item);
+
                 return acc;
             }, {});
 
@@ -1139,26 +1223,36 @@ export async function exportToPDF({
                 data: Array(31)
                     .fill("")
                     .map((_, i) => {
-                        if (i === 2) return `${categoryName} - TOTAL`;
-                        if (i === 4)
-                            return categoryTotalPrice.toLocaleString(undefined, {
+                        if (i === 2) {
+return `${categoryName} - TOTAL`;
+}
+
+                        if (i === 4) {
+return categoryTotalPrice.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
-                        if (i === 6)
-                            return categoryTotalAmount.toLocaleString(undefined, {
+}
+
+                        if (i === 6) {
+return categoryTotalAmount.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
+}
+
                         const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+
                         if (monthAmtCols.includes(i)) {
                             const monthIdx = (i - 8) / 2;
                             const value = categoryMonthlyTotals[monthIdx] || 0;
+
                             return value.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
                         }
+
                         return "";
                     }),
             });
@@ -1174,21 +1268,29 @@ export async function exportToPDF({
             data: Array(31)
                 .fill("")
                 .map((_, i) => {
-                    if (i === 2) return `TOTAL - FOR ${procurementType}`;
-                    if (i === 6)
-                        return procurementTypeTotalAmount.toLocaleString(undefined, {
+                    if (i === 2) {
+return `TOTAL - FOR ${procurementType}`;
+}
+
+                    if (i === 6) {
+return procurementTypeTotalAmount.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         });
+}
+
                     const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+
                     if (monthAmtCols.includes(i)) {
                         const monthIdx = (i - 8) / 2;
                         const value = procurementTypeMonthlyTotals[monthIdx] || 0;
+
                         return value.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         });
                     }
+
                     return "";
                 }),
         });
@@ -1212,21 +1314,29 @@ export async function exportToPDF({
         data: Array(31)
             .fill("")
             .map((_, i) => {
-                if (i === 2) return "GRAND TOTAL - FOR THE AIP/PPA";
-                if (i === 6)
-                    return grandTotalAmount.toLocaleString(undefined, {
+                if (i === 2) {
+return "GRAND TOTAL - FOR THE AIP/PPA";
+}
+
+                if (i === 6) {
+return grandTotalAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     });
+}
+
                 const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+
                 if (monthAmtCols.includes(i)) {
                     const monthIdx = (i - 8) / 2;
                     const value = grandMonthlyTotals[monthIdx] || 0;
+
                     return value.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     });
                 }
+
                 return "";
             }),
     });
@@ -1376,39 +1486,48 @@ export async function exportToPDF({
             if (data.section === "head" && data.row.index <= 4) {
                 data.cell.styles.lineWidth = 0;
             }
+
             if (data.section === "head" && data.row.index === 5) {
                 data.cell.styles.fontSize = 5;
                 data.cell.styles.fontStyle = "bold";
                 data.cell.styles.fillColor = [222, 234, 246];
             }
+
             if (data.section === "body") {
                 const rowMeta = tableBody[data.row.index];
                 const greenCols = [5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29];
+
                 if (greenCols.includes(data.column.index)) {
                     data.cell.styles.fillColor = [146, 208, 80];
                 }
+
                 if (rowMeta?.isProcurementType) {
                     data.cell.styles.fillColor = [255, 255, 255];
                     data.cell.styles.fontStyle = "bold";
                     data.cell.styles.fontSize = 6;
                 }
+
                 if (rowMeta?.isCategory) {
                     data.cell.styles.fillColor = [208, 206, 206];
                     data.cell.styles.fontStyle = "bold";
                 }
+
                 if (rowMeta?.isAccount) {
                     data.cell.styles.fillColor = [251, 228, 213];
                     data.cell.styles.fontStyle = "bold";
                 }
+
                 if (rowMeta?.isTotal) {
                     data.cell.styles.fillColor = [254, 242, 203];
                     data.cell.styles.fontStyle = "bold";
                 }
+
                 if (rowMeta?.isProcurementTypeTotal) {
                     data.cell.styles.fillColor = [255, 255, 0];
                     data.cell.styles.fontStyle = "bold";
                     data.cell.styles.fontSize = 5;
                 }
+
                 if (rowMeta?.isGrandTotal) {
                     data.cell.styles.fillColor = [0, 176, 80];
                     data.cell.styles.textColor = [0, 0, 0];

@@ -1,6 +1,11 @@
 // src/components/ui/command-select.tsx
+import { Check, ChevronsUpDown } from 'lucide-react';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+} from '@/components/ui/button-group';
 import {
     Command,
     CommandDialog,
@@ -10,11 +15,6 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import {
-    ButtonGroup,
-    ButtonGroupSeparator,
-} from '@/components/ui/button-group';
 
 export interface CommandSelectProps<T> {
     value: string | number | null;

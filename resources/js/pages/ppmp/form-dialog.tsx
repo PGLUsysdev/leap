@@ -1,14 +1,12 @@
-import { useState, useEffect } from "react";
-import { Field, FieldError, FieldLabel, FieldContent } from "@/components/ui/field";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { ChartOfAccount, FundingSource, AipEntry, Ppmp } from "@/types";
 import { router } from "@inertiajs/react";
-import { formSchema, type FormSchemaType } from "./form-dialog-schema";
-import { FormDialogShell } from "@/components/form-dialog-shell";
+import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
 import { CommandSelect } from "@/components/command-select";
+import { FormDialogShell } from "@/components/form-dialog-shell";
+import { Field, FieldError, FieldLabel, FieldContent } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Select,
     SelectContent,
@@ -16,6 +14,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import type { ChartOfAccount, FundingSource, AipEntry, Ppmp } from "@/types";
+import { formSchema  } from "./form-dialog-schema";
+import type {FormSchemaType} from "./form-dialog-schema";
 
 interface PpmpFormDialogProps {
     open: boolean;
@@ -120,16 +121,22 @@ export default function PpmpFormDialog({
     ] as const;
 
     useEffect(() => {
-        if (mode !== "quick-add" || !selectedPriceListId || !existingPpmps?.length) return;
+        if (mode !== "quick-add" || !selectedPriceListId || !existingPpmps?.length) {
+return;
+}
 
         const match = (existingPpmps as any[]).find(
             (p) =>
                 Number(p.ppa_funding_source_id) === Number(ppaFundingSourceId) &&
                 Number(p.ppmp_price_list_id) === Number(selectedPriceListId),
         );
-        if (!match) return;
+
+        if (!match) {
+return;
+}
 
         const firstMonth = MONTHS.find((m) => (Number(match[`${m}_qty`]) || 0) > 0);
+
         if (firstMonth) {
             form.setValue("month", firstMonth);
             form.setValue("quantity", Number(match[`${firstMonth}_qty`]));
@@ -147,6 +154,7 @@ export default function PpmpFormDialog({
             ? categoryExpenseAccountIds.includes(coa.id)
             : true;
         const matchesExpenseClass = coa.expense_class === selectedExpenseClass;
+
         return matchesCategory && matchesExpenseClass;
     });
 
@@ -160,6 +168,7 @@ export default function PpmpFormDialog({
 
     const allPriceLists = priceLists.map((priceList) => {
         const pivot = priceList.chart_of_account_ppmp_category;
+
         return {
             ...priceList,
             chart_of_account_id: pivot?.chart_of_account_id,
@@ -172,7 +181,9 @@ export default function PpmpFormDialog({
 
     const filteredPriceLists = allPriceLists.filter((priceList) => {
         // ✅ Only keep price lists with the correct expense class
-        if (priceList.expense_class !== selectedExpenseClass) return false;
+        if (priceList.expense_class !== selectedExpenseClass) {
+return false;
+}
 
         const matchesAccount = selectedExpenseAccount
             ? priceList.chart_of_account_id === selectedExpenseAccount
@@ -180,6 +191,7 @@ export default function PpmpFormDialog({
         const matchesCategory = selectedCategory
             ? priceList.ppmp_category_id === selectedCategory
             : true;
+
         return matchesAccount && matchesCategory;
     });
 
@@ -414,6 +426,7 @@ export default function PpmpFormDialog({
                                                             readOnly
                                                             onChange={(e) => {
                                                                 const val = e.target.value;
+
                                                                 if (val === "") {
                                                                     field.onChange(null);
                                                                 } else {
@@ -690,6 +703,7 @@ export default function PpmpFormDialog({
                                                             value={field.value ?? ""}
                                                             onChange={(e) => {
                                                                 const val = e.target.value;
+
                                                                 if (val === "") {
                                                                     field.onChange(null);
                                                                 } else {

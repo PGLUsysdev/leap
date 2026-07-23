@@ -23,6 +23,7 @@ export const getCommonPinningStyles = <TData>(
 
     // --- Dynamic Stacking Logic ---
     let cellZIndex = 0;
+
     if (isPinned) {
         if (isFooter || isHeader) {
             cellZIndex = 3; // 1. Top Tier: Pinned Headers/Footers freeze above ALL traffic

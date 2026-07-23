@@ -1,6 +1,6 @@
-import type { ChartOfAccount } from "@/types";
 import { createColumnHelper } from "@tanstack/react-table";
 import { Button } from "@/components/ui/button";
+import type { ChartOfAccount } from "@/types";
 
 const columnHelper = createColumnHelper<ChartOfAccount>();
 
@@ -28,6 +28,7 @@ const columns = [
         size: 150,
         cell: ({ row }) => {
             const coa = row.original;
+
             // Amount is handled by the column's meta - just display placeholder
             return <span className="text-muted-foreground tabular-nums">—</span>;
         },
@@ -41,6 +42,7 @@ const columns = [
         size: 400,
         cell: (info) => {
             const num = info.getValue();
+
             switch (num) {
                 case "5-01-01-010":
                     return (
