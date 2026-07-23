@@ -8,7 +8,6 @@ import {
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
-import { Button } from '@/components/ui/button';
 import { reorder } from '@/routes/price-lists';
 import type {
     PriceList,
@@ -39,6 +38,7 @@ interface PriceListPageProps {
 
 export default function PriceListPage({
     paginatedPriceList,
+
     chartOfAccounts,
     ppmpCategories,
     filters,
@@ -46,14 +46,17 @@ export default function PriceListPage({
     can,
     coaCategoryPairs,
 }: PriceListPageProps) {
-    const { data: pageData, ...pagePaginationData } = paginatedPriceList;
+    const { data: priceLists, ...priceListsPagination } = paginatedPriceList;
+
+    // console.log(priceLists);
+    // console.log(priceListsPagination);
+
+    // ---
 
     const dialogData = paginatedDialogPriceList?.data ?? [];
     const dialogPaginationData = paginatedDialogPriceList
         ? (({ data, ...rest }) => rest)(paginatedDialogPriceList)
         : undefined;
-
-    console.log(paginatedDialogPriceList);
 
     const [selectedPriceList, setSelectedPriceList] =
         useState<PriceList | null>(null);
@@ -169,13 +172,9 @@ export default function PriceListPage({
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <NewTable
-                    data={pageData}
-                    paginationData={pagePaginationData}
-                    columns={columnsBase(
-                        can?.edit ?? false,
-                        can?.delete ?? false,
-                        can?.move ?? false,
-                    )}
+                    data={priceLists}
+                    paginationData={priceListsPagination}
+                    columns={columnsBase}
                     meta={{
                         onMove: handleMove,
                         onUpdate: (data: PriceList) => handleEdit(data),
@@ -196,6 +195,8 @@ export default function PriceListPage({
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
+            {/* --- */}
+
             <FormDialog
                 open={openFormDialog}
                 onOpenChange={handleDialogOpenChange}
@@ -214,7 +215,6 @@ export default function PriceListPage({
                 dialogData={dialogData}
                 dialogPaginationData={dialogPaginationData}
                 onMoveItem={handleMoveItem}
-                columns={columnsBase}
                 title="Move Price List Item"
                 description={`Select a target position for "${selectedItem?.description}" and click Move Down.`}
             />

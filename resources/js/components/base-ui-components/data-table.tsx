@@ -334,7 +334,7 @@ export default function Table<TData>({
                 {children}
             </div>
 
-            <ScrollArea className="min-h-0 flex-1 border-y">
+            <ScrollArea className="min-h-0 flex-1 border-t">
                 <div>
                     <DataTable
                         style={{
@@ -345,7 +345,8 @@ export default function Table<TData>({
                             // minWidth: `${table.getTotalSize()}px`,
                         }}
                     >
-                        <colgroup>
+                        {/* only enable this when using grouped cols */}
+                        {/* <colgroup>
                             {table.getAllLeafColumns().filter(col => col.getIsVisible()).map(col => (
                                 <col
                                     key={col.id}
@@ -355,13 +356,13 @@ export default function Table<TData>({
                                     }}
                                 />
                             ))}
-                        </colgroup>
+                        </colgroup> */}
                         <TableHeader className="sticky top-0 z-2">
                             {table.getHeaderGroups().map((headerGroup) => {
                                 return (
                                     <TableRow
                                         key={headerGroup.id}
-                                        className="shadow-[inset_0_-1px_0_0_var(--border)]"
+                                        className="shadow-[0_1px_0_0_var(--border)]"
                                     >
                                         {headerGroup.headers.map((header) => {
                                             return (
@@ -500,7 +501,7 @@ export default function Table<TData>({
                                         return (
                                             <TableRow
                                                 key={footerGroup.id}
-                                                className="shadow-[inset_0_1px_0_0_var(--border)]"
+                                                className="shadow-[0_-1px_0_0_var(--border)]"
                                             >
                                                 {footerGroup.headers.map(
                                                     (header) => {

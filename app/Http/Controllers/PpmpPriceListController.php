@@ -68,10 +68,6 @@ class PpmpPriceListController extends Controller
             });
         }
 
-        $priceList = $query
-            ->paginate(100, ['*'], 'price_list_page')
-            ->withQueryString();
-
         $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
             'MOOE',
             'CO',
@@ -94,7 +90,10 @@ class PpmpPriceListController extends Controller
         ]);
 
         return Inertia::render('price-list/index', [
-            'paginatedPriceList' => $priceList,
+            'paginatedPriceList' => $query
+                ->paginate(100, ['*'], 'price_list_page')
+                ->withQueryString(),
+
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategory,
             'coaCategoryPairs' => $coaCategoryPairs,

@@ -70,7 +70,7 @@ export default function MoveDialog({
                     <DataTable
                         data={dialogData}
                         paginationData={dialogPaginationData}
-                        columns={columns(false, false, false)}
+                        columns={columns}
                         className="h-1000"
                         variant="select"
                         onRowClick={onMoveTargetChange}

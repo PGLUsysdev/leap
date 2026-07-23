@@ -1,138 +1,96 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, Trash, Move } from 'lucide-react';
 import { Button } from '@/components/base-ui-components/ui/button';
-// import { Button } from '@/components/ui/button';
 import type { PriceList } from '@/types';
 
 const columnHelper = createColumnHelper<PriceList>();
 
-const columns = (canEdit: boolean, canDelete: boolean, canMove: boolean) => {
-    const cols = [];
-
-    if (canMove) {
-        cols.push(
-            columnHelper.display({
-                id: 'move-handle',
-                size: 50,
-                cell: ({ row, table }) => (
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => {
-                            table.options.meta?.onMove?.(row.original);
-                        }}
-                    >
-                        <Move />
-                    </Button>
-                ),
-            }),
-        );
-    }
-
-    cols.push(
-        columnHelper.accessor('item_number', {
-            header: 'Item Number',
-            size: 80,
-            cell: (value) => (
-                <div className="wrap-break-words whitespace-normal">
-                    {value.getValue()}
-                </div>
-            ),
-        }),
-        columnHelper.accessor('description', {
-            header: 'Description',
-            size: 300,
-            cell: (value) => (
-                <div className="wrap-break-words py-1 leading-tight font-medium whitespace-normal">
-                    {value.getValue()}
-                </div>
-            ),
-        }),
-        columnHelper.accessor('unit_of_measurement', {
-            header: 'UOM',
-            size: 100,
-            cell: (value) => (
-                <div className="whitespace-normal">{value.getValue()}</div>
-            ),
-        }),
-        columnHelper.accessor('price', {
-            header: () => (
-                <div className="pr-8 text-end">
-                    <span>Price</span>
-                </div>
-            ),
-            size: 120,
-            cell: (value) => (
-                <div className="pr-8 text-end">
-                    <span className="font-mono tabular-nums">
-                        {value.getValue()}
-                    </span>
-                </div>
-            ),
-        }),
-        columnHelper.accessor(
-            'chart_of_account_ppmp_category.ppmp_category.name',
-            {
-                header: 'PPMP Category',
-                size: 180,
-                cell: (value) => (
-                    <div className="leading-tight whitespace-normal">
-                        {value.getValue()}
-                    </div>
-                ),
-            },
+const columns = [
+    columnHelper.display({
+        id: 'move-handle',
+        size: 44,
+        cell: ({ row, table }) => (
+            <div>
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={!table.options.meta?.onMove}
+                    onClick={() => table.options.meta?.onMove?.(row.original)}
+                >
+                    <Move />
+                </Button>
+            </div>
         ),
-        columnHelper.accessor(
-            'chart_of_account_ppmp_category.chart_of_account.account_title',
-            {
-                header: 'Chart of Account',
-                size: 250,
-                cell: (value) => (
-                    <div className="wrap-break-words text-xs leading-tight whitespace-normal text-muted-foreground">
-                        {value.getValue()}
-                    </div>
-                ),
-            },
+    }),
+    columnHelper.accessor('item_number', {
+        header: () => <div className="px-1">Item Number</div>,
+        size: 100,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor('description', {
+        header: () => <div className="px-1">Description</div>,
+        size: 300,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor('unit_of_measurement', {
+        header: () => <div className="px-1">Unit of Measurement</div>,
+        size: 160,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor('price', {
+        header: () => <div className="px-1 text-right">Price</div>,
+        size: 120,
+        cell: (info) => (
+            <div className="px-1 text-right text-wrap">{info.getValue()}</div>
         ),
-    );
+    }),
+    columnHelper.accessor('chart_of_account_ppmp_category.ppmp_category.name', {
+        header: () => <div className="px-1">PPMP Category</div>,
+        size: 180,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor(
+        'chart_of_account_ppmp_category.chart_of_account.account_title',
+        {
+            header: () => <div className="px-1">Chart of Account</div>,
+            size: 250,
+            cell: (info) => (
+                <div className="px-1 text-wrap">{info.getValue()}</div>
+            ),
+        },
+    ),
+    columnHelper.display({
+        id: 'actions',
+        size: 84,
+        cell: ({ row, table }) => (
+            <div className="flex items-center gap-1">
+                <Button
+                    size="icon"
+                    variant="outline"
+                    disabled={!table.options.meta?.onUpdate}
+                    onClick={() => table.options.meta?.onUpdate?.(row.original)}
+                >
+                    <Pencil className="h-4 w-4" />
+                </Button>
 
-    if (canEdit || canDelete) {
-        cols.push(
-            columnHelper.display({
-                id: 'actions',
-                size: canEdit && canDelete ? 82 : 48,
-                cell: ({ row, table }) => (
-                    <div className="flex items-center gap-1">
-                        {canEdit && (
-                            <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() =>
-                                    table.options.meta?.onUpdate?.(row.original)
-                                }
-                            >
-                                <Pencil className="h-4 w-4" />
-                            </Button>
-                        )}
-
-                        {canDelete && (
-                            <Button
-                                size="icon"
-                                variant="destructive"
-                                onClick={() =>
-                                    table.options.meta?.onDelete?.(row.original)
-                                }
-                            >
-                                <Trash className="h-4 w-4" />
-                            </Button>
-                        )}
-                    </div>
-                ),
-            }),
-        );
-    }
-
-    return cols;
-};
+                <Button
+                    size="icon"
+                    variant="destructive"
+                    disabled={!table.options.meta?.onDelete}
+                    onClick={() => table.options.meta?.onDelete?.(row.original)}
+                >
+                    <Trash className="h-4 w-4" />
+                </Button>
+            </div>
+        ),
+    }),
+];
 
 export default columns;
+
+// headers and cells are rendered in a div
+// all cells have text-wrap except `actions` col
+// headers have no text-wrap
+// all headers and cells have px-1 except `actions` col
+// `actions` col: no px-1, no text-wrap
+// numeric/aligned cols have text-right in both header and cell
