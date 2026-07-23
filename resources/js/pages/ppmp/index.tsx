@@ -2,7 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Decimal } from 'decimal.js';
 import { Plus, FileDown, Sheet, FileText, Printer } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import {
     AlertDialog,
@@ -477,13 +477,11 @@ export default function PpmpPage({
                 <DataTable
                     columns={columns}
                     data={filteredPpmpItems}
-                    withSearch={true}
-                    withFooter={true}
-                    negativeHeight={11.4}
-                    onDelete={handleDeleteDialogOpen}
+                    showFooter={true}
                     meta={{
                         readOnly: !isActiveTab,
-                    }}
+                        onDelete: handleDeleteDialogOpen,
+                    } as any}
                 >
                     <div className="flex gap-2">
                         <Select

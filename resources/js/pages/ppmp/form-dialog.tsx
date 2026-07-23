@@ -3,10 +3,18 @@ import { router } from "@inertiajs/react";
 import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { CommandSelect } from "@/components/command-select";
-import { FormDialogShell } from "@/components/form-dialog-shell";
-import { Field, FieldError, FieldLabel, FieldContent } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/base-ui-components/ui/dialog";
+import { Button } from "@/components/base-ui-components/ui/button";
+import { Field, FieldError, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
+import { ScrollArea } from "@/components/base-ui-components/ui/scroll-area";
 import {
     Select,
     SelectContent,
@@ -235,26 +243,19 @@ return false;
     };
 
     return (
-        <FormDialogShell
-            open={open}
-            onOpenChange={onOpenChange}
-            title={mode === "quick-add" ? "Quick Add PPMP Item" : "Add PPMP Item"}
-            description={
-                mode === "quick-add"
-                    ? "Select a procurement item and set the monthly quantity"
-                    : "Add a new item to the PPMP list"
-            }
-            isLoading={isLoading}
-            formId="form-rhf-demo"
-            onReset={handleReset}
-            onCancel={() => onOpenChange(false)}
-            submitLabel={mode === "quick-add" ? "Add & Set Quantity" : "Add Item"}
-            submittingLabel={mode === "quick-add" ? "Adding Item..." : "Adding Item"}
-            className="sm:max-w-2xl"
-        >
-            <div className="flex min-h-0">
-                <ScrollArea className="w-full">
-                    <div className="grid gap-6">
+        <Dialog open={open} onOpenChange={onOpenChange} modal={isLoading}>
+            <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>{mode === "quick-add" ? "Quick Add PPMP Item" : "Add PPMP Item"}</DialogTitle>
+                    <DialogDescription>
+                        {mode === "quick-add"
+                            ? "Select a procurement item and set the monthly quantity"
+                            : "Add a new item to the PPMP list"}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex min-h-0 flex-1">
+                    <ScrollArea className="w-full pr-3">
                         <form id="form-rhf-demo" onSubmit={form.handleSubmit(onSubmit)}>
                             <div className="grid gap-6">
                                 <Controller
@@ -265,7 +266,7 @@ return false;
                                             className="overflow-hidden"
                                             data-invalid={fieldState.invalid}
                                         >
-                                            <FieldContent>
+                                            
                                                 <FieldLabel htmlFor={field.name}>
                                                     Procurement Item
                                                 </FieldLabel>
@@ -356,7 +357,7 @@ return false;
                                                 {fieldState.invalid && (
                                                     <FieldError errors={[fieldState.error]} />
                                                 )}
-                                            </FieldContent>
+                                            
                                         </Field>
                                     )}
                                 />
@@ -368,7 +369,7 @@ return false;
                                             control={form.control}
                                             render={({ field, fieldState }) => (
                                                 <Field data-invalid={fieldState.invalid}>
-                                                    <FieldContent>
+                                                    
                                                         <FieldLabel htmlFor={field.name}>
                                                             Item No.
                                                         </FieldLabel>
@@ -398,7 +399,7 @@ return false;
                                                                 errors={[fieldState.error]}
                                                             />
                                                         )}
-                                                    </FieldContent>
+                                                    
                                                 </Field>
                                             )}
                                         />
@@ -410,7 +411,7 @@ return false;
                                             control={form.control}
                                             render={({ field, fieldState }) => (
                                                 <Field data-invalid={fieldState.invalid}>
-                                                    <FieldContent>
+                                                    
                                                         <FieldLabel htmlFor={field.name}>
                                                             Price
                                                         </FieldLabel>
@@ -444,7 +445,7 @@ return false;
                                                                 errors={[fieldState.error]}
                                                             />
                                                         )}
-                                                    </FieldContent>
+                                                    
                                                 </Field>
                                             )}
                                         />
@@ -456,7 +457,7 @@ return false;
                                             control={form.control}
                                             render={({ field, fieldState }) => (
                                                 <Field data-invalid={fieldState.invalid}>
-                                                    <FieldContent>
+                                                    
                                                         <FieldLabel htmlFor={field.name}>
                                                             Unit of Measurement
                                                         </FieldLabel>
@@ -474,7 +475,7 @@ return false;
                                                                 errors={[fieldState.error]}
                                                             />
                                                         )}
-                                                    </FieldContent>
+                                                    
                                                 </Field>
                                             )}
                                         />
@@ -489,7 +490,7 @@ return false;
                                             // className="overflow-hidden"
                                             data-invalid={fieldState.invalid}
                                         >
-                                            <FieldContent>
+                                            
                                                 <FieldLabel htmlFor={field.name}>
                                                     Expense Account{" "}
                                                     {selectedExpenseClass === "MOOE"
@@ -539,7 +540,7 @@ return false;
                                                 {fieldState.invalid && (
                                                     <FieldError errors={[fieldState.error]} />
                                                 )}
-                                            </FieldContent>
+                                            
                                         </Field>
                                     )}
                                 />
@@ -552,7 +553,7 @@ return false;
                                             // className="overflow-hidden"
                                             data-invalid={fieldState.invalid}
                                         >
-                                            <FieldContent>
+                                            
                                                 <FieldLabel htmlFor={field.name}>
                                                     Category
                                                 </FieldLabel>
@@ -584,7 +585,7 @@ return false;
                                                 {fieldState.invalid && (
                                                     <FieldError errors={[fieldState.error]} />
                                                 )}
-                                            </FieldContent>
+                                            
                                         </Field>
                                     )}
                                 />
@@ -596,7 +597,7 @@ return false;
                                             control={form.control}
                                             render={({ field, fieldState }) => (
                                                 <Field data-invalid={fieldState.invalid}>
-                                                    <FieldContent>
+                                                    
                                                         <FieldLabel htmlFor={field.name}>
                                                             Month
                                                         </FieldLabel>
@@ -679,7 +680,7 @@ return false;
                                                                 errors={[fieldState.error]}
                                                             />
                                                         )}
-                                                    </FieldContent>
+                                                    
                                                 </Field>
                                             )}
                                         />
@@ -689,7 +690,7 @@ return false;
                                             control={form.control}
                                             render={({ field, fieldState }) => (
                                                 <Field data-invalid={fieldState.invalid}>
-                                                    <FieldContent>
+                                                    
                                                         <FieldLabel htmlFor={field.name}>
                                                             Quantity
                                                         </FieldLabel>
@@ -718,7 +719,7 @@ return false;
                                                                 errors={[fieldState.error]}
                                                             />
                                                         )}
-                                                    </FieldContent>
+                                                    
                                                 </Field>
                                             )}
                                         />
@@ -733,7 +734,7 @@ return false;
                                             // className="overflow-hidden"
                                             data-invalid={fieldState.invalid}
                                         >
-                                            <FieldContent>
+                                            
                                                 <FieldLabel htmlFor={field.name}>
                                                     Funding Source
                                                 </FieldLabel>
@@ -774,15 +775,27 @@ return false;
                                                 {fieldState.invalid && (
                                                     <FieldError errors={[fieldState.error]} />
                                                 )}
-                                            </FieldContent>
+                                            
                                         </Field>
                                     )}
                                 />
                             </div>
                         </form>
-                    </div>
-                </ScrollArea>
-            </div>
-        </FormDialogShell>
+                    </ScrollArea>
+                </div>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={handleReset} disabled={isLoading}>
+                        Reset
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" form="form-rhf-demo" disabled={isLoading}>
+                        {isLoading ? "Adding Item..." : mode === "quick-add" ? "Add & Set Quantity" : "Add Item"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

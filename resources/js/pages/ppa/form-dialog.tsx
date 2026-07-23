@@ -25,7 +25,6 @@ import {
 } from '@/components/base-ui-components/ui/dialog';
 import {
     Field,
-    FieldContent,
     // FieldDescription,
     FieldError,
     FieldGroup,
@@ -38,7 +37,6 @@ import {
 import { Input } from '@/components/base-ui-components/ui/input';
 import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
 import { Textarea } from '@/components/base-ui-components/ui/textarea';
-import { FormDialogShell } from '@/components/form-dialog-shell';
 import {
     Command,
     CommandDialog,
@@ -259,26 +257,21 @@ return;
 
     return (
         <>
-            <FormDialogShell
-                open={isOpen}
-                onOpenChange={onOpenChange}
-                title={isEditing ? `Edit ${targetType}` : `Add ${targetType}`}
-                description={
-                    isAddingChild
-                        ? `Creating under: ${parentPpa?.name}`
-                        : isEditing
-                          ? `Modify the details of this ${targetType.toLowerCase()}.`
-                          : `Create a new root level ${targetType.toLowerCase()}.`
-                }
-                isLoading={isSubmitting}
-                formId="ppa-form"
-                onCancel={() => onOpenChange(false)}
-                submitLabel={isEditing ? 'Save Changes' : 'Create PPA'}
-                submittingLabel={isEditing ? 'Saving...' : 'Creating...'}
-                className="sm:max-w-2xl"
-            >
-                <div className="flex min-h-0">
-                    <ScrollArea className="w-full">
+            <Dialog open={isOpen} onOpenChange={onOpenChange} modal={isSubmitting}>
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>{isEditing ? `Edit ${targetType}` : `Add ${targetType}`}</DialogTitle>
+                        <DialogDescription>
+                            {isAddingChild
+                                ? `Creating under: ${parentPpa?.name}`
+                                : isEditing
+                                  ? `Modify the details of this ${targetType.toLowerCase()}.`
+                                  : `Create a new root level ${targetType.toLowerCase()}.`}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="flex min-h-0 flex-1">
+                        <ScrollArea className="w-full pr-3">
                         <form
                             id="ppa-form"
                             onSubmit={form.handleSubmit(onSubmit)}
@@ -316,7 +309,7 @@ return;
                                         <Field
                                             data-invalid={fieldState.invalid}
                                         >
-                                            <FieldContent>
+                                            
                                                 <FieldLabel
                                                     htmlFor={field.name}
                                                     className="gap-1"
@@ -344,7 +337,7 @@ return;
                                                         ]}
                                                     />
                                                 )}
-                                            </FieldContent>
+                                            
                                         </Field>
                                     )}
                                 />
@@ -356,7 +349,7 @@ return;
                                         <Field
                                             data-invalid={fieldState.invalid}
                                         >
-                                            <FieldContent>
+                                            
                                                 <FieldLabel
                                                     htmlFor={field.name}
                                                     className="gap-1"
@@ -470,7 +463,7 @@ return;
                                                         ]}
                                                     />
                                                 )}
-                                            </FieldContent>
+                                            
                                         </Field>
                                     )}
                                 />
@@ -486,7 +479,7 @@ return;
                                                     fieldState.invalid
                                                 }
                                             >
-                                                <FieldContent>
+                                                
                                                     <FieldLabel
                                                         htmlFor={field.name}
                                                         className="gap-1"
@@ -518,7 +511,7 @@ return;
                                                             ]}
                                                         />
                                                     )}
-                                                </FieldContent>
+                                                
                                             </Field>
                                         )}
                                     />
@@ -531,7 +524,7 @@ return;
                                         control={form.control}
                                         render={({ field, fieldState }) => (
                                             <FieldSet>
-                                                <FieldContent>
+                                                
                                                     <FieldLegend variant="label">
                                                         Status
                                                     </FieldLegend>
@@ -574,7 +567,7 @@ return;
                                                             ]}
                                                         />
                                                     )}
-                                                </FieldContent>
+                                                
                                             </FieldSet>
                                         )}
                                     />
@@ -589,7 +582,17 @@ return;
                         </form>
                     </ScrollArea>
                 </div>
-            </FormDialogShell>
+
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" form="ppa-form" disabled={isSubmitting}>
+                        {isSubmitting ? (isEditing ? 'Saving...' : 'Creating...') : isEditing ? 'Save Changes' : 'Create PPA'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
             <AlertDialog
                 open={isErrorAlertOpen}
