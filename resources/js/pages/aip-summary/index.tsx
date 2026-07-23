@@ -1,8 +1,8 @@
 import { router, usePage } from '@inertiajs/react';
 import { Library, FileDown, FileText, Plus } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
-import { DataTable } from '@/components/data-table';
-import BaseDataTable from '@/components/base-ui-components/data-table';
+// import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import {
     AlertDialog,
@@ -39,6 +39,10 @@ import type {
     PpmpCategory,
 } from '@/types';
 import columns from './columns/columns';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 
 interface AipSummaryTableProps {
     fiscalYear: FiscalYear;
@@ -120,7 +124,10 @@ export default function AipSummaryTable({
     ppmpCoaTotals,
     psCoaAutoTotals = {},
     psPoolPpaId = null,
+    newPpaEntries,
 }: AipSummaryTableProps) {
+    // console.log(newPpaEntries);
+
     const { auth } = usePage<SharedData>().props;
 
     const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
@@ -486,8 +493,94 @@ export default function AipSummaryTable({
 
     return (
         <>
-            <div className="flex flex-col gap-4 pt-4">
-                <div className="flex flex-col px-4 sm:flex-row sm:items-center sm:justify-between">
+            {/* <div className="flex flex-col gap-4 pt-4"> */}
+
+            {/* <DataTable
+                    columns={cols}
+                    data={expandPpaByFundingSource(aipEntries)}
+                    withSearch={true}
+                    withRowSpan={true}
+                    onAdd={handleAddEntry}
+                    onEdit={handleEditDialogOpen}
+                    onDelete={handleDeleteDialogOpen}
+                    withFooter={true}
+                    getSubRows={customGetSubRows}
+                    globalFilterFn={customGlobalFilterFn}
+                    negativeHeight={9.98}
+                    meta={{
+                        readOnly: currentScope.scope === 'combined',
+                        canSetPsPool: can?.setPsPool ?? false,
+                        psPoolPpaId,
+                        onSetAsPsPool: handleSetAsPsPool,
+                    }}
+                >
+                    <div className="flex gap-2">
+                        {can.export && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        <FileDown className="mr-2 h-4 w-4" />{' '}
+                                        Export
+                                    </Button>
+                                </DropdownMenuTrigger>
+
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="w-max min-w-max"
+                                >
+                                    <DropdownMenuItem
+                                        onClick={handlePrintPreview}
+                                    >
+                                        <div className="flex items-center">
+                                            <FileText className="mr-2 h-4 w-4" />
+
+                                            <span className="whitespace-nowrap">
+                                                Print Preview
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem> */}
+
+            {/*<DropdownMenuItem
+                                        onClick={handleExportToExcel}
+                                    >
+                                        <div className="flex items-center">
+                                            <FileDown className="mr-2 h-4 w-4" />
+
+                                            <span className="whitespace-nowrap">
+                                                Export to Excel
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>*/}
+
+            {/*<DropdownMenuItem
+                                        onClick={() =>
+                                            setIsSummaryExportOpen(true)
+                                        }
+                                    >
+                                        <div className="flex items-center">
+                                            <FileText className="mr-2 h-4 w-4" />
+
+                                            <span className="whitespace-nowrap">
+                                                Export Summary (Totals)
+                                            </span>
+                                        </div>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
+
+                        {can.import && currentScope.scope !== 'combined' && (
+                            <Button onClick={handleImportLibrary}>
+                                <Library className="mr-2 h-4 w-4" /> Import from
+                                Library
+                            </Button>
+                        )}
+                    </div>
+                </DataTable>
+            </div>*/}
+
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
+                <div className="flex flex-col px-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <Tabs
                         value={activeTabValue}
                         onValueChange={(val) => {
@@ -559,91 +652,29 @@ export default function AipSummaryTable({
                 <DataTable
                     columns={cols}
                     data={expandPpaByFundingSource(aipEntries)}
-                    withSearch={true}
+                    showFooter={true}
                     withRowSpan={true}
-                    onAdd={handleAddEntry}
-                    onEdit={handleEditDialogOpen}
-                    onDelete={handleDeleteDialogOpen}
-                    withFooter={true}
+
+                    // withSearch={true}
+
+                    // onAdd={handleAddEntry}
+                    // onEdit={handleEditDialogOpen}
+                    // onDelete={handleDeleteDialogOpen}
                     getSubRows={customGetSubRows}
-                    globalFilterFn={customGlobalFilterFn}
-                    negativeHeight={9.98}
+                    // globalFilterFn={customGlobalFilterFn}
+
                     meta={{
                         readOnly: currentScope.scope === 'combined',
                         canSetPsPool: can?.setPsPool ?? false,
                         psPoolPpaId,
                         onSetAsPsPool: handleSetAsPsPool,
                     }}
-                >
-                    <div className="flex gap-2">
-                        {can.export && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        <FileDown className="mr-2 h-4 w-4" />{' '}
-                                        Export
-                                    </Button>
-                                </DropdownMenuTrigger>
 
-                                <DropdownMenuContent
-                                    align="end"
-                                    className="w-max min-w-max"
-                                >
-                                    <DropdownMenuItem
-                                        onClick={handlePrintPreview}
-                                    >
-                                        <div className="flex items-center">
-                                            <FileText className="mr-2 h-4 w-4" />
+                    className="pr-3"
+                ></DataTable>
 
-                                            <span className="whitespace-nowrap">
-                                                Print Preview
-                                            </span>
-                                        </div>
-                                    </DropdownMenuItem>
-
-                                    {/*<DropdownMenuItem
-                                        onClick={handleExportToExcel}
-                                    >
-                                        <div className="flex items-center">
-                                            <FileDown className="mr-2 h-4 w-4" />
-
-                                            <span className="whitespace-nowrap">
-                                                Export to Excel
-                                            </span>
-                                        </div>
-                                    </DropdownMenuItem>*/}
-
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            setIsSummaryExportOpen(true)
-                                        }
-                                    >
-                                        <div className="flex items-center">
-                                            <FileText className="mr-2 h-4 w-4" />
-
-                                            <span className="whitespace-nowrap">
-                                                Export Summary (Totals)
-                                            </span>
-                                        </div>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-
-                        {can.import && currentScope.scope !== 'combined' && (
-                            <Button onClick={handleImportLibrary}>
-                                <Library className="mr-2 h-4 w-4" /> Import from
-                                Library
-                            </Button>
-                        )}
-                    </div>
-                </DataTable>
-
-                <BaseDataTable
-                    columns={cols}
-                    data={expandPpaByFundingSource(aipEntries)}
-                ></BaseDataTable>
-            </div>
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <PpaSelectorDialog
                 isOpen={isSelectorOpen}

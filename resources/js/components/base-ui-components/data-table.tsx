@@ -24,7 +24,7 @@ import {
     ChevronsRight,
     ChevronsLeft,
 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Input } from '@/components/base-ui-components/ui/input';
@@ -71,6 +71,8 @@ interface TableProps<TData> {
     only?: string[];
     getSubRows?: (row: TData) => TData[] | undefined;
     showFooter?: boolean;
+
+    withRowSpan?: boolean;
 }
 
 const getCommonPinningStyles = <TData,>(
@@ -125,6 +127,8 @@ export default function Table<TData>({
     only,
     getSubRows,
     showFooter = false,
+
+    withRowSpan = false,
 }: TableProps<TData>) {
     const isServer = !!paginationData;
 
@@ -277,6 +281,28 @@ export default function Table<TData>({
         meta: meta,
     });
 
+    const rows = table.getRowModel().rows;
+
+    const visibleSpans = useMemo(() => {
+        const firstVisibleIdx: Record<string, number> = {};
+        const visibleCounts: Record<string, number> = {};
+
+        rows.forEach((row, index) => {
+            const id = (row.original as any).id;
+
+            if (firstVisibleIdx[id] === undefined) {
+                firstVisibleIdx[id] = index;
+            }
+
+            visibleCounts[id] = (visibleCounts[id] || 0) + 1;
+        });
+
+        return {
+            firstVisibleIdx,
+            visibleCounts,
+        };
+    }, [rows]);
+
     return (
         <div
             className={cn(
@@ -356,7 +382,7 @@ export default function Table<TData>({
                             })}
                         </TableHeader>
                         <TableBody>
-                            {table.getRowModel().rows.map((row) => {
+                            {rows.map((row, rowIndex) => {
                                 const isSelected =
                                     selectedKey &&
                                     selectedValue &&
@@ -388,9 +414,41 @@ export default function Table<TData>({
                                         }}
                                     >
                                         {row.getVisibleCells().map((cell) => {
+                                            const columnMeta = cell.column
+                                                .columnDef.meta as any;
+
+                                            const isSpannedColumn =
+                                                withRowSpan &&
+                                                columnMeta?.rowSpan;
+
+                                            const rowData = row.original as any;
+                                            const ppaId = rowData.id;
+
+                                            const isFirstVisible =
+                                                visibleSpans.firstVisibleIdx[
+                                                    ppaId
+                                                ] === rowIndex;
+
+                                            const spanSize =
+                                                visibleSpans.visibleCounts[
+                                                    ppaId
+                                                ];
+
+                                            if (
+                                                isSpannedColumn &&
+                                                !isFirstVisible
+                                            ) {
+                                                return null;
+                                            }
+
                                             return (
                                                 <TableCell
                                                     key={cell.id}
+                                                    rowSpan={
+                                                        isSpannedColumn
+                                                            ? spanSize
+                                                            : 1
+                                                    }
                                                     style={{
                                                         width: `${cell.column.getSize()}px`,
                                                         ...getCommonPinningStyles(
