@@ -345,6 +345,17 @@ export default function Table<TData>({
                             // minWidth: `${table.getTotalSize()}px`,
                         }}
                     >
+                        <colgroup>
+                            {table.getAllLeafColumns().filter(col => col.getIsVisible()).map(col => (
+                                <col
+                                    key={col.id}
+                                    style={{
+                                        width: col.getSize(),
+                                        minWidth: col.getSize(),
+                                    }}
+                                />
+                            ))}
+                        </colgroup>
                         <TableHeader className="sticky top-0 z-2">
                             {table.getHeaderGroups().map((headerGroup) => {
                                 return (

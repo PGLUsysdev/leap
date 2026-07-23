@@ -664,6 +664,9 @@ export default function AipSummaryTable({
                     // globalFilterFn={customGlobalFilterFn}
 
                     meta={{
+                        onAdd: handleAddEntry,
+                        onEdit: handleEditDialogOpen,
+                        onDelete: handleDeleteDialogOpen,
                         readOnly: currentScope.scope === 'combined',
                         canSetPsPool: can?.setPsPool ?? false,
                         psPoolPpaId,
