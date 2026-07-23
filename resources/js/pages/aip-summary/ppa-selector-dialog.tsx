@@ -1,8 +1,8 @@
-import { router } from "@inertiajs/react";
-import { ChevronRight, Home, Info } from "lucide-react";
-import { useState, useMemo } from "react";
-import { DataTable } from "@/components/data-table";
-import { Button } from "@/components/ui/button";
+import { router } from '@inertiajs/react';
+import { ChevronRight, Home, Info } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -10,15 +10,14 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Spinner } from "@/components/ui/spinner";
-import type { Ppa, PaginatedResponse, Filter } from "@/types";
-import columns from "./columns/import-columns";
+} from '@/components/base-ui-components/ui/dialog';
+import { Spinner } from '@/components/ui/spinner';
+import type { Ppa, PaginatedResponse, Filter } from '@/types';
+import columns from './columns/import-columns';
 
 interface PpaSelectorDialogProps {
-    isOpen: boolean;
-    onClose: () => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
     dialogPpaTree?: PaginatedResponse<Ppa>;
     dialogCurrent?: Ppa[];
     fiscalYearId: number;
@@ -28,8 +27,8 @@ interface PpaSelectorDialogProps {
 }
 
 export default function PpaSelectorDialog({
-    isOpen,
-    onClose,
+    open,
+    onOpenChange,
     dialogPpaTree,
     dialogCurrent = [],
     filters,
@@ -37,50 +36,22 @@ export default function PpaSelectorDialog({
     existingPpaIds = [],
     supplementalAipId = null,
 }: PpaSelectorDialogProps) {
-    const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(new Map());
+    const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
+        new Map(),
+    );
     const [loading, setLoading] = useState(false);
 
-    const existingIdsSet = useMemo(() => new Set(existingPpaIds), [existingPpaIds]);
+    const existingIdsSet = useMemo(
+        () => new Set(existingPpaIds),
+        [existingPpaIds],
+    );
 
-    // useEffect(() => {
-    //     if (!isOpen) {
-    //         console.log(isOpen);
+    const handleOpenChange = (isOpen: boolean) => {
+        if (!isOpen) {
+            setSelectedItems(new Map());
+        }
 
-    //         setSelectedItems(new Map()); // Reset local selection
-
-    //         const {
-    //             dialog_id,
-    //             dialog_page,
-    //             dialog_search,
-    //             dialog_boundary_id,
-    //             ...mainFilters
-    //         } = filters;
-
-    //         // Navigate back to the clean URL
-    //         // router.visit(window.location.pathname, {
-    //         //     data: mainFilters,
-    //         //     preserveState: true,
-    //         //     preserveScroll: true,
-    //         //     replace: true,
-    //         // });
-    //     }
-    // }, [isOpen]);
-
-    const handleClose = () => {
-        // 1. Reset your local state
-        setSelectedItems(new Map());
-
-        // 2. Perform your navigation/cleanup logic
-        const { dialog_id, dialog_page, dialog_search, dialog_boundary_id, ...mainFilters } =
-            filters;
-
-        // router.get(window.location.pathname, mainFilters, {
-        //     preserveState: true,
-        //     preserveScroll: true,
-        //     replace: true,
-        // });
-
-        onClose();
+        onOpenChange(isOpen);
     };
 
     const handleToggle = (ppa: Ppa) => {
@@ -128,8 +99,8 @@ export default function PpaSelectorDialog({
                     if (dialogCurrent) {
                         dialogCurrent.forEach((anc) => {
                             if (!existingIdsSet.has(anc.id)) {
-next.set(anc.id, anc);
-}
+                                next.set(anc.id, anc);
+                            }
                         });
                     }
                 } else {
@@ -164,7 +135,7 @@ next.set(anc.id, anc);
             {
                 preserveState: true,
                 preserveScroll: true,
-                only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
             },
         );
     };
@@ -181,125 +152,153 @@ next.set(anc.id, anc);
                 onStart: () => setLoading(true),
                 onSuccess: () => {
                     setSelectedItems(new Map());
-                    onClose();
+                    handleOpenChange(false);
                 },
                 onFinish: () => setLoading(false),
             },
         );
     };
 
+    const paginationData = useMemo(() => {
+        if (!dialogPpaTree || Array.isArray(dialogPpaTree)) {
+            return undefined;
+        }
+
+        const { data, ...rest } = dialogPpaTree;
+
+        return rest;
+    }, [dialogPpaTree]);
+
     const displayData = useMemo(() => {
         if (Array.isArray(dialogPpaTree) || !dialogPpaTree) {
-return [];
-}
+            return [];
+        }
 
         return dialogPpaTree.data.map((ppa) => ({
             ...ppa,
-            // We inject the state directly into the object
-            // This ensures the DataTable's useEffect detects a change
             _isSelected: selectedItems.has(ppa.id),
             _isAdded: existingIdsSet.has(ppa.id),
         }));
     }, [dialogPpaTree, selectedItems, existingIdsSet]);
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="flex max-h-[95vh] flex-col sm:max-w-[85%]">
-                <DialogHeader>
-                    <DialogTitle>Library Navigator</DialogTitle>
-                    <DialogDescription className="sr-only">
-                        Select items to import. Selections are preserved across folders.
-                    </DialogDescription>
-                </DialogHeader>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+            <DialogContent className="flex max-h-[95vh] flex-col gap-0 p-0 py-4 sm:max-w-[85%] [&>*:not(:nth-last-child(-n+3))]:pb-4">
+                <div className="px-4">
+                    <DialogHeader>
+                        <DialogTitle>Library Navigator</DialogTitle>
+                        <DialogDescription className="sr-only">
+                            Select items to import. Selections are preserved
+                            across folders.
+                        </DialogDescription>
+                    </DialogHeader>
+                </div>
 
                 {/* breadcrumbs */}
-                <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`h-7 px-2 ${filters.dialog_boundary_id ? "cursor-not-allowed opacity-50" : ""}`}
-                        onClick={() => handleNavigate(null)}
-                        disabled={!!filters.dialog_boundary_id}
-                    >
-                        <Home className="mr-1 h-4 w-4" /> Root
-                    </Button>
+                <div className="px-4">
+                    <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2 text-sm">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-7 px-2 ${filters.dialog_boundary_id ? 'cursor-not-allowed opacity-50' : ''}`}
+                            onClick={() => handleNavigate(null)}
+                            disabled={!!filters.dialog_boundary_id}
+                        >
+                            <Home className="mr-1 h-4 w-4" /> Root
+                        </Button>
 
-                    {dialogCurrent.map((item) => {
-                        const boundaryId = Number(filters.dialog_boundary_id);
-                        const isAncestor =
-                            boundaryId &&
-                            item.id !== boundaryId &&
-                            dialogCurrent.findIndex((i) => i.id === boundaryId) >
-                                dialogCurrent.findIndex((i) => i.id === item.id);
+                        {dialogCurrent.map((item) => {
+                            const boundaryId = Number(
+                                filters.dialog_boundary_id,
+                            );
+                            const isAncestor =
+                                boundaryId &&
+                                item.id !== boundaryId &&
+                                dialogCurrent.findIndex(
+                                    (i) => i.id === boundaryId,
+                                ) >
+                                    dialogCurrent.findIndex(
+                                        (i) => i.id === item.id,
+                                    );
 
-                        return (
-                            <div key={item.id} className="flex min-w-0 items-center gap-2">
-                                <ChevronRight className="h-4 w-4 opacity-30" />
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="flex min-w-0 items-center gap-2"
+                                >
+                                    <ChevronRight className="h-4 w-4 opacity-30" />
+
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className={`block h-7 flex-1 truncate px-2 ${isAncestor ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        onClick={() => handleNavigate(item.id)}
+                                        disabled={
+                                            !!isAncestor ||
+                                            item.id.toString() ===
+                                                filters.dialog_id
+                                        }
+                                    >
+                                        {item.name}
+                                    </Button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {!Array.isArray(dialogPpaTree) && (
+                    <DataTable
+                        key={`lib-table-${filters?.dialog_id}`}
+                        columns={columns}
+                        data={displayData}
+                        paginationData={paginationData}
+                        searchParamName="dialog_search"
+                        pageParamName="dialog_page"
+                        only={['dialogPpaTree', 'dialogCurrent', 'filters']}
+                        meta={
+                            {
+                                selectedIds: new Set(selectedItems.keys()),
+                                existingIds: existingIdsSet,
+                                onToggle: handleToggle,
+                                onNavigate: handleNavigate,
+                                onToggleAll: handleToggleAll,
+                            } as any
+                        }
+                        className="h-1000"
+                    />
+                )}
+
+                <div className="px-4">
+                    <DialogFooter>
+                        <div className="flex w-full justify-between">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Info className="h-4 w-4" />
+                                {selectedItems.size} items selected
+                            </div>
+
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleOpenChange(false)}
+                                    disabled={loading}
+                                >
+                                    Cancel
+                                </Button>
 
                                 <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className={`block h-7 flex-1 truncate px-2 ${isAncestor ? "cursor-not-allowed opacity-50" : ""}`}
-                                    onClick={() => handleNavigate(item.id)}
+                                    onClick={handleImport}
                                     disabled={
-                                        !!isAncestor || item.id.toString() === filters.dialog_id
+                                        loading || selectedItems.size === 0
                                     }
                                 >
-                                    {item.name}
+                                    {loading && <Spinner />}
+                                    Import Selected
                                 </Button>
                             </div>
-                        );
-                    })}
-                </div>
-
-                <div className="flex min-h-0">
-                    <ScrollArea className="w-full pr-3">
-                        {!Array.isArray(dialogPpaTree) && (
-                            <DataTable
-                                key={`lib-table-${filters?.dialog_id}`}
-                                columns={columns}
-                                data={displayData}
-                                paginationObj={dialogPpaTree}
-                                withSearch
-                                searchKey="dialog_search"
-                                pageKey="dialog_page"
-                                negativeHeight={24}
-                                filters={filters}
-                                onlyKeys={["dialogPpaTree", "dialogCurrent", "filters"]}
-                                meta={{
-                                    selectedIds: new Set(selectedItems.keys()),
-                                    existingIds: existingIdsSet,
-                                    onToggle: handleToggle,
-                                    onNavigate: handleNavigate,
-                                    onToggleAll: handleToggleAll,
-                                }}
-                            />
-                        )}
-                    </ScrollArea>
-                </div>
-
-                <DialogFooter>
-                    <div className="flex w-full justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Info className="h-4 w-4" />
-                            {selectedItems.size} items selected
                         </div>
-
-                        <div className="flex gap-2">
-                            <Button variant="outline" onClick={onClose} disabled={loading}>
-                                Cancel
-                            </Button>
-
-                            <Button
-                                onClick={handleImport}
-                                disabled={loading || selectedItems.size === 0}
-                            >
-                                {loading && <Spinner />}
-                                Import Selected
-                            </Button>
-                        </div>
-                    </div>
-                </DialogFooter>
+                    </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     );

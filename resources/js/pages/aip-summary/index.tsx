@@ -743,8 +743,8 @@ export default function AipSummaryTable({
             </ScrollArea>
 
             <PpaSelectorDialog
-                isOpen={isSelectorOpen}
-                onClose={() => setIsSelectorOpen(false)}
+                open={isSelectorOpen}
+                onOpenChange={setIsSelectorOpen}
                 dialogPpaTree={dialogPpaTree}
                 dialogCurrent={dialogCurrent}
                 filters={filters}
