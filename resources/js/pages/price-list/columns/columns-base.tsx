@@ -24,7 +24,7 @@ const columns = [
     }),
     columnHelper.accessor('item_number', {
         header: () => <div className="px-1">Item Number</div>,
-        size: 100,
+        size: 110,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('description', {
@@ -61,7 +61,7 @@ const columns = [
     ),
     columnHelper.display({
         id: 'actions',
-        size: 84,
+        size: 82,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">
                 <Button
@@ -88,9 +88,10 @@ const columns = [
 
 export default columns;
 
+// action cols that contain buttons like move-handle and actions dont have headers
 // headers and cells are rendered in a div
-// all cells have text-wrap except `actions` col
+// all cells have text-wrap except actions cols
 // headers have no text-wrap
 // all headers and cells have px-1 except `actions` col
-// `actions` col: no px-1, no text-wrap
-// numeric/aligned cols have text-right in both header and cell
+// actions col: no px-1, no text-wrap
+// numeric cols have text-right in both header and cell
