@@ -7,44 +7,39 @@ const columnHelper = createColumnHelper<User>();
 
 const columns = [
     columnHelper.accessor('name', {
-        header: 'Name',
-        cell: (info) => {
-            return <div className="text-wrap">{info.getValue()}</div>;
-        },
+        size: 200,
+        header: () => <div className="px-1">Name</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('email', {
-        header: 'Email',
-        size: 300,
-        cell: (info) => {
-            return <div className="text-wrap">{info.getValue()}</div>;
-        },
+        size: 250,
+        header: () => <div className="px-1">Email</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('office.name', {
-        header: 'Department / Office',
         size: 300,
-        cell: (info) => {
-            return <div className="text-wrap">{info.getValue()}</div>;
-        },
+        header: () => <div className="px-1">Department / Office</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('role.name', {
-        header: 'Role',
-        size: 150,
-        cell: (info) => {
-            return <div className="text-wrap">{info.getValue() ?? '-'}</div>;
-        },
+        size: 100,
+        header: () => <div className="px-1">Role</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap">{info.getValue() ?? '-'}</div>
+        ),
     }),
     columnHelper.accessor('position', {
-        header: 'Assigned Position',
-        size: 250,
+        size: 200,
+        header: () => <div className="px-1">Assigned Position</div>,
         cell: (info) => {
             const position = info.getValue();
 
             if (!position) {
-                return '-';
+                return <div className="px-1 text-wrap">-</div>;
             }
 
             return (
-                <div className="text-wrap">
+                <div className="px-1 text-wrap">
                     {position.item_number}
                     {position.ios ? ` — ${position.ios.class}` : ''}
                 </div>
@@ -52,24 +47,22 @@ const columns = [
         },
     }),
     columnHelper.accessor('step', {
-        header: 'Step',
-        size: 80,
+        size: 100,
+        header: () => <div className="px-1">Step</div>,
         cell: (info) => {
             const step = info.getValue();
 
-            return <div className="text-wrap">{step ?? '-'}</div>;
+            return <div className="px-1 text-wrap">{step ?? '-'}</div>;
         },
     }),
     columnHelper.accessor('status', {
-        header: 'Status',
         size: 100,
-        cell: (info) => {
-            return <div className="text-wrap">{info.getValue()}</div>;
-        },
+        header: () => <div className="px-1">Status</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.display({
         id: 'actions',
-        size: 48,
+        size: 46,
         cell: ({ row, table }) => {
             const meta = table.options.meta as
                 | {
@@ -85,15 +78,12 @@ const columns = [
             const canEditRow =
                 editAll || (editOwn && row.original.office_id === userOfficeId);
 
-            if (!canEditRow) {
-                return null;
-            }
-
             return (
                 <div>
                     <Button
                         size="icon"
                         variant="outline"
+                        disabled={!canEditRow}
                         onClick={() => meta?.onEdit?.(row.original)}
                     >
                         <Pencil />

@@ -149,7 +149,8 @@ export default function SalaryStandard({
                         >
                             <SelectTrigger className="w-full max-w-48">
                                 <span className="flex flex-1 text-left">
-                                    {selectedFiscalYear?.year ?? 'Select Fiscal Year'}
+                                    {selectedFiscalYear?.year ??
+                                        'Select Fiscal Year'}
                                 </span>
                             </SelectTrigger>
                             <SelectContent>

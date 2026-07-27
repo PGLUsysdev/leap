@@ -96,7 +96,7 @@ export default function PpaPage({
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // Handlers
-    function handleAddChild(parent: Ppa, childType: Ppa['type']) {
+    function handleAddChild(parent: Ppa, childType: Ppa['type'] = 'Program') {
         setFormMode('add');
         setTargetType(childType);
         setParentPpa(parent);
@@ -255,7 +255,7 @@ export default function PpaPage({
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={columns(data)}
+                    columns={columns}
                     data={data}
                     paginationData={paginationData}
                     meta={{

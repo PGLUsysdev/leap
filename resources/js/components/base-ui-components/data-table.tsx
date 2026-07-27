@@ -79,6 +79,8 @@ interface TableProps<TData> {
     showFooter?: boolean;
 
     withRowSpan?: boolean;
+
+    withColgroup?: boolean;
 }
 
 const getCommonPinningStyles = <TData,>(
@@ -135,6 +137,7 @@ export default function Table<TData>({
     showFooter = false,
 
     withRowSpan = false,
+    withColgroup = false,
 }: TableProps<TData>) {
     const isServer = !!paginationData;
 
@@ -317,7 +320,7 @@ export default function Table<TData>({
                     variant === 'select' && 'pt-0',
                 )}
             >
-                <InputGroup className="w-100">
+                <InputGroup className="w-100 min-w-30">
                     <InputGroupInput
                         value={globalFilter ?? ''}
                         onChange={(e) =>
@@ -333,7 +336,7 @@ export default function Table<TData>({
                 {children}
             </div>
 
-            <ScrollArea className="min-h-0 flex-1 border-t">
+            <ScrollArea className="min-h-0 flex-1 border-y">
                 <div>
                     <DataTable
                         style={{
@@ -344,18 +347,22 @@ export default function Table<TData>({
                             // minWidth: `${table.getTotalSize()}px`,
                         }}
                     >
-                        {/* only enable this when using grouped cols */}
-                        {/* <colgroup>
-                            {table.getAllLeafColumns().filter(col => col.getIsVisible()).map(col => (
-                                <col
-                                    key={col.id}
-                                    style={{
-                                        width: col.getSize(),
-                                        minWidth: col.getSize(),
-                                    }}
-                                />
-                            ))}
-                        </colgroup> */}
+                        {withColgroup && (
+                            <colgroup>
+                                {table
+                                    .getAllLeafColumns()
+                                    .filter((col) => col.getIsVisible())
+                                    .map((col) => (
+                                        <col
+                                            key={col.id}
+                                            style={{
+                                                width: col.getSize(),
+                                                minWidth: col.getSize(),
+                                            }}
+                                        />
+                                    ))}
+                            </colgroup>
+                        )}
                         <TableHeader className="sticky top-0 z-2">
                             {table.getHeaderGroups().map((headerGroup) => {
                                 return (

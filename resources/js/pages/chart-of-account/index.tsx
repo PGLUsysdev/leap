@@ -73,13 +73,11 @@ export default function ChartOfAccountPage({
         });
     }
 
-    const cols = columns(can?.edit ?? false, can?.delete ?? false);
-
     return (
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 {/*<DataTable
-                    columns={cols}
+                    columns={columns}
                     data={chartOfAccounts}
                     withSearch={true}
                     onEdit={handleEdit}
@@ -88,7 +86,16 @@ export default function ChartOfAccountPage({
                 >
                 </DataTable>*/}
 
-                <DataTable columns={cols} data={chartOfAccounts} meta={{ onEdit: handleEdit, onDelete: handleDeleteDialogOpen }}>
+                <DataTable
+                    columns={columns}
+                    data={chartOfAccounts}
+                    meta={{
+                        canEdit: can?.edit ?? false,
+                        canDelete: can?.delete ?? false,
+                        onEdit: handleEdit,
+                        onDelete: handleDeleteDialogOpen,
+                    }}
+                >
                     {can?.add && (
                         <div className="flex justify-end">
                             <Button onClick={handleAdd}>

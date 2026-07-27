@@ -133,8 +133,15 @@ export interface FundingSource {
     code: string;
     title: string;
     description: string | null;
+    allow_typhoon?: boolean;
     created_at: string | null;
     updated_at: string | null;
+}
+
+export interface SalaryGradeOption {
+    salary_grade: number;
+    min_rate: string;
+    max_rate: string;
 }
 
 export interface PpaFundingSource {
@@ -229,6 +236,7 @@ export interface ChartOfAccount {
     is_active: boolean;
     normal_balance: 'DEBIT' | 'CREDIT';
     description: string | null;
+    is_manual?: boolean;
     created_at: string | null;
     updated_at: string | null;
 

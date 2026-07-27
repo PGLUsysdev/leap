@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import NewTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
 import { Button as BaseButton } from '@/components/base-ui-components/ui/button';
 import {
     ScrollArea,
@@ -17,7 +17,7 @@ import type {
     Filter,
     ChartOfAccountPpmpCategory,
 } from '@/types';
-import columnsBase from './columns/columns-base';
+import columns from './columns/columns-base';
 import FormDialog from './form-dialog-base';
 import MoveDialog from './move-dialog-base';
 
@@ -171,10 +171,10 @@ export default function PriceListPage({
     return (
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
-                <NewTable
+                <DataTable
                     data={priceLists}
                     paginationData={priceListsPagination}
-                    columns={columnsBase}
+                    columns={columns}
                     meta={{
                         onMove: handleMove,
                         onUpdate: (data: PriceList) => handleEdit(data),
@@ -190,7 +190,7 @@ export default function PriceListPage({
                     >
                         Create Item
                     </BaseButton>
-                </NewTable>
+                </DataTable>
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>

@@ -39,7 +39,7 @@ declare module '@tanstack/react-table' {
         onShowChildren?: (data: TData) => void;
         onMove?: (data: TData) => void;
         onSelect?: (data: TData, boolean: boolean) => void;
-        onEditPerms?: () => void;
+        onEditPerms?: (data: TData) => void;
         onToggle?: (data: TData) => void;
         onToggleAll?: (data: TData[], isChecked: boolean) => void;
         selectedIds?: Set<number>;
@@ -55,5 +55,18 @@ declare module '@tanstack/react-table' {
             fundingSources?: FundingSource[];
         };
         selectedItemToMove?: TData;
+
+        canEdit?: boolean;
+        canDelete?: boolean;
+        canEditPerms?: boolean;
+        canUpdateStatus?: boolean;
+        canOpenAip?: boolean;
+        canGenerateApp?: boolean;
+        canOpenPpmpSummary?: boolean;
+        canSetPsPool?: boolean;
+        readOnly?: boolean;
+        disableOpenAip?: boolean;
+        psPoolPpaId?: number | null;
+        onSetAsPsPool?: (data: TData) => void;
     }
 }

@@ -112,8 +112,10 @@ export default function PositionPage({
                     columns={columns}
                     data={officePositions}
                     meta={{
-                        onEdit: can?.edit ? handleEdit : undefined,
-                        onDelete: can?.delete ? handleDelete : undefined,
+                        canEdit: can?.edit ?? false,
+                        canDelete: can?.delete ?? false,
+                        onEdit: handleEdit,
+                        onDelete: handleDelete,
                     }}
                 >
                     <div className="flex gap-1">

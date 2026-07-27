@@ -83,9 +83,10 @@ return;
                     columns={columns}
                     data={strategicPriorities}
                     meta={{
+                        canEdit: can.edit,
+                        canDelete: can.delete,
                         onEdit: handleEdit,
                         onDelete: handleDeleteRequest,
-                        can,
                     }}
                 >
                     {can?.add && (

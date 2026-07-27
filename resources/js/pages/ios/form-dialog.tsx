@@ -15,7 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { Ios } from '@/types';
+import type { Ios, SalaryGradeOption } from '@/types';
 import iosCodes from './ios_codes.js';
 
 const formSchema = z.object({
@@ -33,12 +33,6 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-interface SalaryGradeOption {
-    salary_grade: number;
-    min_rate: string;
-    max_rate: string;
-}
 
 interface FormDialogProps {
     open: boolean;

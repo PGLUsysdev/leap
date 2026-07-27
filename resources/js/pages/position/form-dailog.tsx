@@ -62,7 +62,7 @@ interface FormDialogProps {
     data: Position | null;
     offices: Office[];
     iosList: PaginatedResponse<Ios>;
-    userOfficeId?: number;
+    userOfficeId?: number | null;
 }
 
 const columnHelper = createColumnHelper<Ios>();
@@ -199,113 +199,30 @@ export default function FormDialog({
 
     return (
         <>
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle>
-                        {isEditing ? 'Edit Position' : 'Add New Position'}
-                    </DialogTitle>
-                    <DialogDescription>
-                        {isEditing
-                            ? 'Modify the details of the existing position below.'
-                            : 'Fill in the information to create a new position.'}
-                    </DialogDescription>
-                </DialogHeader>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {isEditing ? 'Edit Position' : 'Add New Position'}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {isEditing
+                                ? 'Modify the details of the existing position below.'
+                                : 'Fill in the information to create a new position.'}
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <div className="flex min-h-0 flex-1">
-                    <ScrollArea className="w-full pr-3">
-                        <form
-                            id="position-form"
-                            onSubmit={form.handleSubmit(handleSubmit)}
-                            className="flex flex-col gap-4 py-1"
-                        >
-                            <Controller
-                                name="item_number"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Item Number
-                                            </FieldLabel>
-                                            <Input
-                                                {...field}
-                                                id={field.name}
-                                                placeholder="e.g. 001"
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                autoComplete="off"
-                                            />
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
-
-                            <Controller
-                                name="office_id"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Office
-                                            </FieldLabel>
-                                            <CommandSelect<Office>
-                                                value={field.value}
-                                                onChange={(value) =>
-                                                    field.onChange(value)
-                                                }
-                                                options={offices}
-                                                getOptionValue={(office) =>
-                                                    String(office.id)
-                                                }
-                                                getOptionSearchText={(office) =>
-                                                    office.name
-                                                }
-                                                renderTrigger={(office) => (
-                                                    <span className="truncate">
-                                                        {office.acronym
-                                                            ? `${office.acronym} — ${office.name}`
-                                                            : office.name}
-                                                    </span>
-                                                )}
-                                                renderOption={(office) => (
-                                                    <span>
-                                                        {office.acronym
-                                                            ? `${office.acronym} — ${office.name}`
-                                                            : office.name}
-                                                    </span>
-                                                )}
-                                                placeholder="Select office"
-                                                searchPlaceholder="Search offices..."
-                                                heading="Offices"
-                                                disabled
-                                            />
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
-
-                            <Controller
-                                name="ios_id"
-                                control={form.control}
-                                render={({ field, fieldState }) => {
-                                    const selectedIos = iosList.data.find(
-                                        (ios) => String(ios.id) === field.value,
-                                    );
-
-                                    return (
+                    <div className="flex min-h-0 flex-1">
+                        <ScrollArea className="w-full pr-3">
+                            <form
+                                id="position-form"
+                                onSubmit={form.handleSubmit(handleSubmit)}
+                                className="flex flex-col gap-4 py-1"
+                            >
+                                <Controller
+                                    name="item_number"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
                                         <Field
                                             data-invalid={fieldState.invalid}
                                         >
@@ -313,52 +230,17 @@ export default function FormDialog({
                                                 <FieldLabel
                                                     htmlFor={field.name}
                                                 >
-                                                    IOS Classification
+                                                    Item Number
                                                 </FieldLabel>
-
-                                                <ButtonGroup className="w-full">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
-                                                        onClick={() =>
-                                                            setOpenIosSelect(
-                                                                true,
-                                                            )
-                                                        }
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                    >
-                                                        <span className="truncate">
-                                                            {selectedIos
-                                                                ? `${selectedIos.class} (SG ${selectedIos.salary_grade})`
-                                                                : 'Select IOS classification'}
-                                                        </span>
-                                                        <ChevronsUpDown />
-                                                    </Button>
-                                                    <ButtonGroupSeparator />
-                                                    <Button
-                                                        type="button"
-                                                        variant="secondary"
-                                                        aria-label="clear selection"
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                        onClick={() =>
-                                                            form.resetField(
-                                                                'ios_id',
-                                                                {
-                                                                    defaultValue:
-                                                                        '',
-                                                                },
-                                                            )
-                                                        }
-                                                    >
-                                                        <Delete />
-                                                    </Button>
-                                                </ButtonGroup>
-
+                                                <Input
+                                                    {...field}
+                                                    id={field.name}
+                                                    placeholder="e.g. 001"
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    autoComplete="off"
+                                                />
                                                 {fieldState.invalid && (
                                                     <FieldError
                                                         errors={[
@@ -368,187 +250,345 @@ export default function FormDialog({
                                                 )}
                                             </FieldContent>
                                         </Field>
-                                    );
-                                }}
-                            />
+                                    )}
+                                />
 
-                            <Controller
-                                name="employment_type"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Employment Type
-                                            </FieldLabel>
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                            >
-                                                <SelectTrigger
-                                                    className="w-full"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                <Controller
+                                    name="office_id"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
                                                 >
-                                                    <SelectValue placeholder="Select type" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {employmentTypeOptions.map(
-                                                        (opt) => (
-                                                            <SelectItem
-                                                                key={opt.value}
-                                                                value={
-                                                                    opt.value
-                                                                }
-                                                            >
-                                                                {opt.label}
-                                                            </SelectItem>
-                                                        ),
+                                                    Office
+                                                </FieldLabel>
+                                                <CommandSelect<Office>
+                                                    value={field.value}
+                                                    onChange={(value) =>
+                                                        field.onChange(value)
+                                                    }
+                                                    options={offices}
+                                                    getOptionValue={(office) =>
+                                                        String(office.id)
+                                                    }
+                                                    getOptionSearchText={(
+                                                        office,
+                                                    ) => office.name}
+                                                    renderTrigger={(office) => (
+                                                        <span className="truncate">
+                                                            {office.acronym
+                                                                ? `${office.acronym} — ${office.name}`
+                                                                : office.name}
+                                                        </span>
                                                     )}
-                                                </SelectContent>
-                                            </Select>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
+                                                    renderOption={(office) => (
+                                                        <span>
+                                                            {office.acronym
+                                                                ? `${office.acronym} — ${office.name}`
+                                                                : office.name}
+                                                        </span>
+                                                    )}
+                                                    placeholder="Select office"
+                                                    searchPlaceholder="Search offices..."
+                                                    heading="Offices"
+                                                    disabled
                                                 />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
 
-                            <Controller
-                                name="is_funded"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Funded
-                                            </FieldLabel>
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
+                                <Controller
+                                    name="ios_id"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => {
+                                        const selectedIos = iosList.data.find(
+                                            (ios) =>
+                                                String(ios.id) === field.value,
+                                        );
+
+                                        return (
+                                            <Field
+                                                data-invalid={
+                                                    fieldState.invalid
+                                                }
                                             >
-                                                <SelectTrigger
-                                                    className="w-full"
-                                                    aria-invalid={
-                                                        fieldState.invalid
+                                                <FieldContent>
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
+                                                        IOS Classification
+                                                    </FieldLabel>
+
+                                                    <ButtonGroup className="w-full">
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
+                                                            onClick={() =>
+                                                                setOpenIosSelect(
+                                                                    true,
+                                                                )
+                                                            }
+                                                            aria-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                        >
+                                                            <span className="truncate">
+                                                                {selectedIos
+                                                                    ? `${selectedIos.class} (SG ${selectedIos.salary_grade})`
+                                                                    : 'Select IOS classification'}
+                                                            </span>
+                                                            <ChevronsUpDown />
+                                                        </Button>
+                                                        <ButtonGroupSeparator />
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                            aria-label="clear selection"
+                                                            aria-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                            onClick={() =>
+                                                                form.resetField(
+                                                                    'ios_id',
+                                                                    {
+                                                                        defaultValue:
+                                                                            '',
+                                                                    },
+                                                                )
+                                                            }
+                                                        >
+                                                            <Delete />
+                                                        </Button>
+                                                    </ButtonGroup>
+
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </FieldContent>
+                                            </Field>
+                                        );
+                                    }}
+                                />
+
+                                <Controller
+                                    name="employment_type"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Employment Type
+                                                </FieldLabel>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
                                                     }
                                                 >
-                                                    <SelectValue placeholder="Select" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="true">
-                                                        Yes
-                                                    </SelectItem>
-                                                    <SelectItem value="false">
-                                                        No
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
+                                                    <SelectTrigger
+                                                        className="w-full"
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    >
+                                                        <SelectValue placeholder="Select type" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {employmentTypeOptions.map(
+                                                            (opt) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        opt.value
+                                                                    }
+                                                                    value={
+                                                                        opt.value
+                                                                    }
+                                                                >
+                                                                    {opt.label}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
 
-                            <Controller
-                                name="status"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Status
-                                            </FieldLabel>
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                            >
-                                                <SelectTrigger
-                                                    className="w-full"
-                                                    aria-invalid={
-                                                        fieldState.invalid
+                                <Controller
+                                    name="is_funded"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Funded
+                                                </FieldLabel>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
                                                     }
                                                 >
-                                                    <SelectValue placeholder="Select status" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="occupied">
-                                                        Occupied
-                                                    </SelectItem>
-                                                    <SelectItem value="vacant">
-                                                        Vacant
-                                                    </SelectItem>
-                                                    <SelectItem value="abolished">
-                                                        Abolished
-                                                    </SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
-                        </form>
+                                                    <SelectTrigger
+                                                        className="w-full"
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    >
+                                                        <SelectValue placeholder="Select" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="true">
+                                                            Yes
+                                                        </SelectItem>
+                                                        <SelectItem value="false">
+                                                            No
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
 
-                        <ScrollBar orientation="vertical" />
-                    </ScrollArea>
-                </div>
+                                <Controller
+                                    name="status"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
+                                            <FieldContent>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Status
+                                                </FieldLabel>
+                                                <Select
+                                                    value={field.value}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
+                                                >
+                                                    <SelectTrigger
+                                                        className="w-full"
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    >
+                                                        <SelectValue placeholder="Select status" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="occupied">
+                                                            Occupied
+                                                        </SelectItem>
+                                                        <SelectItem value="vacant">
+                                                            Vacant
+                                                        </SelectItem>
+                                                        <SelectItem value="abolished">
+                                                            Abolished
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                {fieldState.invalid && (
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
+                                                )}
+                                            </FieldContent>
+                                        </Field>
+                                    )}
+                                />
+                            </form>
 
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            onOpenChange(false);
-                            form.reset();
-                        }}
-                        disabled={submitting}
-                    >
-                        Cancel
-                    </Button>
+                            <ScrollBar orientation="vertical" />
+                        </ScrollArea>
+                    </div>
 
-                    <Button
-                        type="submit"
-                        form="position-form"
-                        disabled={submitting}
-                    >
-                        {submitting
-                            ? 'Saving...'
-                            : isEditing
-                              ? 'Save Changes'
-                              : 'Add Position'}
-                    </Button>
-                </DialogFooter>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                onOpenChange(false);
+                                form.reset();
+                            }}
+                            disabled={submitting}
+                        >
+                            Cancel
+                        </Button>
 
-            </DialogContent>
-        </Dialog>
+                        <Button
+                            type="submit"
+                            form="position-form"
+                            disabled={submitting}
+                        >
+                            {submitting
+                                ? 'Saving...'
+                                : isEditing
+                                  ? 'Save Changes'
+                                  : 'Add Position'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-        <TableSelect<Ios>
-            data={iosList.data}
-            columns={selectColumns}
-            open={openIosSelect}
-            onOpenChange={setOpenIosSelect}
-            paginationData={iosList}
-            only={['iosList']}
-            onRowSelect={(row) => {
-                form.setValue('ios_id', String(row.id));
-            }}
-            value={form.watch('ios_id')}
-            valueKey="id"
-            title="Select IOS Classification"
-            description="Search and select an IOS classification"
-        />
+            <TableSelect<Ios>
+                data={iosList.data}
+                columns={selectColumns}
+                open={openIosSelect}
+                onOpenChange={setOpenIosSelect}
+                paginationData={iosList}
+                only={['iosList']}
+                onRowSelect={(row) => {
+                    form.setValue('ios_id', String(row.id));
+                }}
+                value={form.watch('ios_id')}
+                valueKey="id"
+                title="Select IOS Classification"
+                description="Search and select an IOS classification"
+            />
         </>
     );
 }

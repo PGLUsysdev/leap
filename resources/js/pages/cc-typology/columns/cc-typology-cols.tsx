@@ -17,99 +17,89 @@ const categoryLabels: Record<string, string> = {
     '4': 'Service Delivery',
 };
 
-interface CcTypologyTableMeta {
-    onEdit: (typology: CcTypology) => void;
-    onDelete: (typology: CcTypology) => void;
-    can?: {
-        add: boolean;
-        edit: boolean;
-        delete: boolean;
-    };
-}
+const columns = [
+    columnHelper.accessor('code', {
+        size: 100,
+        header: () => <div className="px-1">Code</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor('description', {
+        size: 400,
+        header: () => <div className="px-1">Description</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor('response_type', {
+        size: 120,
+        header: () => <div className="px-1">Response Type</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap">
+                {responseTypeLabels[info.getValue()] ?? info.getValue()}
+            </div>
+        ),
+    }),
+    columnHelper.accessor('strategic_priority.name', {
+        size: 200,
+        header: () => <div className="px-1">Strategic Priority</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor('sub_sector.name', {
+        size: 200,
+        header: () => <div className="px-1">Sub Sector</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap">{info.getValue() ?? '—'}</div>
+        ),
+    }),
+    columnHelper.accessor('category_code', {
+        size: 200,
+        header: () => <div className="px-1">Category Code</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap">
+                {categoryLabels[info.getValue()] ?? info.getValue()}
+            </div>
+        ),
+    }),
+    columnHelper.accessor('item_num', {
+        size: 100,
+        header: () => <div className="px-1">Item No.</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor('is_nccap_activity', {
+        size: 120,
+        header: () => <div className="px-1">NCCAP Activity</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap">
+                {info.getValue() ? 'Yes' : 'No'}
+            </div>
+        ),
+    }),
+    columnHelper.display({
+        id: 'actions',
+        size: 82,
+        cell: (info) => (
+            <div className="flex gap-1">
+                <Button
+                    size="icon"
+                    variant="outline"
+                    disabled={!info.table.options.meta?.canEdit}
+                    onClick={() =>
+                        info.table.options.meta?.onEdit?.(info.row.original)
+                    }
+                >
+                    <Pencil />
+                </Button>
+                <Button
+                    size="icon"
+                    variant="destructive"
+                    disabled={!info.table.options.meta?.canDelete}
+                    onClick={() =>
+                        info.table.options.meta?.onDelete?.(info.row.original)
+                    }
+                >
+                    <Trash />
+                </Button>
+            </div>
+        ),
+    }),
+];
 
-export default function columns() {
-    return [
-        columnHelper.accessor('code', {
-            header: 'Code',
-            size: 150,
-            cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-        }),
-        columnHelper.accessor('description', {
-            header: 'Description',
-            size: 400,
-            cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-        }),
-        columnHelper.accessor('response_type', {
-            header: 'Response Type',
-            size: 150,
-            cell: (info) => (
-                <div className="text-wrap">
-                    {responseTypeLabels[info.getValue()] ?? info.getValue()}
-                </div>
-            ),
-        }),
-        columnHelper.accessor('strategic_priority.name', {
-            header: 'Strategic Priority',
-            size: 200,
-            cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-        }),
-        columnHelper.accessor('sub_sector.name', {
-            header: 'Sub Sector',
-            size: 200,
-            cell: (info) => (
-                <div className="text-wrap">{info.getValue() ?? '—'}</div>
-            ),
-        }),
-        columnHelper.accessor('category_code', {
-            header: 'Category Code',
-            size: 200,
-            cell: (info) => (
-                <div className="text-wrap">
-                    {categoryLabels[info.getValue()] ?? info.getValue()}
-                </div>
-            ),
-        }),
-        columnHelper.accessor('item_num', {
-            header: 'Item No.',
-            size: 150,
-            cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-        }),
-        columnHelper.accessor('is_nccap_activity', {
-            header: 'NCCAP Activity',
-            size: 150,
-            cell: (info) => (
-                <div className="text-wrap">
-                    {info.getValue() ? 'Yes' : 'No'}
-                </div>
-            ),
-        }),
-        columnHelper.display({
-            id: 'actions',
-            size: 84,
-            cell: (info) => {
-                const meta = info.table.options.meta as CcTypologyTableMeta;
-
-                return (
-                    <div className="flex gap-1">
-                        <Button
-                            size="icon"
-                            variant="outline"
-                            disabled={!meta?.can?.edit}
-                            onClick={() => meta?.onEdit?.(info.row.original)}
-                        >
-                            <Pencil />
-                        </Button>
-                        <Button
-                            size="icon"
-                            variant="destructive"
-                            disabled={!meta?.can?.delete}
-                            onClick={() => meta?.onDelete?.(info.row.original)}
-                        >
-                            <Trash />
-                        </Button>
-                    </div>
-                );
-            },
-        }),
-    ];
-}
+export default columns;

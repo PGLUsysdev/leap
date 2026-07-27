@@ -8,17 +8,17 @@ const columnHelper = createColumnHelper<Office>();
 
 const columns = [
     columnHelper.accessor('full_code', {
-        header: 'Office Account Code',
         size: 200,
-        cell: (info) => {
-            return <code className="font-mono">{info.getValue()}</code>;
-        },
+        header: () => <div className="px-1">Office Account Code</div>,
+        cell: (info) => (
+            <div className="px-1 font-mono text-wrap">{info.getValue()}</div>
+        ),
     }),
     columnHelper.accessor('name', {
-        header: 'Office Name',
-        size: 300,
+        size: 400,
+        header: () => <div className="px-1">Office Name</div>,
         cell: ({ row }) => (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-1 text-wrap">
                 <span
                     className={`flex gap-2 text-wrap ${row.original.parent_id ? 'ml-8' : ''}`}
                 >
@@ -33,15 +33,17 @@ const columns = [
         ),
     }),
     columnHelper.accessor('acronym', {
-        header: 'Acronym',
+        size: 100,
+        header: () => <div className="px-1">Acronym</div>,
         cell: (value) => (
-            <span className="text-wrap">{value.getValue() ?? '-'}</span>
+            <div className="px-1 text-wrap">{value.getValue() ?? '-'}</div>
         ),
     }),
     columnHelper.accessor('is_lee', {
-        header: 'LEE',
+        size: 100,
+        header: () => <div className="px-1">LEE</div>,
         cell: ({ row }) => (
-            <div className="flex items-center">
+            <div className="flex items-center px-1 text-wrap">
                 {row.getValue('is_lee') ? (
                     <Badge>Yes</Badge>
                 ) : (
@@ -52,7 +54,7 @@ const columns = [
     }),
     columnHelper.display({
         id: 'actions',
-        size: 120,
+        size: 118,
         cell: ({ row, table }) => {
             const meta = table.options.meta as
                 | {

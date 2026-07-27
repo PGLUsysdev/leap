@@ -5,74 +5,60 @@ import type { FundingSource } from '@/types';
 
 const columnHelper = createColumnHelper<FundingSource>();
 
-const columns = (canEdit: boolean, canDelete: boolean) => {
-    const cols = [
-        columnHelper.accessor('fund_type', {
-            header: 'Fund Type',
-            cell: (value) => (
-                <span className="text-wrap">{value.getValue()}</span>
-            ),
-        }),
-        columnHelper.accessor('code', {
-            header: 'Code',
-            cell: (value) => (
-                <span className="text-wrap">{value.getValue()}</span>
-            ),
-        }),
-        columnHelper.accessor('title', {
-            header: 'Title',
-            size: 500,
-            cell: (value) => (
-                <span className="text-wrap">{value.getValue()}</span>
-            ),
-        }),
-        columnHelper.accessor('description', {
-            header: 'Description',
-            size: 300,
-            cell: (value) => (
-                <span className="text-wrap">{value.getValue() ?? '-'}</span>
-            ),
-        }),
-    ];
+const columns = [
+    columnHelper.accessor('fund_type', {
+        size: 100,
+        header: () => <div className="px-1">Fund Type</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue()}</div>
+        ),
+    }),
+    columnHelper.accessor('code', {
+        size: 100,
+        header: () => <div className="px-1">Code</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue()}</div>
+        ),
+    }),
+    columnHelper.accessor('title', {
+        size: 300,
+        header: () => <div className="px-1">Title</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue()}</div>
+        ),
+    }),
+    columnHelper.accessor('description', {
+        size: 300,
+        header: () => <div className="px-1">Description</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue() ?? '-'}</div>
+        ),
+    }),
+    columnHelper.display({
+        id: 'actions',
+        size: 82,
+        cell: ({ row, table }) => (
+            <div className="flex items-center gap-1">
+                <Button
+                    size="icon"
+                    variant="outline"
+                    disabled={!table.options.meta?.canEdit}
+                    onClick={() => table.options.meta?.onEdit?.(row.original)}
+                >
+                    <Pencil />
+                </Button>
 
-    if (canEdit || canDelete) {
-        cols.push(
-            columnHelper.display({
-                id: 'actions',
-                // size: 82,
-                size: canEdit && canDelete ? 82 : 48,
-                cell: ({ row, table }) => (
-                    <div className="flex items-center gap-1">
-                        {canEdit && (
-                            <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={() =>
-                                    table.options.meta?.onEdit?.(row.original)
-                                }
-                            >
-                                <Pencil />
-                            </Button>
-                        )}
-
-                        {canDelete && (
-                            <Button
-                                size="icon"
-                                variant="destructive"
-                                onClick={() =>
-                                    table.options.meta?.onDelete?.(row.original)
-                                }
-                            >
-                                <Trash />
-                            </Button>
-                        )}
-                    </div>
-                ),
-            }),
-        );
-    }
-
-    return cols;
-};
+                <Button
+                    size="icon"
+                    variant="destructive"
+                    disabled={!table.options.meta?.canDelete}
+                    onClick={() => table.options.meta?.onDelete?.(row.original)}
+                >
+                    <Trash />
+                </Button>
+            </div>
+        ),
+    }),
+];
 
 export default columns;

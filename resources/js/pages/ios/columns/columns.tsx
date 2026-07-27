@@ -7,57 +7,51 @@ const columnHelper = createColumnHelper<Ios>();
 
 const columns = [
     columnHelper.accessor('occupational_service_code', {
-        header: 'Occupational Service Code',
-        size: 200,
-        cell: (info) => info.getValue(),
+        size: 210,
+        header: () => <div className="px-1">Occupational Service Code</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('occupational_group_code', {
-        header: 'Occupational Group Code',
         size: 200,
-        cell: (info) => info.getValue(),
+        header: () => <div className="px-1">Occupational Group Code</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('class_id', {
-        header: 'Class ID',
-        size: 150,
-        cell: (info) => info.getValue(),
+        size: 100,
+        header: () => <div className="px-1">Class ID</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('class', {
-        header: 'Class',
         size: 300,
-        cell: (info) => info.getValue(),
+        header: () => <div className="px-1">Class</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('salary_grade', {
-        header: 'Salary Grade',
-        size: 100,
-        cell: (info) => info.getValue(),
+        size: 110,
+        header: () => <div className="px-1">Salary Grade</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.display({
         id: 'actions',
-        size: 83,
+        size: 82,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">
-                {table.options.meta?.onEdit && (
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() =>
-                            table.options.meta?.onEdit?.(row.original)
-                        }
-                    >
-                        <Pencil />
-                    </Button>
-                )}
-                {table.options.meta?.onDelete && (
-                    <Button
-                        size="icon"
-                        variant="destructive"
-                        onClick={() =>
-                            table.options.meta?.onDelete?.(row.original)
-                        }
-                    >
-                        <Trash2 />
-                    </Button>
-                )}
+                <Button
+                    size="icon"
+                    variant="outline"
+                    disabled={!table.options.meta?.canEdit}
+                    onClick={() => table.options.meta?.onEdit?.(row.original)}
+                >
+                    <Pencil />
+                </Button>
+                <Button
+                    size="icon"
+                    variant="destructive"
+                    disabled={!table.options.meta?.canDelete}
+                    onClick={() => table.options.meta?.onDelete?.(row.original)}
+                >
+                    <Trash2 />
+                </Button>
             </div>
         ),
     }),

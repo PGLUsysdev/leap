@@ -3,6 +3,10 @@ import { Library, FileDown, FileText, Plus } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
 // import { DataTable } from '@/components/data-table';
 import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import {
     AlertDialog,
@@ -39,10 +43,6 @@ import type {
     PpmpCategory,
 } from '@/types';
 import columns from './columns/columns';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
 
 interface AipSummaryTableProps {
     fiscalYear: FiscalYear;
@@ -52,6 +52,7 @@ interface AipSummaryTableProps {
         import: boolean;
         createSaip: boolean;
         setPsPool: boolean;
+        showSummaryAll?: boolean;
     };
     fundingSources: FundingSource[];
     ccTypologies: {
@@ -124,10 +125,7 @@ export default function AipSummaryTable({
     ppmpCoaTotals,
     psCoaAutoTotals = {},
     psPoolPpaId = null,
-    newPpaEntries,
 }: AipSummaryTableProps) {
-    // console.log(newPpaEntries);
-
     const { auth } = usePage<SharedData>().props;
 
     const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
@@ -489,14 +487,12 @@ export default function AipSummaryTable({
             ? `saip-${currentScope.supplemental_aip_id}`
             : currentScope.scope;
 
-    const cols = columns();
-
     return (
         <>
             {/* <div className="flex flex-col gap-4 pt-4"> */}
 
             {/* <DataTable
-                    columns={cols}
+                    columns={columns}
                     data={expandPpaByFundingSource(aipEntries)}
                     withSearch={true}
                     withRowSpan={true}
@@ -650,11 +646,11 @@ export default function AipSummaryTable({
                 </div>
 
                 <DataTable
-                    columns={cols}
+                    columns={columns}
                     data={expandPpaByFundingSource(aipEntries)}
                     showFooter={true}
                     withRowSpan={true}
-
+                    withColgroup={true}
                     // withSearch={true}
 
                     // onAdd={handleAddEntry}
@@ -764,7 +760,7 @@ export default function AipSummaryTable({
                 auth={auth}
                 supplementalAipId={currentScope.supplemental_aip_id}
                 canShowSummaryAll={can?.showSummaryAll ?? false}
-                selectedOfficeId={filters?.selected_office_id}
+                selectedOfficeId={filters?.selected_office_id ?? undefined}
                 chartOfAccounts={chartOfAccounts}
                 priceLists={priceLists}
                 ppmpCategories={ppmpCategories}

@@ -78,7 +78,7 @@ interface AipEntryFormDialogProps {
     auth: AuthData;
     supplementalAipId?: number | null;
     canShowSummaryAll?: boolean; // NEW
-    selectedOfficeId?: string;
+    selectedOfficeId?: string | null;
     ccTypologies: {
         id: number;
         code: string;

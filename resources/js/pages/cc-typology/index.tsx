@@ -8,7 +8,7 @@ import {
 } from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import type { CcTypology, CcStrategicPriority, CcSubSector } from '@/types';
-import createColumns from './columns/cc-typology-cols';
+import columns from './columns/cc-typology-cols';
 import FormDialog from './form-dialog-base';
 
 interface CcTypologyPageProps {
@@ -75,15 +75,18 @@ export default function CcTypologyPage({
         setEditingTypology(null);
     }, []);
 
-    const columns = createColumns();
-
     return (
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
                     columns={columns}
                     data={ccTypologies}
-                    meta={{ onEdit: handleEdit, onDelete: handleDelete, can }}
+                    meta={{
+                        canEdit: can.edit,
+                        canDelete: can.delete,
+                        onEdit: handleEdit,
+                        onDelete: handleDelete,
+                    }}
                 >
                     {can?.add && (
                         <Button onClick={handleCreate}>

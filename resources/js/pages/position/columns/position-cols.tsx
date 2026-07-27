@@ -7,84 +7,97 @@ const columnHelper = createColumnHelper<Position>();
 
 const columns = [
     columnHelper.accessor('item_number', {
-        header: 'Item No.',
         size: 100,
+        header: () => <div className="px-1">Item No.</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('office_id', {
-        header: 'Office',
         size: 100,
+        header: () => <div className="px-1">Office</div>,
         cell: (info) => {
             const row = info.row.original;
             const office = row.office;
 
-            return office?.acronym ?? office?.name ?? info.getValue();
+            return (
+                <div className="px-1 text-wrap">
+                    {office?.acronym ?? office?.name ?? info.getValue()}
+                </div>
+            );
         },
     }),
     columnHelper.accessor('ios_id', {
-        header: 'Class',
         size: 200,
+        header: () => <div className="px-1">Class</div>,
         cell: (info) => {
             const row = info.row.original;
 
-            return row.ios?.class ?? info.getValue();
+            return (
+                <div className="px-1 text-wrap">
+                    {row.ios?.class ?? info.getValue()}
+                </div>
+            );
         },
     }),
     columnHelper.accessor('ios_id', {
         id: 'salary_grade',
-        header: 'Salary Grade',
-        size: 100,
+        size: 110,
+        header: () => <div className="px-1">Salary Grade</div>,
         cell: (info) => {
             const row = info.row.original;
 
-            return row.ios?.salary_grade ?? info.getValue();
+            return (
+                <div className="px-1 text-wrap">
+                    {row.ios?.salary_grade ?? info.getValue()}
+                </div>
+            );
         },
     }),
     columnHelper.accessor('employment_type', {
-        header: 'Employment Type',
         size: 150,
-        cell: (info) => <span className="capitalize">{info.getValue()}</span>,
+        header: () => <div className="px-1">Employment Type</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap capitalize">{info.getValue()}</div>
+        ),
     }),
     columnHelper.accessor('is_funded', {
-        header: 'Funded',
         size: 100,
-        cell: (info) => <span>{info.getValue() ? 'Yes' : 'No'}</span>,
+        header: () => <div className="px-1">Funded</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap">
+                {info.getValue() ? 'Yes' : 'No'}
+            </div>
+        ),
     }),
     columnHelper.accessor('status', {
-        header: 'Status',
         size: 100,
+        header: () => <div className="px-1">Status</div>,
         cell: (info) => {
             const status = info.getValue();
 
-            return <span className="capitalize">{status}</span>;
+            return <div className="px-1 text-wrap capitalize">{status}</div>;
         },
     }),
     columnHelper.display({
-        id: 'action',
-        size: 84,
+        id: 'actions',
+        size: 82,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">
-                {table.options.meta?.onEdit && (
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() =>
-                            table.options.meta?.onEdit?.(row.original)
-                        }
-                    >
-                        <Pencil />
-                    </Button>
-                )}
-                {table.options.meta?.onDelete && (
-                    <Button
-                        size="icon"
-                        variant="destructive"
-                        onClick={() =>
-                            table.options.meta?.onDelete?.(row.original)
-                        }
-                    >
-                        <Trash2 />
-                    </Button>
-                )}
+                <Button
+                    size="icon"
+                    variant="outline"
+                    disabled={!table.options.meta?.canEdit}
+                    onClick={() => table.options.meta?.onEdit?.(row.original)}
+                >
+                    <Pencil />
+                </Button>
+                <Button
+                    size="icon"
+                    variant="destructive"
+                    disabled={!table.options.meta?.canDelete}
+                    onClick={() => table.options.meta?.onDelete?.(row.original)}
+                >
+                    <Trash2 />
+                </Button>
             </div>
         ),
     }),

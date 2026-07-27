@@ -109,9 +109,11 @@ export default function PpmpCategoryPage({
                 {/* additional content here */}
 
                 <DataTable
-                    columns={columns(can?.edit ?? false, can?.delete ?? false)}
+                    columns={columns}
                     data={ppmpCategories}
                     meta={{
+                        canEdit: can?.edit ?? false,
+                        canDelete: can?.delete ?? false,
                         onEdit: handleEdit,
                         onDelete: handleDeleteDialogOpen,
                     }}

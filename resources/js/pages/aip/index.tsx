@@ -107,16 +107,16 @@ export default function AipPage({
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={columns(
-                        can?.updateStatus ?? false,
-                        canOpenAip ?? false,
-                        isOpenAipDisabled,
-                        (can?.generateAppAll ?? false) ||
-                            (can?.generateAppOwn ?? false),
-                        can?.openPpmpSummary ?? false,
-                    )}
+                    columns={columns}
                     data={fiscalYears}
                     meta={{
+                        canUpdateStatus: can?.updateStatus ?? false,
+                        canOpenAip: canOpenAip ?? false,
+                        disableOpenAip: isOpenAipDisabled,
+                        canGenerateApp:
+                            (can?.generateAppAll ?? false) ||
+                            (can?.generateAppOwn ?? false),
+                        canOpenPpmpSummary: can?.openPpmpSummary ?? false,
                         onUpdateStatus,
                         onOpen: handleOpenAipSummary,
                         onGeneratePdf: handleGeneratePdf,
@@ -168,7 +168,10 @@ export default function AipPage({
                 </DataTable>
             </ScrollArea>
 
-            <FormDialog open={openFormDialog} onOpenChange={setOpenFormDialog} />
+            <FormDialog
+                open={openFormDialog}
+                onOpenChange={setOpenFormDialog}
+            />
 
             <PdfPreviewDialog
                 open={openPdfPreviewDialog}

@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { index as aipIndex, summary } from '@/routes/aip';
 import type { ChartOfAccount, Position, PsBreakdownItem } from '@/types';
 import getPsBreakdownCols from './columns/ps-breakdown-cols';
@@ -28,9 +32,9 @@ export default function PsBreakdown({
     positions,
     ppaFundingSourceId,
     rates,
-    fiscalYear,
+    // fiscalYear,
     annualRateMap,
-    can,
+    // can,
 }: PsBreakdownProps) {
     const [openPdfPreview, setOpenPdfPreview] = useState(false);
 
@@ -66,7 +70,7 @@ export default function PsBreakdown({
 
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
                     data={positions}
                     columns={psBreakdownCols}
@@ -83,7 +87,9 @@ export default function PsBreakdown({
                         )}
                     </div>*/}
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <PreviewPdfDialog
                 open={openPdfPreview}

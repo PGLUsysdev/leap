@@ -1,29 +1,23 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import type { SalaryScheduleMatrixRow } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import type { SalaryScheduleMatrixRow } from '@/types';
 
 const currency = (value: number | null) =>
     value != null
-        ? value.toLocaleString("en-US", {
+        ? value.toLocaleString('en-US', {
               minimumFractionDigits: 2,
           })
-        : "-";
+        : '-';
 
 const columns = (maxStep: number) => {
     const columnHelper = createColumnHelper<SalaryScheduleMatrixRow>();
 
     const cols = [
-        // Added Fiscal Year column
-        // columnHelper.accessor('fiscal_year_id', {
-        //     header: 'Fiscal Year',
-        //     size: 100,
-        //     cell: (info) => (
-        //         <span className="text-muted-foreground">{info.getValue()}</span>
-        //     ),
-        // }),
-        columnHelper.accessor("salary_grade", {
-            header: "Salary Grade",
-            size: 120,
-            cell: (info) => <span className="font-medium">{info.getValue()}</span>,
+        columnHelper.accessor('salary_grade', {
+            size: 100,
+            header: () => <div className="px-1">Salary Grade</div>,
+            cell: (info) => (
+                <div className="px-1 font-medium">{info.getValue()}</div>
+            ),
         }),
     ];
 
@@ -31,13 +25,14 @@ const columns = (maxStep: number) => {
         const key = `step_${step}` as const;
         cols.push(
             columnHelper.accessor(key as any, {
-                // Cast as any to handle dynamic keys safely
-                header: `Step ${step}`,
-                size: 130,
+                size: 150,
+                header: () => (
+                    <div className="px-1 text-right">Step {step}</div>
+                ),
                 cell: (info) => (
-                    <span className="tabular-nums">
+                    <div className="px-1 text-right tabular-nums">
                         {currency(info.getValue() as number | null)}
-                    </span>
+                    </div>
                 ),
             }),
         );

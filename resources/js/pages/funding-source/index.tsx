@@ -72,14 +72,12 @@ export default function FundingSourcePage({
         });
     }
 
-    const cols = columns(can?.edit ?? false, can?.delete ?? false);
-
     return (
         <>
             {/*<div className="pt-4">*/}
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 {/*<DataTable
-                    columns={cols}
+                    columns={columns}
                     data={fundingSources}
                     withSearch={true}
                     onEdit={handleEdit}
@@ -96,9 +94,11 @@ export default function FundingSourcePage({
                 </DataTable>*/}
 
                 <DataTable
-                    columns={cols}
+                    columns={columns}
                     data={fundingSources}
                     meta={{
+                        canEdit: can?.edit ?? false,
+                        canDelete: can?.delete ?? false,
                         onEdit: handleEdit,
                         onDelete: handleDeleteDialogOpen,
                     }}

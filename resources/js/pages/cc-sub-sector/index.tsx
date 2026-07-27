@@ -86,9 +86,10 @@ export default function CcSubSectorPage({
                     columns={columns}
                     data={subSectors}
                     meta={{
+                        canEdit: can.edit,
+                        canDelete: can.delete,
                         onEdit: handleEdit,
                         onDelete: handleDeleteRequest,
-                        can,
                     }}
                 >
                     {can?.add && (

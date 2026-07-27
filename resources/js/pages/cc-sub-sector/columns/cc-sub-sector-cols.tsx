@@ -1,35 +1,35 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, Trash } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { CcSubSector } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import { Pencil, Trash } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { CcSubSector } from '@/types';
 
 const columnHelper = createColumnHelper<CcSubSector>();
 
 const columns = [
-    columnHelper.accessor("code", {
-        header: "Code",
-        size: 200,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+    columnHelper.accessor('code', {
+        size: 100,
+        header: () => <div className="px-1">Code</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
-    columnHelper.accessor("name", {
-        header: "Name",
-        size: 400,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
-    }),
-    columnHelper.accessor("strategic_priority.name", {
-        header: "Strategic Priority",
+    columnHelper.accessor('name', {
         size: 200,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+        header: () => <div className="px-1">Name</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+    }),
+    columnHelper.accessor('strategic_priority.name', {
+        size: 200,
+        header: () => <div className="px-1">Strategic Priority</div>,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.display({
-        id: "action",
-        size: 86,
+        id: 'actions',
+        size: 82,
         cell: ({ row, table }) => (
             <div className="flex gap-1">
                 <Button
                     size="icon"
                     variant="outline"
-                    disabled={!table.options.meta?.can?.edit}
+                    disabled={!table.options.meta?.canEdit}
                     onClick={() => table.options.meta?.onEdit?.(row.original)}
                 >
                     <Pencil />
@@ -37,7 +37,7 @@ const columns = [
                 <Button
                     size="icon"
                     variant="destructive"
-                    disabled={!table.options.meta?.can?.delete}
+                    disabled={!table.options.meta?.canDelete}
                     onClick={() => table.options.meta?.onDelete?.(row.original)}
                 >
                     <Trash />

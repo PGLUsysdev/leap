@@ -1,6 +1,10 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 import type { Role } from '@/types';
@@ -58,23 +62,20 @@ export default function RolePage({ roles, can }: RolePageProps) {
         });
     }
 
-    const cols = columns(
-        can?.edit ?? false,
-        can?.managePermissions ?? false,
-        can?.delete ?? false,
-    );
-
     return (
         <>
-            <div className="pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <DataTable
-                    columns={cols}
+                    columns={columns}
                     data={roles ?? []}
-                    withSearch={true}
-                    onEdit={handleEdit}
-                    onEditPerms={handleEditPerms}
-                    onDelete={handleDeleteDialogOpen}
-                    negativeHeight={7}
+                    meta={{
+                        canEdit: can?.edit ?? false,
+                        canEditPerms: can?.managePermissions ?? false,
+                        canDelete: can?.delete ?? false,
+                        onEdit: handleEdit,
+                        onEditPerms: handleEditPerms,
+                        onDelete: handleDeleteDialogOpen,
+                    }}
                 >
                     {can?.add && (
                         <div className="flex justify-end">
@@ -82,7 +83,8 @@ export default function RolePage({ roles, can }: RolePageProps) {
                         </div>
                     )}
                 </DataTable>
-            </div>
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <FormDialog
                 open={openForm}

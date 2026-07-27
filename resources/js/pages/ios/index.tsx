@@ -16,13 +16,13 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import type { Ios, PaginatedResponse, SalaryStandard } from '@/types';
+import type { Ios, PaginatedResponse, SalaryGradeOption } from '@/types';
 import columns from './columns/columns';
 import FormDialog from './form-dialog-base';
 
 interface IosPageProps {
     ios: PaginatedResponse<Ios>;
-    salaryGrades: SalaryStandard[];
+    salaryGrades: SalaryGradeOption[];
     can?: {
         add: boolean;
         edit: boolean;
@@ -70,8 +70,10 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
                     data={ios.data}
                     paginationData={ios}
                     meta={{
-                        onEdit: can?.edit ? handleEdit : undefined,
-                        onDelete: can?.delete ? handleDelete : undefined,
+                        canEdit: can?.edit ?? false,
+                        canDelete: can?.delete ?? false,
+                        onEdit: handleEdit,
+                        onDelete: handleDelete,
                     }}
                     only={['ios']}
                 >

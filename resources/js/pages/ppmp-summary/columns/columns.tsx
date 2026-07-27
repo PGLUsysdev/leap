@@ -57,35 +57,62 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
     );
 
     return [
-        columnHelper.accessor('item_number', { header: 'Item #', size: 50 }),
-        columnHelper.accessor('description', {
-            header: 'Description',
-            size: 300,
+        columnHelper.accessor('item_number', {
+            size: 200,
+            header: () => <div className="px-1">Item #</div>,
             cell: (info) => (
-                <div className="min-w-[300px] text-wrap">{info.getValue()}</div>
+                <div className="px-1 text-wrap">{info.getValue()}</div>
+            ),
+        }),
+        columnHelper.accessor('description', {
+            size: 800,
+            header: () => <div className="px-1">Description</div>,
+            cell: (info) => (
+                <div className="px-1 text-wrap">{info.getValue()}</div>
             ),
         }),
         columnHelper.accessor('unit_of_measurement', {
-            header: 'Unit',
-            size: 50,
+            size: 200,
+            header: () => <div className="px-1">Unit</div>,
+            cell: (info) => (
+                <div className="px-1 text-wrap">{info.getValue()}</div>
+            ),
         }),
-        columnHelper.accessor('price', { header: 'Price', size: 100 }),
+        columnHelper.accessor('price', {
+            size: 300,
+            header: () => <div className="px-1 text-right">Price</div>,
+            cell: (info) => (
+                <div className="px-1 text-right text-wrap">
+                    {info.getValue()}
+                </div>
+            ),
+        }),
+
         columnHelper.group({
             id: 'grand_totals',
-            size: 200,
+            size: 500,
             columns: [
                 columnHelper.display({
                     id: 'total_qty',
-                    header: 'Total QTY',
-                    cell: ({ row }) =>
-                        row.original.ppmps.reduce(
-                            (sum, p) => sum + (p.total_qty || 0),
-                            0,
-                        ),
+                    size: 100,
+                    header: () => (
+                        <div className="px-1 text-right">Total QTY</div>
+                    ),
+                    cell: ({ row }) => (
+                        <div className="px-1 text-right text-wrap">
+                            {row.original.ppmps.reduce(
+                                (sum, p) => sum + (p.total_qty || 0),
+                                0,
+                            )}
+                        </div>
+                    ),
                 }),
                 columnHelper.display({
                     id: 'total_cost',
-                    header: 'Total Cost',
+                    size: 100,
+                    header: () => (
+                        <div className="px-1 text-right">Total Cost</div>
+                    ),
                     cell: ({ row }) => {
                         const total = row.original.ppmps.reduce(
                             (sum, p) => sum + Number(p.total_amount || 0),
@@ -93,11 +120,11 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                         );
 
                         return (
-                            <span className="font-bold text-blue-600">
+                            <div className="px-1 text-right text-wrap">
                                 {total.toLocaleString('en-US', {
                                     minimumFractionDigits: 2,
                                 })}
-                            </span>
+                            </div>
                         );
                     },
                     footer: () => {
@@ -113,11 +140,11 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                         );
 
                         return (
-                            <span className="font-bold text-blue-600">
+                            <div className="px-1 text-right">
                                 {grandTotal.toLocaleString('en-US', {
                                     minimumFractionDigits: 2,
                                 })}
-                            </span>
+                            </div>
                         );
                     },
                 }),
@@ -128,19 +155,28 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
         ...uniquePPAs.map((ppa) =>
             columnHelper.group({
                 id: `group_ppa_${ppa.id}`,
-                size: 400,
-                header: () => <div className="font-bold">{ppa.name}</div>,
-                columns: [
-                    // 2. Level 2: Quarter Groups (Nested inside PPA)
-                    ...[1, 2, 3, 4].map((q) =>
-                        columnHelper.group({
-                            id: `ppa_${ppa.id}_q${q}_group`,
-                            header: () => <div>Quarter {q}</div>,
+                size: 1600,
+                header: () => (
+                    <div className="px-1 text-center">{ppa.name}</div>
+                ),
+                columns: [1, 2, 3, 4].map((q) =>
+                    columnHelper.group({
+                        id: `ppa_${ppa.id}_q${q}_group`,
+                            size: 100,
+                            header: () => (
+                                <div className="px-1 text-center">
+                                    Quarter {q}
+                                </div>
+                            ),
                             columns: [
-                                // 3. Level 3: The actual data columns
                                 columnHelper.display({
                                     id: `ppa_${ppa.id}_q${q}_qty`,
-                                    header: 'Qty',
+                                    size: 100,
+                                    header: () => (
+                                        <div className="px-1 text-right">
+                                            Qty
+                                        </div>
+                                    ),
                                     cell: ({ row }) => {
                                         const entries =
                                             row.original.ppmps.filter(
@@ -150,20 +186,30 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                                     ppa.id,
                                             );
 
-                                        return entries.reduce(
-                                            (sum, e) =>
-                                                sum +
-                                                Number(
-                                                    (e as any)[`q${q}_qty`] ||
-                                                        0,
-                                                ),
-                                            0,
+                                        return (
+                                            <div className="px-1 text-right text-wrap">
+                                                {entries.reduce(
+                                                    (sum, e) =>
+                                                        sum +
+                                                        Number(
+                                                            (e as any)[
+                                                                `q${q}_qty`
+                                                            ] || 0,
+                                                        ),
+                                                    0,
+                                                )}
+                                            </div>
                                         );
                                     },
                                 }),
                                 columnHelper.display({
                                     id: `ppa_${ppa.id}_q${q}_cost`,
-                                    header: 'Cost',
+                                    size: 100,
+                                    header: () => (
+                                        <div className="px-1 text-right">
+                                            Cost
+                                        </div>
+                                    ),
                                     cell: ({ row }) => {
                                         const entries =
                                             row.original.ppmps.filter(
@@ -183,9 +229,15 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                             0,
                                         );
 
-                                        return Number(amount).toLocaleString(
-                                            undefined,
-                                            { minimumFractionDigits: 2 },
+                                        return (
+                                            <div className="px-1 text-right text-wrap">
+                                                {Number(amount).toLocaleString(
+                                                    undefined,
+                                                    {
+                                                        minimumFractionDigits: 2,
+                                                    },
+                                                )}
+                                            </div>
                                         );
                                     },
                                     footer: () => {
@@ -216,34 +268,22 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                                             0,
                                         );
 
-                                        return quarterTotal.toLocaleString(
-                                            undefined,
-                                            { minimumFractionDigits: 2 },
+                                        return (
+                                            <div className="px-1 text-right">
+                                                {quarterTotal.toLocaleString(
+                                                    undefined,
+                                                    {
+                                                        minimumFractionDigits: 2,
+                                                    },
+                                                )}
+                                            </div>
                                         );
                                     },
                                 }),
                             ],
                         }),
                     ),
-                    // Optional: Total for this PPA across all quarters
-                    // columnHelper.display({
-                    //     id: `ppa_${ppa.id}_ppa_total`,
-                    //     header: 'PPA Total',
-                    //     cell: ({ row }) => {
-                    //         const entry = row.original.ppmps.find(
-                    //             (p) => p.aip_entry.ppa.id === ppa.id,
-                    //         );
-                    //         return (
-                    //             <span className="font-bold">
-                    //                 {Number(
-                    //                     entry?.total_amount || 0,
-                    //                 ).toLocaleString()}
-                    //             </span>
-                    //         );
-                    //     },
-                    // }),
-                ],
-            }),
-        ),
-    ];
-};
+                }),
+            ),
+        ];
+    };

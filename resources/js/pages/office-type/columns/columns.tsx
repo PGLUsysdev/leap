@@ -7,15 +7,17 @@ const columnHelper = createColumnHelper<OfficeType>();
 
 const columns = [
     columnHelper.accessor('code', {
-        header: 'Code',
+        size: 100,
+        header: () => <div className="px-1">Code</div>,
         cell: (value) => (
-            <span className="text-wrap">{value.getValue()}</span>
+            <div className="px-1 text-wrap">{value.getValue()}</div>
         ),
     }),
     columnHelper.accessor('name', {
-        header: 'Type',
+        size: 100,
+        header: () => <div className="px-1">Type</div>,
         cell: (value) => (
-            <span className="text-wrap">{value.getValue()}</span>
+            <div className="px-1 text-wrap">{value.getValue()}</div>
         ),
     }),
     columnHelper.display({
@@ -30,38 +32,26 @@ const columns = [
                       onDelete?: (data: OfficeType) => void;
                   }
                 | undefined;
-            const canEdit = meta?.canEdit ?? false;
-            const canDelete = meta?.canDelete ?? false;
-
-            if (!canEdit && !canDelete) {
-                return null;
-            }
 
             return (
                 <div className="flex items-center gap-1">
-                    {canEdit && (
-                        <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() =>
-                                meta?.onEdit?.(row.original)
-                            }
-                        >
-                            <Pencil />
-                        </Button>
-                    )}
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        disabled={!meta?.canEdit}
+                        onClick={() => meta?.onEdit?.(row.original)}
+                    >
+                        <Pencil />
+                    </Button>
 
-                    {canDelete && (
-                        <Button
-                            size="icon"
-                            variant="destructive"
-                            onClick={() =>
-                                meta?.onDelete?.(row.original)
-                            }
-                        >
-                            <Trash />
-                        </Button>
-                    )}
+                    <Button
+                        size="icon"
+                        variant="destructive"
+                        disabled={!meta?.canDelete}
+                        onClick={() => meta?.onDelete?.(row.original)}
+                    >
+                        <Trash />
+                    </Button>
                 </div>
             );
         },

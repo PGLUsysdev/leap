@@ -24,17 +24,17 @@ const columns = [
     }),
     columnHelper.accessor('item_number', {
         header: () => <div className="px-1">Item Number</div>,
-        size: 110,
+        size: 120,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('description', {
         header: () => <div className="px-1">Description</div>,
-        size: 300,
+        size: 200,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('unit_of_measurement', {
         header: () => <div className="px-1">Unit of Measurement</div>,
-        size: 160,
+        size: 170,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('price', {
@@ -46,14 +46,14 @@ const columns = [
     }),
     columnHelper.accessor('chart_of_account_ppmp_category.ppmp_category.name', {
         header: () => <div className="px-1">PPMP Category</div>,
-        size: 180,
+        size: 200,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor(
         'chart_of_account_ppmp_category.chart_of_account.account_title',
         {
             header: () => <div className="px-1">Chart of Account</div>,
-            size: 250,
+            size: 200,
             cell: (info) => (
                 <div className="px-1 text-wrap">{info.getValue()}</div>
             ),

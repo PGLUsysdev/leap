@@ -1,8 +1,12 @@
 import { router, usePage } from '@inertiajs/react';
 import { Decimal } from 'decimal.js';
 import { Plus, FileDown, Sheet, FileText, Printer } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import {
     AlertDialog,
@@ -57,7 +61,6 @@ interface PpmpPageProps {
     aipEntry: AipEntry;
     allAipEntries?: AipEntry[];
     ppmps: Ppmp[];
-    isSupplemental?: boolean;
     priceLists: PriceList[];
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
@@ -80,7 +83,7 @@ export default function PpmpPage({
     aipEntry,
     allAipEntries = [],
     ppmps,
-    isSupplemental = false,
+    // isSupplemental = false,
     priceLists,
     chartOfAccounts,
     ppmpCategories,
@@ -160,54 +163,21 @@ export default function PpmpPage({
         return fundingSources.filter((fs) => entryFsIds.has(fs.id));
     }, [currentTab, activeAipEntry, aipEntry, fundingSources]);
 
-    useEffect(() => {
-        if (activeFundingSources.length > 0) {
-            const hasSelected = activeFundingSources.some(
-                (fs) => fs.id === selectedFundingSourceId,
-            );
-
-            if (!hasSelected) {
-                const nextFsId = activeFundingSources[0].id;
-
-                setSelectedFundingSourceId(nextFsId);
-
-                const bridgeId = (
-                    activeAipEntry || aipEntry
-                ).ppa_funding_sources?.find(
-                    (pfs) => pfs.funding_source_id === nextFsId,
-                )?.id;
-
-                router.get(
-                    window.location.pathname,
-                    buildQuery({
-                        choice: selectedExpenseClass,
-                        ppa_funding_source_id: bridgeId,
-                        tab: currentTab,
-                    }),
-                    { preserveState: true, replace: true },
-                );
-            }
-        }
-    }, [
-        currentTab,
-        activeFundingSources,
-        selectedFundingSourceId,
-        activeAipEntry,
-        aipEntry,
-        selectedExpenseClass,
-    ]);
-
-    const hasSupplementalEntries = useMemo(() => {
-        if (!can?.viewSupplemental) {
-            return false;
+    const effectiveFsId = useMemo(() => {
+        if (activeFundingSources.length === 0) {
+            return selectedFundingSourceId;
         }
 
-        return allAipEntries.some(
-            (e) =>
-                e.supplemental_aip_id &&
-                (e.ppa_funding_sources?.length ?? 0) > 0,
-        );
-    }, [allAipEntries, can?.viewSupplemental]);
+        return activeFundingSources.some(
+            (fs) => fs.id === selectedFundingSourceId,
+        )
+            ? selectedFundingSourceId
+            : activeFundingSources[0].id;
+    }, [activeFundingSources, selectedFundingSourceId]);
+
+    if (effectiveFsId !== selectedFundingSourceId) {
+        setSelectedFundingSourceId(effectiveFsId);
+    }
 
     const tabsList = useMemo(() => {
         const list: { value: string; label: string }[] = [];
@@ -228,16 +198,6 @@ export default function PpmpPage({
 
         return list;
     }, [allAipEntries]);
-
-    const summaryHref = useMemo(() => {
-        let href = `/aip/${fiscalYear.id}/summary`;
-
-        if (can?.showSummaryAll && selectedOfficeId) {
-            href += `?selected_office_id=${selectedOfficeId}`;
-        }
-
-        return href;
-    }, [fiscalYear.id, can?.showSummaryAll, selectedOfficeId]);
 
     const handleExpenseClassChange = (value: 'MOOE' | 'CO') => {
         setSelectedExpenseClass(value);
@@ -423,10 +383,10 @@ export default function PpmpPage({
 
     return (
         <>
-            <div className="flex flex-col gap-4 pt-4">
+            <ScrollArea className="h-[calc(100vh-3rem)] w-full">
                 <div
                     // className="flex flex-wrap items-center justify-between gap-4"
-                    className="flex flex-col gap-2 px-4"
+                    className="flex flex-col gap-2 px-4 pt-4"
                 >
                     <small className="text-sm leading-none font-medium">
                         Viewing: {aipEntry?.ppa?.name}
@@ -436,9 +396,50 @@ export default function PpmpPage({
                     <Tabs
                         value={currentTab}
                         onValueChange={(val: any) => {
-                            const query: Record<string, any> = { tab: val };
+                            const newEntry =
+                                val === 'original'
+                                    ? allAipEntries.find(
+                                          (e) => !e.supplemental_aip_id,
+                                      )
+                                    : val.startsWith('supplemental_')
+                                      ? allAipEntries.find(
+                                            (e) =>
+                                                e.id ===
+                                                Number(
+                                                    val.replace(
+                                                        'supplemental_',
+                                                        '',
+                                                    ),
+                                                ),
+                                        )
+                                      : null;
 
-                            // Keep the selected office for super admins
+                            const newActiveSources =
+                                val === 'combined'
+                                    ? fundingSources
+                                    : fundingSources.filter((fs) =>
+                                          (
+                                              newEntry || aipEntry
+                                          )?.ppa_funding_sources?.some(
+                                              (pfs) =>
+                                                  pfs.funding_source_id ===
+                                                  fs.id,
+                                          ),
+                                      );
+
+                            const nextFsId = newActiveSources[0]?.id;
+                            const bridgeId = (
+                                newEntry || aipEntry
+                            )?.ppa_funding_sources?.find(
+                                (pfs) => pfs.funding_source_id === nextFsId,
+                            )?.id;
+
+                            const query: Record<string, any> = {
+                                tab: val,
+                                choice: selectedExpenseClass,
+                                ppa_funding_source_id: bridgeId,
+                            };
+
                             if (can?.showSummaryAll && selectedOfficeId) {
                                 query.selected_office_id = selectedOfficeId;
                             }
@@ -478,10 +479,13 @@ export default function PpmpPage({
                     columns={columns}
                     data={filteredPpmpItems}
                     showFooter={true}
-                    meta={{
-                        readOnly: !isActiveTab,
-                        onDelete: handleDeleteDialogOpen,
-                    } as any}
+                    meta={
+                        {
+                            readOnly: !isActiveTab,
+                            onDelete: handleDeleteDialogOpen,
+                        } as any
+                    }
+                    className="pr-3"
                 >
                     <div className="flex gap-2">
                         <Select
@@ -652,7 +656,9 @@ export default function PpmpPage({
                         )}
                     </div>
                 </DataTable>
-            </div>
+
+                <ScrollBar orientation="vertical" />
+            </ScrollArea>
 
             <PpmpFormDialog
                 open={open}
