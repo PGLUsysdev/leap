@@ -17,9 +17,9 @@ import type {
     Filter,
     ChartOfAccountPpmpCategory,
 } from '@/types';
-import columns from './columns/columns-base';
-import FormDialog from './form-dialog-base';
-import MoveDialog from './move-dialog-base';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
+import MoveDialog from './move-dialog';
 
 interface PriceListPageProps {
     paginatedPriceList: PaginatedResponse<PriceList>;
@@ -38,20 +38,14 @@ interface PriceListPageProps {
 
 export default function PriceListPage({
     paginatedPriceList,
-
     chartOfAccounts,
     ppmpCategories,
-    filters,
     paginatedDialogPriceList,
-    can,
     coaCategoryPairs,
+    // filters,
+    // can,
 }: PriceListPageProps) {
     const { data: priceLists, ...priceListsPagination } = paginatedPriceList;
-
-    // console.log(priceLists);
-    // console.log(priceListsPagination);
-
-    // ---
 
     const dialogData = paginatedDialogPriceList?.data ?? [];
     const dialogPaginationData = paginatedDialogPriceList
@@ -194,8 +188,6 @@ export default function PriceListPage({
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
-
-            {/* --- */}
 
             <FormDialog
                 open={openFormDialog}
