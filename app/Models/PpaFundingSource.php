@@ -23,7 +23,7 @@ class PpaFundingSource extends Model
                 $model->loadMissing('aipEntry.ppa');
                 $ppa = $model->aipEntry?->ppa;
 
-                if (! $ppa || ! $ppa->is_ps_pool) {
+                if (!$ppa || !$ppa->is_ps_pool) {
                     throw new \Exception(
                         'Personal Services (PS) can only be allocated to the designated PS pool Program.',
                     );
@@ -33,6 +33,7 @@ class PpaFundingSource extends Model
     }
 
     protected $fillable = [
+        'id',
         'aip_entry_id',
         'funding_source_id',
         'ps_amount',

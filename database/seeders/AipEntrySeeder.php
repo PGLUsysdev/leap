@@ -3,50 +3,1037 @@
 namespace Database\Seeders;
 
 use App\Models\AipEntry;
-use App\Models\FiscalYear;
-use App\Models\Ppa;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 class AipEntrySeeder extends Seeder
 {
+    private function toDate(string $monthYear): string
+    {
+        $months = [
+            'Jan' => '01',
+            'Feb' => '02',
+            'Mar' => '03',
+            'Apr' => '04',
+            'May' => '05',
+            'Jun' => '06',
+            'Jul' => '07',
+            'Aug' => '08',
+            'Sep' => '09',
+            'Oct' => '10',
+            'Nov' => '11',
+            'Dec' => '12',
+        ];
+        [$m, $y] = explode('-', $monthYear);
+        return '20' . $y . '-' . $months[$m] . '-01';
+    }
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        // 1. Get the Fiscal Year
-        $fiscalYear = FiscalYear::first();
+        $aipEntries = [
+            [
+                'id' => 1,
+                'ppa_id' => 1,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 2,
+                'ppa_id' => 2,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 3,
+                'ppa_id' => 3,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 4,
+                'ppa_id' => 4,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Forty-Seven (47) existing information systems maintained',
+            ],
+            [
+                'id' => 5,
+                'ppa_id' => 5,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 6,
+                'ppa_id' => 6,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Four (4) information system developed and deployed',
+            ],
+            [
+                'id' => 7,
+                'ppa_id' => 7,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'Fifteen (15) Business Process Automated',
+            ],
+            [
+                'id' => 8,
+                'ppa_id' => 8,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'Six (6) Consultation meetings conducted',
+            ],
+            [
+                'id' => 9,
+                'ppa_id' => 9,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'Twelve (12) IS Manuals created',
+            ],
+            [
+                'id' => 10,
+                'ppa_id' => 10,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'Fifty (50) end users capacitated',
+            ],
+            [
+                'id' => 11,
+                'ppa_id' => 11,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 12,
+                'ppa_id' => 12,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'One (1) Subscription of Online Services (SSL) for secured PGLU ICT Web services (https://) and well-maintained Network Infrastructure',
+            ],
+            [
+                'id' => 13,
+                'ppa_id' => 13,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'One (1) subscription of Provincial Text Blast system',
+            ],
+            [
+                'id' => 14,
+                'ppa_id' => 14,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'One (1) Subscription of Email Services for secured information repository and communication',
+            ],
+            [
+                'id' => 15,
+                'ppa_id' => 15,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'One (1) Subscription to application software',
+            ],
+            [
+                'id' => 16,
+                'ppa_id' => 16,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Three (3) Productivity and Collaboration Tools subscribed',
+            ],
+            [
+                'id' => 17,
+                'ppa_id' => 17,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'One (1) Subscription of Web Conference Tool for online meetings, webinars, etc…',
+            ],
+            [
+                'id' => 18,
+                'ppa_id' => 18,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% increase scalability and flexibility of resources',
+            ],
+            [
+                'id' => 19,
+                'ppa_id' => 19,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Three (3) Subscription of Internet Service Providers (ISP) for PGLU departments, hospitals, work units and offices',
+            ],
+            [
+                'id' => 20,
+                'ppa_id' => 20,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 21,
+                'ppa_id' => 21,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 22,
+                'ppa_id' => 22,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'One (1) Data Protection Officer registered',
+            ],
+            [
+                'id' => 23,
+                'ppa_id' => 23,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Comprehensive PIA Report and Risk Registry for all departments',
+            ],
+            [
+                'id' => 24,
+                'ppa_id' => 24,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'One (1) Data Privacy Manual established
+        Four (4) meetings conducted
+        Four (4) reports prepared',
+            ],
+            [
+                'id' => 25,
+                'ppa_id' => 25,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Security Audit Report (Physical, Technical, and Organizational measures)',
+            ],
+            [
+                'id' => 26,
+                'ppa_id' => 26,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'Two (2) policies created and implemented',
+            ],
+            [
+                'id' => 27,
+                'ppa_id' => 27,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'One (1) Data Privacy Act of 2012 Awareness Training conducted;
+        Sixty-four (64) participants attended',
+            ],
+            [
+                'id' => 28,
+                'ppa_id' => 28,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 29,
+                'ppa_id' => 29,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% data repository managed and maintained',
+            ],
+            [
+                'id' => 30,
+                'ppa_id' => 30,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 31,
+                'ppa_id' => 31,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '99% uptime of PGLU Web Services and well-maintained network infrastructure',
+            ],
+            [
+                'id' => 32,
+                'ppa_id' => 32,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% up-to-date and well-maintained PGLU ICT resources through the Annual Preventive Maintenance (APM) and Annual ICT Inventory (AII)',
+            ],
+            [
+                'id' => 33,
+                'ppa_id' => 33,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => '99% uptime of PGLU communication lines',
+            ],
+            [
+                'id' => 34,
+                'ppa_id' => 34,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Thirty (30) offices with Upgraded Hardware Resources',
+            ],
+            [
+                'id' => 35,
+                'ppa_id' => 35,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'Sixty (60) JPA poles utilized',
+            ],
+            [
+                'id' => 36,
+                'ppa_id' => 36,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'Twenty-four (24) Sites unified',
+            ],
+            [
+                'id' => 37,
+                'ppa_id' => 37,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Twenty (20) component LGUs of La Union connected',
+            ],
+            [
+                'id' => 38,
+                'ppa_id' => 38,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% electrical lines/posts maintained for nine (9) tower relays',
+            ],
+            [
+                'id' => 39,
+                'ppa_id' => 39,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => '100% connected restored',
+            ],
+            [
+                'id' => 40,
+                'ppa_id' => 40,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 41,
+                'ppa_id' => 41,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 42,
+                'ppa_id' => 42,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '1 ICT Lab and Hub implemented',
+            ],
+            [
+                'id' => 43,
+                'ppa_id' => 43,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 44,
+                'ppa_id' => 44,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '1 Functional GAD Corner-WebPage established and updated monthly by June 2027',
+            ],
+            [
+                'id' => 45,
+                'ppa_id' => 45,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '1 Live GAD Dashboard operational by the end of Q3 2027',
+            ],
+            [
+                'id' => 46,
+                'ppa_id' => 46,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 47,
+                'ppa_id' => 47,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 48,
+                'ppa_id' => 48,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => '100% Secretariat Services provisioned',
+            ],
+            [
+                'id' => 49,
+                'ppa_id' => 49,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'One (1) La Union ICT Roadmap created, implemented and monitored.',
+            ],
+            [
+                'id' => 50,
+                'ppa_id' => 50,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 51,
+                'ppa_id' => 51,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 52,
+                'ppa_id' => 52,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'One (1) Executive Order created',
+            ],
+            [
+                'id' => 53,
+                'ppa_id' => 53,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'One (1) General Assembly conducted',
+            ],
+            [
+                'id' => 54,
+                'ppa_id' => 54,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'Two (2) semestral meetings conducted',
+            ],
+            [
+                'id' => 55,
+                'ppa_id' => 55,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'One (1) ISSP formulated and approved',
+            ],
+            [
+                'id' => 56,
+                'ppa_id' => 56,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'One (1) ISSP implemented and monitored',
+            ],
+            [
+                'id' => 57,
+                'ppa_id' => 57,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 58,
+                'ppa_id' => 58,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'One (1) Training Plan',
+            ],
+            [
+                'id' => 59,
+                'ppa_id' => 59,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'Twenty (20) component LGUs capacitated',
+            ],
+            [
+                'id' => 60,
+                'ppa_id' => 60,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'One (1) Monitoring Report',
+            ],
+            [
+                'id' => 61,
+                'ppa_id' => 61,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 62,
+                'ppa_id' => 62,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 63,
+                'ppa_id' => 63,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 64,
+                'ppa_id' => 64,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'Twenty (20) GIDA Schools capacitated',
+            ],
+            [
+                'id' => 65,
+                'ppa_id' => 65,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'One (1) Information System developed and deployed',
+            ],
+            [
+                'id' => 66,
+                'ppa_id' => 66,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'One (1) La Union Constituent Database created',
+            ],
+            [
+                'id' => 67,
+                'ppa_id' => 67,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => 'One (1) national membership subscribed (NICP)
+        One (1) international national membership subscribed (WeGO)',
+            ],
+            [
+                'id' => 68,
+                'ppa_id' => 68,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 69,
+                'ppa_id' => 69,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 70,
+                'ppa_id' => 70,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Twenty (20) Permanent personnel capacitated',
+            ],
+            [
+                'id' => 71,
+                'ppa_id' => 71,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Five (5) summits/conferences/ceremonies attended for ICT events and activities',
+            ],
+            [
+                'id' => 72,
+                'ppa_id' => 72,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 73,
+                'ppa_id' => 73,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    'Sixty (60) ICT Focal Person and Alternates capacitated and trained',
+            ],
+            [
+                'id' => 74,
+                'ppa_id' => 74,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Thirty (30) PGLU employees capacitated on online applications',
+            ],
+            [
+                'id' => 75,
+                'ppa_id' => 75,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 76,
+                'ppa_id' => 76,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Three Hundred Twenty (320) participants attended',
+            ],
+            [
+                'id' => 77,
+                'ppa_id' => 77,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Twenty (20) component LGUs\' employees capacitated for website creation and management',
+            ],
+            [
+                'id' => 78,
+                'ppa_id' => 78,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'One (1) ICT Exhibition/Summit conducted',
+            ],
+            [
+                'id' => 79,
+                'ppa_id' => 79,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'One (1) Hackathon conducted',
+            ],
+            [
+                'id' => 80,
+                'ppa_id' => 80,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'One (1) ICT QuizBee conducted',
+            ],
+            [
+                'id' => 81,
+                'ppa_id' => 81,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 82,
+                'ppa_id' => 82,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 83,
+                'ppa_id' => 83,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => 'Integrated online portal launched',
+            ],
+            [
+                'id' => 84,
+                'ppa_id' => 84,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% adoption of mandatory eLGU modules',
+            ],
+            [
+                'id' => 85,
+                'ppa_id' => 85,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Digital payment gateways integrated into local revenue systems',
+            ],
+            [
+                'id' => 86,
+                'ppa_id' => 86,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Standardized use of digital signatures in official documents',
+            ],
+            [
+                'id' => 87,
+                'ppa_id' => 87,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Fully operational automated payroll and financial management system',
+            ],
+            [
+                'id' => 88,
+                'ppa_id' => 88,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Established feedback and grievance mechanism',
+            ],
+            [
+                'id' => 89,
+                'ppa_id' => 89,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 90,
+                'ppa_id' => 90,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Approved Provincial Cybersecurity Policy and Privacy Management Program',
+            ],
+            [
+                'id' => 91,
+                'ppa_id' => 91,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    'Formal designation/appointment of CIO across all LGUs',
+            ],
+            [
+                'id' => 92,
+                'ppa_id' => 92,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 93,
+                'ppa_id' => 93,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '1 Office Yearend Assessment and Planning conducted',
+            ],
+            [
+                'id' => 94,
+                'ppa_id' => 94,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 95,
+                'ppa_id' => 95,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '1 Office AWFP prepared',
+            ],
+            [
+                'id' => 96,
+                'ppa_id' => 96,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '100% of required Quarterly, semestral and annual reports prepared',
+            ],
+            [
+                'id' => 97,
+                'ppa_id' => 97,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '1 Office CY 2027 AIP prepared',
+            ],
+            [
+                'id' => 98,
+                'ppa_id' => 98,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '1 Office CY 2027 PPMP prepared',
+            ],
+            [
+                'id' => 99,
+                'ppa_id' => 99,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '1 Office CY 2027 Annual Budget prepared',
+            ],
+            [
+                'id' => 100,
+                'ppa_id' => 100,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '12 monthly meeting cum staff development session conducted',
+            ],
+            [
+                'id' => 101,
+                'ppa_id' => 101,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 102,
+                'ppa_id' => 102,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '100% of needed ISO requirements implemented and sustained',
+            ],
+            [
+                'id' => 103,
+                'ppa_id' => 103,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% of ISO required trainings attended',
+            ],
+            [
+                'id' => 104,
+                'ppa_id' => 104,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '7S procedure sustained',
+            ],
+            [
+                'id' => 105,
+                'ppa_id' => 105,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '100% of all communications reviewed and acted upon',
+            ],
+            [
+                'id' => 106,
+                'ppa_id' => 106,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% of all required HR documents filed/ processed/submitted',
+            ],
+            [
+                'id' => 107,
+                'ppa_id' => 107,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 108,
+                'ppa_id' => 108,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '2 OPCR Targets prepared',
+            ],
+            [
+                'id' => 109,
+                'ppa_id' => 109,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '2 OPCR Ratings prepared',
+            ],
+            [
+                'id' => 110,
+                'ppa_id' => 110,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% UPCR Targets prepared',
+            ],
+            [
+                'id' => 111,
+                'ppa_id' => 111,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% UPCR Ratings prepared',
+            ],
+            [
+                'id' => 112,
+                'ppa_id' => 112,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% IPCR Targets prepared',
+            ],
+            [
+                'id' => 113,
+                'ppa_id' => 113,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% IPCR Ratings prepared',
+            ],
+            [
+                'id' => 114,
+                'ppa_id' => 114,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% of all IDP of staff prepared',
+            ],
+            [
+                'id' => 115,
+                'ppa_id' => 115,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% of all PDS of staff updated',
+            ],
+            [
+                'id' => 116,
+                'ppa_id' => 116,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => '100% of all SALN of staff prepared',
+            ],
+            [
+                'id' => 117,
+                'ppa_id' => 117,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '12 monthly personnel discipline report prepared',
+            ],
+            [
+                'id' => 118,
+                'ppa_id' => 118,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => '100% of all records updated and managed',
+            ],
+            [
+                'id' => 119,
+                'ppa_id' => 119,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '100% needed equipment/fixtures for records management provided',
+            ],
+            [
+                'id' => 120,
+                'ppa_id' => 120,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '100% of all incoming and outgoing  communications recorded, processed and filed',
+            ],
+            [
+                'id' => 121,
+                'ppa_id' => 121,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => null,
+            ],
+            [
+                'id' => 122,
+                'ppa_id' => 122,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' =>
+                    '100% of all required Financial documents filed/processed/ submitted',
+            ],
+            [
+                'id' => 123,
+                'ppa_id' => 123,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% office area and operation maintained',
+            ],
+            [
+                'id' => 124,
+                'ppa_id' => 124,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => '100% service vechile repaired/maintained',
+            ],
+            [
+                'id' => 125,
+                'ppa_id' => 125,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% ICT and office equipment repaired and maintained',
+            ],
+            [
+                'id' => 126,
+                'ppa_id' => 126,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => '12 monthly inventory  report of supplies and ICT equipment prepared
+        1 annual inventory report prepared',
+            ],
+            [
+                'id' => 127,
+                'ppa_id' => 127,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' => '1 ICT Office improved',
+            ],
+            [
+                'id' => 128,
+                'ppa_id' => 128,
+                'start_date' => null,
+                'end_date' => null,
+                'expected_output' => null,
+            ],
+            [
+                'id' => 129,
+                'ppa_id' => 129,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% of ICT Resources maintained for Provincial Wireless Mesh',
+            ],
+            [
+                'id' => 130,
+                'ppa_id' => 130,
+                'start_date' => 'Jan-27',
+                'end_date' => 'Dec-27',
+                'expected_output' =>
+                    '100% of ICT Resources maintained for Emergency Operation Centers (EOCs)',
+            ],
+        ];
 
-        // 2. Get the Master List of PPAs
-        $ppas = Ppa::all();
-
-        // Safety check
-        if (! $fiscalYear || $ppas->isEmpty()) {
-            $this->command->error(
-                'Error: No Fiscal Year or PPAs found. Please seed those tables first.',
+        foreach ($aipEntries as $entry) {
+            AipEntry::updateOrCreate(
+                ['id' => $entry['id']],
+                [
+                    'ppa_id' => $entry['ppa_id'],
+                    'start_date' => $entry['start_date']
+                        ? Carbon::createFromFormat('M-y', $entry['start_date'])
+                            ->startOfMonth()
+                            ->format('Y-m-d')
+                        : null,
+                    'end_date' => $entry['end_date']
+                        ? Carbon::createFromFormat('M-y', $entry['end_date'])
+                            ->startOfMonth()
+                            ->format('Y-m-d')
+                        : null,
+                    'expected_output' => $entry['expected_output'],
+                ],
             );
-
-            return;
-        }
-
-        $year = $fiscalYear->year;
-
-        foreach ($ppas as $ppa) {
-            AipEntry::create([
-                'fiscal_year_id' => $fiscalYear->id,
-                'ppa_id' => $ppa->id,
-
-                // Set dates within the budget year
-                'start_date' => Carbon::createFromDate($year, 1, 1),
-                'end_date' => Carbon::createFromDate($year, 12, 31),
-
-                'expected_output' => 'Successfully implemented '.
-                    $ppa->title.
-                    ' with 100% utilization rate.',
-
-                // Financial and CCET columns removed as requested
-            ]);
+            // AipEntry::create([
+            //     'id' => $entry['id'],
+            //     'ppa_id' => $entry['ppa_id'],
+            //     'start_date' => $entry['start_date']
+            //         ? Carbon::createFromFormat('M-y', $entry['start_date'])
+            //             ->startOfMonth()
+            //             ->format('Y-m-d')
+            //         : null,
+            //     'end_date' => $entry['end_date']
+            //         ? Carbon::createFromFormat('M-y', $entry['end_date'])
+            //             ->startOfMonth()
+            //             ->format('Y-m-d')
+            //         : null,
+            //     'expected_output' => $entry['expected_output'],
+            // ]);
         }
     }
 }

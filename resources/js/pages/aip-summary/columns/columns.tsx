@@ -37,7 +37,7 @@ export const formatDate = (dateString: string) => {
     ];
     const dateSplit = dateString.split('-');
 
-    return `${months[Number(dateSplit[1]) - 1]}-${dateSplit[2]}`;
+    return `${months[Number(dateSplit[1]) - 1]}-${dateSplit[0].slice(2)}`;
 };
 
 const sumField = (rows: any[], field: keyof PpaFundingSource) => {
@@ -55,7 +55,7 @@ const columnHelper = createColumnHelper<FlattenedPpa>();
 const columns = [
     columnHelper.accessor('full_code', {
         id: 'full_code',
-        size: 200,
+        size: 220,
         header: () => <div className="px-1">AIP Reference Code</div>,
         cell: (info) => (
             <div className="px-1 font-mono text-wrap">{info.getValue()}</div>
@@ -147,9 +147,9 @@ const columns = [
                 header: () => <div className="px-1">Start</div>,
                 cell: (info) => (
                     <div className="px-1 text-wrap">
-                        {info.getValue()
+                        {info.getValue()?.start_date
                             ? formatDate(info.getValue()?.start_date)
-                            : '—'}
+                            : '-'}
                     </div>
                 ),
                 meta: { rowSpan: true },
@@ -160,9 +160,9 @@ const columns = [
                 header: () => <div className="px-1">End</div>,
                 cell: (info) => (
                     <div className="px-1 text-wrap">
-                        {info.getValue()
+                        {info.getValue()?.end_date
                             ? formatDate(info.getValue()?.end_date)
-                            : '—'}
+                            : '-'}
                     </div>
                 ),
                 meta: { rowSpan: true },

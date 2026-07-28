@@ -34,9 +34,23 @@ interface Ppa {
 
 interface AipEntry {
     id: number;
+    ppa_id: number;
     start_date: string | null;
     end_date: string | null;
     expected_output: string | null;
+}
+
+interface PpaFundingSource {
+    id: number;
+    aip_entry_id: number;
+    funding_source_id: string | null;
+    ps_amount: number | null;
+    mooe_amount: number | null;
+    fe_amount: number | null;
+    co_amount: number | null;
+    ccet_adaptation: number | null;
+    ccet_mitigation: number | null;
+    cc_typology_id: number | null;
 }
 
 function getType(value: string): NodeType | null {
@@ -84,8 +98,36 @@ function cellText(cell: ExcelJS.Cell): string | null {
     return String(value).trim() || null;
 }
 
-function phpValue(value: string | null): string {
-    return value === null ? 'null' : `'${escapePhp(value)}'`;
+function cellNumber(cell: ExcelJS.Cell): number | null {
+    let value: any = cell.value;
+
+    if (typeof value === 'object' && value !== null && 'result' in value) {
+        value = value.result;
+    }
+
+    if (value == null || value === '') {
+        return null;
+    }
+
+    if (typeof value === 'number') {
+        return value;
+    }
+
+    const parsed = Number(String(value).replace(/,/g, '').trim());
+
+    return Number.isNaN(parsed) ? null : parsed;
+}
+
+function phpValue(value: string | number | null): string {
+    if (value === null) {
+        return 'null';
+    }
+
+    if (typeof value === 'number') {
+        return String(value);
+    }
+
+    return `'${escapePhp(value)}'`;
 }
 
 function ppaPhp(data: Ppa[]): string {
@@ -109,9 +151,31 @@ ${data
     .map(
         (item) => `    [
         'id' => ${item.id},
+        'ppa_id' => ${item.ppa_id},
         'start_date' => ${phpValue(item.start_date)},
         'end_date' => ${phpValue(item.end_date)},
         'expected_output' => ${phpValue(item.expected_output)},
+    ]`,
+    )
+    .join(',\n')}
+];`;
+}
+
+function fundingSourcePhp(data: PpaFundingSource[]): string {
+    return `[
+${data
+    .map(
+        (item) => `    [
+        'id' => ${item.id},
+        'aip_entry_id' => ${item.aip_entry_id},
+        'funding_source_id' => ${phpValue(item.funding_source_id)},
+        'ps_amount' => ${phpValue(item.ps_amount)},
+        'mooe_amount' => ${phpValue(item.mooe_amount)},
+        'fe_amount' => ${phpValue(item.fe_amount)},
+        'co_amount' => ${phpValue(item.co_amount)},
+        'ccet_adaptation' => ${phpValue(item.ccet_adaptation)},
+        'ccet_mitigation' => ${phpValue(item.ccet_mitigation)},
+        'cc_typology_id' => ${phpValue(item.cc_typology_id)},
     ]`,
     )
     .join(',\n')}
@@ -131,6 +195,7 @@ async function main() {
 
     const ppas: Ppa[] = [];
     const aipEntries: AipEntry[] = [];
+    const fundingSources: PpaFundingSource[] = [];
 
     let nextId = 1;
 
@@ -193,9 +258,23 @@ async function main() {
 
         aipEntries.push({
             id,
+            ppa_id: id,
             start_date: cellText(row.getCell(COL.startDate)),
             end_date: cellText(row.getCell(COL.endDate)),
             expected_output: cellText(row.getCell(COL.expectedOutput)),
+        });
+
+        fundingSources.push({
+            id,
+            aip_entry_id: id,
+            funding_source_id: cellText(row.getCell(COL.fundingSourceId)),
+            ps_amount: cellNumber(row.getCell(COL.psAmount)),
+            mooe_amount: cellNumber(row.getCell(COL.mooeAmount)),
+            fe_amount: cellNumber(row.getCell(COL.feAmount)),
+            co_amount: cellNumber(row.getCell(COL.coAmount)),
+            ccet_adaptation: cellNumber(row.getCell(COL.ccetAdaptation)),
+            ccet_mitigation: cellNumber(row.getCell(COL.ccetMitigation)),
+            cc_typology_id: cellNumber(row.getCell(COL.ccTypologyId)),
         });
     }
 
@@ -211,8 +290,15 @@ async function main() {
         'utf8',
     );
 
+    await writeFile(
+        path.join(import.meta.dirname, 'ppa_funding_sources.php'),
+        fundingSourcePhp(fundingSources),
+        'utf8',
+    );
+
     console.log(`Generated ${ppas.length} PPAs.`);
     console.log(`Generated ${aipEntries.length} AIP entries.`);
+    console.log(`Generated ${fundingSources.length} funding sources.`);
 }
 
 main().catch(console.error);

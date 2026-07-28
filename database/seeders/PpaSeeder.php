@@ -33,6 +33,7 @@ class PpaSeeder extends Seeder
                 'parent_id' => null,
                 'name' => 'MANPOWER SERVICES',
                 'type' => 'Program',
+                'is_ps_pool' => true,
             ],
             [
                 'id' => 2,
@@ -862,6 +863,7 @@ class PpaSeeder extends Seeder
                         ->where('type', $item['type'])
                         ->count() + 1,
                 'is_active' => true,
+                'is_ps_pool' => $item['is_ps_pool'] ?? false,
             ]);
         }
     }
