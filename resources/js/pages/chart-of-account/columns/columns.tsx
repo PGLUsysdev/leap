@@ -10,7 +10,9 @@ const columns = [
         size: 150,
         header: () => <div className="px-1">Account Number</div>,
         cell: (value) => (
-            <div className="px-1 font-mono text-wrap">{value.getValue()}</div>
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {value.getValue()}
+            </div>
         ),
     }),
     columnHelper.accessor('account_title', {

@@ -37,7 +37,7 @@ const columns = [
         size: 200,
         header: () => <div className="px-1">AIP Reference Code</div>,
         cell: (value) => (
-            <div className="px-1 font-mono text-xs text-wrap">
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
                 {value.getValue<string>()}
             </div>
         ),

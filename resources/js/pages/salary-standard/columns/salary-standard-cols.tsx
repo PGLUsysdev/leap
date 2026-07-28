@@ -16,7 +16,9 @@ const columns = (maxStep: number) => {
             size: 100,
             header: () => <div className="px-1">Salary Grade</div>,
             cell: (info) => (
-                <div className="px-1 font-medium">{info.getValue()}</div>
+                <div className="px-1 text-wrap slashed-zero tabular-nums">
+                    {info.getValue()}
+                </div>
             ),
         }),
     ];
@@ -30,7 +32,7 @@ const columns = (maxStep: number) => {
                     <div className="px-1 text-right">Step {step}</div>
                 ),
                 cell: (info) => (
-                    <div className="px-1 text-right tabular-nums">
+                    <div className="px-1 text-right text-wrap slashed-zero tabular-nums">
                         {currency(info.getValue() as number | null)}
                     </div>
                 ),

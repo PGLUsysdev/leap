@@ -75,8 +75,12 @@ const columns = [
         },
     }),
     columnHelper.accessor('full_code', {
-        header: 'Code',
-        cell: (info) => <code className="text-xs">{info.getValue()}</code>,
+        header: () => <div className="px-1">Code</div>,
+        cell: (info) => (
+            <div className="px-1 slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
+        ),
     }),
     columnHelper.accessor('name', {
         header: 'Description',

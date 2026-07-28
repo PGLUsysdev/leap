@@ -9,7 +9,11 @@ const columns = [
     columnHelper.accessor('item_number', {
         size: 100,
         header: () => <div className="px-1">Item No.</div>,
-        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
+        ),
     }),
     columnHelper.accessor('office_id', {
         size: 100,
@@ -46,7 +50,7 @@ const columns = [
             const row = info.row.original;
 
             return (
-                <div className="px-1 text-wrap">
+                <div className="px-1 text-wrap slashed-zero tabular-nums">
                     {row.ios?.salary_grade ?? info.getValue()}
                 </div>
             );

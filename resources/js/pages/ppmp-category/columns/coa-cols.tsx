@@ -5,40 +5,28 @@ const columnHelper = createColumnHelper<ChartOfAccount>();
 
 const columns = [
     columnHelper.accessor('account_number', {
-        header: 'Account Number',
-        // size: 80,
+        header: () => <div className="px-1">Account Number</div>,
+        size: 100,
         cell: (info) => (
-            <div className="wrap-break-words whitespace-normal">
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
                 {info.getValue()}
             </div>
         ),
     }),
     columnHelper.accessor('account_title', {
-        header: 'Account Title',
-        // size: 80,
-        cell: (info) => (
-            <div className="wrap-break-words whitespace-normal">
-                {info.getValue()}
-            </div>
-        ),
+        header: () => <div className="px-1">Account Title</div>,
+        size: 200,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('expense_class', {
-        header: 'Expense Class',
-        // size: 80,
-        cell: (info) => (
-            <div className="wrap-break-words whitespace-normal">
-                {info.getValue()}
-            </div>
-        ),
+        header: () => <div className="px-1">Expense Class</div>,
+        size: 100,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('description', {
-        header: 'Description',
-        // size: 80,
-        cell: (info) => (
-            <div className="wrap-break-words whitespace-normal">
-                {info.getValue()}
-            </div>
-        ),
+        header: () => <div className="px-1">Description</div>,
+        size: 200,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
 ];
 

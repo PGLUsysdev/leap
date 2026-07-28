@@ -11,7 +11,9 @@ const columns = [
         size: 200,
         header: () => <div className="px-1">Office Account Code</div>,
         cell: (info) => (
-            <div className="px-1 font-mono text-wrap">{info.getValue()}</div>
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
         ),
     }),
     columnHelper.accessor('name', {

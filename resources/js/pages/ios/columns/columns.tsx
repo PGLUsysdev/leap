@@ -9,7 +9,11 @@ const columns = [
     columnHelper.accessor('occupational_service_code', {
         size: 210,
         header: () => <div className="px-1">Occupational Service Code</div>,
-        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
+        ),
     }),
     columnHelper.accessor('occupational_group_code', {
         size: 200,
@@ -19,7 +23,11 @@ const columns = [
     columnHelper.accessor('class_id', {
         size: 100,
         header: () => <div className="px-1">Class ID</div>,
-        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
+        ),
     }),
     columnHelper.accessor('class', {
         size: 300,
@@ -29,7 +37,11 @@ const columns = [
     columnHelper.accessor('salary_grade', {
         size: 110,
         header: () => <div className="px-1">Salary Grade</div>,
-        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
+        ),
     }),
     columnHelper.display({
         id: 'actions',

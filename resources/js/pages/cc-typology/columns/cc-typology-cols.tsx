@@ -21,7 +21,11 @@ const columns = [
     columnHelper.accessor('code', {
         size: 100,
         header: () => <div className="px-1">Code</div>,
-        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
+        ),
     }),
     columnHelper.accessor('description', {
         size: 400,
@@ -61,7 +65,11 @@ const columns = [
     columnHelper.accessor('item_num', {
         size: 100,
         header: () => <div className="px-1">Item No.</div>,
-        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
+        ),
     }),
     columnHelper.accessor('is_nccap_activity', {
         size: 120,

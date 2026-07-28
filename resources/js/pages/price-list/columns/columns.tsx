@@ -25,7 +25,11 @@ const columns = [
     columnHelper.accessor('item_number', {
         header: () => <div className="px-1">Item Number</div>,
         size: 120,
-        cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+        cell: (info) => (
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
+        ),
     }),
     columnHelper.accessor('description', {
         header: () => <div className="px-1">Description</div>,
@@ -41,7 +45,9 @@ const columns = [
         header: () => <div className="px-1 text-right">Price</div>,
         size: 120,
         cell: (info) => (
-            <div className="px-1 text-right text-wrap">{info.getValue()}</div>
+            <div className="px-1 text-right text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
         ),
     }),
     columnHelper.accessor('chart_of_account_ppmp_category.ppmp_category.name', {

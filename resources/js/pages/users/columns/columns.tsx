@@ -52,7 +52,11 @@ const columns = [
         cell: (info) => {
             const step = info.getValue();
 
-            return <div className="px-1 text-wrap">{step ?? '-'}</div>;
+            return (
+                <div className="px-1 text-wrap slashed-zero tabular-nums">
+                    {step ?? '-'}
+                </div>
+            );
         },
     }),
     columnHelper.accessor('status', {
