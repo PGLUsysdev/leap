@@ -255,35 +255,35 @@ class PpmpPriceListController extends Controller
     {
         Gate::authorize('delete', $ppmpPriceList);
 
-        // $ppmpPriceList->delete();
+        // abort(404);
 
-        try {
-            $ppmpPriceList->delete();
+        // try {
+        //     $ppmpPriceList->delete();
 
-            $all = PpmpPriceList::orderBy('sort_order')->get();
-            foreach ($all as $index => $item) {
-                $item->update([
-                    'sort_order' => $index + 1,
-                    'item_number' => $index + 1,
-                ]);
-            }
+        //     $all = PpmpPriceList::orderBy('sort_order')->get();
+        //     foreach ($all as $index => $item) {
+        //         $item->update([
+        //             'sort_order' => $index + 1,
+        //             'item_number' => $index + 1,
+        //         ]);
+        //     }
 
-            return Redirect::back()->with(
-                'success',
-                'Price list deleted successfully.',
-            );
-        } catch (QueryException $e) {
-            if ($e->getCode() === '23000') {
-                return Redirect::back()->withErrors([
-                    'database' =>
-                        'This record cannot be deleted because it is being used by another part of the system.',
-                ]);
-            }
+        //     return Redirect::back()->with(
+        //         'success',
+        //         'Price list deleted successfully.',
+        //     );
+        // } catch (QueryException $e) {
+        //     if ($e->getCode() === '23000') {
+        //         return Redirect::back()->withErrors([
+        //             'database' =>
+        //                 'This record cannot be deleted because it is being used by another part of the system.',
+        //         ]);
+        //     }
 
-            return Redirect::back()->withErrors([
-                'database' => 'An unexpected database error occurred.',
-            ]);
-        }
+        //     return Redirect::back()->withErrors([
+        //         'database' => 'An unexpected database error occurred.',
+        //     ]);
+        // }
     }
 
     /**

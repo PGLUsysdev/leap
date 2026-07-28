@@ -1,15 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
-import { ChevronsUpDown, Delete } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import { TableSelect } from '@/components/base-ui-components/table-select';
+import { TableSelectButton } from '@/components/base-ui-components/table-select-button';
 import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    ButtonGroup,
-    ButtonGroupSeparator,
-} from '@/components/base-ui-components/ui/button-group';
 import {
     Dialog,
     DialogContent,
@@ -28,6 +24,7 @@ import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
+import { useTableSelect } from '@/hooks/use-table-select';
 import { store, update } from '@/routes/price-lists';
 import type {
     PriceList,
@@ -66,10 +63,6 @@ export default function FormDialog({
     ppmpCategories,
     coaCategoryPairs,
 }: FormDialogProps) {
-    const [openCoaTableSelect, setOpenCoaTableSelect] = useState(false);
-    const [openCategoryTableSelect, setOpenCategoryTableSelect] =
-        useState(false);
-
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -183,13 +176,17 @@ export default function FormDialog({
         );
     }
 
-    const selectedCoa = chartOfAccounts.find(
-        (c) => String(c.id) === watchCoaId,
-    );
+    //
 
-    const selectedCategory = ppmpCategories.find(
-        (cat) => String(cat.id) === watchCategoryId,
-    );
+    const coaHook = useTableSelect({
+        data: filterChartOfAccounts(),
+        value: watchCoaId,
+    });
+
+    const categoryHook = useTableSelect({
+        data: filterPpmpCategories(),
+        value: watchCategoryId,
+    });
 
     return (
         <>
@@ -226,47 +223,21 @@ export default function FormDialog({
                                                 Chart of Accounts
                                             </FieldLabel>
 
-                                            <ButtonGroup className="w-full">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
-                                                    onClick={() => {
-                                                        setOpenCoaTableSelect(
-                                                            true,
-                                                        );
-                                                    }}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
-                                                    <span className="truncate">
-                                                        {selectedCoa?.account_title ??
-                                                            'Select Chart of Account'}
-                                                    </span>
-                                                    <ChevronsUpDown />
-                                                </Button>
-                                                <ButtonGroupSeparator />
-                                                <Button
-                                                    type="button"
-                                                    variant="secondary"
-                                                    aria-label="clear selection"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    onClick={() =>
-                                                        form.resetField(
-                                                            'coa_id',
-                                                            {
-                                                                defaultValue:
-                                                                    '',
-                                                            },
-                                                        )
-                                                    }
-                                                >
-                                                    <Delete />
-                                                </Button>
-                                            </ButtonGroup>
+                                            <TableSelectButton
+                                                hook={coaHook}
+                                                displayValue={(item) =>
+                                                    item?.account_title
+                                                }
+                                                placeholder={
+                                                    'Select Chart of Account'
+                                                }
+                                                invalid={fieldState.invalid}
+                                                onClear={() =>
+                                                    form.resetField('coa_id', {
+                                                        defaultValue: '',
+                                                    })
+                                                }
+                                            />
                                             {fieldState.invalid && (
                                                 <FieldError
                                                     errors={[fieldState.error]}
@@ -283,49 +254,25 @@ export default function FormDialog({
                                             data-invalid={fieldState.invalid}
                                         >
                                             <FieldLabel htmlFor="form-price-list-category-id">
-                                                Catgory
+                                                Category
                                             </FieldLabel>
-                                            <ButtonGroup className="w-full">
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
-                                                    onClick={() => {
-                                                        setOpenCategoryTableSelect(
-                                                            true,
-                                                        );
-                                                    }}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
-                                                    <span className="truncate">
-                                                        {selectedCategory?.name ??
-                                                            'Select Category'}
-                                                    </span>
-                                                    <ChevronsUpDown />
-                                                </Button>
-                                                <ButtonGroupSeparator />
-                                                <Button
-                                                    type="button"
-                                                    variant="secondary"
-                                                    aria-label="clear selection"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    onClick={() =>
-                                                        form.resetField(
-                                                            'category_id',
-                                                            {
-                                                                defaultValue:
-                                                                    '',
-                                                            },
-                                                        )
-                                                    }
-                                                >
-                                                    <Delete />
-                                                </Button>
-                                            </ButtonGroup>
+
+                                            <TableSelectButton
+                                                hook={categoryHook}
+                                                displayValue={(item) =>
+                                                    item?.name
+                                                }
+                                                placeholder="Select Category"
+                                                invalid={fieldState.invalid}
+                                                onClear={() =>
+                                                    form.resetField(
+                                                        'category_id',
+                                                        {
+                                                            defaultValue: '',
+                                                        },
+                                                    )
+                                                }
+                                            />
                                             {fieldState.invalid && (
                                                 <FieldError
                                                     errors={[fieldState.error]}
@@ -350,7 +297,7 @@ export default function FormDialog({
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
-                                                placeholder="Login button not working on mobile"
+                                                placeholder="Enter item name"
                                                 autoComplete="off"
                                             />
                                             {fieldState.invalid && (
@@ -377,7 +324,7 @@ export default function FormDialog({
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
-                                                placeholder="Login button not working on mobile"
+                                                placeholder="Enter unit of measurement"
                                                 autoComplete="off"
                                             />
                                             {fieldState.invalid && (
@@ -404,7 +351,7 @@ export default function FormDialog({
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
-                                                placeholder="Login button not working on mobile"
+                                                placeholder="0.00"
                                                 autoComplete="off"
                                             />
                                             {fieldState.invalid && (
@@ -467,8 +414,8 @@ export default function FormDialog({
             <TableSelect
                 columns={coaCols}
                 data={filterChartOfAccounts()}
-                open={openCoaTableSelect}
-                onOpenChange={setOpenCoaTableSelect}
+                open={coaHook.open}
+                onOpenChange={coaHook.setOpen}
                 onRowSelect={(row) => {
                     form.setValue('coa_id', String(row.id), {
                         shouldValidate: true,
@@ -476,16 +423,16 @@ export default function FormDialog({
                 }}
                 value={watchCoaId}
                 valueKey="id"
-                className="sm:max-w-175"
                 title="Select Chart of Account"
                 description="Choose the chart of account for this price list item."
+                className="sm:max-w-300"
             />
 
             <TableSelect
                 columns={categoryCols}
                 data={filterPpmpCategories()}
-                open={openCategoryTableSelect}
-                onOpenChange={setOpenCategoryTableSelect}
+                open={categoryHook.open}
+                onOpenChange={categoryHook.setOpen}
                 onRowSelect={(row) => {
                     form.setValue('category_id', String(row.id), {
                         shouldValidate: true,
@@ -495,6 +442,7 @@ export default function FormDialog({
                 valueKey="id"
                 title="Select Category"
                 description="Choose the category for this price list item."
+                // className="sm:max-w-300"
             />
         </>
     );

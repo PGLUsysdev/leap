@@ -68,6 +68,8 @@ export default function PpaPage({
     selectedOfficeId,
     parentOffices,
 }: PpaPageProps) {
+    console.log(ppaTree);
+
     const { data, ...paginationData } = ppaTree;
 
     const { auth } = usePage<SharedData>().props;

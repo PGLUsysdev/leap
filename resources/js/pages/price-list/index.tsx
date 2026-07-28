@@ -2,13 +2,13 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import DataTable from '@/components/base-ui-components/data-table';
+import DeleteDialog from '@/components/base-ui-components/delete-dialog';
 import { Button as BaseButton } from '@/components/base-ui-components/ui/button';
 import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { reorder } from '@/routes/price-lists';
+import { reorder, destroy } from '@/routes/price-lists';
 import type {
     PriceList,
     ChartOfAccount,
@@ -51,19 +51,16 @@ export default function PriceListPage({
     const dialogPaginationData = paginatedDialogPriceList
         ? (({ data, ...rest }) => rest)(paginatedDialogPriceList)
         : undefined;
-
     const [selectedPriceList, setSelectedPriceList] =
         useState<PriceList | null>(null);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<PriceList | null>(null);
-
     const [openFormDialog, setOpenFormDialog] = useState(false);
-
     const [openMoveDialog, setOpenMoveDialog] = useState(false);
     const [moveTarget, setMoveTarget] = useState<PriceList | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     function handleEdit(data: PriceList) {
         setSelectedPriceList(data);
@@ -102,17 +99,22 @@ export default function PriceListPage({
 
     function handleDeleteDialogOpen(data: PriceList) {
         setSelectedPriceList(data);
-        setIsDeleteDialogOpen(true);
+        setDeleteDialogOpen(true);
     }
 
     function handleDelete() {
-        router.delete(`/price-lists/${selectedPriceList?.id}`, {
-            preserveState: true,
+        if (!selectedPriceList) {
+            return;
+        }
+
+        router.visit(destroy(selectedPriceList?.id).url, {
+            method: 'delete',
             preserveScroll: true,
+            preserveState: true,
             onStart: () => setIsLoading(true),
             onSuccess: () => {
-                setIsDeleteDialogOpen(false);
-                setSelectedPriceList(null);
+                setDeleteDialogOpen(false);
+                // setSelectedPriceList(null);
             },
             onError: (errors) => {
                 const errorMessage =
@@ -211,7 +213,7 @@ export default function PriceListPage({
                 description={`Select a target position for "${selectedItem?.description}" and click Move Down.`}
             />
 
-            <DeleteDialog
+            {/*<DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
                 title="Delete Price List?"
@@ -230,13 +232,47 @@ export default function PriceListPage({
                     setSelectedPriceList(null);
                 }}
                 isLoading={isLoading}
+            />*/}
+
+            <DeleteDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title={'Delete Price List?'}
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedPriceList?.description}"
+                        </span>
+                        ?
+                    </>
+                }
+                loading={isLoading}
+                handleDelete={handleDelete}
             />
 
-            <AlertErrorDialog
+            <DeleteDialog
+                open={isErrorDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title={'Delete Price List?'}
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedPriceList?.description}"
+                        </span>
+                        ?
+                    </>
+                }
+                loading={isLoading}
+                handleDelete={handleDelete}
+            />
+
+            {/*<AlertErrorDialog
                 open={isErrorDialogOpen}
                 onOpenChange={setIsErrorDialogOpen}
                 error={error}
-            />
+            />*/}
         </>
     );
 }

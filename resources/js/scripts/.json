@@ -1,0 +1,316 @@
+[
+    ['PROGRAM / PROJECT / ACTIVITY DESCRIPTION' => 2],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => 'A. MANPOWER SERVICES'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => null],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => 'B. OPERATIONAL ACTIVITIES'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1. Information Systems (IS) Management'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1. Information Systems Maintenance and Upgrades'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2. Systems Modernization and Development'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2.1. Development and deployment of PGLU Information Systems '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2.2. Business Process Automation'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2.3. Conduct of Consultation Meetings'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2.4. Information System Manuals Creation'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2.5. Information System End-User Training'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3. Platform Subscriptions'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.1. Subscription of Secure Sockets Layer (SSL) Technology'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.2. Subscription of Provincial Text Blast'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.3. Subscription of Email Services'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.4.Subscription of plug-ins and templates'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.5. Subscription of Information Systems Cloud-based platform'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.6. Subscription of Productivity and Collaboration Tools'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.7. Subscription of Web Conference Tool'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.8. Subscription of Firewall '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.4. Subscription to Internet Service Provider (ISP)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2. Data Privacy and Compliance Program'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1. Data Privacy and Security (RA 10173)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.1. Pillar 1: Appoint a Data Protection Officer (DPO)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.2. Conduct a Privacy Impact Assessment (PIA)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.3. Pillar 3: Create a Privacy Management Program (PMP)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.4. Pillar 4: Implement Privacy & Data Protection Measures'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.5. Pillar 5: Exercise Breach Reporting Procedures'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.6. Capacity Training for PGLU Heads and Administrative Officers for Awareness on Data Access and Privacy Training (ADAPT)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.2. Data Governance & Repository'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.2.1. Maintenance and Management of PGLU Private Cloud'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3. Infrastructure, Connectivity & Cloud Management'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1. Maintenance of PGLU Server and Network Resources'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.2. Maintenance of PGLU ICT Resources'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.3. Maintenance of PGLU Unified Communications'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.4. ICT Resources Upgrade'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.5. Joint Pole Agreement (JPA)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.6. OneScreen La Union - Unified Digital
+Signages Across the Component LGUs of La Union
+'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.7. La Union Peace and Order System (Maintenance for La Union Wireless Province-Wide Mesh High Speed Local Network Backbone) - Radios/Relays and CCTVs'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.7.1. Provision of Electricity Services'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.7.2. Wireless Mesh Restoration'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4. Gender-Responsive Digital Literacy and ICT Hub Program'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1. Digital Skills and Livelihood Training Program'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1. Taripatup ti Ammu, Kamalig ti Sirib (TAKS)
+Stewardship of Knowledge, Granary of Wisdom'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.1. Solo Parent Tech-Hub Initiative'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.2. Youth Tech-Points'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.3. Project "DIGI-NANAY"'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.4. Advanced Digital Marketing & Canva Design Workshop '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.5. E-Wallet & Financial Literacy Workshop'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.6. Digital Safety & Freelance Rights Seminar'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.7. ICT Jumpstart Workshop'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.8. Visual Creators Program'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1.9. Safe Surf & Work Seminar'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.2. GAD Initiatives'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.2.1. Establishment of the Digital GAD Corner'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.2.2. GAD Data Digitization '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => 'C. STRATEGIC ACTIVITIES'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1. ICT Governance - La Union ICT Council (LUICTC) Operations and Roadmap'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1. LUICTC Secretariat Services and Institutionalization'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2. La Union ICT Roadmap - Formulation, Implementation and Monitoring'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2. ICT Strategic Planning - ISSP Formulation '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1. PGLU ISSP — SC/TWG Formation, Writeshop, Approval & Monitoring'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.1. Creation of Steering Committee (SC) and
+Technical Working Group (TWG)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.2. General Assembly of SC and TWG'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.3. Monthly/Quarterly/Semestral Meetings'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.4. Writeshop/Formulation of ISSP '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.5. Implementation and Monitoring'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.2. LGU ISSP — Training, Monitoring & Compliance'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.2.1. Training Plan'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.2.2. End User Trainings'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.2.3. Monitoring Compliance Team'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3. Smart Province Program'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1. ICT Governance Milestones'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1.1 Feasibility Study (FS) Support and Joint Workshops'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.2. La Union ConnectEd'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.2.1. Provision of Internet connectivity and ICT resources to GIDA Schools'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.3. La Union OneGov'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.3.1. Database build up for all La Union Constituents'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.4. Membership to National and International Organizations'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => 'D. CAPACITY BUILDING PROGRAMS'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1. Capacity Development Program for PICTO Personnel '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1. Attendance, Participation and Completion to IT-Related trainings'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2. Attendance to ICT Summits, Conferences and Awarding Ceremonies'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2. Digital Literacy and Upskilling for PGLU Employees'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1. Capacity Training for PGLU IT Focal Person (Bileg iti Impormasyon Teknolohiya a mangted ti Sirib para iti kailian
+-BITS)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.2. Capacity Training for PGLU employees for Online Applications (Cybersecurity Aptitude  and Compile Hazards for End users-CACHE)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3. ICT Month Program'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1. Overall Program Management '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1.1. WEB - Website Enhancement Booting'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1.2. PIES - Provincial ICT Exhibition and Summit'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1.3. PATCH - Provincial Application and Tool for Citizens Hackathon'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1.4. QUERY - Quizbee for Universal End-users and Robust Youth '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4. eGovernance Act Capacity Development for LGUs'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1. Conduct of End User Trainings'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.1. One-Stop Service Portals'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.2. Mandatory eLGU Systems'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.3. Government Digital Payments'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.4. Digital Signatures via PKI'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.5. Integrated HR and Finance Systems'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1.6. Online Public Service Portal'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.2. Policy Making and Implementation'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.2.1. Cybersecurity and Privacy-by-Design'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.2.2. Chief Information Officer (CIO) in Every Agency'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => 'E. GENERAL ADMINISTRATIVE SERVICES'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1. Office Administration'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1. Preparation and Assessment of Work Program and Budget and other Office Reports/Plans'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1.1. Annual Work and Financial Plan
+(AWFP)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1.2. Quarterly, semestral and annual reports'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1.3. Annual Investment Program (AIP)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1.4. Project Procurement Management
+Plan (PPMP)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.1.5. Annual Budget'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.2. Conduct of Monthly Accomplishment and Assessment cum Staff Development Session'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3. Sustainability of ISO implementation'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.1. Monitoring of ISO Implementation'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.2. Attendance to ISO related Trainings'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.3.3. Sustain 7S Implementation'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '1.4. Review of Communications'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2. Human Resource Management Services'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1. SPMS Preparation'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.1. Office Performance and Commitment
+and Review (OPCR) Target '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.2. Office Performance and Commitment
+and Review (OPCR) Rating '],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.3. Unit Performance and Commitment
+and Review (UPCR) Target'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.4. Unit Performance and Commitment
+and Review (UPCR) Rating'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.5. Individual Performance and
+Commitment and Review (IPCR) Target'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.1.6. Individual Performance and
+Commitment and Review (IPCR) Rating'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.2. Preparation/Updating of Individual Development Plan (IDP)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.3. Preparation/Updating of Personnel Data Sheet (PDS)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.4. Preparation of Statement of Assets, Liabilities and Net Worth (SALN)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.5. Preparation of Personnel Discipline Report'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '2.6 Preparation of Customer Feedback Report (CFR)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3. Records Management'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.1. Updating and Management of All Records'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '3.2. Management of all Incoming and Outgoing Communications'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4. Management of all Financial Documents'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '4.1. Preparation of financial documents'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '5.Administrative Support Services'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '5.1. Janitorial Services'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '5.2. Transport Services'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '5.2.1 Vehicle Maintenance Report'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '5.3. ICT and Office Equipment'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '5.4. Preparation of Supplies and ICT Equipment Inventory Report'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '6. Office Improvement'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => null],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '7. La Union Peace and Order System (LUPOS)'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '7.1. LBP Loan Ammortizations (Establishment of the Province-wide Mesh High Speed Local Network Backbone) @6.00% p.a.'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => '7.2. LBP Loan Amortizations (Implementation of the La Union Peace, Order and Public Safety System-Phase II) @ 6.25% p.a.'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => 'TOTAL'],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => null],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => null],
+    ['PROGRAM / PROJECT / ACTIVITY
+DESCRIPTION' => null]
+]

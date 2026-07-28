@@ -15,6 +15,7 @@ class Ppa extends Model
     use HasFactory;
 
     protected $fillable = [
+        'id',
         'office_id',
         'parent_id',
         'name',
@@ -36,26 +37,30 @@ class Ppa extends Model
             get: function () {
                 $suffix = $this->code_suffix ?? '0000';
 
-                // 1. If this PPA has a parent, get the parent's full code first
+                // Pad suffix based on PPA type
+                $paddedSuffix = match ($this->type) {
+                    'Program' => str_pad($suffix, 3, '0', STR_PAD_LEFT),
+                    'Project' => str_pad($suffix, 3, '0', STR_PAD_LEFT),
+                    'Activity' => str_pad($suffix, 2, '0', STR_PAD_LEFT),
+                    'Sub-Activity' => $suffix,
+                    default => $suffix,
+                };
+
                 if ($this->parent_id) {
-                    // Use the loaded relation if available to prevent N+1 queries
                     $parent = $this->relationLoaded('parent')
                         ? $this->parent
                         : $this->parent()->first();
-
                     if ($parent) {
-                        return $parent->full_code.'-'.$suffix;
+                        return $parent->full_code . '-' . $paddedSuffix;
                     }
                 }
 
-                // 2. If no parent, we are at the top level (Program).
-                // We start with the Office Code.
                 $office = $this->relationLoaded('office')
                     ? $this->office
                     : $this->office()->first();
                 $officePrefix = $office?->full_code ?? '0000-0-00-000';
 
-                return $officePrefix.'-'.$suffix;
+                return $officePrefix . '-' . $paddedSuffix;
             },
         );
     }

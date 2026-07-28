@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table';
-import NewTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/base-ui-components/data-table';
 import {
     Dialog,
     DialogContent,
@@ -7,10 +7,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/base-ui-components/ui/dialog';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { PaginatedResponse } from '@/types';
 
@@ -59,7 +55,7 @@ export function TableSelect<TData>({
                 </DialogHeader>
 
                 <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
-                    <NewTable
+                    <DataTable
                         className="h-150"
                         data={data}
                         columns={columns}
@@ -72,7 +68,7 @@ export function TableSelect<TData>({
                         }}
                         selectedValue={value}
                         selectedKey={valueKey}
-                    />
+                    ></DataTable>
                 </div>
             </DialogContent>
         </Dialog>
