@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AipCostingController;
 use App\Http\Controllers\AipEntryController;
 use App\Http\Controllers\AipRefCodeController;
+use App\Http\Controllers\AipSummaryImportController;
 use App\Http\Controllers\CcStrategicPriorityController;
 use App\Http\Controllers\CcSubSectorController;
 use App\Http\Controllers\CcTypologyController;
@@ -495,5 +496,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
 });
+
+Route::get('aip-summary-import', [
+    AipSummaryImportController::class,
+    'index',
+])->name('aip-summary-import.index');
 
 require __DIR__ . '/settings.php';
