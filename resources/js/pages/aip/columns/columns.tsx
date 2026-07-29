@@ -89,16 +89,20 @@ const columns = [
             return (
                 <div className="flex items-center gap-1">
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                title="Change AIP status"
-                                disabled={!table.options.meta?.canUpdateStatus}
-                            >
-                                <Pencil />
-                            </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger
+                            render={
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    title="Change AIP status"
+                                    disabled={
+                                        !table.options.meta?.canUpdateStatus
+                                    }
+                                >
+                                    <Pencil />
+                                </Button>
+                            }
+                        ></DropdownMenuTrigger>
                         <DropdownMenuContent>
                             <DropdownMenuGroup>
                                 <DropdownMenuLabel>

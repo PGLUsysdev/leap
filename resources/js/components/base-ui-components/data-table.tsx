@@ -375,7 +375,7 @@ export default function Table<TData>({
                                                 <TableHead
                                                     key={header.id}
                                                     colSpan={header.colSpan}
-                                                    className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
+                                                    className="border-x bg-background/95 p-1 px-2 first:border-l-0 last:border-r-0"
                                                     style={{
                                                         width: `${header.getSize()}px`,
                                                         ...getCommonPinningStyles(
@@ -475,7 +475,7 @@ export default function Table<TData>({
                                                         ),
                                                     }}
                                                     className={cn(
-                                                        'border p-1 first:border-l-0 last:border-r-0',
+                                                        'border p-1 px-2 first:border-l-0 last:border-r-0',
                                                         cell.column.getIsPinned() &&
                                                             'bg-background/95',
                                                     )}
@@ -514,7 +514,7 @@ export default function Table<TData>({
                                                         return (
                                                             <TableCell
                                                                 key={header.id}
-                                                                className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
+                                                                className="border-x bg-background/95 p-1 px-2 first:border-l-0 last:border-r-0"
                                                                 style={{
                                                                     width: `${header.getSize()}px`,
                                                                     ...getCommonPinningStyles(
@@ -541,45 +541,6 @@ export default function Table<TData>({
                                     })}
                             </TableFooter>
                         )}
-                        {/* {showFooter && (
-                            <TableFooter className="sticky bottom-0 z-2">
-                                {[table.getFooterGroups().at(-1)].map(
-                                    (footerGroup) => {
-                                        console.log(footerGroup);
-
-                                        return (
-                                            <TableRow key={footerGroup.id}>
-                                                {footerGroup.headers.map(
-                                                    (header) => (
-                                                        <TableCell
-                                                            key={header.id}
-                                                            className="border-x bg-background/95 p-1 first:border-l-0 last:border-r-0"
-                                                            style={{
-                                                                width: `${header.getSize()}px`,
-                                                                ...getCommonPinningStyles(
-                                                                    header.column,
-                                                                    table,
-                                                                ),
-                                                            }}
-                                                        >
-                                                            {header.isPlaceholder
-                                                                ? null
-                                                                : flexRender(
-                                                                      header
-                                                                          .column
-                                                                          .columnDef
-                                                                          .footer,
-                                                                      header.getContext(),
-                                                                  )}
-                                                        </TableCell>
-                                                    ),
-                                                )}
-                                            </TableRow>
-                                        );
-                                    },
-                                )}
-                            </TableFooter>
-                        )} */}
                     </DataTable>
                 </div>
 
