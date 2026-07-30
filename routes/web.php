@@ -513,4 +513,9 @@ Route::get('price-list-import', [
     'index',
 ])->name('price-list-import.index');
 
+Route::post('price-list-import', [
+    PriceListImportController::class,
+    'store',
+])->name('price-list-import.store');
+
 require __DIR__ . '/settings.php';

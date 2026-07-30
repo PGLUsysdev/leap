@@ -1,5 +1,848 @@
-export default function PriceListImport() {
-    return <></>;
+import { router, usePage } from '@inertiajs/react';
+import ExcelJS from 'exceljs';
+import type { ChangeEvent } from 'react';
+import { useMemo, useState } from 'react';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '@/components/base-ui-components/ui/combobox';
+import {
+    Field,
+    FieldDescription,
+    FieldLabel,
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/base-ui-components/ui/select';
+import type { ChartOfAccount, PpmpCategory } from '@/types';
+import { extractData } from './extract';
+import type { ExtractResult } from './extract';
+
+interface ColumnMapping {
+    chartOfAccount: string;
+    category: string;
+    description: string;
+    unit: string;
+    price: string;
+}
+
+const defaultColumnMapping: ColumnMapping = {
+    chartOfAccount: 'D',
+    category: 'F',
+    description: 'F',
+    unit: 'G',
+    price: 'H',
+};
+
+interface PriceListImportProps {
+    chartOfAccounts: ChartOfAccount[];
+    ppmpCategories: PpmpCategory[];
+}
+
+interface ResolvedItem {
+    chart_of_account_id: number;
+    ppmp_category_id: number;
+    description: string;
+    unit_of_measurement: string;
+    price: number | null;
+}
+
+interface Resolution {
+    resolved: ResolvedItem[];
+    totalItems: number;
+    matchedItems: number;
+    unmatchedChartOfAccounts: string[];
+    unmatchedCategories: string[];
+}
+
+function normalize(s: string): string {
+    return s.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** Build a normalized name → ID lookup map from a list of DB items. */
+function buildLookup<T>(
+    items: T[],
+    getName: (item: T) => string,
+): Map<string, number> {
+    const map = new Map<string, number>();
+
+    for (const item of items) {
+        map.set(
+            normalize(getName(item)),
+            (item as unknown as { id: number }).id,
+        );
+    }
+
+    return map;
+}
+
+/** Compute resolution given auto-lookups + manual overrides. */
+function computeResolution(
+    result: ExtractResult,
+    coaLookup: Map<string, number>,
+    catLookup: Map<string, number>,
+    manualCoa: Record<string, number>,
+    manualCat: Record<string, number>,
+): Resolution {
+    const resolved: ResolvedItem[] = [];
+    const unmatchedCoaSet = new Set<string>();
+    const unmatchedCatSet = new Set<string>();
+
+    for (const item of result.items) {
+        const coaId =
+            coaLookup.get(normalize(item.chartOfAccount)) ??
+            manualCoa[item.chartOfAccount];
+
+        if (!coaId) {
+            unmatchedCoaSet.add(item.chartOfAccount);
+
+            continue;
+        }
+
+        const catId =
+            catLookup.get(normalize(item.category)) ?? manualCat[item.category];
+
+        if (!catId) {
+            unmatchedCatSet.add(item.category);
+
+            continue;
+        }
+
+        resolved.push({
+            chart_of_account_id: coaId,
+            ppmp_category_id: catId,
+            description: item.description,
+            unit_of_measurement: item.unitOfMeasurement,
+            price: item.price ?? 0,
+        });
+    }
+
+    return {
+        resolved,
+        totalItems: result.items.length,
+        matchedItems: resolved.length,
+        unmatchedChartOfAccounts: [...unmatchedCoaSet].sort(),
+        unmatchedCategories: [...unmatchedCatSet].sort(),
+    };
+}
+
+export default function PriceListImport({
+    chartOfAccounts,
+    ppmpCategories,
+}: PriceListImportProps) {
+    const [sheets, setSheets] = useState<string[]>([]);
+    const [_workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
+    const [selectedSheet, setSelectedSheet] = useState('');
+    const [startRow, setStartRow] = useState(9);
+    const [endRow, setEndRow] = useState<number | undefined>(1233);
+    const [columnMap, setColumnMap] =
+        useState<ColumnMapping>(defaultColumnMapping);
+    const [result, setResult] = useState<ExtractResult | null>(null);
+    const [importing, setImporting] = useState(false);
+
+    // Manual mappings for names that didn't auto-match
+    const [manualCoa, setManualCoa] = useState<Record<string, number>>({});
+    const [manualCat, setManualCat] = useState<Record<string, number>>({});
+
+    // Auto-lookup maps (stable across renders)
+    const coaLookup = useMemo(
+        () =>
+            buildLookup(
+                chartOfAccounts,
+                (coa: ChartOfAccount) => coa.account_title,
+            ),
+        [chartOfAccounts],
+    );
+
+    const catLookup = useMemo(
+        () => buildLookup(ppmpCategories, (cat: PpmpCategory) => cat.name),
+        [ppmpCategories],
+    );
+
+    // Maps for Combobox: name ↔ ID lookup (unprefixed)
+    const coaNameToId = useMemo(() => {
+        const m = new Map<string, number>();
+
+        for (const coa of chartOfAccounts) {
+            m.set(coa.account_title, coa.id);
+        }
+
+        return m;
+    }, [chartOfAccounts]);
+
+    const idToCoaTitle = useMemo(() => {
+        const m = new Map<number, string>();
+
+        for (const coa of chartOfAccounts) {
+            m.set(coa.id, coa.account_title);
+        }
+
+        return m;
+    }, [chartOfAccounts]);
+
+    const catNameToId = useMemo(() => {
+        const m = new Map<string, number>();
+
+        for (const cat of ppmpCategories) {
+            m.set(cat.name, cat.id);
+        }
+
+        return m;
+    }, [ppmpCategories]);
+
+    const idToCatName = useMemo(() => {
+        const m = new Map<number, string>();
+
+        for (const cat of ppmpCategories) {
+            m.set(cat.id, cat.name);
+        }
+
+        return m;
+    }, [ppmpCategories]);
+
+    // Combobox items with type prefix to avoid ComboboxCollection key collision
+    const coaComboboxItems = useMemo(
+        () => chartOfAccounts.map((coa) => `coa:${coa.account_title}`),
+        [chartOfAccounts],
+    );
+
+    const catComboboxItems = useMemo(
+        () => ppmpCategories.map((cat) => `cat:${cat.name}`),
+        [ppmpCategories],
+    );
+
+    // Resolution re-computes whenever result, manualCoa, or manualCat changes
+    const resolution: Resolution | null = useMemo(() => {
+        if (!result) {
+            return null;
+        }
+
+        return computeResolution(
+            result,
+            coaLookup,
+            catLookup,
+            manualCoa,
+            manualCat,
+        );
+    }, [result, coaLookup, catLookup, manualCoa, manualCat]);
+
+    async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        const wb = new ExcelJS.Workbook();
+        const arrayBuffer = await file.arrayBuffer();
+        await wb.xlsx.load(arrayBuffer);
+
+        setWorkbook(wb);
+        setSheets(wb.worksheets.map((ws) => ws.name));
+        setSelectedSheet('');
+        setResult(null);
+        setManualCoa({});
+        setManualCat({});
+    }
+
+    function handleExtract() {
+        if (!_workbook || !selectedSheet) {
+            return;
+        }
+
+        const ws = _workbook.getWorksheet(selectedSheet);
+
+        if (!ws) {
+            return;
+        }
+
+        const data = extractData({
+            worksheet: ws,
+            startRow,
+            endRow,
+            columnMap,
+        });
+
+        setResult(data);
+        setManualCoa({});
+        setManualCat({});
+    }
+
+    function updateColumn(key: keyof ColumnMapping, value: string) {
+        setColumnMap((prev) => ({ ...prev, [key]: value.toUpperCase() }));
+    }
+
+    function handleImport() {
+        if (!resolution || resolution.resolved.length === 0 || importing) {
+            return;
+        }
+
+        console.log('Importing items:', resolution.resolved);
+        console.log('Item count:', resolution.resolved.length);
+
+        if (resolution.resolved.length > 0) {
+            const first = resolution.resolved[0];
+            console.log('First item sample:', first);
+            console.log(
+                'unit_of_measurement value:',
+                JSON.stringify(first.unit_of_measurement),
+            );
+            console.log(
+                'unit_of_measurement length:',
+                first.unit_of_measurement?.length,
+            );
+        }
+
+        setImporting(true);
+
+        router.post(
+            '/price-list-import' as const,
+            { items: resolution.resolved } as never,
+            {
+                onFinish: () => setImporting(false),
+                onError: (importErrors) => {
+                    console.error('Import validation errors:', importErrors);
+
+                    // Log the actual items that failed validation
+                    for (const key of Object.keys(importErrors)) {
+                        const match = key.match(/^items\.(\d+)\.(\w+)$/);
+
+                        if (match) {
+                            const idx = Number(match[1]);
+                            const field = match[2];
+                            const item = resolution.resolved[idx];
+
+                            if (item) {
+                                console.log(
+                                    `Failing item [${idx}].${field}:`,
+                                    item,
+                                );
+                            }
+                        }
+                    }
+                },
+            },
+        );
+    }
+
+    const { errors } = usePage().props;
+
+    return (
+        <>
+            <Field>
+                <FieldLabel htmlFor="file">Excel File</FieldLabel>
+                <Input
+                    id="file"
+                    type="file"
+                    accept=".xlsx"
+                    onChange={handleFileChange}
+                />
+                <FieldDescription>Select an Excel file.</FieldDescription>
+            </Field>
+
+            {sheets.length > 0 && (
+                <Field>
+                    <FieldLabel>Sheet</FieldLabel>
+                    <Select
+                        value={selectedSheet}
+                        onValueChange={(v) => v && setSelectedSheet(v)}
+                    >
+                        <SelectTrigger className="w-45">
+                            <SelectValue placeholder="Select sheet" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectGroup>
+                                {sheets.map((sheet) => (
+                                    <SelectItem key={sheet} value={sheet}>
+                                        {sheet}
+                                    </SelectItem>
+                                ))}
+                            </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </Field>
+            )}
+
+            {sheets.length > 0 && (
+                <>
+                    <div className="mt-4 flex gap-4">
+                        <Field>
+                            <FieldLabel htmlFor="startRow">
+                                Start Row
+                            </FieldLabel>
+                            <Input
+                                id="startRow"
+                                type="number"
+                                value={startRow}
+                                onChange={(e) =>
+                                    setStartRow(Number(e.target.value))
+                                }
+                            />
+                        </Field>
+
+                        <Field>
+                            <FieldLabel htmlFor="endRow">
+                                End Row (optional)
+                            </FieldLabel>
+                            <Input
+                                id="endRow"
+                                type="number"
+                                value={endRow ?? ''}
+                                onChange={(e) =>
+                                    setEndRow(
+                                        e.target.value
+                                            ? Number(e.target.value)
+                                            : undefined,
+                                    )
+                                }
+                            />
+                            <FieldDescription>
+                                Leave empty to read to the last row.
+                            </FieldDescription>
+                        </Field>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-4">
+                        <Field>
+                            <FieldLabel>Chart of Account</FieldLabel>
+                            <Input
+                                value={columnMap.chartOfAccount}
+                                onChange={(e) =>
+                                    updateColumn(
+                                        'chartOfAccount',
+                                        e.target.value,
+                                    )
+                                }
+                                className="w-16"
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Category</FieldLabel>
+                            <Input
+                                value={columnMap.category}
+                                onChange={(e) =>
+                                    updateColumn('category', e.target.value)
+                                }
+                                className="w-16"
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Description</FieldLabel>
+                            <Input
+                                value={columnMap.description}
+                                onChange={(e) =>
+                                    updateColumn('description', e.target.value)
+                                }
+                                className="w-16"
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Unit of Measure</FieldLabel>
+                            <Input
+                                value={columnMap.unit}
+                                onChange={(e) =>
+                                    updateColumn('unit', e.target.value)
+                                }
+                                className="w-16"
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Price</FieldLabel>
+                            <Input
+                                value={columnMap.price}
+                                onChange={(e) =>
+                                    updateColumn('price', e.target.value)
+                                }
+                                className="w-16"
+                            />
+                        </Field>
+                    </div>
+
+                    {selectedSheet && (
+                        <div className="mt-6">
+                            <Button onClick={handleExtract}>Extract</Button>
+                        </div>
+                    )}
+
+                    {result && resolution && (
+                        <div className="mt-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    const pairs = new Set<string>();
+
+                                    for (const item of result.items) {
+                                        pairs.add(
+                                            `${item.category} → ${item.chartOfAccount}`,
+                                        );
+                                    }
+
+                                    console.log('=== Category → COA Pairs ===');
+                                    console.log([...pairs].sort().join('\n'));
+                                    console.log(
+                                        `Total unique pairs: ${pairs.size}`,
+                                    );
+                                }}
+                            >
+                                Log Category–COA Pairs
+                            </Button>
+                        </div>
+                    )}
+
+                    {result && resolution && (
+                        <div className="mt-4 space-y-3">
+                            <div className="text-sm text-muted-foreground">
+                                Found {result.items.length} items,{' '}
+                                {result.uniqueChartOfAccounts.length} unique
+                                chart of accounts,{' '}
+                                {result.uniqueCategories.length} unique
+                                categories.
+                            </div>
+
+                            <div className="text-sm">
+                                <span className="font-medium">
+                                    {resolution.matchedItems}/
+                                    {resolution.totalItems}
+                                </span>{' '}
+                                items matched to database entries.
+                            </div>
+
+                            {/* ---- Chart of Account Mapping ---- */}
+                            <div className="overflow-hidden rounded-lg border">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="bg-muted/50">
+                                            <th className="px-3 py-2 text-left font-medium">
+                                                Chart of Account
+                                            </th>
+                                            <th className="px-3 py-2 text-left font-medium">
+                                                Map to DB Entry
+                                            </th>
+                                            <th className="px-3 py-2 text-center font-medium">
+                                                Status
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {result.uniqueChartOfAccounts.map(
+                                            (excelName: string) => {
+                                                const autoId = coaLookup.get(
+                                                    normalize(excelName),
+                                                );
+                                                const currentId =
+                                                    manualCoa[excelName] ??
+                                                    autoId;
+                                                const currentTitle = currentId
+                                                    ? idToCoaTitle.get(
+                                                          currentId,
+                                                      )
+                                                    : undefined;
+                                                const comboboxValue =
+                                                    currentTitle
+                                                        ? `coa:${currentTitle}`
+                                                        : '';
+                                                const isManual =
+                                                    excelName in manualCoa;
+                                                let statusLabel: string;
+                                                let statusClass: string;
+
+                                                if (isManual) {
+                                                    statusLabel = '✎ manual';
+                                                    statusClass =
+                                                        'text-blue-600';
+                                                } else if (autoId) {
+                                                    statusLabel = '✓ auto';
+                                                    statusClass =
+                                                        'text-green-600';
+                                                } else {
+                                                    statusLabel = '✗ unmapped';
+                                                    statusClass =
+                                                        'text-destructive';
+                                                }
+
+                                                return (
+                                                    <tr
+                                                        key={excelName}
+                                                        className="border-t"
+                                                    >
+                                                        <td className="px-3 py-2 font-mono text-xs">
+                                                            {excelName}
+                                                        </td>
+                                                        <td className="px-3 py-2">
+                                                            <Combobox
+                                                                items={
+                                                                    coaComboboxItems
+                                                                }
+                                                                value={
+                                                                    comboboxValue
+                                                                }
+                                                                onValueChange={(
+                                                                    v,
+                                                                ) => {
+                                                                    if (!v) {
+                                                                        return;
+                                                                    }
+
+                                                                    const name =
+                                                                        v.replace(
+                                                                            /^[^:]+:/,
+                                                                            '',
+                                                                        );
+                                                                    const id =
+                                                                        coaNameToId.get(
+                                                                            name,
+                                                                        );
+
+                                                                    if (id) {
+                                                                        setManualCoa(
+                                                                            (
+                                                                                prev,
+                                                                            ) => ({
+                                                                                ...prev,
+                                                                                [excelName]:
+                                                                                    id,
+                                                                            }),
+                                                                        );
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <ComboboxInput placeholder="Search chart of account..." />
+                                                                <ComboboxContent>
+                                                                    <ComboboxEmpty>
+                                                                        No items
+                                                                        found.
+                                                                    </ComboboxEmpty>
+                                                                    <ComboboxList>
+                                                                        {(
+                                                                            item,
+                                                                        ) => (
+                                                                            <ComboboxItem
+                                                                                key={
+                                                                                    item
+                                                                                }
+                                                                                value={
+                                                                                    item
+                                                                                }
+                                                                            >
+                                                                                {item.replace(
+                                                                                    /^[^:]+:/,
+                                                                                    '',
+                                                                                )}
+                                                                            </ComboboxItem>
+                                                                        )}
+                                                                    </ComboboxList>
+                                                                </ComboboxContent>
+                                                            </Combobox>
+                                                        </td>
+                                                        <td className="px-3 py-2 text-center text-xs">
+                                                            <span
+                                                                className={
+                                                                    statusClass
+                                                                }
+                                                            >
+                                                                {statusLabel}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            },
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* ---- Category Mapping ---- */}
+                            <div className="overflow-hidden rounded-lg border">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="bg-muted/50">
+                                            <th className="px-3 py-2 text-left font-medium">
+                                                Category
+                                            </th>
+                                            <th className="px-3 py-2 text-left font-medium">
+                                                Map to DB Entry
+                                            </th>
+                                            <th className="px-3 py-2 text-center font-medium">
+                                                Status
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {result.uniqueCategories.map(
+                                            (excelName: string) => {
+                                                const autoId = catLookup.get(
+                                                    normalize(excelName),
+                                                );
+                                                const currentId =
+                                                    manualCat[excelName] ??
+                                                    autoId;
+                                                const currentName = currentId
+                                                    ? idToCatName.get(currentId)
+                                                    : undefined;
+                                                const comboboxValue =
+                                                    currentName
+                                                        ? `cat:${currentName}`
+                                                        : '';
+                                                const isManual =
+                                                    excelName in manualCat;
+                                                let statusLabel: string;
+                                                let statusClass: string;
+
+                                                if (isManual) {
+                                                    statusLabel = '✎ manual';
+                                                    statusClass =
+                                                        'text-blue-600';
+                                                } else if (autoId) {
+                                                    statusLabel = '✓ auto';
+                                                    statusClass =
+                                                        'text-green-600';
+                                                } else {
+                                                    statusLabel = '✗ unmapped';
+                                                    statusClass =
+                                                        'text-destructive';
+                                                }
+
+                                                return (
+                                                    <tr
+                                                        key={excelName}
+                                                        className="border-t"
+                                                    >
+                                                        <td className="px-3 py-2 font-mono text-xs">
+                                                            {excelName}
+                                                        </td>
+                                                        <td className="px-3 py-2">
+                                                            <Combobox
+                                                                items={
+                                                                    catComboboxItems
+                                                                }
+                                                                value={
+                                                                    comboboxValue
+                                                                }
+                                                                onValueChange={(
+                                                                    v,
+                                                                ) => {
+                                                                    if (!v) {
+                                                                        return;
+                                                                    }
+
+                                                                    const name =
+                                                                        v.replace(
+                                                                            /^[^:]+:/,
+                                                                            '',
+                                                                        );
+                                                                    const id =
+                                                                        catNameToId.get(
+                                                                            name,
+                                                                        );
+
+                                                                    if (id) {
+                                                                        setManualCat(
+                                                                            (
+                                                                                prev,
+                                                                            ) => ({
+                                                                                ...prev,
+                                                                                [excelName]:
+                                                                                    id,
+                                                                            }),
+                                                                        );
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <ComboboxInput placeholder="Search category..." />
+                                                                <ComboboxContent>
+                                                                    <ComboboxEmpty>
+                                                                        No items
+                                                                        found.
+                                                                    </ComboboxEmpty>
+                                                                    <ComboboxList>
+                                                                        {(
+                                                                            item,
+                                                                        ) => (
+                                                                            <ComboboxItem
+                                                                                key={
+                                                                                    item
+                                                                                }
+                                                                                value={
+                                                                                    item
+                                                                                }
+                                                                            >
+                                                                                {item.replace(
+                                                                                    /^[^:]+:/,
+                                                                                    '',
+                                                                                )}
+                                                                            </ComboboxItem>
+                                                                        )}
+                                                                    </ComboboxList>
+                                                                </ComboboxContent>
+                                                            </Combobox>
+                                                        </td>
+                                                        <td className="px-3 py-2 text-center text-xs">
+                                                            <span
+                                                                className={
+                                                                    statusClass
+                                                                }
+                                                            >
+                                                                {statusLabel}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            },
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {errors?.import && (
+                                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                                    <p className="font-medium text-destructive">
+                                        {errors.import}
+                                    </p>
+                                </div>
+                            )}
+
+                            {typeof errors === 'object' &&
+                                errors !== null &&
+                                Object.keys(errors).length > 0 &&
+                                !errors?.import && (
+                                    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                                        <p className="font-medium text-destructive">
+                                            Validation failed. Check the browser
+                                            console for details.
+                                        </p>
+                                    </div>
+                                )}
+
+                            {resolution.matchedItems > 0 && (
+                                <div className="mt-4">
+                                    <Button
+                                        onClick={handleImport}
+                                        disabled={importing}
+                                    >
+                                        {importing
+                                            ? 'Importing...'
+                                            : `Import ${resolution.matchedItems} Items`}
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </>
+            )}
+        </>
+    );
 }
 
 PriceListImport.layout = {
