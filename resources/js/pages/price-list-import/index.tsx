@@ -30,6 +30,7 @@ import {
     ToggleGroupItem,
 } from '@/components/base-ui-components/ui/toggle-group';
 import { Spinner } from '@/components/base-ui-components/ui/spinner';
+import { Switch } from '@/components/base-ui-components/ui/switch';
 import type { ChartOfAccount, PpmpCategory } from '@/types';
 import { extractData } from './extract';
 import type { ExtractResult } from './extract';
@@ -156,6 +157,27 @@ export default function PriceListImport({
     const [result, setResult] = useState<ExtractResult | null>(null);
     const [importing, setImporting] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [confirmed, setConfirmed] = useState(false);
+    const [calibratingSheet, setCalibratingSheet] = useState('');
+    const [sheetConfigs, setSheetConfigs] = useState<Record<string, {
+        useCustom: boolean;
+        startRow: number;
+        endRow: number | undefined;
+        columnMap: { chartOfAccount: string; category: string; description: string; unit: string; price: string; };
+    }>>({});
+
+    const defaultConfig = {
+        useCustom: false,
+        startRow: 9,
+        endRow: 1233 as number | undefined,
+        columnMap: {
+            chartOfAccount: 'D',
+            category: 'F',
+            description: 'F',
+            unit: 'G',
+            price: 'H',
+        },
+    };
 
     // Manual mappings for names that didn't auto-match
     const [manualCoa, setManualCoa] = useState<Record<string, number>>({});
@@ -263,6 +285,27 @@ export default function PriceListImport({
         setManualCoa({});
         setManualCat({});
         setLoading(false);
+        setConfirmed(false);
+    }
+
+    function handleSheetsChange(sheets: string[]) {
+        setSelectedSheets(sheets);
+        setConfirmed(false);
+    }
+
+    function handleConfirm() {
+        const configs: Record<string, typeof defaultConfig> = {};
+
+        for (const sheet of selectedSheets) {
+            configs[sheet] = {
+                ...defaultConfig,
+                columnMap: { ...defaultConfig.columnMap },
+            };
+        }
+
+        setSheetConfigs(configs);
+        setCalibratingSheet(selectedSheets[0] ?? '');
+        setConfirmed(true);
     }
 
     // function handleExtract() {
@@ -373,7 +416,7 @@ export default function PriceListImport({
                     <ToggleGroup
                         multiple
                         value={selectedSheets}
-                        onValueChange={setSelectedSheets}
+                        onValueChange={handleSheetsChange}
                         orientation="horizontal"
                         className="flex-wrap"
                     >
@@ -390,17 +433,323 @@ export default function PriceListImport({
                 </Field>
             )}
 
-            {selectedSheets.length > 0 && (
+            {selectedSheets.length > 0 && !confirmed && (
                 <div className="mt-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            console.log('Selected sheets:', selectedSheets);
-                        }}
-                    >
-                        Log Selected Sheets
+                    <Button onClick={handleConfirm}>
+                        Confirm Selection
                     </Button>
+                </div>
+            )}
+
+            {confirmed && selectedSheets.length > 0 && (
+                <div className="mt-4 space-y-4">
+                    <Field>
+                        <FieldLabel>Sheet to calibrate</FieldLabel>
+                        <Select
+                            value={calibratingSheet}
+                            onValueChange={(v) => v && setCalibratingSheet(v)}
+                        >
+                            <SelectTrigger className="w-60">
+                                <SelectValue placeholder="Select sheet" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {selectedSheets.map((sheet) => (
+                                        <SelectItem key={sheet} value={sheet}>
+                                            {sheet}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </Field>
+
+                    {calibratingSheet && sheetConfigs[calibratingSheet] && (
+                        <div className="rounded-lg border p-4">
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium">
+                                    {calibratingSheet}
+                                </span>
+                                <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                    Use Defaults
+                                    <Switch
+                                        checked={
+                                            !sheetConfigs[calibratingSheet]
+                                                .useCustom
+                                        }
+                                        onCheckedChange={(checked) =>
+                                            setSheetConfigs((prev) => ({
+                                                ...prev,
+                                                [calibratingSheet]: {
+                                                    ...prev[calibratingSheet],
+                                                    useCustom: !checked,
+                                                },
+                                            }))
+                                        }
+                                        size="sm"
+                                    />
+                                </label>
+                            </div>
+
+                            {sheetConfigs[calibratingSheet].useCustom && (
+                                <>
+                                    <div className="mt-4 flex gap-4">
+                                        <Field>
+                                            <FieldLabel>
+                                                Start Row
+                                            </FieldLabel>
+                                            <Input
+                                                type="number"
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].startRow
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            [calibratingSheet]:
+                                                                {
+                                                                    ...prev[
+                                                                        calibratingSheet
+                                                                    ],
+                                                                    startRow:
+                                                                        Number(
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                        ),
+                                                                },
+                                                        }),
+                                                    )
+                                                }
+                                                className="w-20"
+                                            />
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>
+                                                End Row
+                                            </FieldLabel>
+                                            <Input
+                                                type="number"
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].endRow ?? ''
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            [calibratingSheet]:
+                                                                {
+                                                                    ...prev[
+                                                                        calibratingSheet
+                                                                    ],
+                                                                    endRow:
+                                                                        e
+                                                                            .target
+                                                                            .value
+                                                                            ? Number(
+                                                                                  e
+                                                                                      .target
+                                                                                      .value,
+                                                                              )
+                                                                            : undefined,
+                                                                },
+                                                        }),
+                                                    )
+                                                }
+                                                className="w-20"
+                                            />
+                                        </Field>
+                                    </div>
+
+                                    <div className="mt-4 grid grid-cols-5 gap-2">
+                                        <Field>
+                                            <FieldLabel>COA</FieldLabel>
+                                            <Input
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].columnMap
+                                                        .chartOfAccount
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            [calibratingSheet]:
+                                                                {
+                                                                    ...prev[
+                                                                        calibratingSheet
+                                                                    ],
+                                                                    columnMap:
+                                                                        {
+                                                                            ...prev[
+                                                                                calibratingSheet
+                                                                            ].columnMap,
+                                                                            chartOfAccount:
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                                    .toUpperCase(),
+                                                                        },
+                                                                },
+                                                        }),
+                                                    )
+                                                }
+                                                className="w-16"
+                                            />
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>Cat</FieldLabel>
+                                            <Input
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].columnMap.category
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            [calibratingSheet]:
+                                                                {
+                                                                    ...prev[
+                                                                        calibratingSheet
+                                                                    ],
+                                                                    columnMap:
+                                                                        {
+                                                                            ...prev[
+                                                                                calibratingSheet
+                                                                            ].columnMap,
+                                                                            category:
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                                    .toUpperCase(),
+                                                                        },
+                                                                },
+                                                        }),
+                                                    )
+                                                }
+                                                className="w-16"
+                                            />
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>Desc</FieldLabel>
+                                            <Input
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].columnMap.description
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            [calibratingSheet]:
+                                                                {
+                                                                    ...prev[
+                                                                        calibratingSheet
+                                                                    ],
+                                                                    columnMap:
+                                                                        {
+                                                                            ...prev[
+                                                                                calibratingSheet
+                                                                            ].columnMap,
+                                                                            description:
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                                    .toUpperCase(),
+                                                                        },
+                                                                },
+                                                        }),
+                                                    )
+                                                }
+                                                className="w-16"
+                                            />
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>Unit</FieldLabel>
+                                            <Input
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].columnMap.unit
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            [calibratingSheet]:
+                                                                {
+                                                                    ...prev[
+                                                                        calibratingSheet
+                                                                    ],
+                                                                    columnMap:
+                                                                        {
+                                                                            ...prev[
+                                                                                calibratingSheet
+                                                                            ].columnMap,
+                                                                            unit:
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                                    .toUpperCase(),
+                                                                        },
+                                                                },
+                                                        }),
+                                                    )
+                                                }
+                                                className="w-16"
+                                            />
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>Price</FieldLabel>
+                                            <Input
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].columnMap.price
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            [calibratingSheet]:
+                                                                {
+                                                                    ...prev[
+                                                                        calibratingSheet
+                                                                    ],
+                                                                    columnMap:
+                                                                        {
+                                                                            ...prev[
+                                                                                calibratingSheet
+                                                                            ].columnMap,
+                                                                            price:
+                                                                                e
+                                                                                    .target
+                                                                                    .value
+                                                                                    .toUpperCase(),
+                                                                        },
+                                                                },
+                                                        }),
+                                                    )
+                                                }
+                                                className="w-16"
+                                            />
+                                        </Field>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    <Button>Extract</Button>
                 </div>
             )}
 
