@@ -25,117 +25,122 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/base-ui-components/ui/select';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+} from '@/components/base-ui-components/ui/toggle-group';
+import { Spinner } from '@/components/base-ui-components/ui/spinner';
 import type { ChartOfAccount, PpmpCategory } from '@/types';
 import { extractData } from './extract';
 import type { ExtractResult } from './extract';
 
-interface ColumnMapping {
-    chartOfAccount: string;
-    category: string;
-    description: string;
-    unit: string;
-    price: string;
-}
+// interface ColumnMapping {
+//     chartOfAccount: string;
+//     category: string;
+//     description: string;
+//     unit: string;
+//     price: string;
+// }
 
-const defaultColumnMapping: ColumnMapping = {
-    chartOfAccount: 'D',
-    category: 'F',
-    description: 'F',
-    unit: 'G',
-    price: 'H',
-};
+// const defaultColumnMapping: ColumnMapping = {
+//     chartOfAccount: 'D',
+//     category: 'F',
+//     description: 'F',
+//     unit: 'G',
+//     price: 'H',
+// };
 
 interface PriceListImportProps {
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
 }
 
-interface ResolvedItem {
-    chart_of_account_id: number;
-    ppmp_category_id: number;
-    description: string;
-    unit_of_measurement: string;
-    price: number | null;
-}
+// interface ResolvedItem {
+//     chart_of_account_id: number;
+//     ppmp_category_id: number;
+//     description: string;
+//     unit_of_measurement: string;
+//     price: number | null;
+// }
 
-interface Resolution {
-    resolved: ResolvedItem[];
-    totalItems: number;
-    matchedItems: number;
-    unmatchedChartOfAccounts: string[];
-    unmatchedCategories: string[];
-}
+// interface Resolution {
+//     resolved: ResolvedItem[];
+//     totalItems: number;
+//     matchedItems: number;
+//     unmatchedChartOfAccounts: string[];
+//     unmatchedCategories: string[];
+// }
 
-function normalize(s: string): string {
-    return s.toLowerCase().replace(/\s+/g, ' ').trim();
-}
+// function normalize(s: string): string {
+//     return s.toLowerCase().replace(/\s+/g, ' ').trim();
+// }
 
-/** Build a normalized name → ID lookup map from a list of DB items. */
-function buildLookup<T>(
-    items: T[],
-    getName: (item: T) => string,
-): Map<string, number> {
-    const map = new Map<string, number>();
+// /** Build a normalized name → ID lookup map from a list of DB items. */
+// function buildLookup<T>(
+//     items: T[],
+//     getName: (item: T) => string,
+// ): Map<string, number> {
+//     const map = new Map<string, number>();
 
-    for (const item of items) {
-        map.set(
-            normalize(getName(item)),
-            (item as unknown as { id: number }).id,
-        );
-    }
+//     for (const item of items) {
+//         map.set(
+//             normalize(getName(item)),
+//             (item as unknown as { id: number }).id,
+//         );
+//     }
 
-    return map;
-}
+//     return map;
+// }
 
-/** Compute resolution given auto-lookups + manual overrides. */
-function computeResolution(
-    result: ExtractResult,
-    coaLookup: Map<string, number>,
-    catLookup: Map<string, number>,
-    manualCoa: Record<string, number>,
-    manualCat: Record<string, number>,
-): Resolution {
-    const resolved: ResolvedItem[] = [];
-    const unmatchedCoaSet = new Set<string>();
-    const unmatchedCatSet = new Set<string>();
+// /** Compute resolution given auto-lookups + manual overrides. */
+// function computeResolution(
+//     result: ExtractResult,
+//     coaLookup: Map<string, number>,
+//     catLookup: Map<string, number>,
+//     manualCoa: Record<string, number>,
+//     manualCat: Record<string, number>,
+// ): Resolution {
+//     const resolved: ResolvedItem[] = [];
+//     const unmatchedCoaSet = new Set<string>();
+//     const unmatchedCatSet = new Set<string>();
 
-    for (const item of result.items) {
-        const coaId =
-            coaLookup.get(normalize(item.chartOfAccount)) ??
-            manualCoa[item.chartOfAccount];
+//     for (const item of result.items) {
+//         const coaId =
+//             coaLookup.get(normalize(item.chartOfAccount)) ??
+//             manualCoa[item.chartOfAccount];
 
-        if (!coaId) {
-            unmatchedCoaSet.add(item.chartOfAccount);
+//         if (!coaId) {
+//             unmatchedCoaSet.add(item.chartOfAccount);
 
-            continue;
-        }
+//             continue;
+//         }
 
-        const catId =
-            catLookup.get(normalize(item.category)) ?? manualCat[item.category];
+//         const catId =
+//             catLookup.get(normalize(item.category)) ?? manualCat[item.category];
 
-        if (!catId) {
-            unmatchedCatSet.add(item.category);
+//         if (!catId) {
+//             unmatchedCatSet.add(item.category);
 
-            continue;
-        }
+//             continue;
+//         }
 
-        resolved.push({
-            chart_of_account_id: coaId,
-            ppmp_category_id: catId,
-            description: item.description,
-            unit_of_measurement: item.unitOfMeasurement,
-            price: item.price ?? 0,
-        });
-    }
+//         resolved.push({
+//             chart_of_account_id: coaId,
+//             ppmp_category_id: catId,
+//             description: item.description,
+//             unit_of_measurement: item.unitOfMeasurement,
+//             price: item.price ?? 0,
+//         });
+//     }
 
-    return {
-        resolved,
-        totalItems: result.items.length,
-        matchedItems: resolved.length,
-        unmatchedChartOfAccounts: [...unmatchedCoaSet].sort(),
-        unmatchedCategories: [...unmatchedCatSet].sort(),
-    };
-}
+//     return {
+//         resolved,
+//         totalItems: result.items.length,
+//         matchedItems: resolved.length,
+//         unmatchedChartOfAccounts: [...unmatchedCoaSet].sort(),
+//         unmatchedCategories: [...unmatchedCatSet].sort(),
+//     };
+// }
 
 export default function PriceListImport({
     chartOfAccounts,
@@ -143,99 +148,100 @@ export default function PriceListImport({
 }: PriceListImportProps) {
     const [sheets, setSheets] = useState<string[]>([]);
     const [_workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
-    const [selectedSheet, setSelectedSheet] = useState('');
-    const [startRow, setStartRow] = useState(9);
-    const [endRow, setEndRow] = useState<number | undefined>(1233);
-    const [columnMap, setColumnMap] =
-        useState<ColumnMapping>(defaultColumnMapping);
+    const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+    // const [startRow, setStartRow] = useState(9);
+    // const [endRow, setEndRow] = useState<number | undefined>(1233);
+    // const [columnMap, setColumnMap] =
+    //     useState<ColumnMapping>(defaultColumnMapping);
     const [result, setResult] = useState<ExtractResult | null>(null);
     const [importing, setImporting] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Manual mappings for names that didn't auto-match
     const [manualCoa, setManualCoa] = useState<Record<string, number>>({});
     const [manualCat, setManualCat] = useState<Record<string, number>>({});
 
     // Auto-lookup maps (stable across renders)
-    const coaLookup = useMemo(
-        () =>
-            buildLookup(
-                chartOfAccounts,
-                (coa: ChartOfAccount) => coa.account_title,
-            ),
-        [chartOfAccounts],
-    );
+    // const coaLookup = useMemo(
+    //     () =>
+    //         buildLookup(
+    //             chartOfAccounts,
+    //             (coa: ChartOfAccount) => coa.account_title,
+    //         ),
+    //     [chartOfAccounts],
+    // );
 
-    const catLookup = useMemo(
-        () => buildLookup(ppmpCategories, (cat: PpmpCategory) => cat.name),
-        [ppmpCategories],
-    );
+    // const catLookup = useMemo(
+    //     () => buildLookup(ppmpCategories, (cat: PpmpCategory) => cat.name),
+    //     [ppmpCategories],
+    // );
 
-    // Maps for Combobox: name ↔ ID lookup (unprefixed)
-    const coaNameToId = useMemo(() => {
-        const m = new Map<string, number>();
+    // // Maps for Combobox: name ↔ ID lookup (unprefixed)
+    // const coaNameToId = useMemo(() => {
+    //     const m = new Map<string, number>();
 
-        for (const coa of chartOfAccounts) {
-            m.set(coa.account_title, coa.id);
-        }
+    //     for (const coa of chartOfAccounts) {
+    //         m.set(coa.account_title, coa.id);
+    //     }
 
-        return m;
-    }, [chartOfAccounts]);
+    //     return m;
+    // }, [chartOfAccounts]);
 
-    const idToCoaTitle = useMemo(() => {
-        const m = new Map<number, string>();
+    // const idToCoaTitle = useMemo(() => {
+    //     const m = new Map<number, string>();
 
-        for (const coa of chartOfAccounts) {
-            m.set(coa.id, coa.account_title);
-        }
+    //     for (const coa of chartOfAccounts) {
+    //         m.set(coa.id, coa.account_title);
+    //     }
 
-        return m;
-    }, [chartOfAccounts]);
+    //     return m;
+    // }, [chartOfAccounts]);
 
-    const catNameToId = useMemo(() => {
-        const m = new Map<string, number>();
+    // const catNameToId = useMemo(() => {
+    //     const m = new Map<string, number>();
 
-        for (const cat of ppmpCategories) {
-            m.set(cat.name, cat.id);
-        }
+    //     for (const cat of ppmpCategories) {
+    //         m.set(cat.name, cat.id);
+    //     }
 
-        return m;
-    }, [ppmpCategories]);
+    //     return m;
+    // }, [ppmpCategories]);
 
-    const idToCatName = useMemo(() => {
-        const m = new Map<number, string>();
+    // const idToCatName = useMemo(() => {
+    //     const m = new Map<number, string>();
 
-        for (const cat of ppmpCategories) {
-            m.set(cat.id, cat.name);
-        }
+    //     for (const cat of ppmpCategories) {
+    //         m.set(cat.id, cat.name);
+    //     }
 
-        return m;
-    }, [ppmpCategories]);
+    //     return m;
+    // }, [ppmpCategories]);
 
-    // Combobox items with type prefix to avoid ComboboxCollection key collision
-    const coaComboboxItems = useMemo(
-        () => chartOfAccounts.map((coa) => `coa:${coa.account_title}`),
-        [chartOfAccounts],
-    );
+    // // Combobox items with type prefix to avoid ComboboxCollection key collision
+    // const coaComboboxItems = useMemo(
+    //     () => chartOfAccounts.map((coa) => `coa:${coa.account_title}`),
+    //     [chartOfAccounts],
+    // );
 
-    const catComboboxItems = useMemo(
-        () => ppmpCategories.map((cat) => `cat:${cat.name}`),
-        [ppmpCategories],
-    );
+    // const catComboboxItems = useMemo(
+    //     () => ppmpCategories.map((cat) => `cat:${cat.name}`),
+    //     [ppmpCategories],
+    // );
 
     // Resolution re-computes whenever result, manualCoa, or manualCat changes
-    const resolution: Resolution | null = useMemo(() => {
-        if (!result) {
-            return null;
-        }
+    // const resolution: Resolution | null = useMemo(() => {
+    //     if (!result) {
+    //         return null;
+    //     }
 
-        return computeResolution(
-            result,
-            coaLookup,
-            catLookup,
-            manualCoa,
-            manualCat,
-        );
-    }, [result, coaLookup, catLookup, manualCoa, manualCat]);
+    //     return computeResolution(
+    //         result,
+    //         coaLookup,
+    //         catLookup,
+    //         manualCoa,
+    //         manualCat,
+    //     );
+    // }, [result, coaLookup, catLookup, manualCoa, manualCat]);
 
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -244,102 +250,105 @@ export default function PriceListImport({
             return;
         }
 
+        setLoading(true);
+
         const wb = new ExcelJS.Workbook();
         const arrayBuffer = await file.arrayBuffer();
         await wb.xlsx.load(arrayBuffer);
 
         setWorkbook(wb);
         setSheets(wb.worksheets.map((ws) => ws.name));
-        setSelectedSheet('');
+        setSelectedSheets([]);
         setResult(null);
         setManualCoa({});
         setManualCat({});
+        setLoading(false);
     }
 
-    function handleExtract() {
-        if (!_workbook || !selectedSheet) {
-            return;
-        }
+    // function handleExtract() {
+    //     if (!_workbook || !selectedSheet) {
+    //         return;
+    //     }
 
-        const ws = _workbook.getWorksheet(selectedSheet);
+    //     const ws = _workbook.getWorksheet(selectedSheet);
 
-        if (!ws) {
-            return;
-        }
+    //     if (!ws) {
+    //         return;
+    //     }
 
-        const data = extractData({
-            worksheet: ws,
-            startRow,
-            endRow,
-            columnMap,
-        });
+    //     const data = extractData({
+    //         worksheet: ws,
+    //         startRow,
+    //         endRow,
+    //         columnMap,
+    //     });
 
-        setResult(data);
-        setManualCoa({});
-        setManualCat({});
-    }
+    //     setResult(data);
+    //     setManualCoa({});
+    //     setManualCat({});
+    // }
 
-    function updateColumn(key: keyof ColumnMapping, value: string) {
-        setColumnMap((prev) => ({ ...prev, [key]: value.toUpperCase() }));
-    }
+    // function updateColumn(key: keyof ColumnMapping, value: string) {
+    //     setColumnMap((prev) => ({ ...prev, [key]: value.toUpperCase() }));
+    // }
 
-    function handleImport() {
-        if (!resolution || resolution.resolved.length === 0 || importing) {
-            return;
-        }
+    // function handleImport() {
+    //     if (!resolution || resolution.resolved.length === 0 || importing) {
+    //         return;
+    //     }
 
-        console.log('Importing items:', resolution.resolved);
-        console.log('Item count:', resolution.resolved.length);
+    //     console.log('Importing items:', resolution.resolved);
+    //     console.log('Item count:', resolution.resolved.length);
 
-        if (resolution.resolved.length > 0) {
-            const first = resolution.resolved[0];
-            console.log('First item sample:', first);
-            console.log(
-                'unit_of_measurement value:',
-                JSON.stringify(first.unit_of_measurement),
-            );
-            console.log(
-                'unit_of_measurement length:',
-                first.unit_of_measurement?.length,
-            );
-        }
+    //     if (resolution.resolved.length > 0) {
+    //         const first = resolution.resolved[0];
+    //         console.log('First item sample:', first);
+    //         console.log(
+    //             'unit_of_measurement value:',
+    //             JSON.stringify(first.unit_of_measurement),
+    //         );
+    //         console.log(
+    //             'unit_of_measurement length:',
+    //             first.unit_of_measurement?.length,
+    //         );
+    //     }
 
-        setImporting(true);
+    //     setImporting(true);
 
-        router.post(
-            '/price-list-import' as const,
-            { items: resolution.resolved } as never,
-            {
-                onFinish: () => setImporting(false),
-                onError: (importErrors) => {
-                    console.error('Import validation errors:', importErrors);
+    //     router.post(
+    //         '/price-list-import' as const,
+    //         { items: resolution.resolved } as never,
+    //         {
+    //             onFinish: () => setImporting(false),
+    //             onError: (importErrors) => {
+    //                 console.error('Import validation errors:', importErrors);
 
-                    // Log the actual items that failed validation
-                    for (const key of Object.keys(importErrors)) {
-                        const match = key.match(/^items\.(\d+)\.(\w+)$/);
+    //                 // Log the actual items that failed validation
+    //                 for (const key of Object.keys(importErrors)) {
+    //                     const match = key.match(/^items\.(\d+)\.(\w+)$/);
 
-                        if (match) {
-                            const idx = Number(match[1]);
-                            const field = match[2];
-                            const item = resolution.resolved[idx];
+    //                     if (match) {
+    //                         const idx = Number(match[1]);
+    //                         const field = match[2];
+    //                         const item = resolution.resolved[idx];
 
-                            if (item) {
-                                console.log(
-                                    `Failing item [${idx}].${field}:`,
-                                    item,
-                                );
-                            }
-                        }
-                    }
-                },
-            },
-        );
-    }
+    //                         if (item) {
+    //                             console.log(
+    //                                 `Failing item [${idx}].${field}:`,
+    //                                 item,
+    //                             );
+    //                         }
+    //                     }
+    //                 }
+    //             },
+    //         },
+    //     );
+    // }
 
-    const { errors } = usePage().props;
+    // const { errors } = usePage().props;
 
     return (
-        <>
+        <div className="flex flex-col gap-4 p-4">
             <Field>
                 <FieldLabel htmlFor="file">Excel File</FieldLabel>
                 <Input
@@ -347,34 +356,55 @@ export default function PriceListImport({
                     type="file"
                     accept=".xlsx"
                     onChange={handleFileChange}
+                    disabled={loading}
                 />
-                <FieldDescription>Select an Excel file.</FieldDescription>
+                {loading ? (
+                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                        <Spinner /> Parsing workbook...
+                    </div>
+                ) : (
+                    <FieldDescription>Select an Excel file.</FieldDescription>
+                )}
             </Field>
 
             {sheets.length > 0 && (
                 <Field>
-                    <FieldLabel>Sheet</FieldLabel>
-                    <Select
-                        value={selectedSheet}
-                        onValueChange={(v) => v && setSelectedSheet(v)}
+                    <FieldLabel>Sheets</FieldLabel>
+                    <ToggleGroup
+                        multiple
+                        value={selectedSheets}
+                        onValueChange={setSelectedSheets}
+                        orientation="horizontal"
+                        className="flex-wrap"
                     >
-                        <SelectTrigger className="w-45">
-                            <SelectValue placeholder="Select sheet" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {sheets.map((sheet) => (
-                                    <SelectItem key={sheet} value={sheet}>
-                                        {sheet}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
+                        {sheets.map((sheet) => (
+                            <ToggleGroupItem
+                                key={sheet}
+                                value={sheet}
+                                className="border"
+                            >
+                                {sheet}
+                            </ToggleGroupItem>
+                        ))}
+                    </ToggleGroup>
                 </Field>
             )}
 
-            {sheets.length > 0 && (
+            {selectedSheets.length > 0 && (
+                <div className="mt-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            console.log('Selected sheets:', selectedSheets);
+                        }}
+                    >
+                        Log Selected Sheets
+                    </Button>
+                </div>
+            )}
+
+            {/* {sheets.length > 0 && (
                 <>
                     <div className="mt-4 flex gap-4">
                         <Field>
@@ -519,7 +549,7 @@ export default function PriceListImport({
                                 items matched to database entries.
                             </div>
 
-                            {/* ---- Chart of Account Mapping ---- */}
+                            {---- Chart of Account Mapping ----}
                             <div className="overflow-hidden rounded-lg border">
                                 <table className="w-full text-sm">
                                     <thead>
@@ -663,7 +693,7 @@ export default function PriceListImport({
                                 </table>
                             </div>
 
-                            {/* ---- Category Mapping ---- */}
+                            {---- Category Mapping ----}
                             <div className="overflow-hidden rounded-lg border">
                                 <table className="w-full text-sm">
                                     <thead>
@@ -840,8 +870,8 @@ export default function PriceListImport({
                         </div>
                     )}
                 </>
-            )}
-        </>
+            )} */}
+        </div>
     );
 }
 
