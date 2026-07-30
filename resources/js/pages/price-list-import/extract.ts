@@ -6,6 +6,19 @@ interface ColumnMap {
     description: string;
     unit: string;
     price: string;
+    itemNumber: string;
+    janQty: string;
+    febQty: string;
+    marQty: string;
+    aprQty: string;
+    mayQty: string;
+    junQty: string;
+    julQty: string;
+    augQty: string;
+    sepQty: string;
+    octQty: string;
+    novQty: string;
+    decQty: string;
 }
 
 interface ExtractConfig {
@@ -22,6 +35,19 @@ export interface PriceListItem {
     unitOfMeasurement: string;
     price: number | null;
     category: string;
+    itemNumber: number | null;
+    janQty: number | null;
+    febQty: number | null;
+    marQty: number | null;
+    aprQty: number | null;
+    mayQty: number | null;
+    junQty: number | null;
+    julQty: number | null;
+    augQty: number | null;
+    sepQty: number | null;
+    octQty: number | null;
+    novQty: number | null;
+    decQty: number | null;
 }
 
 export interface ExtractResult {
@@ -85,6 +111,19 @@ export function extractData(config: ExtractConfig): ExtractResult {
         const description = cellText(row.getCell(columnMap.description));
         const unit = cellText(row.getCell(columnMap.unit));
         const price = cellNumber(row.getCell(columnMap.price));
+        const itemNumber = cellNumber(row.getCell(columnMap.itemNumber));
+        const janQty = cellNumber(row.getCell(columnMap.janQty));
+        const febQty = cellNumber(row.getCell(columnMap.febQty));
+        const marQty = cellNumber(row.getCell(columnMap.marQty));
+        const aprQty = cellNumber(row.getCell(columnMap.aprQty));
+        const mayQty = cellNumber(row.getCell(columnMap.mayQty));
+        const junQty = cellNumber(row.getCell(columnMap.junQty));
+        const julQty = cellNumber(row.getCell(columnMap.julQty));
+        const augQty = cellNumber(row.getCell(columnMap.augQty));
+        const sepQty = cellNumber(row.getCell(columnMap.sepQty));
+        const octQty = cellNumber(row.getCell(columnMap.octQty));
+        const novQty = cellNumber(row.getCell(columnMap.novQty));
+        const decQty = cellNumber(row.getCell(columnMap.decQty));
 
         // Skip fully empty rows
         if (
@@ -164,6 +203,19 @@ export function extractData(config: ExtractConfig): ExtractResult {
             unitOfMeasurement: unit ?? '',
             price,
             category: currentCategory,
+            itemNumber,
+            janQty,
+            febQty,
+            marQty,
+            aprQty,
+            mayQty,
+            junQty,
+            julQty,
+            augQty,
+            sepQty,
+            octQty,
+            novQty,
+            decQty,
         });
     }
 
