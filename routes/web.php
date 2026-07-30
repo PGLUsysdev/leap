@@ -501,5 +501,9 @@ Route::get('aip-summary-import', [
     AipSummaryImportController::class,
     'index',
 ])->name('aip-summary-import.index');
+Route::post('aip-summary-import', [
+    AipSummaryImportController::class,
+    'store',
+])->name('aip-summary-import.store');
 
 require __DIR__ . '/settings.php';

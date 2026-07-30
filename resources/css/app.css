@@ -104,7 +104,7 @@
     --sidebar-border: oklch(0.8576 0 0);
     --sidebar-ring: oklch(0.4891 0 0);
 
-    --font-sans: 'JetBrains Mono', monospace;
+    --font-sans: 'Outfit Variable', sans-serif;
     --font-serif: 'Playfair Display', serif;
     --font-mono: 'JetBrains Mono', monospace;
     --radius: 0.5rem;
@@ -204,6 +204,6 @@
     }
 
     .root {
-      isolation: isolate;
+        isolation: isolate;
     }
 }

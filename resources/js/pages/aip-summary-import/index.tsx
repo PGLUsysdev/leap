@@ -1,3 +1,4 @@
+import { router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import type { ChangeEvent } from 'react';
 import { useState } from 'react';
@@ -16,9 +17,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/base-ui-components/ui/select';
-import type { FiscalYear, Office } from '@/types';
+import type { FiscalYear, FundingSource, Office } from '@/types';
 import { extractData } from './extract';
 import type { ExtractResult } from './extract';
+import { FundingSourceMap } from './funding-source-map';
 
 interface ColumnMapping {
     ppa: string;
@@ -50,14 +52,21 @@ const defaultColumnMapping: ColumnMapping = {
     ccTypologyId: 'O',
 };
 
+const DEFAULT_FUNDING_CODE_MAP: Record<string, string> = {
+    'GF-Proper': 'GF Proper',
+    '5% GAD': 'GF-5% GAD',
+};
+
 interface AipSummaryImportProps {
     years: FiscalYear[];
     offices: Office[];
+    fundingSources: FundingSource[];
 }
 
 export default function AipSummaryImport({
     years,
     offices,
+    fundingSources: allFundingSources,
 }: AipSummaryImportProps) {
     const [sheets, setSheets] = useState<string[]>([]);
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
@@ -67,6 +76,10 @@ export default function AipSummaryImport({
     const [columnMap, setColumnMap] =
         useState<ColumnMapping>(defaultColumnMapping);
     const [result, setResult] = useState<ExtractResult | null>(null);
+    const [psPoolTempId, setPsPoolTempId] = useState<number | null>(null);
+    const [fundingCodeMappings, setFundingCodeMappings] = useState<
+        Record<string, string>
+    >(DEFAULT_FUNDING_CODE_MAP);
     const latestDraftYear = years.find((fy) => fy.status === 'draft');
     const [selectedFiscalYear, setSelectedFiscalYear] = useState(
         latestDraftYear ? String(latestDraftYear.id) : '',
@@ -87,6 +100,8 @@ export default function AipSummaryImport({
         setWorkbook(wb);
         setSheets(wb.worksheets.map((ws) => ws.name));
         setResult(null);
+        setPsPoolTempId(null);
+        setFundingCodeMappings(DEFAULT_FUNDING_CODE_MAP);
     }
 
     function handleExtract() {
@@ -108,8 +123,33 @@ export default function AipSummaryImport({
         });
 
         setResult(data);
+        setPsPoolTempId(null);
+        setFundingCodeMappings(DEFAULT_FUNDING_CODE_MAP);
         console.log('Extract result:', data);
     }
+
+    function handleImport() {
+        if (
+            !result ||
+            !selectedFiscalYear ||
+            !selectedOfficeId ||
+            !psPoolTempId
+        ) {
+            return;
+        }
+
+        router.post('/aip-summary-import', {
+            fiscal_year_id: selectedFiscalYear,
+            office_id: selectedOfficeId,
+            ps_pool_temp_id: psPoolTempId,
+            ppas: result.ppas,
+            aip_entries: result.aipEntries,
+            funding_sources: result.fundingSources,
+            funding_code_mappings: fundingCodeMappings,
+        });
+    }
+
+    const programs = result?.ppas.filter((p) => p.type === 'Program') ?? [];
 
     function updateColumn(key: keyof ColumnMapping, value: string) {
         setColumnMap((prev) => ({ ...prev, [key]: value.toUpperCase() }));
@@ -386,6 +426,53 @@ export default function AipSummaryImport({
                             Found {result.ppas.length} PPAs,{' '}
                             {result.aipEntries.length} entries,{' '}
                             {result.fundingSources.length} funding sources.
+                        </div>
+                    )}
+
+                    {programs.length > 0 && (
+                        <Field>
+                            <FieldLabel>PS Pool Program</FieldLabel>
+                            <Select
+                                value={psPoolTempId ? String(psPoolTempId) : ''}
+                                onValueChange={(v) =>
+                                    setPsPoolTempId(Number(v))
+                                }
+                            >
+                                <SelectTrigger className="w-[400px]">
+                                    <SelectValue placeholder="Select which Program is the PS pool..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {programs.map((p) => (
+                                            <SelectItem
+                                                key={p.tempId}
+                                                value={String(p.tempId)}
+                                            >
+                                                [{p.tempId}] {p.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <FieldDescription>
+                                Personal Services amounts can only be assigned
+                                to this Program.
+                            </FieldDescription>
+                        </Field>
+                    )}
+
+                    <FundingSourceMap
+                        fundingSources={result?.fundingSources ?? []}
+                        allFundingSources={allFundingSources}
+                        mappings={fundingCodeMappings}
+                        onMappingsChange={setFundingCodeMappings}
+                    />
+
+                    {result && psPoolTempId && (
+                        <div className="mt-6">
+                            <Button onClick={handleImport}>
+                                Import to Database
+                            </Button>
                         </div>
                     )}
                 </>

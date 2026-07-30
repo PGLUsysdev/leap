@@ -25,20 +25,21 @@ interface ExtractConfig {
 export type NodeType = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
 
 export interface PpaRow {
+    tempId: number;
+    parentTempId: number | null;
     name: string;
     type: NodeType;
-    parent_id: number | null;
 }
 
 export interface AipEntryRow {
-    ppa_id: number;
+    ppaTempId: number;
     start_date: string | null;
     end_date: string | null;
     expected_output: string | null;
 }
 
 export interface PpaFundingSourceRow {
-    aip_entry_id: number;
+    ppaTempId: number;
     funding_source_id: string | null;
     ps_amount: number | null;
     mooe_amount: number | null;
@@ -123,11 +124,11 @@ export function extractData(config: ExtractConfig): ExtractResult {
     const aipEntries: AipEntryRow[] = [];
     const fundingSources: PpaFundingSourceRow[] = [];
 
-    let nextId = 1;
+    let nextTempId = 1;
 
-    let currentProgramId: number | null = null;
-    let currentProjectId: number | null = null;
-    let currentActivityId: number | null = null;
+    let currentProgramTempId: number | null = null;
+    let currentProjectTempId: number | null = null;
+    let currentActivityTempId: number | null = null;
 
     const lastRow = endRow ?? worksheet.rowCount;
 
@@ -146,48 +147,49 @@ export function extractData(config: ExtractConfig): ExtractResult {
             continue;
         }
 
-        const id = nextId++;
+        const tempId = nextTempId++;
 
-        let parentId: number | null = null;
+        let parentTempId: number | null = null;
 
         switch (type) {
             case 'Program':
-                currentProgramId = id;
-                currentProjectId = null;
-                currentActivityId = null;
+                currentProgramTempId = tempId;
+                currentProjectTempId = null;
+                currentActivityTempId = null;
                 break;
 
             case 'Project':
-                parentId = currentProgramId;
-                currentProjectId = id;
-                currentActivityId = null;
+                parentTempId = currentProgramTempId;
+                currentProjectTempId = tempId;
+                currentActivityTempId = null;
                 break;
 
             case 'Activity':
-                parentId = currentProjectId;
-                currentActivityId = id;
+                parentTempId = currentProjectTempId;
+                currentActivityTempId = tempId;
                 break;
 
             case 'Sub-Activity':
-                parentId = currentActivityId;
+                parentTempId = currentActivityTempId;
                 break;
         }
 
         ppas.push({
-            parent_id: parentId,
+            tempId,
+            parentTempId,
             name: cleanName(raw),
             type,
         });
 
         aipEntries.push({
-            ppa_id: id,
+            ppaTempId: tempId,
             start_date: cellText(row.getCell(columnMap.startDate)),
             end_date: cellText(row.getCell(columnMap.endDate)),
             expected_output: cellText(row.getCell(columnMap.expectedOutput)),
         });
 
         fundingSources.push({
-            aip_entry_id: id,
+            ppaTempId: tempId,
             funding_source_id: cellText(row.getCell(columnMap.fundingSourceId)),
             ps_amount: cellNumber(row.getCell(columnMap.psAmount)),
             mooe_amount: cellNumber(row.getCell(columnMap.mooeAmount)),
