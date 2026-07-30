@@ -15,6 +15,7 @@ use App\Http\Controllers\FundingSourceController;
 use App\Http\Controllers\IosController;
 use App\Http\Controllers\LguLevelController;
 use App\Http\Controllers\OfficeController;
+use App\Http\Controllers\PriceListImportController;
 use App\Http\Controllers\OfficeTypeController;
 use App\Http\Controllers\PlantillaPositionController;
 use App\Http\Controllers\PositionController;
@@ -501,9 +502,15 @@ Route::get('aip-summary-import', [
     AipSummaryImportController::class,
     'index',
 ])->name('aip-summary-import.index');
+
 Route::post('aip-summary-import', [
     AipSummaryImportController::class,
     'store',
 ])->name('aip-summary-import.store');
+
+Route::get('price-list-import', [
+    PriceListImportController::class,
+    'index',
+])->name('price-list-import.index');
 
 require __DIR__ . '/settings.php';
