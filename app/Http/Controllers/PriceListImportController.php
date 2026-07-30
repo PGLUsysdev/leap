@@ -115,6 +115,3 @@ class PriceListImportController extends Controller
             );
     }
 }
-
-// ANTIPSYCHOTIC
-// Antipsychotic

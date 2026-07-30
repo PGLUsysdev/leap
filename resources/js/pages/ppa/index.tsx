@@ -72,7 +72,16 @@ export default function PpaPage({
 
     const { data, ...paginationData } = ppaTree;
 
+    const page = usePage<SharedData>();
     const { auth } = usePage<SharedData>().props;
+    const activeFiscalYear = (page.props as any).activeFiscalYear;
+
+    console.log('activeFiscalYear:', activeFiscalYear);
+    console.log('auth:', auth);
+    console.log('current user office_id:', auth.user?.office_id);
+    console.log('ppaTree:', ppaTree);
+    console.log('ppaTree total:', ppaTree?.total);
+    console.log('filters:', filters);
 
     // Form Dialog States
     const [isFormOpen, setIsFormOpen] = useState(false);
