@@ -16,6 +16,11 @@ import {
     FieldDescription,
     FieldLabel,
 } from '@/components/base-ui-components/ui/field';
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from '@/components/base-ui-components/ui/hover-card';
 import { Input } from '@/components/base-ui-components/ui/input';
 import {
     Select,
@@ -156,8 +161,8 @@ export default function PriceListImport({
     //     useState<ColumnMapping>(defaultColumnMapping);
     const [result, setResult] = useState<ExtractResult | null>(null);
     const [extracted, setExtracted] = useState<{
-        chartOfAccounts: string[];
-        categories: string[];
+        chartOfAccounts: Array<{ name: string; sheets: string[] }>;
+        categories: Array<{ name: string; sheets: string[] }>;
     } | null>(null);
     const [importing, setImporting] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -352,15 +357,19 @@ export default function PriceListImport({
     }
 
     function handleExtractCoaAndCategory() {
-        if (!_workbook) return;
+        if (!_workbook) {
+            return;
+        }
 
-        const coaSet = new Set<string>();
-        const catSet = new Set<string>();
+        const coaSheets = new Map<string, Set<string>>();
+        const catSheets = new Map<string, Set<string>>();
 
         for (const sheet of selectedSheets) {
             const ws = _workbook.getWorksheet(sheet);
 
-            if (!ws) continue;
+            if (!ws) {
+                continue;
+            }
 
             const config = sheetConfigs[sheet] ?? defaultConfig;
             const effective = config.useCustom ? config : defaultConfig;
@@ -372,104 +381,36 @@ export default function PriceListImport({
             });
 
             for (const coa of result.uniqueChartOfAccounts) {
-                coaSet.add(coa);
+                if (!coaSheets.has(coa)) {
+                    coaSheets.set(coa, new Set());
+                }
+
+                coaSheets.get(coa)!.add(sheet);
             }
 
             for (const cat of result.uniqueCategories) {
-                catSet.add(cat);
+                if (!catSheets.has(cat)) {
+                    catSheets.set(cat, new Set());
+                }
+
+                catSheets.get(cat)!.add(sheet);
             }
         }
 
         setExtracted({
-            chartOfAccounts: [...coaSet].sort(),
-            categories: [...catSet].sort(),
+            chartOfAccounts: [...coaSheets.entries()]
+                .map(([name, sheets]) => ({
+                    name,
+                    sheets: [...sheets],
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name)),
+            categories: [...catSheets.entries()]
+                .map(([name, sheets]) => ({
+                    name,
+                    sheets: [...sheets],
+                }))
+                .sort((a, b) => a.name.localeCompare(b.name)),
         });
-    }
-
-    function handleLogCoaSummary() {
-        if (!_workbook) return;
-
-        const nameToSheets = new Map<string, Set<string>>();
-
-        for (const sheet of selectedSheets) {
-            const ws = _workbook.getWorksheet(sheet);
-
-            if (!ws) continue;
-
-            const config = sheetConfigs[sheet] ?? defaultConfig;
-            const effective = config.useCustom ? config : defaultConfig;
-            const result = extractData({
-                worksheet: ws,
-                startRow: effective.startRow,
-                endRow: effective.endRow,
-                columnMap: effective.columnMap,
-            });
-
-            for (const coa of result.uniqueChartOfAccounts) {
-                if (!nameToSheets.has(coa)) {
-                    nameToSheets.set(coa, new Set());
-                }
-
-                nameToSheets.get(coa)!.add(sheet);
-            }
-        }
-
-        const total = selectedSheets.length;
-
-        const lines = [...nameToSheets.entries()]
-            .sort((a, b) => b[1].size - a[1].size)
-            .map(([name, sheets]) =>
-                sheets.size === total
-                    ? `${name} ${total} — all sheets`
-                    : `${name} ${sheets.size} — ${[...sheets].join(', ')}`,
-            )
-            .join('\n');
-
-        console.log(`=== COA Summary (total sheets: ${total}) ===`);
-        console.log(lines);
-    }
-
-    function handleLogCategorySummary() {
-        if (!_workbook) return;
-
-        const nameToSheets = new Map<string, Set<string>>();
-
-        for (const sheet of selectedSheets) {
-            const ws = _workbook.getWorksheet(sheet);
-
-            if (!ws) continue;
-
-            const config = sheetConfigs[sheet] ?? defaultConfig;
-            const effective = config.useCustom ? config : defaultConfig;
-            const result = extractData({
-                worksheet: ws,
-                startRow: effective.startRow,
-                endRow: effective.endRow,
-                columnMap: effective.columnMap,
-            });
-
-            for (const cat of result.uniqueCategories) {
-                if (!nameToSheets.has(cat)) {
-                    nameToSheets.set(cat, new Set());
-                }
-
-                nameToSheets.get(cat)!.add(sheet);
-            }
-        }
-
-        const total = selectedSheets.length;
-
-        const lines = [...nameToSheets.entries()]
-            .sort((a, b) => b[1].size - a[1].size)
-            .map(([name, sheets]) =>
-                sheets.size === total
-                    ? `${name} ${total} — all sheets`
-                    : `${name} ${sheets.size} — ${[...sheets].join(', ')}`,
-            )
-            .join('\n');
-
-        console.log(`=== Category Summary (total sheets: ${total}) ===`);
-        console.log(lines);
     }
 
     function normalize(str: string) {
@@ -477,7 +418,9 @@ export default function PriceListImport({
     }
 
     function handleCheckDbMatches() {
-        if (!_workbook) return;
+        if (!_workbook) {
+            return;
+        }
 
         const coaSet = new Set<string>();
         const catSet = new Set<string>();
@@ -485,7 +428,9 @@ export default function PriceListImport({
         for (const sheet of selectedSheets) {
             const ws = _workbook.getWorksheet(sheet);
 
-            if (!ws) continue;
+            if (!ws) {
+                continue;
+            }
 
             const config = sheetConfigs[sheet] ?? defaultConfig;
             const effective = config.useCustom ? config : defaultConfig;
@@ -579,7 +524,9 @@ export default function PriceListImport({
     }
 
     function handleLogCategoryCoaPairs() {
-        if (!_workbook) return;
+        if (!_workbook) {
+            return;
+        }
 
         const allPairs = new Map<
             string,
@@ -589,7 +536,9 @@ export default function PriceListImport({
         for (const sheet of selectedSheets) {
             const ws = _workbook.getWorksheet(sheet);
 
-            if (!ws) continue;
+            if (!ws) {
+                continue;
+            }
 
             const config = sheetConfigs[sheet] ?? defaultConfig;
             const effective = config.useCustom ? config : defaultConfig;
@@ -1362,15 +1311,6 @@ export default function PriceListImport({
                         >
                             Extract COA and Category
                         </Button>
-                        <Button variant="outline" onClick={handleLogCoaSummary}>
-                            Log COA Summary
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={handleLogCategorySummary}
-                        >
-                            Log Category Summary
-                        </Button>
                         <Button
                             variant="outline"
                             onClick={handleCheckDbMatches}
@@ -1394,10 +1334,30 @@ export default function PriceListImport({
                                 <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-3">
                                     {extracted.chartOfAccounts.map((coa) => (
                                         <li
-                                            key={coa}
-                                            className="text-sm text-foreground"
+                                            key={coa.name}
+                                            className="flex items-baseline justify-between gap-2 text-sm text-foreground"
                                         >
-                                            {coa}
+                                            <span className="truncate">
+                                                {coa.name}
+                                            </span>
+                                            <HoverCard>
+                                                <HoverCardTrigger
+                                                    render={
+                                                        <span className="shrink-0 cursor-pointer text-xs text-muted-foreground">
+                                                            {coa.sheets.length}/
+                                                            {
+                                                                selectedSheets.length
+                                                            }
+                                                        </span>
+                                                    }
+                                                />
+                                                <HoverCardContent>
+                                                    {coa.sheets.length ===
+                                                    selectedSheets.length
+                                                        ? `Appears in ${coa.sheets.length} — all sheets`
+                                                        : `Appears in: ${coa.sheets.join(', ')}`}
+                                                </HoverCardContent>
+                                            </HoverCard>
                                         </li>
                                     ))}
                                 </ul>
@@ -1409,10 +1369,30 @@ export default function PriceListImport({
                                 <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-3">
                                     {extracted.categories.map((cat) => (
                                         <li
-                                            key={cat}
-                                            className="text-sm text-foreground"
+                                            key={cat.name}
+                                            className="flex items-baseline justify-between gap-2 text-sm text-foreground"
                                         >
-                                            {cat}
+                                            <span className="truncate">
+                                                {cat.name}
+                                            </span>
+                                            <HoverCard>
+                                                <HoverCardTrigger
+                                                    render={
+                                                        <span className="shrink-0 cursor-pointer text-xs text-muted-foreground">
+                                                            {cat.sheets.length}/
+                                                            {
+                                                                selectedSheets.length
+                                                            }
+                                                        </span>
+                                                    }
+                                                />
+                                                <HoverCardContent>
+                                                    {cat.sheets.length ===
+                                                    selectedSheets.length
+                                                        ? `Appears in ${cat.sheets.length} — all sheets`
+                                                        : `Appears in: ${cat.sheets.join(', ')}`}
+                                                </HoverCardContent>
+                                            </HoverCard>
                                         </li>
                                     ))}
                                 </ul>
