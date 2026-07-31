@@ -17,6 +17,15 @@ import {
     FieldLabel,
 } from '@/components/base-ui-components/ui/field';
 import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/base-ui-components/ui/dialog';
+import {
     HoverCard,
     HoverCardContent,
     HoverCardTrigger,
@@ -72,6 +81,12 @@ interface PriceListImportProps {
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
     dbPairs: ChartOfAccountPpmpCategory[];
+    priceListItems: Array<{
+        id: number;
+        description: string;
+        unit_of_measurement: string;
+        price: string;
+    }>;
 }
 
 // interface ResolvedItem {
@@ -151,6 +166,7 @@ export default function PriceListImport({
     chartOfAccounts,
     ppmpCategories,
     dbPairs,
+    priceListItems,
 }: PriceListImportProps) {
     console.log(chartOfAccounts);
     console.log(ppmpCategories);
@@ -183,6 +199,17 @@ export default function PriceListImport({
     const [pairOverrides, setPairOverrides] = useState<
         Record<string, { coaId: number | null }>
     >({});
+    const [uniqueItems, setUniqueItems] = useState<Array<{
+        description: string;
+        category: string;
+        chartOfAccount: string;
+        unit_of_measurement: string;
+        price: number | null;
+        sheets: string[];
+    }> | null>(null);
+    const [itemMatches, setItemMatches] = useState<Record<string, number>>({});
+    const [hideExisting, setHideExisting] = useState(false);
+    const [importDialogOpen, setImportDialogOpen] = useState(false);
     const [importing, setImporting] = useState(false);
     const [loading, setLoading] = useState(false);
     const [refetching, setRefetching] = useState(false);
@@ -321,6 +348,32 @@ export default function PriceListImport({
         return set;
     }, [dbPairs]);
 
+    const dbDescriptionSet = useMemo(() => {
+        const set = new Set<string>();
+
+        for (const item of priceListItems) {
+            set.add(normalize(item.description));
+        }
+
+        return set;
+    }, [priceListItems]);
+
+    const pliById = useMemo(() => {
+        const m = new Map<number, (typeof priceListItems)[number]>();
+
+        for (const item of priceListItems) {
+            m.set(item.id, item);
+        }
+
+        return m;
+    }, [priceListItems]);
+
+    // Combobox items with type prefix to avoid ComboboxCollection key collision
+    const pliComboboxItems = useMemo(
+        () => priceListItems.map((item) => `pli:${item.description}`),
+        [priceListItems],
+    );
+
     // Combobox items with type prefix to avoid ComboboxCollection key collision
     const coaComboboxItems = useMemo(
         () => chartOfAccounts.map((coa) => `coa:${coa.account_title}`),
@@ -331,6 +384,86 @@ export default function PriceListImport({
         () => ppmpCategories.map((cat) => `cat:${cat.name}`),
         [ppmpCategories],
     );
+
+    const importPlan = useMemo(() => {
+        if (!uniqueItems) {
+            return null;
+        }
+
+        const items: Array<{
+            chart_of_account_id: number;
+            ppmp_category_id: number;
+            description: string;
+            unit_of_measurement: string;
+            price: number;
+        }> = [];
+        let skippedNoMatch = 0;
+        let skippedNoPrice = 0;
+        let skippedMissingUnit = 0;
+
+        for (const item of uniqueItems) {
+            const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
+
+            if (itemMatches[itemKey]) {
+                continue;
+            }
+
+            if (dbDescriptionSet.has(normalize(item.description))) {
+                continue;
+            }
+
+            const catId =
+                manualCat[item.category] ??
+                catLookup.get(normalize(item.category));
+            const coaId =
+                pairOverrides[
+                    `${item.category}|${item.chartOfAccount}`
+                ]?.coaId ??
+                manualCoa[item.chartOfAccount] ??
+                coaLookup.get(normalize(item.chartOfAccount));
+
+            if (
+                catId === null ||
+                catId === undefined ||
+                coaId === null ||
+                coaId === undefined ||
+                !dbPairsSet.has(`${coaId}|${catId}`)
+            ) {
+                skippedNoMatch++;
+                continue;
+            }
+
+            if (item.price === null || item.price === undefined) {
+                skippedNoPrice++;
+                continue;
+            }
+
+            if (!item.unit_of_measurement.trim()) {
+                skippedMissingUnit++;
+                continue;
+            }
+
+            items.push({
+                chart_of_account_id: coaId,
+                ppmp_category_id: catId,
+                description: item.description,
+                unit_of_measurement: item.unit_of_measurement,
+                price: item.price,
+            });
+        }
+
+        return { items, skippedNoMatch, skippedNoPrice, skippedMissingUnit };
+    }, [
+        uniqueItems,
+        itemMatches,
+        dbDescriptionSet,
+        manualCat,
+        catLookup,
+        manualCoa,
+        coaLookup,
+        pairOverrides,
+        dbPairsSet,
+    ]);
 
     // Resolution re-computes whenever result, manualCoa, or manualCat changes
     // const resolution: Resolution | null = useMemo(() => {
@@ -367,6 +500,8 @@ export default function PriceListImport({
         setExtracted(null);
         setMappedPairs(null);
         setPairOverrides({});
+        setUniqueItems(null);
+        setItemMatches({});
         setManualCoa({});
         setManualCat({});
         setLoading(false);
@@ -378,6 +513,8 @@ export default function PriceListImport({
         setExtracted(null);
         setMappedPairs(null);
         setPairOverrides({});
+        setUniqueItems(null);
+        setItemMatches({});
         setConfirmed(false);
     }
 
@@ -486,6 +623,92 @@ export default function PriceListImport({
         });
     }
 
+    function handleExtractUniqueItems() {
+        if (!_workbook) {
+            return;
+        }
+
+        const itemMap = new Map<
+            string,
+            {
+                description: string;
+                category: string;
+                chartOfAccount: string;
+                unit_of_measurement: string;
+                price: number | null;
+                sheets: Set<string>;
+            }
+        >();
+
+        for (const sheet of selectedSheets) {
+            const ws = _workbook.getWorksheet(sheet);
+
+            if (!ws) {
+                continue;
+            }
+
+            const config = sheetConfigs[sheet] ?? defaultConfig;
+            const effective = config.useCustom ? config : defaultConfig;
+            const result = extractData({
+                worksheet: ws,
+                startRow: effective.startRow,
+                endRow: effective.endRow,
+                columnMap: effective.columnMap,
+            });
+
+            for (const item of result.items) {
+                const key = `${normalize(item.description)}|${normalize(item.category)}|${normalize(item.chartOfAccount)}`;
+
+                if (!itemMap.has(key)) {
+                    itemMap.set(key, {
+                        description: item.description,
+                        category: item.category,
+                        chartOfAccount: item.chartOfAccount,
+                        unit_of_measurement: item.unitOfMeasurement,
+                        price: item.price,
+                        sheets: new Set(),
+                    });
+                }
+
+                itemMap.get(key)!.sheets.add(sheet);
+            }
+        }
+
+        setUniqueItems(
+            [...itemMap.values()]
+                .map((item) => ({
+                    description: item.description,
+                    category: item.category,
+                    chartOfAccount: item.chartOfAccount,
+                    unit_of_measurement: item.unit_of_measurement,
+                    price: item.price,
+                    sheets: [...item.sheets],
+                }))
+                .sort(
+                    (a, b) =>
+                        a.description.localeCompare(b.description) ||
+                        a.category.localeCompare(b.category) ||
+                        a.chartOfAccount.localeCompare(b.chartOfAccount),
+                ),
+        );
+    }
+
+    function handleConfirmImport() {
+        if (!importPlan || importPlan.items.length === 0 || importing) {
+            return;
+        }
+
+        setImporting(true);
+
+        router.post(
+            '/price-list-import' as const,
+            { items: importPlan.items } as never,
+            {
+                onFinish: () => setImporting(false),
+            },
+        );
+    }
+
     function handleMapResolved() {
         if (!extracted) return;
 
@@ -503,9 +726,9 @@ export default function PriceListImport({
                 categoryId: catId ?? null,
                 coaId: coaId ?? null,
                 resolvedCategory: catId
-                    ? idToCatName.get(catId) ?? null
+                    ? (idToCatName.get(catId) ?? null)
                     : null,
-                resolvedCoa: coaId ? idToCoaTitle.get(coaId) ?? null : null,
+                resolvedCoa: coaId ? (idToCoaTitle.get(coaId) ?? null) : null,
             };
         });
 
@@ -1275,18 +1498,25 @@ export default function PriceListImport({
                         </Button>
                         <Button
                             variant="outline"
+                            onClick={handleMapResolved}
+                            disabled={!extracted}
+                        >
+                            Map Resolved
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleExtractUniqueItems}
+                            disabled={!mappedPairs}
+                        >
+                            Show Unique Items
+                        </Button>
+                        <Button
+                            variant="outline"
                             onClick={handleRefetch}
                             disabled={refetching}
                         >
                             {refetching && <Spinner />}
                             Refetch DB Data
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={handleMapResolved}
-                            disabled={!extracted}
-                        >
-                            Map Resolved
                         </Button>
                     </div>
 
@@ -1354,6 +1584,7 @@ export default function PriceListImport({
                                                                                             .sheets
                                                                                             .length
                                                                                     }
+
                                                                                     /
                                                                                     {
                                                                                         selectedSheets.length
@@ -1362,7 +1593,8 @@ export default function PriceListImport({
                                                                             }
                                                                         />
                                                                         <HoverCardContent>
-                                                                            {cat.sheets
+                                                                            {cat
+                                                                                .sheets
                                                                                 .length ===
                                                                             selectedSheets.length
                                                                                 ? `Appears in ${cat.sheets.length} — all sheets`
@@ -1415,7 +1647,8 @@ export default function PriceListImport({
                                                                         <ComboboxInput placeholder="Search category..." />
                                                                         <ComboboxContent>
                                                                             <ComboboxEmpty>
-                                                                                No items
+                                                                                No
+                                                                                items
                                                                                 found.
                                                                             </ComboboxEmpty>
                                                                             <ComboboxList>
@@ -1450,8 +1683,8 @@ export default function PriceListImport({
                                 </div>
                                 <div className="order-2">
                                     <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                        COAs (
-                                        {extracted.chartOfAccounts.length})
+                                        COAs ({extracted.chartOfAccounts.length}
+                                        )
                                     </h3>
                                     <div className="max-h-80 overflow-y-auto rounded-md border">
                                         <Table>
@@ -1509,6 +1742,7 @@ export default function PriceListImport({
                                                                                             .sheets
                                                                                             .length
                                                                                     }
+
                                                                                     /
                                                                                     {
                                                                                         selectedSheets.length
@@ -1517,7 +1751,8 @@ export default function PriceListImport({
                                                                             }
                                                                         />
                                                                         <HoverCardContent>
-                                                                            {coa.sheets
+                                                                            {coa
+                                                                                .sheets
                                                                                 .length ===
                                                                             selectedSheets.length
                                                                                 ? `Appears in ${coa.sheets.length} — all sheets`
@@ -1570,7 +1805,8 @@ export default function PriceListImport({
                                                                         <ComboboxInput placeholder="Search chart of account..." />
                                                                         <ComboboxContent>
                                                                             <ComboboxEmpty>
-                                                                                No items
+                                                                                No
+                                                                                items
                                                                                 found.
                                                                             </ComboboxEmpty>
                                                                             <ComboboxList>
@@ -1614,9 +1850,7 @@ export default function PriceListImport({
                                     <Table>
                                         <TableHeader className="sticky top-0 z-10 bg-background">
                                             <TableRow>
-                                                <TableHead>
-                                                    Category
-                                                </TableHead>
+                                                <TableHead>Category</TableHead>
                                                 <TableHead>
                                                     Chart of Account
                                                 </TableHead>
@@ -1634,9 +1868,7 @@ export default function PriceListImport({
                                                         {pair.category}
                                                     </TableCell>
                                                     <TableCell className="max-w-48 truncate">
-                                                        {
-                                                            pair.chartOfAccount
-                                                        }
+                                                        {pair.chartOfAccount}
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <HoverCard>
@@ -1673,6 +1905,334 @@ export default function PriceListImport({
                         </>
                     )}
 
+                    {uniqueItems && (
+                        <div className="mt-6">
+                            <div className="mb-2 flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-muted-foreground">
+                                    Unique Items (
+                                    {hideExisting
+                                        ? uniqueItems.filter((item) => {
+                                              const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
+                                              return (
+                                                  !itemMatches[itemKey] &&
+                                                  !dbDescriptionSet.has(
+                                                      normalize(
+                                                          item.description,
+                                                      ),
+                                                  )
+                                              );
+                                          }).length
+                                        : uniqueItems.length}
+                                    )
+                                </h3>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                        Hide exists
+                                        <Switch
+                                            checked={hideExisting}
+                                            onCheckedChange={setHideExisting}
+                                            size="sm"
+                                        />
+                                    </label>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setImportDialogOpen(true)}
+                                        disabled={
+                                            !importPlan ||
+                                            importPlan.items.length === 0 ||
+                                            importing
+                                        }
+                                    >
+                                        {importing && <Spinner />}
+                                        Import{' '}
+                                        {importPlan?.items.length ?? 0} New
+                                        Items
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto rounded-md border">
+                                <Table>
+                                    <TableHeader className="sticky top-0 z-10 bg-background">
+                                        <TableRow>
+                                            <TableHead>Description</TableHead>
+                                            <TableHead>Category</TableHead>
+                                            <TableHead>
+                                                Chart of Account
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                Sheets
+                                            </TableHead>
+                                            <TableHead>In DB</TableHead>
+                                            <TableHead>Match</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {uniqueItems
+                                            .filter((item) => {
+                                                if (!hideExisting) {
+                                                    return true;
+                                                }
+
+                                                const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
+
+                                                return (
+                                                    !itemMatches[itemKey] &&
+                                                    !dbDescriptionSet.has(
+                                                        normalize(
+                                                            item.description,
+                                                        ),
+                                                    )
+                                                );
+                                            })
+                                            .map((item) => {
+                                                const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
+                                                const matchedId =
+                                                    itemMatches[itemKey];
+                                                const matchedItem = matchedId
+                                                    ? pliById.get(matchedId)
+                                                    : null;
+                                                const exactInDb =
+                                                    dbDescriptionSet.has(
+                                                        normalize(
+                                                            item.description,
+                                                        ),
+                                                    );
+                                                const inDb = matchedId
+                                                    ? true
+                                                    : exactInDb;
+                                                const comboboxValue =
+                                                    matchedItem
+                                                        ? `pli:${matchedItem.description}`
+                                                        : exactInDb
+                                                          ? `pli:${item.description}`
+                                                          : '';
+
+                                                return (
+                                                    <TableRow key={itemKey}>
+                                                        <TableCell className="max-w-64 truncate">
+                                                            {item.description}
+                                                        </TableCell>
+                                                        <TableCell className="max-w-40 truncate">
+                                                            {item.category}
+                                                        </TableCell>
+                                                        <TableCell className="max-w-48 truncate">
+                                                            {
+                                                                item.chartOfAccount
+                                                            }
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <HoverCard>
+                                                                <HoverCardTrigger
+                                                                    render={
+                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                            {
+                                                                                item
+                                                                                    .sheets
+                                                                                    .length
+                                                                            }
+                                                                            /
+                                                                            {
+                                                                                selectedSheets.length
+                                                                            }
+                                                                        </span>
+                                                                    }
+                                                                />
+                                                                <HoverCardContent>
+                                                                    {item.sheets
+                                                                        .length ===
+                                                                    selectedSheets.length
+                                                                        ? `Appears in ${item.sheets.length} — all sheets`
+                                                                        : `Appears in: ${item.sheets.join(', ')}`}
+                                                                </HoverCardContent>
+                                                            </HoverCard>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {matchedId ? (
+                                                                <HoverCard>
+                                                                    <HoverCardTrigger
+                                                                        render={
+                                                                            <span className="cursor-pointer text-blue-600">
+                                                                                ✓
+                                                                                matched
+                                                                            </span>
+                                                                        }
+                                                                    />
+                                                                    <HoverCardContent>
+                                                                        {matchedItem
+                                                                            ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
+                                                                            : ''}
+                                                                    </HoverCardContent>
+                                                                </HoverCard>
+                                                            ) : exactInDb ? (
+                                                                <span className="text-emerald-600">
+                                                                    ✓ exists
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-amber-600">
+                                                                    ✗ new
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Combobox
+                                                                items={
+                                                                    pliComboboxItems
+                                                                }
+                                                                value={
+                                                                    comboboxValue
+                                                                }
+                                                                onValueChange={(
+                                                                    v,
+                                                                ) => {
+                                                                    setItemMatches(
+                                                                        (
+                                                                            prev,
+                                                                        ) => {
+                                                                            const next =
+                                                                                {
+                                                                                    ...prev,
+                                                                                };
+
+                                                                            if (
+                                                                                !v
+                                                                            ) {
+                                                                                delete next[
+                                                                                    itemKey
+                                                                                ];
+                                                                                return next;
+                                                                            }
+
+                                                                            const name =
+                                                                                v.replace(
+                                                                                    /^[^:]+:/,
+                                                                                    '',
+                                                                                );
+                                                                            const dbItem =
+                                                                                priceListItems.find(
+                                                                                    (
+                                                                                        p,
+                                                                                    ) =>
+                                                                                        p.description ===
+                                                                                        name,
+                                                                                );
+
+                                                                            if (
+                                                                                dbItem
+                                                                            ) {
+                                                                                next[
+                                                                                    itemKey
+                                                                                ] =
+                                                                                    dbItem.id;
+                                                                            }
+
+                                                                            return next;
+                                                                        },
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <ComboboxInput
+                                                                    placeholder="Search price list item..."
+                                                                    showClear
+                                                                />
+                                                                <ComboboxContent>
+                                                                    <ComboboxEmpty>
+                                                                        No items
+                                                                        found.
+                                                                    </ComboboxEmpty>
+                                                                    <ComboboxList>
+                                                                        {(
+                                                                            item,
+                                                                        ) => (
+                                                                            <ComboboxItem
+                                                                                key={
+                                                                                    item
+                                                                                }
+                                                                                value={
+                                                                                    item
+                                                                                }
+                                                                            >
+                                                                                {item.replace(
+                                                                                    /^[^:]+:/,
+                                                                                    '',
+                                                                                )}
+                                                                            </ComboboxItem>
+                                                                        )}
+                                                                    </ComboboxList>
+                                                                </ComboboxContent>
+                                                            </Combobox>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    )}
+
+                    <Dialog
+                        open={importDialogOpen}
+                        onOpenChange={setImportDialogOpen}
+                    >
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Confirm Import</DialogTitle>
+                                <DialogDescription>
+                                    You're about to import{' '}
+                                    {importPlan?.items.length ?? 0} new price
+                                    list item(s) into the database.
+                                </DialogDescription>
+                            </DialogHeader>
+                            {importPlan &&
+                                (importPlan.skippedNoMatch > 0 ||
+                                    importPlan.skippedNoPrice > 0 ||
+                                    importPlan.skippedMissingUnit > 0) && (
+                                    <div className="space-y-1 text-sm text-muted-foreground">
+                                        Skipped:
+                                        {importPlan.skippedNoMatch > 0 && (
+                                            <p>
+                                                {importPlan.skippedNoMatch} —
+                                                category/COA pair not in
+                                                database
+                                            </p>
+                                        )}
+                                        {importPlan.skippedNoPrice > 0 && (
+                                            <p>
+                                                {importPlan.skippedNoPrice} —
+                                                no price
+                                            </p>
+                                        )}
+                                        {importPlan.skippedMissingUnit > 0 && (
+                                            <p>
+                                                {importPlan.skippedMissingUnit}{' '}
+                                                — no unit of measurement
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            <DialogFooter>
+                                <DialogClose
+                                    render={
+                                        <Button variant="outline">
+                                            Cancel
+                                        </Button>
+                                    }
+                                />
+                                <Button
+                                    onClick={handleConfirmImport}
+                                    disabled={
+                                        !importPlan ||
+                                        importPlan.items.length === 0 ||
+                                        importing
+                                    }
+                                >
+                                    {importing ? 'Importing...' : 'Confirm'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
                     {mappedPairs && (
                         <div className="mt-6">
                             <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
@@ -1683,21 +2243,15 @@ export default function PriceListImport({
                                 <Table>
                                     <TableHeader className="sticky top-0 z-10 bg-background">
                                         <TableRow>
-                                            <TableHead>
-                                                Category
-                                            </TableHead>
+                                            <TableHead>Category</TableHead>
                                             <TableHead>
                                                 Resolved Category
                                             </TableHead>
                                             <TableHead>
                                                 Chart of Account
                                             </TableHead>
-                                            <TableHead>
-                                                Resolved COA
-                                            </TableHead>
-                                            <TableHead>
-                                                DB Pair
-                                            </TableHead>
+                                            <TableHead>Resolved COA</TableHead>
+                                            <TableHead>DB Pair</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -1709,8 +2263,8 @@ export default function PriceListImport({
                                                 override?.coaId ?? pair.coaId;
                                             const effCatId = pair.categoryId;
                                             const effCoaTitle = effCoaId
-                                                ? idToCoaTitle.get(effCoaId) ??
-                                                  null
+                                                ? (idToCoaTitle.get(effCoaId) ??
+                                                  null)
                                                 : null;
                                             const comboboxValue = effCoaTitle
                                                 ? `coa:${effCoaTitle}`
@@ -1726,9 +2280,7 @@ export default function PriceListImport({
                                                 effCatId !== null;
 
                                             return (
-                                                <TableRow
-                                                    key={overrideKey}
-                                                >
+                                                <TableRow key={overrideKey}>
                                                     <TableCell className="max-w-40 truncate">
                                                         {pair.category}
                                                     </TableCell>
@@ -1737,9 +2289,7 @@ export default function PriceListImport({
                                                             '—'}
                                                     </TableCell>
                                                     <TableCell className="max-w-48 truncate">
-                                                        {
-                                                            pair.chartOfAccount
-                                                        }
+                                                        {pair.chartOfAccount}
                                                     </TableCell>
                                                     <TableCell className="max-w-48 truncate">
                                                         <Combobox
@@ -1778,12 +2328,15 @@ export default function PriceListImport({
                                                                                 name,
                                                                             );
 
-                                                                        if (id) {
+                                                                        if (
+                                                                            id
+                                                                        ) {
                                                                             next[
                                                                                 overrideKey
-                                                                            ] = {
-                                                                                coaId: id,
-                                                                            };
+                                                                            ] =
+                                                                                {
+                                                                                    coaId: id,
+                                                                                };
                                                                         }
 
                                                                         return next;
@@ -1801,9 +2354,7 @@ export default function PriceListImport({
                                                                     found.
                                                                 </ComboboxEmpty>
                                                                 <ComboboxList>
-                                                                    {(
-                                                                        item,
-                                                                    ) => (
+                                                                    {(item) => (
                                                                         <ComboboxItem
                                                                             key={
                                                                                 item

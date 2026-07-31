@@ -31,10 +31,18 @@ class PriceListImportController extends Controller
             'ppmp_category_id',
         ]);
 
+        $priceListItems = PpmpPriceList::get([
+            'id',
+            'description',
+            'unit_of_measurement',
+            'price',
+        ]);
+
         return Inertia::render('price-list-import/index', [
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'dbPairs' => $dbPairs,
+            'priceListItems' => $priceListItems,
         ]);
     }
 
@@ -74,11 +82,19 @@ class PriceListImportController extends Controller
 
         foreach ($validated['items'] as $i => $data) {
             try {
-                // Auto-create the junction pair if it doesn't exist yet
-                $junction = ChartOfAccountPpmpCategory::firstOrCreate([
+                // The pair must already exist; unconfirmed pairs are skipped
+                $junction = ChartOfAccountPpmpCategory::where([
                     'chart_of_account_id' => $data['chart_of_account_id'],
                     'ppmp_category_id' => $data['ppmp_category_id'],
-                ]);
+                ])->first();
+
+                if (!$junction) {
+                    $errors[] =
+                        'Row ' .
+                        ($i + 1) .
+                        ': category/COA pair not found in database';
+                    continue;
+                }
 
                 $itemNumber++;
 
@@ -102,22 +118,22 @@ class PriceListImportController extends Controller
         );
 
         if (!empty($errors)) {
-            return redirect()
-                ->back()
-                ->withErrors(['import' => implode(' | ', $errors)])
-                ->with(
-                    'success',
+            Inertia::flash('toast', [
+                'type' => 'error',
+                'message' =>
                     "Partially imported {$created} items with " .
-                        count($errors) .
-                        ' errors.',
-                );
+                    count($errors) .
+                    ' errors.',
+            ]);
+
+            return redirect()->back();
         }
 
-        return redirect()
-            ->back()
-            ->with(
-                'success',
-                "Imported {$created} price list items successfully.",
-            );
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "Imported {$created} price list items successfully.",
+        ]);
+
+        return redirect()->back();
     }
 }
