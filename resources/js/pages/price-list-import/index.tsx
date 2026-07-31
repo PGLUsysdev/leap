@@ -33,6 +33,14 @@ import {
 import { Spinner } from '@/components/base-ui-components/ui/spinner';
 import { Switch } from '@/components/base-ui-components/ui/switch';
 import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/base-ui-components/ui/table';
+import {
     ToggleGroup,
     ToggleGroupItem,
 } from '@/components/base-ui-components/ui/toggle-group';
@@ -1331,71 +1339,107 @@ export default function PriceListImport({
                                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                                     COAs ({extracted.chartOfAccounts.length})
                                 </h3>
-                                <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-3">
-                                    {extracted.chartOfAccounts.map((coa) => (
-                                        <li
-                                            key={coa.name}
-                                            className="flex items-baseline justify-between gap-2 text-sm text-foreground"
-                                        >
-                                            <span className="truncate">
-                                                {coa.name}
-                                            </span>
-                                            <HoverCard>
-                                                <HoverCardTrigger
-                                                    render={
-                                                        <span className="shrink-0 cursor-pointer text-xs text-muted-foreground">
-                                                            {coa.sheets.length}/
-                                                            {
-                                                                selectedSheets.length
-                                                            }
-                                                        </span>
-                                                    }
-                                                />
-                                                <HoverCardContent>
-                                                    {coa.sheets.length ===
-                                                    selectedSheets.length
-                                                        ? `Appears in ${coa.sheets.length} — all sheets`
-                                                        : `Appears in: ${coa.sheets.join(', ')}`}
-                                                </HoverCardContent>
-                                            </HoverCard>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <div className="max-h-80 overflow-y-auto rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>
+                                                    Chart of Account
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    Sheets
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {extracted.chartOfAccounts.map(
+                                                (coa) => (
+                                                    <TableRow key={coa.name}>
+                                                        <TableCell className="max-w-64 truncate">
+                                                            {coa.name}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <HoverCard>
+                                                                <HoverCardTrigger
+                                                                    render={
+                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                            {
+                                                                                coa.sheets.length
+                                                                            }
+                                                                            /
+                                                                            {
+                                                                                selectedSheets.length
+                                                                            }
+                                                                        </span>
+                                                                    }
+                                                                />
+                                                                <HoverCardContent>
+                                                                    {coa.sheets
+                                                                        .length ===
+                                                                    selectedSheets.length
+                                                                        ? `Appears in ${coa.sheets.length} — all sheets`
+                                                                        : `Appears in: ${coa.sheets.join(', ')}`}
+                                                                </HoverCardContent>
+                                                            </HoverCard>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ),
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                             <div>
                                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                                     Categories ({extracted.categories.length})
                                 </h3>
-                                <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-3">
-                                    {extracted.categories.map((cat) => (
-                                        <li
-                                            key={cat.name}
-                                            className="flex items-baseline justify-between gap-2 text-sm text-foreground"
-                                        >
-                                            <span className="truncate">
-                                                {cat.name}
-                                            </span>
-                                            <HoverCard>
-                                                <HoverCardTrigger
-                                                    render={
-                                                        <span className="shrink-0 cursor-pointer text-xs text-muted-foreground">
-                                                            {cat.sheets.length}/
-                                                            {
-                                                                selectedSheets.length
-                                                            }
-                                                        </span>
-                                                    }
-                                                />
-                                                <HoverCardContent>
-                                                    {cat.sheets.length ===
-                                                    selectedSheets.length
-                                                        ? `Appears in ${cat.sheets.length} — all sheets`
-                                                        : `Appears in: ${cat.sheets.join(', ')}`}
-                                                </HoverCardContent>
-                                            </HoverCard>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <div className="max-h-80 overflow-y-auto rounded-md border">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead className="text-right">
+                                                    Sheets
+                                                </TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {extracted.categories.map(
+                                                (cat) => (
+                                                    <TableRow key={cat.name}>
+                                                        <TableCell className="max-w-64 truncate">
+                                                            {cat.name}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <HoverCard>
+                                                                <HoverCardTrigger
+                                                                    render={
+                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                            {
+                                                                                cat.sheets.length
+                                                                            }
+                                                                            /
+                                                                            {
+                                                                                selectedSheets.length
+                                                                            }
+                                                                        </span>
+                                                                    }
+                                                                />
+                                                                <HoverCardContent>
+                                                                    {cat.sheets
+                                                                        .length ===
+                                                                    selectedSheets.length
+                                                                        ? `Appears in ${cat.sheets.length} — all sheets`
+                                                                        : `Appears in: ${cat.sheets.join(', ')}`}
+                                                                </HoverCardContent>
+                                                            </HoverCard>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ),
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
                         </div>
                     )}
