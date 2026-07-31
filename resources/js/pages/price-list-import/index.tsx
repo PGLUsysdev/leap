@@ -155,6 +155,10 @@ export default function PriceListImport({
     // const [columnMap, setColumnMap] =
     //     useState<ColumnMapping>(defaultColumnMapping);
     const [result, setResult] = useState<ExtractResult | null>(null);
+    const [extracted, setExtracted] = useState<{
+        chartOfAccounts: string[];
+        categories: string[];
+    } | null>(null);
     const [importing, setImporting] = useState(false);
     const [loading, setLoading] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
@@ -319,6 +323,7 @@ export default function PriceListImport({
         setSheets(wb.worksheets.map((ws) => ws.name));
         setSelectedSheets([]);
         setResult(null);
+        setExtracted(null);
         setManualCoa({});
         setManualCat({});
         setLoading(false);
@@ -327,6 +332,7 @@ export default function PriceListImport({
 
     function handleSheetsChange(sheets: string[]) {
         setSelectedSheets(sheets);
+        setExtracted(null);
         setConfirmed(false);
     }
 
@@ -345,8 +351,11 @@ export default function PriceListImport({
         setConfirmed(true);
     }
 
-    function handleExtractCoas() {
+    function handleExtractCoaAndCategory() {
         if (!_workbook) return;
+
+        const coaSet = new Set<string>();
+        const catSet = new Set<string>();
 
         for (const sheet of selectedSheets) {
             const ws = _workbook.getWorksheet(sheet);
@@ -362,35 +371,19 @@ export default function PriceListImport({
                 columnMap: effective.columnMap,
             });
 
-            console.log(
-                `=== COAs: ${sheet} (${result.uniqueChartOfAccounts.length}) ===`,
-            );
-            console.log(result.uniqueChartOfAccounts.join(', '));
+            for (const coa of result.uniqueChartOfAccounts) {
+                coaSet.add(coa);
+            }
+
+            for (const cat of result.uniqueCategories) {
+                catSet.add(cat);
+            }
         }
-    }
 
-    function handleExtractCategories() {
-        if (!_workbook) return;
-
-        for (const sheet of selectedSheets) {
-            const ws = _workbook.getWorksheet(sheet);
-
-            if (!ws) continue;
-
-            const config = sheetConfigs[sheet] ?? defaultConfig;
-            const effective = config.useCustom ? config : defaultConfig;
-            const result = extractData({
-                worksheet: ws,
-                startRow: effective.startRow,
-                endRow: effective.endRow,
-                columnMap: effective.columnMap,
-            });
-
-            console.log(
-                `=== Categories: ${sheet} (${result.uniqueCategories.length}) ===`,
-            );
-            console.log(result.uniqueCategories.join(', '));
-        }
+        setExtracted({
+            chartOfAccounts: [...coaSet].sort(),
+            categories: [...catSet].sort(),
+        });
     }
 
     function handleLogCoaSummary() {
@@ -1363,16 +1356,12 @@ export default function PriceListImport({
                     )}
 
                     <div className="mt-4 flex gap-2">
-                        <Button variant="outline" onClick={handleExtractCoas}>
-                            Extract COAs
-                        </Button>
                         <Button
                             variant="outline"
-                            onClick={handleExtractCategories}
+                            onClick={handleExtractCoaAndCategory}
                         >
-                            Extract Categories
+                            Extract COA and Category
                         </Button>
-                        <Button>Extract</Button>
                         <Button variant="outline" onClick={handleLogCoaSummary}>
                             Log COA Summary
                         </Button>
@@ -1395,6 +1384,41 @@ export default function PriceListImport({
                             Log Category–COA Pairs
                         </Button>
                     </div>
+
+                    {extracted && (
+                        <div className="mt-6 grid grid-cols-2 gap-6">
+                            <div>
+                                <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                    COAs ({extracted.chartOfAccounts.length})
+                                </h3>
+                                <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-3">
+                                    {extracted.chartOfAccounts.map((coa) => (
+                                        <li
+                                            key={coa}
+                                            className="text-sm text-foreground"
+                                        >
+                                            {coa}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                    Categories ({extracted.categories.length})
+                                </h3>
+                                <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-3">
+                                    {extracted.categories.map((cat) => (
+                                        <li
+                                            key={cat}
+                                            className="text-sm text-foreground"
+                                        >
+                                            {cat}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
