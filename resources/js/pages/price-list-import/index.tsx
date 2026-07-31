@@ -180,6 +180,9 @@ export default function PriceListImport({
         resolvedCategory: string | null;
         resolvedCoa: string | null;
     }> | null>(null);
+    const [pairOverrides, setPairOverrides] = useState<
+        Record<string, { coaId: number | null }>
+    >({});
     const [importing, setImporting] = useState(false);
     const [loading, setLoading] = useState(false);
     const [refetching, setRefetching] = useState(false);
@@ -363,6 +366,7 @@ export default function PriceListImport({
         setResult(null);
         setExtracted(null);
         setMappedPairs(null);
+        setPairOverrides({});
         setManualCoa({});
         setManualCat({});
         setLoading(false);
@@ -373,6 +377,7 @@ export default function PriceListImport({
         setSelectedSheets(sheets);
         setExtracted(null);
         setMappedPairs(null);
+        setPairOverrides({});
         setConfirmed(false);
     }
 
@@ -1697,19 +1702,32 @@ export default function PriceListImport({
                                     </TableHeader>
                                     <TableBody>
                                         {mappedPairs.map((pair) => {
+                                            const overrideKey = `${pair.category}|${pair.chartOfAccount}`;
+                                            const override =
+                                                pairOverrides[overrideKey];
+                                            const effCoaId =
+                                                override?.coaId ?? pair.coaId;
+                                            const effCatId = pair.categoryId;
+                                            const effCoaTitle = effCoaId
+                                                ? idToCoaTitle.get(effCoaId) ??
+                                                  null
+                                                : null;
+                                            const comboboxValue = effCoaTitle
+                                                ? `coa:${effCoaTitle}`
+                                                : '';
                                             const pairExists =
-                                                pair.coaId !== null &&
-                                                pair.categoryId !== null &&
+                                                effCoaId !== null &&
+                                                effCatId !== null &&
                                                 dbPairsSet.has(
-                                                    `${pair.coaId}|${pair.categoryId}`,
+                                                    `${effCoaId}|${effCatId}`,
                                                 );
                                             const pairResolvable =
-                                                pair.coaId !== null &&
-                                                pair.categoryId !== null;
+                                                effCoaId !== null &&
+                                                effCatId !== null;
 
                                             return (
                                                 <TableRow
-                                                    key={`${pair.category}|${pair.chartOfAccount}`}
+                                                    key={overrideKey}
                                                 >
                                                     <TableCell className="max-w-40 truncate">
                                                         {pair.category}
@@ -1724,8 +1742,90 @@ export default function PriceListImport({
                                                         }
                                                     </TableCell>
                                                     <TableCell className="max-w-48 truncate">
-                                                        {pair.resolvedCoa ??
-                                                            '—'}
+                                                        <Combobox
+                                                            items={
+                                                                coaComboboxItems
+                                                            }
+                                                            value={
+                                                                comboboxValue
+                                                            }
+                                                            onValueChange={(
+                                                                v,
+                                                            ) => {
+                                                                setPairOverrides(
+                                                                    (prev) => {
+                                                                        const next =
+                                                                            {
+                                                                                ...prev,
+                                                                            };
+
+                                                                        if (
+                                                                            !v
+                                                                        ) {
+                                                                            delete next[
+                                                                                overrideKey
+                                                                            ];
+                                                                            return next;
+                                                                        }
+
+                                                                        const name =
+                                                                            v.replace(
+                                                                                /^[^:]+:/,
+                                                                                '',
+                                                                            );
+                                                                        const id =
+                                                                            coaNameToId.get(
+                                                                                name,
+                                                                            );
+
+                                                                        if (id) {
+                                                                            next[
+                                                                                overrideKey
+                                                                            ] = {
+                                                                                coaId: id,
+                                                                            };
+                                                                        }
+
+                                                                        return next;
+                                                                    },
+                                                                );
+                                                            }}
+                                                        >
+                                                            <ComboboxInput
+                                                                placeholder="Search chart of account..."
+                                                                showClear
+                                                            />
+                                                            <ComboboxContent>
+                                                                <ComboboxEmpty>
+                                                                    No items
+                                                                    found.
+                                                                </ComboboxEmpty>
+                                                                <ComboboxList>
+                                                                    {(
+                                                                        item,
+                                                                    ) => (
+                                                                        <ComboboxItem
+                                                                            key={
+                                                                                item
+                                                                            }
+                                                                            value={
+                                                                                item
+                                                                            }
+                                                                        >
+                                                                            {item.replace(
+                                                                                /^[^:]+:/,
+                                                                                '',
+                                                                            )}
+                                                                        </ComboboxItem>
+                                                                    )}
+                                                                </ComboboxList>
+                                                            </ComboboxContent>
+                                                        </Combobox>
+                                                        {override && (
+                                                            <span className="ml-2 text-xs text-blue-600">
+                                                                custom
+                                                            </span>
+                                                        )}
                                                     </TableCell>
                                                     <TableCell>
                                                         {pairResolvable ? (
