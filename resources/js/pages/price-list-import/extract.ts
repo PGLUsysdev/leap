@@ -242,3 +242,155 @@ export function extractData(config: ExtractConfig): ExtractResult {
             }),
     };
 }
+
+export interface QuantityRow {
+    tempId: number;
+    category: string;
+    chartOfAccount: string;
+    description: string;
+    unitOfMeasurement: string;
+    price: number | null;
+    total: number | null;
+    janQty: number | null;
+    febQty: number | null;
+    marQty: number | null;
+    aprQty: number | null;
+    mayQty: number | null;
+    junQty: number | null;
+    julQty: number | null;
+    augQty: number | null;
+    sepQty: number | null;
+    octQty: number | null;
+    novQty: number | null;
+    decQty: number | null;
+}
+
+export interface QuantityColumnMap {
+    category: string;
+    chartOfAccount: string;
+    description: string;
+    total: string;
+    unit: string;
+    price: string;
+    janQty: string;
+    febQty: string;
+    marQty: string;
+    aprQty: string;
+    mayQty: string;
+    junQty: string;
+    julQty: string;
+    augQty: string;
+    sepQty: string;
+    octQty: string;
+    novQty: string;
+    decQty: string;
+}
+
+export interface ExtractQuantitiesConfig {
+    worksheet: ExcelJS.Worksheet;
+    startRow: number;
+    endRow?: number;
+    columnMap: QuantityColumnMap;
+}
+
+export function extractQuantities(
+    config: ExtractQuantitiesConfig,
+): QuantityRow[] {
+    const { worksheet, startRow, endRow, columnMap } = config;
+    const rows: QuantityRow[] = [];
+    const lastRow = endRow ?? worksheet.rowCount;
+    let nextTempId = 1;
+    let currentCategory: string | null = null;
+
+    for (let rowNumber = startRow; rowNumber <= lastRow; rowNumber++) {
+        const row = worksheet.getRow(rowNumber);
+        const chartOfAccount = cellText(
+            row.getCell(columnMap.chartOfAccount),
+        );
+        const category = cellText(row.getCell(columnMap.category));
+        const description = cellText(row.getCell(columnMap.description)) ?? '';
+
+        // Row without a chart of account could be a category header, COA
+        // label, or subtotal
+        if (!chartOfAccount) {
+            const headerName = category ?? description;
+
+            if (headerName) {
+                // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL"
+                if (/\s*-\s*TOTAL$/i.test(headerName)) {
+                    currentCategory = null;
+
+                    continue;
+                }
+
+                // Look ahead to distinguish category header vs COA label
+                let isCoaLabel = false;
+
+                for (
+                    let lookRow = rowNumber + 1;
+                    lookRow <= lastRow;
+                    lookRow++
+                ) {
+                    const nextRow = worksheet.getRow(lookRow);
+                    const nextCoa = cellText(
+                        nextRow.getCell(columnMap.chartOfAccount),
+                    );
+
+                    if (nextCoa) {
+                        if (nextCoa === headerName) {
+                            isCoaLabel = true;
+                        }
+
+                        break;
+                    }
+                }
+
+                if (!isCoaLabel) {
+                    currentCategory = headerName;
+                }
+            }
+
+            continue;
+        }
+
+        // Skip rows before any category header
+        if (!currentCategory) {
+            continue;
+        }
+
+        const total = cellNumber(row.getCell(columnMap.total));
+
+        if (total === null) {
+            continue;
+        }
+
+        // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL"
+        if (/\s*-\s*TOTAL$/i.test(description)) {
+            continue;
+        }
+
+        rows.push({
+            tempId: nextTempId++,
+            category: currentCategory,
+            chartOfAccount,
+            description,
+            unitOfMeasurement: cellText(row.getCell(columnMap.unit)) ?? '',
+            price: cellNumber(row.getCell(columnMap.price)),
+            total,
+            janQty: cellNumber(row.getCell(columnMap.janQty)),
+            febQty: cellNumber(row.getCell(columnMap.febQty)),
+            marQty: cellNumber(row.getCell(columnMap.marQty)),
+            aprQty: cellNumber(row.getCell(columnMap.aprQty)),
+            mayQty: cellNumber(row.getCell(columnMap.mayQty)),
+            junQty: cellNumber(row.getCell(columnMap.junQty)),
+            julQty: cellNumber(row.getCell(columnMap.julQty)),
+            augQty: cellNumber(row.getCell(columnMap.augQty)),
+            sepQty: cellNumber(row.getCell(columnMap.sepQty)),
+            octQty: cellNumber(row.getCell(columnMap.octQty)),
+            novQty: cellNumber(row.getCell(columnMap.novQty)),
+            decQty: cellNumber(row.getCell(columnMap.decQty)),
+        });
+    }
+
+    return rows;
+}

@@ -58,8 +58,8 @@ import type {
     ChartOfAccountPpmpCategory,
     PpmpCategory,
 } from '@/types';
-import { extractData } from './extract';
-import type { ExtractResult } from './extract';
+import { extractData, extractQuantities } from './extract';
+import type { ExtractResult, QuantityRow } from './extract';
 
 // interface ColumnMapping {
 //     chartOfAccount: string;
@@ -93,6 +93,7 @@ interface PriceListImportProps {
         name: string;
         fiscal_year_id: number | null;
     }>;
+    fundingSources: Array<{ id: number; code: string; title: string }>;
 }
 
 // interface ResolvedItem {
@@ -175,6 +176,7 @@ export default function PriceListImport({
     priceListItems,
     fiscalYears,
     ppas,
+    fundingSources,
 }: PriceListImportProps) {
     console.log(chartOfAccounts);
     console.log(ppmpCategories);
@@ -227,6 +229,58 @@ export default function PriceListImport({
         null,
     );
     const [targetPpaId, setTargetPpaId] = useState<number | null>(null);
+    const [targetFundingSourceId, setTargetFundingSourceId] = useState<
+        number | null
+    >(null);
+
+    const monthlyQtyColumns = [
+        ['janQty', 'Jan', 'K'],
+        ['febQty', 'Feb', 'M'],
+        ['marQty', 'Mar', 'O'],
+        ['aprQty', 'Apr', 'Q'],
+        ['mayQty', 'May', 'S'],
+        ['junQty', 'Jun', 'U'],
+        ['julQty', 'Jul', 'W'],
+        ['augQty', 'Aug', 'Y'],
+        ['sepQty', 'Sep', 'AA'],
+        ['octQty', 'Oct', 'AC'],
+        ['novQty', 'Nov', 'AE'],
+        ['decQty', 'Dec', 'AG'],
+    ] as const;
+
+    const defaultQuantitiesColumns = {
+        category: 'F',
+        chartOfAccount: 'D',
+        description: 'F',
+        total: 'J',
+        unit: 'G',
+        price: 'H',
+        janQty: 'K',
+        febQty: 'M',
+        marQty: 'O',
+        aprQty: 'Q',
+        mayQty: 'S',
+        junQty: 'U',
+        julQty: 'W',
+        augQty: 'Y',
+        sepQty: 'AA',
+        octQty: 'AC',
+        novQty: 'AE',
+        decQty: 'AG',
+    };
+
+    const [quantitiesConfig, setQuantitiesConfig] = useState({
+        startRow: 8,
+        endRow: undefined as number | undefined,
+        columns: { ...defaultQuantitiesColumns },
+    });
+    const [quantityRows, setQuantityRows] = useState<QuantityRow[] | null>(
+        null,
+    );
+    const [quantityMatches, setQuantityMatches] = useState<
+        Record<number, { itemId: number | null }>
+    >({});
+    const [quantityChecked, setQuantityChecked] = useState(false);
     const [calibratingSheet, setCalibratingSheet] = useState('');
     const [sheetConfigs, setSheetConfigs] = useState<
         Record<
@@ -284,21 +338,6 @@ export default function PriceListImport({
             decQty: 'AG',
         },
     };
-
-    const monthlyQtyColumns = [
-        ['Jan', 'K'],
-        ['Feb', 'M'],
-        ['Mar', 'O'],
-        ['Apr', 'Q'],
-        ['May', 'S'],
-        ['Jun', 'U'],
-        ['Jul', 'W'],
-        ['Aug', 'Y'],
-        ['Sep', 'AA'],
-        ['Oct', 'AC'],
-        ['Nov', 'AE'],
-        ['Dec', 'AG'],
-    ] as const;
 
     // Manual mappings for names that didn't auto-match
     const [manualCoa, setManualCoa] = useState<Record<string, number>>({});
@@ -738,6 +777,46 @@ export default function PriceListImport({
         );
     }
 
+    function handleExtractQuantities() {
+        if (!_workbook || selectedSheets.length === 0) {
+            return;
+        }
+
+        const ws = _workbook.getWorksheet(selectedSheets[0]);
+
+        if (!ws) {
+            return;
+        }
+
+        const rows = extractQuantities({
+            worksheet: ws,
+            startRow: quantitiesConfig.startRow,
+            endRow: quantitiesConfig.endRow,
+            columnMap: quantitiesConfig.columns,
+        });
+
+        setQuantityRows(rows);
+    }
+
+    function handleCheckDbMatches() {
+        if (!quantityRows) {
+            return;
+        }
+
+        const matches: Record<number, { itemId: number | null }> = {};
+
+        for (const row of quantityRows) {
+            const item = priceListItems.find(
+                (p) => normalize(p.description) === normalize(row.description),
+            );
+
+            matches[row.tempId] = { itemId: item?.id ?? null };
+        }
+
+        setQuantityMatches(matches);
+        setQuantityChecked(true);
+    }
+
     function handleConfirmImport() {
         if (!importPlan || importPlan.items.length === 0 || importing) {
             return;
@@ -932,7 +1011,7 @@ export default function PriceListImport({
                 </p>
             )}
 
-            {sheets.length > 0 && (
+            {mode && sheets.length > 0 && (
                 <Field>
                     <FieldLabel>Sheets</FieldLabel>
                     {mode === 'quantities' && (
@@ -1078,22 +1157,37 @@ export default function PriceListImport({
                                         </ComboboxContent>
                                     </Combobox>
                                 </Field>
-                                <Field>
-                                    <FieldLabel>Funding Source</FieldLabel>
-                                    <Combobox
-                                        items={[]}
-                                        value=""
-                                        onValueChange={() => {}}
-                                    >
-                                        <ComboboxInput placeholder="Select funding source..." />
-                                        <ComboboxContent>
-                                            <ComboboxEmpty>
-                                                Select a PPA first.
-                                            </ComboboxEmpty>
-                                            <ComboboxList />
-                                        </ComboboxContent>
-                                    </Combobox>
-                                </Field>
+                            <Field>
+                                <FieldLabel>Funding Source</FieldLabel>
+                                <Select
+                                    value={
+                                        targetFundingSourceId
+                                            ? String(targetFundingSourceId)
+                                            : ''
+                                    }
+                                    onValueChange={(v) =>
+                                        setTargetFundingSourceId(
+                                            v ? Number(v) : null,
+                                        )
+                                    }
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select funding source" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {fundingSources.map((fs) => (
+                                                <SelectItem
+                                                    key={fs.id}
+                                                    value={String(fs.id)}
+                                                >
+                                                    [{fs.code}] {fs.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">
                                 Resolved target: —
@@ -1109,23 +1203,139 @@ export default function PriceListImport({
                                     <FieldLabel>Start Row</FieldLabel>
                                     <Input
                                         type="number"
-                                        defaultValue={8}
+                                        value={quantitiesConfig.startRow}
+                                        onChange={(e) =>
+                                            setQuantitiesConfig((prev) => ({
+                                                ...prev,
+                                                startRow: Number(
+                                                    e.target.value,
+                                                ),
+                                            }))
+                                        }
                                         className="w-20"
                                     />
                                 </Field>
                                 <Field>
                                     <FieldLabel>End Row</FieldLabel>
-                                    <Input type="number" className="w-20" />
+                                    <Input
+                                        type="number"
+                                        value={quantitiesConfig.endRow ?? ''}
+                                        onChange={(e) =>
+                                            setQuantitiesConfig((prev) => ({
+                                                ...prev,
+                                                endRow: e.target.value
+                                                    ? Number(e.target.value)
+                                                    : undefined,
+                                            }))
+                                        }
+                                        className="w-20"
+                                    />
                                 </Field>
                             </div>
                             <div className="mt-4 grid grid-cols-6 gap-2">
                                 <Field>
-                                    <FieldLabel>Item#</FieldLabel>
-                                    <Input defaultValue="E" className="w-16" />
+                                    <FieldLabel>Category</FieldLabel>
+                                    <Input
+                                        value={quantitiesConfig.columns.category}
+                                        onChange={(e) =>
+                                            setQuantitiesConfig((prev) => ({
+                                                ...prev,
+                                                columns: {
+                                                    ...prev.columns,
+                                                    category:
+                                                        e.target.value.toUpperCase(),
+                                                },
+                                            }))
+                                        }
+                                        className="w-16"
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>Chart of Account</FieldLabel>
+                                    <Input
+                                        value={
+                                            quantitiesConfig.columns
+                                                .chartOfAccount
+                                        }
+                                        onChange={(e) =>
+                                            setQuantitiesConfig((prev) => ({
+                                                ...prev,
+                                                columns: {
+                                                    ...prev.columns,
+                                                    chartOfAccount:
+                                                        e.target.value.toUpperCase(),
+                                                },
+                                            }))
+                                        }
+                                        className="w-16"
+                                    />
                                 </Field>
                                 <Field>
                                     <FieldLabel>Description</FieldLabel>
-                                    <Input defaultValue="F" className="w-16" />
+                                    <Input
+                                        value={
+                                            quantitiesConfig.columns.description
+                                        }
+                                        onChange={(e) =>
+                                            setQuantitiesConfig((prev) => ({
+                                                ...prev,
+                                                columns: {
+                                                    ...prev.columns,
+                                                    description:
+                                                        e.target.value.toUpperCase(),
+                                                },
+                                            }))
+                                        }
+                                        className="w-16"
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>Total</FieldLabel>
+                                    <Input
+                                        value={quantitiesConfig.columns.total}
+                                        onChange={(e) =>
+                                            setQuantitiesConfig((prev) => ({
+                                                ...prev,
+                                                columns: {
+                                                    ...prev.columns,
+                                                    total: e.target.value.toUpperCase(),
+                                                },
+                                            }))
+                                        }
+                                        className="w-16"
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>Unit</FieldLabel>
+                                    <Input
+                                        value={quantitiesConfig.columns.unit}
+                                        onChange={(e) =>
+                                            setQuantitiesConfig((prev) => ({
+                                                ...prev,
+                                                columns: {
+                                                    ...prev.columns,
+                                                    unit: e.target.value.toUpperCase(),
+                                                },
+                                            }))
+                                        }
+                                        className="w-16"
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>Price</FieldLabel>
+                                    <Input
+                                        value={quantitiesConfig.columns.price}
+                                        onChange={(e) =>
+                                            setQuantitiesConfig((prev) => ({
+                                                ...prev,
+                                                columns: {
+                                                    ...prev.columns,
+                                                    price: e.target.value.toUpperCase(),
+                                                },
+                                            }))
+                                        }
+                                        className="w-16"
+                                    />
                                 </Field>
                             </div>
                             <div className="mt-4">
@@ -1133,18 +1343,281 @@ export default function PriceListImport({
                                     Monthly Quantities
                                 </p>
                                 <div className="grid grid-cols-4 gap-2">
-                                    {monthlyQtyColumns.map(([label, col]) => (
-                                        <Field key={label}>
+                                    {monthlyQtyColumns.map(([key, label]) => (
+                                        <Field key={key}>
                                             <FieldLabel>{label}</FieldLabel>
                                             <Input
-                                                defaultValue={col}
+                                                value={
+                                                    quantitiesConfig.columns[
+                                                        key
+                                                    ]
+                                                }
+                                                onChange={(e) =>
+                                                    setQuantitiesConfig(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            columns: {
+                                                                ...prev.columns,
+                                                                [key]: e.target.value.toUpperCase(),
+                                                            },
+                                                        }),
+                                                    )
+                                                }
                                                 className="w-16"
                                             />
                                         </Field>
                                     ))}
                                 </div>
                             </div>
+                            <div className="mt-4">
+                                <Button onClick={handleExtractQuantities}>
+                                    Extract
+                                </Button>
+                            </div>
                         </div>
+
+                        {quantityRows && (
+                            <div className="mt-6">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-muted-foreground">
+                                        Extracted Items ({quantityRows.length})
+                                    </h3>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCheckDbMatches}
+                                    >
+                                        Check DB Matches
+                                    </Button>
+                                </div>
+                                <div className="max-h-96 overflow-auto rounded-md border">
+                                    <Table>
+                                        <TableHeader className="sticky top-0 z-10 bg-background">
+                                            <TableRow>
+                                                <TableHead>
+                                                    Description
+                                                </TableHead>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead>
+                                                    Chart of Account
+                                                </TableHead>
+                                                <TableHead>Unit</TableHead>
+                                                <TableHead className="text-right">
+                                                    Price
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    Total
+                                                </TableHead>
+                                                <TableHead>In DB</TableHead>
+                                                <TableHead>Match</TableHead>
+                                                <TableHead>Jan</TableHead>
+                                                <TableHead>Feb</TableHead>
+                                                <TableHead>Mar</TableHead>
+                                                <TableHead>Apr</TableHead>
+                                                <TableHead>May</TableHead>
+                                                <TableHead>Jun</TableHead>
+                                                <TableHead>Jul</TableHead>
+                                                <TableHead>Aug</TableHead>
+                                                <TableHead>Sep</TableHead>
+                                                <TableHead>Oct</TableHead>
+                                                <TableHead>Nov</TableHead>
+                                                <TableHead>Dec</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {quantityRows.map((row) => {
+                                                const match =
+                                                    quantityMatches[row.tempId];
+                                                const matchedItem = match?.itemId
+                                                    ? priceListItems.find(
+                                                          (p) =>
+                                                              p.id ===
+                                                              match.itemId,
+                                                      )
+                                                    : null;
+
+                                                return (
+                                                <TableRow key={row.tempId}>
+                                                    <TableCell className="max-w-64 truncate">
+                                                        {row.description}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-40 truncate">
+                                                        {row.category}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-48 truncate">
+                                                        {row.chartOfAccount}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {row.unitOfMeasurement}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.price ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.total ?? '—'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {!quantityChecked ? (
+                                                            <span className="text-muted-foreground">
+                                                                —
+                                                            </span>
+                                                        ) : match?.itemId ? (
+                                                            <HoverCard>
+                                                                <HoverCardTrigger
+                                                                    render={
+                                                                        <span className="cursor-pointer text-emerald-600">
+                                                                            ✓
+                                                                            exists
+                                                                        </span>
+                                                                    }
+                                                                />
+                                                                <HoverCardContent>
+                                                                    {matchedItem
+                                                                        ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
+                                                                        : ''}
+                                                                </HoverCardContent>
+                                                            </HoverCard>
+                                                        ) : (
+                                                            <span className="text-amber-600">
+                                                                ✗ new
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Combobox
+                                                            items={
+                                                                pliComboboxItems
+                                                            }
+                                                            value={
+                                                                matchedItem
+                                                                    ? `pli:${matchedItem.description}`
+                                                                    : ''
+                                                            }
+                                                            onValueChange={(
+                                                                v,
+                                                            ) => {
+                                                                setQuantityMatches(
+                                                                    (prev) => {
+                                                                        const next =
+                                                                            {
+                                                                                ...prev,
+                                                                            };
+
+                                                                        if (
+                                                                            !v
+                                                                        ) {
+                                                                            next[
+                                                                                row.tempId
+                                                                            ] = {
+                                                                                itemId: null,
+                                                                            };
+                                                                            return next;
+                                                                        }
+
+                                                                        const name =
+                                                                            v.replace(
+                                                                                /^[^:]+:/,
+                                                                                '',
+                                                                            );
+                                                                        const dbItem =
+                                                                            priceListItems.find(
+                                                                                (
+                                                                                    p,
+                                                                                ) =>
+                                                                                    p.description ===
+                                                                                    name,
+                                                                            );
+
+                                                                        if (
+                                                                            dbItem
+                                                                        ) {
+                                                                            next[
+                                                                                row.tempId
+                                                                            ] = {
+                                                                                itemId: dbItem.id,
+                                                                            };
+                                                                        }
+
+                                                                        return next;
+                                                                    },
+                                                                );
+                                                            }}
+                                                        >
+                                                            <ComboboxInput
+                                                                placeholder="Search price list item..."
+                                                                showClear
+                                                            />
+                                                            <ComboboxContent>
+                                                                <ComboboxEmpty>
+                                                                    No items
+                                                                    found.
+                                                                </ComboboxEmpty>
+                                                                <ComboboxList>
+                                                                    {(
+                                                                        item,
+                                                                    ) => (
+                                                                        <ComboboxItem
+                                                                            key={
+                                                                                item
+                                                                            }
+                                                                            value={
+                                                                                item
+                                                                            }
+                                                                        >
+                                                                            {item.replace(
+                                                                                /^[^:]+:/,
+                                                                                '',
+                                                                            )}
+                                                                        </ComboboxItem>
+                                                                    )}
+                                                                </ComboboxList>
+                                                            </ComboboxContent>
+                                                        </Combobox>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.janQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.febQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.marQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.aprQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.mayQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.junQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.julQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.augQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.sepQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.octQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.novQty ?? ''}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.decQty ?? ''}
+                                                    </TableCell>
+                                                </TableRow>
+                                                );
+                                            })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

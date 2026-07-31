@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountPpmpCategory;
 use App\Models\FiscalYear;
+use App\Models\FundingSource;
 use App\Models\Ppa;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
@@ -46,6 +47,12 @@ class PriceListImportController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'fiscal_year_id']);
 
+        $fundingSources = FundingSource::orderBy('code')->get([
+            'id',
+            'code',
+            'title',
+        ]);
+
         return Inertia::render('price-list-import/index', [
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
@@ -53,6 +60,7 @@ class PriceListImportController extends Controller
             'priceListItems' => $priceListItems,
             'fiscalYears' => $fiscalYears,
             'ppas' => $ppas,
+            'fundingSources' => $fundingSources,
         ]);
     }
 
