@@ -44,7 +44,11 @@ import {
     ToggleGroup,
     ToggleGroupItem,
 } from '@/components/base-ui-components/ui/toggle-group';
-import type { ChartOfAccount, PpmpCategory } from '@/types';
+import type {
+    ChartOfAccount,
+    ChartOfAccountPpmpCategory,
+    PpmpCategory,
+} from '@/types';
 import { extractData } from './extract';
 import type { ExtractResult } from './extract';
 
@@ -67,6 +71,7 @@ import type { ExtractResult } from './extract';
 interface PriceListImportProps {
     chartOfAccounts: ChartOfAccount[];
     ppmpCategories: PpmpCategory[];
+    dbPairs: ChartOfAccountPpmpCategory[];
 }
 
 // interface ResolvedItem {
@@ -74,7 +79,7 @@ interface PriceListImportProps {
 //     ppmp_category_id: number;
 //     description: string;
 //     unit_of_measurement: string;
-//     price: number | null;
+//     price: number;
 // }
 
 // interface Resolution {
@@ -85,66 +90,52 @@ interface PriceListImportProps {
 //     unmatchedCategories: string[];
 // }
 
-// function normalize(s: string): string {
-//     return s.toLowerCase().replace(/\s+/g, ' ').trim();
-// }
-
-// /** Build a normalized name → ID lookup map from a list of DB items. */
-// function buildLookup<T>(
-//     items: T[],
-//     getName: (item: T) => string,
-// ): Map<string, number> {
+// function buildLookup<T>(items: T[], getName: (item: T) => string) {
 //     const map = new Map<string, number>();
-
+//
 //     for (const item of items) {
-//         map.set(
-//             normalize(getName(item)),
-//             (item as unknown as { id: number }).id,
-//         );
+//         map.set(getName(item).trim().toLowerCase(), item.id);
 //     }
-
+//
 //     return map;
 // }
 
-// /** Compute resolution given auto-lookups + manual overrides. */
 // function computeResolution(
 //     result: ExtractResult,
 //     coaLookup: Map<string, number>,
 //     catLookup: Map<string, number>,
 //     manualCoa: Record<string, number>,
 //     manualCat: Record<string, number>,
-// ): Resolution {
+// ) {
 //     const resolved: ResolvedItem[] = [];
 //     const unmatchedCoaSet = new Set<string>();
 //     const unmatchedCatSet = new Set<string>();
 
 //     for (const item of result.items) {
 //         const coaId =
-//             coaLookup.get(normalize(item.chartOfAccount)) ??
-//             manualCoa[item.chartOfAccount];
+//             manualCoa[item.chartOfAccount] ??
+//             coaLookup.get(item.chartOfAccount.trim().toLowerCase());
+//         const catId =
+//             manualCat[item.category] ??
+//             catLookup.get(item.category.trim().toLowerCase());
 
 //         if (!coaId) {
 //             unmatchedCoaSet.add(item.chartOfAccount);
-
-//             continue;
 //         }
-
-//         const catId =
-//             catLookup.get(normalize(item.category)) ?? manualCat[item.category];
 
 //         if (!catId) {
 //             unmatchedCatSet.add(item.category);
-
-//             continue;
 //         }
 
-//         resolved.push({
-//             chart_of_account_id: coaId,
-//             ppmp_category_id: catId,
-//             description: item.description,
-//             unit_of_measurement: item.unitOfMeasurement,
-//             price: item.price ?? 0,
-//         });
+//         if (coaId && catId) {
+//             resolved.push({
+//                 chart_of_account_id: coaId,
+//                 ppmp_category_id: catId,
+//                 description: item.description,
+//                 unit_of_measurement: item.unit,
+//                 price: item.price,
+//             });
+//         }
 //     }
 
 //     return {
@@ -159,7 +150,11 @@ interface PriceListImportProps {
 export default function PriceListImport({
     chartOfAccounts,
     ppmpCategories,
+    dbPairs,
 }: PriceListImportProps) {
+    console.log(chartOfAccounts);
+    console.log(ppmpCategories);
+
     const [sheets, setSheets] = useState<string[]>([]);
     const [_workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
@@ -171,9 +166,23 @@ export default function PriceListImport({
     const [extracted, setExtracted] = useState<{
         chartOfAccounts: Array<{ name: string; sheets: string[] }>;
         categories: Array<{ name: string; sheets: string[] }>;
+        pairs: Array<{
+            category: string;
+            chartOfAccount: string;
+            sheets: string[];
+        }>;
     } | null>(null);
+    const [mappedPairs, setMappedPairs] = useState<Array<{
+        category: string;
+        chartOfAccount: string;
+        categoryId: number | null;
+        coaId: number | null;
+        resolvedCategory: string | null;
+        resolvedCoa: string | null;
+    }> | null>(null);
     const [importing, setImporting] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [refetching, setRefetching] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [calibratingSheet, setCalibratingSheet] = useState('');
     const [sheetConfigs, setSheetConfigs] = useState<
@@ -238,71 +247,87 @@ export default function PriceListImport({
     const [manualCat, setManualCat] = useState<Record<string, number>>({});
 
     // Auto-lookup maps (stable across renders)
-    // const coaLookup = useMemo(
-    //     () =>
-    //         buildLookup(
-    //             chartOfAccounts,
-    //             (coa: ChartOfAccount) => coa.account_title,
-    //         ),
-    //     [chartOfAccounts],
-    // );
+    const coaLookup = useMemo(() => {
+        const m = new Map<string, number>();
 
-    // const catLookup = useMemo(
-    //     () => buildLookup(ppmpCategories, (cat: PpmpCategory) => cat.name),
-    //     [ppmpCategories],
-    // );
+        for (const coa of chartOfAccounts) {
+            m.set(normalize(coa.account_title), coa.id);
+        }
 
-    // // Maps for Combobox: name ↔ ID lookup (unprefixed)
-    // const coaNameToId = useMemo(() => {
-    //     const m = new Map<string, number>();
+        return m;
+    }, [chartOfAccounts]);
 
-    //     for (const coa of chartOfAccounts) {
-    //         m.set(coa.account_title, coa.id);
-    //     }
+    const catLookup = useMemo(() => {
+        const m = new Map<string, number>();
 
-    //     return m;
-    // }, [chartOfAccounts]);
+        for (const cat of ppmpCategories) {
+            m.set(normalize(cat.name), cat.id);
+        }
 
-    // const idToCoaTitle = useMemo(() => {
-    //     const m = new Map<number, string>();
+        return m;
+    }, [ppmpCategories]);
 
-    //     for (const coa of chartOfAccounts) {
-    //         m.set(coa.id, coa.account_title);
-    //     }
+    // Maps for Combobox: name ↔ ID lookup (unprefixed)
+    const coaNameToId = useMemo(() => {
+        const m = new Map<string, number>();
 
-    //     return m;
-    // }, [chartOfAccounts]);
+        for (const coa of chartOfAccounts) {
+            m.set(coa.account_title, coa.id);
+        }
 
-    // const catNameToId = useMemo(() => {
-    //     const m = new Map<string, number>();
+        return m;
+    }, [chartOfAccounts]);
 
-    //     for (const cat of ppmpCategories) {
-    //         m.set(cat.name, cat.id);
-    //     }
+    const idToCoaTitle = useMemo(() => {
+        const m = new Map<number, string>();
 
-    //     return m;
-    // }, [ppmpCategories]);
+        for (const coa of chartOfAccounts) {
+            m.set(coa.id, coa.account_title);
+        }
 
-    // const idToCatName = useMemo(() => {
-    //     const m = new Map<number, string>();
+        return m;
+    }, [chartOfAccounts]);
 
-    //     for (const cat of ppmpCategories) {
-    //         m.set(cat.id, cat.name);
-    //     }
+    const catNameToId = useMemo(() => {
+        const m = new Map<string, number>();
 
-    //     return m;
-    // }, [ppmpCategories]);
+        for (const cat of ppmpCategories) {
+            m.set(cat.name, cat.id);
+        }
 
-    // // Combobox items with type prefix to avoid ComboboxCollection key collision
-    // const coaComboboxItems = useMemo(
-    //     () => chartOfAccounts.map((coa) => `coa:${coa.account_title}`),
-    //     [chartOfAccounts],
-    // );
+        return m;
+    }, [ppmpCategories]);
 
-    // const catComboboxItems = useMemo(
-    //     () => ppmpCategories.map((cat) => `cat:${cat.name}`),
-    //     [ppmpCategories],
-    // );
+    const idToCatName = useMemo(() => {
+        const m = new Map<number, string>();
+
+        for (const cat of ppmpCategories) {
+            m.set(cat.id, cat.name);
+        }
+
+        return m;
+    }, [ppmpCategories]);
+
+    const dbPairsSet = useMemo(() => {
+        const set = new Set<string>();
+
+        for (const pair of dbPairs) {
+            set.add(`${pair.chart_of_account_id}|${pair.ppmp_category_id}`);
+        }
+
+        return set;
+    }, [dbPairs]);
+
+    // Combobox items with type prefix to avoid ComboboxCollection key collision
+    const coaComboboxItems = useMemo(
+        () => chartOfAccounts.map((coa) => `coa:${coa.account_title}`),
+        [chartOfAccounts],
+    );
+
+    const catComboboxItems = useMemo(
+        () => ppmpCategories.map((cat) => `cat:${cat.name}`),
+        [ppmpCategories],
+    );
 
     // Resolution re-computes whenever result, manualCoa, or manualCat changes
     // const resolution: Resolution | null = useMemo(() => {
@@ -337,6 +362,7 @@ export default function PriceListImport({
         setSelectedSheets([]);
         setResult(null);
         setExtracted(null);
+        setMappedPairs(null);
         setManualCoa({});
         setManualCat({});
         setLoading(false);
@@ -346,6 +372,7 @@ export default function PriceListImport({
     function handleSheetsChange(sheets: string[]) {
         setSelectedSheets(sheets);
         setExtracted(null);
+        setMappedPairs(null);
         setConfirmed(false);
     }
 
@@ -371,6 +398,14 @@ export default function PriceListImport({
 
         const coaSheets = new Map<string, Set<string>>();
         const catSheets = new Map<string, Set<string>>();
+        const pairSheets = new Map<
+            string,
+            {
+                category: string;
+                chartOfAccount: string;
+                sheets: Set<string>;
+            }
+        >();
 
         for (const sheet of selectedSheets) {
             const ws = _workbook.getWorksheet(sheet);
@@ -403,6 +438,20 @@ export default function PriceListImport({
 
                 catSheets.get(cat)!.add(sheet);
             }
+
+            for (const pair of result.uniquePairs) {
+                const key = `${pair.category}|${pair.chartOfAccount}`;
+
+                if (!pairSheets.has(key)) {
+                    pairSheets.set(key, {
+                        category: pair.category,
+                        chartOfAccount: pair.chartOfAccount,
+                        sheets: new Set(),
+                    });
+                }
+
+                pairSheets.get(key)!.sheets.add(sheet);
+            }
         }
 
         setExtracted({
@@ -418,160 +467,60 @@ export default function PriceListImport({
                     sheets: [...sheets],
                 }))
                 .sort((a, b) => a.name.localeCompare(b.name)),
+            pairs: [...pairSheets.entries()]
+                .map(([, pair]) => ({
+                    category: pair.category,
+                    chartOfAccount: pair.chartOfAccount,
+                    sheets: [...pair.sheets],
+                }))
+                .sort(
+                    (a, b) =>
+                        a.category.localeCompare(b.category) ||
+                        a.chartOfAccount.localeCompare(b.chartOfAccount),
+                ),
         });
+    }
+
+    function handleMapResolved() {
+        if (!extracted) return;
+
+        const mapped = extracted.pairs.map((pair) => {
+            const catId =
+                manualCat[pair.category] ??
+                catLookup.get(normalize(pair.category));
+            const coaId =
+                manualCoa[pair.chartOfAccount] ??
+                coaLookup.get(normalize(pair.chartOfAccount));
+
+            return {
+                category: pair.category,
+                chartOfAccount: pair.chartOfAccount,
+                categoryId: catId ?? null,
+                coaId: coaId ?? null,
+                resolvedCategory: catId
+                    ? idToCatName.get(catId) ?? null
+                    : null,
+                resolvedCoa: coaId ? idToCoaTitle.get(coaId) ?? null : null,
+            };
+        });
+
+        setMappedPairs(mapped);
     }
 
     function normalize(str: string) {
         return str.trim().toLowerCase();
     }
 
-    function handleCheckDbMatches() {
-        if (!_workbook) {
+    function handleRefetch() {
+        if (refetching) {
             return;
         }
 
-        const coaSet = new Set<string>();
-        const catSet = new Set<string>();
+        setRefetching(true);
 
-        for (const sheet of selectedSheets) {
-            const ws = _workbook.getWorksheet(sheet);
-
-            if (!ws) {
-                continue;
-            }
-
-            const config = sheetConfigs[sheet] ?? defaultConfig;
-            const effective = config.useCustom ? config : defaultConfig;
-            const result = extractData({
-                worksheet: ws,
-                startRow: effective.startRow,
-                endRow: effective.endRow,
-                columnMap: effective.columnMap,
-            });
-
-            for (const coa of result.uniqueChartOfAccounts) {
-                coaSet.add(coa);
-            }
-
-            for (const cat of result.uniqueCategories) {
-                catSet.add(cat);
-            }
-        }
-
-        const dbCoaTitles = new Map(
-            chartOfAccounts.map((c) => [
-                normalize(c.account_title),
-                c.account_title,
-            ]),
-        );
-        const dbCatNames = new Map(
-            ppmpCategories.map((c) => [normalize(c.name), c.name]),
-        );
-
-        const matchedCoas: string[] = [];
-        const unmatchedCoas: string[] = [];
-
-        for (const name of coaSet) {
-            if (dbCoaTitles.has(normalize(name))) {
-                matchedCoas.push(name);
-            } else {
-                unmatchedCoas.push(name);
-            }
-        }
-
-        const matchedCats: string[] = [];
-        const unmatchedCats: string[] = [];
-
-        for (const name of catSet) {
-            if (dbCatNames.has(normalize(name))) {
-                matchedCats.push(name);
-            } else {
-                unmatchedCats.push(name);
-            }
-        }
-
-        console.log('=== DB Match Check (case-insensitive) ===\n');
-        console.log(
-            `COAs (${unmatchedCoas.length} unmatched / ${coaSet.size} total):`,
-        );
-        console.log(
-            matchedCoas
-                .sort()
-                .map((n) => `  ✓ ${n}`)
-                .join('\n'),
-        );
-
-        if (unmatchedCoas.length > 0) {
-            console.log(
-                unmatchedCoas
-                    .sort()
-                    .map((n) => `  ✗ ${n} — NO MATCH`)
-                    .join('\n'),
-            );
-        }
-
-        console.log('');
-        console.log(
-            `Categories (${unmatchedCats.length} unmatched / ${catSet.size} total):`,
-        );
-        console.log(
-            matchedCats
-                .sort()
-                .map((n) => `  ✓ ${n}`)
-                .join('\n'),
-        );
-
-        if (unmatchedCats.length > 0) {
-            console.log(
-                unmatchedCats
-                    .sort()
-                    .map((n) => `  ✗ ${n} — NO MATCH`)
-                    .join('\n'),
-            );
-        }
-    }
-
-    function handleLogCategoryCoaPairs() {
-        if (!_workbook) {
-            return;
-        }
-
-        const allPairs = new Map<
-            string,
-            { category: string; chartOfAccount: string }
-        >();
-
-        for (const sheet of selectedSheets) {
-            const ws = _workbook.getWorksheet(sheet);
-
-            if (!ws) {
-                continue;
-            }
-
-            const config = sheetConfigs[sheet] ?? defaultConfig;
-            const effective = config.useCustom ? config : defaultConfig;
-            const result = extractData({
-                worksheet: ws,
-                startRow: effective.startRow,
-                endRow: effective.endRow,
-                columnMap: effective.columnMap,
-            });
-
-            for (const pair of result.uniquePairs) {
-                const key = `${pair.category}|${pair.chartOfAccount}`;
-
-                if (!allPairs.has(key)) {
-                    allPairs.set(key, pair);
-                }
-            }
-        }
-
-        const lines = [...allPairs.values()]
-            .sort((a, b) => a.category.localeCompare(b.category))
-            .map((p) => `  ${p.category} → ${p.chartOfAccount}`);
-
-        console.log(`=== Category → COA Pairs (${allPairs.size} unique) ===\n`);
-        console.log(lines.join('\n'));
+        router.reload({
+            onFinish: () => setRefetching(false),
+        });
     }
 
     // function handleExtract() {
@@ -1321,28 +1270,348 @@ export default function PriceListImport({
                         </Button>
                         <Button
                             variant="outline"
-                            onClick={handleCheckDbMatches}
+                            onClick={handleRefetch}
+                            disabled={refetching}
                         >
-                            Check DB Matches
+                            {refetching && <Spinner />}
+                            Refetch DB Data
                         </Button>
                         <Button
                             variant="outline"
-                            onClick={handleLogCategoryCoaPairs}
+                            onClick={handleMapResolved}
+                            disabled={!extracted}
                         >
-                            Log Category–COA Pairs
+                            Map Resolved
                         </Button>
                     </div>
 
                     {extracted && (
-                        <div className="mt-6 grid grid-cols-2 gap-6">
-                            <div>
+                        <>
+                            <div className="mt-6 grid grid-cols-2 gap-6">
+                                <div className="order-1">
+                                    <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                        Categories (
+                                        {extracted.categories.length})
+                                    </h3>
+                                    <div className="max-h-80 overflow-y-auto rounded-md border">
+                                        <Table>
+                                            <TableHeader className="sticky top-0 z-10 bg-background">
+                                                <TableRow>
+                                                    <TableHead>
+                                                        Category
+                                                    </TableHead>
+                                                    <TableHead className="text-right">
+                                                        Sheets
+                                                    </TableHead>
+                                                    <TableHead>
+                                                        Map to DB
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {extracted.categories.map(
+                                                    (cat) => {
+                                                        const autoId =
+                                                            catLookup.get(
+                                                                normalize(
+                                                                    cat.name,
+                                                                ),
+                                                            );
+                                                        const currentId =
+                                                            manualCat[
+                                                                cat.name
+                                                            ] ?? autoId;
+                                                        const currentName =
+                                                            currentId
+                                                                ? idToCatName.get(
+                                                                      currentId,
+                                                                  )
+                                                                : undefined;
+                                                        const comboboxValue =
+                                                            currentName
+                                                                ? `cat:${currentName}`
+                                                                : '';
+
+                                                        return (
+                                                            <TableRow
+                                                                key={cat.name}
+                                                            >
+                                                                <TableCell className="max-w-64 truncate">
+                                                                    {cat.name}
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
+                                                                    <HoverCard>
+                                                                        <HoverCardTrigger
+                                                                            render={
+                                                                                <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                                    {
+                                                                                        cat
+                                                                                            .sheets
+                                                                                            .length
+                                                                                    }
+                                                                                    /
+                                                                                    {
+                                                                                        selectedSheets.length
+                                                                                    }
+                                                                                </span>
+                                                                            }
+                                                                        />
+                                                                        <HoverCardContent>
+                                                                            {cat.sheets
+                                                                                .length ===
+                                                                            selectedSheets.length
+                                                                                ? `Appears in ${cat.sheets.length} — all sheets`
+                                                                                : `Appears in: ${cat.sheets.join(', ')}`}
+                                                                        </HoverCardContent>
+                                                                    </HoverCard>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Combobox
+                                                                        items={
+                                                                            catComboboxItems
+                                                                        }
+                                                                        value={
+                                                                            comboboxValue
+                                                                        }
+                                                                        onValueChange={(
+                                                                            v,
+                                                                        ) => {
+                                                                            if (
+                                                                                !v
+                                                                            ) {
+                                                                                return;
+                                                                            }
+
+                                                                            const name =
+                                                                                v.replace(
+                                                                                    /^[^:]+:/,
+                                                                                    '',
+                                                                                );
+                                                                            const id =
+                                                                                catNameToId.get(
+                                                                                    name,
+                                                                                );
+
+                                                                            if (
+                                                                                id
+                                                                            ) {
+                                                                                setManualCat(
+                                                                                    (
+                                                                                        prev,
+                                                                                    ) => ({
+                                                                                        ...prev,
+                                                                                        [cat.name]:
+                                                                                            id,
+                                                                                    }),
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <ComboboxInput placeholder="Search category..." />
+                                                                        <ComboboxContent>
+                                                                            <ComboboxEmpty>
+                                                                                No items
+                                                                                found.
+                                                                            </ComboboxEmpty>
+                                                                            <ComboboxList>
+                                                                                {(
+                                                                                    item,
+                                                                                ) => (
+                                                                                    <ComboboxItem
+                                                                                        key={
+                                                                                            item
+                                                                                        }
+                                                                                        value={
+                                                                                            item
+                                                                                        }
+                                                                                    >
+                                                                                        {item.replace(
+                                                                                            /^[^:]+:/,
+                                                                                            '',
+                                                                                        )}
+                                                                                    </ComboboxItem>
+                                                                                )}
+                                                                            </ComboboxList>
+                                                                        </ComboboxContent>
+                                                                    </Combobox>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    },
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                                <div className="order-2">
+                                    <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                        COAs (
+                                        {extracted.chartOfAccounts.length})
+                                    </h3>
+                                    <div className="max-h-80 overflow-y-auto rounded-md border">
+                                        <Table>
+                                            <TableHeader className="sticky top-0 z-10 bg-background">
+                                                <TableRow>
+                                                    <TableHead>
+                                                        Chart of Account
+                                                    </TableHead>
+                                                    <TableHead className="text-right">
+                                                        Sheets
+                                                    </TableHead>
+                                                    <TableHead>
+                                                        Map to DB
+                                                    </TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {extracted.chartOfAccounts.map(
+                                                    (coa) => {
+                                                        const autoId =
+                                                            coaLookup.get(
+                                                                normalize(
+                                                                    coa.name,
+                                                                ),
+                                                            );
+                                                        const currentId =
+                                                            manualCoa[
+                                                                coa.name
+                                                            ] ?? autoId;
+                                                        const currentTitle =
+                                                            currentId
+                                                                ? idToCoaTitle.get(
+                                                                      currentId,
+                                                                  )
+                                                                : undefined;
+                                                        const comboboxValue =
+                                                            currentTitle
+                                                                ? `coa:${currentTitle}`
+                                                                : '';
+
+                                                        return (
+                                                            <TableRow
+                                                                key={coa.name}
+                                                            >
+                                                                <TableCell className="max-w-64 truncate">
+                                                                    {coa.name}
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
+                                                                    <HoverCard>
+                                                                        <HoverCardTrigger
+                                                                            render={
+                                                                                <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                                    {
+                                                                                        coa
+                                                                                            .sheets
+                                                                                            .length
+                                                                                    }
+                                                                                    /
+                                                                                    {
+                                                                                        selectedSheets.length
+                                                                                    }
+                                                                                </span>
+                                                                            }
+                                                                        />
+                                                                        <HoverCardContent>
+                                                                            {coa.sheets
+                                                                                .length ===
+                                                                            selectedSheets.length
+                                                                                ? `Appears in ${coa.sheets.length} — all sheets`
+                                                                                : `Appears in: ${coa.sheets.join(', ')}`}
+                                                                        </HoverCardContent>
+                                                                    </HoverCard>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    <Combobox
+                                                                        items={
+                                                                            coaComboboxItems
+                                                                        }
+                                                                        value={
+                                                                            comboboxValue
+                                                                        }
+                                                                        onValueChange={(
+                                                                            v,
+                                                                        ) => {
+                                                                            if (
+                                                                                !v
+                                                                            ) {
+                                                                                return;
+                                                                            }
+
+                                                                            const name =
+                                                                                v.replace(
+                                                                                    /^[^:]+:/,
+                                                                                    '',
+                                                                                );
+                                                                            const id =
+                                                                                coaNameToId.get(
+                                                                                    name,
+                                                                                );
+
+                                                                            if (
+                                                                                id
+                                                                            ) {
+                                                                                setManualCoa(
+                                                                                    (
+                                                                                        prev,
+                                                                                    ) => ({
+                                                                                        ...prev,
+                                                                                        [coa.name]:
+                                                                                            id,
+                                                                                    }),
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        <ComboboxInput placeholder="Search chart of account..." />
+                                                                        <ComboboxContent>
+                                                                            <ComboboxEmpty>
+                                                                                No items
+                                                                                found.
+                                                                            </ComboboxEmpty>
+                                                                            <ComboboxList>
+                                                                                {(
+                                                                                    item,
+                                                                                ) => (
+                                                                                    <ComboboxItem
+                                                                                        key={
+                                                                                            item
+                                                                                        }
+                                                                                        value={
+                                                                                            item
+                                                                                        }
+                                                                                    >
+                                                                                        {item.replace(
+                                                                                            /^[^:]+:/,
+                                                                                            '',
+                                                                                        )}
+                                                                                    </ComboboxItem>
+                                                                                )}
+                                                                            </ComboboxList>
+                                                                        </ComboboxContent>
+                                                                    </Combobox>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    },
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-6">
                                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                    COAs ({extracted.chartOfAccounts.length})
+                                    Category ↔ COA Pairs (
+                                    {extracted.pairs.length})
                                 </h3>
                                 <div className="max-h-80 overflow-y-auto rounded-md border">
                                     <Table>
-                                        <TableHeader>
+                                        <TableHeader className="sticky top-0 z-10 bg-background">
                                             <TableRow>
+                                                <TableHead>
+                                                    Category
+                                                </TableHead>
                                                 <TableHead>
                                                     Chart of Account
                                                 </TableHead>
@@ -1352,94 +1621,134 @@ export default function PriceListImport({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {extracted.chartOfAccounts.map(
-                                                (coa) => (
-                                                    <TableRow key={coa.name}>
-                                                        <TableCell className="max-w-64 truncate">
-                                                            {coa.name}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <HoverCard>
-                                                                <HoverCardTrigger
-                                                                    render={
-                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                            {
-                                                                                coa.sheets.length
-                                                                            }
-                                                                            /
-                                                                            {
-                                                                                selectedSheets.length
-                                                                            }
-                                                                        </span>
-                                                                    }
-                                                                />
-                                                                <HoverCardContent>
-                                                                    {coa.sheets
-                                                                        .length ===
-                                                                    selectedSheets.length
-                                                                        ? `Appears in ${coa.sheets.length} — all sheets`
-                                                                        : `Appears in: ${coa.sheets.join(', ')}`}
-                                                                </HoverCardContent>
-                                                            </HoverCard>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ),
-                                            )}
+                                            {extracted.pairs.map((pair) => (
+                                                <TableRow
+                                                    key={`${pair.category}|${pair.chartOfAccount}`}
+                                                >
+                                                    <TableCell className="max-w-40 truncate">
+                                                        {pair.category}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-48 truncate">
+                                                        {
+                                                            pair.chartOfAccount
+                                                        }
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <HoverCard>
+                                                            <HoverCardTrigger
+                                                                render={
+                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                        {
+                                                                            pair
+                                                                                .sheets
+                                                                                .length
+                                                                        }
+                                                                        /
+                                                                        {
+                                                                            selectedSheets.length
+                                                                        }
+                                                                    </span>
+                                                                }
+                                                            />
+                                                            <HoverCardContent>
+                                                                {pair.sheets
+                                                                    .length ===
+                                                                selectedSheets.length
+                                                                    ? `Appears in ${pair.sheets.length} — all sheets`
+                                                                    : `Appears in: ${pair.sheets.join(', ')}`}
+                                                            </HoverCardContent>
+                                                        </HoverCard>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
                                         </TableBody>
                                     </Table>
                                 </div>
                             </div>
-                            <div>
-                                <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                    Categories ({extracted.categories.length})
-                                </h3>
-                                <div className="max-h-80 overflow-y-auto rounded-md border">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead className="text-right">
-                                                    Sheets
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {extracted.categories.map(
-                                                (cat) => (
-                                                    <TableRow key={cat.name}>
-                                                        <TableCell className="max-w-64 truncate">
-                                                            {cat.name}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <HoverCard>
-                                                                <HoverCardTrigger
-                                                                    render={
-                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                            {
-                                                                                cat.sheets.length
-                                                                            }
-                                                                            /
-                                                                            {
-                                                                                selectedSheets.length
-                                                                            }
-                                                                        </span>
-                                                                    }
-                                                                />
-                                                                <HoverCardContent>
-                                                                    {cat.sheets
-                                                                        .length ===
-                                                                    selectedSheets.length
-                                                                        ? `Appears in ${cat.sheets.length} — all sheets`
-                                                                        : `Appears in: ${cat.sheets.join(', ')}`}
-                                                                </HoverCardContent>
-                                                            </HoverCard>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ),
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                        </>
+                    )}
+
+                    {mappedPairs && (
+                        <div className="mt-6">
+                            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                Mapped Category ↔ COA Pairs (
+                                {mappedPairs.length})
+                            </h3>
+                            <div className="max-h-80 overflow-y-auto rounded-md border">
+                                <Table>
+                                    <TableHeader className="sticky top-0 z-10 bg-background">
+                                        <TableRow>
+                                            <TableHead>
+                                                Category
+                                            </TableHead>
+                                            <TableHead>
+                                                Resolved Category
+                                            </TableHead>
+                                            <TableHead>
+                                                Chart of Account
+                                            </TableHead>
+                                            <TableHead>
+                                                Resolved COA
+                                            </TableHead>
+                                            <TableHead>
+                                                DB Pair
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {mappedPairs.map((pair) => {
+                                            const pairExists =
+                                                pair.coaId !== null &&
+                                                pair.categoryId !== null &&
+                                                dbPairsSet.has(
+                                                    `${pair.coaId}|${pair.categoryId}`,
+                                                );
+                                            const pairResolvable =
+                                                pair.coaId !== null &&
+                                                pair.categoryId !== null;
+
+                                            return (
+                                                <TableRow
+                                                    key={`${pair.category}|${pair.chartOfAccount}`}
+                                                >
+                                                    <TableCell className="max-w-40 truncate">
+                                                        {pair.category}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-40 truncate">
+                                                        {pair.resolvedCategory ??
+                                                            '—'}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-48 truncate">
+                                                        {
+                                                            pair.chartOfAccount
+                                                        }
+                                                    </TableCell>
+                                                    <TableCell className="max-w-48 truncate">
+                                                        {pair.resolvedCoa ??
+                                                            '—'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {pairResolvable ? (
+                                                            pairExists ? (
+                                                                <span className="text-emerald-600">
+                                                                    ✓ exists
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-amber-600">
+                                                                    ✗ not found
+                                                                </span>
+                                                            )
+                                                        ) : (
+                                                            <span className="text-destructive">
+                                                                ⚠ unresolvable
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
                             </div>
                         </div>
                     )}
@@ -1514,7 +1823,10 @@ export default function PriceListImport({
                             <Input
                                 value={columnMap.description}
                                 onChange={(e) =>
-                                    updateColumn('description', e.target.value)
+                                    updateColumn(
+                                        'description',
+                                        e.target.value,
+                                    )
                                 }
                                 className="w-16"
                             />
@@ -1561,7 +1873,9 @@ export default function PriceListImport({
                                         );
                                     }
 
-                                    console.log('=== Category → COA Pairs ===');
+                                    console.log(
+                                        '=== Category → COA Pairs ===',
+                                    );
                                     console.log([...pairs].sort().join('\n'));
                                     console.log(
                                         `Total unique pairs: ${pairs.size}`,

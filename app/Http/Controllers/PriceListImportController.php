@@ -26,9 +26,15 @@ class PriceListImportController extends Controller
 
         $ppmpCategories = PpmpCategory::get(['id', 'name']);
 
+        $dbPairs = ChartOfAccountPpmpCategory::get([
+            'chart_of_account_id',
+            'ppmp_category_id',
+        ]);
+
         return Inertia::render('price-list-import/index', [
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
+            'dbPairs' => $dbPairs,
         ]);
     }
 
