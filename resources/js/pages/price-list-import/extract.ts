@@ -54,13 +54,18 @@ export interface ExtractResult {
     items: PriceListItem[];
     uniqueChartOfAccounts: string[];
     uniqueCategories: string[];
+    uniquePairs: Array<{ category: string; chartOfAccount: string }>;
 }
 
 function cellText(cell: ExcelJS.Cell): string | null {
     let value: any = cell.value;
 
-    if (typeof value === 'object' && value !== null && 'result' in value) {
-        value = value.result;
+    if (typeof value === 'object' && value !== null) {
+        if ('result' in value) {
+            value = value.result;
+        } else {
+            return null;
+        }
     }
 
     if (value == null) {
@@ -73,8 +78,12 @@ function cellText(cell: ExcelJS.Cell): string | null {
 function cellNumber(cell: ExcelJS.Cell): number | null {
     let value: any = cell.value;
 
-    if (typeof value === 'object' && value !== null && 'result' in value) {
-        value = value.result;
+    if (typeof value === 'object' && value !== null) {
+        if ('result' in value) {
+            value = value.result;
+        } else {
+            return null;
+        }
     }
 
     if (value == null || value === '') {
@@ -96,6 +105,7 @@ export function extractData(config: ExtractConfig): ExtractResult {
     const items: PriceListItem[] = [];
     const chartOfAccountSet = new Set<string>();
     const categorySet = new Set<string>();
+    const pairsSet = new Set<string>();
 
     let nextTempId = 1;
 
@@ -195,6 +205,7 @@ export function extractData(config: ExtractConfig): ExtractResult {
         }
 
         chartOfAccountSet.add(chartOfAccount);
+        pairsSet.add(`${currentCategory}|${chartOfAccount}`);
 
         items.push({
             tempId: nextTempId++,
@@ -223,5 +234,11 @@ export function extractData(config: ExtractConfig): ExtractResult {
         items,
         uniqueChartOfAccounts: [...chartOfAccountSet].sort(),
         uniqueCategories: [...categorySet].sort(),
+        uniquePairs: [...pairsSet]
+            .sort()
+            .map((p) => {
+                const [category, chartOfAccount] = p.split('|');
+                return { category, chartOfAccount };
+            }),
     };
 }

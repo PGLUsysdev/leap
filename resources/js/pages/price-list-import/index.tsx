@@ -25,12 +25,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/base-ui-components/ui/select';
+import { Spinner } from '@/components/base-ui-components/ui/spinner';
+import { Switch } from '@/components/base-ui-components/ui/switch';
 import {
     ToggleGroup,
     ToggleGroupItem,
 } from '@/components/base-ui-components/ui/toggle-group';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
-import { Switch } from '@/components/base-ui-components/ui/switch';
 import type { ChartOfAccount, PpmpCategory } from '@/types';
 import { extractData } from './extract';
 import type { ExtractResult } from './extract';
@@ -432,9 +432,7 @@ export default function PriceListImport({
             )
             .join('\n');
 
-        console.log(
-            `=== COA Summary (total sheets: ${total}) ===`,
-        );
+        console.log(`=== COA Summary (total sheets: ${total}) ===`);
         console.log(lines);
     }
 
@@ -477,10 +475,153 @@ export default function PriceListImport({
             )
             .join('\n');
 
-        console.log(
-            `=== Category Summary (total sheets: ${total}) ===`,
-        );
+        console.log(`=== Category Summary (total sheets: ${total}) ===`);
         console.log(lines);
+    }
+
+    function normalize(str: string) {
+        return str.trim().toLowerCase();
+    }
+
+    function handleCheckDbMatches() {
+        if (!_workbook) return;
+
+        const coaSet = new Set<string>();
+        const catSet = new Set<string>();
+
+        for (const sheet of selectedSheets) {
+            const ws = _workbook.getWorksheet(sheet);
+
+            if (!ws) continue;
+
+            const config = sheetConfigs[sheet] ?? defaultConfig;
+            const effective = config.useCustom ? config : defaultConfig;
+            const result = extractData({
+                worksheet: ws,
+                startRow: effective.startRow,
+                endRow: effective.endRow,
+                columnMap: effective.columnMap,
+            });
+
+            for (const coa of result.uniqueChartOfAccounts) {
+                coaSet.add(coa);
+            }
+
+            for (const cat of result.uniqueCategories) {
+                catSet.add(cat);
+            }
+        }
+
+        const dbCoaTitles = new Map(
+            chartOfAccounts.map((c) => [
+                normalize(c.account_title),
+                c.account_title,
+            ]),
+        );
+        const dbCatNames = new Map(
+            ppmpCategories.map((c) => [normalize(c.name), c.name]),
+        );
+
+        const matchedCoas: string[] = [];
+        const unmatchedCoas: string[] = [];
+
+        for (const name of coaSet) {
+            if (dbCoaTitles.has(normalize(name))) {
+                matchedCoas.push(name);
+            } else {
+                unmatchedCoas.push(name);
+            }
+        }
+
+        const matchedCats: string[] = [];
+        const unmatchedCats: string[] = [];
+
+        for (const name of catSet) {
+            if (dbCatNames.has(normalize(name))) {
+                matchedCats.push(name);
+            } else {
+                unmatchedCats.push(name);
+            }
+        }
+
+        console.log('=== DB Match Check (case-insensitive) ===\n');
+        console.log(
+            `COAs (${unmatchedCoas.length} unmatched / ${coaSet.size} total):`,
+        );
+        console.log(
+            matchedCoas
+                .sort()
+                .map((n) => `  ✓ ${n}`)
+                .join('\n'),
+        );
+
+        if (unmatchedCoas.length > 0) {
+            console.log(
+                unmatchedCoas
+                    .sort()
+                    .map((n) => `  ✗ ${n} — NO MATCH`)
+                    .join('\n'),
+            );
+        }
+
+        console.log('');
+        console.log(
+            `Categories (${unmatchedCats.length} unmatched / ${catSet.size} total):`,
+        );
+        console.log(
+            matchedCats
+                .sort()
+                .map((n) => `  ✓ ${n}`)
+                .join('\n'),
+        );
+
+        if (unmatchedCats.length > 0) {
+            console.log(
+                unmatchedCats
+                    .sort()
+                    .map((n) => `  ✗ ${n} — NO MATCH`)
+                    .join('\n'),
+            );
+        }
+    }
+
+    function handleLogCategoryCoaPairs() {
+        if (!_workbook) return;
+
+        const allPairs = new Map<
+            string,
+            { category: string; chartOfAccount: string }
+        >();
+
+        for (const sheet of selectedSheets) {
+            const ws = _workbook.getWorksheet(sheet);
+
+            if (!ws) continue;
+
+            const config = sheetConfigs[sheet] ?? defaultConfig;
+            const effective = config.useCustom ? config : defaultConfig;
+            const result = extractData({
+                worksheet: ws,
+                startRow: effective.startRow,
+                endRow: effective.endRow,
+                columnMap: effective.columnMap,
+            });
+
+            for (const pair of result.uniquePairs) {
+                const key = `${pair.category}|${pair.chartOfAccount}`;
+
+                if (!allPairs.has(key)) {
+                    allPairs.set(key, pair);
+                }
+            }
+        }
+
+        const lines = [...allPairs.values()]
+            .sort((a, b) => a.category.localeCompare(b.category))
+            .map((p) => `  ${p.category} → ${p.chartOfAccount}`);
+
+        console.log(`=== Category → COA Pairs (${allPairs.size} unique) ===\n`);
+        console.log(lines.join('\n'));
     }
 
     // function handleExtract() {
@@ -1232,10 +1373,7 @@ export default function PriceListImport({
                             Extract Categories
                         </Button>
                         <Button>Extract</Button>
-                        <Button
-                            variant="outline"
-                            onClick={handleLogCoaSummary}
-                        >
+                        <Button variant="outline" onClick={handleLogCoaSummary}>
                             Log COA Summary
                         </Button>
                         <Button
@@ -1243,6 +1381,18 @@ export default function PriceListImport({
                             onClick={handleLogCategorySummary}
                         >
                             Log Category Summary
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleCheckDbMatches}
+                        >
+                            Check DB Matches
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleLogCategoryCoaPairs}
+                        >
+                            Log Category–COA Pairs
                         </Button>
                     </div>
                 </div>
