@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountPpmpCategory;
+use App\Models\FiscalYear;
+use App\Models\Ppa;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use Illuminate\Http\Request;
@@ -38,11 +40,19 @@ class PriceListImportController extends Controller
             'price',
         ]);
 
+        $fiscalYears = FiscalYear::orderByDesc('year')->get(['id', 'year']);
+
+        $ppas = Ppa::where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'fiscal_year_id']);
+
         return Inertia::render('price-list-import/index', [
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'dbPairs' => $dbPairs,
             'priceListItems' => $priceListItems,
+            'fiscalYears' => $fiscalYears,
+            'ppas' => $ppas,
         ]);
     }
 

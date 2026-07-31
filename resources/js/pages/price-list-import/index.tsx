@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import type { ChangeEvent } from 'react';
 import { useMemo, useState } from 'react';
@@ -12,11 +12,6 @@ import {
     ComboboxList,
 } from '@/components/base-ui-components/ui/combobox';
 import {
-    Field,
-    FieldDescription,
-    FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import {
     Dialog,
     DialogClose,
     DialogContent,
@@ -25,6 +20,11 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/base-ui-components/ui/dialog';
+import {
+    Field,
+    FieldDescription,
+    FieldLabel,
+} from '@/components/base-ui-components/ui/field';
 import {
     HoverCard,
     HoverCardContent,
@@ -86,6 +86,12 @@ interface PriceListImportProps {
         description: string;
         unit_of_measurement: string;
         price: string;
+    }>;
+    fiscalYears: Array<{ id: number; year: number }>;
+    ppas: Array<{
+        id: number;
+        name: string;
+        fiscal_year_id: number | null;
     }>;
 }
 
@@ -167,10 +173,13 @@ export default function PriceListImport({
     ppmpCategories,
     dbPairs,
     priceListItems,
+    fiscalYears,
+    ppas,
 }: PriceListImportProps) {
     console.log(chartOfAccounts);
     console.log(ppmpCategories);
 
+    const [mode, setMode] = useState<'price-list' | 'quantities' | null>(null);
     const [sheets, setSheets] = useState<string[]>([]);
     const [_workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
@@ -214,6 +223,10 @@ export default function PriceListImport({
     const [loading, setLoading] = useState(false);
     const [refetching, setRefetching] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
+    const [targetFiscalYearId, setTargetFiscalYearId] = useState<number | null>(
+        null,
+    );
+    const [targetPpaId, setTargetPpaId] = useState<number | null>(null);
     const [calibratingSheet, setCalibratingSheet] = useState('');
     const [sheetConfigs, setSheetConfigs] = useState<
         Record<
@@ -271,6 +284,21 @@ export default function PriceListImport({
             decQty: 'AG',
         },
     };
+
+    const monthlyQtyColumns = [
+        ['Jan', 'K'],
+        ['Feb', 'M'],
+        ['Mar', 'O'],
+        ['Apr', 'Q'],
+        ['May', 'S'],
+        ['Jun', 'U'],
+        ['Jul', 'W'],
+        ['Aug', 'Y'],
+        ['Sep', 'AA'],
+        ['Oct', 'AC'],
+        ['Nov', 'AE'],
+        ['Dec', 'AG'],
+    ] as const;
 
     // Manual mappings for names that didn't auto-match
     const [manualCoa, setManualCoa] = useState<Record<string, number>>({});
@@ -385,6 +413,14 @@ export default function PriceListImport({
         [ppmpCategories],
     );
 
+    const ppaComboboxItems = useMemo(
+        () =>
+            ppas
+                .filter((p) => p.fiscal_year_id === targetFiscalYearId)
+                .map((p) => `ppa:${p.name}`),
+        [ppas, targetFiscalYearId],
+    );
+
     const importPlan = useMemo(() => {
         if (!uniqueItems) {
             return null;
@@ -416,9 +452,8 @@ export default function PriceListImport({
                 manualCat[item.category] ??
                 catLookup.get(normalize(item.category));
             const coaId =
-                pairOverrides[
-                    `${item.category}|${item.chartOfAccount}`
-                ]?.coaId ??
+                pairOverrides[`${item.category}|${item.chartOfAccount}`]
+                    ?.coaId ??
                 manualCoa[item.chartOfAccount] ??
                 coaLookup.get(normalize(item.chartOfAccount));
 
@@ -495,6 +530,7 @@ export default function PriceListImport({
 
         setWorkbook(wb);
         setSheets(wb.worksheets.map((ws) => ws.name));
+        setMode(null);
         setSelectedSheets([]);
         setResult(null);
         setExtracted(null);
@@ -516,6 +552,15 @@ export default function PriceListImport({
         setUniqueItems(null);
         setItemMatches({});
         setConfirmed(false);
+    }
+
+    function handleModeChange(nextMode: 'price-list' | 'quantities') {
+        if (nextMode === 'quantities') {
+            setSelectedSheets((prev) => prev.slice(0, 1));
+        }
+
+        setConfirmed(false);
+        setMode(nextMode);
     }
 
     function handleConfirm() {
@@ -710,7 +755,9 @@ export default function PriceListImport({
     }
 
     function handleMapResolved() {
-        if (!extracted) return;
+        if (!extracted) {
+            return;
+        }
 
         const mapped = extracted.pairs.map((pair) => {
             const catId =
@@ -855,9 +902,44 @@ export default function PriceListImport({
 
             {sheets.length > 0 && (
                 <Field>
+                    <FieldLabel>Import Route</FieldLabel>
+                    <div className="flex gap-2">
+                        <Button
+                            variant={
+                                mode === 'price-list' ? 'default' : 'outline'
+                            }
+                            onClick={() => handleModeChange('price-list')}
+                        >
+                            Price List Import
+                        </Button>
+                        <Button
+                            variant={
+                                mode === 'quantities' ? 'default' : 'outline'
+                            }
+                            onClick={() => handleModeChange('quantities')}
+                        >
+                            Monthly Quantities
+                        </Button>
+                    </div>
+                </Field>
+            )}
+
+            {mode === 'quantities' && !confirmed && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                    Monthly Quantities import is coming next. This path will
+                    import the monthly quantities from the Excel into the PPMP
+                    table for a specific PPA, funding source, and fiscal year.
+                </p>
+            )}
+
+            {sheets.length > 0 && (
+                <Field>
                     <FieldLabel>Sheets</FieldLabel>
+                    {mode === 'quantities' && (
+                        <FieldDescription>Select one sheet.</FieldDescription>
+                    )}
                     <ToggleGroup
-                        multiple
+                        multiple={mode !== 'quantities'}
                         value={selectedSheets}
                         onValueChange={handleSheetsChange}
                         orientation="horizontal"
@@ -882,290 +964,320 @@ export default function PriceListImport({
                 </div>
             )}
 
-            {confirmed && selectedSheets.length > 0 && (
-                <div className="mt-4 space-y-4">
-                    <Field>
-                        <FieldLabel>Sheet to calibrate</FieldLabel>
-                        <Select
-                            value={calibratingSheet}
-                            onValueChange={(v) => v && setCalibratingSheet(v)}
+            {mode === 'quantities' &&
+                confirmed &&
+                selectedSheets.length > 0 && (
+                    <div className="mt-4 space-y-4">
+                        <p className="text-sm">
+                            Confirmed sheet:{' '}
+                            <span className="font-medium">
+                                {selectedSheets[0]}
+                            </span>
+                        </p>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setConfirmed(false)}
                         >
-                            <SelectTrigger className="w-60">
-                                <SelectValue placeholder="Select sheet" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    {selectedSheets.map((sheet) => (
-                                        <SelectItem key={sheet} value={sheet}>
-                                            {sheet}
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </Field>
+                            ← Change sheet selection
+                        </Button>
 
-                    {calibratingSheet && sheetConfigs[calibratingSheet] && (
                         <div className="rounded-lg border p-4">
-                            <div className="flex items-center justify-between">
-                                <span className="font-medium">
-                                    {calibratingSheet}
-                                </span>
-                                <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                    Use Defaults
-                                    <Switch
-                                        checked={
-                                            !sheetConfigs[calibratingSheet]
-                                                .useCustom
+                            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                Target
+                            </h3>
+                            <div className="grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
+                                <Field>
+                                    <FieldLabel>Fiscal Year</FieldLabel>
+                                    <Select
+                                        value={
+                                            targetFiscalYearId
+                                                ? String(targetFiscalYearId)
+                                                : ''
                                         }
-                                        onCheckedChange={(checked) =>
-                                            setSheetConfigs((prev) => ({
-                                                ...prev,
-                                                [calibratingSheet]: {
-                                                    ...prev[calibratingSheet],
-                                                    useCustom: !checked,
-                                                },
-                                            }))
+                                        onValueChange={(v) => {
+                                            setTargetFiscalYearId(
+                                                v ? Number(v) : null,
+                                            );
+                                            setTargetPpaId(null);
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select fiscal year" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {fiscalYears.map((fy) => (
+                                                    <SelectItem
+                                                        key={fy.id}
+                                                        value={String(fy.id)}
+                                                    >
+                                                        {fy.year}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                                <Field>
+                                    <FieldLabel>PPA</FieldLabel>
+                                    <Combobox
+                                        items={ppaComboboxItems}
+                                        value={
+                                            targetPpaId
+                                                ? `ppa:${ppas.find((p) => p.id === targetPpaId)?.name ?? ''}`
+                                                : ''
                                         }
-                                        size="sm"
-                                    />
-                                </label>
-                            </div>
+                                        onValueChange={(v) => {
+                                            if (!v) {
+                                                setTargetPpaId(null);
 
-                            <fieldset
-                                disabled={
-                                    !sheetConfigs[calibratingSheet].useCustom
+                                                return;
+                                            }
+
+                                            const name = v.replace(
+                                                /^[^:]+:/,
+                                                '',
+                                            );
+                                            const ppa = ppas.find(
+                                                (p) =>
+                                                    p.fiscal_year_id ===
+                                                        targetFiscalYearId &&
+                                                    p.name === name,
+                                            );
+
+                                            if (ppa) {
+                                                setTargetPpaId(ppa.id);
+                                            }
+                                        }}
+                                    >
+                                        <ComboboxInput
+                                            placeholder="Select PPA..."
+                                            showClear
+                                            disabled={!targetFiscalYearId}
+                                        />
+                                        <ComboboxContent>
+                                            <ComboboxEmpty>
+                                                {targetFiscalYearId
+                                                    ? 'No PPA found.'
+                                                    : 'Select a fiscal year first.'}
+                                            </ComboboxEmpty>
+                                            <ComboboxList>
+                                                {(item) => (
+                                                    <ComboboxItem
+                                                        key={item}
+                                                        value={item}
+                                                    >
+                                                        {item.replace(
+                                                            /^[^:]+:/,
+                                                            '',
+                                                        )}
+                                                    </ComboboxItem>
+                                                )}
+                                            </ComboboxList>
+                                        </ComboboxContent>
+                                    </Combobox>
+                                </Field>
+                                <Field>
+                                    <FieldLabel>Funding Source</FieldLabel>
+                                    <Combobox
+                                        items={[]}
+                                        value=""
+                                        onValueChange={() => {}}
+                                    >
+                                        <ComboboxInput placeholder="Select funding source..." />
+                                        <ComboboxContent>
+                                            <ComboboxEmpty>
+                                                Select a PPA first.
+                                            </ComboboxEmpty>
+                                            <ComboboxList />
+                                        </ComboboxContent>
+                                    </Combobox>
+                                </Field>
+                            </div>
+                            <p className="mt-2 text-sm text-muted-foreground">
+                                Resolved target: —
+                            </p>
+                        </div>
+
+                        <div className="rounded-lg border p-4">
+                            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                Calibration
+                            </h3>
+                            <div className="flex gap-4">
+                                <Field>
+                                    <FieldLabel>Start Row</FieldLabel>
+                                    <Input
+                                        type="number"
+                                        defaultValue={8}
+                                        className="w-20"
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>End Row</FieldLabel>
+                                    <Input type="number" className="w-20" />
+                                </Field>
+                            </div>
+                            <div className="mt-4 grid grid-cols-6 gap-2">
+                                <Field>
+                                    <FieldLabel>Item#</FieldLabel>
+                                    <Input defaultValue="E" className="w-16" />
+                                </Field>
+                                <Field>
+                                    <FieldLabel>Description</FieldLabel>
+                                    <Input defaultValue="F" className="w-16" />
+                                </Field>
+                            </div>
+                            <div className="mt-4">
+                                <p className="mb-2 text-sm font-medium text-muted-foreground">
+                                    Monthly Quantities
+                                </p>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {monthlyQtyColumns.map(([label, col]) => (
+                                        <Field key={label}>
+                                            <FieldLabel>{label}</FieldLabel>
+                                            <Input
+                                                defaultValue={col}
+                                                className="w-16"
+                                            />
+                                        </Field>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+            {mode === 'price-list' &&
+                confirmed &&
+                selectedSheets.length > 0 && (
+                    <div className="mt-4 space-y-4">
+                        <Field>
+                            <FieldLabel>Sheet to calibrate</FieldLabel>
+                            <Select
+                                value={calibratingSheet}
+                                onValueChange={(v) =>
+                                    v && setCalibratingSheet(v)
                                 }
                             >
-                                <div className="mt-4 flex gap-4">
-                                    <Field>
-                                        <FieldLabel>Start Row</FieldLabel>
-                                        <Input
-                                            type="number"
-                                            value={
-                                                sheetConfigs[calibratingSheet]
-                                                    .startRow
+                                <SelectTrigger className="w-60">
+                                    <SelectValue placeholder="Select sheet" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {selectedSheets.map((sheet) => (
+                                            <SelectItem
+                                                key={sheet}
+                                                value={sheet}
+                                            >
+                                                {sheet}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                        </Field>
+
+                        {calibratingSheet && sheetConfigs[calibratingSheet] && (
+                            <div className="rounded-lg border p-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="font-medium">
+                                        {calibratingSheet}
+                                    </span>
+                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                        Use Defaults
+                                        <Switch
+                                            checked={
+                                                !sheetConfigs[calibratingSheet]
+                                                    .useCustom
                                             }
-                                            onChange={(e) =>
+                                            onCheckedChange={(checked) =>
                                                 setSheetConfigs((prev) => ({
                                                     ...prev,
                                                     [calibratingSheet]: {
                                                         ...prev[
                                                             calibratingSheet
                                                         ],
-                                                        startRow: Number(
-                                                            e.target.value,
-                                                        ),
+                                                        useCustom: !checked,
                                                     },
                                                 }))
                                             }
-                                            className="w-20"
+                                            size="sm"
                                         />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel>End Row</FieldLabel>
-                                        <Input
-                                            type="number"
-                                            value={
-                                                sheetConfigs[calibratingSheet]
-                                                    .endRow ?? ''
-                                            }
-                                            onChange={(e) =>
-                                                setSheetConfigs((prev) => ({
-                                                    ...prev,
-                                                    [calibratingSheet]: {
-                                                        ...prev[
-                                                            calibratingSheet
-                                                        ],
-                                                        endRow: e.target.value
-                                                            ? Number(
-                                                                  e.target
-                                                                      .value,
-                                                              )
-                                                            : undefined,
-                                                    },
-                                                }))
-                                            }
-                                            className="w-20"
-                                        />
-                                    </Field>
+                                    </label>
                                 </div>
 
-                                <div className="mt-4 grid grid-cols-6 gap-2">
-                                    <Field>
-                                        <FieldLabel>COA</FieldLabel>
-                                        <Input
-                                            value={
-                                                sheetConfigs[calibratingSheet]
-                                                    .columnMap.chartOfAccount
-                                            }
-                                            onChange={(e) =>
-                                                setSheetConfigs((prev) => ({
-                                                    ...prev,
-                                                    [calibratingSheet]: {
-                                                        ...prev[
-                                                            calibratingSheet
-                                                        ],
-                                                        columnMap: {
+                                <fieldset
+                                    disabled={
+                                        !sheetConfigs[calibratingSheet]
+                                            .useCustom
+                                    }
+                                >
+                                    <div className="mt-4 flex gap-4">
+                                        <Field>
+                                            <FieldLabel>Start Row</FieldLabel>
+                                            <Input
+                                                type="number"
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].startRow
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs((prev) => ({
+                                                        ...prev,
+                                                        [calibratingSheet]: {
                                                             ...prev[
                                                                 calibratingSheet
-                                                            ].columnMap,
-                                                            chartOfAccount:
-                                                                e.target.value.toUpperCase(),
+                                                            ],
+                                                            startRow: Number(
+                                                                e.target.value,
+                                                            ),
                                                         },
-                                                    },
-                                                }))
-                                            }
-                                            className="w-16"
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel>Item#</FieldLabel>
-                                        <Input
-                                            value={
-                                                sheetConfigs[calibratingSheet]
-                                                    .columnMap.itemNumber
-                                            }
-                                            onChange={(e) =>
-                                                setSheetConfigs((prev) => ({
-                                                    ...prev,
-                                                    [calibratingSheet]: {
-                                                        ...prev[
-                                                            calibratingSheet
-                                                        ],
-                                                        columnMap: {
+                                                    }))
+                                                }
+                                                className="w-20"
+                                            />
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>End Row</FieldLabel>
+                                            <Input
+                                                type="number"
+                                                value={
+                                                    sheetConfigs[
+                                                        calibratingSheet
+                                                    ].endRow ?? ''
+                                                }
+                                                onChange={(e) =>
+                                                    setSheetConfigs((prev) => ({
+                                                        ...prev,
+                                                        [calibratingSheet]: {
                                                             ...prev[
                                                                 calibratingSheet
-                                                            ].columnMap,
-                                                            itemNumber:
-                                                                e.target.value.toUpperCase(),
+                                                            ],
+                                                            endRow: e.target
+                                                                .value
+                                                                ? Number(
+                                                                      e.target
+                                                                          .value,
+                                                                  )
+                                                                : undefined,
                                                         },
-                                                    },
-                                                }))
-                                            }
-                                            className="w-16"
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel>Cat</FieldLabel>
-                                        <Input
-                                            value={
-                                                sheetConfigs[calibratingSheet]
-                                                    .columnMap.category
-                                            }
-                                            onChange={(e) =>
-                                                setSheetConfigs((prev) => ({
-                                                    ...prev,
-                                                    [calibratingSheet]: {
-                                                        ...prev[
-                                                            calibratingSheet
-                                                        ],
-                                                        columnMap: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ].columnMap,
-                                                            category:
-                                                                e.target.value.toUpperCase(),
-                                                        },
-                                                    },
-                                                }))
-                                            }
-                                            className="w-16"
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel>Desc</FieldLabel>
-                                        <Input
-                                            value={
-                                                sheetConfigs[calibratingSheet]
-                                                    .columnMap.description
-                                            }
-                                            onChange={(e) =>
-                                                setSheetConfigs((prev) => ({
-                                                    ...prev,
-                                                    [calibratingSheet]: {
-                                                        ...prev[
-                                                            calibratingSheet
-                                                        ],
-                                                        columnMap: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ].columnMap,
-                                                            description:
-                                                                e.target.value.toUpperCase(),
-                                                        },
-                                                    },
-                                                }))
-                                            }
-                                            className="w-16"
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel>Unit</FieldLabel>
-                                        <Input
-                                            value={
-                                                sheetConfigs[calibratingSheet]
-                                                    .columnMap.unit
-                                            }
-                                            onChange={(e) =>
-                                                setSheetConfigs((prev) => ({
-                                                    ...prev,
-                                                    [calibratingSheet]: {
-                                                        ...prev[
-                                                            calibratingSheet
-                                                        ],
-                                                        columnMap: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ].columnMap,
-                                                            unit: e.target.value.toUpperCase(),
-                                                        },
-                                                    },
-                                                }))
-                                            }
-                                            className="w-16"
-                                        />
-                                    </Field>
-                                    <Field>
-                                        <FieldLabel>Price</FieldLabel>
-                                        <Input
-                                            value={
-                                                sheetConfigs[calibratingSheet]
-                                                    .columnMap.price
-                                            }
-                                            onChange={(e) =>
-                                                setSheetConfigs((prev) => ({
-                                                    ...prev,
-                                                    [calibratingSheet]: {
-                                                        ...prev[
-                                                            calibratingSheet
-                                                        ],
-                                                        columnMap: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ].columnMap,
-                                                            price: e.target.value.toUpperCase(),
-                                                        },
-                                                    },
-                                                }))
-                                            }
-                                            className="w-16"
-                                        />
-                                    </Field>
-                                </div>
+                                                    }))
+                                                }
+                                                className="w-20"
+                                            />
+                                        </Field>
+                                    </div>
 
-                                <div className="mt-4">
-                                    <p className="mb-2 text-sm font-medium text-muted-foreground">
-                                        Monthly Quantities
-                                    </p>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="mt-4 grid grid-cols-6 gap-2">
                                         <Field>
-                                            <FieldLabel>Jan</FieldLabel>
+                                            <FieldLabel>COA</FieldLabel>
                                             <Input
                                                 value={
                                                     sheetConfigs[
                                                         calibratingSheet
-                                                    ].columnMap.janQty
+                                                    ].columnMap.chartOfAccount
                                                 }
                                                 onChange={(e) =>
                                                     setSheetConfigs((prev) => ({
@@ -1178,7 +1290,8 @@ export default function PriceListImport({
                                                                 ...prev[
                                                                     calibratingSheet
                                                                 ].columnMap,
-                                                                janQty: e.target.value.toUpperCase(),
+                                                                chartOfAccount:
+                                                                    e.target.value.toUpperCase(),
                                                             },
                                                         },
                                                     }))
@@ -1187,12 +1300,12 @@ export default function PriceListImport({
                                             />
                                         </Field>
                                         <Field>
-                                            <FieldLabel>Feb</FieldLabel>
+                                            <FieldLabel>Item#</FieldLabel>
                                             <Input
                                                 value={
                                                     sheetConfigs[
                                                         calibratingSheet
-                                                    ].columnMap.febQty
+                                                    ].columnMap.itemNumber
                                                 }
                                                 onChange={(e) =>
                                                     setSheetConfigs((prev) => ({
@@ -1205,7 +1318,8 @@ export default function PriceListImport({
                                                                 ...prev[
                                                                     calibratingSheet
                                                                 ].columnMap,
-                                                                febQty: e.target.value.toUpperCase(),
+                                                                itemNumber:
+                                                                    e.target.value.toUpperCase(),
                                                             },
                                                         },
                                                     }))
@@ -1214,12 +1328,12 @@ export default function PriceListImport({
                                             />
                                         </Field>
                                         <Field>
-                                            <FieldLabel>Mar</FieldLabel>
+                                            <FieldLabel>Cat</FieldLabel>
                                             <Input
                                                 value={
                                                     sheetConfigs[
                                                         calibratingSheet
-                                                    ].columnMap.marQty
+                                                    ].columnMap.category
                                                 }
                                                 onChange={(e) =>
                                                     setSheetConfigs((prev) => ({
@@ -1232,7 +1346,8 @@ export default function PriceListImport({
                                                                 ...prev[
                                                                     calibratingSheet
                                                                 ].columnMap,
-                                                                marQty: e.target.value.toUpperCase(),
+                                                                category:
+                                                                    e.target.value.toUpperCase(),
                                                             },
                                                         },
                                                     }))
@@ -1241,12 +1356,12 @@ export default function PriceListImport({
                                             />
                                         </Field>
                                         <Field>
-                                            <FieldLabel>Apr</FieldLabel>
+                                            <FieldLabel>Desc</FieldLabel>
                                             <Input
                                                 value={
                                                     sheetConfigs[
                                                         calibratingSheet
-                                                    ].columnMap.aprQty
+                                                    ].columnMap.description
                                                 }
                                                 onChange={(e) =>
                                                     setSheetConfigs((prev) => ({
@@ -1259,7 +1374,8 @@ export default function PriceListImport({
                                                                 ...prev[
                                                                     calibratingSheet
                                                                 ].columnMap,
-                                                                aprQty: e.target.value.toUpperCase(),
+                                                                description:
+                                                                    e.target.value.toUpperCase(),
                                                             },
                                                         },
                                                     }))
@@ -1268,12 +1384,12 @@ export default function PriceListImport({
                                             />
                                         </Field>
                                         <Field>
-                                            <FieldLabel>May</FieldLabel>
+                                            <FieldLabel>Unit</FieldLabel>
                                             <Input
                                                 value={
                                                     sheetConfigs[
                                                         calibratingSheet
-                                                    ].columnMap.mayQty
+                                                    ].columnMap.unit
                                                 }
                                                 onChange={(e) =>
                                                     setSheetConfigs((prev) => ({
@@ -1286,7 +1402,7 @@ export default function PriceListImport({
                                                                 ...prev[
                                                                     calibratingSheet
                                                                 ].columnMap,
-                                                                mayQty: e.target.value.toUpperCase(),
+                                                                unit: e.target.value.toUpperCase(),
                                                             },
                                                         },
                                                     }))
@@ -1295,12 +1411,12 @@ export default function PriceListImport({
                                             />
                                         </Field>
                                         <Field>
-                                            <FieldLabel>Jun</FieldLabel>
+                                            <FieldLabel>Price</FieldLabel>
                                             <Input
                                                 value={
                                                     sheetConfigs[
                                                         calibratingSheet
-                                                    ].columnMap.junQty
+                                                    ].columnMap.price
                                                 }
                                                 onChange={(e) =>
                                                     setSheetConfigs((prev) => ({
@@ -1313,169 +1429,7 @@ export default function PriceListImport({
                                                                 ...prev[
                                                                     calibratingSheet
                                                                 ].columnMap,
-                                                                junQty: e.target.value.toUpperCase(),
-                                                            },
-                                                        },
-                                                    }))
-                                                }
-                                                className="w-16"
-                                            />
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>Jul</FieldLabel>
-                                            <Input
-                                                value={
-                                                    sheetConfigs[
-                                                        calibratingSheet
-                                                    ].columnMap.julQty
-                                                }
-                                                onChange={(e) =>
-                                                    setSheetConfigs((prev) => ({
-                                                        ...prev,
-                                                        [calibratingSheet]: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ],
-                                                            columnMap: {
-                                                                ...prev[
-                                                                    calibratingSheet
-                                                                ].columnMap,
-                                                                julQty: e.target.value.toUpperCase(),
-                                                            },
-                                                        },
-                                                    }))
-                                                }
-                                                className="w-16"
-                                            />
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>Aug</FieldLabel>
-                                            <Input
-                                                value={
-                                                    sheetConfigs[
-                                                        calibratingSheet
-                                                    ].columnMap.augQty
-                                                }
-                                                onChange={(e) =>
-                                                    setSheetConfigs((prev) => ({
-                                                        ...prev,
-                                                        [calibratingSheet]: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ],
-                                                            columnMap: {
-                                                                ...prev[
-                                                                    calibratingSheet
-                                                                ].columnMap,
-                                                                augQty: e.target.value.toUpperCase(),
-                                                            },
-                                                        },
-                                                    }))
-                                                }
-                                                className="w-16"
-                                            />
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>Sep</FieldLabel>
-                                            <Input
-                                                value={
-                                                    sheetConfigs[
-                                                        calibratingSheet
-                                                    ].columnMap.sepQty
-                                                }
-                                                onChange={(e) =>
-                                                    setSheetConfigs((prev) => ({
-                                                        ...prev,
-                                                        [calibratingSheet]: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ],
-                                                            columnMap: {
-                                                                ...prev[
-                                                                    calibratingSheet
-                                                                ].columnMap,
-                                                                sepQty: e.target.value.toUpperCase(),
-                                                            },
-                                                        },
-                                                    }))
-                                                }
-                                                className="w-16"
-                                            />
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>Oct</FieldLabel>
-                                            <Input
-                                                value={
-                                                    sheetConfigs[
-                                                        calibratingSheet
-                                                    ].columnMap.octQty
-                                                }
-                                                onChange={(e) =>
-                                                    setSheetConfigs((prev) => ({
-                                                        ...prev,
-                                                        [calibratingSheet]: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ],
-                                                            columnMap: {
-                                                                ...prev[
-                                                                    calibratingSheet
-                                                                ].columnMap,
-                                                                octQty: e.target.value.toUpperCase(),
-                                                            },
-                                                        },
-                                                    }))
-                                                }
-                                                className="w-16"
-                                            />
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>Nov</FieldLabel>
-                                            <Input
-                                                value={
-                                                    sheetConfigs[
-                                                        calibratingSheet
-                                                    ].columnMap.novQty
-                                                }
-                                                onChange={(e) =>
-                                                    setSheetConfigs((prev) => ({
-                                                        ...prev,
-                                                        [calibratingSheet]: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ],
-                                                            columnMap: {
-                                                                ...prev[
-                                                                    calibratingSheet
-                                                                ].columnMap,
-                                                                novQty: e.target.value.toUpperCase(),
-                                                            },
-                                                        },
-                                                    }))
-                                                }
-                                                className="w-16"
-                                            />
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>Dec</FieldLabel>
-                                            <Input
-                                                value={
-                                                    sheetConfigs[
-                                                        calibratingSheet
-                                                    ].columnMap.decQty
-                                                }
-                                                onChange={(e) =>
-                                                    setSheetConfigs((prev) => ({
-                                                        ...prev,
-                                                        [calibratingSheet]: {
-                                                            ...prev[
-                                                                calibratingSheet
-                                                            ],
-                                                            columnMap: {
-                                                                ...prev[
-                                                                    calibratingSheet
-                                                                ].columnMap,
-                                                                decQty: e.target.value.toUpperCase(),
+                                                                price: e.target.value.toUpperCase(),
                                                             },
                                                         },
                                                     }))
@@ -1484,49 +1438,766 @@ export default function PriceListImport({
                                             />
                                         </Field>
                                     </div>
-                                </div>
-                            </fieldset>
+
+                                    <div className="mt-4">
+                                        <p className="mb-2 text-sm font-medium text-muted-foreground">
+                                            Monthly Quantities
+                                        </p>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            <Field>
+                                                <FieldLabel>Jan</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.janQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                janQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Feb</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.febQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                febQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Mar</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.marQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                marQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Apr</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.aprQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                aprQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>May</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.mayQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                mayQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Jun</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.junQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                junQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Jul</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.julQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                julQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Aug</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.augQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                augQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Sep</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.sepQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                sepQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Oct</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.octQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                octQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Nov</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.novQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                novQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel>Dec</FieldLabel>
+                                                <Input
+                                                    value={
+                                                        sheetConfigs[
+                                                            calibratingSheet
+                                                        ].columnMap.decQty
+                                                    }
+                                                    onChange={(e) =>
+                                                        setSheetConfigs(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [calibratingSheet]:
+                                                                    {
+                                                                        ...prev[
+                                                                            calibratingSheet
+                                                                        ],
+                                                                        columnMap:
+                                                                            {
+                                                                                ...prev[
+                                                                                    calibratingSheet
+                                                                                ]
+                                                                                    .columnMap,
+                                                                                decQty: e.target.value.toUpperCase(),
+                                                                            },
+                                                                    },
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-16"
+                                                />
+                                            </Field>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </div>
+                        )}
+
+                        <div className="mt-4 flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={handleExtractCoaAndCategory}
+                            >
+                                Extract COA and Category
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handleMapResolved}
+                                disabled={!extracted}
+                            >
+                                Map Resolved
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handleExtractUniqueItems}
+                                disabled={!mappedPairs}
+                            >
+                                Show Unique Items
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handleRefetch}
+                                disabled={refetching}
+                            >
+                                {refetching && <Spinner />}
+                                Refetch DB Data
+                            </Button>
                         </div>
-                    )}
 
-                    <div className="mt-4 flex gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={handleExtractCoaAndCategory}
-                        >
-                            Extract COA and Category
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={handleMapResolved}
-                            disabled={!extracted}
-                        >
-                            Map Resolved
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={handleExtractUniqueItems}
-                            disabled={!mappedPairs}
-                        >
-                            Show Unique Items
-                        </Button>
-                        <Button
-                            variant="outline"
-                            onClick={handleRefetch}
-                            disabled={refetching}
-                        >
-                            {refetching && <Spinner />}
-                            Refetch DB Data
-                        </Button>
-                    </div>
+                        {extracted && (
+                            <>
+                                <div className="mt-6 grid grid-cols-2 gap-6">
+                                    <div className="order-1">
+                                        <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                            Categories (
+                                            {extracted.categories.length})
+                                        </h3>
+                                        <div className="max-h-80 overflow-y-auto rounded-md border">
+                                            <Table>
+                                                <TableHeader className="sticky top-0 z-10 bg-background">
+                                                    <TableRow>
+                                                        <TableHead>
+                                                            Category
+                                                        </TableHead>
+                                                        <TableHead className="text-right">
+                                                            Sheets
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Map to DB
+                                                        </TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {extracted.categories.map(
+                                                        (cat) => {
+                                                            const autoId =
+                                                                catLookup.get(
+                                                                    normalize(
+                                                                        cat.name,
+                                                                    ),
+                                                                );
+                                                            const currentId =
+                                                                manualCat[
+                                                                    cat.name
+                                                                ] ?? autoId;
+                                                            const currentName =
+                                                                currentId
+                                                                    ? idToCatName.get(
+                                                                          currentId,
+                                                                      )
+                                                                    : undefined;
+                                                            const comboboxValue =
+                                                                currentName
+                                                                    ? `cat:${currentName}`
+                                                                    : '';
 
-                    {extracted && (
-                        <>
-                            <div className="mt-6 grid grid-cols-2 gap-6">
-                                <div className="order-1">
+                                                            return (
+                                                                <TableRow
+                                                                    key={
+                                                                        cat.name
+                                                                    }
+                                                                >
+                                                                    <TableCell className="max-w-64 truncate">
+                                                                        {
+                                                                            cat.name
+                                                                        }
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <HoverCard>
+                                                                            <HoverCardTrigger
+                                                                                render={
+                                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                                        {
+                                                                                            cat
+                                                                                                .sheets
+                                                                                                .length
+                                                                                        }
+
+                                                                                        /
+                                                                                        {
+                                                                                            selectedSheets.length
+                                                                                        }
+                                                                                    </span>
+                                                                                }
+                                                                            />
+                                                                            <HoverCardContent>
+                                                                                {cat
+                                                                                    .sheets
+                                                                                    .length ===
+                                                                                selectedSheets.length
+                                                                                    ? `Appears in ${cat.sheets.length} — all sheets`
+                                                                                    : `Appears in: ${cat.sheets.join(', ')}`}
+                                                                            </HoverCardContent>
+                                                                        </HoverCard>
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <Combobox
+                                                                            items={
+                                                                                catComboboxItems
+                                                                            }
+                                                                            value={
+                                                                                comboboxValue
+                                                                            }
+                                                                            onValueChange={(
+                                                                                v,
+                                                                            ) => {
+                                                                                if (
+                                                                                    !v
+                                                                                ) {
+                                                                                    return;
+                                                                                }
+
+                                                                                const name =
+                                                                                    v.replace(
+                                                                                        /^[^:]+:/,
+                                                                                        '',
+                                                                                    );
+                                                                                const id =
+                                                                                    catNameToId.get(
+                                                                                        name,
+                                                                                    );
+
+                                                                                if (
+                                                                                    id
+                                                                                ) {
+                                                                                    setManualCat(
+                                                                                        (
+                                                                                            prev,
+                                                                                        ) => ({
+                                                                                            ...prev,
+                                                                                            [cat.name]:
+                                                                                                id,
+                                                                                        }),
+                                                                                    );
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <ComboboxInput placeholder="Search category..." />
+                                                                            <ComboboxContent>
+                                                                                <ComboboxEmpty>
+                                                                                    No
+                                                                                    items
+                                                                                    found.
+                                                                                </ComboboxEmpty>
+                                                                                <ComboboxList>
+                                                                                    {(
+                                                                                        item,
+                                                                                    ) => (
+                                                                                        <ComboboxItem
+                                                                                            key={
+                                                                                                item
+                                                                                            }
+                                                                                            value={
+                                                                                                item
+                                                                                            }
+                                                                                        >
+                                                                                            {item.replace(
+                                                                                                /^[^:]+:/,
+                                                                                                '',
+                                                                                            )}
+                                                                                        </ComboboxItem>
+                                                                                    )}
+                                                                                </ComboboxList>
+                                                                            </ComboboxContent>
+                                                                        </Combobox>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        },
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                    <div className="order-2">
+                                        <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                            COAs (
+                                            {extracted.chartOfAccounts.length})
+                                        </h3>
+                                        <div className="max-h-80 overflow-y-auto rounded-md border">
+                                            <Table>
+                                                <TableHeader className="sticky top-0 z-10 bg-background">
+                                                    <TableRow>
+                                                        <TableHead>
+                                                            Chart of Account
+                                                        </TableHead>
+                                                        <TableHead className="text-right">
+                                                            Sheets
+                                                        </TableHead>
+                                                        <TableHead>
+                                                            Map to DB
+                                                        </TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {extracted.chartOfAccounts.map(
+                                                        (coa) => {
+                                                            const autoId =
+                                                                coaLookup.get(
+                                                                    normalize(
+                                                                        coa.name,
+                                                                    ),
+                                                                );
+                                                            const currentId =
+                                                                manualCoa[
+                                                                    coa.name
+                                                                ] ?? autoId;
+                                                            const currentTitle =
+                                                                currentId
+                                                                    ? idToCoaTitle.get(
+                                                                          currentId,
+                                                                      )
+                                                                    : undefined;
+                                                            const comboboxValue =
+                                                                currentTitle
+                                                                    ? `coa:${currentTitle}`
+                                                                    : '';
+
+                                                            return (
+                                                                <TableRow
+                                                                    key={
+                                                                        coa.name
+                                                                    }
+                                                                >
+                                                                    <TableCell className="max-w-64 truncate">
+                                                                        {
+                                                                            coa.name
+                                                                        }
+                                                                    </TableCell>
+                                                                    <TableCell className="text-right">
+                                                                        <HoverCard>
+                                                                            <HoverCardTrigger
+                                                                                render={
+                                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                                        {
+                                                                                            coa
+                                                                                                .sheets
+                                                                                                .length
+                                                                                        }
+
+                                                                                        /
+                                                                                        {
+                                                                                            selectedSheets.length
+                                                                                        }
+                                                                                    </span>
+                                                                                }
+                                                                            />
+                                                                            <HoverCardContent>
+                                                                                {coa
+                                                                                    .sheets
+                                                                                    .length ===
+                                                                                selectedSheets.length
+                                                                                    ? `Appears in ${coa.sheets.length} — all sheets`
+                                                                                    : `Appears in: ${coa.sheets.join(', ')}`}
+                                                                            </HoverCardContent>
+                                                                        </HoverCard>
+                                                                    </TableCell>
+                                                                    <TableCell>
+                                                                        <Combobox
+                                                                            items={
+                                                                                coaComboboxItems
+                                                                            }
+                                                                            value={
+                                                                                comboboxValue
+                                                                            }
+                                                                            onValueChange={(
+                                                                                v,
+                                                                            ) => {
+                                                                                if (
+                                                                                    !v
+                                                                                ) {
+                                                                                    return;
+                                                                                }
+
+                                                                                const name =
+                                                                                    v.replace(
+                                                                                        /^[^:]+:/,
+                                                                                        '',
+                                                                                    );
+                                                                                const id =
+                                                                                    coaNameToId.get(
+                                                                                        name,
+                                                                                    );
+
+                                                                                if (
+                                                                                    id
+                                                                                ) {
+                                                                                    setManualCoa(
+                                                                                        (
+                                                                                            prev,
+                                                                                        ) => ({
+                                                                                            ...prev,
+                                                                                            [coa.name]:
+                                                                                                id,
+                                                                                        }),
+                                                                                    );
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            <ComboboxInput placeholder="Search chart of account..." />
+                                                                            <ComboboxContent>
+                                                                                <ComboboxEmpty>
+                                                                                    No
+                                                                                    items
+                                                                                    found.
+                                                                                </ComboboxEmpty>
+                                                                                <ComboboxList>
+                                                                                    {(
+                                                                                        item,
+                                                                                    ) => (
+                                                                                        <ComboboxItem
+                                                                                            key={
+                                                                                                item
+                                                                                            }
+                                                                                            value={
+                                                                                                item
+                                                                                            }
+                                                                                        >
+                                                                                            {item.replace(
+                                                                                                /^[^:]+:/,
+                                                                                                '',
+                                                                                            )}
+                                                                                        </ComboboxItem>
+                                                                                    )}
+                                                                                </ComboboxList>
+                                                                            </ComboboxContent>
+                                                                        </Combobox>
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        },
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-6">
                                     <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                        Categories (
-                                        {extracted.categories.length})
+                                        Category ↔ COA Pairs (
+                                        {extracted.pairs.length})
                                     </h3>
                                     <div className="max-h-80 overflow-y-auto rounded-md border">
                                         <Table>
@@ -1535,246 +2206,503 @@ export default function PriceListImport({
                                                     <TableHead>
                                                         Category
                                                     </TableHead>
-                                                    <TableHead className="text-right">
-                                                        Sheets
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Map to DB
-                                                    </TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {extracted.categories.map(
-                                                    (cat) => {
-                                                        const autoId =
-                                                            catLookup.get(
-                                                                normalize(
-                                                                    cat.name,
-                                                                ),
-                                                            );
-                                                        const currentId =
-                                                            manualCat[
-                                                                cat.name
-                                                            ] ?? autoId;
-                                                        const currentName =
-                                                            currentId
-                                                                ? idToCatName.get(
-                                                                      currentId,
-                                                                  )
-                                                                : undefined;
-                                                        const comboboxValue =
-                                                            currentName
-                                                                ? `cat:${currentName}`
-                                                                : '';
-
-                                                        return (
-                                                            <TableRow
-                                                                key={cat.name}
-                                                            >
-                                                                <TableCell className="max-w-64 truncate">
-                                                                    {cat.name}
-                                                                </TableCell>
-                                                                <TableCell className="text-right">
-                                                                    <HoverCard>
-                                                                        <HoverCardTrigger
-                                                                            render={
-                                                                                <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                    {
-                                                                                        cat
-                                                                                            .sheets
-                                                                                            .length
-                                                                                    }
-
-                                                                                    /
-                                                                                    {
-                                                                                        selectedSheets.length
-                                                                                    }
-                                                                                </span>
-                                                                            }
-                                                                        />
-                                                                        <HoverCardContent>
-                                                                            {cat
-                                                                                .sheets
-                                                                                .length ===
-                                                                            selectedSheets.length
-                                                                                ? `Appears in ${cat.sheets.length} — all sheets`
-                                                                                : `Appears in: ${cat.sheets.join(', ')}`}
-                                                                        </HoverCardContent>
-                                                                    </HoverCard>
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <Combobox
-                                                                        items={
-                                                                            catComboboxItems
-                                                                        }
-                                                                        value={
-                                                                            comboboxValue
-                                                                        }
-                                                                        onValueChange={(
-                                                                            v,
-                                                                        ) => {
-                                                                            if (
-                                                                                !v
-                                                                            ) {
-                                                                                return;
-                                                                            }
-
-                                                                            const name =
-                                                                                v.replace(
-                                                                                    /^[^:]+:/,
-                                                                                    '',
-                                                                                );
-                                                                            const id =
-                                                                                catNameToId.get(
-                                                                                    name,
-                                                                                );
-
-                                                                            if (
-                                                                                id
-                                                                            ) {
-                                                                                setManualCat(
-                                                                                    (
-                                                                                        prev,
-                                                                                    ) => ({
-                                                                                        ...prev,
-                                                                                        [cat.name]:
-                                                                                            id,
-                                                                                    }),
-                                                                                );
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <ComboboxInput placeholder="Search category..." />
-                                                                        <ComboboxContent>
-                                                                            <ComboboxEmpty>
-                                                                                No
-                                                                                items
-                                                                                found.
-                                                                            </ComboboxEmpty>
-                                                                            <ComboboxList>
-                                                                                {(
-                                                                                    item,
-                                                                                ) => (
-                                                                                    <ComboboxItem
-                                                                                        key={
-                                                                                            item
-                                                                                        }
-                                                                                        value={
-                                                                                            item
-                                                                                        }
-                                                                                    >
-                                                                                        {item.replace(
-                                                                                            /^[^:]+:/,
-                                                                                            '',
-                                                                                        )}
-                                                                                    </ComboboxItem>
-                                                                                )}
-                                                                            </ComboboxList>
-                                                                        </ComboboxContent>
-                                                                    </Combobox>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    },
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </div>
-                                <div className="order-2">
-                                    <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                        COAs ({extracted.chartOfAccounts.length}
-                                        )
-                                    </h3>
-                                    <div className="max-h-80 overflow-y-auto rounded-md border">
-                                        <Table>
-                                            <TableHeader className="sticky top-0 z-10 bg-background">
-                                                <TableRow>
                                                     <TableHead>
                                                         Chart of Account
                                                     </TableHead>
                                                     <TableHead className="text-right">
                                                         Sheets
                                                     </TableHead>
-                                                    <TableHead>
-                                                        Map to DB
-                                                    </TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {extracted.chartOfAccounts.map(
-                                                    (coa) => {
-                                                        const autoId =
-                                                            coaLookup.get(
-                                                                normalize(
-                                                                    coa.name,
-                                                                ),
-                                                            );
-                                                        const currentId =
-                                                            manualCoa[
-                                                                coa.name
-                                                            ] ?? autoId;
-                                                        const currentTitle =
-                                                            currentId
-                                                                ? idToCoaTitle.get(
-                                                                      currentId,
-                                                                  )
-                                                                : undefined;
-                                                        const comboboxValue =
-                                                            currentTitle
-                                                                ? `coa:${currentTitle}`
-                                                                : '';
+                                                {extracted.pairs.map((pair) => (
+                                                    <TableRow
+                                                        key={`${pair.category}|${pair.chartOfAccount}`}
+                                                    >
+                                                        <TableCell className="max-w-40 truncate">
+                                                            {pair.category}
+                                                        </TableCell>
+                                                        <TableCell className="max-w-48 truncate">
+                                                            {
+                                                                pair.chartOfAccount
+                                                            }
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <HoverCard>
+                                                                <HoverCardTrigger
+                                                                    render={
+                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                            {
+                                                                                pair
+                                                                                    .sheets
+                                                                                    .length
+                                                                            }
+                                                                            /
+                                                                            {
+                                                                                selectedSheets.length
+                                                                            }
+                                                                        </span>
+                                                                    }
+                                                                />
+                                                                <HoverCardContent>
+                                                                    {pair.sheets
+                                                                        .length ===
+                                                                    selectedSheets.length
+                                                                        ? `Appears in ${pair.sheets.length} — all sheets`
+                                                                        : `Appears in: ${pair.sheets.join(', ')}`}
+                                                                </HoverCardContent>
+                                                            </HoverCard>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
-                                                        return (
-                                                            <TableRow
-                                                                key={coa.name}
-                                                            >
-                                                                <TableCell className="max-w-64 truncate">
-                                                                    {coa.name}
-                                                                </TableCell>
-                                                                <TableCell className="text-right">
+                        {uniqueItems && (
+                            <div className="mt-6">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-muted-foreground">
+                                        Unique Items (
+                                        {hideExisting
+                                            ? uniqueItems.filter((item) => {
+                                                  const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
+
+                                                  return (
+                                                      !itemMatches[itemKey] &&
+                                                      !dbDescriptionSet.has(
+                                                          normalize(
+                                                              item.description,
+                                                          ),
+                                                      )
+                                                  );
+                                              }).length
+                                            : uniqueItems.length}
+                                        )
+                                    </h3>
+                                    <div className="flex items-center gap-4">
+                                        <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                            Hide exists
+                                            <Switch
+                                                checked={hideExisting}
+                                                onCheckedChange={
+                                                    setHideExisting
+                                                }
+                                                size="sm"
+                                            />
+                                        </label>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                setImportDialogOpen(true)
+                                            }
+                                            disabled={
+                                                !importPlan ||
+                                                importPlan.items.length === 0 ||
+                                                importing
+                                            }
+                                        >
+                                            {importing && <Spinner />}
+                                            Import{' '}
+                                            {importPlan?.items.length ?? 0} New
+                                            Items
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="max-h-80 overflow-y-auto rounded-md border">
+                                    <Table>
+                                        <TableHeader className="sticky top-0 z-10 bg-background">
+                                            <TableRow>
+                                                <TableHead>
+                                                    Description
+                                                </TableHead>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead>
+                                                    Chart of Account
+                                                </TableHead>
+                                                <TableHead className="text-right">
+                                                    Sheets
+                                                </TableHead>
+                                                <TableHead>In DB</TableHead>
+                                                <TableHead>Match</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {uniqueItems
+                                                .filter((item) => {
+                                                    if (!hideExisting) {
+                                                        return true;
+                                                    }
+
+                                                    const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
+
+                                                    return (
+                                                        !itemMatches[itemKey] &&
+                                                        !dbDescriptionSet.has(
+                                                            normalize(
+                                                                item.description,
+                                                            ),
+                                                        )
+                                                    );
+                                                })
+                                                .map((item) => {
+                                                    const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
+                                                    const matchedId =
+                                                        itemMatches[itemKey];
+                                                    const matchedItem =
+                                                        matchedId
+                                                            ? pliById.get(
+                                                                  matchedId,
+                                                              )
+                                                            : null;
+                                                    const exactInDb =
+                                                        dbDescriptionSet.has(
+                                                            normalize(
+                                                                item.description,
+                                                            ),
+                                                        );
+                                                    const inDb = matchedId
+                                                        ? true
+                                                        : exactInDb;
+                                                    const comboboxValue =
+                                                        matchedItem
+                                                            ? `pli:${matchedItem.description}`
+                                                            : exactInDb
+                                                              ? `pli:${item.description}`
+                                                              : '';
+
+                                                    return (
+                                                        <TableRow key={itemKey}>
+                                                            <TableCell className="max-w-64 truncate">
+                                                                {
+                                                                    item.description
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="max-w-40 truncate">
+                                                                {item.category}
+                                                            </TableCell>
+                                                            <TableCell className="max-w-48 truncate">
+                                                                {
+                                                                    item.chartOfAccount
+                                                                }
+                                                            </TableCell>
+                                                            <TableCell className="text-right">
+                                                                <HoverCard>
+                                                                    <HoverCardTrigger
+                                                                        render={
+                                                                            <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                                {
+                                                                                    item
+                                                                                        .sheets
+                                                                                        .length
+                                                                                }
+
+                                                                                /
+                                                                                {
+                                                                                    selectedSheets.length
+                                                                                }
+                                                                            </span>
+                                                                        }
+                                                                    />
+                                                                    <HoverCardContent>
+                                                                        {item
+                                                                            .sheets
+                                                                            .length ===
+                                                                        selectedSheets.length
+                                                                            ? `Appears in ${item.sheets.length} — all sheets`
+                                                                            : `Appears in: ${item.sheets.join(', ')}`}
+                                                                    </HoverCardContent>
+                                                                </HoverCard>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {matchedId ? (
                                                                     <HoverCard>
                                                                         <HoverCardTrigger
                                                                             render={
-                                                                                <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                    {
-                                                                                        coa
-                                                                                            .sheets
-                                                                                            .length
-                                                                                    }
-
-                                                                                    /
-                                                                                    {
-                                                                                        selectedSheets.length
-                                                                                    }
+                                                                                <span className="cursor-pointer text-blue-600">
+                                                                                    ✓
+                                                                                    matched
                                                                                 </span>
                                                                             }
                                                                         />
                                                                         <HoverCardContent>
-                                                                            {coa
-                                                                                .sheets
-                                                                                .length ===
-                                                                            selectedSheets.length
-                                                                                ? `Appears in ${coa.sheets.length} — all sheets`
-                                                                                : `Appears in: ${coa.sheets.join(', ')}`}
+                                                                            {matchedItem
+                                                                                ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
+                                                                                : ''}
                                                                         </HoverCardContent>
                                                                     </HoverCard>
-                                                                </TableCell>
-                                                                <TableCell>
-                                                                    <Combobox
-                                                                        items={
-                                                                            coaComboboxItems
-                                                                        }
-                                                                        value={
-                                                                            comboboxValue
-                                                                        }
-                                                                        onValueChange={(
-                                                                            v,
+                                                                ) : exactInDb ? (
+                                                                    <span className="text-emerald-600">
+                                                                        ✓ exists
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-amber-600">
+                                                                        ✗ new
+                                                                    </span>
+                                                                )}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Combobox
+                                                                    items={
+                                                                        pliComboboxItems
+                                                                    }
+                                                                    value={
+                                                                        comboboxValue
+                                                                    }
+                                                                    onValueChange={(
+                                                                        v,
+                                                                    ) => {
+                                                                        setItemMatches(
+                                                                            (
+                                                                                prev,
+                                                                            ) => {
+                                                                                const next =
+                                                                                    {
+                                                                                        ...prev,
+                                                                                    };
+
+                                                                                if (
+                                                                                    !v
+                                                                                ) {
+                                                                                    delete next[
+                                                                                        itemKey
+                                                                                    ];
+
+                                                                                    return next;
+                                                                                }
+
+                                                                                const name =
+                                                                                    v.replace(
+                                                                                        /^[^:]+:/,
+                                                                                        '',
+                                                                                    );
+                                                                                const dbItem =
+                                                                                    priceListItems.find(
+                                                                                        (
+                                                                                            p,
+                                                                                        ) =>
+                                                                                            p.description ===
+                                                                                            name,
+                                                                                    );
+
+                                                                                if (
+                                                                                    dbItem
+                                                                                ) {
+                                                                                    next[
+                                                                                        itemKey
+                                                                                    ] =
+                                                                                        dbItem.id;
+                                                                                }
+
+                                                                                return next;
+                                                                            },
+                                                                        );
+                                                                    }}
+                                                                >
+                                                                    <ComboboxInput
+                                                                        placeholder="Search price list item..."
+                                                                        showClear
+                                                                    />
+                                                                    <ComboboxContent>
+                                                                        <ComboboxEmpty>
+                                                                            No
+                                                                            items
+                                                                            found.
+                                                                        </ComboboxEmpty>
+                                                                        <ComboboxList>
+                                                                            {(
+                                                                                item,
+                                                                            ) => (
+                                                                                <ComboboxItem
+                                                                                    key={
+                                                                                        item
+                                                                                    }
+                                                                                    value={
+                                                                                        item
+                                                                                    }
+                                                                                >
+                                                                                    {item.replace(
+                                                                                        /^[^:]+:/,
+                                                                                        '',
+                                                                                    )}
+                                                                                </ComboboxItem>
+                                                                            )}
+                                                                        </ComboboxList>
+                                                                    </ComboboxContent>
+                                                                </Combobox>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+                        )}
+
+                        <Dialog
+                            open={importDialogOpen}
+                            onOpenChange={setImportDialogOpen}
+                        >
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>Confirm Import</DialogTitle>
+                                    <DialogDescription>
+                                        You're about to import{' '}
+                                        {importPlan?.items.length ?? 0} new
+                                        price list item(s) into the database.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                {importPlan &&
+                                    (importPlan.skippedNoMatch > 0 ||
+                                        importPlan.skippedNoPrice > 0 ||
+                                        importPlan.skippedMissingUnit > 0) && (
+                                        <div className="space-y-1 text-sm text-muted-foreground">
+                                            Skipped:
+                                            {importPlan.skippedNoMatch > 0 && (
+                                                <p>
+                                                    {importPlan.skippedNoMatch}{' '}
+                                                    — category/COA pair not in
+                                                    database
+                                                </p>
+                                            )}
+                                            {importPlan.skippedNoPrice > 0 && (
+                                                <p>
+                                                    {importPlan.skippedNoPrice}{' '}
+                                                    — no price
+                                                </p>
+                                            )}
+                                            {importPlan.skippedMissingUnit >
+                                                0 && (
+                                                <p>
+                                                    {
+                                                        importPlan.skippedMissingUnit
+                                                    }{' '}
+                                                    — no unit of measurement
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                <DialogFooter>
+                                    <DialogClose
+                                        render={
+                                            <Button variant="outline">
+                                                Cancel
+                                            </Button>
+                                        }
+                                    />
+                                    <Button
+                                        onClick={handleConfirmImport}
+                                        disabled={
+                                            !importPlan ||
+                                            importPlan.items.length === 0 ||
+                                            importing
+                                        }
+                                    >
+                                        {importing ? 'Importing...' : 'Confirm'}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+
+                        {mappedPairs && (
+                            <div className="mt-6">
+                                <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                    Mapped Category ↔ COA Pairs (
+                                    {mappedPairs.length})
+                                </h3>
+                                <div className="max-h-80 overflow-y-auto rounded-md border">
+                                    <Table>
+                                        <TableHeader className="sticky top-0 z-10 bg-background">
+                                            <TableRow>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead>
+                                                    Resolved Category
+                                                </TableHead>
+                                                <TableHead>
+                                                    Chart of Account
+                                                </TableHead>
+                                                <TableHead>
+                                                    Resolved COA
+                                                </TableHead>
+                                                <TableHead>DB Pair</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {mappedPairs.map((pair) => {
+                                                const overrideKey = `${pair.category}|${pair.chartOfAccount}`;
+                                                const override =
+                                                    pairOverrides[overrideKey];
+                                                const effCoaId =
+                                                    override?.coaId ??
+                                                    pair.coaId;
+                                                const effCatId =
+                                                    pair.categoryId;
+                                                const effCoaTitle = effCoaId
+                                                    ? (idToCoaTitle.get(
+                                                          effCoaId,
+                                                      ) ?? null)
+                                                    : null;
+                                                const comboboxValue =
+                                                    effCoaTitle
+                                                        ? `coa:${effCoaTitle}`
+                                                        : '';
+                                                const pairExists =
+                                                    effCoaId !== null &&
+                                                    effCatId !== null &&
+                                                    dbPairsSet.has(
+                                                        `${effCoaId}|${effCatId}`,
+                                                    );
+                                                const pairResolvable =
+                                                    effCoaId !== null &&
+                                                    effCatId !== null;
+
+                                                return (
+                                                    <TableRow key={overrideKey}>
+                                                        <TableCell className="max-w-40 truncate">
+                                                            {pair.category}
+                                                        </TableCell>
+                                                        <TableCell className="max-w-40 truncate">
+                                                            {pair.resolvedCategory ??
+                                                                '—'}
+                                                        </TableCell>
+                                                        <TableCell className="max-w-48 truncate">
+                                                            {
+                                                                pair.chartOfAccount
+                                                            }
+                                                        </TableCell>
+                                                        <TableCell className="max-w-48 truncate">
+                                                            <Combobox
+                                                                items={
+                                                                    coaComboboxItems
+                                                                }
+                                                                value={
+                                                                    comboboxValue
+                                                                }
+                                                                onValueChange={(
+                                                                    v,
+                                                                ) => {
+                                                                    setPairOverrides(
+                                                                        (
+                                                                            prev,
                                                                         ) => {
+                                                                            const next =
+                                                                                {
+                                                                                    ...prev,
+                                                                                };
+
                                                                             if (
                                                                                 !v
                                                                             ) {
-                                                                                return;
+                                                                                delete next[
+                                                                                    overrideKey
+                                                                                ];
+
+                                                                                return next;
                                                                             }
 
                                                                             const name =
@@ -1790,340 +2718,12 @@ export default function PriceListImport({
                                                                             if (
                                                                                 id
                                                                             ) {
-                                                                                setManualCoa(
-                                                                                    (
-                                                                                        prev,
-                                                                                    ) => ({
-                                                                                        ...prev,
-                                                                                        [coa.name]:
-                                                                                            id,
-                                                                                    }),
-                                                                                );
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <ComboboxInput placeholder="Search chart of account..." />
-                                                                        <ComboboxContent>
-                                                                            <ComboboxEmpty>
-                                                                                No
-                                                                                items
-                                                                                found.
-                                                                            </ComboboxEmpty>
-                                                                            <ComboboxList>
-                                                                                {(
-                                                                                    item,
-                                                                                ) => (
-                                                                                    <ComboboxItem
-                                                                                        key={
-                                                                                            item
-                                                                                        }
-                                                                                        value={
-                                                                                            item
-                                                                                        }
-                                                                                    >
-                                                                                        {item.replace(
-                                                                                            /^[^:]+:/,
-                                                                                            '',
-                                                                                        )}
-                                                                                    </ComboboxItem>
-                                                                                )}
-                                                                            </ComboboxList>
-                                                                        </ComboboxContent>
-                                                                    </Combobox>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    },
-                                                )}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-6">
-                                <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                    Category ↔ COA Pairs (
-                                    {extracted.pairs.length})
-                                </h3>
-                                <div className="max-h-80 overflow-y-auto rounded-md border">
-                                    <Table>
-                                        <TableHeader className="sticky top-0 z-10 bg-background">
-                                            <TableRow>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead>
-                                                    Chart of Account
-                                                </TableHead>
-                                                <TableHead className="text-right">
-                                                    Sheets
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {extracted.pairs.map((pair) => (
-                                                <TableRow
-                                                    key={`${pair.category}|${pair.chartOfAccount}`}
-                                                >
-                                                    <TableCell className="max-w-40 truncate">
-                                                        {pair.category}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-48 truncate">
-                                                        {pair.chartOfAccount}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <HoverCard>
-                                                            <HoverCardTrigger
-                                                                render={
-                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                        {
-                                                                            pair
-                                                                                .sheets
-                                                                                .length
-                                                                        }
-                                                                        /
-                                                                        {
-                                                                            selectedSheets.length
-                                                                        }
-                                                                    </span>
-                                                                }
-                                                            />
-                                                            <HoverCardContent>
-                                                                {pair.sheets
-                                                                    .length ===
-                                                                selectedSheets.length
-                                                                    ? `Appears in ${pair.sheets.length} — all sheets`
-                                                                    : `Appears in: ${pair.sheets.join(', ')}`}
-                                                            </HoverCardContent>
-                                                        </HoverCard>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </div>
-                        </>
-                    )}
-
-                    {uniqueItems && (
-                        <div className="mt-6">
-                            <div className="mb-2 flex items-center justify-between">
-                                <h3 className="text-sm font-semibold text-muted-foreground">
-                                    Unique Items (
-                                    {hideExisting
-                                        ? uniqueItems.filter((item) => {
-                                              const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
-                                              return (
-                                                  !itemMatches[itemKey] &&
-                                                  !dbDescriptionSet.has(
-                                                      normalize(
-                                                          item.description,
-                                                      ),
-                                                  )
-                                              );
-                                          }).length
-                                        : uniqueItems.length}
-                                    )
-                                </h3>
-                                <div className="flex items-center gap-4">
-                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                        Hide exists
-                                        <Switch
-                                            checked={hideExisting}
-                                            onCheckedChange={setHideExisting}
-                                            size="sm"
-                                        />
-                                    </label>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setImportDialogOpen(true)}
-                                        disabled={
-                                            !importPlan ||
-                                            importPlan.items.length === 0 ||
-                                            importing
-                                        }
-                                    >
-                                        {importing && <Spinner />}
-                                        Import{' '}
-                                        {importPlan?.items.length ?? 0} New
-                                        Items
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className="max-h-80 overflow-y-auto rounded-md border">
-                                <Table>
-                                    <TableHeader className="sticky top-0 z-10 bg-background">
-                                        <TableRow>
-                                            <TableHead>Description</TableHead>
-                                            <TableHead>Category</TableHead>
-                                            <TableHead>
-                                                Chart of Account
-                                            </TableHead>
-                                            <TableHead className="text-right">
-                                                Sheets
-                                            </TableHead>
-                                            <TableHead>In DB</TableHead>
-                                            <TableHead>Match</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {uniqueItems
-                                            .filter((item) => {
-                                                if (!hideExisting) {
-                                                    return true;
-                                                }
-
-                                                const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
-
-                                                return (
-                                                    !itemMatches[itemKey] &&
-                                                    !dbDescriptionSet.has(
-                                                        normalize(
-                                                            item.description,
-                                                        ),
-                                                    )
-                                                );
-                                            })
-                                            .map((item) => {
-                                                const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
-                                                const matchedId =
-                                                    itemMatches[itemKey];
-                                                const matchedItem = matchedId
-                                                    ? pliById.get(matchedId)
-                                                    : null;
-                                                const exactInDb =
-                                                    dbDescriptionSet.has(
-                                                        normalize(
-                                                            item.description,
-                                                        ),
-                                                    );
-                                                const inDb = matchedId
-                                                    ? true
-                                                    : exactInDb;
-                                                const comboboxValue =
-                                                    matchedItem
-                                                        ? `pli:${matchedItem.description}`
-                                                        : exactInDb
-                                                          ? `pli:${item.description}`
-                                                          : '';
-
-                                                return (
-                                                    <TableRow key={itemKey}>
-                                                        <TableCell className="max-w-64 truncate">
-                                                            {item.description}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-40 truncate">
-                                                            {item.category}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-48 truncate">
-                                                            {
-                                                                item.chartOfAccount
-                                                            }
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <HoverCard>
-                                                                <HoverCardTrigger
-                                                                    render={
-                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                            {
-                                                                                item
-                                                                                    .sheets
-                                                                                    .length
-                                                                            }
-                                                                            /
-                                                                            {
-                                                                                selectedSheets.length
-                                                                            }
-                                                                        </span>
-                                                                    }
-                                                                />
-                                                                <HoverCardContent>
-                                                                    {item.sheets
-                                                                        .length ===
-                                                                    selectedSheets.length
-                                                                        ? `Appears in ${item.sheets.length} — all sheets`
-                                                                        : `Appears in: ${item.sheets.join(', ')}`}
-                                                                </HoverCardContent>
-                                                            </HoverCard>
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {matchedId ? (
-                                                                <HoverCard>
-                                                                    <HoverCardTrigger
-                                                                        render={
-                                                                            <span className="cursor-pointer text-blue-600">
-                                                                                ✓
-                                                                                matched
-                                                                            </span>
-                                                                        }
-                                                                    />
-                                                                    <HoverCardContent>
-                                                                        {matchedItem
-                                                                            ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
-                                                                            : ''}
-                                                                    </HoverCardContent>
-                                                                </HoverCard>
-                                                            ) : exactInDb ? (
-                                                                <span className="text-emerald-600">
-                                                                    ✓ exists
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-amber-600">
-                                                                    ✗ new
-                                                                </span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Combobox
-                                                                items={
-                                                                    pliComboboxItems
-                                                                }
-                                                                value={
-                                                                    comboboxValue
-                                                                }
-                                                                onValueChange={(
-                                                                    v,
-                                                                ) => {
-                                                                    setItemMatches(
-                                                                        (
-                                                                            prev,
-                                                                        ) => {
-                                                                            const next =
-                                                                                {
-                                                                                    ...prev,
-                                                                                };
-
-                                                                            if (
-                                                                                !v
-                                                                            ) {
-                                                                                delete next[
-                                                                                    itemKey
-                                                                                ];
-                                                                                return next;
-                                                                            }
-
-                                                                            const name =
-                                                                                v.replace(
-                                                                                    /^[^:]+:/,
-                                                                                    '',
-                                                                                );
-                                                                            const dbItem =
-                                                                                priceListItems.find(
-                                                                                    (
-                                                                                        p,
-                                                                                    ) =>
-                                                                                        p.description ===
-                                                                                        name,
-                                                                                );
-
-                                                                            if (
-                                                                                dbItem
-                                                                            ) {
                                                                                 next[
-                                                                                    itemKey
+                                                                                    overrideKey
                                                                                 ] =
-                                                                                    dbItem.id;
+                                                                                    {
+                                                                                        coaId: id,
+                                                                                    };
                                                                             }
 
                                                                             return next;
@@ -2132,7 +2732,7 @@ export default function PriceListImport({
                                                                 }}
                                                             >
                                                                 <ComboboxInput
-                                                                    placeholder="Search price list item..."
+                                                                    placeholder="Search chart of account..."
                                                                     showClear
                                                                 />
                                                                 <ComboboxContent>
@@ -2161,250 +2761,41 @@ export default function PriceListImport({
                                                                     </ComboboxList>
                                                                 </ComboboxContent>
                                                             </Combobox>
+                                                            {override && (
+                                                                <span className="ml-2 text-xs text-blue-600">
+                                                                    custom
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {pairResolvable ? (
+                                                                pairExists ? (
+                                                                    <span className="text-emerald-600">
+                                                                        ✓ exists
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-amber-600">
+                                                                        ✗ not
+                                                                        found
+                                                                    </span>
+                                                                )
+                                                            ) : (
+                                                                <span className="text-destructive">
+                                                                    ⚠
+                                                                    unresolvable
+                                                                </span>
+                                                            )}
                                                         </TableCell>
                                                     </TableRow>
                                                 );
                                             })}
-                                    </TableBody>
-                                </Table>
+                                        </TableBody>
+                                    </Table>
+                                </div>
                             </div>
-                        </div>
-                    )}
-
-                    <Dialog
-                        open={importDialogOpen}
-                        onOpenChange={setImportDialogOpen}
-                    >
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Confirm Import</DialogTitle>
-                                <DialogDescription>
-                                    You're about to import{' '}
-                                    {importPlan?.items.length ?? 0} new price
-                                    list item(s) into the database.
-                                </DialogDescription>
-                            </DialogHeader>
-                            {importPlan &&
-                                (importPlan.skippedNoMatch > 0 ||
-                                    importPlan.skippedNoPrice > 0 ||
-                                    importPlan.skippedMissingUnit > 0) && (
-                                    <div className="space-y-1 text-sm text-muted-foreground">
-                                        Skipped:
-                                        {importPlan.skippedNoMatch > 0 && (
-                                            <p>
-                                                {importPlan.skippedNoMatch} —
-                                                category/COA pair not in
-                                                database
-                                            </p>
-                                        )}
-                                        {importPlan.skippedNoPrice > 0 && (
-                                            <p>
-                                                {importPlan.skippedNoPrice} —
-                                                no price
-                                            </p>
-                                        )}
-                                        {importPlan.skippedMissingUnit > 0 && (
-                                            <p>
-                                                {importPlan.skippedMissingUnit}{' '}
-                                                — no unit of measurement
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            <DialogFooter>
-                                <DialogClose
-                                    render={
-                                        <Button variant="outline">
-                                            Cancel
-                                        </Button>
-                                    }
-                                />
-                                <Button
-                                    onClick={handleConfirmImport}
-                                    disabled={
-                                        !importPlan ||
-                                        importPlan.items.length === 0 ||
-                                        importing
-                                    }
-                                >
-                                    {importing ? 'Importing...' : 'Confirm'}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-
-                    {mappedPairs && (
-                        <div className="mt-6">
-                            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                Mapped Category ↔ COA Pairs (
-                                {mappedPairs.length})
-                            </h3>
-                            <div className="max-h-80 overflow-y-auto rounded-md border">
-                                <Table>
-                                    <TableHeader className="sticky top-0 z-10 bg-background">
-                                        <TableRow>
-                                            <TableHead>Category</TableHead>
-                                            <TableHead>
-                                                Resolved Category
-                                            </TableHead>
-                                            <TableHead>
-                                                Chart of Account
-                                            </TableHead>
-                                            <TableHead>Resolved COA</TableHead>
-                                            <TableHead>DB Pair</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {mappedPairs.map((pair) => {
-                                            const overrideKey = `${pair.category}|${pair.chartOfAccount}`;
-                                            const override =
-                                                pairOverrides[overrideKey];
-                                            const effCoaId =
-                                                override?.coaId ?? pair.coaId;
-                                            const effCatId = pair.categoryId;
-                                            const effCoaTitle = effCoaId
-                                                ? (idToCoaTitle.get(effCoaId) ??
-                                                  null)
-                                                : null;
-                                            const comboboxValue = effCoaTitle
-                                                ? `coa:${effCoaTitle}`
-                                                : '';
-                                            const pairExists =
-                                                effCoaId !== null &&
-                                                effCatId !== null &&
-                                                dbPairsSet.has(
-                                                    `${effCoaId}|${effCatId}`,
-                                                );
-                                            const pairResolvable =
-                                                effCoaId !== null &&
-                                                effCatId !== null;
-
-                                            return (
-                                                <TableRow key={overrideKey}>
-                                                    <TableCell className="max-w-40 truncate">
-                                                        {pair.category}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-40 truncate">
-                                                        {pair.resolvedCategory ??
-                                                            '—'}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-48 truncate">
-                                                        {pair.chartOfAccount}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-48 truncate">
-                                                        <Combobox
-                                                            items={
-                                                                coaComboboxItems
-                                                            }
-                                                            value={
-                                                                comboboxValue
-                                                            }
-                                                            onValueChange={(
-                                                                v,
-                                                            ) => {
-                                                                setPairOverrides(
-                                                                    (prev) => {
-                                                                        const next =
-                                                                            {
-                                                                                ...prev,
-                                                                            };
-
-                                                                        if (
-                                                                            !v
-                                                                        ) {
-                                                                            delete next[
-                                                                                overrideKey
-                                                                            ];
-                                                                            return next;
-                                                                        }
-
-                                                                        const name =
-                                                                            v.replace(
-                                                                                /^[^:]+:/,
-                                                                                '',
-                                                                            );
-                                                                        const id =
-                                                                            coaNameToId.get(
-                                                                                name,
-                                                                            );
-
-                                                                        if (
-                                                                            id
-                                                                        ) {
-                                                                            next[
-                                                                                overrideKey
-                                                                            ] =
-                                                                                {
-                                                                                    coaId: id,
-                                                                                };
-                                                                        }
-
-                                                                        return next;
-                                                                    },
-                                                                );
-                                                            }}
-                                                        >
-                                                            <ComboboxInput
-                                                                placeholder="Search chart of account..."
-                                                                showClear
-                                                            />
-                                                            <ComboboxContent>
-                                                                <ComboboxEmpty>
-                                                                    No items
-                                                                    found.
-                                                                </ComboboxEmpty>
-                                                                <ComboboxList>
-                                                                    {(item) => (
-                                                                        <ComboboxItem
-                                                                            key={
-                                                                                item
-                                                                            }
-                                                                            value={
-                                                                                item
-                                                                            }
-                                                                        >
-                                                                            {item.replace(
-                                                                                /^[^:]+:/,
-                                                                                '',
-                                                                            )}
-                                                                        </ComboboxItem>
-                                                                    )}
-                                                                </ComboboxList>
-                                                            </ComboboxContent>
-                                                        </Combobox>
-                                                        {override && (
-                                                            <span className="ml-2 text-xs text-blue-600">
-                                                                custom
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {pairResolvable ? (
-                                                            pairExists ? (
-                                                                <span className="text-emerald-600">
-                                                                    ✓ exists
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-amber-600">
-                                                                    ✗ not found
-                                                                </span>
-                                                            )
-                                                        ) : (
-                                                            <span className="text-destructive">
-                                                                ⚠ unresolvable
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
+                        )}
+                    </div>
+                )}
 
             {/* {sheets.length > 0 && (
                 <>
