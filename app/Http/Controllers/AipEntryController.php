@@ -782,7 +782,9 @@ class AipEntryController extends Controller
             ->ppaFundingSources()
             ->when($saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
             ->when(!$saipId, fn($q) => $q->whereNull('supplemental_aip_id'))
-            ->get();
+            ->get()
+            ->filter(fn($source) => $source->funding_source_id !== null)
+            ->values();
 
         if ($current->count() !== count($submittedSources)) {
             return true;

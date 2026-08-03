@@ -548,17 +548,19 @@ export default function AipEntryFormDialog({
                 start_date: currentEntry?.start_date || '',
                 end_date: currentEntry?.end_date || '',
                 ppa_funding_sources:
-                    currentSources.map((fs) => ({
-                        id: fs.id,
-                        funding_source_id: fs.funding_source_id.toString(),
-                        ps_amount: fs.ps_amount,
-                        mooe_amount: fs.mooe_amount,
-                        fe_amount: fs.fe_amount,
-                        co_amount: fs.co_amount,
-                        ccet_adaptation: fs.ccet_adaptation,
-                        ccet_mitigation: fs.ccet_mitigation,
-                        cc_typology_id: (fs as any).cc_typology_id ?? null,
-                    })) || [],
+                    currentSources
+                        .filter((fs: any) => fs.funding_source_id != null)
+                        .map((fs) => ({
+                            id: fs.id,
+                            funding_source_id: fs.funding_source_id.toString(),
+                            ps_amount: fs.ps_amount,
+                            mooe_amount: fs.mooe_amount,
+                            fe_amount: fs.fe_amount,
+                            co_amount: fs.co_amount,
+                            ccet_adaptation: fs.ccet_adaptation,
+                            ccet_mitigation: fs.ccet_mitigation,
+                            cc_typology_id: (fs as any).cc_typology_id ?? null,
+                        })) || [],
             });
             setSavedHash(JSON.stringify(form.getValues()));
             setSaveWorthyHash(
