@@ -662,6 +662,22 @@ export default function PriceListImport({
         setManualCat({});
         setLoading(false);
         setConfirmed(false);
+        resetQuantityCycle();
+    }
+
+    function resetQuantityCycle() {
+        setQuantityRows(null);
+        setQuantityMatches({});
+        setQuantityChecked(false);
+        setQuantityImportDialogOpen(false);
+        setTargetFiscalYearId(null);
+        setTargetPpaId(null);
+        setTargetFundingSourceId(null);
+        setQuantitiesConfig({
+            startRow: 8,
+            endRow: undefined,
+            columns: { ...defaultQuantitiesColumns },
+        });
     }
 
     function handleSheetsChange(sheets: string[]) {
@@ -672,6 +688,7 @@ export default function PriceListImport({
         setUniqueItems(null);
         setItemMatches({});
         setConfirmed(false);
+        resetQuantityCycle();
     }
 
     function handleModeChange(nextMode: 'price-list' | 'quantities') {
@@ -681,6 +698,7 @@ export default function PriceListImport({
 
         setConfirmed(false);
         setMode(nextMode);
+        resetQuantityCycle();
     }
 
     function handleConfirm() {
@@ -696,6 +714,7 @@ export default function PriceListImport({
         setSheetConfigs(configs);
         setCalibratingSheet(selectedSheets[0] ?? '');
         setConfirmed(true);
+        resetQuantityCycle();
     }
 
     function handleExtractCoaAndCategory() {
@@ -909,6 +928,7 @@ export default function PriceListImport({
             '/price-list-import' as const,
             { items: importPlan.items } as never,
             {
+                onSuccess: () => setImportDialogOpen(false),
                 onFinish: () => setImporting(false),
             },
         );
@@ -934,6 +954,7 @@ export default function PriceListImport({
                 rows: quantityImportPlan.rows,
             } as never,
             {
+                onSuccess: () => setQuantityImportDialogOpen(false),
                 onFinish: () => setQuantityImporting(false),
             },
         );
