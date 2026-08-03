@@ -75,6 +75,14 @@ function cellText(cell: ExcelJS.Cell): string | null {
     return String(value).trim() || null;
 }
 
+function isSubtotalRow(name: string): boolean {
+    return (
+        /\s*-\s*TOTAL$/i.test(name) ||
+        /^GRAND\s+TOTAL/i.test(name) ||
+        /^TOTAL\s+-\s+FOR\b/i.test(name)
+    );
+}
+
 function cellNumber(cell: ExcelJS.Cell): number | null {
     let value: any = cell.value;
 
@@ -152,8 +160,9 @@ export function extractData(config: ExtractConfig): ExtractResult {
             const headerName = category ?? description;
 
             if (headerName) {
-                // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL"
-                if (/\s*-\s*TOTAL$/i.test(headerName)) {
+                // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL",
+                // "TOTAL - FOR PROCUREMENT", or "GRAND TOTAL - FOR THE AIP/PPA"
+                if (isSubtotalRow(headerName)) {
                     currentCategory = null;
 
                     continue;
@@ -194,8 +203,16 @@ export function extractData(config: ExtractConfig): ExtractResult {
             continue;
         }
 
-        // Skip rows without a category header yet
-        if (!currentCategory) {
+        // Rows before any category header: non-procurement items after a
+        // subtotal (e.g. "TOTAL - FOR PROCUREMENT") have a chart of account
+        // and description but no category, so synthesize one.
+        const itemCategory =
+            currentCategory ??
+            (chartOfAccount && description
+                ? `Non-Procurement Items - ${chartOfAccount}`
+                : null);
+
+        if (!itemCategory) {
             continue;
         }
 
@@ -205,7 +222,7 @@ export function extractData(config: ExtractConfig): ExtractResult {
         }
 
         chartOfAccountSet.add(chartOfAccount);
-        pairsSet.add(`${currentCategory}|${chartOfAccount}`);
+        pairsSet.add(`${itemCategory}|${chartOfAccount}`);
 
         items.push({
             tempId: nextTempId++,
@@ -213,7 +230,7 @@ export function extractData(config: ExtractConfig): ExtractResult {
             description,
             unitOfMeasurement: unit ?? '',
             price,
-            category: currentCategory,
+            category: itemCategory,
             itemNumber,
             janQty,
             febQty,
@@ -316,8 +333,9 @@ export function extractQuantities(
             const headerName = category ?? description;
 
             if (headerName) {
-                // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL"
-                if (/\s*-\s*TOTAL$/i.test(headerName)) {
+                // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL",
+                // "TOTAL - FOR PROCUREMENT", or "GRAND TOTAL - FOR THE AIP/PPA"
+                if (isSubtotalRow(headerName)) {
                     currentCategory = null;
 
                     continue;
@@ -353,8 +371,16 @@ export function extractQuantities(
             continue;
         }
 
-        // Skip rows before any category header
-        if (!currentCategory) {
+        // Rows before any category header: non-procurement items after a
+        // subtotal (e.g. "TOTAL - FOR PROCUREMENT") have a chart of account
+        // and description but no category, so synthesize one.
+        const itemCategory =
+            currentCategory ??
+            (chartOfAccount && description
+                ? `Non-Procurement Items - ${chartOfAccount}`
+                : null);
+
+        if (!itemCategory) {
             continue;
         }
 
@@ -365,13 +391,13 @@ export function extractQuantities(
         }
 
         // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL"
-        if (/\s*-\s*TOTAL$/i.test(description)) {
+        if (isSubtotalRow(description)) {
             continue;
         }
 
         rows.push({
             tempId: nextTempId++,
-            category: currentCategory,
+            category: itemCategory,
             chartOfAccount,
             description,
             unitOfMeasurement: cellText(row.getCell(columnMap.unit)) ?? '',
