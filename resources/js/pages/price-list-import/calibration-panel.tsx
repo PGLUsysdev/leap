@@ -62,6 +62,7 @@ export interface SheetConfig {
     endRow: number | undefined;
     nonProcurementStartRow: number | undefined;
     columnMap: PriceListColumnMap | QuantityColumnMap;
+    excludeRows: string;
 }
 
 interface CalibrationPanelProps {
@@ -114,17 +115,14 @@ export function CalibrationPanel({
     };
 
     const handleUseDefaultToggle = (checked: boolean) => {
-        // checked = true means "Use Defaults" is ON -> useCustom = false
         onUpdateSheet(currentSheet, { useCustom: !checked });
     };
 
-    // Determine if we should show a sheet dropdown or just a label
     const showSheetSelector =
         mode === 'price-list' && selectedSheets.length > 1;
 
     return (
         <div className="space-y-4">
-            {/* Sheet selector / label and "Use Defaults" switch */}
             <div className="flex items-center gap-4">
                 {showSheetSelector ? (
                     <Field className="w-60">
@@ -156,7 +154,6 @@ export function CalibrationPanel({
                     </div>
                 )}
 
-                {/* Always show the "Use Defaults" switch */}
                 <div className="flex items-center gap-2 self-end pb-1">
                     <label className="flex cursor-pointer items-center gap-2 text-sm">
                         Use Defaults
@@ -169,7 +166,6 @@ export function CalibrationPanel({
                 </div>
             </div>
 
-            {/* Main calibration fields */}
             <div className="rounded-lg border p-4">
                 <div className="flex flex-wrap gap-4">
                     <Field>
@@ -218,9 +214,20 @@ export function CalibrationPanel({
                             disabled={!currentConfig.useCustom}
                         />
                     </Field>
+                    <Field>
+                        <FieldLabel>Exclude Rows</FieldLabel>
+                        <Input
+                            value={currentConfig.excludeRows}
+                            onChange={(e) =>
+                                updateField('excludeRows', e.target.value)
+                            }
+                            className="w-40"
+                            placeholder="e.g. 1118, 1120"
+                            disabled={!currentConfig.useCustom}
+                        />
+                    </Field>
                 </div>
 
-                {/* Column mappings */}
                 <div className="mt-4 grid grid-cols-6 gap-2">
                     <Field>
                         <FieldLabel>COA</FieldLabel>
@@ -278,7 +285,6 @@ export function CalibrationPanel({
                         />
                     </Field>
 
-                    {/* Mode‑specific extra column */}
                     {mode === 'price-list' ? (
                         <Field>
                             <FieldLabel>Item#</FieldLabel>
@@ -312,7 +318,6 @@ export function CalibrationPanel({
                     )}
                 </div>
 
-                {/* Monthly quantity columns */}
                 <div className="mt-4">
                     <p className="mb-2 text-sm font-medium text-muted-foreground">
                         Monthly Quantities

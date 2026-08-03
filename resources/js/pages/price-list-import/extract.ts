@@ -27,6 +27,16 @@ interface ExtractConfig {
     endRow?: number;
     nonProcurementStartRow: number;
     columnMap: ColumnMap;
+    excludeRows?: number[];
+}
+
+export function parseExcludeRows(raw: string): number[] {
+    return raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s !== '')
+        .map(Number)
+        .filter((n) => !Number.isNaN(n));
 }
 
 export interface PriceListItem {
@@ -124,6 +134,10 @@ export function extractData(config: ExtractConfig): ExtractResult {
     const lastRow = endRow ?? worksheet.rowCount;
 
     for (let rowNumber = startRow; rowNumber <= lastRow; rowNumber++) {
+        if (config.excludeRows && config.excludeRows.includes(rowNumber)) {
+            continue;
+        }
+
         const row = worksheet.getRow(rowNumber);
 
         const chartOfAccount = cellText(row.getCell(columnMap.chartOfAccount));
@@ -321,6 +335,7 @@ export interface ExtractQuantitiesConfig {
     endRow?: number;
     nonProcurementStartRow: number;
     columnMap: QuantityColumnMap;
+    excludeRows?: number[];
 }
 
 export function extractQuantities(
@@ -334,6 +349,10 @@ export function extractQuantities(
     let currentCategory: string | null = null;
 
     for (let rowNumber = startRow; rowNumber <= lastRow; rowNumber++) {
+        if (config.excludeRows && config.excludeRows.includes(rowNumber)) {
+            continue;
+        }
+
         const row = worksheet.getRow(rowNumber);
         const chartOfAccount = cellText(row.getCell(columnMap.chartOfAccount));
         const category = cellText(row.getCell(columnMap.category));
@@ -341,12 +360,15 @@ export function extractQuantities(
 
         if (!chartOfAccount) {
             const headerName = category ?? description;
+
             if (headerName) {
                 if (isSubtotalRow(headerName)) {
                     currentCategory = null;
                     continue;
                 }
+
                 let isCoaLabel = false;
+
                 for (
                     let lookRow = rowNumber + 1;
                     lookRow <= lastRow;
@@ -356,17 +378,21 @@ export function extractQuantities(
                     const nextCoa = cellText(
                         nextRow.getCell(columnMap.chartOfAccount),
                     );
+
                     if (nextCoa) {
                         if (nextCoa === headerName) {
                             isCoaLabel = true;
                         }
+
                         break;
                     }
                 }
+
                 if (!isCoaLabel) {
                     currentCategory = headerName;
                 }
             }
+
             continue;
         }
 
@@ -383,6 +409,7 @@ export function extractQuantities(
         }
 
         const total = cellNumber(row.getCell(columnMap.total));
+
         if (total === null) {
             continue;
         }

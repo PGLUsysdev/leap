@@ -60,7 +60,7 @@ import type {
     PpmpCategory,
 } from '@/types';
 import { CalibrationPanel, type SheetConfig } from './calibration-panel';
-import { extractData, extractQuantities } from './extract';
+import { extractData, extractQuantities, parseExcludeRows } from './extract';
 import type { ExtractResult, QuantityRow } from './extract';
 
 interface PriceListImportProps {
@@ -200,6 +200,7 @@ export default function PriceListImport({
             endRow: defaultEnd,
             nonProcurementStartRow: defaultNonProc,
             columnMap,
+            excludeRows: '',
         };
     }
 
@@ -527,7 +528,10 @@ export default function PriceListImport({
 
         for (const sheet of selectedSheets) {
             const ws = _workbook.getWorksheet(sheet);
-            if (!ws) continue;
+
+            if (!ws) {
+                continue;
+            }
 
             const config = calibrations[sheet];
             const effective = config.useCustom
@@ -539,6 +543,7 @@ export default function PriceListImport({
                 endRow: effective.endRow,
                 nonProcurementStartRow: effective.nonProcurementStartRow!,
                 columnMap: effective.columnMap as any, // type cast, but it matches
+                excludeRows: parseExcludeRows(effective.excludeRows),
             });
 
             for (const coa of result.uniqueChartOfAccounts) {
@@ -606,7 +611,10 @@ export default function PriceListImport({
 
         for (const sheet of selectedSheets) {
             const ws = _workbook.getWorksheet(sheet);
-            if (!ws) continue;
+
+            if (!ws) {
+                continue;
+            }
 
             const config = calibrations[sheet];
             const effective = config.useCustom
@@ -618,10 +626,12 @@ export default function PriceListImport({
                 endRow: effective.endRow,
                 nonProcurementStartRow: effective.nonProcurementStartRow!,
                 columnMap: effective.columnMap as any,
+                excludeRows: parseExcludeRows(effective.excludeRows),
             });
 
             for (const item of result.items) {
                 const key = `${normalize(item.description)}|${normalize(item.category)}|${normalize(item.chartOfAccount)}`;
+
                 if (!itemMap.has(key)) {
                     itemMap.set(key, {
                         description: item.description,
@@ -632,6 +642,7 @@ export default function PriceListImport({
                         sheets: new Set(),
                     });
                 }
+
                 itemMap.get(key)!.sheets.add(sheet);
             }
         }
@@ -656,15 +667,23 @@ export default function PriceListImport({
     }
 
     function handleExtractQuantities() {
-        if (!_workbook || selectedSheets.length === 0) return;
+        if (!_workbook || selectedSheets.length === 0) {
+            return;
+        }
+
         const sheet = selectedSheets[0];
+
         if (!calibrations[sheet]) {
             toast.error(`Missing calibration for sheet "${sheet}".`);
+
             return;
         }
 
         const ws = _workbook.getWorksheet(sheet);
-        if (!ws) return;
+
+        if (!ws) {
+            return;
+        }
 
         const config = calibrations[sheet];
         const effective = config.useCustom
@@ -676,6 +695,7 @@ export default function PriceListImport({
             endRow: effective.endRow,
             nonProcurementStartRow: effective.nonProcurementStartRow!,
             columnMap: effective.columnMap as any, // cast to QuantityColumnMap
+            excludeRows: parseExcludeRows(effective.excludeRows),
         });
 
         setQuantityRows(rows);
