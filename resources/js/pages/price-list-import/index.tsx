@@ -281,6 +281,9 @@ export default function PriceListImport({
         Record<number, { itemId: number | null }>
     >({});
     const [quantityChecked, setQuantityChecked] = useState(false);
+    const [quantityImportDialogOpen, setQuantityImportDialogOpen] =
+        useState(false);
+    const [quantityImporting, setQuantityImporting] = useState(false);
     const [calibratingSheet, setCalibratingSheet] = useState('');
     const [sheetConfigs, setSheetConfigs] = useState<
         Record<
@@ -538,6 +541,84 @@ export default function PriceListImport({
         pairOverrides,
         dbPairsSet,
     ]);
+
+    const quantityImportPlan = useMemo(() => {
+        if (!quantityRows) {
+            return null;
+        }
+
+        const monthKeys = [
+            'janQty',
+            'febQty',
+            'marQty',
+            'aprQty',
+            'mayQty',
+            'junQty',
+            'julQty',
+            'augQty',
+            'sepQty',
+            'octQty',
+            'novQty',
+            'decQty',
+        ] as const;
+
+        const rows: Array<{
+            ppmp_price_list_id: number;
+            jan_qty: number;
+            feb_qty: number;
+            mar_qty: number;
+            apr_qty: number;
+            may_qty: number;
+            jun_qty: number;
+            jul_qty: number;
+            aug_qty: number;
+            sep_qty: number;
+            oct_qty: number;
+            nov_qty: number;
+            dec_qty: number;
+        }> = [];
+        let skippedNoQty = 0;
+        let unmatched = 0;
+
+        for (const row of quantityRows) {
+            const itemId = quantityMatches[row.tempId]?.itemId ?? null;
+
+            if (!itemId) {
+                unmatched++;
+
+                continue;
+            }
+
+            const qtys = monthKeys.map((key) => row[key]);
+
+            if (qtys.every((q) => q === null || q === undefined || q === 0)) {
+                skippedNoQty++;
+
+                continue;
+            }
+
+            const monthQty = (key: (typeof monthKeys)[number]) =>
+                row[key] ?? 0;
+
+            rows.push({
+                ppmp_price_list_id: itemId,
+                jan_qty: monthQty('janQty'),
+                feb_qty: monthQty('febQty'),
+                mar_qty: monthQty('marQty'),
+                apr_qty: monthQty('aprQty'),
+                may_qty: monthQty('mayQty'),
+                jun_qty: monthQty('junQty'),
+                jul_qty: monthQty('julQty'),
+                aug_qty: monthQty('augQty'),
+                sep_qty: monthQty('sepQty'),
+                oct_qty: monthQty('octQty'),
+                nov_qty: monthQty('novQty'),
+                dec_qty: monthQty('decQty'),
+            });
+        }
+
+        return { rows, skippedNoQty, unmatched };
+    }, [quantityRows, quantityMatches]);
 
     // Resolution re-computes whenever result, manualCoa, or manualCat changes
     // const resolution: Resolution | null = useMemo(() => {
@@ -829,6 +910,31 @@ export default function PriceListImport({
             { items: importPlan.items } as never,
             {
                 onFinish: () => setImporting(false),
+            },
+        );
+    }
+
+    function handleConfirmImportQuantities() {
+        if (
+            !quantityImportPlan ||
+            quantityImportPlan.rows.length === 0 ||
+            quantityImporting
+        ) {
+            return;
+        }
+
+        setQuantityImporting(true);
+
+        router.post(
+            '/price-list-import/quantities' as const,
+            {
+                fiscal_year_id: targetFiscalYearId,
+                ppa_id: targetPpaId,
+                funding_source_id: targetFundingSourceId,
+                rows: quantityImportPlan.rows,
+            } as never,
+            {
+                onFinish: () => setQuantityImporting(false),
             },
         );
     }
@@ -1190,7 +1296,12 @@ export default function PriceListImport({
                             </Field>
                             </div>
                             <p className="mt-2 text-sm text-muted-foreground">
-                                Resolved target: —
+                                Resolved target:{' '}
+                                {targetFiscalYearId &&
+                                targetPpaId &&
+                                targetFundingSourceId
+                                    ? `${fiscalYears.find((fy) => fy.id === targetFiscalYearId)?.year ?? '—'} — ${ppas.find((p) => p.id === targetPpaId)?.name ?? '—'} — [${fundingSources.find((fs) => fs.id === targetFundingSourceId)?.code ?? '—'}]`
+                                    : '—'}
                             </p>
                         </div>
 
@@ -1382,14 +1493,56 @@ export default function PriceListImport({
                                     <h3 className="text-sm font-semibold text-muted-foreground">
                                         Extracted Items ({quantityRows.length})
                                     </h3>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleCheckDbMatches}
-                                    >
-                                        Check DB Matches
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleCheckDbMatches}
+                                        >
+                                            Check DB Matches
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                setQuantityImportDialogOpen(
+                                                    true,
+                                                )
+                                            }
+                                            disabled={
+                                                !quantityImportPlan ||
+                                                quantityImportPlan.rows.length ===
+                                                    0 ||
+                                                quantityImportPlan.unmatched > 0 ||
+                                                !targetFiscalYearId ||
+                                                !targetPpaId ||
+                                                !targetFundingSourceId ||
+                                                quantityImporting
+                                            }
+                                        >
+                                            {quantityImporting && <Spinner />}
+                                            Import{' '}
+                                            {quantityImportPlan?.rows.length ?? 0}{' '}
+                                            Quantities
+                                        </Button>
+                                    </div>
                                 </div>
+                                {quantityImportPlan &&
+                                    quantityImportPlan.unmatched > 0 && (
+                                        <p className="mb-2 text-sm text-destructive">
+                                            {quantityImportPlan.unmatched}{' '}
+                                            item(s) without a DB match —
+                                            resolve them before importing.
+                                        </p>
+                                    )}
+                                {quantityImportPlan &&
+                                    quantityImportPlan.skippedNoQty > 0 && (
+                                        <p className="mb-2 text-sm text-muted-foreground">
+                                            {quantityImportPlan.skippedNoQty}{' '}
+                                            row(s) with no quantities will be
+                                            skipped.
+                                        </p>
+                                    )}
                                 <div className="max-h-96 overflow-auto rounded-md border">
                                     <Table>
                                         <TableHeader className="sticky top-0 z-10 bg-background">
@@ -1618,6 +1771,63 @@ export default function PriceListImport({
                                 </div>
                             </div>
                         )}
+
+                        <Dialog
+                            open={quantityImportDialogOpen}
+                            onOpenChange={setQuantityImportDialogOpen}
+                        >
+                            <DialogContent>
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        Confirm Quantity Import
+                                    </DialogTitle>
+                                    <DialogDescription>
+                                        You're about to import{' '}
+                                        {quantityImportPlan?.rows.length ?? 0}{' '}
+                                        monthly quantity row(s) for{' '}
+                                        {targetFiscalYearId &&
+                                        targetPpaId &&
+                                        targetFundingSourceId
+                                            ? `${fiscalYears.find((fy) => fy.id === targetFiscalYearId)?.year ?? '—'} — ${ppas.find((p) => p.id === targetPpaId)?.name ?? '—'} — [${fundingSources.find((fs) => fs.id === targetFundingSourceId)?.code ?? '—'}]`
+                                            : 'the selected target'}
+                                        . Existing monthly quantities for
+                                        matched items will be overwritten.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                {quantityImportPlan &&
+                                    quantityImportPlan.skippedNoQty > 0 && (
+                                        <div className="space-y-1 text-sm text-muted-foreground">
+                                            Skipped:
+                                            <p>
+                                                {quantityImportPlan.skippedNoQty}{' '}
+                                                — no monthly quantities
+                                            </p>
+                                        </div>
+                                    )}
+                                <DialogFooter>
+                                    <DialogClose
+                                        render={
+                                            <Button variant="outline">
+                                                Cancel
+                                            </Button>
+                                        }
+                                    />
+                                    <Button
+                                        onClick={handleConfirmImportQuantities}
+                                        disabled={
+                                            !quantityImportPlan ||
+                                            quantityImportPlan.rows.length ===
+                                                0 ||
+                                            quantityImporting
+                                        }
+                                    >
+                                        {quantityImporting
+                                            ? 'Importing...'
+                                            : 'Confirm'}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                     </div>
                 )}
 
