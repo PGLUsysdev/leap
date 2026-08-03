@@ -25,6 +25,7 @@ interface ExtractConfig {
     worksheet: ExcelJS.Worksheet;
     startRow: number;
     endRow?: number;
+    nonProcurementStartRow: number;
     columnMap: ColumnMap;
 }
 
@@ -83,6 +84,8 @@ function isSubtotalRow(name: string): boolean {
     );
 }
 
+export const NON_PROC_CATEGORY_PREFIX = 'Non-Procurement Items - ';
+
 function cellNumber(cell: ExcelJS.Cell): number | null {
     let value: any = cell.value;
 
@@ -108,7 +111,8 @@ function cellNumber(cell: ExcelJS.Cell): number | null {
 }
 
 export function extractData(config: ExtractConfig): ExtractResult {
-    const { worksheet, startRow, endRow, columnMap } = config;
+    const { worksheet, startRow, endRow, nonProcurementStartRow, columnMap } =
+        config;
 
     const items: PriceListItem[] = [];
     const chartOfAccountSet = new Set<string>();
@@ -116,9 +120,7 @@ export function extractData(config: ExtractConfig): ExtractResult {
     const pairsSet = new Set<string>();
 
     let nextTempId = 1;
-
     let currentCategory: string | null = null;
-
     const lastRow = endRow ?? worksheet.rowCount;
 
     for (let rowNumber = startRow; rowNumber <= lastRow; rowNumber++) {
@@ -160,19 +162,14 @@ export function extractData(config: ExtractConfig): ExtractResult {
             const headerName = category ?? description;
 
             if (headerName) {
-                // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL",
-                // "TOTAL - FOR PROCUREMENT", or "GRAND TOTAL - FOR THE AIP/PPA"
+                // Skip subtotal rows
                 if (isSubtotalRow(headerName)) {
                     currentCategory = null;
-
                     continue;
                 }
 
                 // Look ahead to distinguish category header vs COA label
-                // Category header: next item rows have DIFFERENT chart of accounts
-                // COA label: next item rows have the SAME chart of account as this text
                 let isCoaLabel = false;
-
                 for (
                     let lookRow = rowNumber + 1;
                     lookRow <= lastRow;
@@ -187,7 +184,6 @@ export function extractData(config: ExtractConfig): ExtractResult {
                         if (nextCoa === headerName) {
                             isCoaLabel = true;
                         }
-
                         break;
                     }
                 }
@@ -195,30 +191,44 @@ export function extractData(config: ExtractConfig): ExtractResult {
                 if (!isCoaLabel) {
                     // New category header
                     currentCategory = headerName;
-                    categorySet.add(headerName);
+                    if (!categorySet.has(headerName)) {
+                        console.log(
+                            `[Row ${rowNumber}] Category added from HEADER: "${headerName}"`,
+                        );
+                        categorySet.add(headerName);
+                    }
                 }
-                // COA label: leave currentCategory unchanged
             }
-
             continue;
         }
 
-        // Rows before any category header: non-procurement items after a
-        // subtotal (e.g. "TOTAL - FOR PROCUREMENT") have a chart of account
-        // and description but no category, so synthesize one.
+        // Rows with chartOfAccount present
         const itemCategory =
             currentCategory ??
             (chartOfAccount && description
-                ? `Non-Procurement Items - ${chartOfAccount}`
+                ? rowNumber >= nonProcurementStartRow
+                    ? `${NON_PROC_CATEGORY_PREFIX}${chartOfAccount}`
+                    : chartOfAccount
                 : null);
 
         if (!itemCategory) {
             continue;
         }
 
-        // Must have a description to be a valid item
         if (!description) {
             continue;
+        }
+
+        // Add category to the set (only if new) and log the first occurrence
+        if (!categorySet.has(itemCategory)) {
+            const source =
+                rowNumber >= nonProcurementStartRow
+                    ? 'NON-PROC synthetic'
+                    : 'PROC synthetic (COA as category)';
+            console.log(
+                `[Row ${rowNumber}] Category added from ITEM: "${itemCategory}" (${source})`,
+            );
+            categorySet.add(itemCategory);
         }
 
         chartOfAccountSet.add(chartOfAccount);
@@ -251,14 +261,16 @@ export function extractData(config: ExtractConfig): ExtractResult {
         items,
         uniqueChartOfAccounts: [...chartOfAccountSet].sort(),
         uniqueCategories: [...categorySet].sort(),
-        uniquePairs: [...pairsSet]
-            .sort()
-            .map((p) => {
-                const [category, chartOfAccount] = p.split('|');
-                return { category, chartOfAccount };
-            }),
+        uniquePairs: [...pairsSet].sort().map((p) => {
+            const [category, chartOfAccount] = p.split('|');
+            return { category, chartOfAccount };
+        }),
     };
 }
+
+// --------------------------------------------------------------
+// extractQuantities (unchanged)
+// --------------------------------------------------------------
 
 export interface QuantityRow {
     tempId: number;
@@ -307,13 +319,15 @@ export interface ExtractQuantitiesConfig {
     worksheet: ExcelJS.Worksheet;
     startRow: number;
     endRow?: number;
+    nonProcurementStartRow: number;
     columnMap: QuantityColumnMap;
 }
 
 export function extractQuantities(
     config: ExtractQuantitiesConfig,
 ): QuantityRow[] {
-    const { worksheet, startRow, endRow, columnMap } = config;
+    const { worksheet, startRow, endRow, nonProcurementStartRow, columnMap } =
+        config;
     const rows: QuantityRow[] = [];
     const lastRow = endRow ?? worksheet.rowCount;
     let nextTempId = 1;
@@ -321,29 +335,18 @@ export function extractQuantities(
 
     for (let rowNumber = startRow; rowNumber <= lastRow; rowNumber++) {
         const row = worksheet.getRow(rowNumber);
-        const chartOfAccount = cellText(
-            row.getCell(columnMap.chartOfAccount),
-        );
+        const chartOfAccount = cellText(row.getCell(columnMap.chartOfAccount));
         const category = cellText(row.getCell(columnMap.category));
         const description = cellText(row.getCell(columnMap.description)) ?? '';
 
-        // Row without a chart of account could be a category header, COA
-        // label, or subtotal
         if (!chartOfAccount) {
             const headerName = category ?? description;
-
             if (headerName) {
-                // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL",
-                // "TOTAL - FOR PROCUREMENT", or "GRAND TOTAL - FOR THE AIP/PPA"
                 if (isSubtotalRow(headerName)) {
                     currentCategory = null;
-
                     continue;
                 }
-
-                // Look ahead to distinguish category header vs COA label
                 let isCoaLabel = false;
-
                 for (
                     let lookRow = rowNumber + 1;
                     lookRow <= lastRow;
@@ -353,31 +356,26 @@ export function extractQuantities(
                     const nextCoa = cellText(
                         nextRow.getCell(columnMap.chartOfAccount),
                     );
-
                     if (nextCoa) {
                         if (nextCoa === headerName) {
                             isCoaLabel = true;
                         }
-
                         break;
                     }
                 }
-
                 if (!isCoaLabel) {
                     currentCategory = headerName;
                 }
             }
-
             continue;
         }
 
-        // Rows before any category header: non-procurement items after a
-        // subtotal (e.g. "TOTAL - FOR PROCUREMENT") have a chart of account
-        // and description but no category, so synthesize one.
         const itemCategory =
             currentCategory ??
             (chartOfAccount && description
-                ? `Non-Procurement Items - ${chartOfAccount}`
+                ? rowNumber >= nonProcurementStartRow
+                    ? `${NON_PROC_CATEGORY_PREFIX}${chartOfAccount}`
+                    : chartOfAccount
                 : null);
 
         if (!itemCategory) {
@@ -385,12 +383,10 @@ export function extractQuantities(
         }
 
         const total = cellNumber(row.getCell(columnMap.total));
-
         if (total === null) {
             continue;
         }
 
-        // Skip subtotal rows like "ACCOUNTABLE FORMS - TOTAL"
         if (isSubtotalRow(description)) {
             continue;
         }
