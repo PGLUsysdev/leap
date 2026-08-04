@@ -890,7 +890,7 @@ export default function PriceListImport({
                             <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
                                 Target
                             </h3>
-                            <div className="grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
+                            <div className="grid grid-cols-5 gap-4">
                                 <Field>
                                     <FieldLabel>Fiscal Year</FieldLabel>
                                     <Select
@@ -923,7 +923,7 @@ export default function PriceListImport({
                                         </SelectContent>
                                     </Select>
                                 </Field>
-                                <Field>
+                                <Field className="col-span-2">
                                     <FieldLabel>PPA</FieldLabel>
                                     <Combobox
                                         items={ppaComboboxItems}
@@ -935,8 +935,10 @@ export default function PriceListImport({
                                         onValueChange={(v) => {
                                             if (!v) {
                                                 setTargetPpaId(null);
+
                                                 return;
                                             }
+
                                             const name = v.replace(
                                                 /^[^:]+:/,
                                                 '',
@@ -947,13 +949,17 @@ export default function PriceListImport({
                                                         targetFiscalYearId &&
                                                     p.name === name,
                                             );
-                                            if (ppa) setTargetPpaId(ppa.id);
+
+                                            if (ppa) {
+                                                setTargetPpaId(ppa.id);
+                                            }
                                         }}
                                     >
                                         <ComboboxInput
                                             placeholder="Select PPA..."
                                             showClear
                                             disabled={!targetFiscalYearId}
+                                            className="w-1000"
                                         />
                                         <ComboboxContent>
                                             <ComboboxEmpty>
@@ -977,7 +983,7 @@ export default function PriceListImport({
                                         </ComboboxContent>
                                     </Combobox>
                                 </Field>
-                                <Field>
+                                <Field className="col-span-2">
                                     <FieldLabel>Funding Source</FieldLabel>
                                     <Select
                                         value={

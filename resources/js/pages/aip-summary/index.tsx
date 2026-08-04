@@ -126,6 +126,8 @@ export default function AipSummaryTable({
     psCoaAutoTotals = {},
     psPoolPpaId = null,
 }: AipSummaryTableProps) {
+    console.log(aipEntries);
+
     const { auth } = usePage<SharedData>().props;
 
     const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
