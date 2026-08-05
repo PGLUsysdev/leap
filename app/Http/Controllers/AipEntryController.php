@@ -28,516 +28,531 @@ class AipEntryController extends Controller
      */
     public function index(Request $request, FiscalYear $fiscalYear)
     {
-        Gate::authorize('viewAny', AipEntry::class);
+        // Gate::authorize('viewAny', AipEntry::class);
 
-        $user = auth()->user();
-        $user->loadMissing('role.permissionRoles.permission');
-        $permissions = $user->role->permissionRoles->pluck('permission.name');
-        $canViewAll = $permissions->contains('aip-summary.show.all');
-        $officeId = $canViewAll
-            ? ($request->query('selected_office_id') ?:
-            $user->office_id)
-            : $user->office_id;
-        $officeIds = $this->getOfficeHierarchyIds($officeId);
+        // $user = auth()->user();
+        // $user->loadMissing('role.permissionRoles.permission');
+        // $permissions = $user->role->permissionRoles->pluck('permission.name');
+        // $canViewAll = $permissions->contains('aip-summary.show.all');
+        // $officeId = $canViewAll
+        //     ? ($request->query('selected_office_id') ?:
+        //     $user->office_id)
+        //     : $user->office_id;
+        // $officeIds = $this->getOfficeHierarchyIds($officeId);
 
-        $yearId = $fiscalYear->id;
+        // $yearId = $fiscalYear->id;
 
-        $scope = $request->query('scope', 'original');
-        $saipId = $request->query('supplemental_aip_id');
+        // $scope = $request->query('scope', 'original');
+        // $saipId = $request->query('supplemental_aip_id');
 
-        $supplementalAip = null;
+        // $supplementalAip = null;
 
-        if ($scope === 'supplemental' && $saipId) {
-            $supplementalAip = \App\Models\SupplementalAip::findOrFail($saipId);
-            Gate::authorize('view', $supplementalAip);
-        }
+        // if ($scope === 'supplemental' && $saipId) {
+        //     $supplementalAip = \App\Models\SupplementalAip::findOrFail($saipId);
+        //     Gate::authorize('view', $supplementalAip);
+        // }
 
-        $fundingSourceFilter = function ($query) use ($scope, $saipId) {
-            $query->with(['fundingSource', 'ccTypology', 'ppmps']);
-            if ($scope === 'original') {
-                $query->whereNull('supplemental_aip_id');
-            } elseif ($scope === 'supplemental' && $saipId) {
-                $query->where('supplemental_aip_id', $saipId);
-            }
-        };
+        // $fundingSourceFilter = function ($query) use ($scope, $saipId) {
+        //     $query->with(['fundingSource', 'ccTypology', 'ppmps']);
+        //     if ($scope === 'original') {
+        //         $query->whereNull('supplemental_aip_id');
+        //     } elseif ($scope === 'supplemental' && $saipId) {
+        //         $query->where('supplemental_aip_id', $saipId);
+        //     }
+        // };
 
-        $aipEntryFilter = function ($query) use (
-            $scope,
-            $saipId,
-            $fundingSourceFilter,
-        ) {
-            if ($scope === 'original') {
-                $query->whereNull('supplemental_aip_id');
-            } elseif ($scope === 'supplemental' && $saipId) {
-                $query->where('supplemental_aip_id', $saipId);
-            }
-            $query->with(['ppaFundingSources' => $fundingSourceFilter]);
-        };
+        // $aipEntryFilter = function ($query) use (
+        //     $scope,
+        //     $saipId,
+        //     $fundingSourceFilter,
+        // ) {
+        //     if ($scope === 'original') {
+        //         $query->whereNull('supplemental_aip_id');
+        //     } elseif ($scope === 'supplemental' && $saipId) {
+        //         $query->where('supplemental_aip_id', $saipId);
+        //     }
+        //     $query->with(['ppaFundingSources' => $fundingSourceFilter]);
+        // };
 
-        $onlyAipItems = function ($query) use ($yearId, $scope, $saipId) {
-            $query
-                ->where('fiscal_year_id', $yearId)
-                ->whereHas('aipEntries', function ($q) use ($scope, $saipId) {
-                    if ($scope === 'original') {
-                        $q->whereNull('supplemental_aip_id');
-                    } elseif ($scope === 'supplemental' && $saipId) {
-                        $q->where('supplemental_aip_id', $saipId);
-                    }
-                })
-                ->orderBy('sort_order');
-        };
+        // $onlyAipItems = function ($query) use ($yearId, $scope, $saipId) {
+        //     $query
+        //         ->where('fiscal_year_id', $yearId)
+        //         ->whereHas('aipEntries', function ($q) use ($scope, $saipId) {
+        //             if ($scope === 'original') {
+        //                 $q->whereNull('supplemental_aip_id');
+        //             } elseif ($scope === 'supplemental' && $saipId) {
+        //                 $q->where('supplemental_aip_id', $saipId);
+        //             }
+        //         })
+        //         ->orderBy('sort_order');
+        // };
 
-        $aipEntries = Ppa::whereIn('office_id', $officeIds)
-            ->whereNull('parent_id')
-            ->where('fiscal_year_id', $yearId)
-            ->whereHas('aipEntries', function ($q) use ($scope, $saipId) {
-                if ($scope === 'original') {
-                    $q->whereNull('supplemental_aip_id');
-                } elseif ($scope === 'supplemental' && $saipId) {
-                    $q->where('supplemental_aip_id', $saipId);
-                }
-            })
-            ->orderBy('sort_order')
-            ->with([
-                'office',
-                'aipEntries' => $aipEntryFilter,
+        // $aipEntries = Ppa::whereIn('office_id', $officeIds)
+        //     ->whereNull('parent_id')
+        //     ->where('fiscal_year_id', $yearId)
+        //     ->whereHas('aipEntries', function ($q) use ($scope, $saipId) {
+        //         if ($scope === 'original') {
+        //             $q->whereNull('supplemental_aip_id');
+        //         } elseif ($scope === 'supplemental' && $saipId) {
+        //             $q->where('supplemental_aip_id', $saipId);
+        //         }
+        //     })
+        //     ->orderBy('sort_order')
+        //     ->with([
+        //         'office',
+        //         'aipEntries' => $aipEntryFilter,
 
-                'children' => $onlyAipItems,
-                'children.office',
-                'children.aipEntries' => $aipEntryFilter,
+        //         'children' => $onlyAipItems,
+        //         'children.office',
+        //         'children.aipEntries' => $aipEntryFilter,
 
-                'children.children' => $onlyAipItems,
-                'children.children.office',
-                'children.children.aipEntries' => $aipEntryFilter,
+        //         'children.children' => $onlyAipItems,
+        //         'children.children.office',
+        //         'children.children.aipEntries' => $aipEntryFilter,
 
-                'children.children.children' => $onlyAipItems,
-                'children.children.children.office',
-                'children.children.children.aipEntries' => $aipEntryFilter,
-            ])
-            ->get()
-            ->map(function ($aipEntries) use ($request, $scope, $saipId) {
-                $aipEntry = $aipEntries->aip_entries?->first();
+        //         'children.children.children' => $onlyAipItems,
+        //         'children.children.children.office',
+        //         'children.children.children.aipEntries' => $aipEntryFilter,
+        //     ])
+        //     ->get()
+        //     ->map(function ($aipEntries) use ($request, $scope, $saipId) {
+        //         $aipEntry = $aipEntries->aip_entries?->first();
 
-                if (!$aipEntry) {
-                    $aipEntry = AipEntry::where('ppa_id', $aipEntries->id)
-                        ->when(
-                            $scope === 'original',
-                            fn($q) => $q->whereNull('supplemental_aip_id'),
-                        )
-                        ->when(
-                            $scope === 'supplemental' && $saipId,
-                            fn($q) => $q->where('supplemental_aip_id', $saipId),
-                        )
-                        ->first();
-                }
+        //         if (!$aipEntry) {
+        //             $aipEntry = AipEntry::where('ppa_id', $aipEntries->id)
+        //                 ->when(
+        //                     $scope === 'original',
+        //                     fn($q) => $q->whereNull('supplemental_aip_id'),
+        //                 )
+        //                 ->when(
+        //                     $scope === 'supplemental' && $saipId,
+        //                     fn($q) => $q->where('supplemental_aip_id', $saipId),
+        //                 )
+        //                 ->first();
+        //         }
 
-                $aipEntries->can = [
-                    'import' => $request
-                        ->user()
-                        ->can('import', [AipEntry::class, [$aipEntries->id]]),
-                    'edit' => $aipEntry
-                        ? $request->user()->can('update', $aipEntry)
-                        : false,
-                    'delete' => $aipEntry
-                        ? $request->user()->can('delete', $aipEntry)
-                        : false,
-                    'editFundingSources' => $aipEntry
-                        ? $request->user()->can('editFundingSources', $aipEntry)
-                        : false,
-                    'viewPpmp' => $aipEntry
-                        ? $request
-                            ->user()
-                            ->can('viewAny', [Ppmp::class, $aipEntry])
-                        : false,
-                    'viewPsBreakdown' => $request
-                        ->user()
-                        ->can('viewAny', PsBreakdownItem::class),
-                ];
+        //         $aipEntries->can = [
+        //             'import' => $request
+        //                 ->user()
+        //                 ->can('import', [AipEntry::class, [$aipEntries->id]]),
+        //             'edit' => $aipEntry
+        //                 ? $request->user()->can('update', $aipEntry)
+        //                 : false,
+        //             'delete' => $aipEntry
+        //                 ? $request->user()->can('delete', $aipEntry)
+        //                 : false,
+        //             'editFundingSources' => $aipEntry
+        //                 ? $request->user()->can('editFundingSources', $aipEntry)
+        //                 : false,
+        //             'viewPpmp' => $aipEntry
+        //                 ? $request
+        //                     ->user()
+        //                     ->can('viewAny', [Ppmp::class, $aipEntry])
+        //                 : false,
+        //             'viewPsBreakdown' => $request
+        //                 ->user()
+        //                 ->can('viewAny', PsBreakdownItem::class),
+        //         ];
 
-                $aipEntries->children->each(function ($child) use (
-                    $request,
-                    $scope,
-                    $saipId,
-                ) {
-                    $childEntry = $child->aip_entries?->first();
+        //         $aipEntries->children->each(function ($child) use (
+        //             $request,
+        //             $scope,
+        //             $saipId,
+        //         ) {
+        //             $childEntry = $child->aip_entries?->first();
 
-                    if (!$childEntry) {
-                        $childEntry = AipEntry::where('ppa_id', $child->id)
-                            ->when(
-                                $scope === 'original',
-                                fn($q) => $q->whereNull('supplemental_aip_id'),
-                            )
-                            ->when(
-                                $scope === 'supplemental' && $saipId,
-                                fn($q) => $q->where(
-                                    'supplemental_aip_id',
-                                    $saipId,
-                                ),
-                            )
-                            ->first();
-                    }
+        //             if (!$childEntry) {
+        //                 $childEntry = AipEntry::where('ppa_id', $child->id)
+        //                     ->when(
+        //                         $scope === 'original',
+        //                         fn($q) => $q->whereNull('supplemental_aip_id'),
+        //                     )
+        //                     ->when(
+        //                         $scope === 'supplemental' && $saipId,
+        //                         fn($q) => $q->where(
+        //                             'supplemental_aip_id',
+        //                             $saipId,
+        //                         ),
+        //                     )
+        //                     ->first();
+        //             }
 
-                    $child->can = [
-                        'import' => $request
-                            ->user()
-                            ->can('import', [AipEntry::class, [$child->id]]),
-                        'edit' => $childEntry
-                            ? $request->user()->can('update', $childEntry)
-                            : false,
-                        'delete' => $childEntry
-                            ? $request->user()->can('delete', $childEntry)
-                            : false,
-                        'editFundingSources' => $childEntry
-                            ? $request
-                                ->user()
-                                ->can('editFundingSources', $childEntry)
-                            : false,
-                        'viewPpmp' => $childEntry
-                            ? $request
-                                ->user()
-                                ->can('viewAny', [Ppmp::class, $childEntry])
-                            : false,
-                        'viewPsBreakdown' => $request
-                            ->user()
-                            ->can('viewAny', PsBreakdownItem::class),
-                    ];
+        //             $child->can = [
+        //                 'import' => $request
+        //                     ->user()
+        //                     ->can('import', [AipEntry::class, [$child->id]]),
+        //                 'edit' => $childEntry
+        //                     ? $request->user()->can('update', $childEntry)
+        //                     : false,
+        //                 'delete' => $childEntry
+        //                     ? $request->user()->can('delete', $childEntry)
+        //                     : false,
+        //                 'editFundingSources' => $childEntry
+        //                     ? $request
+        //                         ->user()
+        //                         ->can('editFundingSources', $childEntry)
+        //                     : false,
+        //                 'viewPpmp' => $childEntry
+        //                     ? $request
+        //                         ->user()
+        //                         ->can('viewAny', [Ppmp::class, $childEntry])
+        //                     : false,
+        //                 'viewPsBreakdown' => $request
+        //                     ->user()
+        //                     ->can('viewAny', PsBreakdownItem::class),
+        //             ];
 
-                    $child->children->each(function ($child2) use (
-                        $request,
-                        $scope,
-                        $saipId,
-                    ) {
-                        $child2Entry = $child2->aip_entries?->first();
+        //             $child->children->each(function ($child2) use (
+        //                 $request,
+        //                 $scope,
+        //                 $saipId,
+        //             ) {
+        //                 $child2Entry = $child2->aip_entries?->first();
 
-                        if (!$child2Entry) {
-                            $child2Entry = AipEntry::where(
-                                'ppa_id',
-                                $child2->id,
-                            )
-                                ->when(
-                                    $scope === 'original',
-                                    fn($q) => $q->whereNull(
-                                        'supplemental_aip_id',
-                                    ),
-                                )
-                                ->when(
-                                    $scope === 'supplemental' && $saipId,
-                                    fn($q) => $q->where(
-                                        'supplemental_aip_id',
-                                        $saipId,
-                                    ),
-                                )
-                                ->first();
-                        }
+        //                 if (!$child2Entry) {
+        //                     $child2Entry = AipEntry::where(
+        //                         'ppa_id',
+        //                         $child2->id,
+        //                     )
+        //                         ->when(
+        //                             $scope === 'original',
+        //                             fn($q) => $q->whereNull(
+        //                                 'supplemental_aip_id',
+        //                             ),
+        //                         )
+        //                         ->when(
+        //                             $scope === 'supplemental' && $saipId,
+        //                             fn($q) => $q->where(
+        //                                 'supplemental_aip_id',
+        //                                 $saipId,
+        //                             ),
+        //                         )
+        //                         ->first();
+        //                 }
 
-                        $child2->can = [
-                            'import' => $request
-                                ->user()
-                                ->can('import', [
-                                    AipEntry::class,
-                                    [$child2->id],
-                                ]),
-                            'edit' => $child2Entry
-                                ? $request->user()->can('update', $child2Entry)
-                                : false,
-                            'delete' => $child2Entry
-                                ? $request->user()->can('delete', $child2Entry)
-                                : false,
-                            'editFundingSources' => $child2Entry
-                                ? $request
-                                    ->user()
-                                    ->can('editFundingSources', $child2Entry)
-                                : false,
-                            'viewPpmp' => $child2Entry
-                                ? $request
-                                    ->user()
-                                    ->can('viewAny', [
-                                        Ppmp::class,
-                                        $child2Entry,
-                                    ])
-                                : false,
-                            'viewPsBreakdown' => $request
-                                ->user()
-                                ->can('viewAny', PsBreakdownItem::class),
-                        ];
+        //                 $child2->can = [
+        //                     'import' => $request
+        //                         ->user()
+        //                         ->can('import', [
+        //                             AipEntry::class,
+        //                             [$child2->id],
+        //                         ]),
+        //                     'edit' => $child2Entry
+        //                         ? $request->user()->can('update', $child2Entry)
+        //                         : false,
+        //                     'delete' => $child2Entry
+        //                         ? $request->user()->can('delete', $child2Entry)
+        //                         : false,
+        //                     'editFundingSources' => $child2Entry
+        //                         ? $request
+        //                             ->user()
+        //                             ->can('editFundingSources', $child2Entry)
+        //                         : false,
+        //                     'viewPpmp' => $child2Entry
+        //                         ? $request
+        //                             ->user()
+        //                             ->can('viewAny', [
+        //                                 Ppmp::class,
+        //                                 $child2Entry,
+        //                             ])
+        //                         : false,
+        //                     'viewPsBreakdown' => $request
+        //                         ->user()
+        //                         ->can('viewAny', PsBreakdownItem::class),
+        //                 ];
 
-                        $child2->children->each(function ($child3) use (
-                            $request,
-                            $scope,
-                            $saipId,
-                        ) {
-                            $child3Entry = $child3->aip_entries?->first();
+        //                 $child2->children->each(function ($child3) use (
+        //                     $request,
+        //                     $scope,
+        //                     $saipId,
+        //                 ) {
+        //                     $child3Entry = $child3->aip_entries?->first();
 
-                            if (!$child3Entry) {
-                                $child3Entry = AipEntry::where(
-                                    'ppa_id',
-                                    $child3->id,
-                                )
-                                    ->when(
-                                        $scope === 'original',
-                                        fn($q) => $q->whereNull(
-                                            'supplemental_aip_id',
-                                        ),
-                                    )
-                                    ->when(
-                                        $scope === 'supplemental' && $saipId,
-                                        fn($q) => $q->where(
-                                            'supplemental_aip_id',
-                                            $saipId,
-                                        ),
-                                    )
-                                    ->first();
-                            }
+        //                     if (!$child3Entry) {
+        //                         $child3Entry = AipEntry::where(
+        //                             'ppa_id',
+        //                             $child3->id,
+        //                         )
+        //                             ->when(
+        //                                 $scope === 'original',
+        //                                 fn($q) => $q->whereNull(
+        //                                     'supplemental_aip_id',
+        //                                 ),
+        //                             )
+        //                             ->when(
+        //                                 $scope === 'supplemental' && $saipId,
+        //                                 fn($q) => $q->where(
+        //                                     'supplemental_aip_id',
+        //                                     $saipId,
+        //                                 ),
+        //                             )
+        //                             ->first();
+        //                     }
 
-                            $child3->can = [
-                                'import' => $request
-                                    ->user()
-                                    ->can('import', [
-                                        AipEntry::class,
-                                        [$child3->id],
-                                    ]),
-                                'edit' => $child3Entry
-                                    ? $request
-                                        ->user()
-                                        ->can('update', $child3Entry)
-                                    : false,
-                                'delete' => $child3Entry
-                                    ? $request
-                                        ->user()
-                                        ->can('delete', $child3Entry)
-                                    : false,
-                                'editFundingSources' => $child3Entry
-                                    ? $request
-                                        ->user()
-                                        ->can(
-                                            'editFundingSources',
-                                            $child3Entry,
-                                        )
-                                    : false,
-                                'viewPpmp' => $child3Entry
-                                    ? $request
-                                        ->user()
-                                        ->can('viewAny', [
-                                            Ppmp::class,
-                                            $child3Entry,
-                                        ])
-                                    : false,
-                                'viewPsBreakdown' => $request
-                                    ->user()
-                                    ->can('viewAny', PsBreakdownItem::class),
-                            ];
-                        });
-                    });
-                });
+        //                     $child3->can = [
+        //                         'import' => $request
+        //                             ->user()
+        //                             ->can('import', [
+        //                                 AipEntry::class,
+        //                                 [$child3->id],
+        //                             ]),
+        //                         'edit' => $child3Entry
+        //                             ? $request
+        //                                 ->user()
+        //                                 ->can('update', $child3Entry)
+        //                             : false,
+        //                         'delete' => $child3Entry
+        //                             ? $request
+        //                                 ->user()
+        //                                 ->can('delete', $child3Entry)
+        //                             : false,
+        //                         'editFundingSources' => $child3Entry
+        //                             ? $request
+        //                                 ->user()
+        //                                 ->can(
+        //                                     'editFundingSources',
+        //                                     $child3Entry,
+        //                                 )
+        //                             : false,
+        //                         'viewPpmp' => $child3Entry
+        //                             ? $request
+        //                                 ->user()
+        //                                 ->can('viewAny', [
+        //                                     Ppmp::class,
+        //                                     $child3Entry,
+        //                                 ])
+        //                             : false,
+        //                         'viewPsBreakdown' => $request
+        //                             ->user()
+        //                             ->can('viewAny', PsBreakdownItem::class),
+        //                     ];
+        //                 });
+        //             });
+        //         });
 
-                return $aipEntries;
-            });
+        //         return $aipEntries;
+        //     });
 
-        // Collect all ppa_funding_source IDs from the loaded tree
-        $allPfsIds = collect();
-        $crawlPpas = function ($ppas) use (&$crawlPpas, &$allPfsIds) {
-            foreach ($ppas as $ppa) {
-                foreach ($ppa->aipEntries ?? [] as $entry) {
-                    foreach ($entry->ppaFundingSources ?? [] as $source) {
-                        $allPfsIds->push($source->id);
-                    }
-                }
-                if (
-                    $ppa->relationLoaded('children') &&
-                    $ppa->children->isNotEmpty()
-                ) {
-                    $crawlPpas($ppa->children);
-                }
-            }
-        };
-        $crawlPpas($aipEntries);
-        $allPfsIds = $allPfsIds->unique()->values();
+        // // Collect all ppa_funding_source IDs from the loaded tree
+        // $allPfsIds = collect();
+        // $crawlPpas = function ($ppas) use (&$crawlPpas, &$allPfsIds) {
+        //     foreach ($ppas as $ppa) {
+        //         foreach ($ppa->aipEntries ?? [] as $entry) {
+        //             foreach ($entry->ppaFundingSources ?? [] as $source) {
+        //                 $allPfsIds->push($source->id);
+        //             }
+        //         }
+        //         if (
+        //             $ppa->relationLoaded('children') &&
+        //             $ppa->children->isNotEmpty()
+        //         ) {
+        //             $crawlPpas($ppa->children);
+        //         }
+        //     }
+        // };
+        // $crawlPpas($aipEntries);
+        // $allPfsIds = $allPfsIds->unique()->values();
 
-        Log::info('PFS IDs', [
-            'ids' => $allPfsIds->toArray(),
-        ]);
+        // Log::info('PFS IDs', [
+        //     'ids' => $allPfsIds->toArray(),
+        // ]);
 
-        // Aggregate PPMP amounts per ppa_funding_source_id and chart_of_account_id
-        $ppmpCoaTotals = Ppmp::whereIn('ppa_funding_source_id', $allPfsIds)
-            ->join(
-                'ppmp_price_lists',
-                'ppmps.ppmp_price_list_id',
-                '=',
-                'ppmp_price_lists.id',
-            )
-            ->join(
-                'chart_of_account_ppmp_categories',
-                'ppmp_price_lists.chart_of_account_ppmp_category_id',
-                '=',
-                'chart_of_account_ppmp_categories.id',
-            )
-            ->selectRaw(
-                '
-                ppmps.ppa_funding_source_id,
-                chart_of_account_ppmp_categories.chart_of_account_id,
-                COALESCE(SUM(
-                    COALESCE(jan_amount, 0) + COALESCE(feb_amount, 0) +
-                    COALESCE(mar_amount, 0) + COALESCE(apr_amount, 0) +
-                    COALESCE(may_amount, 0) + COALESCE(jun_amount, 0) +
-                    COALESCE(jul_amount, 0) + COALESCE(aug_amount, 0) +
-                    COALESCE(sep_amount, 0) + COALESCE(oct_amount, 0) +
-                    COALESCE(nov_amount, 0) + COALESCE(dec_amount, 0)
-                ), 0) as total
-            ',
-            )
-            ->groupBy(
-                'ppmps.ppa_funding_source_id',
-                'chart_of_account_ppmp_categories.chart_of_account_id',
-            )
-            ->get()
-            ->groupBy('ppa_funding_source_id')
-            ->map(
-                fn($items) => $items
-                    ->keyBy('chart_of_account_id')
-                    ->map(fn($item) => (float) $item->total),
-            );
+        // // Aggregate PPMP amounts per ppa_funding_source_id and chart_of_account_id
+        // $ppmpCoaTotals = Ppmp::whereIn('ppa_funding_source_id', $allPfsIds)
+        //     ->join(
+        //         'ppmp_price_lists',
+        //         'ppmps.ppmp_price_list_id',
+        //         '=',
+        //         'ppmp_price_lists.id',
+        //     )
+        //     ->join(
+        //         'chart_of_account_ppmp_categories',
+        //         'ppmp_price_lists.chart_of_account_ppmp_category_id',
+        //         '=',
+        //         'chart_of_account_ppmp_categories.id',
+        //     )
+        //     ->selectRaw(
+        //         '
+        //         ppmps.ppa_funding_source_id,
+        //         chart_of_account_ppmp_categories.chart_of_account_id,
+        //         COALESCE(SUM(
+        //             COALESCE(jan_amount, 0) + COALESCE(feb_amount, 0) +
+        //             COALESCE(mar_amount, 0) + COALESCE(apr_amount, 0) +
+        //             COALESCE(may_amount, 0) + COALESCE(jun_amount, 0) +
+        //             COALESCE(jul_amount, 0) + COALESCE(aug_amount, 0) +
+        //             COALESCE(sep_amount, 0) + COALESCE(oct_amount, 0) +
+        //             COALESCE(nov_amount, 0) + COALESCE(dec_amount, 0)
+        //         ), 0) as total
+        //     ',
+        //     )
+        //     ->groupBy(
+        //         'ppmps.ppa_funding_source_id',
+        //         'chart_of_account_ppmp_categories.chart_of_account_id',
+        //     )
+        //     ->get()
+        //     ->groupBy('ppa_funding_source_id')
+        //     ->map(
+        //         fn($items) => $items
+        //             ->keyBy('chart_of_account_id')
+        //             ->map(fn($item) => (float) $item->total),
+        //     );
 
-        Log::info('PPMP COA totals raw', [
-            'data' => $ppmpCoaTotals->toArray(),
-        ]);
+        // Log::info('PPMP COA totals raw', [
+        //     'data' => $ppmpCoaTotals->toArray(),
+        // ]);
 
-        $psPoolPpa = Ppa::psPoolForFiscalYear($yearId)->first();
+        // $psPoolPpa = Ppa::psPoolForFiscalYear($yearId)->first();
 
         return Inertia::render('aip-summary/index', [
-            'fiscalYear' => $fiscalYear,
-            'psPoolPpaId' => $psPoolPpa?->id,
-            'aipEntries' => $aipEntries,
-            'ppmpCoaTotals' => $ppmpCoaTotals,
-            'psCoaAutoTotals' => $officeId
-                ? PsBreakdownController::computePsCoaTotalsForOffice(
-                    $officeId,
-                    $yearId,
-                )
-                : [],
-            'fundingSources' => FundingSource::all(),
-            'chartOfAccounts' => ChartOfAccount::select(
+            // 'fiscalYear' => $fiscalYear,
+            // 'psPoolPpaId' => $psPoolPpa?->id,
+            // 'aipEntries' => $aipEntries,
+            'newAipEntries' => AipEntry::select([
                 'id',
-                'account_number',
-                'account_title',
-                'expense_class',
-            )
-                ->orderBy('account_number')
-                ->get(),
-            'priceLists' => PpmpPriceList::with([
-                'chartOfAccountPpmpCategory.chartOfAccount',
-                'chartOfAccountPpmpCategory.ppmpCategory',
+                'ppa_id',
+                'start_date',
+                'end_date',
+                'expected_output',
+                'supplemental_aip_id',
+                'is_supplemental',
+                // 'created_at',
+                // 'updated_at',
             ])
-                ->orderBy('sort_order', 'asc')
+                ->with(
+                    'ppa:id,office_id,parent_id,name,type,code_suffix,is_active,sort_order,fiscal_year_id,supplemental_aip_id,is_supplemental,is_ps_pool',
+                    // 'ppa.office:id,sector_id,lgu_level_id,office_type_id,parent_id,code,name,acronym,is_lee',
+                    'ppa.office:id,name,acronym',
+                    // 'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
+                    'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
+                    // 'ppaFundingSources.fundingSource:id,fund_type,code,title,description',
+                    'ppaFundingSources.fundingSource:id,title',
+                    // 'ppaFundingSources.ccTypology:id,code,description,response_type,strategic_priority_id,sub_sector_id,category_code,item_num,id_nccap_activity',
+                    'ppaFundingSources.ccTypology:id,code',
+                )
+                // ->limit(100)
                 ->get(),
-            'ppmpCategories' => PpmpCategory::with([
-                'chartOfAccountPpmpCategories.chartOfAccount',
-            ])->get(),
-            'ccTypologies' => CcTypology::select(
-                'id',
-                'code',
-                'description',
-                'strategic_priority_id',
-                'sub_sector_id',
-            )
-                ->with([
-                    'strategicPriority:id,code,name',
-                    'subSector:id,code,name',
-                ])
-                ->orderBy('code')
-                ->get(),
-            'offices' => Office::all(),
-            'filters' => $request->all(),
-            'supplementalAips' => \App\Models\SupplementalAip::where(
-                'fiscal_year_id',
-                $yearId,
-            )
-                ->where('office_id', $officeId)
-                ->get()
-                ->map(function ($saip) use ($request) {
-                    $saip->can = [
-                        'viewSaip' => $request->user()->can('view', $saip),
-                        'deleteSaip' => $request->user()->can('delete', $saip),
-                    ];
-
-                    return $saip;
-                }),
-            'currentScope' => [
-                'scope' => $scope,
-                'supplemental_aip_id' => $saipId ? (int) $saipId : null,
-            ],
-
-            'can' => [
-                'export' => request()->user()->can('export', AipEntry::class),
-                'import' => $request
-                    ->user()
-                    ->can('import', [AipEntry::class, []]),
-                'createSaip' => $request
-                    ->user()
-                    ->can('create', SupplementalAip::class),
-                'showSummaryAll' => $permissions->contains(
-                    'aip-summary.show.all',
-                ),
-                'setPsPool' => request()
-                    ->user()
-                    ->can('setPsPool', AipEntry::class),
-            ],
-
-            'dialogPpaTree' => Inertia::optional(function () use (
-                $request,
-                $officeIds,
-                $yearId,
-                $scope,
-                $saipId,
-            ) {
-                $id = $request->query('dialog_id');
-                $search = $request->query('dialog_search');
-                $boundaryId = $request->query('dialog_boundary_id');
-
-                $targetParentId = $id ?: $boundaryId;
-
-                return Ppa::whereIn('office_id', $officeIds)
-                    ->where('fiscal_year_id', $yearId)
-                    ->where('parent_id', $targetParentId)
-                    ->where(function ($q) use ($scope, $saipId) {
-                        if ($scope === 'original') {
-                            $q->whereNull('supplemental_aip_id');
-                        } elseif ($scope === 'supplemental' && $saipId) {
-                            $q->whereNull('supplemental_aip_id')->orWhere(
-                                'supplemental_aip_id',
-                                $saipId,
-                            );
-                        }
-                    })
-                    ->when($search, function ($query, $search) {
-                        $query->where(function ($inner) use ($search) {
-                            $inner
-                                ->where('name', 'like', "%$search%")
-                                ->orWhere('code_suffix', 'like', "%$search%");
-
-                            if (str_contains($search, '-')) {
-                                $lastSegment = last(explode('-', $search));
-
-                                $inner->orWhere(
-                                    'code_suffix',
-                                    'like',
-                                    "%$lastSegment%",
-                                );
-                            }
-                        });
-                    })
-                    ->orderBy('sort_order')
-                    ->withCount('children')
-                    ->paginate(50, ['*'], 'dialog_page')
-                    ->withQueryString();
-            }),
-
-            'dialogCurrent' => Inertia::optional(function () use ($request) {
-                $id =
-                    $request->query('dialog_id') ?:
-                    $request->query('dialog_boundary_id');
-
-                return $id ? $this->getPpaBreadcrumbs($id) : [];
-            }),
+            // 'ppmpCoaTotals' => $ppmpCoaTotals,
+            // 'psCoaAutoTotals' => $officeId
+            //     ? PsBreakdownController::computePsCoaTotalsForOffice(
+            //         $officeId,
+            //         $yearId,
+            //     )
+            //     : [],
+            // 'fundingSources' => FundingSource::all(),
+            // 'chartOfAccounts' => ChartOfAccount::select(
+            //     'id',
+            //     'account_number',
+            //     'account_title',
+            //     'expense_class',
+            // )
+            //     ->orderBy('account_number')
+            //     ->get(),
+            // 'priceLists' => PpmpPriceList::with([
+            //     'chartOfAccountPpmpCategory.chartOfAccount',
+            //     'chartOfAccountPpmpCategory.ppmpCategory',
+            // ])
+            //     ->orderBy('sort_order', 'asc')
+            //     ->get(),
+            // 'ppmpCategories' => PpmpCategory::with([
+            //     'chartOfAccountPpmpCategories.chartOfAccount',
+            // ])->get(),
+            // 'ccTypologies' => CcTypology::select(
+            //     'id',
+            //     'code',
+            //     'description',
+            //     'strategic_priority_id',
+            //     'sub_sector_id',
+            // )
+            //     ->with([
+            //         'strategicPriority:id,code,name',
+            //         'subSector:id,code,name',
+            //     ])
+            //     ->orderBy('code')
+            //     ->get(),
+            // 'offices' => Office::all(),
+            // 'filters' => $request->all(),
+            // 'supplementalAips' => \App\Models\SupplementalAip::where(
+            //     'fiscal_year_id',
+            //     $yearId,
+            // )
+            //     ->where('office_id', $officeId)
+            //     ->get()
+            //     ->map(function ($saip) use ($request) {
+            //         $saip->can = [
+            //             'viewSaip' => $request->user()->can('view', $saip),
+            //             'deleteSaip' => $request->user()->can('delete', $saip),
+            //         ];
+            //         return $saip;
+            //     }),
+            // 'currentScope' => [
+            //     'scope' => $scope,
+            //     'supplemental_aip_id' => $saipId ? (int) $saipId : null,
+            // ],
+            // 'can' => [
+            //     'export' => request()->user()->can('export', AipEntry::class),
+            //     'import' => $request
+            //         ->user()
+            //         ->can('import', [AipEntry::class, []]),
+            //     'createSaip' => $request
+            //         ->user()
+            //         ->can('create', SupplementalAip::class),
+            //     'showSummaryAll' => $permissions->contains(
+            //         'aip-summary.show.all',
+            //     ),
+            //     'setPsPool' => request()
+            //         ->user()
+            //         ->can('setPsPool', AipEntry::class),
+            // ],
+            // 'dialogPpaTree' => Inertia::optional(function () use (
+            //     $request,
+            //     $officeIds,
+            //     $yearId,
+            //     $scope,
+            //     $saipId,
+            // ) {
+            //     $id = $request->query('dialog_id');
+            //     $search = $request->query('dialog_search');
+            //     $boundaryId = $request->query('dialog_boundary_id');
+            //     $targetParentId = $id ?: $boundaryId;
+            //     return Ppa::whereIn('office_id', $officeIds)
+            //         ->where('fiscal_year_id', $yearId)
+            //         ->where('parent_id', $targetParentId)
+            //         ->where(function ($q) use ($scope, $saipId) {
+            //             if ($scope === 'original') {
+            //                 $q->whereNull('supplemental_aip_id');
+            //             } elseif ($scope === 'supplemental' && $saipId) {
+            //                 $q->whereNull('supplemental_aip_id')->orWhere(
+            //                     'supplemental_aip_id',
+            //                     $saipId,
+            //                 );
+            //             }
+            //         })
+            //         ->when($search, function ($query, $search) {
+            //             $query->where(function ($inner) use ($search) {
+            //                 $inner
+            //                     ->where('name', 'like', "%$search%")
+            //                     ->orWhere('code_suffix', 'like', "%$search%");
+            //                 if (str_contains($search, '-')) {
+            //                     $lastSegment = last(explode('-', $search));
+            //                     $inner->orWhere(
+            //                         'code_suffix',
+            //                         'like',
+            //                         "%$lastSegment%",
+            //                     );
+            //                 }
+            //             });
+            //         })
+            //         ->orderBy('sort_order')
+            //         ->withCount('children')
+            //         ->paginate(50, ['*'], 'dialog_page')
+            //         ->withQueryString();
+            // }),
+            // 'dialogCurrent' => Inertia::optional(function () use ($request) {
+            //     $id =
+            //         $request->query('dialog_id') ?:
+            //         $request->query('dialog_boundary_id');
+            //     return $id ? $this->getPpaBreadcrumbs($id) : [];
+            // }),
         ]);
     }
 

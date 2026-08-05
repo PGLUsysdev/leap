@@ -15,7 +15,7 @@ class AipEntry extends Model
     use HasFactory;
 
     protected $fillable = [
-        'id',
+        // 'id',
         'ppa_id',
         'start_date',
         'end_date',

@@ -15,7 +15,7 @@ class Ppa extends Model
     use HasFactory;
 
     protected $fillable = [
-        'id',
+        // 'id',
         'office_id',
         'parent_id',
         'name',
@@ -29,41 +29,41 @@ class Ppa extends Model
         'is_ps_pool',
     ];
 
-    protected $appends = ['full_code'];
+    // protected $appends = ['full_code'];
 
-    protected function fullCode(): Attribute
-    {
-        return Attribute::make(
-            get: function () {
-                $suffix = $this->code_suffix ?? '0000';
+    // protected function fullCode(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: function () {
+    //             $suffix = $this->code_suffix ?? '0000';
 
-                // Pad suffix based on PPA type
-                $paddedSuffix = match ($this->type) {
-                    'Program' => str_pad($suffix, 3, '0', STR_PAD_LEFT),
-                    'Project' => str_pad($suffix, 3, '0', STR_PAD_LEFT),
-                    'Activity' => str_pad($suffix, 2, '0', STR_PAD_LEFT),
-                    'Sub-Activity' => $suffix,
-                    default => $suffix,
-                };
+    //             // Pad suffix based on PPA type
+    //             $paddedSuffix = match ($this->type) {
+    //                 'Program' => str_pad($suffix, 3, '0', STR_PAD_LEFT),
+    //                 'Project' => str_pad($suffix, 3, '0', STR_PAD_LEFT),
+    //                 'Activity' => str_pad($suffix, 2, '0', STR_PAD_LEFT),
+    //                 'Sub-Activity' => $suffix,
+    //                 default => $suffix,
+    //             };
 
-                if ($this->parent_id) {
-                    $parent = $this->relationLoaded('parent')
-                        ? $this->parent
-                        : $this->parent()->first();
-                    if ($parent) {
-                        return $parent->full_code . '-' . $paddedSuffix;
-                    }
-                }
+    //             if ($this->parent_id) {
+    //                 $parent = $this->relationLoaded('parent')
+    //                     ? $this->parent
+    //                     : $this->parent()->first();
+    //                 if ($parent) {
+    //                     return $parent->full_code . '-' . $paddedSuffix;
+    //                 }
+    //             }
 
-                $office = $this->relationLoaded('office')
-                    ? $this->office
-                    : $this->office()->first();
-                $officePrefix = $office?->full_code ?? '0000-0-00-000';
+    //             $office = $this->relationLoaded('office')
+    //                 ? $this->office
+    //                 : $this->office()->first();
+    //             $officePrefix = $office?->full_code ?? '0000-0-00-000';
 
-                return $officePrefix . '-' . $paddedSuffix;
-            },
-        );
-    }
+    //             return $officePrefix . '-' . $paddedSuffix;
+    //         },
+    //     );
+    // }
 
     // hasMany
     public function children(): HasMany

@@ -1,48 +1,50 @@
-import { router, usePage } from '@inertiajs/react';
-import { Library, FileDown, FileText, Plus } from 'lucide-react';
-import { useState, useCallback, useMemo } from 'react';
+// import { router, usePage } from '@inertiajs/react';
+// import { Library, FileDown, FileText, Plus } from 'lucide-react';
+// import { useState, useCallback, useMemo } from 'react';
 // import { DataTable } from '@/components/data-table';
 import DataTable from '@/components/base-ui-components/data-table';
 import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
-import { DeleteDialog } from '@/components/delete-dialog';
-import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
-import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
-import { exportToExcel } from '@/pages/aip-summary/export-to-excel';
-import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
-import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
+// import { DeleteDialog } from '@/components/delete-dialog';
+// import {
+//     AlertDialog,
+//     AlertDialogContent,
+//     AlertDialogDescription,
+//     AlertDialogFooter,
+//     AlertDialogHeader,
+//     AlertDialogTitle,
+// } from '@/components/ui/alert-dialog';
+// import { Button } from '@/components/ui/button';
+// import {
+//     DropdownMenu,
+//     DropdownMenuContent,
+//     DropdownMenuItem,
+//     DropdownMenuTrigger,
+// } from '@/components/ui/dropdown-menu';
+// import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
+// import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
+// import { exportToExcel } from '@/pages/aip-summary/export-to-excel';
+// import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
+// import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
 import type {
     FiscalYear,
     Ppa,
     FundingSource,
     Office,
-    FlattenedPpa,
-    SharedData,
+    // FlattenedPpa,
+    // SharedData,
     Filter,
     PaginatedResponse,
     ChartOfAccount,
     PriceList,
     PpmpCategory,
+    AipEntry,
 } from '@/types';
-import columns from './columns/columns';
+// import columns from './columns/columns';
+import newColumns from './columns/new-columns';
 
 interface AipSummaryTableProps {
     fiscalYear: FiscalYear;
@@ -79,415 +81,424 @@ interface AipSummaryTableProps {
     ppmpCoaTotals: Record<number, Record<number, number>>;
     psCoaAutoTotals: Record<string, number>;
     psPoolPpaId?: number | null;
+    newAipEntries: AipEntry;
 }
 
-const existingPpaIds = (aipEntries: Ppa[]) => {
-    const ppaIds: Set<number> = new Set();
+// const existingPpaIds = (aipEntries: Ppa[]) => {
+//     const ppaIds: Set<number> = new Set();
 
-    const parentEntries = [...aipEntries];
+//     const parentEntries = [...aipEntries];
 
-    while (parentEntries.length > 0) {
-        const entry = parentEntries.pop();
+//     while (parentEntries.length > 0) {
+//         const entry = parentEntries.pop();
 
-        if (!entry) {
-            continue;
-        }
+//         if (!entry) {
+//             continue;
+//         }
 
-        ppaIds.add(entry.id);
+//         ppaIds.add(entry.id);
 
-        if (entry?.children && entry.children.length > 0) {
-            parentEntries.push(...entry.children);
-        }
+//         if (entry?.children && entry.children.length > 0) {
+//             parentEntries.push(...entry.children);
+//         }
 
-        if (!(parentEntries.length > 0)) {
-            break;
-        }
-    }
+//         if (!(parentEntries.length > 0)) {
+//             break;
+//         }
+//     }
 
-    return ppaIds;
-};
+//     return ppaIds;
+// };
 
 export default function AipSummaryTable({
-    fiscalYear,
-    aipEntries,
-    can,
-    fundingSources,
-    ccTypologies,
-    offices,
-    filters,
-    dialogPpaTree,
-    dialogCurrent,
-    supplementalAips = [],
-    currentScope = { scope: 'original', supplemental_aip_id: null },
-    chartOfAccounts,
-    priceLists,
-    ppmpCategories,
-    ppmpCoaTotals,
-    psCoaAutoTotals = {},
-    psPoolPpaId = null,
+    // fiscalYear,
+    // aipEntries,
+    // can,
+    // fundingSources,
+    // ccTypologies,
+    // offices,
+    // filters,
+    // dialogPpaTree,
+    // dialogCurrent,
+    // supplementalAips = [],
+    // currentScope = { scope: 'original', supplemental_aip_id: null },
+    // chartOfAccounts,
+    // priceLists,
+    // ppmpCategories,
+    // ppmpCoaTotals,
+    // psCoaAutoTotals = {},
+    // psPoolPpaId = null,
+    newAipEntries,
 }: AipSummaryTableProps) {
-    console.log(aipEntries);
+    console.log(newAipEntries);
 
-    const { auth } = usePage<SharedData>().props;
+    const json = JSON.stringify(newAipEntries);
+    const bytes = new Blob([json]).size;
 
-    const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    console.log(`Payload size: ${bytes} bytes`);
+    console.log(`Payload size: ${(bytes / 1024).toFixed(2)} KB`);
+    console.log(`Payload size: ${(bytes / 1024 / 1024).toFixed(2)} MB`);
 
-    const selectedEntry = useMemo(() => {
-        const findInTree = (entries: Ppa[], id: number): Ppa | null => {
-            for (const entry of entries) {
-                if (entry.id === id) {
-                    return entry;
-                }
+    // const { auth } = usePage<SharedData>().props;
 
-                if (entry.children) {
-                    const found = findInTree(entry.children, id);
+    // const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
+    // const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-                    if (found) {
-                        return found;
-                    }
-                }
-            }
+    // const selectedEntry = useMemo(() => {
+    //     const findInTree = (entries: Ppa[], id: number): Ppa | null => {
+    //         for (const entry of entries) {
+    //             if (entry.id === id) {
+    //                 return entry;
+    //             }
 
-            return null;
-        };
+    //             if (entry.children) {
+    //                 const found = findInTree(entry.children, id);
 
-        return selectedEntryId ? findInTree(aipEntries, selectedEntryId) : null;
-    }, [aipEntries, selectedEntryId]);
-    const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-    const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [isExportOpen, setIsExportOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isCreateSaipDialogOpen, setIsCreateSaipDialogOpen] = useState(false);
-    const [isDeleteSaipDialogOpen, setIsDeleteSaipDialogOpen] = useState(false);
+    //                 if (found) {
+    //                     return found;
+    //                 }
+    //             }
+    //         }
 
-    const currentSaip =
-        currentScope?.scope === 'supplemental' &&
-        currentScope.supplemental_aip_id
-            ? supplementalAips.find(
-                  (s: any) => s.id === currentScope.supplemental_aip_id,
-              )
-            : null;
-    const canDeleteSaip = currentSaip?.can?.deleteSaip ?? false;
+    //         return null;
+    //     };
 
-    const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): any[] => {
-        return ppas.flatMap((ppa): FlattenedPpa[] => {
-            const expandedChildren = ppa.children
-                ? expandPpaByFundingSource(ppa.children, depth + 1)
-                : [];
+    //     return selectedEntryId ? findInTree(aipEntries, selectedEntryId) : null;
+    // }, [aipEntries, selectedEntryId]);
+    // const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+    // const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
+    // const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    // const [isExportOpen, setIsExportOpen] = useState(false);
+    // const [isLoading, setIsLoading] = useState(false);
+    // const [isCreateSaipDialogOpen, setIsCreateSaipDialogOpen] = useState(false);
+    // const [isDeleteSaipDialogOpen, setIsDeleteSaipDialogOpen] = useState(false);
 
-            const activeAips = ppa.aip_entries || [];
-            let sources = activeAips.flatMap(
-                (aip) => aip.ppa_funding_sources || [],
-            );
+    // const currentSaip =
+    //     currentScope?.scope === 'supplemental' &&
+    //     currentScope.supplemental_aip_id
+    //         ? supplementalAips.find(
+    //               (s: any) => s.id === currentScope.supplemental_aip_id,
+    //           )
+    //         : null;
+    // const canDeleteSaip = currentSaip?.can?.deleteSaip ?? false;
 
-            if (currentScope?.scope === 'combined') {
-                // Group sources by funding_source_id
-                const grouped = new Map<number, typeof sources>();
-                sources.forEach((src) => {
-                    const list = grouped.get(src.funding_source_id) || [];
-                    list.push(src);
-                    grouped.set(src.funding_source_id, list);
-                });
+    // const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): any[] => {
+    //     return ppas.flatMap((ppa): FlattenedPpa[] => {
+    //         const expandedChildren = ppa.children
+    //             ? expandPpaByFundingSource(ppa.children, depth + 1)
+    //             : [];
 
-                // Merge groups
-                sources = Array.from(grouped.entries()).map(([fsId, list]) => {
-                    const base = { ...list[0] };
-                    let ps = 0,
-                        mooe = 0,
-                        co = 0,
-                        fe = 0,
-                        ccet_ad = 0,
-                        ccet_mit = 0;
-                    list.forEach((item) => {
-                        ps += parseFloat(item.ps_amount || '0');
-                        mooe += parseFloat(item.mooe_amount || '0');
-                        co += parseFloat(item.co_amount || '0');
-                        fe += parseFloat(item.fe_amount || '0');
-                        ccet_ad += parseFloat(item.ccet_adaptation || '0');
-                        ccet_mit += parseFloat(item.ccet_mitigation || '0');
-                    });
-                    base.ps_amount = ps.toString();
-                    base.mooe_amount = mooe.toString();
-                    base.co_amount = co.toString();
-                    base.fe_amount = fe.toString();
-                    base.ccet_adaptation = ccet_ad.toString();
-                    base.ccet_mitigation = ccet_mit.toString();
-                    // Point to the latest SAIP entry so non-numeric fields
-                    // (office, dates, expected output) resolve correctly
-                    const entryIds = [
-                        ...new Set(list.map((s) => s.aip_entry_id)),
-                    ];
-                    const latestEntry = entryIds
-                        .map((id) => activeAips.find((a) => a.id === id))
-                        .filter(Boolean)
-                        .sort(
-                            (a: any, b: any) =>
-                                (b.supplemental_aip_id ?? -1) -
-                                (a.supplemental_aip_id ?? -1),
-                        )[0];
+    //         const activeAips = ppa.aip_entries || [];
+    //         let sources = activeAips.flatMap(
+    //             (aip) => aip.ppa_funding_sources || [],
+    //         );
 
-                    if (latestEntry) {
-                        base.aip_entry_id = latestEntry.id;
-                    }
+    //         if (currentScope?.scope === 'combined') {
+    //             // Group sources by funding_source_id
+    //             const grouped = new Map<number, typeof sources>();
+    //             sources.forEach((src) => {
+    //                 const list = grouped.get(src.funding_source_id) || [];
+    //                 list.push(src);
+    //                 grouped.set(src.funding_source_id, list);
+    //             });
 
-                    return base;
-                });
-            }
+    //             // Merge groups
+    //             sources = Array.from(grouped.entries()).map(([fsId, list]) => {
+    //                 const base = { ...list[0] };
+    //                 let ps = 0,
+    //                     mooe = 0,
+    //                     co = 0,
+    //                     fe = 0,
+    //                     ccet_ad = 0,
+    //                     ccet_mit = 0;
+    //                 list.forEach((item) => {
+    //                     ps += parseFloat(item.ps_amount || '0');
+    //                     mooe += parseFloat(item.mooe_amount || '0');
+    //                     co += parseFloat(item.co_amount || '0');
+    //                     fe += parseFloat(item.fe_amount || '0');
+    //                     ccet_ad += parseFloat(item.ccet_adaptation || '0');
+    //                     ccet_mit += parseFloat(item.ccet_mitigation || '0');
+    //                 });
+    //                 base.ps_amount = ps.toString();
+    //                 base.mooe_amount = mooe.toString();
+    //                 base.co_amount = co.toString();
+    //                 base.fe_amount = fe.toString();
+    //                 base.ccet_adaptation = ccet_ad.toString();
+    //                 base.ccet_mitigation = ccet_mit.toString();
+    //                 // Point to the latest SAIP entry so non-numeric fields
+    //                 // (office, dates, expected output) resolve correctly
+    //                 const entryIds = [
+    //                     ...new Set(list.map((s) => s.aip_entry_id)),
+    //                 ];
+    //                 const latestEntry = entryIds
+    //                     .map((id) => activeAips.find((a) => a.id === id))
+    //                     .filter(Boolean)
+    //                     .sort(
+    //                         (a: any, b: any) =>
+    //                             (b.supplemental_aip_id ?? -1) -
+    //                             (a.supplemental_aip_id ?? -1),
+    //                     )[0];
 
-            if (sources.length === 0) {
-                const latestAip = [...activeAips].sort(
-                    (a: any, b: any) =>
-                        (b.supplemental_aip_id ?? -1) -
-                        (a.supplemental_aip_id ?? -1),
-                )[0];
+    //                 if (latestEntry) {
+    //                     base.aip_entry_id = latestEntry.id;
+    //                 }
 
-                return [
-                    {
-                        ...ppa,
-                        current_fs: null,
-                        aip_entry: latestAip || null,
-                        children: expandedChildren,
-                        isFirstInGroup: true,
-                        isLastInGroup: true,
-                        groupSize: 1,
-                        depth,
-                    },
-                ];
-            }
+    //                 return base;
+    //             });
+    //         }
 
-            return sources.map((fs, index) => {
-                const parentAip =
-                    activeAips.find((aip) => aip.id === fs.aip_entry_id) ||
-                    null;
+    //         if (sources.length === 0) {
+    //             const latestAip = [...activeAips].sort(
+    //                 (a: any, b: any) =>
+    //                     (b.supplemental_aip_id ?? -1) -
+    //                     (a.supplemental_aip_id ?? -1),
+    //             )[0];
 
-                return {
-                    ...ppa,
-                    current_fs: fs,
-                    aip_entry: parentAip,
-                    children: expandedChildren,
-                    isFirstInGroup: index === 0,
-                    isLastInGroup: index === sources.length - 1,
-                    groupSize: sources.length,
-                    depth,
-                };
-            });
-        });
-    };
+    //             return [
+    //                 {
+    //                     ...ppa,
+    //                     current_fs: null,
+    //                     aip_entry: latestAip || null,
+    //                     children: expandedChildren,
+    //                     isFirstInGroup: true,
+    //                     isLastInGroup: true,
+    //                     groupSize: 1,
+    //                     depth,
+    //                 },
+    //             ];
+    //         }
 
-    const customGetSubRows = useCallback((row: any) => {
-        return row.isLastInGroup ? row.children : [];
-    }, []);
+    //         return sources.map((fs, index) => {
+    //             const parentAip =
+    //                 activeAips.find((aip) => aip.id === fs.aip_entry_id) ||
+    //                 null;
+
+    //             return {
+    //                 ...ppa,
+    //                 current_fs: fs,
+    //                 aip_entry: parentAip,
+    //                 children: expandedChildren,
+    //                 isFirstInGroup: index === 0,
+    //                 isLastInGroup: index === sources.length - 1,
+    //                 groupSize: sources.length,
+    //                 depth,
+    //             };
+    //         });
+    //     });
+    // };
+
+    // const customGetSubRows = useCallback((row: any) => {
+    //     return row.isLastInGroup ? row.children : [];
+    // }, []);
 
     // Custom Filter logic specific to the PPA Flat-Tree
-    const customGlobalFilterFn = useCallback(
-        (row: any, columnId: string, filterValue: any) => {
-            const searchStr = String(filterValue).toLowerCase();
+    // const customGlobalFilterFn = useCallback(
+    //     (row: any, columnId: string, filterValue: any) => {
+    //         const searchStr = String(filterValue).toLowerCase();
 
-            // Standard check
-            const cellValue = row.getValue(columnId);
+    //         // Standard check
+    //         const cellValue = row.getValue(columnId);
 
-            if (
-                cellValue != null &&
-                String(cellValue).toLowerCase().includes(searchStr)
-            ) {
-                return true;
-            }
+    //         if (
+    //             cellValue != null &&
+    //             String(cellValue).toLowerCase().includes(searchStr)
+    //         ) {
+    //             return true;
+    //         }
 
-            // Deep child check for PPA preservation
-            const original = row.original as any;
+    //         // Deep child check for PPA preservation
+    //         const original = row.original as any;
 
-            if (original.children && original.children.length > 0) {
-                const childrenText = JSON.stringify(
-                    original.children,
-                ).toLowerCase();
+    //         if (original.children && original.children.length > 0) {
+    //             const childrenText = JSON.stringify(
+    //                 original.children,
+    //             ).toLowerCase();
 
-                if (childrenText.includes(searchStr)) {
-                    return true;
-                }
-            }
+    //             if (childrenText.includes(searchStr)) {
+    //                 return true;
+    //             }
+    //         }
 
-            return false;
-        },
-        [],
-    );
+    //         return false;
+    //     },
+    //     [],
+    // );
 
-    const handleScopeChange = (newScope: string, newSaipId?: number | null) => {
-        router.get(
-            window.location.pathname,
-            {
-                ...filters,
-                scope: newScope,
-                supplemental_aip_id: newSaipId || undefined,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-            },
-        );
-    };
+    // const handleScopeChange = (newScope: string, newSaipId?: number | null) => {
+    //     router.get(
+    //         window.location.pathname,
+    //         {
+    //             ...filters,
+    //             scope: newScope,
+    //             supplemental_aip_id: newSaipId || undefined,
+    //         },
+    //         {
+    //             preserveState: true,
+    //             preserveScroll: true,
+    //         },
+    //     );
+    // };
 
-    const handleCreateSaip = () => {
-        setIsCreateSaipDialogOpen(true);
-    };
+    // const handleCreateSaip = () => {
+    //     setIsCreateSaipDialogOpen(true);
+    // };
 
-    const handleCreateSaipConfirm = () => {
-        setIsLoading(true);
-        router.post(
-            '/supplemental-aips',
-            {
-                fiscal_year_id: fiscalYear.id,
-            },
-            {
-                preserveScroll: true,
-                onFinish: () => {
-                    setIsLoading(false);
-                    setIsCreateSaipDialogOpen(false);
-                },
-            },
-        );
-    };
+    // const handleCreateSaipConfirm = () => {
+    //     setIsLoading(true);
+    //     router.post(
+    //         '/supplemental-aips',
+    //         {
+    //             fiscal_year_id: fiscalYear.id,
+    //         },
+    //         {
+    //             preserveScroll: true,
+    //             onFinish: () => {
+    //                 setIsLoading(false);
+    //                 setIsCreateSaipDialogOpen(false);
+    //             },
+    //         },
+    //     );
+    // };
 
-    const handleSetAsPsPool = useCallback((ppa: Ppa) => {
-        router.post(
-            `/ppas/${ppa.id}/set-as-ps-pool`,
+    // const handleSetAsPsPool = useCallback((ppa: Ppa) => {
+    //     router.post(
+    //         `/ppas/${ppa.id}/set-as-ps-pool`,
 
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-            },
-        );
-    }, []);
+    //         {},
+    //         {
+    //             preserveState: true,
+    //             preserveScroll: true,
+    //         },
+    //     );
+    // }, []);
 
-    const handleDeleteSaip = () => {
-        setIsDeleteSaipDialogOpen(true);
-    };
+    // const handleDeleteSaip = () => {
+    //     setIsDeleteSaipDialogOpen(true);
+    // };
 
-    const handleDeleteSaipConfirm = () => {
-        if (!currentScope.supplemental_aip_id) {
-            return;
-        }
+    // const handleDeleteSaipConfirm = () => {
+    //     if (!currentScope.supplemental_aip_id) {
+    //         return;
+    //     }
 
-        setIsLoading(true);
-        router.delete(
-            `/supplemental-aips/${currentScope.supplemental_aip_id}`,
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    handleScopeChange('original');
-                },
-                onFinish: () => {
-                    setIsLoading(false);
-                    setIsDeleteSaipDialogOpen(false);
-                },
-            },
-        );
-    };
+    //     setIsLoading(true);
+    //     router.delete(
+    //         `/supplemental-aips/${currentScope.supplemental_aip_id}`,
+    //         {
+    //             preserveScroll: true,
+    //             onSuccess: () => {
+    //                 handleScopeChange('original');
+    //             },
+    //             onFinish: () => {
+    //                 setIsLoading(false);
+    //                 setIsDeleteSaipDialogOpen(false);
+    //             },
+    //         },
+    //     );
+    // };
 
-    const handleImportLibrary = () => {
-        router.get(
-            window.location.pathname,
-            {
-                ...filters,
-                scope: currentScope.scope,
-                supplemental_aip_id:
-                    currentScope.supplemental_aip_id || undefined,
-                dialog_id: null,
-                dialog_boundary_id: null,
-                dialog_page: 1,
-            },
-            {
-                preserveState: true,
-                preserveScroll: true,
-                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
-                onSuccess: () => {
-                    setIsSelectorOpen(true);
-                },
-            },
-        );
-    };
+    // const handleImportLibrary = () => {
+    //     router.get(
+    //         window.location.pathname,
+    //         {
+    //             ...filters,
+    //             scope: currentScope.scope,
+    //             supplemental_aip_id:
+    //                 currentScope.supplemental_aip_id || undefined,
+    //             dialog_id: null,
+    //             dialog_boundary_id: null,
+    //             dialog_page: 1,
+    //         },
+    //         {
+    //             preserveState: true,
+    //             preserveScroll: true,
+    //             only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+    //             onSuccess: () => {
+    //                 setIsSelectorOpen(true);
+    //             },
+    //         },
+    //     );
+    // };
 
-    const handleAddEntry = useCallback(
-        (entry: Ppa) => {
-            router.get(
-                window.location.pathname,
-                {
-                    ...filters,
-                    scope: currentScope.scope,
-                    supplemental_aip_id:
-                        currentScope.supplemental_aip_id || undefined,
-                    dialog_id: entry.id,
-                    dialog_boundary_id: entry.id,
-                    dialog_page: 1,
-                },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
-                    onSuccess: () => {
-                        setIsSelectorOpen(true);
-                    },
-                },
-            );
-        },
-        [filters, currentScope],
-    );
+    // const handleAddEntry = useCallback(
+    //     (entry: Ppa) => {
+    //         router.get(
+    //             window.location.pathname,
+    //             {
+    //                 ...filters,
+    //                 scope: currentScope.scope,
+    //                 supplemental_aip_id:
+    //                     currentScope.supplemental_aip_id || undefined,
+    //                 dialog_id: entry.id,
+    //                 dialog_boundary_id: entry.id,
+    //                 dialog_page: 1,
+    //             },
+    //             {
+    //                 preserveState: true,
+    //                 preserveScroll: true,
+    //                 only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+    //                 onSuccess: () => {
+    //                     setIsSelectorOpen(true);
+    //                 },
+    //             },
+    //         );
+    //     },
+    //     [filters, currentScope],
+    // );
 
-    const handleEditDialogOpen = (data: Ppa) => {
-        setSelectedEntryId(data.id);
-        setIsEditDialogOpen(true);
-    };
+    // const handleEditDialogOpen = (data: Ppa) => {
+    //     setSelectedEntryId(data.id);
+    //     setIsEditDialogOpen(true);
+    // };
 
-    function handleDeleteDialogOpen(data: Ppa) {
-        setSelectedEntryId(data.id);
-        setIsDeleteDialogOpen(true);
-    }
+    // function handleDeleteDialogOpen(data: Ppa) {
+    //     setSelectedEntryId(data.id);
+    //     setIsDeleteDialogOpen(true);
+    // }
 
-    const handlePpmpItemAdded = () => {
-        router.visit(window.location.href, {
-            only: ['aipEntries'],
-            preserveState: true,
-            preserveScroll: true,
-        });
-    };
+    // const handlePpmpItemAdded = () => {
+    //     router.visit(window.location.href, {
+    //         only: ['aipEntries'],
+    //         preserveState: true,
+    //         preserveScroll: true,
+    //     });
+    // };
 
-    function handleDelete() {
-        const entryId = selectedEntry?.aip_entries?.[0]?.id;
+    // function handleDelete() {
+    //     const entryId = selectedEntry?.aip_entries?.[0]?.id;
 
-        router.delete(`/aip-entries/${entryId}`, {
-            preserveState: true,
-            preserveScroll: true,
-            onStart: () => setIsLoading(true),
-            onSuccess: () => {
-                setIsDeleteDialogOpen(false);
-                setSelectedEntryId(null);
-            },
-            onFinish: () => setIsLoading(false),
-            onError: (error) => console.error('error', error),
-        });
-    }
+    //     router.delete(`/aip-entries/${entryId}`, {
+    //         preserveState: true,
+    //         preserveScroll: true,
+    //         onStart: () => setIsLoading(true),
+    //         onSuccess: () => {
+    //             setIsDeleteDialogOpen(false);
+    //             setSelectedEntryId(null);
+    //         },
+    //         onFinish: () => setIsLoading(false),
+    //         onError: (error) => console.error('error', error),
+    //     });
+    // }
 
-    function handlePrintPreview() {
-        setIsExportOpen(true);
-    }
+    // function handlePrintPreview() {
+    //     setIsExportOpen(true);
+    // }
 
-    async function handleExportToExcel() {
-        const officeName = auth.user.office?.name || '';
+    // async function handleExportToExcel() {
+    //     const officeName = auth.user.office?.name || '';
 
-        await exportToExcel({
-            aipEntries,
-            fiscalYear,
-            officeName,
-            currentScope,
-        });
-    }
+    //     await exportToExcel({
+    //         aipEntries,
+    //         fiscalYear,
+    //         officeName,
+    //         currentScope,
+    //     });
+    // }
 
-    const activeTabValue =
-        currentScope.scope === 'supplemental'
-            ? `saip-${currentScope.supplemental_aip_id}`
-            : currentScope.scope;
+    // const activeTabValue =
+    //     currentScope.scope === 'supplemental'
+    //         ? `saip-${currentScope.supplemental_aip_id}`
+    //         : currentScope.scope;
 
     return (
         <>
@@ -578,7 +589,7 @@ export default function AipSummaryTable({
             </div>*/}
 
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
-                <div className="flex flex-col px-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                {/*<div className="flex flex-col px-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <Tabs
                         value={activeTabValue}
                         onValueChange={(val) => {
@@ -645,35 +656,37 @@ export default function AipSummaryTable({
                             </Button>
                         )}
                     </div>
-                </div>
+                </div>*/}
 
                 <DataTable
-                    columns={columns}
-                    data={expandPpaByFundingSource(aipEntries)}
-                    showFooter={true}
-                    withRowSpan={true}
-                    withColgroup={true}
+                    // columns={columns}
+                    columns={newColumns}
+                    // data={expandPpaByFundingSource(aipEntries)}
+                    data={newAipEntries}
+                    // showFooter={true}
+                    // withRowSpan={true}
+                    // withColgroup={true}
                     // withSearch={true}
 
                     // onAdd={handleAddEntry}
                     // onEdit={handleEditDialogOpen}
                     // onDelete={handleDeleteDialogOpen}
-                    getSubRows={customGetSubRows}
+                    // getSubRows={customGetSubRows}
                     // globalFilterFn={customGlobalFilterFn}
 
-                    meta={{
-                        onAdd: handleAddEntry,
-                        onEdit: handleEditDialogOpen,
-                        onDelete: handleDeleteDialogOpen,
-                        readOnly: currentScope.scope === 'combined',
-                        canSetPsPool: can?.setPsPool ?? false,
-                        psPoolPpaId,
-                        onSetAsPsPool: handleSetAsPsPool,
-                    }}
+                    // meta={{
+                    //     onAdd: handleAddEntry,
+                    //     onEdit: handleEditDialogOpen,
+                    //     onDelete: handleDeleteDialogOpen,
+                    //     readOnly: currentScope.scope === 'combined',
+                    //     canSetPsPool: can?.setPsPool ?? false,
+                    //     psPoolPpaId,
+                    //     onSetAsPsPool: handleSetAsPsPool,
+                    // }}
 
                     className="pr-3"
                 >
-                    <div className="flex gap-2">
+                    {/*<div className="flex gap-2">
                         {can.export && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -697,9 +710,9 @@ export default function AipSummaryTable({
                                                 Print Preview
                                             </span>
                                         </div>
-                                    </DropdownMenuItem>
+                                    </DropdownMenuItem>*/}
 
-                                    {/*<DropdownMenuItem
+                    {/*<DropdownMenuItem
                                         onClick={handleExportToExcel}
                                     >
                                         <div className="flex items-center">
@@ -711,7 +724,7 @@ export default function AipSummaryTable({
                                         </div>
                                     </DropdownMenuItem>*/}
 
-                                    <DropdownMenuItem
+                    {/*<DropdownMenuItem
                                         onClick={() =>
                                             setIsSummaryExportOpen(true)
                                         }
@@ -726,21 +739,21 @@ export default function AipSummaryTable({
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                        )}
+                        )}*/}
 
-                        {can.import && currentScope.scope !== 'combined' && (
+                    {/*{can.import && currentScope.scope !== 'combined' && (
                             <Button onClick={handleImportLibrary}>
                                 <Library className="mr-2 h-4 w-4" /> Import from
                                 Library
                             </Button>
-                        )}
-                    </div>
+                        )}*/}
+                    {/*</div>*/}
                 </DataTable>
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
-            <PpaSelectorDialog
+            {/* <PpaSelectorDialog
                 open={isSelectorOpen}
                 onOpenChange={setIsSelectorOpen}
                 dialogPpaTree={dialogPpaTree}
@@ -749,9 +762,9 @@ export default function AipSummaryTable({
                 fiscalYearId={fiscalYear.id}
                 existingPpaIds={Array.from(existingPpaIds(aipEntries))}
                 supplementalAipId={currentScope.supplemental_aip_id}
-            />
+            />  */}
 
-            <AipEntryFormDialog
+            {/* <AipEntryFormDialog
                 open={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}
                 data={selectedEntry}
@@ -883,7 +896,7 @@ export default function AipSummaryTable({
                         </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
-            </AlertDialog>
+                </AlertDialog> */}
         </>
     );
 }

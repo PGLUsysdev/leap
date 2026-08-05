@@ -13,24 +13,24 @@ class PpaFundingSource extends Model
     /** @use HasFactory<PpaFundingSourceFactory> */
     use HasFactory;
 
-    protected static function boot()
-    {
-        parent::boot();
+    // protected static function boot()
+    // {
+    //     parent::boot();
 
-        static::saving(function ($model) {
-            // Only validate if ps_amount is being set to a non-zero value
-            if ((float) $model->ps_amount > 0) {
-                $model->loadMissing('aipEntry.ppa');
-                $ppa = $model->aipEntry?->ppa;
+    //     static::saving(function ($model) {
+    //         // Only validate if ps_amount is being set to a non-zero value
+    //         if ((float) $model->ps_amount > 0) {
+    //             $model->loadMissing('aipEntry.ppa');
+    //             $ppa = $model->aipEntry?->ppa;
 
-                if (!$ppa || !$ppa->is_ps_pool) {
-                    throw new \Exception(
-                        'Personal Services (PS) can only be allocated to the designated PS pool Program.',
-                    );
-                }
-            }
-        });
-    }
+    //             if (!$ppa || !$ppa->is_ps_pool) {
+    //                 throw new \Exception(
+    //                     'Personal Services (PS) can only be allocated to the designated PS pool Program.',
+    //                 );
+    //             }
+    //         }
+    //     });
+    // }
 
     protected $fillable = [
         'id',

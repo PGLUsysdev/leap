@@ -25,20 +25,20 @@ class Office extends Model
         'is_lee',
     ];
 
-    protected $appends = ['full_code'];
+    // protected $appends = ['full_code'];
 
-    protected function fullCode(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => sprintf(
-                '%s-%s-%s-%s',
-                $this->sector?->code ?? '0000',
-                $this->lguLevel?->code ?? '0',
-                $this->officeType?->code ?? '00',
-                $this->code ?? '000',
-            ),
-        );
-    }
+    // protected function fullCode(): Attribute
+    // {
+    //     return Attribute::make(
+    //         get: fn () => sprintf(
+    //             '%s-%s-%s-%s',
+    //             $this->sector?->code ?? '0000',
+    //             $this->lguLevel?->code ?? '0',
+    //             $this->officeType?->code ?? '00',
+    //             $this->code ?? '000',
+    //         ),
+    //     );
+    // }
 
     // hasMany
     public function children(): HasMany

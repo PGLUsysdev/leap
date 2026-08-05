@@ -116,6 +116,7 @@ export interface AipEntry {
     start_date: string | null;
     end_date: string | null;
     expected_output: string | null;
+    is_supplemental: boolean;
     created_at: string | null;
     updated_at: string | null;
 
@@ -123,8 +124,8 @@ export interface AipEntry {
     supplemental_aip_id: number | null;
 
     ppa?: Ppa;
-    ppa_funding_sources?: PpaFundingSource[];
     supplemental_aip?: SupplementalAip;
+    ppa_funding_sources?: PpaFundingSource[];
 }
 
 export interface FundingSource {
@@ -174,17 +175,19 @@ export interface Ppa {
     code_suffix: string;
     is_active: boolean;
     sort_order: number;
+    is_supplemetal: boolean;
+    is_ps_pool?: boolean;
     created_at: string | null;
     updated_at: string | null;
 
     office_id: number;
     parent_id: number | null;
     fiscal_year_id: number;
-    is_ps_pool?: boolean;
+    supplemental_aip_id: null | number;
 
-    aip_entries?: AipEntry[];
-    children?: Ppa[];
     office?: Office;
+    children?: Ppa[];
+    aip_entries?: AipEntry[];
 
     full_code: string;
     children_count?: number;
