@@ -112,6 +112,18 @@ interface AipSummaryTableProps {
 
 type NumberedAipEntry = AipEntry & { number: string };
 
+function toLetters(n: number): string {
+    let s = '';
+
+    while (n > 0) {
+        n--;
+        s = String.fromCharCode(65 + (n % 26)) + s;
+        n = Math.floor(n / 26);
+    }
+
+    return s;
+}
+
 function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
     const byParent = new Map<number | null, AipEntry[]>();
     const seen = new Set<number>();
@@ -153,7 +165,7 @@ function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
 
         const number =
             (depth === 0
-                ? String.fromCharCode(64 + counters[0])
+                ? toLetters(counters[0])
                 : counters.slice(1, depth + 1).join('.')) + '.';
 
         result.push({ ...entry, number });
