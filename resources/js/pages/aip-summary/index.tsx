@@ -110,7 +110,9 @@ interface AipSummaryTableProps {
 //     return ppaIds;
 // };
 
-function sortFlatLikeTree(entries: AipEntry[]) {
+type NumberedAipEntry = AipEntry & { number: string };
+
+function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
     const byParent = new Map<number | null, AipEntry[]>();
     const seen = new Set<number>();
 
@@ -135,17 +137,31 @@ function sortFlatLikeTree(entries: AipEntry[]) {
             (a, b) => (a.ppa?.sort_order ?? 0) - (b.ppa?.sort_order ?? 0),
         );
 
-    const result: AipEntry[] = [];
-    const stack = [...sortSiblings(byParent.get(null) ?? [])].reverse();
+    const counters: number[] = [];
+    const result: NumberedAipEntry[] = [];
+    const stack: { entry: AipEntry; depth: number }[] = [
+        ...sortSiblings(byParent.get(null) ?? []),
+    ]
+        .reverse()
+        .map((entry) => ({ entry, depth: 0 }));
 
     while (stack.length) {
-        const entry = stack.pop()!;
-        result.push(entry);
+        const { entry, depth } = stack.pop()!;
+
+        counters[depth] = (counters[depth] ?? 0) + 1;
+        counters.length = depth + 1;
+
+        const number =
+            (depth === 0
+                ? String.fromCharCode(64 + counters[0])
+                : counters.slice(1, depth + 1).join('.')) + '.';
+
+        result.push({ ...entry, number });
 
         const kids = sortSiblings(byParent.get(entry.ppa_id) ?? []);
 
         for (let i = kids.length - 1; i >= 0; i--) {
-            stack.push(kids[i]);
+            stack.push({ entry: kids[i], depth: depth + 1 });
         }
     }
 

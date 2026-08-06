@@ -62,9 +62,22 @@ const columns = [
                 Program / Project / Activity Description
             </div>
         ),
-        cell: (info) => (
-            <div className="text-wrap">{formatText(info.getValue())}</div>
-        ),
+        cell: (info) => {
+            const original = info.row.original as AipEntry & {
+                number: string;
+            };
+
+            return (
+                <div className="flex gap-1">
+                    <span className="text-muted-foreground tabular-nums">
+                        {original.number}
+                    </span>{' '}
+                    <div className="text-wrap">
+                        {formatText(info.getValue())}
+                    </div>
+                </div>
+            );
+        },
     }),
     columnHelper.accessor('ppa.office.acronym', {
         size: 400,
