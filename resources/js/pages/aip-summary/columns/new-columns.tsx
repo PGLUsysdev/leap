@@ -45,6 +45,27 @@ function formatDateCell(value: string | null | undefined) {
     );
 }
 
+type AmountField =
+    | 'ps_amount'
+    | 'mooe_amount'
+    | 'fe_amount'
+    | 'co_amount'
+    | 'ccet_adaptation'
+    | 'ccet_mitigation';
+
+function sumField(rows: Array<{ original: AipEntry }>, field: AmountField) {
+    return rows.reduce((sum, row) => {
+        const fs = row.original.ppa_funding_sources?.[0];
+        const value = fs?.[field];
+
+        if (!value || isNaN(Number(value))) {
+            return sum;
+        }
+
+        return sum.plus(value);
+    }, new Decimal(0));
+}
+
 const columns = [
     columnHelper.accessor('ppa.full_code', {
         size: 400,
@@ -54,6 +75,7 @@ const columns = [
         cell: (info) => (
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
+        footer: () => <div className="font-bold">Total</div>,
     }),
     columnHelper.accessor('ppa.name', {
         size: 600,
@@ -176,6 +198,16 @@ const columns = [
                         </div>
                     );
                 },
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().flatRows;
+                    const total = sumField(rows, 'ps_amount');
+
+                    return (
+                        <div className="text-right text-wrap slashed-zero tabular-nums">
+                            {formatNumeric(total.toString())}
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor('ppa_funding_sources', {
                 id: 'mooe',
@@ -191,6 +223,16 @@ const columns = [
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
                             {formatNumeric(fs?.mooe_amount)}
+                        </div>
+                    );
+                },
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().flatRows;
+                    const total = sumField(rows, 'mooe_amount');
+
+                    return (
+                        <div className="text-right text-wrap slashed-zero tabular-nums">
+                            {formatNumeric(total.toString())}
                         </div>
                     );
                 },
@@ -212,6 +254,16 @@ const columns = [
                         </div>
                     );
                 },
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().flatRows;
+                    const total = sumField(rows, 'fe_amount');
+
+                    return (
+                        <div className="text-right text-wrap slashed-zero tabular-nums">
+                            {formatNumeric(total.toString())}
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor('ppa_funding_sources', {
                 id: 'co',
@@ -227,6 +279,16 @@ const columns = [
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
                             {formatNumeric(fs?.co_amount)}
+                        </div>
+                    );
+                },
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().flatRows;
+                    const total = sumField(rows, 'co_amount');
+
+                    return (
+                        <div className="text-right text-wrap slashed-zero tabular-nums">
+                            {formatNumeric(total.toString())}
                         </div>
                     );
                 },
@@ -259,11 +321,33 @@ const columns = [
                         </div>
                     );
                 },
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().flatRows;
+                    const total = rows.reduce((sum, row) => {
+                        const fs = row.original.ppa_funding_sources?.[0];
+
+                        if (!fs) {
+                            return sum;
+                        }
+
+                        return sum
+                            .plus(fs.ps_amount || 0)
+                            .plus(fs.mooe_amount || 0)
+                            .plus(fs.fe_amount || 0)
+                            .plus(fs.co_amount || 0);
+                    }, new Decimal(0));
+
+                    return (
+                        <div className="text-right text-wrap slashed-zero tabular-nums">
+                            {formatNumeric(total.toString())}
+                        </div>
+                    );
+                },
             }),
         ],
     }),
     columnHelper.group({
-        id: 'amount',
+        id: 'climate-change',
         size: 800,
         header: () => (
             <div className="text-center text-wrap">
@@ -288,6 +372,16 @@ const columns = [
                         </div>
                     );
                 },
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().flatRows;
+                    const total = sumField(rows, 'ccet_adaptation');
+
+                    return (
+                        <div className="text-right text-wrap slashed-zero tabular-nums">
+                            {formatNumeric(total.toString())}
+                        </div>
+                    );
+                },
             }),
             columnHelper.accessor('ppa_funding_sources', {
                 id: 'cc-mitig',
@@ -303,6 +397,16 @@ const columns = [
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
                             {formatNumeric(fs?.ccet_mitigation)}
+                        </div>
+                    );
+                },
+                footer: ({ table }) => {
+                    const rows = table.getFilteredRowModel().flatRows;
+                    const total = sumField(rows, 'ccet_mitigation');
+
+                    return (
+                        <div className="text-right text-wrap slashed-zero tabular-nums">
+                            {formatNumeric(total.toString())}
                         </div>
                     );
                 },

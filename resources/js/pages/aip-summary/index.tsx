@@ -81,7 +81,7 @@ interface AipSummaryTableProps {
     ppmpCoaTotals: Record<number, Record<number, number>>;
     psCoaAutoTotals: Record<string, number>;
     psPoolPpaId?: number | null;
-    newAipEntries: AipEntry;
+    newAipEntries: AipEntry[];
 }
 
 // const existingPpaIds = (aipEntries: Ppa[]) => {
@@ -733,7 +733,7 @@ export default function AipSummaryTable({
                     columns={newColumns}
                     // data={expandPpaByFundingSource(aipEntries)}
                     data={sortFlatLikeTree(newAipEntries)}
-                    // showFooter={true}
+                    showFooter={true}
                     // withRowSpan={true}
                     // withColgroup={true}
                     // withSearch={true}
