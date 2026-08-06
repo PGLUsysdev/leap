@@ -85,7 +85,7 @@ const columns = [
         cell: (info) => (
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
-        footer: () => <div className="font-bold">Total</div>,
+        // footer: () => <div className="font-bold">Total</div>,
         meta: { rowSpan: true },
     }),
     columnHelper.accessor('ppa.name', {
@@ -532,6 +532,7 @@ const columns = [
                 </div>
             );
         },
+        meta: { rowSpan: true },
     }),
 ];
 
