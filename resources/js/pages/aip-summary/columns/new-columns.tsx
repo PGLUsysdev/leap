@@ -49,7 +49,7 @@ const columns = [
     columnHelper.accessor('ppa.full_code', {
         size: 400,
         header: () => (
-            <div className="text-center text-wrap">AIP Ref. Code</div>
+            <div className="text-center text-wrap">AIP Reference Code</div>
         ),
         cell: (info) => (
             <div className="text-wrap">{formatText(info.getValue())}</div>
