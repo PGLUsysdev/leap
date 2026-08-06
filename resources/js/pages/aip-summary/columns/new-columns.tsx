@@ -1,10 +1,15 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
 import { Button } from '@/components/base-ui-components/ui/button';
-import type { AipEntry } from '@/types';
+import type { AipEntry, PpaFundingSource } from '@/types';
 import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
 
-const columnHelper = createColumnHelper<AipEntry>();
+type FundingSourceRow = AipEntry & {
+    number: string;
+    current_fs: PpaFundingSource | null;
+};
+
+const columnHelper = createColumnHelper<FundingSourceRow>();
 
 function formatText(value: string | null | undefined) {
     return value?.trim() ? (
@@ -55,9 +60,12 @@ type AmountField =
     | 'ccet_adaptation'
     | 'ccet_mitigation';
 
-function sumField(rows: Array<{ original: AipEntry }>, field: AmountField) {
+function sumField(
+    rows: Array<{ original: FundingSourceRow }>,
+    field: AmountField,
+) {
     return rows.reduce((sum, row) => {
-        const fs = row.original.ppa_funding_sources?.[0];
+        const fs = row.original.current_fs;
         const value = fs?.[field];
 
         if (!value || isNaN(Number(value))) {
@@ -78,6 +86,7 @@ const columns = [
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
         footer: () => <div className="font-bold">Total</div>,
+        meta: { rowSpan: true },
     }),
     columnHelper.accessor('ppa.name', {
         size: 600,
@@ -102,6 +111,7 @@ const columns = [
                 </div>
             );
         },
+        meta: { rowSpan: true },
     }),
     columnHelper.accessor('ppa.office.acronym', {
         size: 400,
@@ -115,6 +125,7 @@ const columns = [
                 {formatText(info.getValue())}
             </div>
         ),
+        meta: { rowSpan: true },
     }),
     columnHelper.group({
         id: 'schedule',
@@ -135,6 +146,7 @@ const columns = [
                         {formatDateCell(info.getValue())}
                     </div>
                 ),
+                meta: { rowSpan: true },
             }),
             columnHelper.accessor('end_date', {
                 size: 100,
@@ -146,6 +158,7 @@ const columns = [
                         {formatDateCell(info.getValue())}
                     </div>
                 ),
+                meta: { rowSpan: true },
             }),
         ],
     }),
@@ -157,6 +170,7 @@ const columns = [
         cell: (info) => (
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
+        meta: { rowSpan: true },
     }),
     columnHelper.accessor('ppa_funding_sources', {
         id: 'fs',
@@ -165,7 +179,7 @@ const columns = [
             <div className="text-center text-wrap">Funding Source</div>
         ),
         cell: (info) => {
-            const fs = info.row.original.ppa_funding_sources?.[0];
+            const fs = info.row.original.current_fs;
 
             return (
                 <div className="text-center text-wrap">
@@ -192,7 +206,7 @@ const columns = [
                     </div>
                 ),
                 cell: (info) => {
-                    const fs = info.row.original.ppa_funding_sources?.[0];
+                    const fs = info.row.original.current_fs;
 
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
@@ -220,7 +234,7 @@ const columns = [
                     </div>
                 ),
                 cell: (info) => {
-                    const fs = info.row.original.ppa_funding_sources?.[0];
+                    const fs = info.row.original.current_fs;
 
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
@@ -248,7 +262,7 @@ const columns = [
                     </div>
                 ),
                 cell: (info) => {
-                    const fs = info.row.original.ppa_funding_sources?.[0];
+                    const fs = info.row.original.current_fs;
 
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
@@ -276,7 +290,7 @@ const columns = [
                     </div>
                 ),
                 cell: (info) => {
-                    const fs = info.row.original.ppa_funding_sources?.[0];
+                    const fs = info.row.original.current_fs;
 
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
@@ -302,7 +316,7 @@ const columns = [
                     <div className="text-center text-wrap">Total</div>
                 ),
                 cell: (info) => {
-                    const fs = info.row.original.ppa_funding_sources?.[0];
+                    const fs = info.row.original.current_fs;
 
                     if (!fs) {
                         return (
@@ -326,7 +340,7 @@ const columns = [
                 footer: ({ table }) => {
                     const rows = table.getFilteredRowModel().flatRows;
                     const total = rows.reduce((sum, row) => {
-                        const fs = row.original.ppa_funding_sources?.[0];
+                        const fs = row.original.current_fs;
 
                         if (!fs) {
                             return sum;
@@ -366,7 +380,7 @@ const columns = [
                     </div>
                 ),
                 cell: (info) => {
-                    const fs = info.row.original.ppa_funding_sources?.[0];
+                    const fs = info.row.original.current_fs;
 
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
@@ -394,7 +408,7 @@ const columns = [
                     </div>
                 ),
                 cell: (info) => {
-                    const fs = info.row.original.ppa_funding_sources?.[0];
+                    const fs = info.row.original.current_fs;
 
                     return (
                         <div className="text-right text-wrap slashed-zero tabular-nums">
@@ -422,7 +436,7 @@ const columns = [
             <div className="text-center text-wrap">CC Typology Code</div>
         ),
         cell: (info) => {
-            const fs = info.row.original.ppa_funding_sources?.[0];
+            const fs = info.row.original.current_fs;
 
             return (
                 <div className="text-center text-wrap">

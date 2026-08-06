@@ -42,6 +42,7 @@ import type {
     PriceList,
     PpmpCategory,
     AipEntry,
+    PpaFundingSource,
 } from '@/types';
 // import columns from './columns/columns';
 import newColumns from './columns/new-columns';
@@ -178,6 +179,30 @@ function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
     }
 
     return result;
+}
+
+type FundingSourceRow = NumberedAipEntry & {
+    current_fs: PpaFundingSource | null;
+};
+
+function expandByFundingSource(
+    entries: NumberedAipEntry[],
+): FundingSourceRow[] {
+    return entries.flatMap((entry): FundingSourceRow[] => {
+        const sources = entry.ppa_funding_sources ?? [];
+
+        if (sources.length === 0) {
+            return [{ ...entry, id: entry.id, current_fs: null }];
+        }
+
+        return sources.map(
+            (fs): FundingSourceRow => ({
+                ...entry,
+                id: entry.id,
+                current_fs: fs,
+            }),
+        );
+    });
 }
 
 export default function AipSummaryTable({
@@ -732,9 +757,9 @@ export default function AipSummaryTable({
                     // columns={columns}
                     columns={newColumns}
                     // data={expandPpaByFundingSource(aipEntries)}
-                    data={sortFlatLikeTree(newAipEntries)}
+                    data={expandByFundingSource(sortFlatLikeTree(newAipEntries))}
                     showFooter={true}
-                    // withRowSpan={true}
+                    withRowSpan={true}
                     // withColgroup={true}
                     // withSearch={true}
 
