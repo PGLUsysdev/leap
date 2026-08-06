@@ -1,6 +1,8 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
+import { Button } from '@/components/base-ui-components/ui/button';
 import type { AipEntry } from '@/types';
+import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
 
 const columnHelper = createColumnHelper<AipEntry>();
 
@@ -425,6 +427,94 @@ const columns = [
             return (
                 <div className="text-center text-wrap">
                     {formatText(fs?.cc_typology?.code)}
+                </div>
+            );
+        },
+    }),
+    columnHelper.display({
+        id: 'actions',
+        size: 154,
+        cell: ({ row, table }) => {
+            // const meta = table.options.meta as any;
+            // const isReadOnly = meta?.readOnly;
+            // const canSetPsPool = meta?.canSetPsPool;
+            // const can = row.original.can;
+            // const canImport = can?.import;
+            // const canEdit = can?.edit;
+            // const canDelete = can?.delete;
+            // const canEditFundingSources = can?.editFundingSources;
+            // const canViewPpmp = can?.viewPpmp;
+            // const canViewPsBreakdown = can?.viewPsBreakdown;
+
+            // if (isReadOnly) {
+            //     return (
+            //         <div className="text-center text-muted-foreground">-</div>
+            //     );
+            // }
+
+            return (
+                <div className="flex items-center gap-1">
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        // onClick={() => meta?.onAdd?.(row.original)}
+                        // disabled={
+                        //     row.original.type === 'Sub-Activity' || !canImport
+                        // }
+                    >
+                        <Plus />
+                    </Button>
+
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        // onClick={() => meta?.onEdit?.(row.original)}
+                        // disabled={
+                        //     !canEdit &&
+                        //     !canEditFundingSources &&
+                        //     !canViewPpmp &&
+                        //     !canViewPsBreakdown
+                        // }
+                    >
+                        <Pencil />
+                    </Button>
+
+                    <Button
+                        size="icon"
+                        variant="outline"
+                        // className={
+                        //     row.original.type === 'Program' &&
+                        //     !row.original.is_ps_pool
+                        //         ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
+                        //         : 'border-gray-300 text-gray-300'
+                        // }
+                        // onClick={() => meta?.onSetAsPsPool?.(row.original)}
+                        // disabled={
+                        //     row.original.type !== 'Program' ||
+                        //     row.original.is_ps_pool ||
+                        //     !canSetPsPool
+                        // }
+                        // title={
+                        //     !canSetPsPool
+                        //         ? "You don't have permission to set the PS pool"
+                        //         : row.original.type !== 'Program'
+                        //           ? 'Only Programs can be designated as the PS pool'
+                        //           : row.original.is_ps_pool
+                        //             ? 'This Program is already the PS pool'
+                        //             : 'Designate this Program as the PS pool'
+                        // }
+                    >
+                        <ShieldCheck />
+                    </Button>
+
+                    <Button
+                        size="icon"
+                        variant="destructive"
+                        // onClick={() => meta?.onDelete?.(row.original)}
+                        // disabled={!canDelete}
+                    >
+                        <Trash />
+                    </Button>
                 </div>
             );
         },
