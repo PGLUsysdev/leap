@@ -15,6 +15,7 @@ use App\Models\Ppmp;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use App\Models\PsBreakdownItem;
+use App\Models\SupplementalAip;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -30,20 +31,20 @@ class AipEntryController extends Controller
     {
         // Gate::authorize('viewAny', AipEntry::class);
 
-        // $user = auth()->user();
-        // $user->loadMissing('role.permissionRoles.permission');
-        // $permissions = $user->role->permissionRoles->pluck('permission.name');
-        // $canViewAll = $permissions->contains('aip-summary.show.all');
-        // $officeId = $canViewAll
-        //     ? ($request->query('selected_office_id') ?:
-        //     $user->office_id)
-        //     : $user->office_id;
-        // $officeIds = $this->getOfficeHierarchyIds($officeId);
+        $user = auth()->user();
+        $user->loadMissing('role.permissionRoles.permission');
+        $permissions = $user->role->permissionRoles->pluck('permission.name');
+        $canViewAll = $permissions->contains('aip-summary.show.all');
+        $officeId = $canViewAll
+            ? ($request->query('selected_office_id') ?:
+            $user->office_id)
+            : $user->office_id;
+        $officeIds = $this->getOfficeHierarchyIds($officeId);
 
-        // $yearId = $fiscalYear->id;
+        $yearId = $fiscalYear->id;
 
-        // $scope = $request->query('scope', 'original');
-        // $saipId = $request->query('supplemental_aip_id');
+        $scope = $request->query('scope', 'original');
+        $saipId = $request->query('supplemental_aip_id');
 
         // $supplementalAip = null;
 
@@ -404,7 +405,7 @@ class AipEntryController extends Controller
         // $psPoolPpa = Ppa::psPoolForFiscalYear($yearId)->first();
 
         return Inertia::render('aip-summary/index', [
-            // 'fiscalYear' => $fiscalYear,
+            'fiscalYear' => $fiscalYear,
             // 'psPoolPpaId' => $psPoolPpa?->id,
             // 'aipEntries' => $aipEntries,
             'newAipEntries' => AipEntry::select([
@@ -470,7 +471,7 @@ class AipEntryController extends Controller
             //     ->orderBy('code')
             //     ->get(),
             // 'offices' => Office::all(),
-            // 'filters' => $request->all(),
+            'filters' => $request->all(),
             // 'supplementalAips' => \App\Models\SupplementalAip::where(
             //     'fiscal_year_id',
             //     $yearId,
@@ -488,71 +489,71 @@ class AipEntryController extends Controller
             //     'scope' => $scope,
             //     'supplemental_aip_id' => $saipId ? (int) $saipId : null,
             // ],
-            // 'can' => [
-            //     'export' => request()->user()->can('export', AipEntry::class),
-            //     'import' => $request
-            //         ->user()
-            //         ->can('import', [AipEntry::class, []]),
-            //     'createSaip' => $request
-            //         ->user()
-            //         ->can('create', SupplementalAip::class),
-            //     'showSummaryAll' => $permissions->contains(
-            //         'aip-summary.show.all',
-            //     ),
-            //     'setPsPool' => request()
-            //         ->user()
-            //         ->can('setPsPool', AipEntry::class),
-            // ],
-            // 'dialogPpaTree' => Inertia::optional(function () use (
-            //     $request,
-            //     $officeIds,
-            //     $yearId,
-            //     $scope,
-            //     $saipId,
-            // ) {
-            //     $id = $request->query('dialog_id');
-            //     $search = $request->query('dialog_search');
-            //     $boundaryId = $request->query('dialog_boundary_id');
-            //     $targetParentId = $id ?: $boundaryId;
-            //     return Ppa::whereIn('office_id', $officeIds)
-            //         ->where('fiscal_year_id', $yearId)
-            //         ->where('parent_id', $targetParentId)
-            //         ->where(function ($q) use ($scope, $saipId) {
-            //             if ($scope === 'original') {
-            //                 $q->whereNull('supplemental_aip_id');
-            //             } elseif ($scope === 'supplemental' && $saipId) {
-            //                 $q->whereNull('supplemental_aip_id')->orWhere(
-            //                     'supplemental_aip_id',
-            //                     $saipId,
-            //                 );
-            //             }
-            //         })
-            //         ->when($search, function ($query, $search) {
-            //             $query->where(function ($inner) use ($search) {
-            //                 $inner
-            //                     ->where('name', 'like', "%$search%")
-            //                     ->orWhere('code_suffix', 'like', "%$search%");
-            //                 if (str_contains($search, '-')) {
-            //                     $lastSegment = last(explode('-', $search));
-            //                     $inner->orWhere(
-            //                         'code_suffix',
-            //                         'like',
-            //                         "%$lastSegment%",
-            //                     );
-            //                 }
-            //             });
-            //         })
-            //         ->orderBy('sort_order')
-            //         ->withCount('children')
-            //         ->paginate(50, ['*'], 'dialog_page')
-            //         ->withQueryString();
-            // }),
-            // 'dialogCurrent' => Inertia::optional(function () use ($request) {
-            //     $id =
-            //         $request->query('dialog_id') ?:
-            //         $request->query('dialog_boundary_id');
-            //     return $id ? $this->getPpaBreadcrumbs($id) : [];
-            // }),
+            'can' => [
+                'export' => request()->user()->can('export', AipEntry::class),
+                'import' => $request
+                    ->user()
+                    ->can('import', [AipEntry::class, []]),
+                'createSaip' => $request
+                    ->user()
+                    ->can('create', SupplementalAip::class),
+                'showSummaryAll' => $permissions->contains(
+                    'aip-summary.show.all',
+                ),
+                'setPsPool' => request()
+                    ->user()
+                    ->can('setPsPool', AipEntry::class),
+            ],
+            'dialogPpaTree' => Inertia::optional(function () use (
+                $request,
+                $officeIds,
+                $yearId,
+                $scope,
+                $saipId,
+            ) {
+                $id = $request->query('dialog_id');
+                $search = $request->query('dialog_search');
+                $boundaryId = $request->query('dialog_boundary_id');
+                $targetParentId = $id ?: $boundaryId;
+                return Ppa::whereIn('office_id', $officeIds)
+                    ->where('fiscal_year_id', $yearId)
+                    ->where('parent_id', $targetParentId)
+                    ->where(function ($q) use ($scope, $saipId) {
+                        if ($scope === 'original') {
+                            $q->whereNull('supplemental_aip_id');
+                        } elseif ($scope === 'supplemental' && $saipId) {
+                            $q->whereNull('supplemental_aip_id')->orWhere(
+                                'supplemental_aip_id',
+                                $saipId,
+                            );
+                        }
+                    })
+                    ->when($search, function ($query, $search) {
+                        $query->where(function ($inner) use ($search) {
+                            $inner
+                                ->where('name', 'like', "%$search%")
+                                ->orWhere('code_suffix', 'like', "%$search%");
+                            if (str_contains($search, '-')) {
+                                $lastSegment = last(explode('-', $search));
+                                $inner->orWhere(
+                                    'code_suffix',
+                                    'like',
+                                    "%$lastSegment%",
+                                );
+                            }
+                        });
+                    })
+                    ->orderBy('sort_order')
+                    ->withCount('children')
+                    ->paginate(50, ['*'], 'dialog_page')
+                    ->withQueryString();
+            }),
+            'dialogCurrent' => Inertia::optional(function () use ($request) {
+                $id =
+                    $request->query('dialog_id') ?:
+                    $request->query('dialog_boundary_id');
+                return $id ? $this->getPpaBreadcrumbs($id) : [];
+            }),
         ]);
     }
 

@@ -1,8 +1,10 @@
-// import { router, usePage } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 // import { Library, FileDown, FileText, Plus } from 'lucide-react';
-// import { useState, useCallback, useMemo } from 'react';
+import { Library } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
 // import { DataTable } from '@/components/data-table';
 import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     ScrollArea,
     ScrollBar,
@@ -16,7 +18,6 @@ import {
 //     AlertDialogHeader,
 //     AlertDialogTitle,
 // } from '@/components/ui/alert-dialog';
-// import { Button } from '@/components/ui/button';
 // import {
 //     DropdownMenu,
 //     DropdownMenuContent,
@@ -28,7 +29,7 @@ import {
 // import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
 // import { exportToExcel } from '@/pages/aip-summary/export-to-excel';
 // import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
-// import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
+import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
 import type {
     FiscalYear,
     Ppa,
@@ -195,13 +196,11 @@ function expandByFundingSource(
             return [{ ...entry, id: entry.id, current_fs: null }];
         }
 
-        return sources.map(
-            (fs): FundingSourceRow => ({
-                ...entry,
-                id: entry.id,
-                current_fs: fs,
-            }),
-        );
+        return sources.map((fs): FundingSourceRow => ({
+            ...entry,
+            id: entry.id,
+            current_fs: fs,
+        }));
     });
 }
 
@@ -223,6 +222,11 @@ export default function AipSummaryTable({
     // ppmpCoaTotals,
     // psCoaAutoTotals = {},
     // psPoolPpaId = null,
+    fiscalYear,
+    can,
+    filters,
+    dialogPpaTree,
+    dialogCurrent,
     newAipEntries,
 }: AipSummaryTableProps) {
     console.log(newAipEntries);
@@ -233,6 +237,56 @@ export default function AipSummaryTable({
     // console.log(`Payload size: ${bytes} bytes`);
     // console.log(`Payload size: ${(bytes / 1024).toFixed(2)} KB`);
     // console.log(`Payload size: ${(bytes / 1024 / 1024).toFixed(2)} MB`);
+
+    const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+
+    const existingPpaIds = useMemo(
+        () => Array.from(new Set(newAipEntries.map((e) => e.ppa_id))),
+        [newAipEntries],
+    );
+
+    const handleImportLibrary = () => {
+        router.get(
+            window.location.pathname,
+            {
+                ...filters,
+                dialog_id: null,
+                dialog_boundary_id: null,
+                dialog_page: 1,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                onSuccess: () => {
+                    setIsSelectorOpen(true);
+                },
+            },
+        );
+    };
+
+    const handleAddEntry = useCallback(
+        (entry: NumberedAipEntry) => {
+            router.get(
+                window.location.pathname,
+                {
+                    ...filters,
+                    dialog_id: entry.ppa_id,
+                    dialog_boundary_id: entry.ppa_id,
+                    dialog_page: 1,
+                },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                    onSuccess: () => {
+                        setIsSelectorOpen(true);
+                    },
+                },
+            );
+        },
+        [filters],
+    );
 
     // const { auth } = usePage<SharedData>().props;
 
@@ -757,7 +811,9 @@ export default function AipSummaryTable({
                     // columns={columns}
                     columns={newColumns}
                     // data={expandPpaByFundingSource(aipEntries)}
-                    data={expandByFundingSource(sortFlatLikeTree(newAipEntries))}
+                    data={expandByFundingSource(
+                        sortFlatLikeTree(newAipEntries),
+                    )}
                     showFooter={true}
                     withRowSpan={true}
                     // withColgroup={true}
@@ -778,6 +834,10 @@ export default function AipSummaryTable({
                     //     psPoolPpaId,
                     //     onSetAsPsPool: handleSetAsPsPool,
                     // }}
+
+                    meta={{
+                        onAdd: handleAddEntry,
+                    }}
 
                     className="pr-3"
                 >
@@ -842,22 +902,28 @@ export default function AipSummaryTable({
                                 Library
                             </Button>
                         )}*/}
+                    {can.import && (
+                        <Button onClick={handleImportLibrary}>
+                            <Library className="mr-2 h-4 w-4" /> Import from
+                            Library
+                        </Button>
+                    )}
                     {/*</div>*/}
                 </DataTable>
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
-            {/* <PpaSelectorDialog
+            <PpaSelectorDialog
                 open={isSelectorOpen}
                 onOpenChange={setIsSelectorOpen}
                 dialogPpaTree={dialogPpaTree}
                 dialogCurrent={dialogCurrent}
                 filters={filters}
                 fiscalYearId={fiscalYear.id}
-                existingPpaIds={Array.from(existingPpaIds(aipEntries))}
-                supplementalAipId={currentScope.supplemental_aip_id}
-            />  */}
+                existingPpaIds={existingPpaIds}
+                supplementalAipId={null}
+            />
 
             {/* <AipEntryFormDialog
                 open={isEditDialogOpen}
