@@ -449,7 +449,7 @@ const columns = [
         id: 'actions',
         size: 154,
         cell: ({ row, table }) => {
-            // const meta = table.options.meta as any;
+            const meta = table.options.meta as any;
             // const isReadOnly = meta?.readOnly;
             // const canSetPsPool = meta?.canSetPsPool;
             // const can = row.original.can;
@@ -471,10 +471,8 @@ const columns = [
                     <Button
                         size="icon"
                         variant="outline"
-                        // onClick={() => meta?.onAdd?.(row.original)}
-                        // disabled={
-                        //     row.original.type === 'Sub-Activity' || !canImport
-                        // }
+                        onClick={() => meta?.onAdd?.(row.original)}
+                        disabled={row.original.ppa?.type === 'Sub-Activity'}
                     >
                         <Plus />
                     </Button>
