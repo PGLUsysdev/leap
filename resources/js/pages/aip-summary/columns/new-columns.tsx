@@ -74,7 +74,9 @@ const columns = [
             </div>
         ),
         cell: (info) => (
-            <div className="text-wrap">{formatText(info.getValue())}</div>
+            <div className="text-center text-wrap">
+                {formatText(info.getValue())}
+            </div>
         ),
     }),
     columnHelper.group({
@@ -92,7 +94,7 @@ const columns = [
                     <div className="text-center text-wrap">Starting Date</div>
                 ),
                 cell: (info) => (
-                    <div className="text-wrap">
+                    <div className="text-center text-wrap">
                         {formatDateCell(info.getValue())}
                     </div>
                 ),
@@ -103,7 +105,7 @@ const columns = [
                     <div className="text-center text-wrap">Completion Date</div>
                 ),
                 cell: (info) => (
-                    <div className="text-wrap">
+                    <div className="text-center text-wrap">
                         {formatDateCell(info.getValue())}
                     </div>
                 ),
@@ -129,7 +131,7 @@ const columns = [
             const fs = info.row.original.ppa_funding_sources?.[0];
 
             return (
-                <div className="text-wrap">
+                <div className="text-center text-wrap">
                     {formatText(fs?.funding_source?.title)}
                 </div>
             );
@@ -304,7 +306,7 @@ const columns = [
             const fs = info.row.original.ppa_funding_sources?.[0];
 
             return (
-                <div className="text-wrap">
+                <div className="text-center text-wrap">
                     {formatText(fs?.cc_typology?.code)}
                 </div>
             );
