@@ -110,6 +110,48 @@ interface AipSummaryTableProps {
 //     return ppaIds;
 // };
 
+function sortFlatLikeTree(entries: AipEntry[]) {
+    const byParent = new Map<number | null, AipEntry[]>();
+    const seen = new Set<number>();
+
+    for (const entry of entries) {
+        if (seen.has(entry.ppa_id)) {
+            throw new Error(`Duplicate ppa_id found: ${entry.ppa_id}`);
+        }
+
+        seen.add(entry.ppa_id);
+
+        const parentId = entry.ppa?.parent_id ?? null;
+
+        if (!byParent.has(parentId)) {
+            byParent.set(parentId, []);
+        }
+
+        byParent.get(parentId)!.push(entry);
+    }
+
+    const sortSiblings = (list: AipEntry[]) =>
+        list.sort(
+            (a, b) => (a.ppa?.sort_order ?? 0) - (b.ppa?.sort_order ?? 0),
+        );
+
+    const result: AipEntry[] = [];
+    const stack = [...sortSiblings(byParent.get(null) ?? [])].reverse();
+
+    while (stack.length) {
+        const entry = stack.pop()!;
+        result.push(entry);
+
+        const kids = sortSiblings(byParent.get(entry.ppa_id) ?? []);
+
+        for (let i = kids.length - 1; i >= 0; i--) {
+            stack.push(kids[i]);
+        }
+    }
+
+    return result;
+}
+
 export default function AipSummaryTable({
     // fiscalYear,
     // aipEntries,
@@ -132,12 +174,12 @@ export default function AipSummaryTable({
 }: AipSummaryTableProps) {
     console.log(newAipEntries);
 
-    const json = JSON.stringify(newAipEntries);
-    const bytes = new Blob([json]).size;
+    // const json = JSON.stringify(newAipEntries);
+    // const bytes = new Blob([json]).size;
 
-    console.log(`Payload size: ${bytes} bytes`);
-    console.log(`Payload size: ${(bytes / 1024).toFixed(2)} KB`);
-    console.log(`Payload size: ${(bytes / 1024 / 1024).toFixed(2)} MB`);
+    // console.log(`Payload size: ${bytes} bytes`);
+    // console.log(`Payload size: ${(bytes / 1024).toFixed(2)} KB`);
+    // console.log(`Payload size: ${(bytes / 1024 / 1024).toFixed(2)} MB`);
 
     // const { auth } = usePage<SharedData>().props;
 
@@ -662,7 +704,7 @@ export default function AipSummaryTable({
                     // columns={columns}
                     columns={newColumns}
                     // data={expandPpaByFundingSource(aipEntries)}
-                    data={newAipEntries}
+                    data={sortFlatLikeTree(newAipEntries)}
                     // showFooter={true}
                     // withRowSpan={true}
                     // withColgroup={true}
