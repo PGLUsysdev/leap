@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react';
+import { Deferred, router, usePage } from '@inertiajs/react';
 // import { Library, FileDown, FileText, Plus } from 'lucide-react';
 import { Library } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
@@ -60,8 +60,8 @@ interface AipSummaryTableProps {
         setPsPool: boolean;
         showSummaryAll?: boolean;
     };
-    fundingSources: FundingSource[];
-    ccTypologies: {
+    fundingSources?: FundingSource[];
+    ccTypologies?: {
         id: number;
         code: string;
         description: string;
@@ -70,7 +70,7 @@ interface AipSummaryTableProps {
         strategic_priority?: { id: number; code: number; name: string };
         sub_sector?: { id: number; code: number; name: string } | null;
     }[];
-    offices: Office[];
+    offices?: Office[];
     filters: Filter;
     dialogPpaTree?: PaginatedResponse<Ppa>;
     dialogCurrent?: Ppa[];
@@ -79,9 +79,9 @@ interface AipSummaryTableProps {
         scope: string;
         supplemental_aip_id: number | null;
     };
-    chartOfAccounts: ChartOfAccount[];
-    priceLists: PriceList[];
-    ppmpCategories: PpmpCategory[];
+    chartOfAccounts?: ChartOfAccount[];
+    priceLists?: PriceList[];
+    ppmpCategories?: PpmpCategory[];
     ppmpCoaTotals: Record<number, Record<number, number>>;
     psCoaAutoTotals: Record<string, number>;
     psPoolPpaId?: number | null;
@@ -240,7 +240,24 @@ export default function AipSummaryTable({
     psPoolPpaId,
     newAipEntries,
 }: AipSummaryTableProps) {
-    console.log(newAipEntries);
+    // console.log(newAipEntries);
+    console.log({
+        fiscalYear,
+        can,
+        filters,
+        dialogPpaTree,
+        dialogCurrent,
+        fundingSources,
+        ccTypologies,
+        offices,
+        chartOfAccounts,
+        priceLists,
+        ppmpCategories,
+        ppmpCoaTotals,
+        psCoaAutoTotals,
+        psPoolPpaId,
+        newAipEntries,
+    });
 
     // const json = JSON.stringify(newAipEntries);
     // const bytes = new Blob([json]).size;
@@ -305,25 +322,22 @@ export default function AipSummaryTable({
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState<Ppa | null>(null);
 
-    const handleEditDialogOpen = useCallback(
-        (entry: NumberedAipEntry) => {
-            if (!entry.ppa) {
-                return;
-            }
+    const handleEditDialogOpen = useCallback((entry: NumberedAipEntry) => {
+        if (!entry.ppa) {
+            return;
+        }
 
-            const ppa: Ppa = {
-                ...entry.ppa,
-                aip_entries:
-                    entry.ppa.aip_entries && entry.ppa.aip_entries.length > 0
-                        ? entry.ppa.aip_entries
-                        : [entry],
-            };
+        const ppa: Ppa = {
+            ...entry.ppa,
+            aip_entries:
+                entry.ppa.aip_entries && entry.ppa.aip_entries.length > 0
+                    ? entry.ppa.aip_entries
+                    : [entry],
+        };
 
-            setSelectedEntry(ppa);
-            setIsEditDialogOpen(true);
-        },
-        [],
-    );
+        setSelectedEntry(ppa);
+        setIsEditDialogOpen(true);
+    }, []);
 
     // const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
     // const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -961,25 +975,41 @@ export default function AipSummaryTable({
                 supplementalAipId={null}
             />
 
-            <AipEntryFormDialog
-                open={isEditDialogOpen}
-                onOpenChange={setIsEditDialogOpen}
-                data={selectedEntry}
-                fiscalYear={fiscalYear}
-                fundingSources={fundingSources}
-                ccTypologies={ccTypologies}
-                offices={offices}
-                auth={auth as any}
-                supplementalAipId={null}
-                canShowSummaryAll={can?.showSummaryAll ?? false}
-                selectedOfficeId={filters?.selected_office_id ?? undefined}
-                chartOfAccounts={chartOfAccounts}
-                priceLists={priceLists}
-                ppmpCategories={ppmpCategories}
-                ppmpCoaTotals={ppmpCoaTotals}
-                psCoaAutoTotals={psCoaAutoTotals}
-                psPoolPpaId={psPoolPpaId}
-            />
+            <Deferred
+                data={[
+                    'fundingSources',
+                    'chartOfAccounts',
+                    'priceLists',
+                    'ppmpCategories',
+                    'ccTypologies',
+                    'offices',
+                ]}
+                fallback={
+                    <div className="p-4 text-sm text-muted-foreground">
+                        Loading editor...
+                    </div>
+                }
+            >
+                <AipEntryFormDialog
+                    open={isEditDialogOpen}
+                    onOpenChange={setIsEditDialogOpen}
+                    data={selectedEntry}
+                    fiscalYear={fiscalYear}
+                    fundingSources={fundingSources}
+                    ccTypologies={ccTypologies}
+                    offices={offices}
+                    auth={auth as any}
+                    supplementalAipId={null}
+                    canShowSummaryAll={can?.showSummaryAll ?? false}
+                    selectedOfficeId={filters?.selected_office_id ?? undefined}
+                    chartOfAccounts={chartOfAccounts}
+                    priceLists={priceLists}
+                    ppmpCategories={ppmpCategories}
+                    ppmpCoaTotals={ppmpCoaTotals}
+                    psCoaAutoTotals={psCoaAutoTotals}
+                    psPoolPpaId={psPoolPpaId}
+                />
+            </Deferred>
 
             {/* <AipEntryFormDialog
                 open={isEditDialogOpen}

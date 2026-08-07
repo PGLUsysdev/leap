@@ -439,38 +439,46 @@ class AipEntryController extends Controller
             //         $yearId,
             //     )
             //     : [],
-            'fundingSources' => FundingSource::all(),
-            'chartOfAccounts' => ChartOfAccount::select(
-                'id',
-                'account_number',
-                'account_title',
-                'expense_class',
-            )
-                ->orderBy('account_number')
-                ->get(),
-            'priceLists' => PpmpPriceList::with([
-                'chartOfAccountPpmpCategory.chartOfAccount',
-                'chartOfAccountPpmpCategory.ppmpCategory',
-            ])
-                ->orderBy('sort_order', 'asc')
-                ->get(),
-            'ppmpCategories' => PpmpCategory::with([
-                'chartOfAccountPpmpCategories.chartOfAccount',
-            ])->get(),
-            'ccTypologies' => CcTypology::select(
-                'id',
-                'code',
-                'description',
-                'strategic_priority_id',
-                'sub_sector_id',
-            )
-                ->with([
-                    'strategicPriority:id,code,name',
-                    'subSector:id,code,name',
+            'fundingSources' => Inertia::defer(fn() => FundingSource::all()),
+            'chartOfAccounts' => Inertia::defer(
+                fn() => ChartOfAccount::select(
+                    'id',
+                    'account_number',
+                    'account_title',
+                    'expense_class',
+                )
+                    ->orderBy('account_number')
+                    ->get(),
+            ),
+            'priceLists' => Inertia::defer(
+                fn() => PpmpPriceList::with([
+                    'chartOfAccountPpmpCategory.chartOfAccount',
+                    'chartOfAccountPpmpCategory.ppmpCategory',
                 ])
-                ->orderBy('code')
-                ->get(),
-            'offices' => Office::all(),
+                    ->orderBy('sort_order', 'asc')
+                    ->get(),
+            ),
+            'ppmpCategories' => Inertia::defer(
+                fn() => PpmpCategory::with([
+                    'chartOfAccountPpmpCategories.chartOfAccount',
+                ])->get(),
+            ),
+            'ccTypologies' => Inertia::defer(
+                fn() => CcTypology::select(
+                    'id',
+                    'code',
+                    'description',
+                    'strategic_priority_id',
+                    'sub_sector_id',
+                )
+                    ->with([
+                        'strategicPriority:id,code,name',
+                        'subSector:id,code,name',
+                    ])
+                    ->orderBy('code')
+                    ->get(),
+            ),
+            'offices' => Inertia::defer(fn() => Office::all()),
             'filters' => $request->all(),
             // 'supplementalAips' => \App\Models\SupplementalAip::where(
             //     'fiscal_year_id',

@@ -73,13 +73,13 @@ interface AipEntryFormDialogProps {
     onOpenChange: (open: boolean) => void;
     data: Ppa | null;
     fiscalYear: FiscalYear;
-    fundingSources: FundingSource[];
-    offices: Office[];
+    fundingSources?: FundingSource[];
+    offices?: Office[];
     auth: AuthData;
     supplementalAipId?: number | null;
     canShowSummaryAll?: boolean; // NEW
     selectedOfficeId?: string | null;
-    ccTypologies: {
+    ccTypologies?: {
         id: number;
         code: string;
         description: string;
@@ -88,9 +88,9 @@ interface AipEntryFormDialogProps {
         strategic_priority?: { id: number; code: number; name: string };
         sub_sector?: { id: number; code: number; name: string } | null;
     }[];
-    chartOfAccounts: ChartOfAccount[];
-    priceLists: PriceList[];
-    ppmpCategories: PpmpCategory[];
+    chartOfAccounts?: ChartOfAccount[];
+    priceLists?: PriceList[];
+    ppmpCategories?: PpmpCategory[];
     ppmpCoaTotals: Record<number, Record<number, number>>;
     psCoaAutoTotals: Record<string, number>;
     onPpmpItemAdded?: () => void;
@@ -135,16 +135,16 @@ export default function AipEntryFormDialog({
     onOpenChange,
     data,
     fiscalYear,
-    fundingSources,
-    ccTypologies,
-    offices,
+    fundingSources = [],
+    ccTypologies = [],
+    offices = [],
     auth,
     supplementalAipId = null,
     canShowSummaryAll,
     selectedOfficeId,
-    chartOfAccounts,
-    priceLists,
-    ppmpCategories,
+    chartOfAccounts = [],
+    priceLists = [],
+    ppmpCategories = [],
     ppmpCoaTotals = {},
     psCoaAutoTotals = {},
     onPpmpItemAdded,
