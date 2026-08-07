@@ -558,17 +558,20 @@ export default function AipSummaryTable({
     //     );
     // };
 
-    // const handleSetAsPsPool = useCallback((ppa: Ppa) => {
-    //     router.post(
-    //         `/ppas/${ppa.id}/set-as-ps-pool`,
+    const handleSetAsPsPool = useCallback((entry: NumberedAipEntry) => {
+        if (!entry.ppa) {
+            return;
+        }
 
-    //         {},
-    //         {
-    //             preserveState: true,
-    //             preserveScroll: true,
-    //         },
-    //     );
-    // }, []);
+        router.post(
+            `/ppas/${entry.ppa.id}/set-as-ps-pool`,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: true,
+            },
+        );
+    }, []);
 
     // const handleDeleteSaip = () => {
     //     setIsDeleteSaipDialogOpen(true);
@@ -887,6 +890,9 @@ export default function AipSummaryTable({
                     meta={{
                         onAdd: handleAddEntry,
                         onEdit: handleEditDialogOpen,
+                        canSetPsPool: can?.setPsPool ?? false,
+                        psPoolPpaId,
+                        onSetAsPsPool: handleSetAsPsPool,
                     }}
 
                     className="pr-3"

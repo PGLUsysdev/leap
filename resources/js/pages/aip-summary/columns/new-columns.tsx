@@ -1,6 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
 import { Button } from '@/components/base-ui-components/ui/button';
+import { Badge } from '@/components/base-ui-components/ui/badge';
 import type { AipEntry, PpaFundingSource } from '@/types';
 import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
 
@@ -108,6 +109,15 @@ const columns = [
                     <div className="text-wrap">
                         {formatText(info.getValue())}
                     </div>
+                    {original.ppa?.is_ps_pool && (
+                        <Badge
+                            variant="default"
+                            title="PS Pool"
+                            className="h-fit w-fit min-w-0 bg-emerald-600 p-1 text-white"
+                        >
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                        </Badge>
+                    )}
                 </div>
             );
         },
@@ -494,29 +504,29 @@ const columns = [
                     <Button
                         size="icon"
                         variant="outline"
-                        // className={
-                        //     row.original.type === 'Program' &&
-                        //     !row.original.is_ps_pool
-                        //         ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
-                        //         : 'border-gray-300 text-gray-300'
-                        // }
-                        // onClick={() => meta?.onSetAsPsPool?.(row.original)}
-                        // disabled={
-                        //     row.original.type !== 'Program' ||
-                        //     row.original.is_ps_pool ||
-                        //     !canSetPsPool
-                        // }
-                        // title={
-                        //     !canSetPsPool
-                        //         ? "You don't have permission to set the PS pool"
-                        //         : row.original.type !== 'Program'
-                        //           ? 'Only Programs can be designated as the PS pool'
-                        //           : row.original.is_ps_pool
-                        //             ? 'This Program is already the PS pool'
-                        //             : 'Designate this Program as the PS pool'
-                        // }
+                        className={
+                            row.original.ppa?.type === 'Program' &&
+                            !row.original.ppa?.is_ps_pool
+                                ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
+                                : 'border-gray-300 text-gray-300'
+                        }
+                        onClick={() => meta?.onSetAsPsPool?.(row.original)}
+                        disabled={
+                            row.original.ppa?.type !== 'Program' ||
+                            row.original.ppa?.is_ps_pool ||
+                            !meta?.canSetPsPool
+                        }
+                        title={
+                            !meta?.canSetPsPool
+                                ? "You don't have permission to set the PS pool"
+                                : row.original.ppa?.type !== 'Program'
+                                  ? 'Only Programs can be designated as the PS pool'
+                                  : row.original.ppa?.is_ps_pool
+                                    ? 'This Program is already the PS pool'
+                                    : 'Designate this Program as the PS pool'
+                        }
                     >
-                        <ShieldCheck />
+                        <ShieldCheck className="h-4 w-4" />
                     </Button>
 
                     <Button
