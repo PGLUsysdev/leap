@@ -28,7 +28,10 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                     {items.map((item, index) => {
                         if (item.type === 'separator') {
                             return (
-                                <span key={`sep-${index}`} className="px-4">
+                                <span
+                                    key={`sep-${index}`}
+                                    className="px-4 text-muted-foreground"
+                                >
                                     -
                                 </span>
                             );

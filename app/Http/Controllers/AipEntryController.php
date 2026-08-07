@@ -830,7 +830,7 @@ class AipEntryController extends Controller
             PsBreakdownController::syncPoolPsAmount($aipEntry, $saipId);
         }
 
-        return back()->with('success', 'AIP Entry updated successfully.');
+        // return back()->with('success', 'AIP Entry updated successfully.');
     }
 
     private function fundingSourcesChanged(
