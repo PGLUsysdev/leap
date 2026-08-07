@@ -9,6 +9,7 @@ use App\Models\Office;
 use App\Models\Position;
 use App\Models\Ppa;
 use App\Models\PpaFundingSource;
+use App\Models\Ppmp;
 use App\Models\PsBreakdownItem;
 use App\Models\PsRate;
 use App\Models\SalaryStandard;
@@ -161,8 +162,12 @@ class PsBreakdownController extends Controller
     /**
      * Sync the total PS amount onto the GF Proper (funding_source_id=1)
      * funding source for the given AIP entry — but only if its PPA is the PS pool.
-     * All other funding sources on this AIP entry get ps_amount = 0.
-     * If no GF Proper funding source exists, it will be created automatically.
+     *
+     * A PS pool entry is structurally restricted to a single funding source:
+     *   - Only one PPA funding source is allowed (GF Proper, id=1).
+     *   - It carries PS only; MOOE, FE, CO (and CCET) are always 0.
+     * Any other funding source on this AIP entry is deleted (along with its PPMPs).
+     * If no GF Proper funding source exists, it is created automatically.
      */
     public static function syncPoolPsAmount(
         AipEntry $aipEntry,
@@ -180,7 +185,32 @@ class PsBreakdownController extends Controller
         );
         $totalPs = array_sum($psTotals);
 
-        // Find or create the GF Proper funding source (id=1)
+        // Remove any non-GF-Proper funding source on this AIP entry,
+        // cleaning up their PPMPs first (mirrors PpaFundingSourceController::destroy).
+        $nonGfSources = $aipEntry
+            ->ppaFundingSources()
+            ->where(function ($q) {
+                $q->where('funding_source_id', '!=', 1)->orWhereNull(
+                    'funding_source_id',
+                );
+            })
+            ->when(
+                $saipId,
+                fn ($q) => $q->where('supplemental_aip_id', $saipId),
+                fn ($q) => $q->whereNull('supplemental_aip_id'),
+            )
+            ->get();
+
+        if ($nonGfSources->isNotEmpty()) {
+            Ppmp::whereIn(
+                'ppa_funding_source_id',
+                $nonGfSources->pluck('id'),
+            )->delete();
+
+            $nonGfSources->each->delete();
+        }
+
+        // Find or create the GF Proper funding source (id=1) with PS only.
         $gfSource = $aipEntry->ppaFundingSources()->updateOrCreate(
             [
                 'funding_source_id' => 1,
@@ -188,20 +218,15 @@ class PsBreakdownController extends Controller
             ],
             [
                 'ps_amount' => $totalPs,
+                'mooe_amount' => 0,
+                'fe_amount' => 0,
+                'co_amount' => 0,
+                'ccet_adaptation' => 0,
+                'ccet_mitigation' => 0,
+                'cc_typology_id' => null,
                 'is_supplemental' => (bool) $saipId,
             ],
         );
-
-        // Zero out PS on all other funding sources for this AIP entry
-        $aipEntry
-            ->ppaFundingSources()
-            ->where('id', '!=', $gfSource->id)
-            ->when(
-                $saipId,
-                fn ($q) => $q->where('supplemental_aip_id', $saipId),
-                fn ($q) => $q->whereNull('supplemental_aip_id'),
-            )
-            ->update(['ps_amount' => 0]);
     }
 
     /**

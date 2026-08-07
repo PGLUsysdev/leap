@@ -679,22 +679,37 @@ class PpaController extends Controller
         Gate::authorize('setPsPool', AipEntry::class);
 
         try {
-            // Find the current pool before we switch
-            $oldPool = Ppa::psPoolForFiscalYear($ppa->fiscal_year_id)->first();
+            DB::transaction(function () use ($ppa, $poolService) {
+                // Find the current pool before we switch
+                $oldPool = Ppa::psPoolForFiscalYear($ppa->fiscal_year_id)
+                    ->lockForUpdate()
+                    ->first();
 
-            $poolService->setPool($ppa);
+                $poolService->setPool($ppa);
 
-            // Clear old pool's PS amounts
-            if ($oldPool) {
-                foreach ($oldPool->aipEntries as $entry) {
-                    $entry->ppaFundingSources()->update(['ps_amount' => 0]);
+                // Reset the old pool's funding sources completely: detach the
+                // funding source and clear every amount so it reverts to a normal
+                // (empty) AIP entry instead of keeping the pool-only GF Proper structure.
+                if ($oldPool) {
+                    foreach ($oldPool->aipEntries as $entry) {
+                        $entry->ppaFundingSources()->update([
+                            'funding_source_id' => null,
+                            'ps_amount' => 0,
+                            'mooe_amount' => 0,
+                            'fe_amount' => 0,
+                            'co_amount' => 0,
+                            'ccet_adaptation' => 0,
+                            'ccet_mitigation' => 0,
+                            'cc_typology_id' => null,
+                        ]);
+                    }
                 }
-            }
 
-            // Sync new pool's PS amounts (auto-creates GF Proper if needed)
-            foreach ($ppa->aipEntries as $entry) {
-                PsBreakdownController::syncPoolPsAmount($entry);
-            }
+                // Sync new pool's PS amounts (auto-creates GF Proper if needed)
+                foreach ($ppa->aipEntries as $entry) {
+                    PsBreakdownController::syncPoolPsAmount($entry);
+                }
+            });
 
             return redirect()
                 ->back()

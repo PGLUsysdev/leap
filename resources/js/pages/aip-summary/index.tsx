@@ -1,6 +1,6 @@
 import { Deferred, router, usePage } from '@inertiajs/react';
 // import { Library, FileDown, FileText, Plus } from 'lucide-react';
-import { Library } from 'lucide-react';
+import { Library, ShieldCheck } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
 // import { DataTable } from '@/components/data-table';
 import DataTable from '@/components/base-ui-components/data-table';
@@ -9,6 +9,16 @@ import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/base-ui-components/ui/alert-dialog';
 // import { DeleteDialog } from '@/components/delete-dialog';
 // import {
 //     AlertDialog,
@@ -588,20 +598,37 @@ export default function AipSummaryTable({
     //     );
     // };
 
+    const [isSetPsPoolDialogOpen, setIsSetPsPoolDialogOpen] = useState(false);
+    const [psPoolTarget, setPsPoolTarget] = useState<NumberedAipEntry | null>(
+        null,
+    );
+
     const handleSetAsPsPool = useCallback((entry: NumberedAipEntry) => {
-        if (!entry.ppa) {
+        setPsPoolTarget(entry);
+        setIsSetPsPoolDialogOpen(true);
+    }, []);
+
+    const handleSetAsPsPoolConfirm = useCallback(() => {
+        if (!psPoolTarget?.ppa) {
             return;
         }
 
+        setIsLoading(true);
+
         router.post(
-            `/ppas/${entry.ppa.id}/set-as-ps-pool`,
+            `/ppas/${psPoolTarget.ppa.id}/set-as-ps-pool`,
             {},
             {
                 preserveState: true,
                 preserveScroll: true,
+                onFinish: () => {
+                    setIsLoading(false);
+                    setIsSetPsPoolDialogOpen(false);
+                    setPsPoolTarget(null);
+                },
             },
         );
-    }, []);
+    }, [psPoolTarget]);
 
     // const handleDeleteSaip = () => {
     //     setIsDeleteSaipDialogOpen(true);
@@ -1073,6 +1100,89 @@ export default function AipSummaryTable({
                 }}
                 isLoading={isLoading}
             />
+
+            <AlertDialog
+                open={isSetPsPoolDialogOpen}
+                onOpenChange={(open) => {
+                    setIsSetPsPoolDialogOpen(open);
+                    if (!open) {
+                        setPsPoolTarget(null);
+                    }
+                }}
+            >
+                <AlertDialogContent size="default">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                            Set PS Pool?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Designate{' '}
+                            <span className="font-semibold text-foreground">
+                                "{psPoolTarget?.ppa?.name}"
+                            </span>{' '}
+                            as the PS Pool for this fiscal year. This will
+                            change the Personal Services (PS) allocations as
+                            follows:
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <ul className="-mt-1 space-y-2 text-sm text-muted-foreground">
+                        <li className="flex gap-2">
+                            <span className="text-emerald-600">•</span>
+                            <span>
+                                <span className="font-medium text-foreground">
+                                    Personal Services consolidation.
+                                </span>{' '}
+                                All PS amounts across the office are moved into
+                                this Program&apos;s single{' '}
+                                <span className="font-semibold">
+                                    General Fund (GF Proper)
+                                </span>{' '}
+                                funding source.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span className="text-emerald-600">•</span>
+                            <span>
+                                <span className="font-medium text-foreground">
+                                    PS-only funding source.
+                                </span>{' '}
+                                This Program will have exactly one funding
+                                source (GF Proper) and will carry PS only —{' '}
+                                MOOE, FE, and CO are set to zero.
+                            </span>
+                        </li>
+                        <li className="flex gap-2">
+                            <span className="text-amber-600">•</span>
+                            <span>
+                                <span className="font-medium text-foreground">
+                                    Previous PS Pool reset.
+                                </span>{' '}
+                                If another Program was the PS Pool, its funding
+                                sources and amounts are cleared and it reverts
+                                to a normal entry.
+                            </span>
+                        </li>
+                    </ul>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel
+                            disabled={isLoading}
+                            onClick={() => setPsPoolTarget(null)}
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={handleSetAsPsPoolConfirm}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Setting...' : 'Set PS Pool'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* <AipEntryFormDialog
                 open={isEditDialogOpen}
