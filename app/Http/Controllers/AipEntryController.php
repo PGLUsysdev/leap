@@ -404,11 +404,15 @@ class AipEntryController extends Controller
 
         // $psPoolPpa = Ppa::psPoolForFiscalYear($yearId)->first();
 
-        return Inertia::render('aip-summary/index', [
-            'fiscalYear' => $fiscalYear,
-            // 'psPoolPpaId' => $psPoolPpa?->id,
-            // 'aipEntries' => $aipEntries,
-            'newAipEntries' => AipEntry::select([
+        $newAipEntries = AipEntry::whereHas('ppa', function ($query) use (
+            $fiscalYear,
+            $officeIds,
+        ) {
+            $query
+                ->where('fiscal_year_id', $fiscalYear->id)
+                ->whereIn('office_id', $officeIds);
+        })
+            ->select([
                 'id',
                 'ppa_id',
                 'start_date',
@@ -419,19 +423,50 @@ class AipEntryController extends Controller
                 // 'created_at',
                 // 'updated_at',
             ])
-                ->with(
-                    'ppa:id,office_id,parent_id,name,type,code_suffix,is_active,sort_order,fiscal_year_id,supplemental_aip_id,is_supplemental,is_ps_pool',
-                    // 'ppa.office:id,sector_id,lgu_level_id,office_type_id,parent_id,code,name,acronym,is_lee',
-                    'ppa.office:id,name,acronym',
-                    // 'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
-                    'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
-                    // 'ppaFundingSources.fundingSource:id,fund_type,code,title,description',
-                    'ppaFundingSources.fundingSource:id,code,title',
-                    // 'ppaFundingSources.ccTypology:id,code,description,response_type,strategic_priority_id,sub_sector_id,category_code,item_num,id_nccap_activity',
-                    'ppaFundingSources.ccTypology:id,code',
-                )
-                // ->limit(100)
-                ->get(),
+            ->with(
+                'ppa:id,office_id,parent_id,name,type,code_suffix,is_active,sort_order,fiscal_year_id,supplemental_aip_id,is_supplemental,is_ps_pool',
+                // 'ppa.office:id,sector_id,lgu_level_id,office_type_id,parent_id,code,name,acronym,is_lee',
+                'ppa.office:id,name,acronym',
+                // 'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
+                'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
+                // 'ppaFundingSources.fundingSource:id,fund_type,code,title,description',
+                'ppaFundingSources.fundingSource:id,code,title',
+                // 'ppaFundingSources.ccTypology:id,code,description,response_type,strategic_priority_id,sub_sector_id,category_code,item_num,id_nccap_activity',
+                'ppaFundingSources.ccTypology:id,code',
+            )
+            // ->limit(100)
+            ->get();
+
+        // Attach per-entry permissions so the AIP entry form dialog can
+        // enable/disable its controls based on the user's rights.
+        $newAipEntries->each(function ($entry) {
+            if (!$entry->ppa) {
+                return;
+            }
+
+            $entry->ppa->can = [
+                'import' => request()
+                    ->user()
+                    ->can('import', [AipEntry::class, [$entry->ppa_id]]),
+                'edit' => request()->user()->can('update', $entry),
+                'delete' => request()->user()->can('delete', $entry),
+                'editFundingSources' => request()
+                    ->user()
+                    ->can('editFundingSources', $entry),
+                'viewPpmp' => request()
+                    ->user()
+                    ->can('viewAny', [Ppmp::class, $entry]),
+                'viewPsBreakdown' => request()
+                    ->user()
+                    ->can('viewAny', PsBreakdownItem::class),
+            ];
+        });
+
+        return Inertia::render('aip-summary/index', [
+            'fiscalYear' => $fiscalYear,
+            // 'psPoolPpaId' => $psPoolPpa?->id,
+            // 'aipEntries' => $aipEntries,
+            'newAipEntries' => $newAipEntries,
             // 'ppmpCoaTotals' => $ppmpCoaTotals,
             // 'psCoaAutoTotals' => $officeId
             //     ? PsBreakdownController::computePsCoaTotalsForOffice(
