@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 // import { Library, FileDown, FileText, Plus } from 'lucide-react';
 import { Library } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
@@ -26,6 +26,7 @@ import {
 // } from '@/components/ui/dropdown-menu';
 // import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
+import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
 // import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
 // import { exportToExcel } from '@/pages/aip-summary/export-to-excel';
 // import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
@@ -37,6 +38,7 @@ import type {
     Office,
     // FlattenedPpa,
     // SharedData,
+    SharedData,
     Filter,
     PaginatedResponse,
     ChartOfAccount,
@@ -227,6 +229,15 @@ export default function AipSummaryTable({
     filters,
     dialogPpaTree,
     dialogCurrent,
+    fundingSources,
+    ccTypologies,
+    offices,
+    chartOfAccounts,
+    priceLists,
+    ppmpCategories,
+    ppmpCoaTotals,
+    psCoaAutoTotals,
+    psPoolPpaId,
     newAipEntries,
 }: AipSummaryTableProps) {
     console.log(newAipEntries);
@@ -289,6 +300,30 @@ export default function AipSummaryTable({
     );
 
     // const { auth } = usePage<SharedData>().props;
+    const { auth } = usePage<SharedData>().props;
+
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [selectedEntry, setSelectedEntry] = useState<Ppa | null>(null);
+
+    const handleEditDialogOpen = useCallback(
+        (entry: NumberedAipEntry) => {
+            if (!entry.ppa) {
+                return;
+            }
+
+            const ppa: Ppa = {
+                ...entry.ppa,
+                aip_entries:
+                    entry.ppa.aip_entries && entry.ppa.aip_entries.length > 0
+                        ? entry.ppa.aip_entries
+                        : [entry],
+            };
+
+            setSelectedEntry(ppa);
+            setIsEditDialogOpen(true);
+        },
+        [],
+    );
 
     // const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
     // const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -837,6 +872,7 @@ export default function AipSummaryTable({
 
                     meta={{
                         onAdd: handleAddEntry,
+                        onEdit: handleEditDialogOpen,
                     }}
 
                     className="pr-3"
@@ -923,6 +959,26 @@ export default function AipSummaryTable({
                 fiscalYearId={fiscalYear.id}
                 existingPpaIds={existingPpaIds}
                 supplementalAipId={null}
+            />
+
+            <AipEntryFormDialog
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                data={selectedEntry}
+                fiscalYear={fiscalYear}
+                fundingSources={fundingSources}
+                ccTypologies={ccTypologies}
+                offices={offices}
+                auth={auth as any}
+                supplementalAipId={null}
+                canShowSummaryAll={can?.showSummaryAll ?? false}
+                selectedOfficeId={filters?.selected_office_id ?? undefined}
+                chartOfAccounts={chartOfAccounts}
+                priceLists={priceLists}
+                ppmpCategories={ppmpCategories}
+                ppmpCoaTotals={ppmpCoaTotals}
+                psCoaAutoTotals={psCoaAutoTotals}
+                psPoolPpaId={psPoolPpaId}
             />
 
             {/* <AipEntryFormDialog

@@ -480,7 +480,7 @@ const columns = [
                     <Button
                         size="icon"
                         variant="outline"
-                        // onClick={() => meta?.onEdit?.(row.original)}
+                        onClick={() => meta?.onEdit?.(row.original)}
                         // disabled={
                         //     !canEdit &&
                         //     !canEditFundingSources &&

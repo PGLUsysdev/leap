@@ -1419,7 +1419,7 @@ export default function AipEntryFormDialog({
                                                         </DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
 
-                                                        {fundingSources.filter(
+                                                        {(fundingSources ?? []).filter(
                                                             (fs) =>
                                                                 !selectedSourceIds.includes(
                                                                     fs.id.toString(),
@@ -1430,7 +1430,7 @@ export default function AipEntryFormDialog({
                                                                 added
                                                             </div>
                                                         ) : (
-                                                            fundingSources
+                                                            (fundingSources ?? [])
                                                                 .filter(
                                                                     (fs) =>
                                                                         !selectedSourceIds.includes(
