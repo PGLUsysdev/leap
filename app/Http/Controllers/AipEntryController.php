@@ -426,7 +426,7 @@ class AipEntryController extends Controller
                     // 'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
                     'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
                     // 'ppaFundingSources.fundingSource:id,fund_type,code,title,description',
-                    'ppaFundingSources.fundingSource:id,title',
+                    'ppaFundingSources.fundingSource:id,code,title',
                     // 'ppaFundingSources.ccTypology:id,code,description,response_type,strategic_priority_id,sub_sector_id,category_code,item_num,id_nccap_activity',
                     'ppaFundingSources.ccTypology:id,code',
                 )
@@ -511,6 +511,7 @@ class AipEntryController extends Controller
                 'setPsPool' => request()
                     ->user()
                     ->can('setPsPool', AipEntry::class),
+                'delete' => $permissions->contains('aip-summary.delete'),
             ],
             'dialogPpaTree' => Inertia::optional(function () use (
                 $request,

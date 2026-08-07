@@ -30,6 +30,7 @@ import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
 // import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
 // import { exportToExcel } from '@/pages/aip-summary/export-to-excel';
 // import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
 import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
 import type {
     FiscalYear,
@@ -58,6 +59,7 @@ interface AipSummaryTableProps {
         import: boolean;
         createSaip: boolean;
         setPsPool: boolean;
+        delete: boolean;
         showSummaryAll?: boolean;
     };
     fundingSources?: FundingSource[];
@@ -321,6 +323,11 @@ export default function AipSummaryTable({
 
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState<Ppa | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [deleteEntry, setDeleteEntry] = useState<NumberedAipEntry | null>(
+        null,
+    );
 
     const handleEditDialogOpen = useCallback((entry: NumberedAipEntry) => {
         if (!entry.ppa) {
@@ -338,6 +345,29 @@ export default function AipSummaryTable({
         setSelectedEntry(ppa);
         setIsEditDialogOpen(true);
     }, []);
+
+    const handleDeleteDialogOpen = useCallback((entry: NumberedAipEntry) => {
+        setDeleteEntry(entry);
+        setIsDeleteDialogOpen(true);
+    }, []);
+
+    function handleDelete() {
+        if (!deleteEntry) {
+            return;
+        }
+
+        router.delete(`/aip-entries/${deleteEntry.id}`, {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => setIsLoading(true),
+            onSuccess: () => {
+                setIsDeleteDialogOpen(false);
+                setDeleteEntry(null);
+            },
+            onFinish: () => setIsLoading(false),
+            onError: (error) => console.error('error', error),
+        });
+    }
 
     // const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
     // const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -890,6 +920,8 @@ export default function AipSummaryTable({
                     meta={{
                         onAdd: handleAddEntry,
                         onEdit: handleEditDialogOpen,
+                        onDelete: handleDeleteDialogOpen,
+                        canDelete: can?.delete ?? false,
                         canSetPsPool: can?.setPsPool ?? false,
                         psPoolPpaId,
                         onSetAsPsPool: handleSetAsPsPool,
@@ -1016,6 +1048,31 @@ export default function AipSummaryTable({
                     psPoolPpaId={psPoolPpaId}
                 />
             </Deferred>
+
+            <DeleteDialog
+                isOpen={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+                title="Remove from AIP Summary?"
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{deleteEntry?.ppa?.name}"
+                        </span>
+                        ?
+                        <span className="mt-2 block font-semibold text-destructive italic">
+                            This will also remove all nested sub-PPAs and
+                            activities including all their PPMPs.
+                        </span>
+                    </>
+                }
+                onConfirm={handleDelete}
+                onCancel={() => {
+                    setIsDeleteDialogOpen(false);
+                    setDeleteEntry(null);
+                }}
+                isLoading={isLoading}
+            />
 
             {/* <AipEntryFormDialog
                 open={isEditDialogOpen}

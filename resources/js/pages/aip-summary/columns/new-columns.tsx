@@ -193,7 +193,7 @@ const columns = [
 
             return (
                 <div className="text-center text-wrap">
-                    {formatText(fs?.funding_source?.title)}
+                    {formatText(fs?.funding_source?.code)}
                 </div>
             );
         },
@@ -532,8 +532,8 @@ const columns = [
                     <Button
                         size="icon"
                         variant="destructive"
-                        // onClick={() => meta?.onDelete?.(row.original)}
-                        // disabled={!canDelete}
+                        onClick={() => meta?.onDelete?.(row.original)}
+                        disabled={!meta?.canDelete}
                     >
                         <Trash />
                     </Button>
