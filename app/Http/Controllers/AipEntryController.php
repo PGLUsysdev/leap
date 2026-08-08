@@ -434,7 +434,7 @@ class AipEntryController extends Controller
                 // 'ppaFundingSources.ccTypology:id,code,description,response_type,strategic_priority_id,sub_sector_id,category_code,item_num,id_nccap_activity',
                 'ppaFundingSources.ccTypology:id,code',
             )
-            // ->limit(100)
+            ->limit(2)
             ->get();
 
         // Attach per-entry permissions so the AIP entry form dialog can

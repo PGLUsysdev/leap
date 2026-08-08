@@ -1,41 +1,50 @@
-import js from "@eslint/js";
-import stylistic from "@stylistic/eslint-plugin";
-import prettier from "eslint-config-prettier/flat";
-import importPlugin from "eslint-plugin-import";
-import react from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
-import globals from "globals";
-import typescript from "typescript-eslint";
+import js from '@eslint/js';
+import stylistic from '@stylistic/eslint-plugin';
+import prettier from 'eslint-config-prettier/flat';
+import importPlugin from 'eslint-plugin-import';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import typescript from 'typescript-eslint';
 
-const controlStatements = ["if", "return", "for", "while", "do", "switch", "try", "throw"];
+const controlStatements = [
+    'if',
+    'return',
+    'for',
+    'while',
+    'do',
+    'switch',
+    'try',
+    'throw',
+];
 const paddingAroundControl = [
     ...controlStatements.flatMap((stmt) => [
-        { blankLine: "always", prev: "*", next: stmt },
-        { blankLine: "always", prev: stmt, next: "*" },
+        { blankLine: 'always', prev: '*', next: stmt },
+        { blankLine: 'always', prev: stmt, next: '*' },
     ]),
 ];
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
     js.configs.recommended,
-    reactHooks.configs.flat["recommended-latest"],
+    reactHooks.configs.flat['recommended-latest'],
     ...typescript.configs.recommended,
     {
         ...react.configs.flat.recommended,
-        ...react.configs.flat["jsx-runtime"],
+        ...react.configs.flat['jsx-runtime'],
         languageOptions: {
             globals: {
                 ...globals.browser,
             },
         },
         rules: {
-            "react/react-in-jsx-scope": "off",
-            "react/prop-types": "off",
-            "react/no-unescaped-entities": "off",
+            'react/react-in-jsx-scope': 'off',
+            'react/prop-types': 'off',
+            'react/no-unescaped-entities': 'off',
         },
         settings: {
             react: {
-                version: "detect",
+                version: 'detect',
             },
         },
     },
@@ -44,64 +53,86 @@ export default [
             import: importPlugin,
         },
         settings: {
-            "import/resolver": {
+            'import/resolver': {
                 typescript: {
                     alwaysTryTypes: true,
-                    project: "./tsconfig.json",
+                    project: './tsconfig.json',
                 },
                 node: true,
             },
         },
         rules: {
-            "@typescript-eslint/no-explicit-any": "off",
-            "@typescript-eslint/consistent-type-imports": [
-                "error",
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/consistent-type-imports': [
+                'error',
                 {
-                    prefer: "type-imports",
-                    fixStyle: "separate-type-imports",
+                    prefer: 'type-imports',
+                    fixStyle: 'separate-type-imports',
                 },
             ],
-            "import/order": [
-                "error",
+            'import/order': [
+                'error',
                 {
-                    groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
-                    alphabetize: { order: "asc", caseInsensitive: true },
+                    groups: [
+                        'builtin',
+                        'external',
+                        'internal',
+                        'parent',
+                        'sibling',
+                        'index',
+                    ],
+                    alphabetize: { order: 'asc', caseInsensitive: true },
                 },
             ],
-            "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+            'import/consistent-type-specifier-style': [
+                'error',
+                'prefer-top-level',
+            ],
         },
     },
     {
         plugins: {
-            "@stylistic": stylistic,
+            '@stylistic': stylistic,
         },
         rules: {
-            "@stylistic/brace-style": ["error", "1tbs", { allowSingleLine: false }],
-            "@stylistic/padding-line-between-statements": ["error", ...paddingAroundControl],
+            '@stylistic/brace-style': [
+                'error',
+                '1tbs',
+                { allowSingleLine: false },
+            ],
+            '@stylistic/padding-line-between-statements': [
+                'error',
+                ...paddingAroundControl,
+            ],
         },
     },
     {
         ignores: [
-            "vendor",
-            "node_modules",
-            "public",
-            "bootstrap/ssr",
-            "tailwind.config.js",
-            "vite.config.ts",
-            "resources/js/actions/**",
-            "resources/js/components/ui/*",
-            "resources/js/routes/**",
-            "resources/js/wayfinder/**",
+            'vendor',
+            'node_modules',
+            'public',
+            'bootstrap/ssr',
+            'tailwind.config.js',
+            'vite.config.ts',
+            'resources/js/actions/**',
+            'resources/js/components/ui/*',
+            'resources/js/routes/**',
+            'resources/js/wayfinder/**',
         ],
     },
     prettier,
     {
         plugins: {
-            "@stylistic": stylistic,
+            '@stylistic': stylistic,
         },
         rules: {
-            curly: ["error", "all"],
-            "@stylistic/brace-style": ["error", "1tbs", { allowSingleLine: false }],
+            // curly: ["error", "all"],
+            curly: ['error', 'multi-line'],
+            '@stylistic/brace-style': [
+                'error',
+                '1tbs',
+                { allowSingleLine: false },
+            ],
         },
     },
 ];

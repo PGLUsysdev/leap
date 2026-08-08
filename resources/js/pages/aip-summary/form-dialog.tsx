@@ -14,14 +14,15 @@
 //     AlertDialogFooter,
 // } from '@/components/base-ui-components/ui/alert-dialog';
 // import { Button } from '@/components/base-ui-components/ui/button';
-// import {
-//     Dialog,
-//     DialogContent,
-//     DialogDescription,
-//     DialogFooter,
-//     DialogHeader,
-//     DialogTitle,
-// } from '@/components/base-ui-components/ui/dialog';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/base-ui-components/ui/dialog';
+import { Textarea } from '@/components/base-ui-components/ui/textarea';
 // import {
 //     Field,
 //     FieldError,
@@ -60,44 +61,45 @@
 // import PreviewPdfDialog from '@/pages/ps-breakdown/pdf-preview-dialog';
 // import { index } from '@/routes/aip/summary/ppmp';
 // import { index as psBreakdownIndex } from '@/routes/ps-breakdown';
-import type {
-    FiscalYear,
-    Ppa,
-    FundingSource,
-    Office,
-    AuthData,
-    ChartOfAccount,
-    PriceList,
-    PpmpCategory,
-} from '@/types';
+// import type {
+//     FiscalYear,
+//     Ppa,
+//     FundingSource,
+//     Office,
+//     AuthData,
+//     ChartOfAccount,
+//     PriceList,
+//     PpmpCategory,
+// } from '@/types';
 
 interface FormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    data: Ppa | null;
-    fiscalYear: FiscalYear;
-    fundingSources?: FundingSource[];
-    offices?: Office[];
-    auth: AuthData;
-    supplementalAipId?: number | null;
-    canShowSummaryAll?: boolean; // NEW
-    selectedOfficeId?: string | null;
-    ccTypologies?: {
-        id: number;
-        code: string;
-        description: string;
-        strategic_priority_id: number;
-        sub_sector_id: number | null;
-        strategic_priority?: { id: number; code: number; name: string };
-        sub_sector?: { id: number; code: number; name: string } | null;
-    }[];
-    chartOfAccounts?: ChartOfAccount[];
-    priceLists?: PriceList[];
-    ppmpCategories?: PpmpCategory[];
-    ppmpCoaTotals: Record<number, Record<number, number>>;
-    psCoaAutoTotals: Record<string, number>;
-    onPpmpItemAdded?: () => void;
-    psPoolPpaId?: number | null;
+
+    // data: Ppa | null;
+    // fiscalYear: FiscalYear;
+    // fundingSources?: FundingSource[];
+    // offices?: Office[];
+    // auth: AuthData;
+    // supplementalAipId?: number | null;
+    // canShowSummaryAll?: boolean; // NEW
+    // selectedOfficeId?: string | null;
+    // ccTypologies?: {
+    //     id: number;
+    //     code: string;
+    //     description: string;
+    //     strategic_priority_id: number;
+    //     sub_sector_id: number | null;
+    //     strategic_priority?: { id: number; code: number; name: string };
+    //     sub_sector?: { id: number; code: number; name: string } | null;
+    // }[];
+    // chartOfAccounts?: ChartOfAccount[];
+    // priceLists?: PriceList[];
+    // ppmpCategories?: PpmpCategory[];
+    // ppmpCoaTotals: Record<number, Record<number, number>>;
+    // psCoaAutoTotals: Record<string, number>;
+    // onPpmpItemAdded?: () => void;
+    // psPoolPpaId?: number | null;
 }
 
 // const amountSchema = z.string();
@@ -154,6 +156,11 @@ export default function FormDialog({
     // onPpmpItemAdded,
     // psPoolPpaId,
 }: FormDialogProps) {
+    console.log({
+        open,
+        onOpenChange,
+    });
+
     // const userOfficeId = auth?.user?.office_id;
     // const [isLoading, setIsLoading] = useState(false);
     // const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -604,7 +611,41 @@ export default function FormDialog({
 
     return (
         <>
-            {' '}
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Are you absolutely sure?</DialogTitle>
+                        {/*<DialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete your account and remove your data from our
+                            servers.
+                        </DialogDescription>*/}
+                    </DialogHeader>
+
+                    {/*
+                        - [ ] aip ref code
+                        - [ ] ppa name
+                            - textarea
+                        - [ ] office
+                            - selectable main office and sub unit
+                            - support selection of multiple offices, sub units
+                        - [ ] start date
+                            - should only allow current year
+                        - [ ] end date
+                            - should only allow current year
+                        - [ ] expected output
+                            - can have multiple expected output needs db restructuring
+                        - [ ] display funding sources w/ amounts
+                    */}
+                    <div>
+                        <div>aip reference code</div>
+                        <Textarea placeholder="ppa" />
+                        <Button variant="outline">office</Button>
+                        <Textarea placeholder="expected output" />
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             {/*
             <Dialog
                 open={open}
