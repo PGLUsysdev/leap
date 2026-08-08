@@ -1,9 +1,9 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
-import { Button } from '@/components/base-ui-components/ui/button';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import type { AipEntry, PpaFundingSource } from '@/types';
 import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
+import { Badge } from '@/components/base-ui-components/ui/badge';
+import { Button } from '@/components/base-ui-components/ui/button';
+import type { AipEntry, PpaFundingSource } from '@/types';
 
 type FundingSourceRow = AipEntry & {
     number: string;
@@ -459,7 +459,8 @@ const columns = [
         id: 'actions',
         size: 154,
         cell: ({ row, table }) => {
-            const meta = table.options.meta as any;
+            const meta = table.options.meta;
+
             // const isReadOnly = meta?.readOnly;
             // const canSetPsPool = meta?.canSetPsPool;
             // const can = row.original.can;
@@ -490,7 +491,7 @@ const columns = [
                     <Button
                         size="icon"
                         variant="outline"
-                        onClick={() => meta?.onEdit?.(row.original)}
+                        onClick={() => meta?.onEdit?.(row.original.id)}
                         // disabled={
                         //     !canEdit &&
                         //     !canEditFundingSources &&

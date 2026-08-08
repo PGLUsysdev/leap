@@ -1,8 +1,6 @@
-import { Deferred, router, usePage } from '@inertiajs/react';
-// import { Library, FileDown, FileText, Plus } from 'lucide-react';
+import { router, usePage } from '@inertiajs/react';
 import { Library, ShieldCheck } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
-// import { DataTable } from '@/components/data-table';
 import DataTable from '@/components/base-ui-components/data-table';
 import {
     AlertDialog,
@@ -19,36 +17,14 @@ import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
-// import { DeleteDialog } from '@/components/delete-dialog';
-// import {
-//     AlertDialog,
-//     AlertDialogContent,
-//     AlertDialogDescription,
-//     AlertDialogFooter,
-//     AlertDialogHeader,
-//     AlertDialogTitle,
-// } from '@/components/ui/alert-dialog';
-// import {
-//     DropdownMenu,
-//     DropdownMenuContent,
-//     DropdownMenuItem,
-//     DropdownMenuTrigger,
-// } from '@/components/ui/dropdown-menu';
-// import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
 import { DeleteDialog } from '@/components/delete-dialog';
-import AipEntryFormDialog from '@/pages/aip-summary/aip-entry-form-dialog';
-// import ExportSummaryToPdfDialog from '@/pages/aip-summary/export-summary-to-pdf-dialog';
-// import { exportToExcel } from '@/pages/aip-summary/export-to-excel';
-// import ExportToPdfDialog from '@/pages/aip-summary/export-to-pdf-dialog';
+import FormDialog from '@/pages/aip-summary/form-dialog';
 import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
 import type {
     FiscalYear,
     Ppa,
     FundingSource,
     Office,
-    // FlattenedPpa,
-    // SharedData,
     SharedData,
     Filter,
     PaginatedResponse,
@@ -58,10 +34,9 @@ import type {
     AipEntry,
     PpaFundingSource,
 } from '@/types';
-// import columns from './columns/columns';
 import newColumns from './columns/new-columns';
 
-interface AipSummaryTableProps {
+interface AipSummaryProps {
     fiscalYear: FiscalYear;
     aipEntries: Ppa[];
     can: {
@@ -218,7 +193,7 @@ function expandByFundingSource(
     });
 }
 
-export default function AipSummaryTable({
+export default function AipSummary({
     // fiscalYear,
     // aipEntries,
     // can,
@@ -251,26 +226,7 @@ export default function AipSummaryTable({
     psCoaAutoTotals,
     psPoolPpaId,
     newAipEntries,
-}: AipSummaryTableProps) {
-    // console.log(newAipEntries);
-    console.log({
-        fiscalYear,
-        can,
-        filters,
-        dialogPpaTree,
-        dialogCurrent,
-        fundingSources,
-        ccTypologies,
-        offices,
-        chartOfAccounts,
-        priceLists,
-        ppmpCategories,
-        ppmpCoaTotals,
-        psCoaAutoTotals,
-        psPoolPpaId,
-        newAipEntries,
-    });
-
+}: AipSummaryProps) {
     // const json = JSON.stringify(newAipEntries);
     // const bytes = new Blob([json]).size;
 
@@ -331,30 +287,39 @@ export default function AipSummaryTable({
     // const { auth } = usePage<SharedData>().props;
     const { auth } = usePage<SharedData>().props;
 
-    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [selectedEntry, setSelectedEntry] = useState<Ppa | null>(null);
+    const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+    const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
+
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [deleteEntry, setDeleteEntry] = useState<NumberedAipEntry | null>(
         null,
     );
 
-    const handleEditDialogOpen = useCallback((entry: NumberedAipEntry) => {
-        if (!entry.ppa) {
-            return;
+    function handleEdit(id: number) {
+        setSelectedItemId(id);
+        setIsFormDialogOpen(true);
+    }
+
+    const selectedEntry = useMemo<Ppa | null>(() => {
+        if (selectedItemId == null) {
+            return null;
         }
 
-        const ppa: Ppa = {
+        const entry = newAipEntries.find((e) => e.id === selectedItemId);
+
+        if (!entry?.ppa) {
+            return null;
+        }
+
+        return {
             ...entry.ppa,
             aip_entries:
                 entry.ppa.aip_entries && entry.ppa.aip_entries.length > 0
                     ? entry.ppa.aip_entries
                     : [entry],
         };
-
-        setSelectedEntry(ppa);
-        setIsEditDialogOpen(true);
-    }, []);
+    }, [selectedItemId, newAipEntries]);
 
     const handleDeleteDialogOpen = useCallback((entry: NumberedAipEntry) => {
         setDeleteEntry(entry);
@@ -379,9 +344,6 @@ export default function AipSummaryTable({
         });
     }
 
-    // const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null);
-    // const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
     // const selectedEntry = useMemo(() => {
     //     const findInTree = (entries: Ppa[], id: number): Ppa | null => {
     //         for (const entry of entries) {
@@ -401,8 +363,8 @@ export default function AipSummaryTable({
     //         return null;
     //     };
 
-    //     return selectedEntryId ? findInTree(aipEntries, selectedEntryId) : null;
-    // }, [aipEntries, selectedEntryId]);
+    //     return selectedItemId ? findInTree(aipEntries, selectedItemId) : null;
+    // }, [aipEntries, selectedItemId]);
     // const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     // const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
     // const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -704,13 +666,8 @@ export default function AipSummaryTable({
     //     [filters, currentScope],
     // );
 
-    // const handleEditDialogOpen = (data: Ppa) => {
-    //     setSelectedEntryId(data.id);
-    //     setIsEditDialogOpen(true);
-    // };
-
     // function handleDeleteDialogOpen(data: Ppa) {
-    //     setSelectedEntryId(data.id);
+    //     setSelectedItemId(data.id);
     //     setIsDeleteDialogOpen(true);
     // }
 
@@ -731,7 +688,7 @@ export default function AipSummaryTable({
     //         onStart: () => setIsLoading(true),
     //         onSuccess: () => {
     //             setIsDeleteDialogOpen(false);
-    //             setSelectedEntryId(null);
+    //             setSelectedItemId(null);
     //         },
     //         onFinish: () => setIsLoading(false),
     //         onError: (error) => console.error('error', error),
@@ -758,6 +715,8 @@ export default function AipSummaryTable({
     //         ? `saip-${currentScope.supplemental_aip_id}`
     //         : currentScope.scope;
 
+    console.log('selectedItemId', selectedItemId);
+
     return (
         <>
             {/* <div className="flex flex-col gap-4 pt-4"> */}
@@ -768,7 +727,7 @@ export default function AipSummaryTable({
                     withSearch={true}
                     withRowSpan={true}
                     onAdd={handleAddEntry}
-                    onEdit={handleEditDialogOpen}
+                    onEdit={handleEdit}
                     onDelete={handleDeleteDialogOpen}
                     withFooter={true}
                     getSubRows={customGetSubRows}
@@ -917,44 +876,22 @@ export default function AipSummaryTable({
                 </div>*/}
 
                 <DataTable
-                    // columns={columns}
+                    className="pr-3"
                     columns={newColumns}
-                    // data={expandPpaByFundingSource(aipEntries)}
                     data={expandByFundingSource(
                         sortFlatLikeTree(newAipEntries),
                     )}
-                    showFooter={true}
-                    withRowSpan={true}
-                    // withColgroup={true}
-                    // withSearch={true}
-
-                    // onAdd={handleAddEntry}
-                    // onEdit={handleEditDialogOpen}
-                    // onDelete={handleDeleteDialogOpen}
-                    // getSubRows={customGetSubRows}
-                    // globalFilterFn={customGlobalFilterFn}
-
-                    // meta={{
-                    //     onAdd: handleAddEntry,
-                    //     onEdit: handleEditDialogOpen,
-                    //     onDelete: handleDeleteDialogOpen,
-                    //     readOnly: currentScope.scope === 'combined',
-                    //     canSetPsPool: can?.setPsPool ?? false,
-                    //     psPoolPpaId,
-                    //     onSetAsPsPool: handleSetAsPsPool,
-                    // }}
-
                     meta={{
+                        onEdit: handleEdit,
                         onAdd: handleAddEntry,
-                        onEdit: handleEditDialogOpen,
                         onDelete: handleDeleteDialogOpen,
                         canDelete: can?.delete ?? false,
                         canSetPsPool: can?.setPsPool ?? false,
                         psPoolPpaId,
                         onSetAsPsPool: handleSetAsPsPool,
                     }}
-
-                    className="pr-3"
+                    showFooter={true}
+                    withRowSpan={true}
                 >
                     {/*<div className="flex gap-2">
                         {can.export && (
@@ -1040,7 +977,7 @@ export default function AipSummaryTable({
                 supplementalAipId={null}
             />
 
-            <Deferred
+            {/* <Deferred
                 data={[
                     'fundingSources',
                     'chartOfAccounts',
@@ -1050,31 +987,41 @@ export default function AipSummaryTable({
                     'offices',
                 ]}
                 fallback={
-                    <div className="p-4 text-sm text-muted-foreground">
-                        Loading editor...
-                    </div>
+                    <Dialog open={true}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Loading editor...</DialogTitle>
+                                <DialogDescription>
+                                    Loading editor...
+                                </DialogDescription>
+                            </DialogHeader>
+                        </DialogContent>
+                    </Dialog>
                 }
-            >
-                <AipEntryFormDialog
-                    open={isEditDialogOpen}
-                    onOpenChange={setIsEditDialogOpen}
-                    data={selectedEntry}
-                    fiscalYear={fiscalYear}
-                    fundingSources={fundingSources}
-                    ccTypologies={ccTypologies}
-                    offices={offices}
-                    auth={auth as any}
-                    supplementalAipId={null}
-                    canShowSummaryAll={can?.showSummaryAll ?? false}
-                    selectedOfficeId={filters?.selected_office_id ?? undefined}
-                    chartOfAccounts={chartOfAccounts}
-                    priceLists={priceLists}
-                    ppmpCategories={ppmpCategories}
-                    ppmpCoaTotals={ppmpCoaTotals}
-                    psCoaAutoTotals={psCoaAutoTotals}
-                    psPoolPpaId={psPoolPpaId}
-                />
-            </Deferred>
+            > */}
+
+            <FormDialog
+                open={isFormDialogOpen}
+                onOpenChange={setIsFormDialogOpen}
+
+                // data={selectedEntry}
+                // fiscalYear={fiscalYear}
+                // fundingSources={fundingSources}
+                // ccTypologies={ccTypologies}
+                // offices={offices}
+                // auth={auth as any}
+                // supplementalAipId={null}
+                // canShowSummaryAll={can?.showSummaryAll ?? false}
+                // selectedOfficeId={filters?.selected_office_id ?? undefined}
+                // chartOfAccounts={chartOfAccounts}
+                // priceLists={priceLists}
+                // ppmpCategories={ppmpCategories}
+                // ppmpCoaTotals={ppmpCoaTotals}
+                // psCoaAutoTotals={psCoaAutoTotals}
+                // psPoolPpaId={psPoolPpaId}
+            />
+
+            {/* </Deferred> */}
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
@@ -1105,6 +1052,7 @@ export default function AipSummaryTable({
                 open={isSetPsPoolDialogOpen}
                 onOpenChange={(open) => {
                     setIsSetPsPoolDialogOpen(open);
+
                     if (!open) {
                         setPsPoolTarget(null);
                     }
@@ -1184,9 +1132,9 @@ export default function AipSummaryTable({
                 </AlertDialogContent>
             </AlertDialog>
 
-            {/* <AipEntryFormDialog
-                open={isEditDialogOpen}
-                onOpenChange={setIsEditDialogOpen}
+            {/* <FormDialog
+                open={isFormDialogOpen}
+                onOpenChange={setIsFormDialogOpen}
                 data={selectedEntry}
                 fiscalYear={fiscalYear}
                 fundingSources={fundingSources}
@@ -1229,7 +1177,7 @@ export default function AipSummaryTable({
                 onConfirm={handleDelete}
                 onCancel={() => {
                     setIsDeleteDialogOpen(false);
-                    setSelectedEntryId(null);
+                    setSelectedItemId(null);
                 }}
                 isLoading={isLoading}
             />
@@ -1321,7 +1269,7 @@ export default function AipSummaryTable({
     );
 }
 
-AipSummaryTable.layout = {
+AipSummary.layout = {
     breadcrumbs: [
         { title: 'Annual Investment Programs', href: '/aip' },
         { title: 'AIP Summary', href: '#' },

@@ -445,6 +445,12 @@ class AipEntryController extends Controller
             }
 
             $entry->ppa->can = [
+                // 'import' => true,
+                // 'edit' => true,
+                // 'delete' => true,
+                // 'editFundingSources' => true,
+                // 'viewPpmp' => true,
+                // 'viewPsBreakdown' => true,
                 'import' => request()
                     ->user()
                     ->can('import', [AipEntry::class, [$entry->ppa_id]]),
