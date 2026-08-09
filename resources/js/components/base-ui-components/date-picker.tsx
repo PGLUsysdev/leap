@@ -6,12 +6,12 @@ import * as React from 'react';
 
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Calendar } from '@/components/base-ui-components/ui/calendar';
-import { cn } from '@/lib/utils';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from '@/components/base-ui-components/ui/popover';
+import { cn } from '@/lib/utils';
 
 type DatePickerProps = Omit<
     React.ComponentProps<typeof Calendar>,

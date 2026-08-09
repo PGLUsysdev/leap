@@ -20,11 +20,10 @@ declare module '@inertiajs/core' {
 
 declare module '@tanstack/react-table' {
     interface TableMeta<TData extends RowData> {
-        onEdit?: (data: number) => void;
+        onEdit?: (id: number) => void;
+        onDelete?: (id: number) => void;
 
         onUpdate?: (data: TData) => void;
-        onDelete?: (data: TData) => void;
-
         onAdd?: (
             data: TData,
             type?: 'Program' | 'Project' | 'Activity' | 'Sub-Activity',

@@ -44,14 +44,12 @@ class PpaFundingSourceController extends Controller
     ) {
         $user = auth()->user();
 
-        if (! $user->can('editFundingSources', $aipEntry)) {
+        if (!$user->can('editFundingSources', $aipEntry)) {
             abort(403, 'You do not have permission to edit funding sources.');
         }
 
         Ppmp::where('ppa_funding_source_id', $ppaFundingSource->id)->delete();
 
         $ppaFundingSource->delete();
-
-        return response()->json(['success' => true]);
     }
 }

@@ -65,13 +65,21 @@ const columns = [
     columnHelper.display({
         id: 'actions',
         size: 100,
-        cell: (info) => (
-            <div>
-                <Button size="icon" variant="destructive">
-                    <Trash />
-                </Button>
-            </div>
-        ),
+        cell: ({ row, table }) => {
+            const meta = table.options.meta;
+
+            return (
+                <div>
+                    <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() => meta?.onDelete?.(row.original.id)}
+                    >
+                        <Trash />
+                    </Button>
+                </div>
+            );
+        },
     }),
 ];
 

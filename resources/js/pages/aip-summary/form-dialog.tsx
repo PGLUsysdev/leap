@@ -19,6 +19,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/base-ui-components/ui/dialog';
+import { Separator } from '@/components/base-ui-components/ui/separator';
 import { Textarea } from '@/components/base-ui-components/ui/textarea';
 import type { AipEntry, FundingSource, Office } from '@/types';
 import fundingSourceColumns from './columns/funding-source-columns';
@@ -248,43 +249,46 @@ export default function FormDialog({
         console.log(payload);
     }
 
-    function handleAddFundingSource(fs: FundingSource) {
-        // We need the entry ID – from your props, you have `data` which is the AipEntry
+    const handleAddFundingSource = (fs: FundingSource) => {
         const entryId = data?.id;
 
         if (!entryId) {
-            console.warn('No entry ID available');
+            console.warn('No entry ID');
 
             return;
         }
 
-        // Build optimistic update
+        const tempRow = {
+            id: Date.now(),
+            funding_source_id: fs.id,
+            ps_amount: '0.00',
+            mooe_amount: '0.00',
+            fe_amount: '0.00',
+            co_amount: '0.00',
+            ccet_adaptation: '0.00',
+            ccet_mitigation: '0.00',
+            cc_typology_id: null,
+            funding_source: { id: fs.id, code: fs.code, name: fs.name }, // optional
+        };
+
         router
             .optimistic((props) => {
-                // Ensure we have the current ppa_funding_sources array
-                const currentSources = props.data?.ppa_funding_sources || [];
+                const entries = props.newAipEntries || [];
+                const updatedEntries = entries.map((entry: any) => {
+                    if (entry.id === entryId) {
+                        return {
+                            ...entry,
+                            ppa_funding_sources: [
+                                ...(entry.ppa_funding_sources || []),
+                                tempRow,
+                            ],
+                        };
+                    }
 
-                // Create a temporary row with a unique client-side ID
-                const tempRow = {
-                    id: Date.now(), // temporary
-                    funding_source_id: fs.id,
-                    ps_amount: '0.00',
-                    mooe_amount: '0.00',
-                    fe_amount: '0.00',
-                    co_amount: '0.00',
-                    ccet_adaptation: '0.00',
-                    ccet_mitigation: '0.00',
-                    cc_typology_id: null,
-                    // The actual server response will have additional fields
-                };
+                    return entry;
+                });
 
-                // Return a partial update to the props
-                return {
-                    data: {
-                        ...props.data,
-                        ppa_funding_sources: [...currentSources, tempRow],
-                    },
-                };
+                return { newAipEntries: updatedEntries };
             })
             .post(
                 `/aip-entries/${entryId}/ppa-funding-sources`,
@@ -297,16 +301,45 @@ export default function FormDialog({
                     ccet_adaptation: '0.00',
                     ccet_mitigation: '0.00',
                     cc_typology_id: null,
-                    // Include supplemental_aip_id if you have it
-                    // supplemental_aip_id: supplementalAipId,
+                    // supplemental_aip_id: supplementalAipId, // if needed
                 },
-                {
-                    // Optional: you can add onSuccess/onError callbacks if needed
-                    preserveState: true,
-                    preserveScroll: true,
-                },
+                { preserveState: true, preserveScroll: true },
             );
-    }
+    };
+
+    const handleDeleteFundingSource = (sourceId: number) => {
+        const entryId = data?.id;
+
+        if (!entryId) {
+            console.warn('No entry ID');
+
+            return;
+        }
+
+        router
+            .optimistic((props) => {
+                const entries = props.newAipEntries || [];
+                const updatedEntries = entries.map((entry: any) => {
+                    if (entry.id === entryId) {
+                        return {
+                            ...entry,
+                            ppa_funding_sources:
+                                entry.ppa_funding_sources.filter(
+                                    (fs: any) => fs.id !== sourceId,
+                                ),
+                        };
+                    }
+
+                    return entry;
+                });
+
+                return { newAipEntries: updatedEntries };
+            })
+            .delete(`/aip-entries/${entryId}/ppa-funding-sources/${sourceId}`, {
+                preserveState: true,
+                preserveScroll: true,
+            });
+    };
 
     // const userOfficeId = auth?.user?.office_id;
     // const [isLoading, setIsLoading] = useState(false);
@@ -794,100 +827,132 @@ export default function FormDialog({
 
                             <div>{data?.ppa?.name}</div>
 
-                            <Controller
-                                name="office"
-                                control={form.control}
-                                render={({
-                                    // field,
-                                    fieldState,
-                                }) => (
-                                    <div>
-                                        <TableSelectButton
-                                            hook={officeHook}
-                                            displayValue={(item) =>
-                                                item?.acronym ?? undefined
-                                            }
-                                            placeholder="Select office"
-                                            onClear={() =>
-                                                form.resetField('office', {
-                                                    defaultValue: '',
-                                                })
-                                            }
-                                        />
+                            <div className="grid grid-cols-2 gap-4">
+                                <Controller
+                                    name="expectedOutput"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <div>
+                                            <Textarea
+                                                {...field}
+                                                placeholder="expected output"
+                                                className="min-h-[128px] w-full"
+                                            />
 
-                                        {fieldState.invalid && (
-                                            <div className="text-destructive">
-                                                {fieldState.error?.message}
+                                            {fieldState.invalid && (
+                                                <div className="text-destructive">
+                                                    {fieldState.error?.message}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                />
+
+                                <div className="flex flex-col gap-4">
+                                    <Controller
+                                        name="office"
+                                        control={form.control}
+                                        render={({
+                                            // field,
+                                            fieldState,
+                                        }) => (
+                                            <div>
+                                                <TableSelectButton
+                                                    hook={officeHook}
+                                                    displayValue={(item) =>
+                                                        item?.acronym ??
+                                                        undefined
+                                                    }
+                                                    placeholder="Select office"
+                                                    onClear={() =>
+                                                        form.resetField(
+                                                            'office',
+                                                            {
+                                                                defaultValue:
+                                                                    '',
+                                                            },
+                                                        )
+                                                    }
+                                                />
+
+                                                {fieldState.invalid && (
+                                                    <div className="text-destructive">
+                                                        {
+                                                            fieldState.error
+                                                                ?.message
+                                                        }
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
-                                    </div>
-                                )}
-                            />
+                                    />
 
-                            <Controller
-                                name="startDate"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <div>
-                                        <DatePicker
-                                            year={new Date().getFullYear()}
-                                            value={field.value || undefined}
-                                            onValueChange={field.onChange}
-                                        />
+                                    <Controller
+                                        name="startDate"
+                                        control={form.control}
+                                        render={({ field, fieldState }) => (
+                                            <div className="w-full [&>button]:w-full">
+                                                <DatePicker
+                                                    year={new Date().getFullYear()}
+                                                    value={
+                                                        field.value || undefined
+                                                    }
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
+                                                />
 
-                                        {fieldState.invalid && (
-                                            <div className="text-destructive">
-                                                {fieldState.error?.message}
+                                                {fieldState.invalid && (
+                                                    <div className="text-destructive">
+                                                        {
+                                                            fieldState.error
+                                                                ?.message
+                                                        }
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
-                                    </div>
-                                )}
-                            />
+                                    />
 
-                            <Controller
-                                name="endDate"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <div>
-                                        <DatePicker
-                                            year={new Date().getFullYear()}
-                                            value={field.value || undefined}
-                                            onValueChange={field.onChange}
-                                        />
+                                    <Controller
+                                        name="endDate"
+                                        control={form.control}
+                                        render={({ field, fieldState }) => (
+                                            <div className="w-full [&>button]:w-full">
+                                                <DatePicker
+                                                    year={new Date().getFullYear()}
+                                                    value={
+                                                        field.value || undefined
+                                                    }
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
+                                                />
 
-                                        {fieldState.invalid && (
-                                            <div className="text-destructive">
-                                                {fieldState.error?.message}
+                                                {fieldState.invalid && (
+                                                    <div className="text-destructive">
+                                                        {
+                                                            fieldState.error
+                                                                ?.message
+                                                        }
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
-                                    </div>
-                                )}
-                            />
-
-                            <Controller
-                                name="expectedOutput"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <div>
-                                        <Textarea
-                                            {...field}
-                                            placeholder="expected output"
-                                        />
-
-                                        {fieldState.invalid && (
-                                            <div className="text-destructive">
-                                                {fieldState.error?.message}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            />
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </form>
+
+                    <Separator className="mt-4" />
 
                     <DataTable
                         columns={ppaFundingSourceColumns}
                         data={data?.ppa_funding_sources ?? []}
+                        meta={{
+                            onDelete: handleDeleteFundingSource,
+                        }}
                     >
                         <div className="px-4">
                             <Button
@@ -955,11 +1020,11 @@ export default function FormDialog({
                 onOpenChange={fundingSourceHook.setOpen}
                 onRowSelect={(row) => {
                     console.log('Selected funding source:', row);
-                    // handleAddFundingSource(row);
+                    handleAddFundingSource(row);
                     fundingSourceHook.setOpen(false);
                 }}
-                // value={officeHook.value}
-                // valueKey="id"
+                value={fundingSourceHook.value}
+                valueKey="id"
                 className="sm:max-w-[40rem]"
             />
 

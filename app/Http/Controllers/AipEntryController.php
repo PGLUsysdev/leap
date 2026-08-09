@@ -434,7 +434,7 @@ class AipEntryController extends Controller
                 // 'ppaFundingSources.ccTypology:id,code,description,response_type,strategic_priority_id,sub_sector_id,category_code,item_num,id_nccap_activity',
                 'ppaFundingSources.ccTypology:id,code',
             )
-            ->limit(100)
+            ->limit(50)
             ->get();
 
         // Attach per-entry permissions so the AIP entry form dialog can
@@ -480,7 +480,9 @@ class AipEntryController extends Controller
             //         $yearId,
             //     )
             //     : [],
-            'fundingSources' => Inertia::defer(fn() => FundingSource::all()),
+            'fundingSources' => Inertia::defer(
+                fn() => FundingSource::all(),
+            )->once(),
             'chartOfAccounts' => Inertia::defer(
                 fn() => ChartOfAccount::select(
                     'id',
@@ -519,7 +521,7 @@ class AipEntryController extends Controller
                     ->orderBy('code')
                     ->get(),
             ),
-            'offices' => Inertia::defer(fn() => Office::all()),
+            'offices' => Inertia::defer(fn() => Office::all())->once(),
             'filters' => $request->all(),
             // 'supplementalAips' => \App\Models\SupplementalAip::where(
             //     'fiscal_year_id',
