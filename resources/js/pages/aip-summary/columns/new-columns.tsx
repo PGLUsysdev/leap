@@ -461,6 +461,8 @@ const columns = [
         cell: ({ row, table }) => {
             const meta = table.options.meta;
 
+            console.log(row.original);
+
             // const isReadOnly = meta?.readOnly;
             // const canSetPsPool = meta?.canSetPsPool;
             // const can = row.original.can;

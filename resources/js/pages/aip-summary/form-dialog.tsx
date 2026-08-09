@@ -14,6 +14,11 @@
 //     AlertDialogFooter,
 // } from '@/components/base-ui-components/ui/alert-dialog';
 // import { Button } from '@/components/base-ui-components/ui/button';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import * as z from 'zod';
+import { DatePicker } from '@/components/base-ui-components/date-picker';
 import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
@@ -21,8 +26,10 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
+    DialogFooter,
 } from '@/components/base-ui-components/ui/dialog';
 import { Textarea } from '@/components/base-ui-components/ui/textarea';
+import { AipEntry, Office, Office } from '@/types';
 // import {
 //     Field,
 //     FieldError,
@@ -75,6 +82,8 @@ import { Textarea } from '@/components/base-ui-components/ui/textarea';
 interface FormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    data?: AipEntry;
+    offices?: Office[];
 
     // data: Ppa | null;
     // fiscalYear: FiscalYear;
@@ -101,6 +110,14 @@ interface FormDialogProps {
     // onPpmpItemAdded?: () => void;
     // psPoolPpaId?: number | null;
 }
+
+const formSchema = z.object({
+    office: z.any(), // optional
+    // office: z.number().int().positive(), // optional
+    startDate: z.date().optional(), // optional
+    endDate: z.date().optional(), // optional
+    expectedOutput: z.string().trim(), // optional
+});
 
 // const amountSchema = z.string();
 
@@ -135,9 +152,15 @@ interface FormDialogProps {
 //     );
 // };
 
+function parseIsoDate(isoDate: string | null | undefined) {
+    return isoDate ? new Date(isoDate) : undefined;
+}
+
 export default function FormDialog({
     open,
     onOpenChange,
+    data,
+    offices,
 
     // data,
     // fiscalYear,
@@ -157,9 +180,34 @@ export default function FormDialog({
     // psPoolPpaId,
 }: FormDialogProps) {
     console.log({
-        open,
-        onOpenChange,
+        // open,
+        // onOpenChange,
+        data,
     });
+
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            office: '',
+            startDate: undefined,
+            endDate: undefined,
+            expectedOutput: '',
+        },
+    });
+
+    useEffect(() => {
+        if (!open) return;
+
+        form.reset({
+            startDate: parseIsoDate(data?.start_date) ?? undefined,
+            endDate: parseIsoDate(data?.end_date) ?? undefined,
+            expectedOutput: data?.expected_output ?? '',
+        });
+    }, [open, form, data]);
+
+    function onSubmit(data: z.infer<typeof formSchema>) {
+        console.log(data);
+    }
 
     // const userOfficeId = auth?.user?.office_id;
     // const [isLoading, setIsLoading] = useState(false);
@@ -615,11 +663,11 @@ export default function FormDialog({
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Are you absolutely sure?</DialogTitle>
-                        {/*<DialogDescription>
+                        <DialogDescription>
                             This action cannot be undone. This will permanently
                             delete your account and remove your data from our
                             servers.
-                        </DialogDescription>*/}
+                        </DialogDescription>
                     </DialogHeader>
 
                     {/*
@@ -637,12 +685,101 @@ export default function FormDialog({
                             - can have multiple expected output needs db restructuring
                         - [ ] display funding sources w/ amounts
                     */}
-                    <div>
-                        <div>aip reference code</div>
-                        <Textarea placeholder="ppa" />
-                        <Button variant="outline">office</Button>
-                        <Textarea placeholder="expected output" />
-                    </div>
+                    <form
+                        id="form-dialog"
+                        onSubmit={form.handleSubmit(onSubmit)}
+                    >
+                        <div className="flex flex-col gap-4">
+                            <div>aip reference code</div>
+
+                            <div>ppa</div>
+
+                            <Controller
+                                name="office"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <div>
+                                        <Button variant="outline">
+                                            office
+                                        </Button>
+
+                                        {fieldState.invalid && (
+                                            <div className="text-destructive">
+                                                {fieldState.error?.message}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            />
+
+                            <Controller
+                                name="startDate"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <div>
+                                        <DatePicker
+                                            year={new Date().getFullYear()}
+                                            value={field.value || undefined}
+                                            onValueChange={field.onChange}
+                                        />
+
+                                        {fieldState.invalid && (
+                                            <div className="text-destructive">
+                                                {fieldState.error?.message}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            />
+
+                            <Controller
+                                name="endDate"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <div>
+                                        <DatePicker
+                                            year={new Date().getFullYear()}
+                                            value={field.value || undefined}
+                                            onValueChange={field.onChange}
+                                        />
+
+                                        {fieldState.invalid && (
+                                            <div className="text-destructive">
+                                                {fieldState.error?.message}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            />
+
+                            <Controller
+                                name="expectedOutput"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <div>
+                                        <Textarea
+                                            {...field}
+                                            placeholder="expected output"
+                                        />
+
+                                        {fieldState.invalid && (
+                                            <div className="text-destructive">
+                                                {fieldState.error?.message}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            />
+                        </div>
+                    </form>
+
+                    <DialogFooter>
+                        <Button variant="secondary">Reset</Button>
+                        <Button variant="outline">Cancel</Button>
+                        <Button type="submit" form="form-dialog">
+                            Submit
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 

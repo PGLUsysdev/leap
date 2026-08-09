@@ -216,17 +216,21 @@ export default function AipSummary({
     filters,
     dialogPpaTree,
     dialogCurrent,
-    fundingSources,
-    ccTypologies,
-    offices,
-    chartOfAccounts,
-    priceLists,
-    ppmpCategories,
-    ppmpCoaTotals,
-    psCoaAutoTotals,
+    // fundingSources,
+    // ccTypologies,
+    // offices,
+    // chartOfAccounts,
+    // priceLists,
+    // ppmpCategories,
+    // ppmpCoaTotals,
+    // psCoaAutoTotals,
     psPoolPpaId,
+
     newAipEntries,
+    offices,
 }: AipSummaryProps) {
+    console.log({ newAipEntries, offices });
+
     // const json = JSON.stringify(newAipEntries);
     // const bytes = new Blob([json]).size;
 
@@ -1003,6 +1007,8 @@ export default function AipSummary({
             <FormDialog
                 open={isFormDialogOpen}
                 onOpenChange={setIsFormDialogOpen}
+                data={newAipEntries.find((item) => item.id === selectedItemId)}
+                offices={offices}
 
                 // data={selectedEntry}
                 // fiscalYear={fiscalYear}
