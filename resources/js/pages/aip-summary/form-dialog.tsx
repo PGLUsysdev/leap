@@ -1,3 +1,31 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
+import { useForm, Controller, useWatch } from 'react-hook-form';
+import * as z from 'zod';
+import DataTable from '@/components/base-ui-components/data-table';
+import { DatePicker } from '@/components/base-ui-components/date-picker';
+import {
+    TableSelect,
+    TableSelectButton,
+    useTableSelect,
+} from '@/components/base-ui-components/table-select';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/base-ui-components/ui/dialog';
+import { Textarea } from '@/components/base-ui-components/ui/textarea';
+import type { AipEntry, FundingSource, Office } from '@/types';
+import fundingSourceColumns from './columns/funding-source-columns';
+import officeColumns from './columns/office-columns';
+import ppaFundingSourceColumns from './columns/ppa-funding-source-columns';
+// import { TableSelectButton } from '@/components/base-ui-components/table-select-button';
+// import { useTableSelect } from '@/hooks/use-table-select';
 // import { zodResolver } from '@hookform/resolvers/zod';
 // import { router } from '@inertiajs/react';
 // import { format, parseISO } from 'date-fns';
@@ -14,22 +42,6 @@
 //     AlertDialogFooter,
 // } from '@/components/base-ui-components/ui/alert-dialog';
 // import { Button } from '@/components/base-ui-components/ui/button';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import * as z from 'zod';
-import { DatePicker } from '@/components/base-ui-components/date-picker';
-import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
-import { Textarea } from '@/components/base-ui-components/ui/textarea';
-import { AipEntry, Office, Office } from '@/types';
 // import {
 //     Field,
 //     FieldError,
@@ -84,6 +96,7 @@ interface FormDialogProps {
     onOpenChange: (open: boolean) => void;
     data?: AipEntry;
     offices?: Office[];
+    fundingSources?: FundingSource[];
 
     // data: Ppa | null;
     // fiscalYear: FiscalYear;
@@ -112,7 +125,7 @@ interface FormDialogProps {
 }
 
 const formSchema = z.object({
-    office: z.any(), // optional
+    office: z.string(), // optional
     // office: z.number().int().positive(), // optional
     startDate: z.date().optional(), // optional
     endDate: z.date().optional(), // optional
@@ -152,8 +165,12 @@ const formSchema = z.object({
 //     );
 // };
 
-function parseIsoDate(isoDate: string | null | undefined) {
+function toDate(isoDate: string | null | undefined) {
     return isoDate ? new Date(isoDate) : undefined;
+}
+
+function toIsoDate(date: Date | undefined) {
+    return date ? date.toISOString().slice(0, 10) : null;
 }
 
 export default function FormDialog({
@@ -161,6 +178,7 @@ export default function FormDialog({
     onOpenChange,
     data,
     offices,
+    fundingSources,
 
     // data,
     // fiscalYear,
@@ -195,18 +213,99 @@ export default function FormDialog({
         },
     });
 
+    const watchOfficeId = useWatch({ control: form.control, name: 'office' });
+
+    const officeHook = useTableSelect({
+        data: offices ?? [],
+        value: watchOfficeId ? String(watchOfficeId) : undefined,
+    });
+
+    const fundingSourceHook = useTableSelect({
+        data: fundingSources ?? [],
+        value: undefined,
+    });
+
     useEffect(() => {
         if (!open) return;
 
         form.reset({
-            startDate: parseIsoDate(data?.start_date) ?? undefined,
-            endDate: parseIsoDate(data?.end_date) ?? undefined,
+            office:
+                data?.ppa?.office_id != null ? String(data.ppa.office_id) : '',
+            startDate: toDate(data?.start_date) ?? undefined,
+            endDate: toDate(data?.end_date) ?? undefined,
             expectedOutput: data?.expected_output ?? '',
         });
     }, [open, form, data]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        console.log(data);
+        const payload = {
+            ...data,
+            office: data.office === '' ? null : Number(data.office),
+            startDate: toIsoDate(data.startDate),
+            endDate: toIsoDate(data.endDate),
+        };
+
+        console.log(payload);
+    }
+
+    function handleAddFundingSource(fs: FundingSource) {
+        // We need the entry ID – from your props, you have `data` which is the AipEntry
+        const entryId = data?.id;
+
+        if (!entryId) {
+            console.warn('No entry ID available');
+
+            return;
+        }
+
+        // Build optimistic update
+        router
+            .optimistic((props) => {
+                // Ensure we have the current ppa_funding_sources array
+                const currentSources = props.data?.ppa_funding_sources || [];
+
+                // Create a temporary row with a unique client-side ID
+                const tempRow = {
+                    id: Date.now(), // temporary
+                    funding_source_id: fs.id,
+                    ps_amount: '0.00',
+                    mooe_amount: '0.00',
+                    fe_amount: '0.00',
+                    co_amount: '0.00',
+                    ccet_adaptation: '0.00',
+                    ccet_mitigation: '0.00',
+                    cc_typology_id: null,
+                    // The actual server response will have additional fields
+                };
+
+                // Return a partial update to the props
+                return {
+                    data: {
+                        ...props.data,
+                        ppa_funding_sources: [...currentSources, tempRow],
+                    },
+                };
+            })
+            .post(
+                `/aip-entries/${entryId}/ppa-funding-sources`,
+                {
+                    funding_source_id: fs.id,
+                    ps_amount: '0.00',
+                    mooe_amount: '0.00',
+                    fe_amount: '0.00',
+                    co_amount: '0.00',
+                    ccet_adaptation: '0.00',
+                    ccet_mitigation: '0.00',
+                    cc_typology_id: null,
+                    // Include supplemental_aip_id if you have it
+                    // supplemental_aip_id: supplementalAipId,
+                },
+                {
+                    // Optional: you can add onSuccess/onError callbacks if needed
+                    preserveState: true,
+                    preserveScroll: true,
+                },
+            );
     }
 
     // const userOfficeId = auth?.user?.office_id;
@@ -660,8 +759,8 @@ export default function FormDialog({
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent>
-                    <DialogHeader>
+                <DialogContent className="gap-0 px-0 sm:max-w-[80rem]">
+                    <DialogHeader className="px-4">
                         <DialogTitle>Are you absolutely sure?</DialogTitle>
                         <DialogDescription>
                             This action cannot be undone. This will permanently
@@ -688,20 +787,33 @@ export default function FormDialog({
                     <form
                         id="form-dialog"
                         onSubmit={form.handleSubmit(onSubmit)}
+                        className="px-4"
                     >
                         <div className="flex flex-col gap-4">
                             <div>aip reference code</div>
 
-                            <div>ppa</div>
+                            <div>{data?.ppa?.name}</div>
 
                             <Controller
                                 name="office"
                                 control={form.control}
-                                render={({ field, fieldState }) => (
+                                render={({
+                                    // field,
+                                    fieldState,
+                                }) => (
                                     <div>
-                                        <Button variant="outline">
-                                            office
-                                        </Button>
+                                        <TableSelectButton
+                                            hook={officeHook}
+                                            displayValue={(item) =>
+                                                item?.acronym ?? undefined
+                                            }
+                                            placeholder="Select office"
+                                            onClear={() =>
+                                                form.resetField('office', {
+                                                    defaultValue: '',
+                                                })
+                                            }
+                                        />
 
                                         {fieldState.invalid && (
                                             <div className="text-destructive">
@@ -773,15 +885,83 @@ export default function FormDialog({
                         </div>
                     </form>
 
-                    <DialogFooter>
-                        <Button variant="secondary">Reset</Button>
-                        <Button variant="outline">Cancel</Button>
+                    <DataTable
+                        columns={ppaFundingSourceColumns}
+                        data={data?.ppa_funding_sources ?? []}
+                    >
+                        <div className="px-4">
+                            <Button
+                                onClick={() => fundingSourceHook.setOpen(true)}
+                            >
+                                Add Funding Source
+                            </Button>
+                            <Button>LBP Form 2</Button>
+                        </div>
+                    </DataTable>
+
+                    <DialogFooter className="mx-0">
+                        <Button
+                            variant="secondary"
+                            type="button"
+                            onClick={() => {
+                                form.reset({
+                                    office:
+                                        data?.ppa?.office_id != null
+                                            ? String(data.ppa.office_id)
+                                            : '',
+                                    startDate:
+                                        toDate(data?.start_date) ?? undefined,
+                                    endDate:
+                                        toDate(data?.end_date) ?? undefined,
+                                    expectedOutput: data?.expected_output ?? '',
+                                });
+                            }}
+                        >
+                            Reset
+                        </Button>
+                        <Button
+                            variant="outline"
+                            type="button"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Cancel
+                        </Button>
                         <Button type="submit" form="form-dialog">
                             Submit
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <TableSelect<Office>
+                data={offices ?? []}
+                columns={officeColumns}
+                open={officeHook.open}
+                onOpenChange={officeHook.setOpen}
+                onRowSelect={(row) => {
+                    form.setValue('office', String(row.id), {
+                        shouldValidate: true,
+                    });
+                }}
+                value={officeHook.value}
+                valueKey="id"
+                className="sm:max-w-[30rem]"
+            />
+
+            <TableSelect<FundingSource>
+                data={fundingSources ?? []}
+                columns={fundingSourceColumns}
+                open={fundingSourceHook.open}
+                onOpenChange={fundingSourceHook.setOpen}
+                onRowSelect={(row) => {
+                    console.log('Selected funding source:', row);
+                    // handleAddFundingSource(row);
+                    fundingSourceHook.setOpen(false);
+                }}
+                // value={officeHook.value}
+                // valueKey="id"
+                className="sm:max-w-[40rem]"
+            />
 
             {/*
             <Dialog

@@ -1,4 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table';
+import { ChevronsUpDown, Delete } from 'lucide-react';
+import { useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
 import {
     Dialog,
@@ -7,8 +9,11 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/base-ui-components/ui/dialog';
+// import type { useTableSelect } from '@/hooks/use-table-select';
 import { cn } from '@/lib/utils';
 import type { PaginatedResponse } from '@/types';
+import { Button } from './ui/button';
+import { ButtonGroup, ButtonGroupSeparator } from './ui/button-group';
 
 interface TableSelectProps<TData> {
     data: TData[];
@@ -73,4 +78,80 @@ export function TableSelect<TData>({
             </DialogContent>
         </Dialog>
     );
+}
+
+interface TableSelectButtonProps<TData> {
+    hook: ReturnType<typeof useTableSelect<TData>>;
+    displayValue?: (item: TData | undefined) => string | undefined;
+    placeholder?: string;
+    valueKey?: keyof TData;
+    invalid?: boolean;
+    onClear?: () => void;
+}
+
+export function TableSelectButton<TData>({
+    hook,
+    displayValue,
+    placeholder,
+    valueKey = 'id' as keyof TData,
+    invalid,
+    onClear,
+}: TableSelectButtonProps<TData>) {
+    const text = displayValue
+        ? (displayValue(hook.selectedItem) ?? placeholder)
+        : hook.selectedItem
+          ? String(hook.selectedItem[valueKey])
+          : placeholder;
+
+    return (
+        <ButtonGroup className="w-full">
+            <Button
+                type="button"
+                variant="outline"
+                className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
+                onClick={hook.openDialog}
+                aria-invalid={invalid}
+            >
+                <span className="truncate">{text}</span>
+                <ChevronsUpDown />
+            </Button>
+            <ButtonGroupSeparator />
+            <Button
+                type="button"
+                variant="secondary"
+                aria-label="clear selection"
+                aria-invalid={invalid}
+                onClick={onClear}
+            >
+                <Delete />
+            </Button>
+        </ButtonGroup>
+    );
+}
+
+interface UseTableSelectArgs<TData> {
+    data: TData[];
+    value?: string;
+    valueKey?: keyof TData;
+}
+
+export function useTableSelect<TData>({
+    data,
+    value,
+    valueKey = 'id' as keyof TData,
+}: UseTableSelectArgs<TData>) {
+    const [open, setOpen] = useState(false);
+
+    const selectedItem = value
+        ? data.find((item) => String(item[valueKey]) === value)
+        : undefined;
+
+    return {
+        open,
+        setOpen,
+        selectedItem,
+        value,
+        openDialog: () => setOpen(true),
+        closeDialog: () => setOpen(false),
+    };
 }

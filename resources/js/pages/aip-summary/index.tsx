@@ -228,6 +228,7 @@ export default function AipSummary({
 
     newAipEntries,
     offices,
+    fundingSources,
 }: AipSummaryProps) {
     console.log({ newAipEntries, offices });
 
@@ -1009,6 +1010,7 @@ export default function AipSummary({
                 onOpenChange={setIsFormDialogOpen}
                 data={newAipEntries.find((item) => item.id === selectedItemId)}
                 offices={offices}
+                fundingSources={fundingSources}
 
                 // data={selectedEntry}
                 // fiscalYear={fiscalYear}

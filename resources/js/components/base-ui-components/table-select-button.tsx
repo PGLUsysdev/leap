@@ -9,7 +9,7 @@ interface TableSelectButtonProps<TData> {
     placeholder?: string;
     valueKey?: keyof TData;
     invalid?: boolean;
-    onClear: () => void;
+    onClear?: () => void;
 }
 
 export function TableSelectButton<TData>({
