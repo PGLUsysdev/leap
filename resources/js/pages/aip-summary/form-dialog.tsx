@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import * as z from 'zod';
 import DataTable from '@/components/base-ui-components/data-table';
@@ -10,6 +11,7 @@ import {
     TableSelectButton,
     useTableSelect,
 } from '@/components/base-ui-components/table-select';
+import { Badge } from '@/components/base-ui-components/ui/badge';
 import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
@@ -20,7 +22,19 @@ import {
     DialogFooter,
 } from '@/components/base-ui-components/ui/dialog';
 import { Separator } from '@/components/base-ui-components/ui/separator';
+import { Spinner } from '@/components/base-ui-components/ui/spinner';
 import { Textarea } from '@/components/base-ui-components/ui/textarea';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { store, destroy } from '@/routes/aip-entries/ppa-funding-sources';
 import type { AipEntry, FundingSource, Office } from '@/types';
 import fundingSourceColumns from './columns/funding-source-columns';
 import officeColumns from './columns/office-columns';
@@ -125,6 +139,10 @@ interface FormDialogProps {
     // psPoolPpaId?: number | null;
 }
 
+interface PageProps {
+    newAipEntries?: AipEntry[];
+}
+
 const formSchema = z.object({
     office: z.string(), // optional
     // office: z.number().int().positive(), // optional
@@ -204,6 +222,12 @@ export default function FormDialog({
         data,
     });
 
+    const [openAlertDelete, setOpenAlertDelete] = useState(false);
+    const [selectedFsId, setSelectedFsId] = useState<number | null>(null);
+    const [loadingState, setLoadingState] = useState<
+        'idle' | 'saving' | 'saved'
+    >('idle');
+
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -249,11 +273,19 @@ export default function FormDialog({
         console.log(payload);
     }
 
-    const handleAddFundingSource = (fs: FundingSource) => {
+    function availableFundingSources() {
+        const existingIds = new Set(
+            data?.ppa_funding_sources?.map((fs) => fs.funding_source_id) ?? [],
+        );
+
+        return (fundingSources ?? []).filter((fs) => !existingIds.has(fs.id));
+    }
+
+    function handleAddFundingSource(fs: FundingSource) {
         const entryId = data?.id;
 
         if (!entryId) {
-            console.warn('No entry ID');
+            console.warn('no id');
 
             return;
         }
@@ -268,13 +300,18 @@ export default function FormDialog({
             ccet_adaptation: '0.00',
             ccet_mitigation: '0.00',
             cc_typology_id: null,
-            funding_source: { id: fs.id, code: fs.code, name: fs.name }, // optional
-        };
+            funding_source: {
+                // id: fs.id,
+                code: fs.code,
+            },
+            isOptimistic: true,
+        } as any;
 
         router
-            .optimistic((props) => {
-                const entries = props.newAipEntries || [];
-                const updatedEntries = entries.map((entry: any) => {
+            .optimistic((props: PageProps) => {
+                const entries: AipEntry[] = props.newAipEntries || [];
+
+                const updatedEntries = entries.map((entry) => {
                     if (entry.id === entryId) {
                         return {
                             ...entry,
@@ -291,40 +328,55 @@ export default function FormDialog({
                 return { newAipEntries: updatedEntries };
             })
             .post(
-                `/aip-entries/${entryId}/ppa-funding-sources`,
+                store(entryId).url,
                 {
-                    funding_source_id: fs.id,
-                    ps_amount: '0.00',
-                    mooe_amount: '0.00',
-                    fe_amount: '0.00',
-                    co_amount: '0.00',
-                    ccet_adaptation: '0.00',
-                    ccet_mitigation: '0.00',
-                    cc_typology_id: null,
-                    // supplemental_aip_id: supplementalAipId, // if needed
+                    funding_source_id: fs.id, // - [ ] make this required in db
                 },
-                { preserveState: true, preserveScroll: true },
+                {
+                    preserveState: true,
+                    preserveScroll: true,
+                    onStart: () => {
+                        setLoadingState('saving');
+                    },
+                    onSuccess: () => {
+                        setLoadingState('saved');
+                    },
+                    onError: (errors) => {
+                        setLoadingState('idle');
+                        setOpenAlertDelete(false);
+                        console.error(errors);
+                    },
+                    // onFinish: () => {
+                    //     setLoadingState('saved');
+                    // },
+                },
             );
-    };
+    }
 
-    const handleDeleteFundingSource = (sourceId: number) => {
+    function onDeleteFundingSource(sourceId: number) {
+        setSelectedFsId(sourceId);
+        setOpenAlertDelete(true);
+    }
+
+    function handleDeleteFundingSource(sourceId: number | null) {
         const entryId = data?.id;
 
-        if (!entryId) {
-            console.warn('No entry ID');
+        if (!entryId || sourceId === null) {
+            console.warn('error');
 
             return;
         }
 
         router
-            .optimistic((props) => {
+            .optimistic((props: PageProps) => {
                 const entries = props.newAipEntries || [];
-                const updatedEntries = entries.map((entry: any) => {
+
+                const updatedEntries = entries.map((entry) => {
                     if (entry.id === entryId) {
                         return {
                             ...entry,
                             ppa_funding_sources:
-                                entry.ppa_funding_sources.filter(
+                                entry.ppa_funding_sources?.filter(
                                     (fs: any) => fs.id !== sourceId,
                                 ),
                         };
@@ -335,11 +387,25 @@ export default function FormDialog({
 
                 return { newAipEntries: updatedEntries };
             })
-            .delete(`/aip-entries/${entryId}/ppa-funding-sources/${sourceId}`, {
+            .delete(destroy([entryId, sourceId]).url, {
                 preserveState: true,
                 preserveScroll: true,
+                onStart: () => {
+                    setLoadingState('saving');
+                },
+                onSuccess: () => {
+                    setLoadingState('saved');
+                },
+                onError: (errors) => {
+                    setLoadingState('idle');
+                    setOpenAlertDelete(false);
+                    console.error(errors);
+                },
+                // onFinish: () => {
+                //     setLoadingState('saved');
+                // },
             });
-    };
+    }
 
     // const userOfficeId = auth?.user?.office_id;
     // const [isLoading, setIsLoading] = useState(false);
@@ -951,10 +1017,11 @@ export default function FormDialog({
                         columns={ppaFundingSourceColumns}
                         data={data?.ppa_funding_sources ?? []}
                         meta={{
-                            onDelete: handleDeleteFundingSource,
+                            // onDelete: handleDeleteFundingSource,
+                            onDelete: onDeleteFundingSource,
                         }}
                     >
-                        <div className="px-4">
+                        <div className="flex gap-1">
                             <Button
                                 onClick={() => fundingSourceHook.setOpen(true)}
                             >
@@ -964,36 +1031,66 @@ export default function FormDialog({
                         </div>
                     </DataTable>
 
-                    <DialogFooter className="mx-0">
-                        <Button
-                            variant="secondary"
-                            type="button"
-                            onClick={() => {
-                                form.reset({
-                                    office:
-                                        data?.ppa?.office_id != null
-                                            ? String(data.ppa.office_id)
-                                            : '',
-                                    startDate:
-                                        toDate(data?.start_date) ?? undefined,
-                                    endDate:
-                                        toDate(data?.end_date) ?? undefined,
-                                    expectedOutput: data?.expected_output ?? '',
-                                });
-                            }}
+                    <DialogFooter className="mx-0 items-center sm:justify-between">
+                        <Badge
+                            variant={
+                                loadingState === 'saving'
+                                    ? 'secondary'
+                                    : loadingState === 'saved'
+                                      ? 'default'
+                                      : 'ghost'
+                            }
                         >
-                            Reset
-                        </Button>
-                        <Button
-                            variant="outline"
-                            type="button"
-                            onClick={() => onOpenChange(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" form="form-dialog">
-                            Submit
-                        </Button>
+                            {loadingState === 'saving' && (
+                                <>
+                                    <Spinner />
+                                    Saving
+                                </>
+                            )}
+
+                            {loadingState === 'saved' && (
+                                <>
+                                    <Check />
+                                    Saved
+                                </>
+                            )}
+
+                            {loadingState === 'idle' && 'No changes'}
+                        </Badge>
+
+                        <div className="flex gap-1">
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                onClick={() => {
+                                    form.reset({
+                                        office:
+                                            data?.ppa?.office_id != null
+                                                ? String(data.ppa.office_id)
+                                                : '',
+                                        startDate:
+                                            toDate(data?.start_date) ??
+                                            undefined,
+                                        endDate:
+                                            toDate(data?.end_date) ?? undefined,
+                                        expectedOutput:
+                                            data?.expected_output ?? '',
+                                    });
+                                }}
+                            >
+                                Reset
+                            </Button>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                Cancel
+                            </Button>
+                            <Button type="submit" form="form-dialog">
+                                Submit
+                            </Button>
+                        </div>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -1014,19 +1111,64 @@ export default function FormDialog({
             />
 
             <TableSelect<FundingSource>
-                data={fundingSources ?? []}
+                data={availableFundingSources() ?? []}
                 columns={fundingSourceColumns}
                 open={fundingSourceHook.open}
                 onOpenChange={fundingSourceHook.setOpen}
                 onRowSelect={(row) => {
-                    console.log('Selected funding source:', row);
-                    handleAddFundingSource(row);
                     fundingSourceHook.setOpen(false);
+                    handleAddFundingSource(row);
                 }}
                 value={fundingSourceHook.value}
                 valueKey="id"
                 className="sm:max-w-[40rem]"
             />
+
+            <AlertDialog
+                open={openAlertDelete}
+                onOpenChange={setOpenAlertDelete}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            Delete funding source{' '}
+                            {data?.ppa_funding_sources?.find(
+                                (fs) => fs.id === selectedFsId,
+                            )?.funding_source?.code ?? ''}
+                            ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. The following data
+                            will be permanently deleted:
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <ul className="list-disc pl-5 text-sm text-muted-foreground">
+                        <li>
+                            This funding source allocation (PS, MOOE, FE, CO ,
+                            CCET amounts)
+                        </li>
+                        <li>
+                            All PPMP line items assigned to this funding source
+                        </li>
+                        <li>
+                            All PS breakdown entries for this funding source
+                        </li>
+                    </ul>
+
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={() =>
+                                handleDeleteFundingSource(selectedFsId)
+                            }
+                        >
+                            Continue
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/*
             <Dialog

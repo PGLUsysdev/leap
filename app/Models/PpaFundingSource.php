@@ -33,7 +33,7 @@ class PpaFundingSource extends Model
     // }
 
     protected $fillable = [
-        'id',
+        // 'id',
         'aip_entry_id',
         'funding_source_id',
         'ps_amount',

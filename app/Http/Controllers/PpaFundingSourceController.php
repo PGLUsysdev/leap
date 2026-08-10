@@ -6,6 +6,7 @@ use App\Http\Requests\StorePpaFundingSourceRequest;
 use App\Models\AipEntry;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
+use Illuminate\Support\Facades\Log;
 
 class PpaFundingSourceController extends Controller
 {
@@ -14,28 +15,47 @@ class PpaFundingSourceController extends Controller
         AipEntry $aipEntry,
     ) {
         $validated = $request->validated();
-
         $saipId = $validated['supplemental_aip_id'] ?? null;
 
-        $source = $aipEntry->ppaFundingSources()->create([
+        $exists = $aipEntry
+            ->ppaFundingSources()
+            ->where('funding_source_id', $validated['funding_source_id'])
+            ->when(
+                $saipId,
+                function ($query) use ($saipId) {
+                    return $query->where('supplemental_aip_id', $saipId);
+                },
+                function ($query) {
+                    return $query->whereNull('supplemental_aip_id');
+                },
+            )
+            ->exists();
+
+        if ($exists) {
+            Log::warning('Duplicate funding source assignment attempted.', [
+                'aip_entry_id' => $aipEntry->id,
+                'funding_source_id' => $request->funding_source_id,
+            ]);
+
+            // Return a validation error – Inertia will roll back the optimistic update
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'funding_source_id' =>
+                        'This funding source is already assigned to this AIP entry.',
+                ]);
+        }
+
+        $aipEntry->ppaFundingSources()->create([
             'funding_source_id' => $validated['funding_source_id'],
-            'ps_amount' => $validated['ps_amount'],
-            'mooe_amount' => $validated['mooe_amount'],
-            'fe_amount' => $validated['fe_amount'],
-            'co_amount' => $validated['co_amount'],
-            'ccet_adaptation' => $validated['ccet_adaptation'] ?? 0,
-            'ccet_mitigation' => $validated['ccet_mitigation'] ?? 0,
-            'cc_typology_id' => $validated['cc_typology_id'] ?? null,
-            'supplemental_aip_id' => $saipId ?: null,
-            'is_supplemental' => (bool) $saipId,
+            // 'supplemental_aip_id' => $saipId ?: null,
+            // 'is_supplemental' => (bool) $saipId,
         ]);
 
         // PS Pool sync: if the parent PPA is the PS pool,
         // auto-calculate ps_amount onto the GF Proper funding source (id=1),
         // creating it if needed.
         PsBreakdownController::syncPoolPsAmount($aipEntry, $saipId);
-
-        return redirect()->back();
     }
 
     public function destroy(

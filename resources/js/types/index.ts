@@ -153,14 +153,14 @@ export interface PpaFundingSource {
     co_amount: string;
     ccet_adaptation: string;
     ccet_mitigation: string;
-    cc_typology_id?: number | null;
     created_at: string | null;
     updated_at: string | null;
 
-    ppa_id: number;
-    funding_source_id: number;
     aip_entry_id: number;
-    supplemental_aip_id?: number | null;
+    funding_source_id: number;
+    supplemental_aip_id: number | null;
+    cc_typology_id: number | null;
+    ppa_id: number;
 
     funding_source?: FundingSource;
     cc_typology?: { id: number; code: string; description: string };

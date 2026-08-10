@@ -108,11 +108,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/aip-entries/{aipEntry}/ppa-funding-sources', [
         PpaFundingSourceController::class,
         'store',
-    ]);
+    ])->name('aip-entries.ppa-funding-sources.store');
     Route::delete(
         '/aip-entries/{aipEntry}/ppa-funding-sources/{ppaFundingSource}',
         [PpaFundingSourceController::class, 'destroy'],
-    );
+    )->name('aip-entries.ppa-funding-sources.destroy');
 
     // --- Supplemental AIPs ---
     Route::post('/supplemental-aips', [
