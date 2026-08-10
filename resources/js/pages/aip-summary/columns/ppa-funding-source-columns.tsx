@@ -104,7 +104,7 @@ const columns = [
                         size="icon"
                         variant="destructive"
                         onClick={() => meta?.onDelete?.(rowData.id)}
-                        disabled={isOptimistic}
+                        disabled={isOptimistic || Boolean(meta?.disabled)}
                     >
                         <Trash />
                     </Button>

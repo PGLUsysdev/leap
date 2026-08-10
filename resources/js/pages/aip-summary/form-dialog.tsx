@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from '@inertiajs/react';
-import { Check } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useForm, Controller, useWatch } from 'react-hook-form';
+import { useForm, Controller, useWatch, useFormState } from 'react-hook-form';
 import * as z from 'zod';
 import DataTable from '@/components/base-ui-components/data-table';
 import { DatePicker } from '@/components/base-ui-components/date-picker';
@@ -21,6 +21,10 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/base-ui-components/ui/dialog';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import { Separator } from '@/components/base-ui-components/ui/separator';
 import { Spinner } from '@/components/base-ui-components/ui/spinner';
 import { Textarea } from '@/components/base-ui-components/ui/textarea';
@@ -40,6 +44,7 @@ import type { AipEntry, FundingSource, Office } from '@/types';
 import fundingSourceColumns from './columns/funding-source-columns';
 import officeColumns from './columns/office-columns';
 import ppaFundingSourceColumns from './columns/ppa-funding-source-columns';
+import { Card, CardContent } from '@/components/base-ui-components/ui/card';
 // import { TableSelectButton } from '@/components/base-ui-components/table-select-button';
 // import { useTableSelect } from '@/hooks/use-table-select';
 // import { zodResolver } from '@hookform/resolvers/zod';
@@ -217,6 +222,9 @@ export default function FormDialog({
     // onPpmpItemAdded,
     // psPoolPpaId,
 }: FormDialogProps) {
+    // # TODO
+    // - [ ] there's still no indicator for the onError state
+
     console.log({
         // open,
         // onOpenChange,
@@ -238,6 +246,8 @@ export default function FormDialog({
             expectedOutput: '',
         },
     });
+
+    const { isDirty } = useFormState({ control: form.control });
 
     const watchOfficeId = useWatch({ control: form.control, name: 'officeId' });
 
@@ -280,6 +290,19 @@ export default function FormDialog({
             method: 'patch',
             preserveState: true,
             preserveScroll: true,
+            onStart: () => {
+                setLoadingState('saving');
+            },
+            onSuccess: () => {
+                setLoadingState('saved');
+            },
+            onError: (errors) => {
+                setLoadingState('idle');
+                console.error(errors);
+            },
+            // onFinish: () => {
+            //     setLoadingState('saved');
+            // },
         });
     }
 
@@ -353,7 +376,6 @@ export default function FormDialog({
                     },
                     onError: (errors) => {
                         setLoadingState('idle');
-                        setOpenAlertDelete(false);
                         console.error(errors);
                     },
                     // onFinish: () => {
@@ -408,7 +430,6 @@ export default function FormDialog({
                 },
                 onError: (errors) => {
                     setLoadingState('idle');
-                    setOpenAlertDelete(false);
                     console.error(errors);
                 },
                 // onFinish: () => {
@@ -869,203 +890,219 @@ export default function FormDialog({
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="gap-0 px-0 sm:max-w-[80rem]">
+                    {/* <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden px-0 sm:max-w-[80rem]"> */}
                     <DialogHeader className="px-4">
-                        <DialogTitle>Are you absolutely sure?</DialogTitle>
+                        {/* <DialogHeader className="flex-none px-4"> */}
+                        <DialogTitle>Edit AIP Entry</DialogTitle>
                         <DialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete your account and remove your data from our
-                            servers.
+                            Update the office, implementation period, and
+                            expected output for this entry. Add or remove
+                            funding sources with their amounts below.
                         </DialogDescription>
                     </DialogHeader>
 
-                    {/*
-                        - [ ] aip ref code
-                        - [ ] ppa name
-                            - textarea
-                        - [ ] office
-                            - selectable main office and sub unit
-                            - support selection of multiple offices, sub units
-                        - [ ] start date
-                            - should only allow current year
-                        - [ ] end date
-                            - should only allow current year
-                        - [ ] expected output
-                            - can have multiple expected output needs db restructuring
-                        - [ ] display funding sources w/ amounts
-                    */}
-                    <form
-                        id="form-dialog"
-                        onSubmit={form.handleSubmit(onSubmit)}
-                        className="px-4"
-                    >
-                        <div className="flex flex-col gap-4">
-                            <div>aip reference code</div>
+                    <ScrollArea>
+                        <form
+                            id="form-dialog"
+                            onSubmit={form.handleSubmit(onSubmit)}
+                            className="px-4"
+                            // className="flex-none px-4"
+                        >
+                            <div className="flex flex-col gap-4">
+                                <div className="pt-4">
+                                    <Card>
+                                        <CardContent>
+                                            <div className="slashed-zero tabular-nums">
+                                                aip reference code
+                                            </div>
+                                            <div className="text-base font-bold">
+                                                {data?.ppa?.name}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </div>
 
-                            <div>{data?.ppa?.name}</div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Controller
+                                        name="expectedOutput"
+                                        control={form.control}
+                                        render={({ field, fieldState }) => (
+                                            <div>
+                                                <Textarea
+                                                    {...field}
+                                                    placeholder="expected output"
+                                                    className="min-h-[128px] w-full"
+                                                />
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <Controller
-                                    name="expectedOutput"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <div>
-                                            <Textarea
-                                                {...field}
-                                                placeholder="expected output"
-                                                className="min-h-[128px] w-full"
-                                            />
+                                                {fieldState.invalid && (
+                                                    <div className="text-destructive">
+                                                        {
+                                                            fieldState.error
+                                                                ?.message
+                                                        }
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    />
 
-                                            {fieldState.invalid && (
-                                                <div className="text-destructive">
-                                                    {fieldState.error?.message}
+                                    <div className="flex flex-col gap-4">
+                                        <Controller
+                                            name="officeId"
+                                            control={form.control}
+                                            render={({
+                                                // field,
+                                                fieldState,
+                                            }) => (
+                                                <div>
+                                                    <TableSelectButton
+                                                        hook={officeHook}
+                                                        displayValue={(item) =>
+                                                            item?.acronym ??
+                                                            undefined
+                                                        }
+                                                        placeholder="Select office"
+                                                        onClear={() =>
+                                                            form.setValue(
+                                                                'officeId',
+                                                                '',
+                                                                {
+                                                                    shouldDirty:
+                                                                        watchOfficeId !==
+                                                                        '',
+                                                                },
+                                                            )
+                                                        }
+                                                    />
+
+                                                    {fieldState.invalid && (
+                                                        <div className="text-destructive">
+                                                            {
+                                                                fieldState.error
+                                                                    ?.message
+                                                            }
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
-                                        </div>
-                                    )}
-                                />
+                                        />
 
-                                <div className="flex flex-col gap-4">
-                                    <Controller
-                                        name="officeId"
-                                        control={form.control}
-                                        render={({
-                                            // field,
-                                            fieldState,
-                                        }) => (
-                                            <div>
-                                                <TableSelectButton
-                                                    hook={officeHook}
-                                                    displayValue={(item) =>
-                                                        item?.acronym ??
-                                                        undefined
-                                                    }
-                                                    placeholder="Select office"
-                                                    onClear={() =>
-                                                        form.resetField(
-                                                            'office',
+                                        <Controller
+                                            name="startDate"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <div className="w-full [&>button]:w-full">
+                                                    <DatePicker
+                                                        year={new Date().getFullYear()}
+                                                        value={
+                                                            field.value ||
+                                                            undefined
+                                                        }
+                                                        onValueChange={
+                                                            field.onChange
+                                                        }
+                                                    />
+
+                                                    {fieldState.invalid && (
+                                                        <div className="text-destructive">
                                                             {
-                                                                defaultValue:
-                                                                    '',
-                                                            },
-                                                        )
-                                                    }
-                                                />
+                                                                fieldState.error
+                                                                    ?.message
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        />
 
-                                                {fieldState.invalid && (
-                                                    <div className="text-destructive">
-                                                        {
-                                                            fieldState.error
-                                                                ?.message
+                                        <Controller
+                                            name="endDate"
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <div className="w-full [&>button]:w-full">
+                                                    <DatePicker
+                                                        year={new Date().getFullYear()}
+                                                        value={
+                                                            field.value ||
+                                                            undefined
                                                         }
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    />
-
-                                    <Controller
-                                        name="startDate"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => (
-                                            <div className="w-full [&>button]:w-full">
-                                                <DatePicker
-                                                    year={new Date().getFullYear()}
-                                                    value={
-                                                        field.value || undefined
-                                                    }
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <div className="text-destructive">
-                                                        {
-                                                            fieldState.error
-                                                                ?.message
+                                                        onValueChange={
+                                                            field.onChange
                                                         }
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    />
+                                                    />
 
-                                    <Controller
-                                        name="endDate"
-                                        control={form.control}
-                                        render={({ field, fieldState }) => (
-                                            <div className="w-full [&>button]:w-full">
-                                                <DatePicker
-                                                    year={new Date().getFullYear()}
-                                                    value={
-                                                        field.value || undefined
-                                                    }
-                                                    onValueChange={
-                                                        field.onChange
-                                                    }
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <div className="text-destructive">
-                                                        {
-                                                            fieldState.error
-                                                                ?.message
-                                                        }
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    />
+                                                    {fieldState.invalid && (
+                                                        <div className="text-destructive">
+                                                            {
+                                                                fieldState.error
+                                                                    ?.message
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </form>
+                        </form>
 
-                    <Separator className="mt-4" />
+                        <Separator className="mt-4" />
 
-                    <DataTable
-                        columns={ppaFundingSourceColumns}
-                        data={data?.ppa_funding_sources ?? []}
-                        meta={{
-                            // onDelete: handleDeleteFundingSource,
-                            onDelete: onDeleteFundingSource,
-                        }}
-                    >
-                        <div className="flex gap-1">
-                            <Button
-                                onClick={() => fundingSourceHook.setOpen(true)}
-                            >
-                                Add Funding Source
-                            </Button>
-                            <Button>LBP Form 2</Button>
-                        </div>
-                    </DataTable>
+                        <DataTable
+                            columns={ppaFundingSourceColumns}
+                            data={data?.ppa_funding_sources ?? []}
+                            // className="min-h-0 flex-1"
+                            className="pr-2"
+                            meta={{
+                                // onDelete: handleDeleteFundingSource,
+                                onDelete: onDeleteFundingSource,
+                                disabled: isDirty,
+                            }}
+                        >
+                            <div className="flex gap-1">
+                                <Button
+                                    onClick={() =>
+                                        fundingSourceHook.setOpen(true)
+                                    }
+                                    disabled={isDirty}
+                                >
+                                    Add Funding Source
+                                </Button>
+                                <Button>LBP Form 2</Button>
+                            </div>
+                        </DataTable>
+
+                        <ScrollBar orientation="vertical" />
+                    </ScrollArea>
 
                     <DialogFooter className="mx-0 items-center sm:justify-between">
                         <Badge
                             variant={
                                 loadingState === 'saving'
                                     ? 'secondary'
-                                    : loadingState === 'saved'
-                                      ? 'default'
+                                    : isDirty
+                                      ? 'destructive'
                                       : 'ghost'
                             }
                         >
                             {loadingState === 'saving' && (
                                 <>
-                                    <Spinner />
-                                    Saving
+                                    <Spinner /> Saving…
                                 </>
                             )}
-
-                            {loadingState === 'saved' && (
+                            {loadingState !== 'saving' && isDirty && (
                                 <>
-                                    <Check />
-                                    Saved
+                                    {/*<CircleX /> Unsaved changes*/}
+                                    <X /> Unsaved changes
                                 </>
                             )}
-
-                            {loadingState === 'idle' && 'No changes'}
+                            {loadingState !== 'saving' && !isDirty && (
+                                <>
+                                    {/*<CircleCheck /> Saved*/}
+                                    <Check /> Saved
+                                </>
+                            )}
                         </Badge>
 
                         <div className="flex gap-1">
@@ -1097,8 +1134,12 @@ export default function FormDialog({
                             >
                                 Cancel
                             </Button>
-                            <Button type="submit" form="form-dialog">
-                                Submit
+                            <Button
+                                type="submit"
+                                form="form-dialog"
+                                disabled={!isDirty || loadingState === 'saving'}
+                            >
+                                Save
                             </Button>
                         </div>
                     </DialogFooter>
@@ -1111,8 +1152,9 @@ export default function FormDialog({
                 open={officeHook.open}
                 onOpenChange={officeHook.setOpen}
                 onRowSelect={(row) => {
-                    form.setValue('office', String(row.id), {
+                    form.setValue('officeId', String(row.id), {
                         shouldValidate: true,
+                        shouldDirty: true,
                     });
                 }}
                 value={officeHook.value}
@@ -1122,6 +1164,7 @@ export default function FormDialog({
 
             <TableSelect<FundingSource>
                 data={availableFundingSources() ?? []}
+                // data={fundingSources ?? []}
                 columns={fundingSourceColumns}
                 open={fundingSourceHook.open}
                 onOpenChange={fundingSourceHook.setOpen}
