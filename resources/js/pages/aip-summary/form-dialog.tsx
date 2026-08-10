@@ -35,6 +35,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { store, destroy } from '@/routes/aip-entries/ppa-funding-sources';
+import { update } from '@/routes/aip-entry';
 import type { AipEntry, FundingSource, Office } from '@/types';
 import fundingSourceColumns from './columns/funding-source-columns';
 import officeColumns from './columns/office-columns';
@@ -144,7 +145,7 @@ interface PageProps {
 }
 
 const formSchema = z.object({
-    office: z.string(), // optional
+    officeId: z.string(), // optional
     // office: z.number().int().positive(), // optional
     startDate: z.date().optional(), // optional
     endDate: z.date().optional(), // optional
@@ -231,14 +232,14 @@ export default function FormDialog({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            office: '',
+            officeId: '',
             startDate: undefined,
             endDate: undefined,
             expectedOutput: '',
         },
     });
 
-    const watchOfficeId = useWatch({ control: form.control, name: 'office' });
+    const watchOfficeId = useWatch({ control: form.control, name: 'officeId' });
 
     const officeHook = useTableSelect({
         data: offices ?? [],
@@ -254,7 +255,7 @@ export default function FormDialog({
         if (!open) return;
 
         form.reset({
-            office:
+            officeId:
                 data?.ppa?.office_id != null ? String(data.ppa.office_id) : '',
             startDate: toDate(data?.start_date) ?? undefined,
             endDate: toDate(data?.end_date) ?? undefined,
@@ -262,15 +263,24 @@ export default function FormDialog({
         });
     }, [open, form, data]);
 
-    function onSubmit(data: z.infer<typeof formSchema>) {
+    function onSubmit(values: z.infer<typeof formSchema>) {
+        if (data?.id == null) return;
+
         const payload = {
-            ...data,
-            office: data.office === '' ? null : Number(data.office),
-            startDate: toIsoDate(data.startDate),
-            endDate: toIsoDate(data.endDate),
+            ...values,
+            office: values.officeId === '' ? null : Number(values.officeId),
+            startDate: toIsoDate(values.startDate),
+            endDate: toIsoDate(values.endDate),
         };
 
         console.log(payload);
+
+        router.visit(update(data?.id).url, {
+            data: payload,
+            method: 'patch',
+            preserveState: true,
+            preserveScroll: true,
+        });
     }
 
     function availableFundingSources() {
@@ -916,7 +926,7 @@ export default function FormDialog({
 
                                 <div className="flex flex-col gap-4">
                                     <Controller
-                                        name="office"
+                                        name="officeId"
                                         control={form.control}
                                         render={({
                                             // field,
@@ -1064,7 +1074,7 @@ export default function FormDialog({
                                 type="button"
                                 onClick={() => {
                                     form.reset({
-                                        office:
+                                        officeId:
                                             data?.ppa?.office_id != null
                                                 ? String(data.ppa.office_id)
                                                 : '',

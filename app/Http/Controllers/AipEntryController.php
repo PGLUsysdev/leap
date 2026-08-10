@@ -713,132 +713,147 @@ class AipEntryController extends Controller
      */
     public function update(UpdateAipEntryRequest $request, AipEntry $aipEntry)
     {
-        $user = auth()->user();
-        $validated = $request->validated();
-        $ppa = $aipEntry->ppa;
+        $data = $request->validated();
 
-        if (!$ppa) {
-            abort(404, 'Associated PPA not found.');
-        }
+        Log::info($data);
 
-        $canEdit = $user->can('update', $aipEntry);
-        $canEditFunding = $user->can('editFundingSources', $aipEntry);
+        $aipEntry->update([
+            'office_id' => $data['officeId'] ?? null,
+            'start_date' => $data['startDate'] ?? null,
+            'end_date' => $data['endDate'] ?? null,
+            'expected_output' => $data['expectedOutput'] ?? null,
+        ]);
 
-        $saipId = $validated['supplemental_aip_id'] ?? null;
+        // $aipEntry->update($request->validate([]));
 
-        $detailsChanged =
-            $validated['expected_output'] !== $aipEntry->expected_output ||
-            $validated['start_date'] !== $aipEntry->start_date ||
-            $validated['end_date'] !== $aipEntry->end_date ||
-            (int) $validated['office_id'] !== $ppa->office_id;
+        // ---
 
-        $fundingChanged = $this->fundingSourcesChanged(
-            $validated['ppa_funding_sources'] ?? [],
-            $aipEntry,
-            $saipId,
-        );
+        // $user = auth()->user();
+        // $validated = $request->validated();
+        // $ppa = $aipEntry->ppa;
 
-        if ($detailsChanged && !$canEdit) {
-            abort(403, 'You do not have permission to edit AIP entry details.');
-        }
+        // if (!$ppa) {
+        //     abort(404, 'Associated PPA not found.');
+        // }
 
-        if ($fundingChanged && !$canEditFunding) {
-            abort(403, 'You do not have permission to edit funding sources.');
-        }
+        // $canEdit = $user->can('update', $aipEntry);
+        // $canEditFunding = $user->can('editFundingSources', $aipEntry);
 
-        if (!$detailsChanged && !$fundingChanged) {
-            abort(403, 'No changes detected.');
-        }
+        // $saipId = $validated['supplemental_aip_id'] ?? null;
 
-        $currentFundingSourceQuery = $aipEntry->ppaFundingSources();
-        if ($saipId) {
-            $currentFundingSourceQuery->where('supplemental_aip_id', $saipId);
-        } else {
-            $currentFundingSourceQuery->whereNull('supplemental_aip_id');
-        }
+        // $detailsChanged =
+        //     $validated['expected_output'] !== $aipEntry->expected_output ||
+        //     $validated['start_date'] !== $aipEntry->start_date ||
+        //     $validated['end_date'] !== $aipEntry->end_date ||
+        //     (int) $validated['office_id'] !== $ppa->office_id;
 
-        $currentFundingSourceIds = $currentFundingSourceQuery
-            ->pluck('funding_source_id')
-            ->toArray();
+        // $fundingChanged = $this->fundingSourcesChanged(
+        //     $validated['ppa_funding_sources'] ?? [],
+        //     $aipEntry,
+        //     $saipId,
+        // );
 
-        $newFundingSourceIds = collect($validated['ppa_funding_sources'] ?? [])
-            ->pluck('funding_source_id')
-            ->toArray();
+        // if ($detailsChanged && !$canEdit) {
+        //     abort(403, 'You do not have permission to edit AIP entry details.');
+        // }
 
-        $idsToRemove = array_diff(
-            $currentFundingSourceIds,
-            $newFundingSourceIds,
-        );
+        // if ($fundingChanged && !$canEditFunding) {
+        //     abort(403, 'You do not have permission to edit funding sources.');
+        // }
 
-        \DB::transaction(function () use (
-            $validated,
-            $aipEntry,
-            $ppa,
-            $idsToRemove,
-            $saipId,
-            $canEdit,
-            $canEditFunding,
-        ) {
-            if ($canEdit) {
-                $aipEntry->update([
-                    'expected_output' => $validated['expected_output'],
-                    'start_date' => $validated['start_date'],
-                    'end_date' => $validated['end_date'],
-                ]);
+        // if (!$detailsChanged && !$fundingChanged) {
+        //     abort(403, 'No changes detected.');
+        // }
 
-                $ppa->update(['office_id' => $validated['office_id']]);
-            }
+        // $currentFundingSourceQuery = $aipEntry->ppaFundingSources();
+        // if ($saipId) {
+        //     $currentFundingSourceQuery->where('supplemental_aip_id', $saipId);
+        // } else {
+        //     $currentFundingSourceQuery->whereNull('supplemental_aip_id');
+        // }
 
-            if ($canEditFunding) {
-                $sourcesToRemove = $aipEntry
-                    ->ppaFundingSources()
-                    ->whereIn('funding_source_id', $idsToRemove);
-                if ($saipId) {
-                    $sourcesToRemove->where('supplemental_aip_id', $saipId);
-                } else {
-                    $sourcesToRemove->whereNull('supplemental_aip_id');
-                }
+        // $currentFundingSourceIds = $currentFundingSourceQuery
+        //     ->pluck('funding_source_id')
+        //     ->toArray();
 
-                $ppaFundingSourceIds = $sourcesToRemove->pluck('id');
+        // $newFundingSourceIds = collect($validated['ppa_funding_sources'] ?? [])
+        //     ->pluck('funding_source_id')
+        //     ->toArray();
 
-                Ppmp::whereIn(
-                    'ppa_funding_source_id',
-                    $ppaFundingSourceIds,
-                )->delete();
+        // $idsToRemove = array_diff(
+        //     $currentFundingSourceIds,
+        //     $newFundingSourceIds,
+        // );
 
-                $sourcesToRemove->delete();
+        // \DB::transaction(function () use (
+        //     $validated,
+        //     $aipEntry,
+        //     $ppa,
+        //     $idsToRemove,
+        //     $saipId,
+        //     $canEdit,
+        //     $canEditFunding,
+        // ) {
+        //     if ($canEdit) {
+        //         $aipEntry->update([
+        //             'expected_output' => $validated['expected_output'],
+        //             'start_date' => $validated['start_date'],
+        //             'end_date' => $validated['end_date'],
+        //         ]);
 
-                foreach ($validated['ppa_funding_sources'] ?? [] as $source) {
-                    $aipEntry->ppaFundingSources()->updateOrCreate(
-                        [
-                            'funding_source_id' => $source['funding_source_id'],
-                            'supplemental_aip_id' => $saipId ?: null,
-                        ],
-                        [
-                            'ps_amount' => $source['ps_amount'],
-                            'mooe_amount' => $source['mooe_amount'],
-                            'fe_amount' => $source['fe_amount'],
-                            'co_amount' => $source['co_amount'],
-                            'ccet_adaptation' =>
-                                $source['ccet_adaptation'] ?? 0,
-                            'ccet_mitigation' =>
-                                $source['ccet_mitigation'] ?? 0,
-                            'cc_typology_id' =>
-                                $source['cc_typology_id'] ?? null,
-                            'is_supplemental' => (bool) $saipId,
-                        ],
-                    );
-                }
-            }
-        });
+        //         $ppa->update(['office_id' => $validated['office_id']]);
+        //     }
 
-        // PS Pool sync: if this PPA is the PS pool, auto-calculate ps_amount
-        // onto the GF Proper funding source (id=1), creating it if needed.
-        if ($ppa->is_ps_pool && $canEditFunding) {
-            PsBreakdownController::syncPoolPsAmount($aipEntry, $saipId);
-        }
+        //     if ($canEditFunding) {
+        //         $sourcesToRemove = $aipEntry
+        //             ->ppaFundingSources()
+        //             ->whereIn('funding_source_id', $idsToRemove);
+        //         if ($saipId) {
+        //             $sourcesToRemove->where('supplemental_aip_id', $saipId);
+        //         } else {
+        //             $sourcesToRemove->whereNull('supplemental_aip_id');
+        //         }
 
-        // return back()->with('success', 'AIP Entry updated successfully.');
+        //         $ppaFundingSourceIds = $sourcesToRemove->pluck('id');
+
+        //         Ppmp::whereIn(
+        //             'ppa_funding_source_id',
+        //             $ppaFundingSourceIds,
+        //         )->delete();
+
+        //         $sourcesToRemove->delete();
+
+        //         foreach ($validated['ppa_funding_sources'] ?? [] as $source) {
+        //             $aipEntry->ppaFundingSources()->updateOrCreate(
+        //                 [
+        //                     'funding_source_id' => $source['funding_source_id'],
+        //                     'supplemental_aip_id' => $saipId ?: null,
+        //                 ],
+        //                 [
+        //                     'ps_amount' => $source['ps_amount'],
+        //                     'mooe_amount' => $source['mooe_amount'],
+        //                     'fe_amount' => $source['fe_amount'],
+        //                     'co_amount' => $source['co_amount'],
+        //                     'ccet_adaptation' =>
+        //                         $source['ccet_adaptation'] ?? 0,
+        //                     'ccet_mitigation' =>
+        //                         $source['ccet_mitigation'] ?? 0,
+        //                     'cc_typology_id' =>
+        //                         $source['cc_typology_id'] ?? null,
+        //                     'is_supplemental' => (bool) $saipId,
+        //                 ],
+        //             );
+        //         }
+        //     }
+        // });
+
+        // // PS Pool sync: if this PPA is the PS pool, auto-calculate ps_amount
+        // // onto the GF Proper funding source (id=1), creating it if needed.
+        // if ($ppa->is_ps_pool && $canEditFunding) {
+        //     PsBreakdownController::syncPoolPsAmount($aipEntry, $saipId);
+        // }
+
+        // // return back()->with('success', 'AIP Entry updated successfully.');
     }
 
     private function fundingSourcesChanged(

@@ -97,14 +97,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         );
         Route::post('import', [AipEntryController::class, 'import']);
     });
-    Route::put('/aip-entries/{aipEntry}', [
+    Route::patch('/aip-entries/{aipEntry}', [
         AipEntryController::class,
         'update',
     ]);
     Route::delete('/aip-entries/{aipEntry}', [
         AipEntryController::class,
         'destroy',
-    ]);
+    ])->name('aip-entry.update');
     Route::post('/aip-entries/{aipEntry}/ppa-funding-sources', [
         PpaFundingSourceController::class,
         'store',
