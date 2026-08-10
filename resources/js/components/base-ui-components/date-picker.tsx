@@ -11,7 +11,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/base-ui-components/ui/popover';
-import { cn } from '@/lib/utils';
+// import { cn } from '@/lib/utils';
 
 type DatePickerProps = Omit<
     React.ComponentProps<typeof Calendar>,
@@ -20,12 +20,14 @@ type DatePickerProps = Omit<
     year?: number;
     value?: Date;
     onValueChange?: (date: Date | undefined) => void;
+    invalid?: boolean;
 };
 
 export function DatePicker({
     year,
     value,
     onValueChange,
+    invalid,
     ...props
 }: DatePickerProps) {
     const [internalDate, setInternalDate] = React.useState<Date>();
@@ -48,6 +50,7 @@ export function DatePicker({
                         variant="outline"
                         data-empty={!date}
                         className="justify-start text-left font-normal data-[empty=true]:text-muted-foreground"
+                        aria-invalid={invalid}
                     />
                 }
             >

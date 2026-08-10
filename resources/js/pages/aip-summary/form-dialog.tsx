@@ -13,6 +13,7 @@ import {
 } from '@/components/base-ui-components/table-select';
 import { Badge } from '@/components/base-ui-components/ui/badge';
 import { Button } from '@/components/base-ui-components/ui/button';
+import { Card, CardContent } from '@/components/base-ui-components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -38,13 +39,13 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { store, destroy } from '@/routes/aip-entries/ppa-funding-sources';
 import { update } from '@/routes/aip-entry';
 import type { AipEntry, FundingSource, Office } from '@/types';
 import fundingSourceColumns from './columns/funding-source-columns';
 import officeColumns from './columns/office-columns';
 import ppaFundingSourceColumns from './columns/ppa-funding-source-columns';
-import { Card, CardContent } from '@/components/base-ui-components/ui/card';
 
 interface FormDialogProps {
     open: boolean;
@@ -63,6 +64,10 @@ const formSchema = z.object({
     startDate: z.date().optional(),
     endDate: z.date().optional(),
     expectedOutput: z.string().trim(),
+    // officeId: z.number(),
+    // startDate: z.number(),
+    // endDate: z.number(),
+    // expectedOutput: z.number(),
 });
 
 function toDate(isoDate: string | null | undefined) {
@@ -307,7 +312,7 @@ export default function FormDialog({
                             // className="px-4"
                             className="flex-none px-4"
                         >
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-5">
                                 <div className="pt-2">
                                     <Card>
                                         <CardContent>
@@ -321,31 +326,42 @@ export default function FormDialog({
                                     </Card>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-5">
                                     <Controller
                                         name="expectedOutput"
                                         control={form.control}
                                         render={({ field, fieldState }) => (
-                                            <div>
+                                            <Field
+                                                data-invalid={
+                                                    fieldState.invalid
+                                                }
+                                            >
+                                                <FieldLabel htmlFor="form-dialog-expected-output">
+                                                    Expected Output
+                                                </FieldLabel>
+
                                                 <Textarea
                                                     {...field}
+                                                    id="form-dialog-expected-output"
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
                                                     placeholder="expected output"
-                                                    className="min-h-[128px] w-full"
+                                                    className="min-h-[190px] w-full"
                                                 />
 
                                                 {fieldState.invalid && (
-                                                    <div className="text-destructive">
-                                                        {
-                                                            fieldState.error
-                                                                ?.message
-                                                        }
-                                                    </div>
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
-                                            </div>
+                                            </Field>
                                         )}
                                     />
 
-                                    <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col gap-5">
                                         <Controller
                                             name="officeId"
                                             control={form.control}
@@ -353,8 +369,20 @@ export default function FormDialog({
                                                 // field,
                                                 fieldState,
                                             }) => (
-                                                <div>
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel htmlFor="form-dialog-office">
+                                                        Implementing Office /
+                                                        Department / Location
+                                                    </FieldLabel>
+
                                                     <TableSelectButton
+                                                        invalid={
+                                                            fieldState.invalid
+                                                        }
                                                         hook={officeHook}
                                                         displayValue={(item) =>
                                                             item?.acronym ??
@@ -375,14 +403,13 @@ export default function FormDialog({
                                                     />
 
                                                     {fieldState.invalid && (
-                                                        <div className="text-destructive">
-                                                            {
-                                                                fieldState.error
-                                                                    ?.message
-                                                            }
-                                                        </div>
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
                                                     )}
-                                                </div>
+                                                </Field>
                                             )}
                                         />
 
@@ -390,27 +417,39 @@ export default function FormDialog({
                                             name="startDate"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <div className="w-full [&>button]:w-full">
-                                                    <DatePicker
-                                                        year={new Date().getFullYear()}
-                                                        value={
-                                                            field.value ||
-                                                            undefined
-                                                        }
-                                                        onValueChange={
-                                                            field.onChange
-                                                        }
-                                                    />
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel htmlFor="form-dialog-starting-date">
+                                                        Starting Date
+                                                    </FieldLabel>
+
+                                                    <div className="w-full [&>button]:w-full">
+                                                        <DatePicker
+                                                            year={new Date().getFullYear()}
+                                                            value={
+                                                                field.value ||
+                                                                undefined
+                                                            }
+                                                            onValueChange={
+                                                                field.onChange
+                                                            }
+                                                            invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                        />
+                                                    </div>
 
                                                     {fieldState.invalid && (
-                                                        <div className="text-destructive">
-                                                            {
-                                                                fieldState.error
-                                                                    ?.message
-                                                            }
-                                                        </div>
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
                                                     )}
-                                                </div>
+                                                </Field>
                                             )}
                                         />
 
@@ -418,27 +457,39 @@ export default function FormDialog({
                                             name="endDate"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <div className="w-full [&>button]:w-full">
-                                                    <DatePicker
-                                                        year={new Date().getFullYear()}
-                                                        value={
-                                                            field.value ||
-                                                            undefined
-                                                        }
-                                                        onValueChange={
-                                                            field.onChange
-                                                        }
-                                                    />
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel htmlFor="form-dialog-starting-date">
+                                                        Completion Date
+                                                    </FieldLabel>
+
+                                                    <div className="w-full [&>button]:w-full">
+                                                        <DatePicker
+                                                            year={new Date().getFullYear()}
+                                                            value={
+                                                                field.value ||
+                                                                undefined
+                                                            }
+                                                            onValueChange={
+                                                                field.onChange
+                                                            }
+                                                            invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                        />
+                                                    </div>
 
                                                     {fieldState.invalid && (
-                                                        <div className="text-destructive">
-                                                            {
-                                                                fieldState.error
-                                                                    ?.message
-                                                            }
-                                                        </div>
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
                                                     )}
-                                                </div>
+                                                </Field>
                                             )}
                                         />
                                     </div>
@@ -522,6 +573,7 @@ export default function FormDialog({
                                             data?.expected_output ?? '',
                                     });
                                 }}
+                                disabled={!isDirty || loadingState === 'saving'}
                             >
                                 Reset
                             </Button>
@@ -529,6 +581,7 @@ export default function FormDialog({
                                 variant="outline"
                                 type="button"
                                 onClick={() => onOpenChange(false)}
+                                disabled={loadingState === 'saving'}
                             >
                                 Cancel
                             </Button>

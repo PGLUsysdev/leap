@@ -1,6 +1,15 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Trash } from 'lucide-react';
+import { Trash, List, UserRound, Landmark, Construction } from 'lucide-react';
 import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/base-ui-components/ui/dropdown-menu';
 import type { PpaFundingSource } from '@/types';
 
 const columnHelper = createColumnHelper<PpaFundingSource>();
@@ -56,7 +65,7 @@ const columns = [
     columnHelper.display({
         id: 'total',
         size: 100,
-        header: () => <div className="text-center text-wrap">Code</div>,
+        header: () => <div className="text-center text-wrap">Total</div>,
         cell: () => <div className="text-center text-wrap">-</div>,
     }),
     columnHelper.accessor('ccet_adaptation', {
@@ -92,14 +101,38 @@ const columns = [
     }),
     columnHelper.display({
         id: 'actions',
-        size: 48,
+        size: 83,
         cell: ({ row, table }) => {
             const rowData = row.original;
             const meta = table.options.meta;
             const isOptimistic = (rowData as any).isOptimistic === true;
 
             return (
-                <div>
+                <div className="flex gap-1">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger
+                            render={<Button size="icon" variant="outline" />}
+                        >
+                            <List />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="min-w-36">
+                            <DropdownMenuGroup>
+                                <DropdownMenuLabel>PPMP</DropdownMenuLabel>
+                                <DropdownMenuItem>
+                                    <Construction />
+                                    for MOOE
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <Landmark />
+                                    for CO
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                                <UserRound /> PS Breakdown
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button
                         size="icon"
                         variant="destructive"
