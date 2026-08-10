@@ -290,10 +290,8 @@ export default function FormDialog({
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="gap-0 px-0 sm:max-w-[80rem]">
-                    {/* <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden px-0 sm:max-w-[80rem]"> */}
-                    <DialogHeader className="px-4">
-                        {/* <DialogHeader className="flex-none px-4"> */}
+                <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden px-0 sm:max-w-[80rem]">
+                    <DialogHeader className="flex-none px-4 pb-2">
                         <DialogTitle>Edit AIP Entry</DialogTitle>
                         <DialogDescription>
                             Update the office, implementation period, and
@@ -302,7 +300,7 @@ export default function FormDialog({
                         </DialogDescription>
                     </DialogHeader>
 
-                    <ScrollArea>
+                    <ScrollArea className="h-[calc(100vh-240px)]">
                         <form
                             id="form-dialog"
                             onSubmit={form.handleSubmit(onSubmit)}
@@ -310,7 +308,7 @@ export default function FormDialog({
                             className="flex-none px-4"
                         >
                             <div className="flex flex-col gap-4">
-                                <div className="pt-4">
+                                <div className="pt-2">
                                     <Card>
                                         <CardContent>
                                             <div className="slashed-zero tabular-nums">
@@ -453,7 +451,6 @@ export default function FormDialog({
                         <DataTable
                             columns={ppaFundingSourceColumns}
                             data={data?.ppa_funding_sources ?? []}
-                            // className="min-h-0 flex-1"
                             className="pr-2"
                             meta={{
                                 // onDelete: handleDeleteFundingSource,

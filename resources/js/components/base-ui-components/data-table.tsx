@@ -336,7 +336,7 @@ export default function Table<TData>({
                 {children}
             </div>
 
-            <ScrollArea className="min-h-0 flex-1 border-y">
+            <ScrollArea className="min-h-0 flex-1 border-y border-r">
                 <div>
                     <DataTable
                         style={{
