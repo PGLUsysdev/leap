@@ -905,8 +905,8 @@ export default function FormDialog({
                         <form
                             id="form-dialog"
                             onSubmit={form.handleSubmit(onSubmit)}
-                            className="px-4"
-                            // className="flex-none px-4"
+                            // className="px-4"
+                            className="flex-none px-4"
                         >
                             <div className="flex flex-col gap-4">
                                 <div className="pt-4">
