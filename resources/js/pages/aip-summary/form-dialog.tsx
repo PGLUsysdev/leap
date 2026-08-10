@@ -40,6 +40,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { index } from '@/routes/aip/summary/ppmp';
 import { store, destroy } from '@/routes/aip-entries/ppa-funding-sources';
 import { update } from '@/routes/aip-entry';
 import type { AipEntry, FundingSource, Office } from '@/types';
@@ -53,6 +54,7 @@ interface FormDialogProps {
     data?: AipEntry;
     offices?: Office[];
     fundingSources?: FundingSource[];
+    fiscalYearId: number;
 }
 
 interface PageProps {
@@ -64,10 +66,6 @@ const formSchema = z.object({
     startDate: z.date().optional(),
     endDate: z.date().optional(),
     expectedOutput: z.string().trim(),
-    // officeId: z.number(),
-    // startDate: z.number(),
-    // endDate: z.number(),
-    // expectedOutput: z.number(),
 });
 
 function toDate(isoDate: string | null | undefined) {
@@ -84,6 +82,7 @@ export default function FormDialog({
     data,
     offices,
     fundingSources,
+    fiscalYearId,
 }: FormDialogProps) {
     // # TODO
     // - [ ] there's still no indicator for the onError state
@@ -91,7 +90,8 @@ export default function FormDialog({
     console.log({
         // open,
         // onOpenChange,
-        data,
+        // data,
+        fiscalYearId,
     });
 
     const [openAlertDelete, setOpenAlertDelete] = useState(false);
@@ -504,9 +504,27 @@ export default function FormDialog({
                             data={data?.ppa_funding_sources ?? []}
                             className="pr-2"
                             meta={{
-                                // onDelete: handleDeleteFundingSource,
                                 onDelete: onDeleteFundingSource,
                                 disabled: isDirty,
+                                onOpenPpmp: (
+                                    fsId: number,
+                                    type: 'mooe' | 'co',
+                                ) => {
+                                    const entryId = data?.id;
+
+                                    if (!entryId) return;
+
+                                    router.visit(
+                                        index([fiscalYearId, entryId]).url,
+                                        {
+                                            method: 'get',
+                                            data: {
+                                                funding_source_id: fsId,
+                                                type,
+                                            },
+                                        },
+                                    );
+                                },
                             }}
                         >
                             <div className="flex gap-1">

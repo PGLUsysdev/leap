@@ -52,9 +52,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('home', fn() => Inertia::render('home'));
 
     // Test Routes
-    Route::get('test-table', [TestDataTableController::class, 'index'])->name(
-        'test-table.index',
-    );
+    // Route::get('test-table', [TestDataTableController::class, 'index'])->name(
+    //     'test-table.index',
+    // );
     Route::get('test-combobox', fn() => Inertia::render('test-combobox'));
 });
 

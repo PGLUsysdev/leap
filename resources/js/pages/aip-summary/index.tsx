@@ -211,11 +211,6 @@ export default function AipSummary({
     // ppmpCoaTotals,
     // psCoaAutoTotals = {},
     // psPoolPpaId = null,
-    fiscalYear,
-    can,
-    filters,
-    dialogPpaTree,
-    dialogCurrent,
     // fundingSources,
     // ccTypologies,
     // offices,
@@ -224,13 +219,21 @@ export default function AipSummary({
     // ppmpCategories,
     // ppmpCoaTotals,
     // psCoaAutoTotals,
+    fiscalYear,
+    can,
+    filters,
+    dialogPpaTree,
+    dialogCurrent,
     psPoolPpaId,
 
     newAipEntries,
     offices,
     fundingSources,
 }: AipSummaryProps) {
-    console.log({ newAipEntries, offices });
+    console.log({
+        fiscalYear,
+        // newAipEntries, offices
+    });
 
     // const json = JSON.stringify(newAipEntries);
     // const bytes = new Blob([json]).size;
@@ -1011,6 +1014,7 @@ export default function AipSummary({
                 data={newAipEntries.find((item) => item.id === selectedItemId)}
                 offices={offices}
                 fundingSources={fundingSources}
+                fiscalYearId={fiscalYear.id}
 
                 // data={selectedEntry}
                 // fiscalYear={fiscalYear}

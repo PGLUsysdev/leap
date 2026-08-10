@@ -83,7 +83,6 @@ export default function PpmpPage({
     aipEntry,
     allAipEntries = [],
     ppmps,
-    // isSupplemental = false,
     priceLists,
     chartOfAccounts,
     ppmpCategories,
@@ -93,7 +92,25 @@ export default function PpmpPage({
     currentTab,
     can,
     selectedOfficeId,
+    // isSupplemental = false,
 }: PpmpPageProps) {
+    console.log({
+        fiscalYear,
+        aipEntry,
+        allAipEntries,
+        ppmps,
+        priceLists,
+        chartOfAccounts,
+        ppmpCategories,
+        fundingSources,
+        initialChoice,
+        initialPpaFundingSourceId,
+        currentTab,
+        can,
+        selectedOfficeId,
+        // isSupplemental = false,
+    });
+
     const { auth } = usePage<SharedData>().props;
 
     const buildQuery = (extra: Record<string, any> = {}) => {

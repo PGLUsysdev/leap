@@ -118,17 +118,29 @@ const columns = [
                         <DropdownMenuContent align="end" className="min-w-36">
                             <DropdownMenuGroup>
                                 <DropdownMenuLabel>PPMP</DropdownMenuLabel>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        meta?.onOpenPpmp?.(rowData.id, 'mooe')
+                                    }
+                                >
                                     <Construction />
                                     for MOOE
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem
+                                    onClick={() =>
+                                        meta?.onOpenPpmp?.(rowData.id, 'co')
+                                    }
+                                >
                                     <Landmark />
                                     for CO
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    console.log('to ps breakdown');
+                                }}
+                            >
                                 <UserRound /> PS Breakdown
                             </DropdownMenuItem>
                         </DropdownMenuContent>
