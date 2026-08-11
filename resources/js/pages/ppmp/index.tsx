@@ -1,353 +1,359 @@
-import { router, usePage } from '@inertiajs/react';
-import { Decimal } from 'decimal.js';
-import { Plus, FileDown, Sheet, FileText, Printer } from 'lucide-react';
-import { useState, useMemo } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
 import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
-import { DeleteDialog } from '@/components/delete-dialog';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-dialog';
-import PpmpFormDialog from '@/pages/ppmp/form-dialog';
-import NewPpmpFormDialog from '@/pages/ppmp/new-ppmp-form-dialog';
-import {
-    exportToExcel,
-    exportToPDF,
-    exportToPrint,
-} from '@/pages/ppmp/utils/export';
 import { index, summary } from '@/routes/aip';
 import type {
-    FiscalYear,
-    Ppmp,
-    ChartOfAccount,
     AipEntry,
+    ChartOfAccount,
+    FiscalYear,
+    PpaFundingSource,
     PpmpCategory,
-    FundingSource,
     PriceList,
-    SharedData,
+    Ppmp,
+    // FundingSource,
+    // SharedData,
 } from '@/types';
-import columns from './columns/columns';
+// import { router, usePage } from '@inertiajs/react';
+// import { Decimal } from 'decimal.js';
+// import { Plus, FileDown, Sheet, FileText, Printer } from 'lucide-react';
+// import { useState, useMemo } from 'react';
+// import DataTable from '@/components/base-ui-components/data-table';
+// import { DeleteDialog } from '@/components/delete-dialog';
+// import {
+//     AlertDialog,
+//     AlertDialogAction,
+//     AlertDialogContent,
+//     AlertDialogDescription,
+//     AlertDialogFooter,
+//     AlertDialogHeader,
+//     AlertDialogTitle,
+// } from '@/components/ui/alert-dialog';
+// import { Button } from '@/components/ui/button';
+// import {
+//     DropdownMenu,
+//     DropdownMenuContent,
+//     DropdownMenuGroup,
+//     DropdownMenuItem,
+//     DropdownMenuTrigger,
+// } from '@/components/ui/dropdown-menu';
+// import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+// import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-dialog';
+// import PpmpFormDialog from '@/pages/ppmp/form-dialog';
+// import NewPpmpFormDialog from '@/pages/ppmp/new-ppmp-form-dialog';
+// import {
+//     exportToExcel,
+//     exportToPDF,
+//     exportToPrint,
+// } from '@/pages/ppmp/utils/export';
+// import columns from './columns/columns';
 
 interface PpmpPageProps {
-    fiscalYear: FiscalYear;
     aipEntry: AipEntry;
-    allAipEntries?: AipEntry[];
-    ppmps: Ppmp[];
-    priceLists: PriceList[];
+    categories: PpmpCategory[];
     chartOfAccounts: ChartOfAccount[];
-    ppmpCategories: PpmpCategory[];
-    fundingSources: FundingSource[];
-    currentTab: string;
-    initialChoice: 'MOOE' | 'CO';
-    initialPpaFundingSourceId: number;
-    can?: {
-        addPriceList: boolean;
-        viewSupplemental: boolean;
-        export: boolean;
-        generateSummary: boolean;
-        showSummaryAll?: boolean;
-    };
-    selectedOfficeId?: string;
-    fundingSourceId: number;
-    fundingSource: FundingSource;
+    fiscalYear: FiscalYear;
+    ppaFundingSource: PpaFundingSource;
+    ppmpItems: Ppmp[];
+    priceLists: PriceList[];
+
+    // fiscalYear: FiscalYear;
+    // allAipEntries?: AipEntry[];
+    // fundingSources: FundingSource[];
+    // currentTab: string;
+    // initialChoice: 'MOOE' | 'CO';
+    // initialPpaFundingSourceId: number;
+    // can?: {
+    //     addPriceList: boolean;
+    //     viewSupplemental: boolean;
+    //     export: boolean;
+    //     generateSummary: boolean;
+    //     showSummaryAll?: boolean;
+    // };
+    // selectedOfficeId?: string;
+    // fundingSourceId: number;
+    // fundingSource: FundingSource;
 }
 
+// need here
+// - [x] all price lists
+// - [x] all coa
+// - [x] all catagory
+// - [ ] office name
+// - [ ] selected funding source code
+// - [ ] ppa name
 export default function PpmpPage({
-    fiscalYear,
     aipEntry,
-    allAipEntries = [],
-    ppmps,
-    priceLists,
+    categories,
     chartOfAccounts,
-    ppmpCategories,
-    fundingSources,
-    initialChoice,
-    initialPpaFundingSourceId,
-    currentTab,
-    can,
-    selectedOfficeId,
-    fundingSource,
+    fiscalYear,
+    ppaFundingSource,
+    ppmpItems,
+    priceLists,
+
+    // fiscalYear,
+    // allAipEntries = [],
+    // ppmps,
+    // fundingSources,
+    // initialChoice,
+    // initialPpaFundingSourceId,
+    // currentTab,
+    // can,
+    // selectedOfficeId,
+    // fundingSourceId,
     // isSupplemental = false,
-    fundingSourceId,
 }: PpmpPageProps) {
     console.log({
-        fiscalYear,
         aipEntry,
-        allAipEntries,
-        ppmps,
-        priceLists,
+        categories,
         chartOfAccounts,
-        ppmpCategories,
-        fundingSources,
-        initialChoice,
-        initialPpaFundingSourceId,
-        currentTab,
-        can,
-        selectedOfficeId,
-        // isSupplemental = false,
-        fundingSourceId,
+        fiscalYear,
+        ppaFundingSource,
+        ppmpItems,
+        priceLists,
     });
 
-    const { auth } = usePage<SharedData>().props;
+    // const { auth } = usePage<SharedData>().props;
 
-    const buildQuery = (extra: Record<string, any> = {}) => {
-        const query = { ...extra };
+    // const buildQuery = (extra: Record<string, any> = {}) => {
+    //     const query = { ...extra };
 
-        if (can?.showSummaryAll && selectedOfficeId) {
-            query.selected_office_id = selectedOfficeId;
-        }
+    //     if (can?.showSummaryAll && selectedOfficeId) {
+    //         query.selected_office_id = selectedOfficeId;
+    //     }
 
-        return query;
-    };
+    //     return query;
+    // };
 
-    const initialFsId = useMemo(() => {
-        const bridge = aipEntry.ppa_funding_sources?.find(
-            (pfs) => pfs.id === Number(initialPpaFundingSourceId),
-        );
+    // const initialFsId = useMemo(() => {
+    //     const bridge = aipEntry.ppa_funding_sources?.find(
+    //         (pfs) => pfs.id === Number(initialPpaFundingSourceId),
+    //     );
 
-        return bridge?.funding_source_id || 0;
-    }, [aipEntry, initialPpaFundingSourceId]);
+    //     return bridge?.funding_source_id || 0;
+    // }, [aipEntry, initialPpaFundingSourceId]);
 
-    const [selectedFundingSourceId, setSelectedFundingSourceId] =
-        useState(fundingSourceId);
+    // const [selectedFundingSourceId, setSelectedFundingSourceId] =
+    //     useState(fundingSourceId);
 
-    const [open, setOpen] = useState(false);
-    const [openAlert, setOpenAlert] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [
-        openExpenseAccountSummaryDialog,
-        setOpenExpenseAccountSummaryDialog,
-    ] = useState(false);
-    const [openNewPpmpForm, setOpenNewPpmpForm] = useState(false);
+    // const [open, setOpen] = useState(false);
+    // const [openAlert, setOpenAlert] = useState(false);
+    // const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    // const [selectedSource, setSelectedSource] = useState<Ppmp | null>(null);
+    // const [isLoading, setIsLoading] = useState(false);
+    // const [
+    //     openExpenseAccountSummaryDialog,
+    //     setOpenExpenseAccountSummaryDialog,
+    // ] = useState(false);
+    // const [openNewPpmpForm, setOpenNewPpmpForm] = useState(false);
 
-    const activeAipEntry = useMemo(() => {
-        if (currentTab === 'original') {
-            return allAipEntries.find((e) => !e.supplemental_aip_id);
-        }
+    // const activeAipEntry = useMemo(() => {
+    //     if (currentTab === 'original') {
+    //         return allAipEntries.find((e) => !e.supplemental_aip_id);
+    //     }
 
-        if (currentTab.startsWith('supplemental_')) {
-            const entryId = Number(currentTab.replace('supplemental_', ''));
+    //     if (currentTab.startsWith('supplemental_')) {
+    //         const entryId = Number(currentTab.replace('supplemental_', ''));
 
-            return allAipEntries.find((e) => e.id === entryId);
-        }
+    //         return allAipEntries.find((e) => e.id === entryId);
+    //     }
 
-        return null;
-    }, [currentTab, allAipEntries]);
+    //     return null;
+    // }, [currentTab, allAipEntries]);
 
-    const isActiveTab = useMemo(() => {
-        return currentTab !== 'combined';
-    }, [currentTab]);
+    // const isActiveTab = useMemo(() => {
+    //     return currentTab !== 'combined';
+    // }, [currentTab]);
 
-    const activeFundingSources = useMemo(() => {
-        if (currentTab === 'combined') {
-            return fundingSources;
-        }
+    // const activeFundingSources = useMemo(() => {
+    //     if (currentTab === 'combined') {
+    //         return fundingSources;
+    //     }
 
-        const currentEntry = activeAipEntry || aipEntry;
-        const entryFsIds = new Set(
-            currentEntry?.ppa_funding_sources?.map(
-                (pfs) => pfs.funding_source_id,
-            ) || [],
-        );
+    //     const currentEntry = activeAipEntry || aipEntry;
+    //     const entryFsIds = new Set(
+    //         currentEntry?.ppa_funding_sources?.map(
+    //             (pfs) => pfs.funding_source_id,
+    //         ) || [],
+    //     );
 
-        return fundingSources.filter((fs) => entryFsIds.has(fs.id));
-    }, [currentTab, activeAipEntry, aipEntry, fundingSources]);
+    //     return fundingSources.filter((fs) => entryFsIds.has(fs.id));
+    // }, [currentTab, activeAipEntry, aipEntry, fundingSources]);
 
-    const effectiveFsId = useMemo(() => {
-        if (activeFundingSources.length === 0) {
-            return selectedFundingSourceId;
-        }
+    // const effectiveFsId = useMemo(() => {
+    //     if (activeFundingSources.length === 0) {
+    //         return selectedFundingSourceId;
+    //     }
 
-        return activeFundingSources.some(
-            (fs) => fs.id === selectedFundingSourceId,
-        )
-            ? selectedFundingSourceId
-            : activeFundingSources[0].id;
-    }, [activeFundingSources, selectedFundingSourceId]);
+    //     return activeFundingSources.some(
+    //         (fs) => fs.id === selectedFundingSourceId,
+    //     )
+    //         ? selectedFundingSourceId
+    //         : activeFundingSources[0].id;
+    // }, [activeFundingSources, selectedFundingSourceId]);
 
-    if (effectiveFsId !== selectedFundingSourceId) {
-        setSelectedFundingSourceId(effectiveFsId);
-    }
+    // if (effectiveFsId !== selectedFundingSourceId) {
+    //     setSelectedFundingSourceId(effectiveFsId);
+    // }
 
-    const tabsList = useMemo(() => {
-        const list: { value: string; label: string }[] = [];
-        list.push({ value: 'original', label: 'Original' });
-        allAipEntries.forEach((entry) => {
-            if (
-                entry.supplemental_aip_id &&
-                (entry.ppa_funding_sources?.length ?? 0) > 0
-            ) {
-                const name = entry.supplemental_aip?.name || 'Supplemental';
-                list.push({
-                    value: `supplemental_${entry.id}`,
-                    label: name.replace('AIP', 'PPMP'),
-                });
-            }
-        });
-        list.push({ value: 'combined', label: 'Combined' });
+    // const tabsList = useMemo(() => {
+    //     const list: { value: string; label: string }[] = [];
+    //     list.push({ value: 'original', label: 'Original' });
+    //     allAipEntries.forEach((entry) => {
+    //         if (
+    //             entry.supplemental_aip_id &&
+    //             (entry.ppa_funding_sources?.length ?? 0) > 0
+    //         ) {
+    //             const name = entry.supplemental_aip?.name || 'Supplemental';
+    //             list.push({
+    //                 value: `supplemental_${entry.id}`,
+    //                 label: name.replace('AIP', 'PPMP'),
+    //             });
+    //         }
+    //     });
+    //     list.push({ value: 'combined', label: 'Combined' });
 
-        return list;
-    }, [allAipEntries]);
+    //     return list;
+    // }, [allAipEntries]);
 
-    const activePpmpItems = useMemo(() => {
-        if (currentTab === 'combined') {
-            return ppmps;
-        }
+    // const activePpmpItems = useMemo(() => {
+    //     if (currentTab === 'combined') {
+    //         return ppmps;
+    //     }
 
-        if (currentTab === 'original') {
-            const origEntry = allAipEntries.find((e) => !e.supplemental_aip_id);
+    //     if (currentTab === 'original') {
+    //         const origEntry = allAipEntries.find((e) => !e.supplemental_aip_id);
 
-            if (!origEntry) {
-                return [];
-            }
+    //         if (!origEntry) {
+    //             return [];
+    //         }
 
-            return ppmps.filter(
-                (item) =>
-                    item.ppa_funding_source?.aip_entry_id === origEntry.id,
-            );
-        }
+    //         return ppmps.filter(
+    //             (item) =>
+    //                 item.ppa_funding_source?.aip_entry_id === origEntry.id,
+    //         );
+    //     }
 
-        if (currentTab.startsWith('supplemental_')) {
-            const entryId = Number(currentTab.replace('supplemental_', ''));
+    //     if (currentTab.startsWith('supplemental_')) {
+    //         const entryId = Number(currentTab.replace('supplemental_', ''));
 
-            return ppmps.filter(
-                (item) => item.ppa_funding_source?.aip_entry_id === entryId,
-            );
-        }
+    //         return ppmps.filter(
+    //             (item) => item.ppa_funding_source?.aip_entry_id === entryId,
+    //         );
+    //     }
 
-        return [];
-    }, [currentTab, ppmps, allAipEntries]);
+    //     return [];
+    // }, [currentTab, ppmps, allAipEntries]);
 
-    const filteredPpmpItems = useMemo(() => {
-        const items = activePpmpItems.filter((ppmp) => {
-            const matchesFunding =
-                ppmp.ppa_funding_source?.funding_source_id ===
-                selectedFundingSourceId;
+    // const filteredPpmpItems = useMemo(() => {
+    //     const items = activePpmpItems.filter((ppmp) => {
+    //         const matchesFunding =
+    //             ppmp.ppa_funding_source?.funding_source_id ===
+    //             selectedFundingSourceId;
 
-            return matchesFunding;
-        });
+    //         return matchesFunding;
+    //     });
 
-        if (currentTab === 'combined') {
-            const grouped = new Map<number, Ppmp[]>();
-            items.forEach((item) => {
-                const key = item.ppmp_price_list_id;
+    //     if (currentTab === 'combined') {
+    //         const grouped = new Map<number, Ppmp[]>();
+    //         items.forEach((item) => {
+    //             const key = item.ppmp_price_list_id;
 
-                if (!key) {
-                    return;
-                }
+    //             if (!key) {
+    //                 return;
+    //             }
 
-                const list = grouped.get(key) || [];
-                list.push(item);
-                grouped.set(key, list);
-            });
+    //             const list = grouped.get(key) || [];
+    //             list.push(item);
+    //             grouped.set(key, list);
+    //         });
 
-            return Array.from(grouped.values()).map((list) => {
-                const base = { ...list[0] };
-                const months = [
-                    'jan',
-                    'feb',
-                    'mar',
-                    'apr',
-                    'may',
-                    'jun',
-                    'jul',
-                    'aug',
-                    'sep',
-                    'oct',
-                    'nov',
-                    'dec',
-                ];
+    //         return Array.from(grouped.values()).map((list) => {
+    //             const base = { ...list[0] };
+    //             const months = [
+    //                 'jan',
+    //                 'feb',
+    //                 'mar',
+    //                 'apr',
+    //                 'may',
+    //                 'jun',
+    //                 'jul',
+    //                 'aug',
+    //                 'sep',
+    //                 'oct',
+    //                 'nov',
+    //                 'dec',
+    //             ];
 
-                months.forEach((m) => {
-                    const qtyKey = `${m}_qty`;
-                    const amtKey = `${m}_amount`;
+    //             months.forEach((m) => {
+    //                 const qtyKey = `${m}_qty`;
+    //                 const amtKey = `${m}_amount`;
 
-                    let totalQty = 0;
-                    let totalAmt = new Decimal(0);
+    //                 let totalQty = 0;
+    //                 let totalAmt = new Decimal(0);
 
-                    list.forEach((item) => {
-                        totalQty += Number((item as any)[qtyKey] || 0);
-                        totalAmt = totalAmt.plus(
-                            new Decimal((item as any)[amtKey] || 0),
-                        );
-                    });
+    //                 list.forEach((item) => {
+    //                     totalQty += Number((item as any)[qtyKey] || 0);
+    //                     totalAmt = totalAmt.plus(
+    //                         new Decimal((item as any)[amtKey] || 0),
+    //                     );
+    //                 });
 
-                    (base as any)[qtyKey] = totalQty;
-                    (base as any)[amtKey] = totalAmt.toString();
-                });
+    //                 (base as any)[qtyKey] = totalQty;
+    //                 (base as any)[amtKey] = totalAmt.toString();
+    //             });
 
-                base.isCombined = true;
+    //             base.isCombined = true;
 
-                return base;
-            });
-        }
+    //             return base;
+    //         });
+    //     }
 
-        return items;
-    }, [activePpmpItems, selectedFundingSourceId, currentTab]);
+    //     return items;
+    // }, [activePpmpItems, selectedFundingSourceId, currentTab]);
 
-    function handleDeleteDialogOpen(source: Ppmp) {
-        setSelectedSource(source);
-        setIsDeleteDialogOpen(true);
-    }
+    // function handleDeleteDialogOpen(source: Ppmp) {
+    //     setSelectedSource(source);
+    //     setIsDeleteDialogOpen(true);
+    // }
 
-    function handleDelete() {
-        router.delete(`/ppmp/${selectedSource?.id}`, {
-            preserveState: true,
-            preserveScroll: true,
-            onStart: () => setIsLoading(true),
-            onSuccess: () => {
-                setIsDeleteDialogOpen(false);
-                setSelectedSource(null);
-            },
-            onFinish: () => setIsLoading(false),
-        });
-    }
+    // function handleDelete() {
+    //     router.delete(`/ppmp/${selectedSource?.id}`, {
+    //         preserveState: true,
+    //         preserveScroll: true,
+    //         onStart: () => setIsLoading(true),
+    //         onSuccess: () => {
+    //             setIsDeleteDialogOpen(false);
+    //             setSelectedSource(null);
+    //         },
+    //         onFinish: () => setIsLoading(false),
+    //     });
+    // }
 
-    const selectedFundingSource = fundingSources.find((fs) => {
-        return fs.id === selectedFundingSourceId;
-    });
+    // const selectedFundingSource = fundingSources.find((fs) => {
+    //     return fs.id === selectedFundingSourceId;
+    // });
 
-    const currentPpaFundingSourceId = useMemo(() => {
-        // Look for the record in the pivot/bridge table
-        const bridge = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
-            (pfs) => pfs.funding_source_id === selectedFundingSourceId,
-        );
+    // const currentPpaFundingSourceId = useMemo(() => {
+    //     // Look for the record in the pivot/bridge table
+    //     const bridge = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
+    //         (pfs) => pfs.funding_source_id === selectedFundingSourceId,
+    //     );
 
-        return bridge?.id; // This is the primary key of ppa_funding_sources
-    }, [activeAipEntry, aipEntry, selectedFundingSourceId]);
+    //     return bridge?.id; // This is the primary key of ppa_funding_sources
+    // }, [activeAipEntry, aipEntry, selectedFundingSourceId]);
 
-    const allPpmpItemsForFundingSource = useMemo(() => {
-        if (!selectedFundingSourceId) {
-            return [];
-        }
+    // const allPpmpItemsForFundingSource = useMemo(() => {
+    //     if (!selectedFundingSourceId) {
+    //         return [];
+    //     }
 
-        return activePpmpItems.filter(
-            (ppmp) =>
-                ppmp.ppa_funding_source?.funding_source_id ===
-                selectedFundingSourceId,
-        );
-    }, [activePpmpItems, selectedFundingSourceId]);
+    //     return activePpmpItems.filter(
+    //         (ppmp) =>
+    //             ppmp.ppa_funding_source?.funding_source_id ===
+    //             selectedFundingSourceId,
+    //     );
+    // }, [activePpmpItems, selectedFundingSourceId]);
 
     return (
         <>
@@ -361,7 +367,7 @@ export default function PpmpPage({
                             {aipEntry?.ppa?.office?.acronym || 'N/A'}
                         </div>
                         <div className="text-sm">
-                            {fundingSource?.code || 'N/A'}
+                            {ppaFundingSource.funding_source?.code || 'N/A'}
                         </div>
                         <div className="text-sm">aip reference code</div>
                         <div className="text-sm">{aipEntry?.ppa?.name}</div>
@@ -450,7 +456,7 @@ export default function PpmpPage({
                     {/*)}*/}
                 </div>
 
-                <DataTable
+                {/* <DataTable
                     columns={columns}
                     data={filteredPpmpItems}
                     showFooter={true}
@@ -479,7 +485,7 @@ export default function PpmpPage({
                                                     ? exportToPrint({
                                                           filteredPpmpItems,
                                                           priceLists,
-                                                          ppmpCategories,
+                                                          categories,
                                                           chartOfAccounts,
                                                           aipEntry:
                                                               activeAipEntry ||
@@ -502,7 +508,7 @@ export default function PpmpPage({
                                                     ? exportToPDF({
                                                           filteredPpmpItems,
                                                           priceLists,
-                                                          ppmpCategories,
+                                                          categories,
                                                           chartOfAccounts,
                                                           aipEntry:
                                                               activeAipEntry ||
@@ -525,7 +531,7 @@ export default function PpmpPage({
                                                     ? exportToExcel({
                                                           filteredPpmpItems,
                                                           priceLists,
-                                                          ppmpCategories,
+                                                          categories,
                                                           chartOfAccounts,
                                                           aipEntry:
                                                               activeAipEntry ||
@@ -570,16 +576,16 @@ export default function PpmpPage({
                             </Button>
                         )}
                     </div>
-                </DataTable>
+                </DataTable>*/}
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
-            <PpmpFormDialog
+            {/* <PpmpFormDialog
                 open={open}
                 onOpenChange={setOpen}
                 chartOfAccounts={chartOfAccounts}
-                ppmpCategories={ppmpCategories}
+                ppmpCategories={categories}
                 priceLists={priceLists}
                 selectedEntry={activeAipEntry || aipEntry}
                 fundingSources={fundingSources}
@@ -643,7 +649,7 @@ export default function PpmpPage({
                     setSelectedSource(null);
                 }}
                 isLoading={isLoading}
-            />
+            />*/}
         </>
     );
 }

@@ -183,7 +183,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //     'index',
     // ])->name('aip.summary.ppmp.index');
     Route::get(
-        '/aip/{fiscalYear}/summary/{aipEntry}/funding-source/{fundingSource}/ppmp',
+        '/aip/{fiscalYear}/summary/{aipEntry}/funding-source/{ppaFundingSource}/ppmp',
         [PpmpController::class, 'index'],
     )->name('aip.summary.ppmp.index');
     Route::post('/ppmp', [PpmpController::class, 'store'])->name('ppmp.store');

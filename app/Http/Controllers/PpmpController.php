@@ -25,115 +25,120 @@ class PpmpController extends Controller
         Request $request,
         FiscalYear $fiscalYear,
         AipEntry $aipEntry,
-        FundingSource $fundingSource,
+        PpaFundingSource $ppaFundingSource,
     ) {
         Gate::authorize('viewAny', [Ppmp::class, $aipEntry]);
 
-        $selectedAipEntry = AipEntry::with([
-            'ppa.office',
-            'ppaFundingSources',
-        ])->find($aipEntry->id);
-
-        $tab = $request->query('tab');
-
-        $isSupplemental = !is_null($selectedAipEntry->supplemental_aip_id);
-
-        // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
-        $allAipEntries = AipEntry::where('ppa_id', $selectedAipEntry->ppa_id)
-            ->with(['supplementalAip', 'ppaFundingSources', 'ppa'])
-            ->get();
-
-        // Check viewSupplemental whenever supplemental entries exist
-        $hasSupplementalAipEntries = $allAipEntries->contains(
-            fn($entry) => !is_null($entry->supplemental_aip_id),
-        );
-
-        $canViewSupplemental = request()
-            ->user()
-            ->can('viewSupplemental', Ppmp::class);
-
-        if (
-            $tab &&
-            str_starts_with($tab, 'supplemental_') &&
-            !$canViewSupplemental
-        ) {
-            $tab = 'original';
+        // Ensure the pivot belongs to this AIP entry (safety)
+        if ($ppaFundingSource->aip_entry_id !== $aipEntry->id) {
+            abort(404);
         }
 
-        $aipEntryIds = $allAipEntries->pluck('id');
+        // $selectedAipEntry = AipEntry::with([
+        //     'ppa.office',
+        //     'ppaFundingSources',
+        // ])->find($aipEntry->id);
 
-        $ppmps = Ppmp::whereHas('ppaFundingSource', function ($query) use (
-            $aipEntryIds,
-            $fundingSource,
-        ) {
-            $query
-                ->whereIn('aip_entry_id', $aipEntryIds)
-                ->where('funding_source_id', $fundingSource->id);
-        })
-            ->with([
-                'ppaFundingSource' => function ($query) {
-                    $query->select(
-                        'id',
-                        'funding_source_id',
-                        'supplemental_aip_id',
-                        'aip_entry_id',
-                    );
-                },
-                'ppaFundingSource.fundingSource' => function ($query) {
-                    $query->select('id', 'code', 'title'); // only 'code' is needed for display
-                },
-                'ppmpPriceList' => function ($query) {
-                    $query->select(
-                        'id',
-                        'item_number',
-                        'description',
-                        'unit_of_measurement',
-                        'price',
-                        'chart_of_account_ppmp_category_id',
-                    );
-                },
-                'ppmpPriceList.chartOfAccountPpmpCategory' => function (
-                    $query,
-                ) {
-                    $query->select(
-                        'id',
-                        'chart_of_account_id',
-                        'ppmp_category_id',
-                    );
-                },
-                'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount' => function (
-                    $query,
-                ) {
-                    $query->select(
-                        'id',
-                        'account_number',
-                        'account_title',
-                        'expense_class',
-                    );
-                },
-                'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory' => function (
-                    $query,
-                ) {
-                    $query->select('id', 'name', 'is_non_procurement');
-                },
-            ])
-            ->get();
+        // $tab = $request->query('tab');
 
-        $priceLists = PpmpPriceList::with(
-            'chartOfAccountPpmpCategory.chartOfAccount',
-            'chartOfAccountPpmpCategory.ppmpCategory',
-        )->get();
+        // $isSupplemental = !is_null($selectedAipEntry->supplemental_aip_id);
 
-        $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
-            'MOOE',
-            'CO',
-        ])->get();
+        // // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
+        // $allAipEntries = AipEntry::where('ppa_id', $selectedAipEntry->ppa_id)
+        //     ->with(['supplementalAip', 'ppaFundingSources', 'ppa'])
+        //     ->get();
 
-        $ppmpCategories = PpmpCategory::with(
-            'chartOfAccountPpmpCategories.chartOfAccount',
-        )->get();
+        // // Check viewSupplemental whenever supplemental entries exist
+        // $hasSupplementalAipEntries = $allAipEntries->contains(
+        //     fn($entry) => !is_null($entry->supplemental_aip_id),
+        // );
 
-        $fundingSources = FundingSource::where('id', $fundingSource->id)->get();
+        // $canViewSupplemental = request()
+        //     ->user()
+        //     ->can('viewSupplemental', Ppmp::class);
+
+        // if (
+        //     $tab &&
+        //     str_starts_with($tab, 'supplemental_') &&
+        //     !$canViewSupplemental
+        // ) {
+        //     $tab = 'original';
+        // }
+
+        // $aipEntryIds = $allAipEntries->pluck('id');
+
+        // $ppmps = Ppmp::whereHas('ppaFundingSource', function ($query) use (
+        //     $aipEntryIds,
+        //     $fundingSource,
+        // ) {
+        //     $query
+        //         ->whereIn('aip_entry_id', $aipEntryIds)
+        //         ->where('funding_source_id', $fundingSource->id);
+        // })
+        //     ->with([
+        //         'ppaFundingSource' => function ($query) {
+        //             $query->select(
+        //                 'id',
+        //                 'funding_source_id',
+        //                 'supplemental_aip_id',
+        //                 'aip_entry_id',
+        //             );
+        //         },
+        //         'ppaFundingSource.fundingSource' => function ($query) {
+        //             $query->select('id', 'code', 'title'); // only 'code' is needed for display
+        //         },
+        //         'ppmpPriceList' => function ($query) {
+        //             $query->select(
+        //                 'id',
+        //                 'item_number',
+        //                 'description',
+        //                 'unit_of_measurement',
+        //                 'price',
+        //                 'chart_of_account_ppmp_category_id',
+        //             );
+        //         },
+        //         'ppmpPriceList.chartOfAccountPpmpCategory' => function (
+        //             $query,
+        //         ) {
+        //             $query->select(
+        //                 'id',
+        //                 'chart_of_account_id',
+        //                 'ppmp_category_id',
+        //             );
+        //         },
+        //         'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount' => function (
+        //             $query,
+        //         ) {
+        //             $query->select(
+        //                 'id',
+        //                 'account_number',
+        //                 'account_title',
+        //                 'expense_class',
+        //             );
+        //         },
+        //         'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory' => function (
+        //             $query,
+        //         ) {
+        //             $query->select('id', 'name', 'is_non_procurement');
+        //         },
+        //     ])
+        //     ->get();
+
+        // $priceLists = PpmpPriceList::with(
+        //     'chartOfAccountPpmpCategory.chartOfAccount',
+        //     'chartOfAccountPpmpCategory.ppmpCategory',
+        // )->get();
+
+        // $chartOfAccounts = ChartOfAccount::whereIn('expense_class', [
+        //     'MOOE',
+        //     'CO',
+        // ])->get();
+
+        // $ppmpCategories = PpmpCategory::with(
+        //     'chartOfAccountPpmpCategories.chartOfAccount',
+        // )->get();
+
+        // $fundingSources = FundingSource::where('id', $fundingSource->id)->get();
 
         // $fundingSources = FundingSource::whereHas(
         //     'ppaFundingSources',
@@ -142,50 +147,52 @@ class PpmpController extends Controller
         //     },
         // )->get();
 
-        $ppmps->each(function ($ppmp) use ($request) {
-            $ppmp->can = [
-                'edit' => $request->user()->can('editPriceListQuantity', $ppmp),
-                'delete' => $request->user()->can('deletePriceList', $ppmp),
-            ];
-        });
+        // $ppmps->each(function ($ppmp) use ($request) {
+        //     $ppmp->can = [
+        //         'edit' => $request->user()->can('editPriceListQuantity', $ppmp),
+        //         'delete' => $request->user()->can('deletePriceList', $ppmp),
+        //     ];
+        // });
 
-        $selectedOfficeId = $request->query('selected_office_id');
+        // $selectedOfficeId = $request->query('selected_office_id');
 
         return Inertia::render('ppmp/index', [
-            'can' => [
-                'addPriceList' => request()
-                    ->user()
-                    ->can('addPriceList', Ppmp::class),
-                'viewSupplemental' => $canViewSupplemental,
-                'export' => request()->user()->can('export', Ppmp::class),
-                'generateSummary' => request()
-                    ->user()
-                    ->can('generateSummary', Ppmp::class),
-                'showSummaryAll' => $request
-                    ->user()
-                    ->can('showSummaryAll', AipEntry::class),
-            ],
+            'aipEntry' => $aipEntry->load('ppa.office'),
+            'categories' => PpmpCategory::all(),
+            'chartOfAccounts' => ChartOfAccount::whereIn('expense_class', [
+                'MOOE',
+                'CO',
+            ])->get(),
             'fiscalYear' => $fiscalYear,
-            'aipEntry' => $selectedAipEntry,
-            'allAipEntries' => $allAipEntries,
-            'ppmps' => $ppmps,
-            'isSupplemental' => $isSupplemental,
-            'priceLists' => $priceLists,
-            'chartOfAccounts' => $chartOfAccounts,
-            'ppmpCategories' => $ppmpCategories,
-            'fundingSources' => $fundingSources,
-            'currentTab' =>
-                $tab ?:
-                ($selectedAipEntry->supplemental_aip_id
-                    ? "supplemental_{$selectedAipEntry->id}"
-                    : 'original'),
-            // 'initialChoice' => $request->query('choice', 'MOOE'),
-            // 'initialPpaFundingSourceId' => $request->query(
-            //     'ppa_funding_source_id',
-            // ),
-            'fundingSource' => $fundingSource,
-            'fundingSourceId' => $fundingSource->id,
-            'selectedOfficeId' => $selectedOfficeId,
+            'ppaFundingSource' => $ppaFundingSource->load('fundingSource'),
+            'ppmpItems' => Ppmp::all(),
+            'priceLists' => PpmpPriceList::all(),
+
+            // 'can' => [
+            //     'addPriceList' => request()
+            //         ->user()
+            //         ->can('addPriceList', Ppmp::class),
+            //     'viewSupplemental' => $canViewSupplemental,
+            //     'export' => request()->user()->can('export', Ppmp::class),
+            //     'generateSummary' => request()
+            //         ->user()
+            //         ->can('generateSummary', Ppmp::class),
+            //     'showSummaryAll' => $request
+            //         ->user()
+            //         ->can('showSummaryAll', AipEntry::class),
+            // ],
+            // // 'aipEntry' => $selectedAipEntry,
+            // 'allAipEntries' => $allAipEntries,
+            // // 'ppmps' => $ppmps,
+            // 'isSupplemental' => $isSupplemental,
+            // // 'fundingSources' => $fundingSources,
+            // 'currentTab' =>
+            //     $tab ?:
+            //     ($selectedAipEntry->supplemental_aip_id
+            //         ? "supplemental_{$selectedAipEntry->id}"
+            //         : 'original'),
+            // // 'fundingSourceId' => $fundingSource->id,
+            // 'selectedOfficeId' => $selectedOfficeId,
         ]);
     }
 
