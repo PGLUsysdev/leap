@@ -31,7 +31,6 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SalaryStandardController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\SupplementalAipController;
-use App\Http\Controllers\TestDataTableController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -42,8 +41,7 @@ Route::get('/debug-php', function () {
 });
 
 Route::redirect('/', '/login');
-
-Route::inertia('/', 'welcome')->name('home');
+// Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name(
@@ -51,10 +49,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     );
     Route::get('home', fn() => Inertia::render('home'));
 
-    // Test Routes
-    // Route::get('test-table', [TestDataTableController::class, 'index'])->name(
-    //     'test-table.index',
-    // );
     Route::get('test-combobox', fn() => Inertia::render('test-combobox'));
 });
 

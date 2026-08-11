@@ -1,25 +1,44 @@
-import { Form, Head } from "@inertiajs/react";
-import InputError from "@/components/input-error";
-import PasswordInput from "@/components/password-input";
-import TextLink from "@/components/text-link";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
-import { login } from "@/routes";
-import { store } from "@/routes/register";
+import { Form, Head, Link } from '@inertiajs/react';
+import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
+import TextLink from '@/components/text-link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Spinner } from '@/components/ui/spinner';
+import { login } from '@/routes';
+import { store } from '@/routes/register';
 
 type Props = {
     passwordRules: string;
+    flash?: { status?: string };
 };
 
-export default function Register({ passwordRules }: Props) {
+export default function Register({ passwordRules, flash }: Props) {
+    if (flash?.status === 'awaiting-approval') {
+        return (
+            <>
+                <Head title="Account Pending" />
+
+                <div className="space-y-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                        An administrator needs to approve your account before
+                        you can log in. You'll get an email once you're cleared!
+                    </p>
+                    <Button asChild className="w-full">
+                        <Link href={login()}>Back to Login</Link>
+                    </Button>
+                </div>
+            </>
+        );
+    }
+
     return (
         <>
             <Head title="Register" />
             <Form
                 {...store.form()}
-                resetOnSuccess={["password", "password_confirmation"]}
+                resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
                 className="flex flex-col gap-6"
             >
@@ -38,7 +57,10 @@ export default function Register({ passwordRules }: Props) {
                                     name="name"
                                     placeholder="Full name"
                                 />
-                                <InputError message={errors.name} className="mt-2" />
+                                <InputError
+                                    message={errors.name}
+                                    className="mt-2"
+                                />
                             </div>
 
                             <div className="grid gap-2">
@@ -70,7 +92,9 @@ export default function Register({ passwordRules }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password_confirmation">Confirm password</Label>
+                                <Label htmlFor="password_confirmation">
+                                    Confirm password
+                                </Label>
                                 <PasswordInput
                                     id="password_confirmation"
                                     required
@@ -80,7 +104,9 @@ export default function Register({ passwordRules }: Props) {
                                     placeholder="Confirm password"
                                     passwordrules={passwordRules}
                                 />
-                                <InputError message={errors.password_confirmation} />
+                                <InputError
+                                    message={errors.password_confirmation}
+                                />
                             </div>
 
                             <Button
@@ -95,7 +121,7 @@ export default function Register({ passwordRules }: Props) {
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{" "}
+                            Already have an account?{' '}
                             <TextLink href={login()} tabIndex={6}>
                                 Log in
                             </TextLink>
@@ -107,7 +133,18 @@ export default function Register({ passwordRules }: Props) {
     );
 }
 
-Register.layout = {
-    title: "Create an account",
-    description: "Enter your details below to create your account",
-};
+// Register.layout = {
+//     title: 'Create an account',
+//     description: 'Enter your details below to create your account',
+// };
+
+Register.layout = (props: Props) =>
+    props.flash?.status === 'awaiting-approval'
+        ? {
+              title: 'Account Pending',
+              description: 'Your registration was successful.',
+          }
+        : {
+              title: 'Create an account',
+              description: 'Enter your details below to create your account',
+          };

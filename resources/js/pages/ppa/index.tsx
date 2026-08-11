@@ -68,7 +68,18 @@ export default function PpaPage({
     selectedOfficeId,
     parentOffices,
 }: PpaPageProps) {
-    console.log(ppaTree);
+    console.log({
+        offices,
+        ppaTree,
+        current,
+        filters,
+        dialogPpaTree,
+        dialogCurrent,
+        can,
+        showAllOffices,
+        selectedOfficeId,
+        parentOffices,
+    });
 
     const { data, ...paginationData } = ppaTree;
 

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Log;
 
 class PpaController extends Controller
 {
@@ -139,6 +140,8 @@ class PpaController extends Controller
     private function getPpaQuery($request, $officeId, $idKey, $searchKey)
     {
         $fiscalYearId = session('active_fiscal_year_id');
+
+        Log::info($fiscalYearId);
 
         $id = $request->query($idKey);
         $search = $request->query($searchKey);
