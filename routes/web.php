@@ -184,10 +184,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('ppa-list/{program}', [PpaListController::class, 'update']);
 
     // --- PPMP (Procurement Management) ---
-    Route::get('/aip/{fiscalYear}/summary/{aipEntry}/ppmp', [
-        PpmpController::class,
-        'index',
-    ])->name('aip.summary.ppmp.index');
+    // Route::get('/aip/{fiscalYear}/summary/{aipEntry}/ppmp', [
+    //     PpmpController::class,
+    //     'index',
+    // ])->name('aip.summary.ppmp.index');
+    Route::get(
+        '/aip/{fiscalYear}/summary/{aipEntry}/funding-source/{fundingSource}/ppmp',
+        [PpmpController::class, 'index'],
+    )->name('aip.summary.ppmp.index');
     Route::post('/ppmp', [PpmpController::class, 'store'])->name('ppmp.store');
     Route::post('/ppmp/custom', [
         PpmpController::class,

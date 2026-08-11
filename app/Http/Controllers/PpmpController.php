@@ -25,16 +25,18 @@ class PpmpController extends Controller
         Request $request,
         FiscalYear $fiscalYear,
         AipEntry $aipEntry,
+        FundingSource $fundingSource,
     ) {
         Gate::authorize('viewAny', [Ppmp::class, $aipEntry]);
 
-        $selectedAipEntry = AipEntry::with(['ppa', 'ppaFundingSources'])->find(
-            $aipEntry->id,
-        );
+        $selectedAipEntry = AipEntry::with([
+            'ppa.office',
+            'ppaFundingSources',
+        ])->find($aipEntry->id);
 
         $tab = $request->query('tab');
 
-        $isSupplemental = ! is_null($selectedAipEntry->supplemental_aip_id);
+        $isSupplemental = !is_null($selectedAipEntry->supplemental_aip_id);
 
         // Fetch all AIP entries for this PPA to find all SAIPs and the original AIP
         $allAipEntries = AipEntry::where('ppa_id', $selectedAipEntry->ppa_id)
@@ -43,7 +45,7 @@ class PpmpController extends Controller
 
         // Check viewSupplemental whenever supplemental entries exist
         $hasSupplementalAipEntries = $allAipEntries->contains(
-            fn ($entry) => ! is_null($entry->supplemental_aip_id),
+            fn($entry) => !is_null($entry->supplemental_aip_id),
         );
 
         $canViewSupplemental = request()
@@ -53,7 +55,7 @@ class PpmpController extends Controller
         if (
             $tab &&
             str_starts_with($tab, 'supplemental_') &&
-            ! $canViewSupplemental
+            !$canViewSupplemental
         ) {
             $tab = 'original';
         }
@@ -62,8 +64,11 @@ class PpmpController extends Controller
 
         $ppmps = Ppmp::whereHas('ppaFundingSource', function ($query) use (
             $aipEntryIds,
+            $fundingSource,
         ) {
-            $query->whereIn('aip_entry_id', $aipEntryIds);
+            $query
+                ->whereIn('aip_entry_id', $aipEntryIds)
+                ->where('funding_source_id', $fundingSource->id);
         })
             ->with([
                 'ppaFundingSource' => function ($query) {
@@ -128,12 +133,14 @@ class PpmpController extends Controller
             'chartOfAccountPpmpCategories.chartOfAccount',
         )->get();
 
-        $fundingSources = FundingSource::whereHas(
-            'ppaFundingSources',
-            function ($query) use ($aipEntryIds) {
-                $query->whereIn('aip_entry_id', $aipEntryIds);
-            },
-        )->get();
+        $fundingSources = FundingSource::where('id', $fundingSource->id)->get();
+
+        // $fundingSources = FundingSource::whereHas(
+        //     'ppaFundingSources',
+        //     function ($query) use ($aipEntryIds) {
+        //         $query->whereIn('aip_entry_id', $aipEntryIds);
+        //     },
+        // )->get();
 
         $ppmps->each(function ($ppmp) use ($request) {
             $ppmp->can = [
@@ -167,14 +174,17 @@ class PpmpController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'ppmpCategories' => $ppmpCategories,
             'fundingSources' => $fundingSources,
-            'currentTab' => $tab ?:
+            'currentTab' =>
+                $tab ?:
                 ($selectedAipEntry->supplemental_aip_id
                     ? "supplemental_{$selectedAipEntry->id}"
                     : 'original'),
-            'initialChoice' => $request->query('choice', 'MOOE'),
-            'initialPpaFundingSourceId' => $request->query(
-                'ppa_funding_source_id',
-            ),
+            // 'initialChoice' => $request->query('choice', 'MOOE'),
+            // 'initialPpaFundingSourceId' => $request->query(
+            //     'ppa_funding_source_id',
+            // ),
+            'fundingSource' => $fundingSource,
+            'fundingSourceId' => $fundingSource->id,
             'selectedOfficeId' => $selectedOfficeId,
         ]);
     }
@@ -205,8 +215,8 @@ class PpmpController extends Controller
 
         // If month and quantity are provided, set the monthly quantity
         if ($request->filled('month') && $request->filled('quantity')) {
-            $monthQty = $validated['month'].'_qty';
-            $monthAmount = $validated['month'].'_amount';
+            $monthQty = $validated['month'] . '_qty';
+            $monthAmount = $validated['month'] . '_amount';
             $unitPrice = $ppmp->ppmpPriceList?->price ?? 0;
             $newQty = (int) round($validated['quantity']);
 
@@ -302,7 +312,7 @@ class PpmpController extends Controller
 
         $targetColumn = $columnMap[$expenseClass] ?? null;
 
-        if (! $targetColumn) {
+        if (!$targetColumn) {
             return;
         }
 

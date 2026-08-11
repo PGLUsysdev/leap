@@ -1,5 +1,12 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Trash, List, UserRound, Landmark, Construction } from 'lucide-react';
+import {
+    Trash,
+    List,
+    UserRound,
+    Landmark,
+    Construction,
+    ShoppingBasket,
+} from 'lucide-react';
 import { Button } from '@/components/base-ui-components/ui/button';
 import {
     DropdownMenu,
@@ -117,25 +124,16 @@ const columns = [
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="min-w-36">
                             <DropdownMenuGroup>
-                                <DropdownMenuLabel>PPMP</DropdownMenuLabel>
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem
                                     onClick={() =>
-                                        meta?.onOpenPpmp?.(rowData.id, 'mooe')
+                                        meta?.onOpenPpmp?.(rowData.id)
                                     }
                                 >
-                                    <Construction />
-                                    for MOOE
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        meta?.onOpenPpmp?.(rowData.id, 'co')
-                                    }
-                                >
-                                    <Landmark />
-                                    for CO
+                                    <ShoppingBasket />
+                                    PPMP
                                 </DropdownMenuItem>
                             </DropdownMenuGroup>
-                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 onClick={() => {
                                     console.log('to ps breakdown');

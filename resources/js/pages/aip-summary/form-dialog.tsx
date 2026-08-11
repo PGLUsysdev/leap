@@ -506,22 +506,16 @@ export default function FormDialog({
                             meta={{
                                 onDelete: onDeleteFundingSource,
                                 disabled: isDirty,
-                                onOpenPpmp: (
-                                    fsId: number,
-                                    type: 'mooe' | 'co',
-                                ) => {
+                                onOpenPpmp: (fsId: number) => {
                                     const entryId = data?.id;
 
                                     if (!entryId) return;
 
                                     router.visit(
-                                        index([fiscalYearId, entryId]).url,
+                                        index([fiscalYearId, entryId, fsId])
+                                            .url,
                                         {
                                             method: 'get',
-                                            data: {
-                                                funding_source_id: fsId,
-                                                type,
-                                            },
                                         },
                                     );
                                 },

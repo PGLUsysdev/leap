@@ -25,15 +25,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-    SelectLabel,
-} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-dialog';
 import PpmpFormDialog from '@/pages/ppmp/form-dialog';
@@ -76,6 +67,8 @@ interface PpmpPageProps {
         showSummaryAll?: boolean;
     };
     selectedOfficeId?: string;
+    fundingSourceId: number;
+    fundingSource: FundingSource;
 }
 
 export default function PpmpPage({
@@ -92,7 +85,9 @@ export default function PpmpPage({
     currentTab,
     can,
     selectedOfficeId,
+    fundingSource,
     // isSupplemental = false,
+    fundingSourceId,
 }: PpmpPageProps) {
     console.log({
         fiscalYear,
@@ -109,6 +104,7 @@ export default function PpmpPage({
         can,
         selectedOfficeId,
         // isSupplemental = false,
+        fundingSourceId,
     });
 
     const { auth } = usePage<SharedData>().props;
@@ -131,10 +127,8 @@ export default function PpmpPage({
         return bridge?.funding_source_id || 0;
     }, [aipEntry, initialPpaFundingSourceId]);
 
-    const [selectedExpenseClass, setSelectedExpenseClass] =
-        useState(initialChoice);
     const [selectedFundingSourceId, setSelectedFundingSourceId] =
-        useState(initialFsId);
+        useState(fundingSourceId);
 
     const [open, setOpen] = useState(false);
     const [openAlert, setOpenAlert] = useState(false);
@@ -216,34 +210,6 @@ export default function PpmpPage({
         return list;
     }, [allAipEntries]);
 
-    const handleExpenseClassChange = (value: 'MOOE' | 'CO') => {
-        setSelectedExpenseClass(value);
-        router.get(
-            window.location.pathname,
-            buildQuery({
-                choice: value,
-                ppa_funding_source_id: currentPpaFundingSourceId,
-            }),
-            { preserveState: true, replace: true },
-        );
-    };
-
-    const handleFundingSourceChange = (value: string) => {
-        const fsId = Number(value);
-        setSelectedFundingSourceId(fsId);
-        const bridgeId = (activeAipEntry || aipEntry).ppa_funding_sources?.find(
-            (pfs) => pfs.funding_source_id === fsId,
-        )?.id;
-        router.get(
-            window.location.pathname,
-            buildQuery({
-                choice: selectedExpenseClass,
-                ppa_funding_source_id: bridgeId,
-            }),
-            { preserveState: true, replace: true },
-        );
-    };
-
     const activePpmpItems = useMemo(() => {
         if (currentTab === 'combined') {
             return ppmps;
@@ -279,11 +245,7 @@ export default function PpmpPage({
                 ppmp.ppa_funding_source?.funding_source_id ===
                 selectedFundingSourceId;
 
-            const matchesExpenseClass =
-                ppmp.ppmp_price_list?.chart_of_account_ppmp_category
-                    ?.chart_of_account?.expense_class === selectedExpenseClass;
-
-            return matchesFunding && matchesExpenseClass;
+            return matchesFunding;
         });
 
         if (currentTab === 'combined') {
@@ -342,12 +304,7 @@ export default function PpmpPage({
         }
 
         return items;
-    }, [
-        activePpmpItems,
-        selectedFundingSourceId,
-        selectedExpenseClass,
-        currentTab,
-    ]);
+    }, [activePpmpItems, selectedFundingSourceId, currentTab]);
 
     function handleDeleteDialogOpen(source: Ppmp) {
         setSelectedSource(source);
@@ -366,12 +323,6 @@ export default function PpmpPage({
             onFinish: () => setIsLoading(false),
         });
     }
-
-    const filteredChartOfAccounts = useMemo(() => {
-        return chartOfAccounts.filter(
-            (coa) => coa.expense_class === selectedExpenseClass,
-        );
-    }, [chartOfAccounts, selectedExpenseClass]);
 
     const selectedFundingSource = fundingSources.find((fs) => {
         return fs.id === selectedFundingSourceId;
@@ -405,12 +356,20 @@ export default function PpmpPage({
                     // className="flex flex-wrap items-center justify-between gap-4"
                     className="flex flex-col gap-2 px-4 pt-4"
                 >
-                    <small className="text-sm leading-none font-medium">
-                        Viewing: {aipEntry?.ppa?.name}
-                    </small>
+                    <div>
+                        <div className="text-sm">
+                            {aipEntry?.ppa?.office?.acronym || 'N/A'}
+                        </div>
+                        <div className="text-sm">
+                            {fundingSource?.code || 'N/A'}
+                        </div>
+                        <div className="text-sm">aip reference code</div>
+                        <div className="text-sm">{aipEntry?.ppa?.name}</div>
+                    </div>
 
+                    {/* hide these for now */}
                     {/*{hasSupplementalEntries && (*/}
-                    <Tabs
+                    {/*<Tabs
                         value={currentTab}
                         onValueChange={(val: any) => {
                             const newEntry =
@@ -453,7 +412,6 @@ export default function PpmpPage({
 
                             const query: Record<string, any> = {
                                 tab: val,
-                                choice: selectedExpenseClass,
                                 ppa_funding_source_id: bridgeId,
                             };
 
@@ -488,7 +446,7 @@ export default function PpmpPage({
                                 </TabsTrigger>
                             ))}
                         </TabsList>
-                    </Tabs>
+                    </Tabs>*/}
                     {/*)}*/}
                 </div>
 
@@ -502,69 +460,9 @@ export default function PpmpPage({
                             onDelete: handleDeleteDialogOpen,
                         } as any
                     }
-                    className="pr-3"
+                    className="pr-2"
                 >
-                    <div className="flex gap-2">
-                        <Select
-                            onValueChange={handleExpenseClassChange}
-                            value={selectedExpenseClass}
-                        >
-                            <SelectTrigger className="w-full max-w-40 min-w-30">
-                                <SelectValue placeholder="Expense Class" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Expense Class</SelectLabel>
-                                    <SelectItem value="MOOE">MOOE</SelectItem>
-                                    <SelectItem value="CO">CO</SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-
-                        <Select
-                            onValueChange={handleFundingSourceChange}
-                            defaultValue={String(selectedFundingSourceId)}
-                        >
-                            <SelectTrigger className="w-full max-w-48 min-w-30">
-                                <SelectValue placeholder="Select funding source">
-                                    {selectedFundingSourceId && (
-                                        <span>
-                                            {
-                                                fundingSources.find(
-                                                    (fs) =>
-                                                        fs.id ===
-                                                        selectedFundingSourceId,
-                                                )?.code
-                                            }
-                                        </span>
-                                    )}
-                                </SelectValue>
-                            </SelectTrigger>
-
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Funding Sources</SelectLabel>
-                                    {activeFundingSources.map((fs) => (
-                                        <SelectItem
-                                            key={fs.id}
-                                            value={String(fs.id)}
-                                            className="gap-4"
-                                        >
-                                            <div className="flex gap-4">
-                                                <span className="bg-muted font-mono">
-                                                    {fs.code}
-                                                </span>
-                                                <div className="w-80">
-                                                    {fs.title}
-                                                </div>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-
+                    <div className="flex items-center gap-1">
                         {can?.export && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -680,12 +578,11 @@ export default function PpmpPage({
             <PpmpFormDialog
                 open={open}
                 onOpenChange={setOpen}
-                chartOfAccounts={filteredChartOfAccounts}
+                chartOfAccounts={chartOfAccounts}
                 ppmpCategories={ppmpCategories}
                 priceLists={priceLists}
                 selectedEntry={activeAipEntry || aipEntry}
                 fundingSources={fundingSources}
-                selectedExpenseClass={selectedExpenseClass}
                 selectedFundingSourceId={selectedFundingSourceId}
                 ppaFundingSourceId={currentPpaFundingSourceId}
                 existingPpmps={ppmps}
