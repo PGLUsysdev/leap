@@ -71,6 +71,9 @@ class HandleInertiaRequests extends Middleware
 
                 return FiscalYear::find($id);
             },
+            'flash' => [
+                'status' => $request->session()->get('status'),
+            ],
         ];
     }
 }
