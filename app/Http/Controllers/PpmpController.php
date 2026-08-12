@@ -7,13 +7,13 @@ use App\Http\Requests\UpdatePpmpRequest;
 use App\Models\AipEntry;
 use App\Models\ChartOfAccount;
 use App\Models\FiscalYear;
-use App\Models\FundingSource;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PpmpController extends Controller
@@ -165,7 +165,12 @@ class PpmpController extends Controller
             ])->get(),
             'fiscalYear' => $fiscalYear,
             'ppaFundingSource' => $ppaFundingSource->load('fundingSource'),
-            'ppmpItems' => Ppmp::all(),
+            'ppmpItems' => Ppmp::with([
+                'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
+                'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory',
+            ])
+                ->where('ppa_funding_source_id', $ppaFundingSource->id)
+                ->get(),
             'priceLists' => PpmpPriceList::all(),
 
             // 'can' => [
@@ -263,13 +268,11 @@ class PpmpController extends Controller
             $monthAmount => $roundedQuantity * $unitPrice,
         ]);
 
-        $this->updatePpaFundingSourceTotals(
-            $ppmp->ppaFundingSource,
-            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-                ->expense_class,
-        );
-
-        return back();
+        // $this->updatePpaFundingSourceTotals(
+        //     $ppmp->ppaFundingSource,
+        //     $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
+        //         ->expense_class,
+        // );
     }
 
     /**

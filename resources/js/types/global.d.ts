@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { FiscalYear } from '.';
 
 declare module 'react' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -23,6 +24,7 @@ declare module '@tanstack/react-table' {
         onEdit?: (id: number) => void;
         onDelete?: (id: number) => void;
         disabled?: boolean;
+        year?: FiscalYear;
 
         onUpdate?: (data: TData) => void;
         onAdd?: (
@@ -66,6 +68,7 @@ declare module '@tanstack/react-table' {
         canOpenPpmpSummary?: boolean;
         canSetPsPool?: boolean;
         readOnly?: boolean;
+        onSavingChange?: (saving: boolean) => void;
         disableOpenAip?: boolean;
         psPoolPpaId?: number | null;
         onSetAsPsPool?: (data: TData) => void;

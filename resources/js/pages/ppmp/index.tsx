@@ -1,7 +1,12 @@
+import { Check } from 'lucide-react';
+import { useState } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Badge } from '@/components/base-ui-components/ui/badge';
 import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
+import { Spinner } from '@/components/base-ui-components/ui/spinner';
 import { index, summary } from '@/routes/aip';
 import type {
     AipEntry,
@@ -14,11 +19,10 @@ import type {
     // FundingSource,
     // SharedData,
 } from '@/types';
+import ppmpColumns from './columns/ppmp-columns';
 // import { router, usePage } from '@inertiajs/react';
 // import { Decimal } from 'decimal.js';
-// import { Plus, FileDown, Sheet, FileText, Printer } from 'lucide-react';
-// import { useState, useMemo } from 'react';
-// import DataTable from '@/components/base-ui-components/data-table';
+// import { Loader2 } from 'lucide-react';
 // import { DeleteDialog } from '@/components/delete-dialog';
 // import {
 //     AlertDialog,
@@ -103,15 +107,9 @@ export default function PpmpPage({
     // fundingSourceId,
     // isSupplemental = false,
 }: PpmpPageProps) {
-    console.log({
-        aipEntry,
-        categories,
-        chartOfAccounts,
-        fiscalYear,
-        ppaFundingSource,
-        ppmpItems,
-        priceLists,
-    });
+    // Counter so editing multiple cells at once keeps the indicator on
+    const [savingCount, setSavingCount] = useState(0);
+    const isSaving = savingCount > 0;
 
     // const { auth } = usePage<SharedData>().props;
 
@@ -362,15 +360,17 @@ export default function PpmpPage({
                     // className="flex flex-wrap items-center justify-between gap-4"
                     className="flex flex-col gap-2 px-4 pt-4"
                 >
-                    <div>
-                        <div className="text-sm">
-                            {aipEntry?.ppa?.office?.acronym || 'N/A'}
+                    <div className="flex w-full items-center justify-between">
+                        <div>
+                            <div className="text-sm">
+                                {aipEntry?.ppa?.office?.acronym || 'N/A'}
+                            </div>
+                            <div className="text-sm">
+                                {ppaFundingSource.funding_source?.code || 'N/A'}
+                            </div>
+                            <div className="text-sm">aip reference code</div>
+                            <div className="text-sm">{aipEntry?.ppa?.name}</div>
                         </div>
-                        <div className="text-sm">
-                            {ppaFundingSource.funding_source?.code || 'N/A'}
-                        </div>
-                        <div className="text-sm">aip reference code</div>
-                        <div className="text-sm">{aipEntry?.ppa?.name}</div>
                     </div>
 
                     {/* hide these for now */}
@@ -456,19 +456,33 @@ export default function PpmpPage({
                     {/*)}*/}
                 </div>
 
-                {/* <DataTable
-                    columns={columns}
-                    data={filteredPpmpItems}
-                    showFooter={true}
-                    meta={
-                        {
-                            readOnly: !isActiveTab,
-                            onDelete: handleDeleteDialogOpen,
-                        } as any
-                    }
+                <DataTable
                     className="pr-2"
+                    columns={ppmpColumns}
+                    data={ppmpItems}
+                    showFooter={true}
+                    meta={{
+                        year: fiscalYear,
+                        onSavingChange: (saving: boolean) =>
+                            setSavingCount((c) =>
+                                Math.max(0, c + (saving ? 1 : -1)),
+                            ),
+                        //         readOnly: !isActiveTab,
+                        //         onDelete: handleDeleteDialogOpen,
+                    }}
                 >
-                    <div className="flex items-center gap-1">
+                    {isSaving ? (
+                        <Badge variant="secondary">
+                            <Spinner />
+                            Saving…
+                        </Badge>
+                    ) : (
+                        <Badge variant="ghost">
+                            <Check />
+                            Saved
+                        </Badge>
+                    )}
+                    {/* <div className="flex items-center gap-1">
                         {can?.export && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -575,8 +589,8 @@ export default function PpmpPage({
                                 <Plus /> Add Item
                             </Button>
                         )}
-                    </div>
-                </DataTable>*/}
+                    </div> */}
+                </DataTable>
 
                 <ScrollBar orientation="vertical" />
             </ScrollArea>

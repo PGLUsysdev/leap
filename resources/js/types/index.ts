@@ -160,7 +160,7 @@ export interface PpaFundingSource {
     funding_source_id: number;
     supplemental_aip_id: number | null;
     cc_typology_id: number | null;
-    ppa_id: number;
+    // ppa_id: number;
 
     funding_source?: FundingSource;
     cc_typology?: { id: number; code: string; description: string };
@@ -277,7 +277,7 @@ export interface Ppmp {
     created_at: string | null;
     updated_at: string | null;
 
-    ppmp_funding_source_id: number;
+    ppa_funding_source_id: number;
     ppmp_price_list_id: number | null;
 
     ppa_funding_source?: PpaFundingSource;

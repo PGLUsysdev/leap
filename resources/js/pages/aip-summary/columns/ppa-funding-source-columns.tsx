@@ -3,8 +3,8 @@ import {
     Trash,
     List,
     UserRound,
-    Landmark,
-    Construction,
+    // Landmark,
+    // Construction,
     ShoppingBasket,
 } from 'lucide-react';
 import { Button } from '@/components/base-ui-components/ui/button';
@@ -14,7 +14,7 @@ import {
     DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
+    // DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/base-ui-components/ui/dropdown-menu';
 import type { PpaFundingSource } from '@/types';
