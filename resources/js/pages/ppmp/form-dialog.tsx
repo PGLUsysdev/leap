@@ -1,8 +1,8 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@inertiajs/react";
-import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { CommandSelect } from "@/components/command-select";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -10,28 +10,40 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/base-ui-components/ui/dialog";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { Field, FieldError, FieldLabel } from "@/components/base-ui-components/ui/field";
-import { Input } from "@/components/base-ui-components/ui/input";
-import { ScrollArea } from "@/components/base-ui-components/ui/scroll-area";
+} from '@/components/base-ui-components/ui/dialog';
+import {
+    Field,
+    FieldError,
+    FieldLabel,
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import type { ChartOfAccount, FundingSource, AipEntry, Ppmp } from "@/types";
-import { formSchema  } from "./form-dialog-schema";
-import type {FormSchemaType} from "./form-dialog-schema";
+} from '@/components/base-ui-components/ui/select';
+// import { CommandSelect } from '@/components/command-select';
+import type {
+    ChartOfAccount,
+    FundingSource,
+    AipEntry,
+    Ppmp,
+    PpmpCategory,
+    PriceList,
+} from '@/types';
+import { formSchema } from './form-dialog-schema';
+import type { FormSchemaType } from './form-dialog-schema';
 
 interface PpmpFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     chartOfAccounts: ChartOfAccount[];
-    priceLists: any[];
-    ppmpCategories: any[];
+    priceLists: PriceList[];
+    categories: PpmpCategory[];
+
     selectedEntry: AipEntry | null;
     fundingSources: FundingSource[];
     selectedExpenseClass: string;
@@ -39,7 +51,7 @@ interface PpmpFormDialogProps {
     // The ID of the bridge record linking the Activity and the Fund
     ppaFundingSourceId: number | undefined;
     // Quick-add mode: adds month selector and quantity field
-    mode?: "default" | "quick-add";
+    mode?: 'default' | 'quick-add';
     defaultMonth?: string;
     defaultQuantity?: number;
     onItemAdded?: () => void;
@@ -50,20 +62,22 @@ interface PpmpFormDialogProps {
 export default function PpmpFormDialog({
     open,
     onOpenChange,
-    chartOfAccounts,
-    priceLists,
-    ppmpCategories,
+    chartOfAccounts = [],
+    categories = [],
+    priceLists = [],
     selectedEntry = null,
     fundingSources,
     selectedExpenseClass,
     selectedFundingSourceId,
     ppaFundingSourceId,
-    mode = "default",
+    mode = 'default',
     defaultMonth,
     defaultQuantity,
     onItemAdded,
     existingPpmps,
 }: PpmpFormDialogProps) {
+    console.log({ chartOfAccounts, categories, priceLists });
+
     const [isLoading, setIsLoading] = useState(false);
 
     const form = useForm<FormSchemaType>({
@@ -83,13 +97,13 @@ export default function PpmpFormDialog({
         },
     });
 
-    const selectedExpenseAccount = form.watch("expenseAccount");
-    const selectedCategory = form.watch("category");
+    const selectedExpenseAccount = form.watch('expenseAccount');
+    const selectedCategory = form.watch('category');
 
     useEffect(() => {
         if (open) {
-            form.setValue("ppa_funding_source_id", ppaFundingSourceId || null);
-            form.setValue("fundingSource", selectedFundingSourceId || null);
+            form.setValue('ppa_funding_source_id', ppaFundingSourceId || null);
+            form.setValue('fundingSource', selectedFundingSourceId || null);
         }
     }, [open, ppaFundingSourceId, selectedFundingSourceId, form]);
 
@@ -111,47 +125,57 @@ export default function PpmpFormDialog({
         }
     }, [open, form]);
 
-    const selectedPriceListId = form.watch("ppmp_price_list_id");
+    const selectedPriceListId = form.watch('ppmp_price_list_id');
 
     const MONTHS = [
-        "jan",
-        "feb",
-        "mar",
-        "apr",
-        "may",
-        "jun",
-        "jul",
-        "aug",
-        "sep",
-        "oct",
-        "nov",
-        "dec",
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
     ] as const;
 
     useEffect(() => {
-        if (mode !== "quick-add" || !selectedPriceListId || !existingPpmps?.length) {
-return;
-}
+        if (
+            mode !== 'quick-add' ||
+            !selectedPriceListId ||
+            !existingPpmps?.length
+        ) {
+            return;
+        }
 
         const match = (existingPpmps as any[]).find(
             (p) =>
-                Number(p.ppa_funding_source_id) === Number(ppaFundingSourceId) &&
+                Number(p.ppa_funding_source_id) ===
+                    Number(ppaFundingSourceId) &&
                 Number(p.ppmp_price_list_id) === Number(selectedPriceListId),
         );
 
         if (!match) {
-return;
-}
+            return;
+        }
 
-        const firstMonth = MONTHS.find((m) => (Number(match[`${m}_qty`]) || 0) > 0);
+        const firstMonth = MONTHS.find(
+            (m) => (Number(match[`${m}_qty`]) || 0) > 0,
+        );
 
         if (firstMonth) {
-            form.setValue("month", firstMonth);
-            form.setValue("quantity", Number(match[`${firstMonth}_qty`]));
+            form.setValue('month', firstMonth);
+            form.setValue('quantity', Number(match[`${firstMonth}_qty`]));
         }
     }, [selectedPriceListId, mode, existingPpmps, ppaFundingSourceId, form]);
 
-    const selectedCategoryData = ppmpCategories.find((cat) => cat.id === selectedCategory);
+    const selectedCategoryData = categories.find(
+        (cat) => cat.id === selectedCategory,
+    );
+
     const categoryExpenseAccountIds =
         selectedCategoryData?.chart_of_account_ppmp_categories
             ?.map((cac: any) => cac.chart_of_account?.id)
@@ -167,12 +191,13 @@ return;
     });
 
     const filteredPpmpCategories = selectedExpenseAccount
-        ? ppmpCategories.filter((pc) =>
+        ? categories.filter((pc) =>
               pc.chart_of_account_ppmp_categories?.some(
-                  (cac: any) => cac.chart_of_account?.id === selectedExpenseAccount,
+                  (cac: any) =>
+                      cac.chart_of_account?.id === selectedExpenseAccount,
               ),
           )
-        : ppmpCategories;
+        : categories;
 
     const allPriceLists = priceLists.map((priceList) => {
         const pivot = priceList.chart_of_account_ppmp_category;
@@ -190,8 +215,8 @@ return;
     const filteredPriceLists = allPriceLists.filter((priceList) => {
         // ✅ Only keep price lists with the correct expense class
         if (priceList.expense_class !== selectedExpenseClass) {
-return false;
-}
+            return false;
+        }
 
         const matchesAccount = selectedExpenseAccount
             ? priceList.chart_of_account_id === selectedExpenseAccount
@@ -205,8 +230,8 @@ return false;
 
     const handleReset = () => {
         form.reset();
-        form.setValue("ppa_funding_source_id", ppaFundingSourceId || null);
-        form.setValue("fundingSource", selectedFundingSourceId);
+        form.setValue('ppa_funding_source_id', ppaFundingSourceId || null);
+        form.setValue('fundingSource', selectedFundingSourceId);
     };
 
     function onSubmit(data: FormSchemaType) {
@@ -217,12 +242,12 @@ return false;
         };
 
         // Include month and quantity in quick-add mode
-        if (mode === "quick-add") {
+        if (mode === 'quick-add') {
             payload.month = data.month;
             payload.quantity = data.quantity;
         }
 
-        router.post("/ppmp", payload, {
+        router.post('/ppmp', payload, {
             onStart: () => setIsLoading(true),
             onFinish: () => setIsLoading(false),
             onSuccess: () => {
@@ -235,30 +260,37 @@ return false;
     }
 
     const clearDependencies = () => {
-        form.setValue("ppmp_price_list_id", null);
-        form.setValue("description", null);
-        form.setValue("itemNo", null);
-        form.setValue("price", null);
-        form.setValue("unitOfMeasurement", null);
+        form.setValue('ppmp_price_list_id', null);
+        form.setValue('description', null);
+        form.setValue('itemNo', null);
+        form.setValue('price', null);
+        form.setValue('unitOfMeasurement', null);
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange} modal={isLoading}>
             <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>{mode === "quick-add" ? "Quick Add PPMP Item" : "Add PPMP Item"}</DialogTitle>
+                    <DialogTitle>
+                        {mode === 'quick-add'
+                            ? 'Quick Add PPMP Item'
+                            : 'Add PPMP Item'}
+                    </DialogTitle>
                     <DialogDescription>
-                        {mode === "quick-add"
-                            ? "Select a procurement item and set the monthly quantity"
-                            : "Add a new item to the PPMP list"}
+                        {mode === 'quick-add'
+                            ? 'Select a procurement item and set the monthly quantity'
+                            : 'Add a new item to the PPMP list'}
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex min-h-0 flex-1">
                     <ScrollArea className="w-full pr-3">
-                        <form id="form-rhf-demo" onSubmit={form.handleSubmit(onSubmit)}>
+                        <form
+                            id="form-rhf-demo"
+                            onSubmit={form.handleSubmit(onSubmit)}
+                        >
                             <div className="grid gap-6">
-                                <Controller
+                                {/* <Controller
                                     name="description"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
@@ -266,98 +298,118 @@ return false;
                                             className="overflow-hidden"
                                             data-invalid={fieldState.invalid}
                                         >
-                                            
-                                                <FieldLabel htmlFor={field.name}>
-                                                    Procurement Item
-                                                </FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>
+                                                Procurement Item
+                                            </FieldLabel>
 
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val, priceList) => {
-                                                        field.onChange(val);
+                                            <CommandSelect
+                                                value={field.value}
+                                                onChange={(val, priceList) => {
+                                                    field.onChange(val);
 
-                                                        const pivot =
-                                                            priceList.chart_of_account_ppmp_category;
+                                                    const pivot =
+                                                        priceList.chart_of_account_ppmp_category;
 
-                                                        form.setValue(
-                                                            "ppmp_price_list_id",
-                                                            priceList.id,
-                                                        );
+                                                    form.setValue(
+                                                        'ppmp_price_list_id',
+                                                        priceList.id,
+                                                    );
 
-                                                        form.setValue(
-                                                            "expenseAccount",
-                                                            pivot?.chart_of_account_id,
-                                                            {
-                                                                // was priceList.chart_of_account_id
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
-
-                                                        form.setValue(
-                                                            "category",
-                                                            pivot?.ppmp_category_id || null,
-                                                            {
-                                                                // was priceList.ppmp_category_id
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
-
-                                                        form.setValue(
-                                                            "itemNo",
-                                                            priceList.item_number,
-                                                            {
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
-
-                                                        form.setValue("price", priceList.price, {
+                                                    form.setValue(
+                                                        'expenseAccount',
+                                                        pivot?.chart_of_account_id,
+                                                        {
+                                                            // was priceList.chart_of_account_id
                                                             shouldValidate: true,
-                                                        });
+                                                        },
+                                                    );
 
-                                                        form.setValue(
-                                                            "unitOfMeasurement",
-                                                            priceList.unit_of_measurement,
-                                                            {
-                                                                shouldValidate: true,
-                                                            },
-                                                        );
-                                                    }}
-                                                    options={filteredPriceLists}
-                                                    getOptionValue={(pl) => pl.id}
-                                                    getOptionSearchText={(pl) =>
-                                                        `${pl.item_number} ${pl.description} ${pl.unit_of_measurement} ${pl.price}`
-                                                    }
-                                                    placeholder="Select procurement item"
-                                                    searchPlaceholder="Search procurement items..."
-                                                    heading="Procurement Items"
-                                                    dialogClassName="flex max-h-[90vh] flex-col sm:max-w-[600px]"
-                                                    onClear={() => {
-                                                        field.onChange(null);
-                                                        form.setValue("itemNo", null);
-                                                        form.setValue("price", null);
-                                                        form.setValue("unitOfMeasurement", null);
-                                                    }}
-                                                    renderTrigger={(pl) => (
-                                                        <span className="truncate">
+                                                    form.setValue(
+                                                        'category',
+                                                        pivot?.ppmp_category_id ||
+                                                            null,
+                                                        {
+                                                            // was priceList.ppmp_category_id
+                                                            shouldValidate: true,
+                                                        },
+                                                    );
+
+                                                    form.setValue(
+                                                        'itemNo',
+                                                        priceList.item_number,
+                                                        {
+                                                            shouldValidate: true,
+                                                        },
+                                                    );
+
+                                                    form.setValue(
+                                                        'price',
+                                                        priceList.price,
+                                                        {
+                                                            shouldValidate: true,
+                                                        },
+                                                    );
+
+                                                    form.setValue(
+                                                        'unitOfMeasurement',
+                                                        priceList.unit_of_measurement,
+                                                        {
+                                                            shouldValidate: true,
+                                                        },
+                                                    );
+                                                }}
+                                                options={filteredPriceLists}
+                                                getOptionValue={(pl) => pl.id}
+                                                getOptionSearchText={(pl) =>
+                                                    `${pl.item_number} ${pl.description} ${pl.unit_of_measurement} ${pl.price}`
+                                                }
+                                                placeholder="Select procurement item"
+                                                searchPlaceholder="Search procurement items..."
+                                                heading="Procurement Items"
+                                                dialogClassName="flex max-h-[90vh] flex-col sm:max-w-[600px]"
+                                                onClear={() => {
+                                                    field.onChange(null);
+                                                    form.setValue(
+                                                        'itemNo',
+                                                        null,
+                                                    );
+                                                    form.setValue(
+                                                        'price',
+                                                        null,
+                                                    );
+                                                    form.setValue(
+                                                        'unitOfMeasurement',
+                                                        null,
+                                                    );
+                                                }}
+                                                renderTrigger={(pl) => (
+                                                    <span className="truncate">
+                                                        {pl.description}
+                                                    </span>
+                                                )}
+                                                renderOption={(pl) => (
+                                                    <div className="grid w-full grid-cols-10 items-start gap-6 py-1">
+                                                        <span>
+                                                            {pl.item_number}
+                                                        </span>
+                                                        <span className="col-span-6">
                                                             {pl.description}
                                                         </span>
-                                                    )}
-                                                    renderOption={(pl) => (
-                                                        <div className="grid w-full grid-cols-10 items-start gap-6 py-1">
-                                                            <span>{pl.item_number}</span>
-                                                            <span className="col-span-6">
-                                                                {pl.description}
-                                                            </span>
-                                                            <span>{pl.unit_of_measurement}</span>
-                                                            <span>{pl.price}</span>
-                                                        </div>
-                                                    )}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                        <span>
+                                                            {
+                                                                pl.unit_of_measurement
+                                                            }
+                                                        </span>
+                                                        <span>{pl.price}</span>
+                                                    </div>
                                                 )}
-                                            
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
                                         </Field>
                                     )}
                                 />
@@ -368,38 +420,52 @@ return false;
                                             name="itemNo"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Item No.
-                                                        </FieldLabel>
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
+                                                        Item No.
+                                                    </FieldLabel>
 
-                                                        <Input
-                                                            {...field}
-                                                            id={field.name}
-                                                            aria-invalid={fieldState.invalid}
-                                                            type="number"
-                                                            min="1"
-                                                            value={field.value ?? ""}
-                                                            readOnly
-                                                            onChange={(e) =>
-                                                                field.onChange(
-                                                                    e.target.value === ""
-                                                                        ? null
-                                                                        : parseInt(
-                                                                              e.target.value,
-                                                                              10,
-                                                                          ),
-                                                                )
-                                                            }
+                                                    <Input
+                                                        {...field}
+                                                        id={field.name}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                        type="number"
+                                                        min="1"
+                                                        value={
+                                                            field.value ?? ''
+                                                        }
+                                                        readOnly
+                                                        onChange={(e) =>
+                                                            field.onChange(
+                                                                e.target
+                                                                    .value ===
+                                                                    ''
+                                                                    ? null
+                                                                    : parseInt(
+                                                                          e
+                                                                              .target
+                                                                              .value,
+                                                                          10,
+                                                                      ),
+                                                            )
+                                                        }
+                                                    />
+
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
                                                         />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
+                                                    )}
                                                 </Field>
                                             )}
                                         />
@@ -410,42 +476,58 @@ return false;
                                             name="price"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Price
-                                                        </FieldLabel>
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
+                                                        Price
+                                                    </FieldLabel>
 
-                                                        <Input
-                                                            {...field}
-                                                            id={field.name}
-                                                            aria-invalid={fieldState.invalid}
-                                                            type="number"
-                                                            step="0.01"
-                                                            min="0"
-                                                            value={field.value ?? ""}
-                                                            readOnly
-                                                            onChange={(e) => {
-                                                                const val = e.target.value;
+                                                    <Input
+                                                        {...field}
+                                                        id={field.name}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={
+                                                            field.value ?? ''
+                                                        }
+                                                        readOnly
+                                                        onChange={(e) => {
+                                                            const val =
+                                                                e.target.value;
 
-                                                                if (val === "") {
-                                                                    field.onChange(null);
-                                                                } else {
-                                                                    const cleaned = val.replace(
+                                                            if (val === '') {
+                                                                field.onChange(
+                                                                    null,
+                                                                );
+                                                            } else {
+                                                                const cleaned =
+                                                                    val.replace(
                                                                         /^0+(?=\d)/,
-                                                                        "",
+                                                                        '',
                                                                     );
-                                                                    field.onChange(cleaned);
-                                                                }
-                                                            }}
-                                                        />
+                                                                field.onChange(
+                                                                    cleaned,
+                                                                );
+                                                            }
+                                                        }}
+                                                    />
 
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
                                                 </Field>
                                             )}
                                         />
@@ -456,26 +538,36 @@ return false;
                                             name="unitOfMeasurement"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Unit of Measurement
-                                                        </FieldLabel>
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
+                                                        Unit of Measurement
+                                                    </FieldLabel>
 
-                                                        <Input
-                                                            {...field}
-                                                            id={field.name}
-                                                            aria-invalid={fieldState.invalid}
-                                                            value={field.value ?? ""}
-                                                            readOnly
+                                                    <Input
+                                                        {...field}
+                                                        id={field.name}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                        value={
+                                                            field.value ?? ''
+                                                        }
+                                                        readOnly
+                                                    />
+
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
                                                         />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
+                                                    )}
                                                 </Field>
                                             )}
                                         />
@@ -490,57 +582,62 @@ return false;
                                             // className="overflow-hidden"
                                             data-invalid={fieldState.invalid}
                                         >
-                                            
-                                                <FieldLabel htmlFor={field.name}>
-                                                    Expense Account{" "}
-                                                    {selectedExpenseClass === "MOOE"
-                                                        ? "(MOOE)"
-                                                        : "(CO)"}
-                                                </FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>
+                                                Expense Account{' '}
+                                                {selectedExpenseClass === 'MOOE'
+                                                    ? '(MOOE)'
+                                                    : '(CO)'}
+                                            </FieldLabel>
 
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val) => {
-                                                        if (field.value !== val) {
-                                                            field.onChange(val);
-                                                            clearDependencies();
-                                                        }
-                                                    }}
-                                                    options={filteredChartOfAccounts}
-                                                    getOptionValue={(acc) => acc.id}
-                                                    getOptionSearchText={(acc) =>
-                                                        `${acc.account_number} ${acc.account_title}`
-                                                    }
-                                                    placeholder="Select expense account"
-                                                    searchPlaceholder="Search account number or title..."
-                                                    heading="Chart of Accounts"
-                                                    onClear={() => {
-                                                        field.onChange(null);
-                                                        form.setValue("category", null);
+                                            <CommandSelect
+                                                value={field.value}
+                                                onChange={(val) => {
+                                                    if (field.value !== val) {
+                                                        field.onChange(val);
                                                         clearDependencies();
-                                                    }}
-                                                    renderTrigger={(acc) => (
-                                                        <span className="truncate">
-                                                            <code className="mr-2 rounded bg-muted p-0.5 text-xs">
-                                                                {acc.account_number}
-                                                            </code>
-                                                            {acc.account_title}
-                                                        </span>
-                                                    )}
-                                                    renderOption={(acc) => (
-                                                        <div>
-                                                            <code className="mr-2 rounded bg-muted p-1 text-xs">
-                                                                {acc.account_number}
-                                                            </code>
-                                                            {acc.account_title}
-                                                        </div>
-                                                    )}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    }
+                                                }}
+                                                options={
+                                                    filteredChartOfAccounts
+                                                }
+                                                getOptionValue={(acc) => acc.id}
+                                                getOptionSearchText={(acc) =>
+                                                    `${acc.account_number} ${acc.account_title}`
+                                                }
+                                                placeholder="Select expense account"
+                                                searchPlaceholder="Search account number or title..."
+                                                heading="Chart of Accounts"
+                                                onClear={() => {
+                                                    field.onChange(null);
+                                                    form.setValue(
+                                                        'category',
+                                                        null,
+                                                    );
+                                                    clearDependencies();
+                                                }}
+                                                renderTrigger={(acc) => (
+                                                    <span className="truncate">
+                                                        <code className="mr-2 rounded bg-muted p-0.5 text-xs">
+                                                            {acc.account_number}
+                                                        </code>
+                                                        {acc.account_title}
+                                                    </span>
                                                 )}
-                                            
+                                                renderOption={(acc) => (
+                                                    <div>
+                                                        <code className="mr-2 rounded bg-muted p-1 text-xs">
+                                                            {acc.account_number}
+                                                        </code>
+                                                        {acc.account_title}
+                                                    </div>
+                                                )}
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
                                         </Field>
                                     )}
                                 />
@@ -553,134 +650,151 @@ return false;
                                             // className="overflow-hidden"
                                             data-invalid={fieldState.invalid}
                                         >
-                                            
-                                                <FieldLabel htmlFor={field.name}>
-                                                    Category
-                                                </FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>
+                                                Category
+                                            </FieldLabel>
 
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val) => {
-                                                        if (field.value !== val) {
-                                                            field.onChange(val);
-                                                            clearDependencies();
-                                                        }
-                                                    }}
-                                                    options={filteredPpmpCategories}
-                                                    getOptionValue={(cat) => cat.id}
-                                                    getOptionSearchText={(cat) => cat.name}
-                                                    placeholder="Select category"
-                                                    searchPlaceholder="Search category..."
-                                                    heading="Categories"
-                                                    onClear={() => {
-                                                        field.onChange(null);
+                                            <CommandSelect
+                                                value={field.value}
+                                                onChange={(val) => {
+                                                    if (field.value !== val) {
+                                                        field.onChange(val);
                                                         clearDependencies();
-                                                    }}
-                                                    renderTrigger={(cat) => (
-                                                        <span className="truncate">{cat.name}</span>
-                                                    )}
-                                                    renderOption={(cat) => cat.name}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    }
+                                                }}
+                                                options={filteredPpmpCategories}
+                                                getOptionValue={(cat) => cat.id}
+                                                getOptionSearchText={(cat) =>
+                                                    cat.name
+                                                }
+                                                placeholder="Select category"
+                                                searchPlaceholder="Search category..."
+                                                heading="Categories"
+                                                onClear={() => {
+                                                    field.onChange(null);
+                                                    clearDependencies();
+                                                }}
+                                                renderTrigger={(cat) => (
+                                                    <span className="truncate">
+                                                        {cat.name}
+                                                    </span>
                                                 )}
-                                            
+                                                renderOption={(cat) => cat.name}
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
                                         </Field>
                                     )}
                                 />
 
-                                {mode === "quick-add" && (
+                                {mode === 'quick-add' && (
                                     <div className="grid grid-cols-2 gap-4">
                                         <Controller
                                             name="month"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Month
-                                                        </FieldLabel>
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
+                                                        Month
+                                                    </FieldLabel>
 
-                                                        <Select
-                                                            value={field.value ?? undefined}
-                                                            onValueChange={(val) =>
-                                                                field.onChange(val)
-                                                            }
+                                                    <Select
+                                                        value={
+                                                            field.value ??
+                                                            undefined
+                                                        }
+                                                        onValueChange={(val) =>
+                                                            field.onChange(val)
+                                                        }
+                                                    >
+                                                        <SelectTrigger
+                                                            id={field.name}
+                                                            className="h-9"
                                                         >
-                                                            <SelectTrigger
-                                                                id={field.name}
-                                                                className="h-9"
-                                                            >
-                                                                <SelectValue placeholder="Select month" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {[
-                                                                    {
-                                                                        value: "jan",
-                                                                        label: "January",
-                                                                    },
-                                                                    {
-                                                                        value: "feb",
-                                                                        label: "February",
-                                                                    },
-                                                                    {
-                                                                        value: "mar",
-                                                                        label: "March",
-                                                                    },
-                                                                    {
-                                                                        value: "apr",
-                                                                        label: "April",
-                                                                    },
-                                                                    {
-                                                                        value: "may",
-                                                                        label: "May",
-                                                                    },
-                                                                    {
-                                                                        value: "jun",
-                                                                        label: "June",
-                                                                    },
-                                                                    {
-                                                                        value: "jul",
-                                                                        label: "July",
-                                                                    },
-                                                                    {
-                                                                        value: "aug",
-                                                                        label: "August",
-                                                                    },
-                                                                    {
-                                                                        value: "sep",
-                                                                        label: "September",
-                                                                    },
-                                                                    {
-                                                                        value: "oct",
-                                                                        label: "October",
-                                                                    },
-                                                                    {
-                                                                        value: "nov",
-                                                                        label: "November",
-                                                                    },
-                                                                    {
-                                                                        value: "dec",
-                                                                        label: "December",
-                                                                    },
-                                                                ].map((m) => (
-                                                                    <SelectItem
-                                                                        key={m.value}
-                                                                        value={m.value}
-                                                                    >
-                                                                        {m.label}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                            <SelectValue placeholder="Select month" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {[
+                                                                {
+                                                                    value: 'jan',
+                                                                    label: 'January',
+                                                                },
+                                                                {
+                                                                    value: 'feb',
+                                                                    label: 'February',
+                                                                },
+                                                                {
+                                                                    value: 'mar',
+                                                                    label: 'March',
+                                                                },
+                                                                {
+                                                                    value: 'apr',
+                                                                    label: 'April',
+                                                                },
+                                                                {
+                                                                    value: 'may',
+                                                                    label: 'May',
+                                                                },
+                                                                {
+                                                                    value: 'jun',
+                                                                    label: 'June',
+                                                                },
+                                                                {
+                                                                    value: 'jul',
+                                                                    label: 'July',
+                                                                },
+                                                                {
+                                                                    value: 'aug',
+                                                                    label: 'August',
+                                                                },
+                                                                {
+                                                                    value: 'sep',
+                                                                    label: 'September',
+                                                                },
+                                                                {
+                                                                    value: 'oct',
+                                                                    label: 'October',
+                                                                },
+                                                                {
+                                                                    value: 'nov',
+                                                                    label: 'November',
+                                                                },
+                                                                {
+                                                                    value: 'dec',
+                                                                    label: 'December',
+                                                                },
+                                                            ].map((m) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        m.value
+                                                                    }
+                                                                    value={
+                                                                        m.value
+                                                                    }
+                                                                >
+                                                                    {m.label}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
 
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
                                                 </Field>
                                             )}
                                         />
@@ -689,37 +803,50 @@ return false;
                                             name="quantity"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field data-invalid={fieldState.invalid}>
-                                                    
-                                                        <FieldLabel htmlFor={field.name}>
-                                                            Quantity
-                                                        </FieldLabel>
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                >
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
+                                                        Quantity
+                                                    </FieldLabel>
 
-                                                        <Input
-                                                            id={field.name}
-                                                            type="number"
-                                                            step="1"
-                                                            min="0"
-                                                            className="h-9"
-                                                            value={field.value ?? ""}
-                                                            onChange={(e) => {
-                                                                const val = e.target.value;
+                                                    <Input
+                                                        id={field.name}
+                                                        type="number"
+                                                        step="1"
+                                                        min="0"
+                                                        className="h-9"
+                                                        value={
+                                                            field.value ?? ''
+                                                        }
+                                                        onChange={(e) => {
+                                                            const val =
+                                                                e.target.value;
 
-                                                                if (val === "") {
-                                                                    field.onChange(null);
-                                                                } else {
-                                                                    field.onChange(val);
-                                                                }
-                                                            }}
-                                                            placeholder="Enter quantity"
+                                                            if (val === '') {
+                                                                field.onChange(
+                                                                    null,
+                                                                );
+                                                            } else {
+                                                                field.onChange(
+                                                                    val,
+                                                                );
+                                                            }
+                                                        }}
+                                                        placeholder="Enter quantity"
+                                                    />
+
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
                                                         />
-
-                                                        {fieldState.invalid && (
-                                                            <FieldError
-                                                                errors={[fieldState.error]}
-                                                            />
-                                                        )}
-                                                    
+                                                    )}
                                                 </Field>
                                             )}
                                         />
@@ -734,65 +861,87 @@ return false;
                                             // className="overflow-hidden"
                                             data-invalid={fieldState.invalid}
                                         >
-                                            
-                                                <FieldLabel htmlFor={field.name}>
-                                                    Funding Source
-                                                </FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>
+                                                Funding Source
+                                            </FieldLabel>
 
-                                                <CommandSelect
-                                                    value={field.value}
-                                                    onChange={(val) => field.onChange(val)}
-                                                    options={fundingSources}
-                                                    getOptionValue={(fs) => fs.id}
-                                                    getOptionSearchText={(fs) =>
-                                                        `${fs.fund_type} ${fs.code} ${fs.title}`
-                                                    }
-                                                    placeholder="Select funding source"
-                                                    searchPlaceholder="Search funding source..."
-                                                    heading="Funding Sources"
-                                                    disabled // Passed directly through
-                                                    showClear={false} // Disabled clear since original had it disabled
-                                                    onClear={() => field.onChange(null)}
-                                                    renderTrigger={(fs) => (
-                                                        <span className="truncate">
-                                                            <code className="mr-2 rounded bg-muted p-0.5 text-xs">
-                                                                {fs.code}
-                                                            </code>
-                                                            {fs.title}
-                                                        </span>
-                                                    )}
-                                                    renderOption={(fs) => (
-                                                        <div>
-                                                            {fs.fund_type}
-                                                            <code className="mr-2 rounded bg-muted p-1 text-xs">
-                                                                {fs.code}
-                                                            </code>
-                                                            {fs.title}
-                                                        </div>
-                                                    )}
-                                                />
-
-                                                {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                            <CommandSelect
+                                                value={field.value}
+                                                onChange={(val) =>
+                                                    field.onChange(val)
+                                                }
+                                                options={fundingSources}
+                                                getOptionValue={(fs) => fs.id}
+                                                getOptionSearchText={(fs) =>
+                                                    `${fs.fund_type} ${fs.code} ${fs.title}`
+                                                }
+                                                placeholder="Select funding source"
+                                                searchPlaceholder="Search funding source..."
+                                                heading="Funding Sources"
+                                                disabled // Passed directly through
+                                                showClear={false} // Disabled clear since original had it disabled
+                                                onClear={() =>
+                                                    field.onChange(null)
+                                                }
+                                                renderTrigger={(fs) => (
+                                                    <span className="truncate">
+                                                        <code className="mr-2 rounded bg-muted p-0.5 text-xs">
+                                                            {fs.code}
+                                                        </code>
+                                                        {fs.title}
+                                                    </span>
                                                 )}
-                                            
+                                                renderOption={(fs) => (
+                                                    <div>
+                                                        {fs.fund_type}
+                                                        <code className="mr-2 rounded bg-muted p-1 text-xs">
+                                                            {fs.code}
+                                                        </code>
+                                                        {fs.title}
+                                                    </div>
+                                                )}
+                                            />
+
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
                                         </Field>
                                     )}
-                                />
+                                /> */}
                             </div>
                         </form>
                     </ScrollArea>
                 </div>
 
                 <DialogFooter>
-                    <Button type="button" variant="outline" onClick={handleReset} disabled={isLoading}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleReset}
+                        disabled={isLoading}
+                    >
                         Reset
                     </Button>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                        disabled={isLoading}
+                    >
                         Cancel
                     </Button>
-                    <Button type="submit" form="form-rhf-demo" disabled={isLoading}>
-                        {isLoading ? "Adding Item..." : mode === "quick-add" ? "Add & Set Quantity" : "Add Item"}
+                    <Button
+                        type="submit"
+                        form="form-rhf-demo"
+                        disabled={isLoading}
+                    >
+                        {isLoading
+                            ? 'Adding Item...'
+                            : mode === 'quick-add'
+                              ? 'Add & Set Quantity'
+                              : 'Add Item'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

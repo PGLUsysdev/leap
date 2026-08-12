@@ -15,6 +15,7 @@ import {
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
 import { Spinner } from '@/components/base-ui-components/ui/spinner';
+import FormDialog from '@/pages/ppmp/form-dialog';
 import { index, summary } from '@/routes/aip';
 import type {
     AipEntry,
@@ -51,7 +52,6 @@ import ppmpColumns from './columns/ppmp-columns';
 // } from '@/components/ui/dropdown-menu';
 // import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // import ExpenseAccountSummaryDialog from '@/pages/ppmp/expense-account-summary-dialog';
-// import PpmpFormDialog from '@/pages/ppmp/form-dialog';
 // import NewPpmpFormDialog from '@/pages/ppmp/new-ppmp-form-dialog';
 // import {
 //     exportToExcel,
@@ -118,6 +118,7 @@ export default function PpmpPage({
     // Counter so editing multiple cells at once keeps the indicator on
     const [savingCount, setSavingCount] = useState(0);
     const isSaving = savingCount > 0;
+    const [openFormDialog, setOpenFormDialog] = useState(false);
 
     // View filter: show all items, or only MOOE/CO expense-class items
     const [expenseClassFilter, setExpenseClassFilter] = useState<
@@ -498,8 +499,8 @@ export default function PpmpPage({
                             setSavingCount((c) =>
                                 Math.max(0, c + (saving ? 1 : -1)),
                             ),
-                        //         readOnly: !isActiveTab,
-                        //         onDelete: handleDeleteDialogOpen,
+                        //readOnly: !isActiveTab,
+                        //onDelete: handleDeleteDialogOpen,
                     }}
                 >
                     <div className="flex items-center gap-2">
@@ -541,6 +542,11 @@ export default function PpmpPage({
                                 </DropdownMenuRadioGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <Button onClick={() => setOpenFormDialog(true)}>
+                            Add Price List
+                        </Button>
+
                         {isSaving ? (
                             <Badge variant="secondary">
                                 <Spinner />
@@ -666,20 +672,20 @@ export default function PpmpPage({
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
-            {/* <PpmpFormDialog
-                open={open}
-                onOpenChange={setOpen}
+            <FormDialog
+                open={openFormDialog}
+                onOpenChange={setOpenFormDialog}
                 chartOfAccounts={chartOfAccounts}
-                ppmpCategories={categories}
+                categories={categories}
                 priceLists={priceLists}
-                selectedEntry={activeAipEntry || aipEntry}
-                fundingSources={fundingSources}
-                selectedFundingSourceId={selectedFundingSourceId}
-                ppaFundingSourceId={currentPpaFundingSourceId}
-                existingPpmps={ppmps}
+                // selectedEntry={activeAipEntry || aipEntry}
+                // fundingSources={fundingSources}
+                // selectedFundingSourceId={selectedFundingSourceId}
+                // ppaFundingSourceId={currentPpaFundingSourceId}
+                // existingPpmps={ppmps}
             />
 
-            <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
+            {/* <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
