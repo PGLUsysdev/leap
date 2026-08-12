@@ -1,7 +1,15 @@
-import { Check } from 'lucide-react';
-import { useState } from 'react';
+import { Check, Filter } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
 import { Badge } from '@/components/base-ui-components/ui/badge';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuTrigger,
+} from '@/components/base-ui-components/ui/dropdown-menu';
 import {
     ScrollArea,
     ScrollBar,
@@ -110,6 +118,29 @@ export default function PpmpPage({
     // Counter so editing multiple cells at once keeps the indicator on
     const [savingCount, setSavingCount] = useState(0);
     const isSaving = savingCount > 0;
+
+    // View filter: show all items, or only MOOE/CO expense-class items
+    const [expenseClassFilter, setExpenseClassFilter] = useState<
+        'ALL' | 'MOOE' | 'CO'
+    >('ALL');
+
+    const filteredPpmpItems = useMemo(() => {
+        if (expenseClassFilter === 'ALL') {
+            return ppmpItems;
+        }
+
+        return ppmpItems.filter(
+            (item) =>
+                item.ppmp_price_list?.chart_of_account_ppmp_category
+                    ?.chart_of_account?.expense_class === expenseClassFilter,
+        );
+    }, [ppmpItems, expenseClassFilter]);
+
+    const filterLabel = {
+        ALL: 'All items',
+        MOOE: 'MOOE only',
+        CO: 'CO only',
+    }[expenseClassFilter];
 
     // const { auth } = usePage<SharedData>().props;
 
@@ -459,7 +490,7 @@ export default function PpmpPage({
                 <DataTable
                     className="pr-2"
                     columns={ppmpColumns}
-                    data={ppmpItems}
+                    data={filteredPpmpItems}
                     showFooter={true}
                     meta={{
                         year: fiscalYear,
@@ -471,17 +502,57 @@ export default function PpmpPage({
                         //         onDelete: handleDeleteDialogOpen,
                     }}
                 >
-                    {isSaving ? (
-                        <Badge variant="secondary">
-                            <Spinner />
-                            Saving…
-                        </Badge>
-                    ) : (
-                        <Badge variant="ghost">
-                            <Check />
-                            Saved
-                        </Badge>
-                    )}
+                    <div className="flex items-center gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button variant="outline" size="sm">
+                                        <Filter /> {filterLabel}
+                                    </Button>
+                                }
+                            />
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuRadioGroup
+                                    value={expenseClassFilter}
+                                    onValueChange={(value) =>
+                                        setExpenseClassFilter(
+                                            value as 'ALL' | 'MOOE' | 'CO',
+                                        )
+                                    }
+                                >
+                                    <DropdownMenuRadioItem
+                                        value="ALL"
+                                        closeOnClick
+                                    >
+                                        All items
+                                    </DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem
+                                        value="MOOE"
+                                        closeOnClick
+                                    >
+                                        MOOE only
+                                    </DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem
+                                        value="CO"
+                                        closeOnClick
+                                    >
+                                        CO only
+                                    </DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        {isSaving ? (
+                            <Badge variant="secondary">
+                                <Spinner />
+                                Saving…
+                            </Badge>
+                        ) : (
+                            <Badge variant="ghost">
+                                <Check />
+                                Saved
+                            </Badge>
+                        )}
+                    </div>
                     {/* <div className="flex items-center gap-1">
                         {can?.export && (
                             <DropdownMenu>

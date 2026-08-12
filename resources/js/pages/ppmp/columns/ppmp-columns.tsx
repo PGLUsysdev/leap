@@ -275,7 +275,9 @@ const columns = [
     columnHelper.accessor('ppmp_price_list.unit_of_measurement', {
         size: 200,
         header: () => <div className="text-center">Unit of Measurement</div>,
-        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+        cell: (info) => (
+            <div className="text-center text-wrap">{info.getValue()}</div>
+        ),
     }),
     columnHelper.accessor('ppmp_price_list.price', {
         size: 150,
