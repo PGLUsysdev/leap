@@ -257,7 +257,7 @@ const columnHelper = createColumnHelper<Ppmp>();
 const columns = [
     columnHelper.accessor('ppmp_price_list.item_number', {
         size: 100,
-        header: () => <div className="text-center">Item No.</div>,
+        header: () => <div className="text-center text-wrap">Item No.</div>,
         cell: (info) => (
             <div className="text-wrap slashed-zero tabular-nums">
                 {info.getValue()}
@@ -267,21 +267,23 @@ const columns = [
     columnHelper.accessor('ppmp_price_list.description', {
         size: 400,
         enableGlobalFilter: true,
-        header: () => <div className="text-center">Description</div>,
+        header: () => <div className="text-center text-wrap">Description</div>,
         cell: (info) => {
             return <div className="text-wrap">{info.getValue()}</div>;
         },
     }),
     columnHelper.accessor('ppmp_price_list.unit_of_measurement', {
-        size: 200,
-        header: () => <div className="text-center">Unit of Measurement</div>,
+        size: 100,
+        header: () => (
+            <div className="text-center text-wrap">Unit of Measurement</div>
+        ),
         cell: (info) => (
             <div className="text-center text-wrap">{info.getValue()}</div>
         ),
     }),
     columnHelper.accessor('ppmp_price_list.price', {
-        size: 150,
-        header: () => <div className="text-center">PRICELIST</div>,
+        size: 200,
+        header: () => <div className="text-center text-wrap">PRICELIST</div>,
         cell: (info) => (
             <div className="text-right text-wrap slashed-zero tabular-nums">
                 {formatNumber(Number(info.getValue()) || 0)}
@@ -290,11 +292,15 @@ const columns = [
     }),
     columnHelper.display({
         id: 'cy_qty',
-        size: 120,
+        size: 100,
         header: (info) => {
             const meta = info.table.options.meta;
 
-            return <div className="text-center">CY {meta?.year?.year}-QTY</div>;
+            return (
+                <div className="text-center text-wrap">
+                    CY {meta?.year?.year}-QTY
+                </div>
+            );
         },
         cell: ({ row }) => {
             const ppmp = row.original;
@@ -338,7 +344,7 @@ const columns = [
         {
             id: 'total_amount',
             size: 150,
-            header: () => <div className="text-center">TOTAL</div>,
+            header: () => <div className="text-center text-wrap">TOTAL</div>,
             cell: ({ getValue }) => (
                 <div className="text-right text-wrap slashed-zero tabular-nums">
                     {formatNumber(String(getValue()))}
@@ -364,8 +370,15 @@ const columns = [
     ...MONTHS.flatMap((month) => [
         columnHelper.accessor(month.qtyKey, {
             size: 100,
-            header: () => <div className="text-center">{month.qtyHeader}</div>,
-            cell: EditableCell,
+            header: () => (
+                <div className="text-center text-wrap">{month.qtyHeader}</div>
+            ),
+            cell: (props) => (
+                <EditableCell
+                    key={`${props.row.original.id}-${month.qtyKey}`}
+                    {...props}
+                />
+            ),
             footer: ({ table }) => {
                 const sum = table
                     .getFilteredRowModel()
@@ -385,9 +398,11 @@ const columns = [
             },
         }),
         columnHelper.accessor(month.amountKey, {
-            size: 150,
+            size: 200,
             header: () => (
-                <div className="text-center">{month.amountHeader}</div>
+                <div className="text-center text-wrap">
+                    {month.amountHeader}
+                </div>
             ),
             cell: ({ row }) => (
                 <div className="text-right text-wrap">
@@ -421,8 +436,10 @@ const columns = [
                 <Button
                     size="icon"
                     variant="destructive"
-                    onClick={() => table.options.meta?.onDelete?.(row.original)}
-                    disabled={!row.original.can?.delete}
+                    onClick={() => {
+                        // console.log(row.original);
+                        table.options.meta?.onDeletePpmpItem?.(row.original);
+                    }}
                 >
                     <Trash />
                 </Button>

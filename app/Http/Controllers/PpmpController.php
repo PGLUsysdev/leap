@@ -141,14 +141,13 @@ class PpmpController extends Controller
 
         $validated = $request->validated();
 
-        // Save using the normalized bridge ID
+        // Create or fetch the PPMP row. Since both keys are provided, uniqueness is enforced.
         $ppmp = Ppmp::firstOrCreate([
             'ppa_funding_source_id' => $validated['ppa_funding_source_id'],
             'ppmp_price_list_id' => $validated['ppmp_price_list_id'],
-            // quantities default to 0 via DB schema
         ]);
 
-        // If month and quantity are provided, set the monthly quantity
+        // Optional: set initial quantity if month/quantity are sent
         if ($request->filled('month') && $request->filled('quantity')) {
             $monthQty = $validated['month'] . '_qty';
             $monthAmount = $validated['month'] . '_amount';
@@ -219,15 +218,16 @@ class PpmpController extends Controller
     {
         Gate::authorize('deletePriceList', $ppmp);
 
-        $bridge = $ppmp->ppaFundingSource;
-        $expenseClass =
-            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-                ->expense_class;
+        // dd($ppmp);
+
+        // $bridge = $ppmp->ppaFundingSource;
+        // $expenseClass =
+        //     $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
+        //         ->expense_class;
 
         $ppmp->delete();
 
-        // Recalculate totals after deletion
-        $this->updatePpaFundingSourceTotals($bridge, $expenseClass);
+        // $this->updatePpaFundingSourceTotals($bridge, $expenseClass);
     }
 
     private function updatePpaFundingSourceTotals(

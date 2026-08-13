@@ -36,7 +36,7 @@ import coaColumns from './columns/coa-columns';
 import priceListColumns from './columns/price-list-columns';
 
 const ppmpFormSchema = z.object({
-    price_list_id: z.number().nullable().optional(),
+    ppmp_price_list_id: z.number().nullable().optional(),
     coa_id: z.number().nullable().optional(),
     category_id: z.number().nullable().optional(),
 });
@@ -49,6 +49,8 @@ interface PpmpFormDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     priceLists: PaginatedResponse<PriceList>;
+    ppaFundingSourceId: number;
+    onSuccess?: () => void;
     onSubmit?: (values: PpmpFormValues) => void;
 }
 
@@ -67,12 +69,16 @@ export default function PpmpFormDialog({
     chartOfAccounts,
     categories,
     priceLists,
-    onSubmit,
+    ppaFundingSourceId,
+    onSuccess,
 }: PpmpFormDialogProps) {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
     const form = useForm<PpmpFormValues>({
         resolver: zodResolver(ppmpFormSchema),
         defaultValues: {
-            price_list_id: null,
+            ppmp_price_list_id: null,
             coa_id: null,
             category_id: null,
         },
@@ -81,7 +87,10 @@ export default function PpmpFormDialog({
     const { setValue, reset, handleSubmit, control } = form;
 
     // Use useWatch to subscribe to specific fields
-    const watchedPriceListId = useWatch({ control, name: 'price_list_id' });
+    const watchedPriceListId = useWatch({
+        control,
+        name: 'ppmp_price_list_id',
+    });
     const watchedCoaId = useWatch({ control, name: 'coa_id' });
     const watchedCategoryId = useWatch({ control, name: 'category_id' });
 
@@ -225,7 +234,7 @@ export default function PpmpFormDialog({
     // ---- Handlers ----
     const handlePriceListSelect = (row: PriceList) => {
         setSelectedPriceListObj(row);
-        setValue('price_list_id', row.id, { shouldValidate: true });
+        setValue('ppmp_price_list_id', row.id, { shouldValidate: true });
         priceListSelect.setOpen(false);
     };
 
@@ -236,7 +245,7 @@ export default function PpmpFormDialog({
 
         if (watchedPriceListId) {
             setSelectedPriceListObj(null);
-            setValue('price_list_id', null);
+            setValue('ppmp_price_list_id', null);
         }
 
         setValue('coa_id', row.id, { shouldValidate: true });
@@ -250,7 +259,7 @@ export default function PpmpFormDialog({
 
         if (watchedPriceListId) {
             setSelectedPriceListObj(null);
-            setValue('price_list_id', null);
+            setValue('ppmp_price_list_id', null);
         }
 
         setValue('category_id', row.id, { shouldValidate: true });
@@ -259,7 +268,7 @@ export default function PpmpFormDialog({
 
     const handleClearPriceList = () => {
         setSelectedPriceListObj(null);
-        setValue('price_list_id', null);
+        setValue('ppmp_price_list_id', null);
     };
 
     const handleClearCoa = () => {
@@ -300,8 +309,30 @@ export default function PpmpFormDialog({
     };
 
     const handleFormSubmit = (data: PpmpFormValues) => {
-        console.log('Form values:', data);
-        onSubmit?.(data);
+        setIsSubmitting(true);
+        setSubmitError(null);
+
+        router.post(
+            '/ppmp', // adjust to your store route
+            {
+                ppa_funding_source_id: ppaFundingSourceId,
+                ppmp_price_list_id: data.ppmp_price_list_id,
+                coa_id: data.coa_id,
+                category_id: data.category_id,
+            },
+            {
+                onSuccess: () => {
+                    setIsSubmitting(false);
+                    onOpenChange(false);
+                    onSuccess?.();
+                },
+                onError: (errors) => {
+                    setIsSubmitting(false);
+                    setSubmitError(errors?.message || 'Failed to add item.');
+                },
+                onFinish: () => setIsSubmitting(false),
+            },
+        );
     };
 
     return (
@@ -322,7 +353,7 @@ export default function PpmpFormDialog({
                     >
                         {/* Price List */}
                         <Controller
-                            name="price_list_id"
+                            name="ppmp_price_list_id"
                             control={control}
                             render={({ fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>

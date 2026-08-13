@@ -1,4 +1,3 @@
-import type { AlertDialog as AlertDialogNamespace } from '@base-ui/react/alert-dialog';
 import type { ReactNode } from 'react';
 import {
     AlertDialog,
@@ -9,7 +8,6 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    // AlertDialogTrigger,
 } from '@/components/base-ui-components/ui/alert-dialog';
 import { Spinner } from '@/components/base-ui-components/ui/spinner';
 
@@ -22,7 +20,7 @@ interface DeleteDialogProps {
     handleDelete: () => void;
 }
 
-export default function DelteDiaog({
+export default function DeleteDialog({
     open,
     onOpenChange,
     title,
@@ -32,7 +30,7 @@ export default function DelteDiaog({
 }: DeleteDialogProps) {
     function handleOpenChange(
         nextOpen: boolean,
-        eventDetails: AlertDialogNamespace.Root.ChangeEventDetails,
+        eventDetails: any, // Replace with proper type if available
     ) {
         if (!nextOpen && loading) {
             if (
@@ -50,9 +48,6 @@ export default function DelteDiaog({
 
     return (
         <AlertDialog open={open} onOpenChange={handleOpenChange}>
-            {/*<AlertDialogTrigger render={<Button variant="outline" />}>
-                Show Dialog
-            </AlertDialogTrigger>*/}
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>{title}</AlertDialogTitle>

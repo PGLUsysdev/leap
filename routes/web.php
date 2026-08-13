@@ -363,6 +363,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ])->name('price-lists.reorder');
 
     // PPMP Price List (Duplicate/Alternative endpoints)
+    Route::delete('/ppmp-price-list/{priceList}', [
+        PpmpController::class,
+        'destroyPriceList',
+    ])->name('ppmp-price-list.destroy');
     Route::get('/ppmp-price-list', [
         PpmpPriceListController::class,
         'index',

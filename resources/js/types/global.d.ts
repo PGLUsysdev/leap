@@ -23,6 +23,7 @@ declare module '@tanstack/react-table' {
     interface TableMeta<TData extends RowData> {
         onEdit?: (id: number) => void;
         onDelete?: (id: number) => void;
+        onDeletePpmpItem?: (item: Ppmp) => void;
         disabled?: boolean;
         year?: FiscalYear;
 

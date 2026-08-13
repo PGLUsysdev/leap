@@ -1,6 +1,8 @@
+import { router } from '@inertiajs/react';
 import { Check, Filter } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
+import DeleteDialog from '@/components/base-ui-components/delete-dialog';
 import { Badge } from '@/components/base-ui-components/ui/badge';
 import { Button } from '@/components/base-ui-components/ui/button';
 import {
@@ -113,6 +115,9 @@ export default function PpmpPage({
     const [savingCount, setSavingCount] = useState(0);
     const isSaving = savingCount > 0;
     const [openFormDialog, setOpenFormDialog] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [selectedPpmp, setSelectedPpmp] = useState<Ppmp | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // View filter: show all items, or only MOOE/CO expense-class items
     const [expenseClassFilter, setExpenseClassFilter] = useState<
@@ -136,6 +141,33 @@ export default function PpmpPage({
         MOOE: 'MOOE only',
         CO: 'CO only',
     }[expenseClassFilter];
+
+    function handleDeleteDialogOpen(source: Ppmp) {
+        setSelectedPpmp(source);
+        setDeleteDialogOpen(true);
+    }
+
+    function handleDelete() {
+        if (!selectedPpmp) return;
+
+        setIsDeleting(true);
+
+        router.delete(`/ppmp/${selectedPpmp.id}`, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                setDeleteDialogOpen(false);
+                setSelectedPpmp(null);
+                // Optional: reload ppmpItems to update totals
+                router.reload({ only: ['ppmpItems'] });
+            },
+            onError: () => {
+                setIsDeleting(false);
+                // Optionally show error message
+            },
+            onFinish: () => setIsDeleting(false),
+        });
+    }
 
     // const { auth } = usePage<SharedData>().props;
 
@@ -493,8 +525,7 @@ export default function PpmpPage({
                             setSavingCount((c) =>
                                 Math.max(0, c + (saving ? 1 : -1)),
                             ),
-                        //readOnly: !isActiveTab,
-                        //onDelete: handleDeleteDialogOpen,
+                        onDeletePpmpItem: handleDeleteDialogOpen,
                     }}
                 >
                     <div className="flex items-center gap-2">
@@ -672,11 +703,34 @@ export default function PpmpPage({
                 chartOfAccounts={chartOfAccounts}
                 categories={categories}
                 priceLists={priceLists}
+                ppaFundingSourceId={ppaFundingSource.id} // NEW
+                onSuccess={() => {
+                    // Optionally refetch PPMP items after creation
+                    router.reload({ only: ['ppmpItems'] });
+                }}
+
                 // selectedEntry={activeAipEntry || aipEntry}
                 // fundingSources={fundingSources}
                 // selectedFundingSourceId={selectedFundingSourceId}
                 // ppaFundingSourceId={currentPpaFundingSourceId}
                 // existingPpmps={ppmps}
+            />
+
+            <DeleteDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Remove from PPMP?"
+                description={
+                    <>
+                        Are you sure you want to remove{' '}
+                        <span className="font-bold text-foreground">
+                            "{selectedPpmp?.ppmp_price_list?.description}"
+                        </span>
+                        ?
+                    </>
+                }
+                loading={isDeleting}
+                handleDelete={handleDelete}
             />
 
             {/* <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
