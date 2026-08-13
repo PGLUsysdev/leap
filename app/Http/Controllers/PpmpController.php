@@ -162,13 +162,11 @@ class PpmpController extends Controller
         }
 
         // Sync the total back to the ppa_funding_sources table
-        $this->updatePpaFundingSourceTotals(
-            $ppmp->ppaFundingSource,
-            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-                ->expense_class,
-        );
-
-        return back();
+        // $this->updatePpaFundingSourceTotals(
+        //     $ppmp->ppaFundingSource,
+        //     $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
+        //         ->expense_class,
+        // );
     }
 
     public function updateMonthlyQuantity(Request $request, Ppmp $ppmp)

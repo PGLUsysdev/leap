@@ -52,6 +52,15 @@ interface PpmpFormDialogProps {
     onSubmit?: (values: PpmpFormValues) => void;
 }
 
+const formatPrice = (value: number | string | undefined) => {
+    const num = Number(value || 0);
+
+    return num.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
+};
+
 export default function PpmpFormDialog({
     open,
     onOpenChange,
@@ -326,6 +335,28 @@ export default function PpmpFormDialog({
                                         placeholder="Select price list..."
                                         onClear={handleClearPriceList}
                                     />
+
+                                    {selectedPriceListObj && (
+                                        <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                                            <div>
+                                                <span className="font-medium">
+                                                    Unit of Measurement:
+                                                </span>{' '}
+                                                {
+                                                    selectedPriceListObj.unit_of_measurement
+                                                }
+                                            </div>
+                                            <div>
+                                                <span className="font-medium">
+                                                    Price:
+                                                </span>{' '}
+                                                {formatPrice(
+                                                    selectedPriceListObj.price,
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {fieldState.invalid && (
                                         <FieldError
                                             errors={[fieldState.error]}
