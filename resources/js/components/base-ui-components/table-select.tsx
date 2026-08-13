@@ -87,6 +87,7 @@ interface TableSelectButtonProps<TData> {
     valueKey?: keyof TData;
     invalid?: boolean;
     onClear?: () => void;
+    disabled?: boolean;
 }
 
 export function TableSelectButton<TData>({
@@ -96,6 +97,7 @@ export function TableSelectButton<TData>({
     valueKey = 'id' as keyof TData,
     invalid,
     onClear,
+    disabled = false,
 }: TableSelectButtonProps<TData>) {
     const text = displayValue
         ? (displayValue(hook.selectedItem) ?? placeholder)
@@ -111,6 +113,7 @@ export function TableSelectButton<TData>({
                 className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
                 onClick={hook.openDialog}
                 aria-invalid={invalid}
+                disabled={disabled}
             >
                 <span className="truncate">{text}</span>
                 <ChevronsUpDown />
@@ -122,6 +125,7 @@ export function TableSelectButton<TData>({
                 aria-label="clear selection"
                 aria-invalid={invalid}
                 onClick={onClear}
+                disabled={disabled}
             >
                 <Delete />
             </Button>
