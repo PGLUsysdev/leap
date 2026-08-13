@@ -141,13 +141,11 @@ class PpmpController extends Controller
 
         $validated = $request->validated();
 
-        // Create or fetch the PPMP row. Since both keys are provided, uniqueness is enforced.
         $ppmp = Ppmp::firstOrCreate([
             'ppa_funding_source_id' => $validated['ppa_funding_source_id'],
             'ppmp_price_list_id' => $validated['ppmp_price_list_id'],
         ]);
 
-        // Optional: set initial quantity if month/quantity are sent
         if ($request->filled('month') && $request->filled('quantity')) {
             $monthQty = $validated['month'] . '_qty';
             $monthAmount = $validated['month'] . '_amount';
@@ -159,13 +157,6 @@ class PpmpController extends Controller
                 $monthAmount => $newQty * $unitPrice,
             ]);
         }
-
-        // Sync the total back to the ppa_funding_sources table
-        // $this->updatePpaFundingSourceTotals(
-        //     $ppmp->ppaFundingSource,
-        //     $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-        //         ->expense_class,
-        // );
     }
 
     public function updateMonthlyQuantity(Request $request, Ppmp $ppmp)
@@ -188,11 +179,11 @@ class PpmpController extends Controller
             $monthAmount => $roundedQuantity * $unitPrice,
         ]);
 
-        // $this->updatePpaFundingSourceTotals(
-        //     $ppmp->ppaFundingSource,
-        //     $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-        //         ->expense_class,
-        // );
+        $this->updatePpaFundingSourceTotals(
+            $ppmp->ppaFundingSource,
+            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
+                ->expense_class,
+        );
     }
 
     /**
@@ -218,16 +209,14 @@ class PpmpController extends Controller
     {
         Gate::authorize('deletePriceList', $ppmp);
 
-        // dd($ppmp);
-
-        // $bridge = $ppmp->ppaFundingSource;
-        // $expenseClass =
-        //     $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-        //         ->expense_class;
+        $bridge = $ppmp->ppaFundingSource;
+        $expenseClass =
+            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
+                ->expense_class;
 
         $ppmp->delete();
 
-        // $this->updatePpaFundingSourceTotals($bridge, $expenseClass);
+        $this->updatePpaFundingSourceTotals($bridge, $expenseClass);
     }
 
     private function updatePpaFundingSourceTotals(

@@ -365,6 +365,7 @@ export default function PpmpFormDialog({
                                         }
                                         placeholder="Select price list..."
                                         onClear={handleClearPriceList}
+                                        wrapText={true}
                                     />
 
                                     {selectedPriceListObj && (

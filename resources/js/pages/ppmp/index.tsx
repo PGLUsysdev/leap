@@ -1,5 +1,5 @@
 import { router } from '@inertiajs/react';
-import { Check, Filter } from 'lucide-react';
+import { Check, Filter, FileUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
 import DeleteDialog from '@/components/base-ui-components/delete-dialog';
@@ -8,8 +8,12 @@ import { Button } from '@/components/base-ui-components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/base-ui-components/ui/dropdown-menu';
 import {
@@ -34,7 +38,6 @@ import type {
 import ppmpColumns from './columns/ppmp-columns';
 // import { router, usePage } from '@inertiajs/react';
 // import { Decimal } from 'decimal.js';
-// import { Loader2 } from 'lucide-react';
 // import { DeleteDialog } from '@/components/delete-dialog';
 // import {
 //     AlertDialog,
@@ -136,11 +139,11 @@ export default function PpmpPage({
         );
     }, [ppmpItems, expenseClassFilter]);
 
-    const filterLabel = {
-        ALL: 'All items',
-        MOOE: 'MOOE only',
-        CO: 'CO only',
-    }[expenseClassFilter];
+    // const filterLabel = {
+    //     ALL: 'All items',
+    //     MOOE: 'MOOE only',
+    //     CO: 'CO only',
+    // }[expenseClassFilter];
 
     function handleDeleteDialogOpen(source: Ppmp) {
         setSelectedPpmp(source);
@@ -533,7 +536,8 @@ export default function PpmpPage({
                             <DropdownMenuTrigger
                                 render={
                                     <Button variant="outline" size="sm">
-                                        <Filter /> {filterLabel}
+                                        <Filter />
+                                        {/*{filterLabel}*/}
                                     </Button>
                                 }
                             />
@@ -565,6 +569,31 @@ export default function PpmpPage({
                                         CO only
                                     </DropdownMenuRadioItem>
                                 </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger
+                                render={<Button variant="outline" />}
+                            >
+                                <FileUp />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>
+                                        Export
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem>PDF</DropdownMenuItem>
+                                </DropdownMenuGroup>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>
+                                        Generate
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem>
+                                        COA Summary
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
 

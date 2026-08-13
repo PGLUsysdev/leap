@@ -94,6 +94,7 @@ interface TableSelectButtonProps<TData> {
     invalid?: boolean;
     onClear?: () => void;
     disabled?: boolean;
+    wrapText?: boolean;
 }
 
 export function TableSelectButton<TData>({
@@ -104,6 +105,7 @@ export function TableSelectButton<TData>({
     invalid,
     onClear,
     disabled = false,
+    wrapText = false,
 }: TableSelectButtonProps<TData>) {
     const text = displayValue
         ? (displayValue(hook.selectedItem) ?? placeholder)
@@ -112,12 +114,13 @@ export function TableSelectButton<TData>({
           : placeholder;
 
     return (
-        <ButtonGroup className="w-full">
+        <ButtonGroup className="w-full items-stretch">
             <Button
                 type="button"
                 variant="outline"
                 className={cn(
                     'min-w-0 flex-1 justify-between text-left font-normal',
+                    wrapText ? 'h-auto py-2' : 'h-10',
                     !hook.selectedItem
                         ? 'text-muted-foreground hover:text-muted-foreground'
                         : 'hover:text-current',
@@ -126,13 +129,23 @@ export function TableSelectButton<TData>({
                 aria-invalid={invalid}
                 disabled={disabled}
             >
-                <span className="truncate">{text}</span>
-                <ChevronsUpDown />
+                <span
+                    className={cn(
+                        'min-w-0 flex-1',
+                        wrapText
+                            ? 'pr-2 break-words whitespace-normal'
+                            : 'truncate pr-2',
+                    )}
+                >
+                    {text}
+                </span>
+                <ChevronsUpDown className="shrink-0" />
             </Button>
             <ButtonGroupSeparator />
             <Button
                 type="button"
                 variant="secondary"
+                className={cn(wrapText && 'h-auto')}
                 aria-label="clear selection"
                 aria-invalid={invalid}
                 onClick={onClear}
