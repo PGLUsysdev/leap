@@ -28,6 +28,8 @@ interface TableSelectProps<TData> {
     description?: string;
     paginationData?: Omit<PaginatedResponse<TData>, 'data'>;
     only?: string[];
+    pageParamName?: string;
+    searchParamName?: string;
 }
 
 export function TableSelect<TData>({
@@ -43,6 +45,8 @@ export function TableSelect<TData>({
     description,
     paginationData,
     only,
+    pageParamName = 'page',
+    searchParamName = 'search',
 }: TableSelectProps<TData>) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,6 +77,8 @@ export function TableSelect<TData>({
                         }}
                         selectedValue={value}
                         selectedKey={valueKey}
+                        pageParamName={pageParamName}
+                        searchParamName={searchParamName}
                     ></DataTable>
                 </div>
             </DialogContent>
@@ -110,7 +116,12 @@ export function TableSelectButton<TData>({
             <Button
                 type="button"
                 variant="outline"
-                className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
+                className={cn(
+                    'min-w-0 flex-1 justify-between text-left font-normal',
+                    !hook.selectedItem
+                        ? 'text-muted-foreground hover:text-muted-foreground'
+                        : 'hover:text-current',
+                )}
                 onClick={hook.openDialog}
                 aria-invalid={invalid}
                 disabled={disabled}

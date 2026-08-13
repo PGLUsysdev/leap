@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
+import { useForm, Controller, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import {
@@ -23,7 +24,12 @@ import {
     FieldError,
 } from '@/components/base-ui-components/ui/field';
 
-import type { ChartOfAccount, PpmpCategory, PriceList } from '@/types';
+import type {
+    ChartOfAccount,
+    PaginatedResponse,
+    PpmpCategory,
+    PriceList,
+} from '@/types';
 
 import categoryColumns from './columns/category-columns';
 import coaColumns from './columns/coa-columns';
@@ -38,20 +44,20 @@ const ppmpFormSchema = z.object({
 type PpmpFormValues = z.infer<typeof ppmpFormSchema>;
 
 interface PpmpFormDialogProps {
+    categories: PaginatedResponse<PpmpCategory>;
+    chartOfAccounts: PaginatedResponse<ChartOfAccount>;
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    chartOfAccounts: ChartOfAccount[];
-    priceLists: PriceList[];
-    categories: PpmpCategory[];
+    priceLists: PaginatedResponse<PriceList>;
     onSubmit?: (values: PpmpFormValues) => void;
 }
 
 export default function PpmpFormDialog({
     open,
     onOpenChange,
-    chartOfAccounts = [],
-    categories = [],
-    priceLists = [],
+    chartOfAccounts,
+    categories,
+    priceLists,
     onSubmit,
 }: PpmpFormDialogProps) {
     const form = useForm<PpmpFormValues>({
@@ -63,184 +69,153 @@ export default function PpmpFormDialog({
         },
     });
 
-    const { watch, setValue, reset, handleSubmit, control } = form;
-    const watchedPriceListId = watch('price_list_id');
-    const watchedCoaId = watch('coa_id');
-    const watchedCategoryId = watch('category_id');
+    const { setValue, reset, handleSubmit, control } = form;
+
+    // Use useWatch to subscribe to specific fields
+    const watchedPriceListId = useWatch({ control, name: 'price_list_id' });
+    const watchedCoaId = useWatch({ control, name: 'coa_id' });
+    const watchedCategoryId = useWatch({ control, name: 'category_id' });
 
     const isLocked =
         watchedPriceListId !== null && watchedPriceListId !== undefined;
 
-    const selectedPriceList = useMemo(
-        () => priceLists.find((pl) => pl.id === watchedPriceListId) ?? null,
-        [priceLists, watchedPriceListId],
+    // ---- Selected objects (persist across pagination/filter changes) ----
+    const [selectedPriceListObj, setSelectedPriceListObj] =
+        useState<PriceList | null>(null);
+    const [selectedCoaObj, setSelectedCoaObj] = useState<ChartOfAccount | null>(
+        null,
     );
+    const [selectedCategoryObj, setSelectedCategoryObj] =
+        useState<PpmpCategory | null>(null);
 
+    // ---- Trigger partial reload when a price list is selected ----
     useEffect(() => {
-        if (selectedPriceList) {
+        if (selectedPriceListObj) {
             const coaId =
-                selectedPriceList.chart_of_account_ppmp_category
-                    ?.chart_of_account_id ?? null;
-            const catId =
-                selectedPriceList.chart_of_account_ppmp_category
-                    ?.ppmp_category_id ?? null;
-
-            setValue('coa_id', coaId, { shouldValidate: false });
-            setValue('category_id', catId, { shouldValidate: false });
-        }
-    }, [selectedPriceList, setValue]);
-
-    const filteredPriceLists = useMemo(() => {
-        if (watchedCoaId && watchedCategoryId) {
-            return priceLists.filter(
-                (pl) =>
-                    pl.chart_of_account_ppmp_category?.chart_of_account_id ===
-                        watchedCoaId &&
-                    pl.chart_of_account_ppmp_category?.ppmp_category_id ===
-                        watchedCategoryId,
-            );
-        }
-
-        if (watchedCoaId) {
-            return priceLists.filter(
-                (pl) =>
-                    pl.chart_of_account_ppmp_category?.chart_of_account_id ===
-                    watchedCoaId,
-            );
-        }
-
-        if (watchedCategoryId) {
-            return priceLists.filter(
-                (pl) =>
-                    pl.chart_of_account_ppmp_category?.ppmp_category_id ===
-                    watchedCategoryId,
-            );
-        }
-
-        return priceLists;
-    }, [priceLists, watchedCoaId, watchedCategoryId]);
-
-    const filteredCoas = useMemo(() => {
-        if (isLocked) {
-            const lockedCoaId =
-                selectedPriceList?.chart_of_account_ppmp_category
+                selectedPriceListObj.chart_of_account_ppmp_category
                     ?.chart_of_account_id;
-
-            return lockedCoaId
-                ? chartOfAccounts.filter((coa) => coa.id === lockedCoaId)
-                : [];
-        }
-
-        if (watchedCategoryId) {
-            const allowedCoaIds = new Set(
-                priceLists
-                    .filter(
-                        (pl) =>
-                            pl.chart_of_account_ppmp_category
-                                ?.ppmp_category_id === watchedCategoryId,
-                    )
-                    .map(
-                        (pl) =>
-                            pl.chart_of_account_ppmp_category
-                                ?.chart_of_account_id,
-                    ),
-            );
-
-            return chartOfAccounts.filter((coa) => allowedCoaIds.has(coa.id));
-        }
-
-        return chartOfAccounts;
-    }, [
-        chartOfAccounts,
-        priceLists,
-        watchedCategoryId,
-        isLocked,
-        selectedPriceList,
-    ]);
-
-    const filteredCategories = useMemo(() => {
-        if (isLocked) {
-            const lockedCatId =
-                selectedPriceList?.chart_of_account_ppmp_category
+            const catId =
+                selectedPriceListObj.chart_of_account_ppmp_category
                     ?.ppmp_category_id;
 
-            return lockedCatId
-                ? categories.filter((cat) => cat.id === lockedCatId)
-                : [];
+            router.reload({
+                only: ['priceLists', 'chartOfAccounts', 'categories'],
+                data: {
+                    coa_id: coaId ?? undefined,
+                    category_id: catId ?? undefined,
+                    price_list_page: 1,
+                    coa_page: 1,
+                    category_page: 1,
+                },
+                replace: true,
+            });
         }
+    }, [selectedPriceListObj]);
 
-        if (watchedCoaId) {
-            const allowedCatIds = new Set(
-                priceLists
-                    .filter(
-                        (pl) =>
-                            pl.chart_of_account_ppmp_category
-                                ?.chart_of_account_id === watchedCoaId,
-                    )
-                    .map(
-                        (pl) =>
-                            pl.chart_of_account_ppmp_category?.ppmp_category_id,
-                    ),
-            );
+    // ---- Automatically set COA/Category form values and objects from selected price list ----
+    useEffect(() => {
+        if (selectedPriceListObj) {
+            const coa =
+                selectedPriceListObj.chart_of_account_ppmp_category
+                    ?.chart_of_account ?? null;
+            const cat =
+                selectedPriceListObj.chart_of_account_ppmp_category
+                    ?.ppmp_category ?? null;
 
-            return categories.filter((cat) => allowedCatIds.has(cat.id));
+            if (coa) setSelectedCoaObj(coa);
+
+            if (cat) setSelectedCategoryObj(cat);
+
+            setValue('coa_id', coa?.id ?? null, { shouldValidate: false });
+            setValue('category_id', cat?.id ?? null, { shouldValidate: false });
         }
+    }, [selectedPriceListObj, setValue]);
 
-        return categories;
-    }, [categories, priceLists, watchedCoaId, isLocked, selectedPriceList]);
+    // ---- Trigger partial reload when manual filters change (and not locked) ----
+    const prevFilters = useRef<{
+        coaId: number | null | undefined;
+        categoryId: number | null | undefined;
+    }>({
+        coaId: watchedCoaId,
+        categoryId: watchedCategoryId,
+    });
 
     useEffect(() => {
-        if (
-            watchedPriceListId &&
-            !filteredPriceLists.find((pl) => pl.id === watchedPriceListId)
-        ) {
-            setValue('price_list_id', null);
-        }
-    }, [filteredPriceLists, watchedPriceListId, setValue]);
+        if (!open || isLocked) return;
 
-    useEffect(() => {
-        if (
-            watchedCoaId &&
-            !filteredCoas.find((coa) => coa.id === watchedCoaId)
-        ) {
-            setValue('coa_id', null);
-        }
-    }, [filteredCoas, watchedCoaId, setValue]);
+        const filtersChanged =
+            prevFilters.current.coaId !== watchedCoaId ||
+            prevFilters.current.categoryId !== watchedCategoryId;
 
-    useEffect(() => {
-        if (
-            watchedCategoryId &&
-            !filteredCategories.find((cat) => cat.id === watchedCategoryId)
-        ) {
-            setValue('category_id', null);
-        }
-    }, [filteredCategories, watchedCategoryId, setValue]);
+        if (!filtersChanged) return;
 
+        prevFilters.current = {
+            coaId: watchedCoaId,
+            categoryId: watchedCategoryId,
+        };
+
+        router.reload({
+            only: ['priceLists', 'chartOfAccounts', 'categories'],
+            data: {
+                coa_id: watchedCoaId ?? undefined,
+                category_id: watchedCategoryId ?? undefined,
+                price_list_page: 1,
+                coa_page: 1,
+                category_page: 1,
+            },
+            replace: true,
+        });
+    }, [watchedCoaId, watchedCategoryId, open, isLocked]);
+
+    // ---- Reset form and selected objects when dialog closes ----
     useEffect(() => {
         if (!open) {
             reset();
+            setSelectedPriceListObj(null);
+            setSelectedCoaObj(null);
+            setSelectedCategoryObj(null);
+
+            router.reload({
+                only: ['priceLists', 'chartOfAccounts', 'categories'],
+                data: {
+                    coa_id: undefined,
+                    category_id: undefined,
+                    price_list_page: 1,
+                    coa_page: 1,
+                    category_page: 1,
+                },
+                replace: true,
+            });
         }
     }, [open, reset]);
 
+    // ---- Extract data and pagination meta for each list ----
+    const { data: priceListData, ...priceListPagination } = priceLists;
+    const { data: coaData, ...coaPagination } = chartOfAccounts;
+    const { data: categoryData, ...categoryPagination } = categories;
+
+    // ---- Table select hooks ----
     const priceListSelect = useTableSelect<PriceList>({
-        data: filteredPriceLists,
+        data: priceListData,
         value: watchedPriceListId?.toString() ?? undefined,
         valueKey: 'id',
     });
 
     const coaSelect = useTableSelect<ChartOfAccount>({
-        data: filteredCoas,
+        data: coaData,
         value: watchedCoaId?.toString() ?? undefined,
         valueKey: 'id',
     });
 
     const categorySelect = useTableSelect<PpmpCategory>({
-        data: filteredCategories,
+        data: categoryData,
         value: watchedCategoryId?.toString() ?? undefined,
         valueKey: 'id',
     });
 
+    // ---- Handlers ----
     const handlePriceListSelect = (row: PriceList) => {
+        setSelectedPriceListObj(row);
         setValue('price_list_id', row.id, { shouldValidate: true });
         priceListSelect.setOpen(false);
     };
@@ -248,7 +223,10 @@ export default function PpmpFormDialog({
     const handleCoaSelect = (row: ChartOfAccount) => {
         if (isLocked) return;
 
+        setSelectedCoaObj(row);
+
         if (watchedPriceListId) {
+            setSelectedPriceListObj(null);
             setValue('price_list_id', null);
         }
 
@@ -259,12 +237,57 @@ export default function PpmpFormDialog({
     const handleCategorySelect = (row: PpmpCategory) => {
         if (isLocked) return;
 
+        setSelectedCategoryObj(row);
+
         if (watchedPriceListId) {
+            setSelectedPriceListObj(null);
             setValue('price_list_id', null);
         }
 
         setValue('category_id', row.id, { shouldValidate: true });
         categorySelect.setOpen(false);
+    };
+
+    const handleClearPriceList = () => {
+        setSelectedPriceListObj(null);
+        setValue('price_list_id', null);
+    };
+
+    const handleClearCoa = () => {
+        if (!isLocked) {
+            setSelectedCoaObj(null);
+            setValue('coa_id', null);
+        }
+    };
+
+    const handleClearCategory = () => {
+        if (!isLocked) {
+            setSelectedCategoryObj(null);
+            setValue('category_id', null);
+        }
+    };
+
+    const handleReset = () => {
+        reset();
+        setSelectedPriceListObj(null);
+        setSelectedCoaObj(null);
+        setSelectedCategoryObj(null);
+
+        router.reload({
+            only: ['priceLists', 'chartOfAccounts', 'categories'],
+            data: {
+                coa_id: undefined,
+                category_id: undefined,
+                price_list_page: 1,
+                coa_page: 1,
+                category_page: 1,
+            },
+            replace: true,
+        });
+    };
+
+    const handleCancel = () => {
+        onOpenChange(false);
     };
 
     const handleFormSubmit = (data: PpmpFormValues) => {
@@ -288,6 +311,7 @@ export default function PpmpFormDialog({
                         onSubmit={handleSubmit(handleFormSubmit)}
                         className="flex flex-col gap-4"
                     >
+                        {/* Price List */}
                         <Controller
                             name="price_list_id"
                             control={control}
@@ -296,13 +320,11 @@ export default function PpmpFormDialog({
                                     <FieldLabel>Price List</FieldLabel>
                                     <TableSelectButton
                                         hook={priceListSelect}
-                                        displayValue={(item) =>
-                                            item?.description ?? undefined
+                                        displayValue={() =>
+                                            selectedPriceListObj?.description
                                         }
                                         placeholder="Select price list..."
-                                        onClear={() =>
-                                            setValue('price_list_id', null)
-                                        }
+                                        onClear={handleClearPriceList}
                                     />
                                     {fieldState.invalid && (
                                         <FieldError
@@ -313,34 +335,7 @@ export default function PpmpFormDialog({
                             )}
                         />
 
-                        <Controller
-                            name="coa_id"
-                            control={control}
-                            render={({ fieldState }) => (
-                                <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel>Chart of Account</FieldLabel>
-                                    <TableSelectButton
-                                        hook={coaSelect}
-                                        displayValue={(item) =>
-                                            item?.account_title ?? undefined
-                                        }
-                                        placeholder="Select COA..."
-                                        disabled={isLocked}
-                                        onClear={() => {
-                                            if (!isLocked) {
-                                                setValue('coa_id', null);
-                                            }
-                                        }}
-                                    />
-                                    {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
-                                    )}
-                                </Field>
-                            )}
-                        />
-
+                        {/* Category */}
                         <Controller
                             name="category_id"
                             control={control}
@@ -349,16 +344,37 @@ export default function PpmpFormDialog({
                                     <FieldLabel>PPMP Category</FieldLabel>
                                     <TableSelectButton
                                         hook={categorySelect}
-                                        displayValue={(item) =>
-                                            item?.name ?? undefined
+                                        displayValue={() =>
+                                            selectedCategoryObj?.name
                                         }
                                         placeholder="Select category..."
                                         disabled={isLocked}
-                                        onClear={() => {
-                                            if (!isLocked) {
-                                                setValue('category_id', null);
-                                            }
-                                        }}
+                                        onClear={handleClearCategory}
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
+
+                        {/* COA */}
+                        <Controller
+                            name="coa_id"
+                            control={control}
+                            render={({ fieldState }) => (
+                                <Field data-invalid={fieldState.invalid}>
+                                    <FieldLabel>Chart of Account</FieldLabel>
+                                    <TableSelectButton
+                                        hook={coaSelect}
+                                        displayValue={() =>
+                                            selectedCoaObj?.account_title
+                                        }
+                                        placeholder="Select COA..."
+                                        disabled={isLocked}
+                                        onClear={handleClearCoa}
                                     />
                                     {fieldState.invalid && (
                                         <FieldError
@@ -370,40 +386,66 @@ export default function PpmpFormDialog({
                         />
 
                         <DialogFooter>
+                            <Button
+                                variant="secondary"
+                                type="button"
+                                onClick={handleReset}
+                            >
+                                Reset
+                            </Button>
+                            <Button
+                                variant="outline"
+                                type="button"
+                                onClick={handleCancel}
+                            >
+                                Cancel
+                            </Button>
                             <Button type="submit">Add Item</Button>
                         </DialogFooter>
                     </form>
                 </DialogContent>
             </Dialog>
 
+            {/* TableSelect dialogs */}
             <TableSelect
-                data={filteredPriceLists}
+                data={priceListData}
                 columns={priceListColumns}
                 open={priceListSelect.open}
                 onOpenChange={priceListSelect.setOpen}
                 onRowSelect={handlePriceListSelect}
+                paginationData={priceListPagination}
+                pageParamName="price_list_page"
+                searchParamName="price_list_search"
                 title="Select Price List"
                 description="Choose an existing price list item."
+                className="sm:w-300 sm:max-w-[calc(90%)]"
             />
 
             <TableSelect
-                data={filteredCoas}
-                columns={coaColumns}
-                open={coaSelect.open}
-                onOpenChange={coaSelect.setOpen}
-                onRowSelect={handleCoaSelect}
-                title="Select Chart of Account"
-                description="Choose a COA (MOOE or CO)."
-            />
-
-            <TableSelect
-                data={filteredCategories}
+                data={categoryData}
                 columns={categoryColumns}
                 open={categorySelect.open}
                 onOpenChange={categorySelect.setOpen}
                 onRowSelect={handleCategorySelect}
+                paginationData={categoryPagination}
+                pageParamName="category_page"
+                searchParamName="category_search"
                 title="Select Category"
                 description="Choose a PPMP category."
+            />
+
+            <TableSelect
+                data={coaData}
+                columns={coaColumns}
+                open={coaSelect.open}
+                onOpenChange={coaSelect.setOpen}
+                onRowSelect={handleCoaSelect}
+                paginationData={coaPagination}
+                pageParamName="coa_page"
+                searchParamName="coa_search"
+                title="Select Chart of Account"
+                description="Choose a COA (MOOE or CO)."
+                className="sm:w-200 sm:max-w-[calc(90%)]"
             />
         </>
     );

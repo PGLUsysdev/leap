@@ -123,7 +123,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
 
     return (
         <Input
-            className="slashed-zero tabular-nums"
+            className="text-right slashed-zero tabular-nums"
             inputMode="numeric"
             onBeforeInput={(e) => {
                 if (e.data && e.data.length === 1 && !/[0-9]/.test(e.data)) {

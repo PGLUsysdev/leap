@@ -25,6 +25,7 @@ import type {
     PpmpCategory,
     PriceList,
     Ppmp,
+    PaginatedResponse,
     // FundingSource,
     // SharedData,
 } from '@/types';
@@ -62,12 +63,12 @@ import ppmpColumns from './columns/ppmp-columns';
 
 interface PpmpPageProps {
     aipEntry: AipEntry;
-    categories: PpmpCategory[];
-    chartOfAccounts: ChartOfAccount[];
+    categories: PaginatedResponse<PpmpCategory>;
+    chartOfAccounts: PaginatedResponse<ChartOfAccount>;
     fiscalYear: FiscalYear;
     ppaFundingSource: PpaFundingSource;
     ppmpItems: Ppmp[];
-    priceLists: PriceList[];
+    priceLists: PaginatedResponse<PriceList>;
 
     // fiscalYear: FiscalYear;
     // allAipEntries?: AipEntry[];
@@ -87,13 +88,6 @@ interface PpmpPageProps {
     // fundingSource: FundingSource;
 }
 
-// need here
-// - [x] all price lists
-// - [x] all coa
-// - [x] all catagory
-// - [ ] office name
-// - [ ] selected funding source code
-// - [ ] ppa name
 export default function PpmpPage({
     aipEntry,
     categories,
