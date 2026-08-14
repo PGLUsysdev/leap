@@ -67,6 +67,15 @@ class PpmpController extends Controller
             });
         }
 
+        $usedPriceListIds = Ppmp::where(
+            'ppa_funding_source_id',
+            $ppaFundingSource->id,
+        )
+            ->whereNotNull('ppmp_price_list_id')
+            ->pluck('ppmp_price_list_id');
+
+        $priceListsQuery->whereNotIn('id', $usedPriceListIds);
+
         $priceLists = $priceListsQuery->paginate(100, ['*'], 'price_list_page');
 
         // === Chart of Accounts (filtered by Category) ===
