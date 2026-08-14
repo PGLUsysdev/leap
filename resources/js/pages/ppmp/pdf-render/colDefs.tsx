@@ -60,7 +60,7 @@ export const getPpmpColumnDefs = <T extends Record<string, any>>(
     },
     {
         id: 'item_no',
-        header: 'No.',
+        header: 'Item No.',
         width: REG_QTY_COL_WIDTH,
         align: 'center',
         cell: (item) =>
@@ -68,7 +68,7 @@ export const getPpmpColumnDefs = <T extends Record<string, any>>(
     },
     {
         id: 'description',
-        header: 'Item Description',
+        header: 'Description',
         width: DESC_COL_WIDTH,
         align: 'left',
         cell: (item) =>
@@ -86,7 +86,7 @@ export const getPpmpColumnDefs = <T extends Record<string, any>>(
     },
     {
         id: 'price',
-        header: 'Unit Price',
+        header: 'PRICELIST',
         width: AMT_COL_WIDTH,
         align: 'right',
         cell: (item) =>
@@ -110,7 +110,7 @@ export const getPpmpColumnDefs = <T extends Record<string, any>>(
     },
     {
         id: 'total_amount',
-        header: 'Total Amt',
+        header: 'TOTAL',
         width: AMT_COL_WIDTH,
         align: 'right',
         cell: (item) => {
@@ -138,7 +138,7 @@ export const getPpmpColumnDefs = <T extends Record<string, any>>(
         },
         {
             id: `${key}_amount`,
-            header: `${label} Amt`,
+            header: `${label}`,
             width: AMT_COL_WIDTH,
             align: 'right' as const,
             cell: (item: T) => formatCurrency(item[`${key}_amount`]),
