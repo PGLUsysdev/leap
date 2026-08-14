@@ -1,10 +1,19 @@
 import { router } from '@inertiajs/react';
+import { PDFViewer } from '@react-pdf/renderer';
 import { Check, Filter, FileUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
 import DeleteDialog from '@/components/base-ui-components/delete-dialog';
 import { Badge } from '@/components/base-ui-components/ui/badge';
 import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/base-ui-components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,6 +45,7 @@ import type {
     // SharedData,
 } from '@/types';
 import ppmpColumns from './columns/ppmp-columns';
+import { PpmpDocument } from './pdf-render/PpmpDocument';
 // import { router, usePage } from '@inertiajs/react';
 // import { Decimal } from 'decimal.js';
 // import { DeleteDialog } from '@/components/delete-dialog';
@@ -114,6 +124,8 @@ export default function PpmpPage({
     // fundingSourceId,
     // isSupplemental = false,
 }: PpmpPageProps) {
+    console.log(ppmpItems);
+
     // Counter so editing multiple cells at once keeps the indicator on
     const [savingCount, setSavingCount] = useState(0);
     const isSaving = savingCount > 0;
@@ -532,6 +544,47 @@ export default function PpmpPage({
                     }}
                 >
                     <div className="flex items-center gap-2">
+                        <Dialog>
+                            <DialogTrigger>Open</DialogTrigger>
+                            <DialogContent className="!fixed !inset-0 !h-screen !w-screen !max-w-none !translate-x-0 !translate-y-0 gap-0 !rounded-none p-0">
+                                <div className="p-4">
+                                    <DialogHeader>
+                                        <DialogTitle>
+                                            Are you absolutely sure?
+                                        </DialogTitle>
+                                        {/*<DialogDescription>
+                                            This action cannot be undone. This
+                                            will permanently delete your account
+                                            and remove your data from our
+                                            servers.
+                                        </DialogDescription>*/}
+                                    </DialogHeader>
+                                </div>
+
+                                {/*<PpmpPreview></PpmpPreview>*/}
+                                <div
+                                    style={{
+                                        width: '100vw',
+                                        height: '94vh',
+                                        margin: 0,
+                                        padding: 0,
+                                    }}
+                                >
+                                    <PDFViewer
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            border: 'none',
+                                        }}
+                                    >
+                                        <PpmpDocument
+                                            groupedData={ppmpItems}
+                                        ></PpmpDocument>
+                                    </PDFViewer>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 render={
