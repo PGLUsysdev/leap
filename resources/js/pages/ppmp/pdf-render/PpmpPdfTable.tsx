@@ -6,8 +6,7 @@ const styles = StyleSheet.create({
     table: {
         width: '100%',
         marginVertical: 4,
-        borderLeftWidth: 0.5,
-        borderLeftColor: '#000000',
+        // FIXED: Removed parent borderLeft properties to prevent page break artifacts!
     },
 
     /* BASE / GLOBAL TEXT STYLE (DEFAULT FONT SIZE = 5) */
@@ -140,6 +139,12 @@ const styles = StyleSheet.create({
         color: '#000000',
     },
 });
+
+// Helper style to draw outer left border cleanly on the first column of every row
+const leftBorderStyle = {
+    borderLeftWidth: 0.5,
+    borderLeftColor: '#000000',
+};
 
 // Helper function to accumulate totals for items
 function calculateTotals(items: any[]) {
@@ -282,14 +287,14 @@ export function PpmpPdfTable<T extends Record<string, any>>({
         };
     }, [groupedData]);
 
-    // Helper to render GRID-ALIGNED BANNER ROWS (Places title in the Item Description column)
+    // Helper to render GRID-ALIGNED BANNER ROWS
     const renderBannerGridRow = (
         titleText: string,
         rowStyle: any,
         textStyle: any,
     ) => (
         <View style={rowStyle} wrap={false}>
-            {columns.map((col) => {
+            {columns.map((col, cIdx) => {
                 const isDescription = col.id === 'description';
 
                 return (
@@ -303,6 +308,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                                     ? 'flex-start'
                                     : 'center',
                             },
+                            cIdx === 0 ? leftBorderStyle : {},
                         ]}
                     >
                         {isDescription ? (
@@ -322,7 +328,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
         textStyle: any,
     ) => (
         <View style={rowStyle} wrap={false}>
-            {columns.map((col) => {
+            {columns.map((col, cIdx) => {
                 let content: React.ReactNode = '';
 
                 if (col.id === 'description') {
@@ -352,6 +358,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                                           ? 'flex-end'
                                           : 'center',
                             },
+                            cIdx === 0 ? leftBorderStyle : {},
                         ]}
                     >
                         <Text style={textStyle}>{content}</Text>
@@ -365,10 +372,14 @@ export function PpmpPdfTable<T extends Record<string, any>>({
         <View style={styles.table}>
             {/* 1. HEADER ROW: #DEEAF6 */}
             <View fixed style={styles.headerRow}>
-                {columns.map((col) => (
+                {columns.map((col, cIdx) => (
                     <View
                         key={col.id}
-                        style={[styles.headerCell, { width: col.width }]}
+                        style={[
+                            styles.headerCell,
+                            { width: col.width },
+                            cIdx === 0 ? leftBorderStyle : {},
+                        ]}
                     >
                         <Text style={styles.headerText}>{col.header}</Text>
                     </View>
@@ -383,7 +394,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                 const programTotals = calculateTotals(programItems);
 
                 return (
-                    <View key={pIdx} wrap={false}>
+                    <View key={pIdx}>
                         {/* PROGRAM BANNER GRID ROW */}
                         {renderBannerGridRow(
                             programGroup.title,
@@ -421,6 +432,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                                                 (item, rIdx) => (
                                                     <View
                                                         key={rIdx}
+                                                        wrap={false}
                                                         style={[
                                                             styles.row,
                                                             rIdx % 2 === 0
@@ -428,35 +440,41 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                                                                 : {},
                                                         ]}
                                                     >
-                                                        {columns.map((col) => (
-                                                            <View
-                                                                key={col.id}
-                                                                style={[
-                                                                    styles.cell,
-                                                                    {
-                                                                        width: col.width,
-                                                                        alignItems:
-                                                                            col.align ===
-                                                                            'right'
-                                                                                ? 'flex-end'
-                                                                                : col.align ===
-                                                                                    'center'
-                                                                                  ? 'center'
-                                                                                  : 'flex-start',
-                                                                    },
-                                                                ]}
-                                                            >
-                                                                <Text
-                                                                    style={
-                                                                        styles.cellText
-                                                                    }
+                                                        {columns.map(
+                                                            (col, colIdx) => (
+                                                                <View
+                                                                    key={col.id}
+                                                                    style={[
+                                                                        styles.cell,
+                                                                        {
+                                                                            width: col.width,
+                                                                            alignItems:
+                                                                                col.align ===
+                                                                                'right'
+                                                                                    ? 'flex-end'
+                                                                                    : col.align ===
+                                                                                        'center'
+                                                                                      ? 'center'
+                                                                                      : 'flex-start',
+                                                                        },
+                                                                        colIdx ===
+                                                                        0
+                                                                            ? leftBorderStyle
+                                                                            : {},
+                                                                    ]}
                                                                 >
-                                                                    {col.cell(
-                                                                        item,
-                                                                    )}
-                                                                </Text>
-                                                            </View>
-                                                        ))}
+                                                                    <Text
+                                                                        style={
+                                                                            styles.cellText
+                                                                        }
+                                                                    >
+                                                                        {col.cell(
+                                                                            item,
+                                                                        )}
+                                                                    </Text>
+                                                                </View>
+                                                            ),
+                                                        )}
                                                     </View>
                                                 ),
                                             )}

@@ -1,7 +1,16 @@
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import {
+    Document,
+    Page,
+    View,
+    Text,
+    StyleSheet,
+    Font,
+} from '@react-pdf/renderer';
 import React from 'react';
 import { getPpmpColumnDefs } from './colDefs';
 import { PpmpPdfTable } from './PpmpPdfTable';
+
+Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
     page: {

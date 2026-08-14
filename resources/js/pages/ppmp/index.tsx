@@ -133,6 +133,7 @@ export default function PpmpPage({
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [selectedPpmp, setSelectedPpmp] = useState<Ppmp | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [openPdfPreview, setOpenPdfPreview] = useState(false);
 
     // View filter: show all items, or only MOOE/CO expense-class items
     const [expenseClassFilter, setExpenseClassFilter] = useState<
@@ -544,47 +545,6 @@ export default function PpmpPage({
                     }}
                 >
                     <div className="flex items-center gap-2">
-                        <Dialog>
-                            <DialogTrigger>Open</DialogTrigger>
-                            <DialogContent className="!fixed !inset-0 !h-screen !w-screen !max-w-none !translate-x-0 !translate-y-0 gap-0 !rounded-none p-0">
-                                <div className="p-4">
-                                    <DialogHeader>
-                                        <DialogTitle>
-                                            Are you absolutely sure?
-                                        </DialogTitle>
-                                        {/*<DialogDescription>
-                                            This action cannot be undone. This
-                                            will permanently delete your account
-                                            and remove your data from our
-                                            servers.
-                                        </DialogDescription>*/}
-                                    </DialogHeader>
-                                </div>
-
-                                {/*<PpmpPreview></PpmpPreview>*/}
-                                <div
-                                    style={{
-                                        width: '100vw',
-                                        height: '94vh',
-                                        margin: 0,
-                                        padding: 0,
-                                    }}
-                                >
-                                    <PDFViewer
-                                        style={{
-                                            width: '100%',
-                                            height: '100%',
-                                            border: 'none',
-                                        }}
-                                    >
-                                        <PpmpDocument
-                                            groupedData={ppmpItems}
-                                        ></PpmpDocument>
-                                    </PDFViewer>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 render={
@@ -636,7 +596,11 @@ export default function PpmpPage({
                                     <DropdownMenuLabel>
                                         Export
                                     </DropdownMenuLabel>
-                                    <DropdownMenuItem>PDF</DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setOpenPdfPreview(true)}
+                                    >
+                                        PDF
+                                    </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
@@ -814,6 +778,44 @@ export default function PpmpPage({
                 loading={isDeleting}
                 handleDelete={handleDelete}
             />
+
+            <Dialog open={openPdfPreview} onOpenChange={setOpenPdfPreview}>
+                <DialogContent className="!fixed !inset-0 !h-screen !w-screen !max-w-none !translate-x-0 !translate-y-0 gap-0 !rounded-none p-0">
+                    <div className="p-4">
+                        <DialogHeader>
+                            <DialogTitle>Are you absolutely sure?</DialogTitle>
+                            {/*<DialogDescription>
+                                This action cannot be undone. This
+                                will permanently delete your account
+                                and remove your data from our
+                                servers.
+                            </DialogDescription>*/}
+                        </DialogHeader>
+                    </div>
+
+                    {/*<PpmpPreview></PpmpPreview>*/}
+                    <div
+                        style={{
+                            width: '100vw',
+                            height: '94vh',
+                            margin: 0,
+                            padding: 0,
+                        }}
+                    >
+                        <PDFViewer
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                            }}
+                        >
+                            <PpmpDocument
+                                groupedData={ppmpItems}
+                            ></PpmpDocument>
+                        </PDFViewer>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* <AlertDialog open={openAlert} onOpenChange={setOpenAlert}>
                 <AlertDialogContent>
