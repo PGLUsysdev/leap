@@ -27,7 +27,6 @@ const styles = StyleSheet.create({
     headerText: {
         fontSize: 5,
         fontWeight: 'bold',
-        textAlign: 'center',
         color: '#000000',
     },
     programBannerRow: {
@@ -113,7 +112,22 @@ const leftBorderStyle = {
 
 interface PpmpPdfTableProps<T> {
     columns: ColumnDef<T>[];
-    rows: TableRow[]; // Changed from groupedData
+    rows: TableRow[];
+}
+
+// Helper to determine total row text alignment based on column id.
+function getTotalTextAlign(columnId: string): 'left' | 'center' | 'right' {
+    if (columnId === 'description') return 'left';
+
+    if (columnId === 'total_qty' || columnId.endsWith('_qty')) return 'center';
+
+    if (columnId === 'total_amount' || columnId.endsWith('_amount')) {
+        return 'right';
+    }
+
+    // For other columns (coa, item_no, uom, price), we default to left.
+    // Price could be right, but since we don't display it in totals, it doesn't matter.
+    return 'left';
 }
 
 export function PpmpPdfTable<T extends Record<string, any>>({
@@ -121,6 +135,16 @@ export function PpmpPdfTable<T extends Record<string, any>>({
     rows = [],
 }: PpmpPdfTableProps<T>) {
     console.log(rows);
+
+    // Helper to render content that might already be a <Text> element.
+    // If it's not a <Text>, wrap it with default styles.
+    const renderContent = (content: React.ReactNode, defaultStyle: any) => {
+        if (React.isValidElement(content) && content.type === Text) {
+            return content;
+        }
+
+        return <Text style={defaultStyle}>{content}</Text>;
+    };
 
     // Helper to render a "Banner" row (Program, Category, COA)
     const renderBannerRow = (
@@ -163,19 +187,11 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                     key={col.id}
                     style={[
                         styles.cell,
-                        {
-                            width: col.width,
-                            alignItems:
-                                col.align === 'right'
-                                    ? 'flex-end'
-                                    : col.align === 'center'
-                                      ? 'center'
-                                      : 'flex-start',
-                        },
+                        { width: col.width },
                         colIdx === 0 ? leftBorderStyle : {},
                     ]}
                 >
-                    <Text style={styles.cellText}>{col.cell(row.item)}</Text>
+                    {renderContent(col.cell(row.item), styles.cellText)}
                 </View>
             ))}
         </View>
@@ -203,8 +219,15 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                     ) {
                         content = formatCurrency(String(totals[col.id] || 0));
                     } else {
-                        content = ''; // COA, Item No., UOM, Price are empty for totals
+                        content = '';
                     }
+
+                    // Determine text alignment based on column id
+                    const align = getTotalTextAlign(col.id);
+                    const textStyle = {
+                        ...styles.totalText,
+                        textAlign: align,
+                    };
 
                     return (
                         <View
@@ -213,17 +236,11 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                                 styles.cell,
                                 {
                                     width: col.width,
-                                    alignItems:
-                                        col.id === 'description'
-                                            ? 'flex-start'
-                                            : col.align === 'right'
-                                              ? 'flex-end'
-                                              : 'center',
                                 },
                                 cIdx === 0 ? leftBorderStyle : {},
                             ]}
                         >
-                            <Text style={styles.totalText}>{content}</Text>
+                            <Text style={textStyle}>{content}</Text>
                         </View>
                     );
                 })}
@@ -244,7 +261,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                             cIdx === 0 ? leftBorderStyle : {},
                         ]}
                     >
-                        <Text style={styles.headerText}>{col.header}</Text>
+                        {renderContent(col.header, styles.headerText)}
                     </View>
                 ))}
             </View>
@@ -253,7 +270,6 @@ export function PpmpPdfTable<T extends Record<string, any>>({
             {rows.map((row) => {
                 switch (row.type) {
                     case 'banner':
-                        // Determine banner style based on id prefix
                         if (row.id.startsWith('prog-')) {
                             return renderBannerRow(
                                 row,
@@ -280,7 +296,6 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         return renderItemRow(row);
 
                     case 'subtotal':
-                        // Determine if it's a program total or category total based on label or id
                         if (row.id.startsWith('prog-total-')) {
                             return renderTotalRow(row, styles.programTotalRow);
                         }

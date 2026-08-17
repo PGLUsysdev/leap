@@ -5,9 +5,8 @@ import { formatCurrency } from '@/lib/utils';
 
 export interface ColumnDef<T> {
     id: string;
-    header: string;
+    header: React.ReactNode; // now a ReactNode, not a string
     width: string;
-    align?: 'left' | 'center' | 'right';
     cell: (item: T) => React.ReactNode;
 }
 
@@ -36,16 +35,29 @@ const COA_COL_WIDTH = '6.8%';
 const DESC_COL_WIDTH = '15.5%';
 const UOM_COL_WIDTH = '2.5%';
 
+// Helper for consistent cell styling
+const cellStyle = (align: 'left' | 'center' | 'right') => ({
+    textAlign: align,
+    fontSize: 5,
+    color: '#000000',
+});
+
+// Helper for consistent header styling
+const headerStyle = (align: 'left' | 'center' | 'right') => ({
+    textAlign: align,
+    fontSize: 5,
+    fontWeight: 'bold' as const,
+});
+
 export const getPpmpColumnDefs = <
     T extends Record<string, any>,
 >(): ColumnDef<T>[] => [
     {
         id: 'coa',
-        header: 'Chart of Account',
+        header: <Text style={headerStyle('center')}>Chart of Account</Text>,
         width: COA_COL_WIDTH,
-        align: 'left',
         cell: (item) => (
-            <Text style={{ textAlign: 'center' }}>
+            <Text style={cellStyle('center')}>
                 {item.ppmp_price_list?.chart_of_account_ppmp_category
                     ?.chart_of_account?.account_title ??
                     item.accountTitle ??
@@ -55,62 +67,78 @@ export const getPpmpColumnDefs = <
     },
     {
         id: 'item_no',
-        header: 'Item No.',
+        header: <Text style={headerStyle('center')}>Item No.</Text>,
         width: REG_QTY_COL_WIDTH,
-        align: 'center',
-        cell: (item) =>
-            item.ppmp_price_list?.item_number ?? item.item_number ?? '-',
+        cell: (item) => (
+            <Text style={cellStyle('center')}>
+                {item.ppmp_price_list?.item_number ?? item.item_number ?? '-'}
+            </Text>
+        ),
     },
     {
         id: 'description',
-        header: 'Description',
+        header: <Text style={headerStyle('left')}>Description</Text>,
         width: DESC_COL_WIDTH,
-        align: 'left',
-        cell: (item) =>
-            item.ppmp_price_list?.description ?? item.description ?? '-',
+        cell: (item) => (
+            <Text style={cellStyle('left')}>
+                {item.ppmp_price_list?.description ?? item.description ?? '-'}
+            </Text>
+        ),
     },
     {
         id: 'uom',
-        header: 'UOM',
+        header: <Text style={headerStyle('center')}>UOM</Text>,
         width: UOM_COL_WIDTH,
-        align: 'center',
-        cell: (item) =>
-            item.ppmp_price_list?.unit_of_measurement ??
-            item.unit_of_measurement ??
-            '-',
+        cell: (item) => (
+            <Text style={cellStyle('center')}>
+                {item.ppmp_price_list?.unit_of_measurement ??
+                    item.unit_of_measurement ??
+                    '-'}
+            </Text>
+        ),
     },
     {
         id: 'price',
-        header: 'PRICELIST',
+        header: <Text style={headerStyle('right')}>PRICELIST</Text>,
         width: AMT_COL_WIDTH,
-        align: 'right',
-        cell: (item) =>
-            formatCurrency(item.ppmp_price_list?.price ?? item.price),
+        cell: (item) => (
+            <Text style={cellStyle('right')}>
+                {formatCurrency(item.ppmp_price_list?.price ?? item.price)}
+            </Text>
+        ),
     },
     {
         id: 'total_qty',
-        header: 'Total Qty',
+        header: <Text style={headerStyle('center')}>Total Qty</Text>,
         width: TOTAL_QTY_COL_WIDTH,
-        align: 'center',
         cell: (item) => {
-            if (item.total_qty !== undefined) return formatQty(item.total_qty);
+            if (item.total_qty !== undefined) {
+                return (
+                    <Text style={cellStyle('center')}>
+                        {formatQty(item.total_qty)}
+                    </Text>
+                );
+            }
 
             const total = MONTHS.reduce(
                 (sum, m) => sum + (Number(item[`${m.key}_qty`]) || 0),
                 0,
             );
 
-            return formatQty(total);
+            return <Text style={cellStyle('center')}>{formatQty(total)}</Text>;
         },
     },
     {
         id: 'total_amount',
-        header: 'TOTAL',
+        header: <Text style={headerStyle('right')}>TOTAL</Text>,
         width: AMT_COL_WIDTH,
-        align: 'right',
         cell: (item) => {
             if (item.total_amount !== undefined) {
-                return formatCurrency(item.total_amount);
+                return (
+                    <Text style={cellStyle('right')}>
+                        {formatCurrency(item.total_amount)}
+                    </Text>
+                );
             }
 
             const total = MONTHS.reduce(
@@ -118,7 +146,11 @@ export const getPpmpColumnDefs = <
                 new Decimal(0),
             );
 
-            return formatCurrency(total.toString());
+            return (
+                <Text style={cellStyle('right')}>
+                    {formatCurrency(total.toString())}
+                </Text>
+            );
         },
     },
 
@@ -126,17 +158,23 @@ export const getPpmpColumnDefs = <
     ...MONTHS.flatMap(({ key, label }) => [
         {
             id: `${key}_qty`,
-            header: `${label} Qty`,
+            header: <Text style={headerStyle('center')}>{label} Qty</Text>,
             width: REG_QTY_COL_WIDTH,
-            align: 'center' as const,
-            cell: (item: T) => formatQty(item[`${key}_qty`]),
+            cell: (item: T) => (
+                <Text style={cellStyle('center')}>
+                    {formatQty(item[`${key}_qty`])}
+                </Text>
+            ),
         },
         {
             id: `${key}_amount`,
-            header: `${label}`,
+            header: <Text style={headerStyle('right')}>{label}</Text>,
             width: AMT_COL_WIDTH,
-            align: 'right' as const,
-            cell: (item: T) => formatCurrency(item[`${key}_amount`]),
+            cell: (item: T) => (
+                <Text style={cellStyle('right')}>
+                    {formatCurrency(item[`${key}_amount`])}
+                </Text>
+            ),
         },
     ]),
 ];
