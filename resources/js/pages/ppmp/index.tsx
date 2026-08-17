@@ -9,10 +9,9 @@ import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
+    // DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/base-ui-components/ui/dialog';
 import {
     DropdownMenu,
@@ -780,20 +779,13 @@ export default function PpmpPage({
             />
 
             <Dialog open={openPdfPreview} onOpenChange={setOpenPdfPreview}>
-                <DialogContent className="!fixed !inset-0 !h-screen !w-screen !max-w-none !translate-x-0 !translate-y-0 gap-0 !rounded-none p-0">
+                <DialogContent className="fixed! inset-0! h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! gap-0 rounded-none! p-0">
                     <div className="p-4">
                         <DialogHeader>
-                            <DialogTitle>Are you absolutely sure?</DialogTitle>
-                            {/*<DialogDescription>
-                                This action cannot be undone. This
-                                will permanently delete your account
-                                and remove your data from our
-                                servers.
-                            </DialogDescription>*/}
+                            <DialogTitle>PPMP Preview</DialogTitle>
                         </DialogHeader>
                     </div>
 
-                    {/*<PpmpPreview></PpmpPreview>*/}
                     <div
                         style={{
                             width: '100vw',
