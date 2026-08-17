@@ -802,7 +802,10 @@ export default function PpmpPage({
                             }}
                         >
                             <PpmpDocument
+                                aipEntry={aipEntry}
+                                fiscalYear={fiscalYear}
                                 groupedData={ppmpItems}
+                                ppaFundingSource={ppaFundingSource}
                             ></PpmpDocument>
                         </PDFViewer>
                     </div>

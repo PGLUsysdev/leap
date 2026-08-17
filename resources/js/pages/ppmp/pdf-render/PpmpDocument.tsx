@@ -7,6 +7,7 @@ import {
     Font,
 } from '@react-pdf/renderer';
 import React from 'react';
+import type { AipEntry, FiscalYear, PpaFundingSource } from '@/types';
 import { getPpmpColumnDefs } from './colDefs';
 import { PpmpPdfTable } from './PpmpPdfTable';
 
@@ -171,23 +172,26 @@ const DEFAULT_MOCK_DATA = [
 ];
 
 interface PpmpDocumentProps {
-    fiscalYear?: number;
-    officeName?: string;
+    aipEntry?: AipEntry;
+    fiscalYear?: FiscalYear;
     fundSource?: string;
     groupedData?: any[];
+    officeName?: string;
+    ppaFundingSource?: PpaFundingSource;
 }
 
 export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
-    fiscalYear = 2026,
-    officeName = '-',
-    fundSource = '-',
+    aipEntry,
+    fiscalYear,
     groupedData = DEFAULT_MOCK_DATA,
+    ppaFundingSource,
 }) => {
-    const columns = getPpmpColumnDefs(fiscalYear);
+    const columns = getPpmpColumnDefs();
 
     return (
         <Document>
-            <Page size="LEGAL" orientation="landscape" style={styles.page}>
+            {/* size={[612, 936]} = 8.5 x 13 */}
+            <Page size={[612, 936]} orientation="landscape" style={styles.page}>
                 {/* Document Header */}
                 <View
                     fixed
@@ -300,7 +304,9 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                                     fontWeight: 'bold',
                                 }}
                             >
-                                office
+                                {aipEntry?.ppa?.office?.acronym ||
+                                    aipEntry?.ppa?.office?.name ||
+                                    '-'}
                             </Text>
                         </View>
 
@@ -322,7 +328,9 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                                     fontWeight: 'bold',
                                 }}
                             >
-                                general fund
+                                {ppaFundingSource?.funding_source?.code ||
+                                    ppaFundingSource?.funding_source?.title ||
+                                    '-'}
                             </Text>
                         </View>
 
@@ -344,7 +352,7 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                                     fontWeight: 'bold',
                                 }}
                             >
-                                aip ref code
+                                {'-'}
                             </Text>
                         </View>
 
@@ -366,7 +374,7 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                                     fontWeight: 'bold',
                                 }}
                             >
-                                ppa
+                                {aipEntry?.ppa?.name || '-'}
                             </Text>
                         </View>
                     </View>
@@ -424,7 +432,7 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                                 }}
                             >
                                 PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY{' '}
-                                {fiscalYear}
+                                {fiscalYear?.year || '-'}
                             </Text>
                         </View>
                     </View>
@@ -466,7 +474,7 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
 
                 {/* Dynamic Footer */}
                 <View style={styles.footer} fixed>
-                    <Text>PPMP Summary Form • System Generated</Text>
+                    <Text></Text>
                     <Text
                         render={({ pageNumber, totalPages }) =>
                             `Page ${pageNumber} of ${totalPages}`

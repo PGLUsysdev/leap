@@ -45,9 +45,7 @@ const COA_COL_WIDTH = '6.8%';
 const DESC_COL_WIDTH = '15.5%';
 const UOM_COL_WIDTH = '2.5%';
 
-export const getPpmpColumnDefs = <T extends Record<string, any>>(
-    year: number,
-): ColumnDef<T>[] => [
+export const getPpmpColumnDefs = <T extends Record<string, any>>(): ColumnDef<T>[] => [
     {
         id: 'coa',
         header: 'Chart of Account',
