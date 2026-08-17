@@ -250,7 +250,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
             </View>
 
             {/* Body - Flat loop over rows */}
-            {rows.map((row, index) => {
+            {rows.map((row) => {
                 switch (row.type) {
                     case 'banner':
                         // Determine banner style based on id prefix
