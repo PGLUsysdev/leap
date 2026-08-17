@@ -619,7 +619,7 @@ const ProcurementDocument = () => {
 export default function NewPpmpFormDialog({ open, onOpenChange }: any) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
+            <DialogContent className="`h-screen flex flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
                 <PDFViewer
                     width="100%"
                     height="100%"
