@@ -43,6 +43,7 @@ import type {
     // FundingSource,
     // SharedData,
 } from '@/types';
+import { PpmpSummaryDocument } from './coa-summary-pdf/PpmpSummaryDocument';
 import ppmpColumns from './columns/ppmp-columns';
 import { PpmpDocument } from './pdf-render/PpmpDocument';
 // import { router, usePage } from '@inertiajs/react';
@@ -123,7 +124,7 @@ export default function PpmpPage({
     // fundingSourceId,
     // isSupplemental = false,
 }: PpmpPageProps) {
-    console.log(ppmpItems);
+    // console.log(ppmpItems);
 
     // Counter so editing multiple cells at once keeps the indicator on
     const [savingCount, setSavingCount] = useState(0);
@@ -133,6 +134,7 @@ export default function PpmpPage({
     const [selectedPpmp, setSelectedPpmp] = useState<Ppmp | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [openPdfPreview, setOpenPdfPreview] = useState(false);
+    const [openCoaPdfPreview, setOpenCoaPdfPreview] = useState(false);
 
     // View filter: show all items, or only MOOE/CO expense-class items
     const [expenseClassFilter, setExpenseClassFilter] = useState<
@@ -606,7 +608,11 @@ export default function PpmpPage({
                                     <DropdownMenuLabel>
                                         Generate
                                     </DropdownMenuLabel>
-                                    <DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            setOpenCoaPdfPreview(true)
+                                        }
+                                    >
                                         COA Summary
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
@@ -807,6 +813,43 @@ export default function PpmpPage({
                                 groupedData={ppmpItems}
                                 ppaFundingSource={ppaFundingSource}
                             ></PpmpDocument>
+                        </PDFViewer>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={openCoaPdfPreview}
+                onOpenChange={setOpenCoaPdfPreview}
+            >
+                <DialogContent className="fixed! inset-0! h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! gap-0 rounded-none! p-0">
+                    <div className="p-4">
+                        <DialogHeader>
+                            <DialogTitle>COA Summary Preview</DialogTitle>
+                        </DialogHeader>
+                    </div>
+
+                    <div
+                        style={{
+                            width: '100vw',
+                            height: '94vh',
+                            margin: 0,
+                            padding: 0,
+                        }}
+                    >
+                        <PDFViewer
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                            }}
+                        >
+                            <PpmpSummaryDocument
+                                aipEntry={aipEntry}
+                                fiscalYear={fiscalYear}
+                                groupedData={ppmpItems}
+                                ppaFundingSource={ppaFundingSource}
+                            ></PpmpSummaryDocument>
                         </PDFViewer>
                     </div>
                 </DialogContent>
