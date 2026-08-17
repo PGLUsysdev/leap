@@ -5,7 +5,7 @@ import type { ColumnDef } from './colDefs';
 const styles = StyleSheet.create({
     table: {
         width: '100%',
-        marginVertical: 4,
+        marginVertical: -0.5,
         // FIXED: Removed parent borderLeft properties to prevent page break artifacts!
     },
 

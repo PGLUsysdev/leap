@@ -1,3 +1,4 @@
+import { Text } from '@react-pdf/renderer';
 import type React from 'react';
 
 export interface ColumnDef<T> {
@@ -52,11 +53,14 @@ export const getPpmpColumnDefs = <T extends Record<string, any>>(
         header: 'Chart of Account',
         width: COA_COL_WIDTH,
         align: 'left',
-        cell: (item) =>
-            item.ppmp_price_list?.chart_of_account_ppmp_category
-                ?.chart_of_account?.account_title ??
-            item.accountTitle ??
-            '',
+        cell: (item) => (
+            <Text style={{ textAlign: 'center' }}>
+                {item.ppmp_price_list?.chart_of_account_ppmp_category
+                    ?.chart_of_account?.account_title ??
+                    item.accountTitle ??
+                    ''}
+            </Text>
+        ),
     },
     {
         id: 'item_no',

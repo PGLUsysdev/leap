@@ -179,8 +179,8 @@ interface PpmpDocumentProps {
 
 export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
     fiscalYear = 2026,
-    officeName = 'OFFICE OF THE MAYOR',
-    fundSource = 'GENERAL FUND - ANNUAL INVESTMENT PROGRAM (AIP)',
+    officeName = '-',
+    fundSource = '-',
     groupedData = DEFAULT_MOCK_DATA,
 }) => {
     const columns = getPpmpColumnDefs(fiscalYear);
@@ -189,28 +189,245 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
         <Document>
             <Page size="LEGAL" orientation="landscape" style={styles.page}>
                 {/* Document Header */}
-                <View style={styles.headerContainer}>
-                    <Text style={styles.agencyText}>
-                        Republic of the Philippines • Local Government Unit
-                    </Text>
-                    <Text style={styles.title}>
-                        PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP)
-                    </Text>
-                    <Text style={styles.subtitle}>
-                        Fiscal Year {fiscalYear}
-                    </Text>
-                </View>
+                <View
+                    fixed
+                    style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        width: '100%',
+                        height: 58,
+                        fontSize: 5,
+                        // borderTopWidth: 0.5,
+                        // borderLeftWidth: 0.5,
+                        // borderColor: 'black',
+                        // borderStyle: 'solid',
+                    }}
+                >
+                    {/* Column 1 (Width: 6.75%) - 5 rows @ 20% each */}
+                    <View
+                        style={{
+                            width: '6.75%',
+                            display: 'flex',
+                            height: '100%',
+                        }}
+                    >
+                        {/* Row 1 */}
+                        <View
+                            style={{
+                                height: '20%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                            }}
+                        />
+                        {/* Row 2 */}
+                        <View
+                            style={{
+                                height: '20%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                            }}
+                        />
+                        {/* Row 3 */}
+                        <View
+                            style={{
+                                height: '20%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                backgroundColor: '#92D050',
+                            }}
+                        />
+                        {/* Row 4 */}
+                        <View
+                            style={{
+                                height: '20%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                backgroundColor: '#92D050',
+                            }}
+                        />
+                        {/* Row 5 */}
+                        <View
+                            style={{
+                                height: '20%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                backgroundColor: '#92D050',
+                            }}
+                        />
+                    </View>
 
-                {/* Metadata Banner */}
-                <View style={styles.metaGrid}>
-                    <Text style={styles.metaText}>
-                        <Text style={styles.bold}>END-USER / OFFICE:</Text>{' '}
-                        {officeName}
-                    </Text>
-                    <Text style={styles.metaText}>
-                        <Text style={styles.bold}>FUND SOURCE:</Text>{' '}
-                        {fundSource}
-                    </Text>
+                    {/* Column 2 (Width: 29.62%) */}
+                    <View
+                        style={{
+                            width: '29.62%',
+                            display: 'flex',
+                            height: '100%',
+                        }}
+                    >
+                        {/* Rows 1 & 2 (Spans 2 rows = 40%): office */}
+                        <View
+                            style={{
+                                height: '40%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                backgroundColor: '#FF0',
+                                justifyContent: 'center',
+                                // alignItems: 'center',
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    // textAlign: 'center',
+                                    fontSize: 10,
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                                office
+                            </Text>
+                        </View>
+
+                        {/* Row 3 (20%): general fund */}
+                        <View
+                            style={{
+                                height: '20%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                backgroundColor: '#92D050',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                                general fund
+                            </Text>
+                        </View>
+
+                        {/* Row 4 (20%): aip ref code */}
+                        <View
+                            style={{
+                                height: '20%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                backgroundColor: '#92D050',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                                aip ref code
+                            </Text>
+                        </View>
+
+                        {/* Row 5 (20%): ppa */}
+                        <View
+                            style={{
+                                height: '20%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                backgroundColor: '#92D050',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                                ppa
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Column 3 (Width: 63.63%) */}
+                    <View
+                        style={{
+                            width: '63.63%',
+                            display: 'flex',
+                            height: '100%',
+                        }}
+                    >
+                        {/* Rows 1, 2 & 3 (Spans 3 rows = 60%): Title aligned to bottom */}
+                        <View
+                            style={{
+                                height: '60%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                justifyContent: 'flex-end',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    textAlign: 'center',
+                                    fontSize: 23,
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                                PROVINCIAL GOVERNMENT OF LA UNION
+                            </Text>
+                        </View>
+
+                        {/* Rows 4 & 5 (Spans 2 rows = 40%): Subtitle aligned to top */}
+                        <View
+                            style={{
+                                height: '40%',
+                                // borderRightWidth: 0.5,
+                                // borderBottomWidth: 0.5,
+                                // borderColor: 'black',
+                                // borderStyle: 'solid',
+                                padding: 2,
+                                justifyContent: 'flex-start',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    textAlign: 'center',
+                                    fontSize: 15,
+                                    fontWeight: 'bold',
+                                }}
+                            >
+                                PROJECT PROCUREMENT MANAGEMENT PLAN(PPMP) CY{' '}
+                                {fiscalYear}
+                            </Text>
+                        </View>
+                    </View>
                 </View>
 
                 {/* Dynamic Table */}
