@@ -5,6 +5,7 @@ import { Trash } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Input } from '@/components/base-ui-components/ui/input';
+import { formatCurrency } from '@/lib/utils';
 import { updateMonthlyQuantity } from '@/routes/ppmp';
 import type { Ppmp } from '@/types';
 
@@ -19,18 +20,7 @@ interface EditableCellProps {
     table: any;
 }
 
-const formatNumber = (val: string | number) => {
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-
-    return isNaN(num) || num === null
-        ? '0.00'
-        : num.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-          });
-};
-
-const formatInteger = (val: string | number) => {
+const formatQuantity = (val: string | number) => {
     const num =
         typeof val === 'string' ? parseFloat(val.replace(/,/g, '')) : val;
 
@@ -62,7 +52,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
     // server response re-renders this cell with the raw number.
     const displayValue = isFocused
         ? localValue
-        : formatInteger(localValue || '0');
+        : formatQuantity(localValue || '0');
 
     // Enter commits the same way as blur, so the value is
     // formatted and saved exactly once.
@@ -286,7 +276,7 @@ const columns = [
         header: () => <div className="text-center text-wrap">PRICELIST</div>,
         cell: (info) => (
             <div className="text-right text-wrap slashed-zero tabular-nums">
-                {formatNumber(Number(info.getValue()) || 0)}
+                {formatCurrency(info.getValue())}
             </div>
         ),
     }),
@@ -311,7 +301,7 @@ const columns = [
 
             return (
                 <div className="text-right text-wrap slashed-zero tabular-nums">
-                    {formatInteger(totalQty.toString())}
+                    {formatQuantity(totalQty.toString())}
                 </div>
             );
         },
@@ -330,7 +320,7 @@ const columns = [
 
             return (
                 <div className="text-right font-medium slashed-zero tabular-nums">
-                    {formatInteger(total.toString())}
+                    {formatQuantity(total.toString())}
                 </div>
             );
         },
@@ -340,28 +330,30 @@ const columns = [
             MONTHS.reduce(
                 (acc, m) => acc.plus(getMonthlyAmount(row, m)),
                 new Decimal(0),
-            ).toNumber(),
+            ),
         {
             id: 'total_amount',
             size: 150,
             header: () => <div className="text-center text-wrap">TOTAL</div>,
-            cell: ({ getValue }) => (
-                <div className="text-right text-wrap slashed-zero tabular-nums">
-                    {formatNumber(String(getValue()))}
-                </div>
-            ),
+            cell: (info) => {
+                return (
+                    <div className="text-right text-wrap slashed-zero tabular-nums">
+                        {formatCurrency(info.getValue().toString())}
+                    </div>
+                );
+            },
             footer: ({ table }) => {
                 const sum = table
                     .getFilteredRowModel()
                     .rows.reduce(
                         (acc, row) =>
-                            acc.plus(row.getValue<number>('total_amount') || 0),
+                            acc.plus(row.getValue('total_amount') || 0),
                         new Decimal(0),
                     );
 
                 return (
                     <div className="text-right slashed-zero tabular-nums">
-                        {formatNumber(sum.toString())}
+                        {formatCurrency(sum.toString())}
                     </div>
                 );
             },
@@ -392,7 +384,7 @@ const columns = [
 
                 return (
                     <div className="text-right font-medium slashed-zero tabular-nums">
-                        {formatInteger(sum.toString())}
+                        {formatQuantity(sum.toString())}
                     </div>
                 );
             },
@@ -406,7 +398,7 @@ const columns = [
             ),
             cell: ({ row }) => (
                 <div className="text-right text-wrap">
-                    {formatNumber(
+                    {formatCurrency(
                         getMonthlyAmount(row.original, month).toString(),
                     )}
                 </div>
@@ -422,7 +414,7 @@ const columns = [
 
                 return (
                     <div className="text-right slashed-zero tabular-nums">
-                        {formatNumber(sum.toString())}
+                        {formatCurrency(sum.toString())}
                     </div>
                 );
             },

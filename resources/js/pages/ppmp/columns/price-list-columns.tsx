@@ -1,4 +1,5 @@
 import { createColumnHelper } from '@tanstack/react-table';
+import { formatCurrency } from '@/lib/utils';
 import type { PriceList } from '@/types';
 
 const columnHelper = createColumnHelper<PriceList>();
@@ -37,7 +38,7 @@ const columns = [
         cell: (info) => {
             return (
                 <div className="text-right text-wrap slashed-zero tabular-nums">
-                    {info.getValue()}
+                    {formatCurrency(info.getValue())}
                 </div>
             );
         },

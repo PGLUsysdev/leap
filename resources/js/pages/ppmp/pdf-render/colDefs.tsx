@@ -1,5 +1,7 @@
 import { Text } from '@react-pdf/renderer';
+import Decimal from 'decimal.js';
 import type React from 'react';
+import { formatCurrency } from '@/lib/utils';
 
 export interface ColumnDef<T> {
     id: string;
@@ -8,17 +10,6 @@ export interface ColumnDef<T> {
     align?: 'left' | 'center' | 'right';
     cell: (item: T) => React.ReactNode;
 }
-
-export const formatCurrency = (val?: string | number) => {
-    const num = Number(val);
-
-    return num && num > 0
-        ? num.toLocaleString('en-PH', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-          })
-        : '-';
-};
 
 export const formatQty = (val?: number) =>
     val && val > 0 ? val.toString() : '';
@@ -45,7 +36,9 @@ const COA_COL_WIDTH = '6.8%';
 const DESC_COL_WIDTH = '15.5%';
 const UOM_COL_WIDTH = '2.5%';
 
-export const getPpmpColumnDefs = <T extends Record<string, any>>(): ColumnDef<T>[] => [
+export const getPpmpColumnDefs = <
+    T extends Record<string, any>,
+>(): ColumnDef<T>[] => [
     {
         id: 'coa',
         header: 'Chart of Account',
@@ -121,11 +114,11 @@ export const getPpmpColumnDefs = <T extends Record<string, any>>(): ColumnDef<T>
             }
 
             const total = MONTHS.reduce(
-                (sum, m) => sum + (Number(item[`${m.key}_amount`]) || 0),
-                0,
+                (sum, m) => sum.plus(new Decimal(item[`${m.key}_amount`] || 0)),
+                new Decimal(0),
             );
 
-            return formatCurrency(total);
+            return formatCurrency(total.toString());
         },
     },
 
