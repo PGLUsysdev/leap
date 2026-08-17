@@ -29,9 +29,9 @@ const MONTHS = [
     { key: 'dec', label: 'Dec' },
 ];
 
-const REG_QTY_COL_WIDTH = '1.5%'; // 13 cols = 19.5%
-const TOTAL_QTY_COL_WIDTH = '2.5%'; // 1 col  = 2.5%
-const AMT_COL_WIDTH = '3.8%'; // 14 cols = 53.2%
+const REG_QTY_COL_WIDTH = '1.5%';
+const TOTAL_QTY_COL_WIDTH = '2.5%';
+const AMT_COL_WIDTH = '3.8%';
 const COA_COL_WIDTH = '6.8%';
 const DESC_COL_WIDTH = '15.5%';
 const UOM_COL_WIDTH = '2.5%';

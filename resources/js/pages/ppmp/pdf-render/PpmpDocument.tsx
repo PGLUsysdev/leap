@@ -10,6 +10,7 @@ import React from 'react';
 import type { AipEntry, FiscalYear, PpaFundingSource } from '@/types';
 import { getPpmpColumnDefs } from './colDefs';
 import { PpmpPdfTable } from './PpmpPdfTable';
+import { preparePpmpRows } from './preparePpmpRows';
 
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -55,7 +56,6 @@ const styles = StyleSheet.create({
     bold: {
         fontWeight: 'bold',
     },
-    // Signatures
     signatureSection: {
         marginTop: 15,
         flexDirection: 'row',
@@ -95,87 +95,11 @@ const styles = StyleSheet.create({
     },
 });
 
-// Built-in Mock Data (so the format works instantly without props)
-const DEFAULT_MOCK_DATA = [
-    {
-        accountCode: '5-02-03-010',
-        accountTitle: 'Office Supplies Expense',
-        items: [
-            {
-                item_number: 1,
-                description: 'Ballpoint Pen, Fine Tip, Black',
-                unit_of_measurement: 'box',
-                price: 150.0,
-                total_qty: 20,
-                total_amount: 3000.0,
-                jan_qty: 10,
-                jan_amount: 1500.0,
-                jul_qty: 10,
-                jul_amount: 1500.0,
-            },
-            {
-                item_number: 2,
-                description: 'Paper, Multi-Purpose, A4 70gsm',
-                unit_of_measurement: 'ream',
-                price: 220.0,
-                total_qty: 50,
-                total_amount: 11000.0,
-                jan_qty: 20,
-                jan_amount: 4400.0,
-                apr_qty: 10,
-                apr_amount: 2200.0,
-                jul_qty: 10,
-                jul_amount: 2200.0,
-                oct_qty: 10,
-                oct_amount: 2200.0,
-            },
-        ],
-    },
-    {
-        accountCode: '5-02-03-070',
-        accountTitle: 'Drugs and Medicines Expense',
-        items: [
-            {
-                item_number: 1,
-                description: 'Paracetamol 500mg Tablet (500s/box)',
-                unit_of_measurement: 'box',
-                price: 450.0,
-                total_qty: 12,
-                total_amount: 5400.0,
-                jan_qty: 1,
-                jan_amount: 450.0,
-                feb_qty: 1,
-                feb_amount: 450.0,
-                mar_qty: 1,
-                mar_amount: 450.0,
-                apr_qty: 1,
-                apr_amount: 450.0,
-                may_qty: 1,
-                may_amount: 450.0,
-                jun_qty: 1,
-                jun_amount: 450.0,
-                jul_qty: 1,
-                jul_amount: 450.0,
-                aug_qty: 1,
-                aug_amount: 450.0,
-                sep_qty: 1,
-                sep_amount: 450.0,
-                oct_qty: 1,
-                oct_amount: 450.0,
-                nov_qty: 1,
-                nov_amount: 450.0,
-                dec_qty: 1,
-                dec_amount: 450.0,
-            },
-        ],
-    },
-];
-
 interface PpmpDocumentProps {
     aipEntry?: AipEntry;
     fiscalYear?: FiscalYear;
     fundSource?: string;
-    groupedData?: any[];
+    groupedData?: any[]; // now optional – defaults to []
     officeName?: string;
     ppaFundingSource?: PpaFundingSource;
 }
@@ -183,16 +107,18 @@ interface PpmpDocumentProps {
 export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
     aipEntry,
     fiscalYear,
-    groupedData = DEFAULT_MOCK_DATA,
+    groupedData = [], // empty array fallback (no mock data)
     ppaFundingSource,
 }) => {
+    // console.log({ aipEntry, fiscalYear, groupedData, ppaFundingSource });
+
     const columns = getPpmpColumnDefs();
+    const rows = preparePpmpRows(groupedData);
 
     return (
         <Document>
-            {/* size={[612, 936]} = 8.5 x 13 */}
             <Page size={[612, 936]} orientation="landscape" style={styles.page}>
-                {/* Document Header */}
+                {/* Document Header – unchanged */}
                 <View
                     fixed
                     style={{
@@ -201,13 +127,9 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                         width: '100%',
                         height: 58,
                         fontSize: 5,
-                        // borderTopWidth: 0.5,
-                        // borderLeftWidth: 0.5,
-                        // borderColor: 'black',
-                        // borderStyle: 'solid',
                     }}
                 >
-                    {/* Column 1 (Width: 6.75%) - 5 rows @ 20% each */}
+                    {/* Column 1 */}
                     <View
                         style={{
                             width: '6.75%',
@@ -215,67 +137,32 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                             height: '100%',
                         }}
                     >
-                        {/* Row 1 */}
+                        <View style={{ height: '20%', padding: 2 }} />
+                        <View style={{ height: '20%', padding: 2 }} />
                         <View
                             style={{
                                 height: '20%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
-                                padding: 2,
-                            }}
-                        />
-                        {/* Row 2 */}
-                        <View
-                            style={{
-                                height: '20%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
-                                padding: 2,
-                            }}
-                        />
-                        {/* Row 3 */}
-                        <View
-                            style={{
-                                height: '20%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 backgroundColor: '#92D050',
                             }}
                         />
-                        {/* Row 4 */}
                         <View
                             style={{
                                 height: '20%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 backgroundColor: '#92D050',
                             }}
                         />
-                        {/* Row 5 */}
                         <View
                             style={{
                                 height: '20%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 backgroundColor: '#92D050',
                             }}
                         />
                     </View>
 
-                    {/* Column 2 (Width: 29.62%) */}
+                    {/* Column 2 */}
                     <View
                         style={{
                             width: '29.62%',
@@ -283,103 +170,59 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                             height: '100%',
                         }}
                     >
-                        {/* Rows 1 & 2 (Spans 2 rows = 40%): office */}
                         <View
                             style={{
                                 height: '40%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 backgroundColor: '#FF0',
                                 justifyContent: 'center',
-                                // alignItems: 'center',
                             }}
                         >
-                            <Text
-                                style={{
-                                    // textAlign: 'center',
-                                    fontSize: 10,
-                                    fontWeight: 'bold',
-                                }}
-                            >
+                            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>
                                 {aipEntry?.ppa?.office?.acronym ||
                                     aipEntry?.ppa?.office?.name ||
                                     '-'}
                             </Text>
                         </View>
-
-                        {/* Row 3 (20%): general fund */}
                         <View
                             style={{
                                 height: '20%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 backgroundColor: '#92D050',
                                 justifyContent: 'center',
                             }}
                         >
-                            <Text
-                                style={{
-                                    fontWeight: 'bold',
-                                }}
-                            >
+                            <Text style={{ fontWeight: 'bold' }}>
                                 {ppaFundingSource?.funding_source?.code ||
                                     ppaFundingSource?.funding_source?.title ||
                                     '-'}
                             </Text>
                         </View>
-
-                        {/* Row 4 (20%): aip ref code */}
                         <View
                             style={{
                                 height: '20%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 backgroundColor: '#92D050',
                                 justifyContent: 'center',
                             }}
                         >
-                            <Text
-                                style={{
-                                    fontWeight: 'bold',
-                                }}
-                            >
-                                {'-'}
-                            </Text>
+                            <Text style={{ fontWeight: 'bold' }}>{'-'}</Text>
                         </View>
-
-                        {/* Row 5 (20%): ppa */}
                         <View
                             style={{
                                 height: '20%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 backgroundColor: '#92D050',
                                 justifyContent: 'center',
                             }}
                         >
-                            <Text
-                                style={{
-                                    fontWeight: 'bold',
-                                }}
-                            >
+                            <Text style={{ fontWeight: 'bold' }}>
                                 {aipEntry?.ppa?.name || '-'}
                             </Text>
                         </View>
                     </View>
 
-                    {/* Column 3 (Width: 63.63%) */}
+                    {/* Column 3 */}
                     <View
                         style={{
                             width: '63.63%',
@@ -387,14 +230,9 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                             height: '100%',
                         }}
                     >
-                        {/* Rows 1, 2 & 3 (Spans 3 rows = 60%): Title aligned to bottom */}
                         <View
                             style={{
                                 height: '60%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 justifyContent: 'flex-end',
                                 alignItems: 'center',
@@ -410,15 +248,9 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                                 PROVINCIAL GOVERNMENT OF LA UNION
                             </Text>
                         </View>
-
-                        {/* Rows 4 & 5 (Spans 2 rows = 40%): Subtitle aligned to top */}
                         <View
                             style={{
                                 height: '40%',
-                                // borderRightWidth: 0.5,
-                                // borderBottomWidth: 0.5,
-                                // borderColor: 'black',
-                                // borderStyle: 'solid',
                                 padding: 2,
                                 justifyContent: 'flex-start',
                                 alignItems: 'center',
@@ -438,10 +270,10 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                     </View>
                 </View>
 
-                {/* Dynamic Table */}
-                <PpmpPdfTable columns={columns} groupedData={groupedData} />
+                {/* Dynamic Table – now receives groupedData (empty by default) */}
+                <PpmpPdfTable columns={columns} rows={rows} />
 
-                {/* Signatures Block */}
+                {/* Signatures Block – unchanged */}
                 <View style={styles.signatureSection} wrap={false}>
                     <View style={styles.signatureBox}>
                         <Text style={styles.signatureLabel}>Prepared By:</Text>
@@ -472,7 +304,7 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                     </View>
                 </View>
 
-                {/* Dynamic Footer */}
+                {/* Page Footer */}
                 <View style={styles.footer} fixed>
                     <Text></Text>
                     <Text

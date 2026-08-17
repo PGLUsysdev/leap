@@ -1,21 +1,13 @@
 import { View, Text, StyleSheet } from '@react-pdf/renderer';
 import React from 'react';
+import { formatCurrency } from '@/lib/utils';
+import { formatQty } from './colDefs';
 import type { ColumnDef } from './colDefs';
+import type { TableRow } from './preparePpmpRows';
 
 const styles = StyleSheet.create({
-    table: {
-        width: '100%',
-        marginVertical: -0.5,
-        // FIXED: Removed parent borderLeft properties to prevent page break artifacts!
-    },
-
-    /* BASE / GLOBAL TEXT STYLE (DEFAULT FONT SIZE = 5) */
-    cellText: {
-        fontSize: 5,
-        color: '#000000',
-    },
-
-    /* HEADER ROW: #DEEAF6 */
+    table: { width: '100%', marginVertical: -0.5 },
+    cellText: { fontSize: 5, color: '#000000' },
     headerRow: {
         flexDirection: 'row',
         backgroundColor: '#DEEAF6',
@@ -38,8 +30,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         color: '#000000',
     },
-
-    /* LEVEL 1: PROGRAM BANNER (PROCUREMENT / NON-PROCUREMENT) */
     programBannerRow: {
         flexDirection: 'row',
         borderBottomWidth: 0.5,
@@ -52,8 +42,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textTransform: 'uppercase',
     },
-
-    /* CATEGORY ROW: #D0CECE */
     categoryRow: {
         flexDirection: 'row',
         backgroundColor: '#D0CECE',
@@ -68,8 +56,6 @@ const styles = StyleSheet.create({
         color: '#000000',
         textTransform: 'uppercase',
     },
-
-    /* COA ROW: #FBE4D5 */
     coaRow: {
         flexDirection: 'row',
         backgroundColor: '#FBE4D5',
@@ -78,13 +64,7 @@ const styles = StyleSheet.create({
         minHeight: 11,
         alignItems: 'stretch',
     },
-    coaText: {
-        fontSize: 5,
-        fontWeight: 'normal',
-        color: '#000000',
-    },
-
-    /* ITEM DATA ROWS */
+    coaText: { fontSize: 5, fontWeight: 'normal', color: '#000000' },
     row: {
         flexDirection: 'row',
         borderBottomWidth: 0.5,
@@ -92,17 +72,13 @@ const styles = StyleSheet.create({
         minHeight: 11,
         alignItems: 'stretch',
     },
-    rowEven: {
-        // backgroundColor: '#F8FAFC',
-    },
+    rowEven: {},
     cell: {
         padding: 1.5,
         borderRightWidth: 0.5,
         borderRightColor: '#000000',
         justifyContent: 'center',
     },
-
-    /* TOTAL CATEGORY ROW: #FEF2CB */
     categoryTotalRow: {
         flexDirection: 'row',
         backgroundColor: '#FEF2CB',
@@ -111,8 +87,6 @@ const styles = StyleSheet.create({
         minHeight: 11,
         alignItems: 'stretch',
     },
-
-    /* PROGRAM TOTAL ROW (PROCUREMENT / NON-PROCUREMENT): #FFFF00 */
     programTotalRow: {
         flexDirection: 'row',
         backgroundColor: '#FFFF00',
@@ -121,8 +95,6 @@ const styles = StyleSheet.create({
         minHeight: 12,
         alignItems: 'stretch',
     },
-
-    /* GRAND TOTAL ROW - AIP/PPA: #00B050 */
     grandTotalRow: {
         flexDirection: 'row',
         backgroundColor: '#00B050',
@@ -131,169 +103,32 @@ const styles = StyleSheet.create({
         minHeight: 13,
         alignItems: 'stretch',
     },
-
-    /* TOTAL TEXT – BOLD FOR ALL SUMMARY ROWS (5pt) */
-    totalText: {
-        fontSize: 5,
-        fontWeight: 'bold',
-        color: '#000000',
-    },
+    totalText: { fontSize: 5, fontWeight: 'bold', color: '#000000' },
 });
 
-// Helper style to draw outer left border cleanly on the first column of every row
 const leftBorderStyle = {
     borderLeftWidth: 0.5,
     borderLeftColor: '#000000',
 };
 
-// Helper function to accumulate totals for items
-function calculateTotals(items: any[]) {
-    const months = [
-        'jan',
-        'feb',
-        'mar',
-        'apr',
-        'may',
-        'jun',
-        'jul',
-        'aug',
-        'sep',
-        'oct',
-        'nov',
-        'dec',
-    ];
-    const totals: Record<string, number> = {
-        total_qty: 0,
-        total_amount: 0,
-    };
-
-    months.forEach((m) => {
-        totals[`${m}_qty`] = 0;
-        totals[`${m}_amount`] = 0;
-    });
-
-    items.forEach((item) => {
-        months.forEach((m) => {
-            totals[`${m}_qty`] += Number(item[`${m}_qty`]) || 0;
-            totals[`${m}_amount`] += Number(item[`${m}_amount`]) || 0;
-        });
-        totals.total_qty += months.reduce(
-            (sum, m) => sum + (Number(item[`${m}_qty`]) || 0),
-            0,
-        );
-        totals.total_amount += months.reduce(
-            (sum, m) => sum + (Number(item[`${m}_amount`]) || 0),
-            0,
-        );
-    });
-
-    return totals;
-}
-
 interface PpmpPdfTableProps<T> {
-    columns?: ColumnDef<T>[];
-    groupedData?: T[];
+    columns: ColumnDef<T>[];
+    rows: TableRow[]; // Changed from groupedData
 }
 
 export function PpmpPdfTable<T extends Record<string, any>>({
     columns = [],
-    groupedData = [],
+    rows = [],
 }: PpmpPdfTableProps<T>) {
-    // 3-TIER GROUPING LOGIC
-    const { threeTierStructure, grandTotals } = React.useMemo(() => {
-        if (!groupedData || groupedData.length === 0) {
-            return { threeTierStructure: [], grandTotals: calculateTotals([]) };
-        }
+    console.log(rows);
 
-        const level1Map = new Map<
-            string,
-            {
-                title: string;
-                categories: Map<
-                    string,
-                    {
-                        categoryName: string;
-                        coas: Map<
-                            string,
-                            {
-                                accountCode: string;
-                                accountTitle: string;
-                                items: T[];
-                            }
-                        >;
-                    }
-                >;
-            }
-        >();
-
-        groupedData.forEach((item) => {
-            const capc = item.ppmp_price_list?.chart_of_account_ppmp_category;
-            const category = capc?.ppmp_category;
-            const coa = capc?.chart_of_account;
-
-            const isNonProcurement = Boolean(
-                category?.is_non_procurement ?? false,
-            );
-            const level1Key = isNonProcurement
-                ? 'NON_PROCUREMENT'
-                : 'PROCUREMENT';
-            const level1Title = isNonProcurement
-                ? 'NON-PROCUREMENT ITEMS'
-                : 'PROCUREMENT ITEMS';
-
-            if (!level1Map.has(level1Key)) {
-                level1Map.set(level1Key, {
-                    title: level1Title,
-                    categories: new Map(),
-                });
-            }
-
-            const categoryName = category?.name || 'GENERAL CATEGORY';
-            const level1Group = level1Map.get(level1Key)!;
-
-            if (!level1Group.categories.has(categoryName)) {
-                level1Group.categories.set(categoryName, {
-                    categoryName,
-                    coas: new Map(),
-                });
-            }
-
-            const accountCode = coa?.account_number || 'UNCATEGORIZED';
-            const accountTitle = coa?.account_title || 'General Expenses';
-            const level2Group = level1Group.categories.get(categoryName)!;
-
-            if (!level2Group.coas.has(accountCode)) {
-                level2Group.coas.set(accountCode, {
-                    accountCode,
-                    accountTitle,
-                    items: [],
-                });
-            }
-
-            level2Group.coas.get(accountCode)!.items.push(item);
-        });
-
-        const structure = Array.from(level1Map.values()).map((l1) => ({
-            title: l1.title,
-            categories: Array.from(l1.categories.values()).map((l2) => ({
-                categoryName: l2.categoryName,
-                coas: Array.from(l2.coas.values()),
-            })),
-        }));
-
-        return {
-            threeTierStructure: structure,
-            grandTotals: calculateTotals(groupedData),
-        };
-    }, [groupedData]);
-
-    // Helper to render GRID-ALIGNED BANNER ROWS
-    const renderBannerGridRow = (
-        titleText: string,
-        rowStyle: any,
+    // Helper to render a "Banner" row (Program, Category, COA)
+    const renderBannerRow = (
+        row: TableRow,
+        bannerStyle: any,
         textStyle: any,
     ) => (
-        <View style={rowStyle} wrap={false}>
+        <View key={row.id} style={bannerStyle} wrap={false}>
             {columns.map((col, cIdx) => {
                 const isDescription = col.id === 'description';
 
@@ -312,7 +147,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         ]}
                     >
                         {isDescription ? (
-                            <Text style={textStyle}>{titleText}</Text>
+                            <Text style={textStyle}>{row.label}</Text>
                         ) : null}
                     </View>
                 );
@@ -320,57 +155,85 @@ export function PpmpPdfTable<T extends Record<string, any>>({
         </View>
     );
 
-    // Helper to render SUMMARY TOTAL ROWS
-    const renderSummaryRow = (
-        label: string,
-        totals: Record<string, number>,
-        rowStyle: any,
-        textStyle: any,
-    ) => (
-        <View style={rowStyle} wrap={false}>
-            {columns.map((col, cIdx) => {
-                let content: React.ReactNode = '';
-
-                if (col.id === 'description') {
-                    content = label;
-                } else if (
-                    col.id === 'item_no' ||
-                    col.id === 'uom' ||
-                    col.id === 'price' ||
-                    col.id === 'coa'
-                ) {
-                    content = '';
-                } else {
-                    content = col.cell(totals as any);
-                }
-
-                return (
-                    <View
-                        key={col.id}
-                        style={[
-                            styles.cell,
-                            {
-                                width: col.width,
-                                alignItems:
-                                    col.id === 'description'
-                                        ? 'flex-start'
-                                        : col.align === 'right'
-                                          ? 'flex-end'
-                                          : 'center',
-                            },
-                            cIdx === 0 ? leftBorderStyle : {},
-                        ]}
-                    >
-                        <Text style={textStyle}>{content}</Text>
-                    </View>
-                );
-            })}
+    // Helper to render "Item" row
+    const renderItemRow = (row: TableRow) => (
+        <View key={row.id} wrap={false} style={[styles.row]}>
+            {columns.map((col, colIdx) => (
+                <View
+                    key={col.id}
+                    style={[
+                        styles.cell,
+                        {
+                            width: col.width,
+                            alignItems:
+                                col.align === 'right'
+                                    ? 'flex-end'
+                                    : col.align === 'center'
+                                      ? 'center'
+                                      : 'flex-start',
+                        },
+                        colIdx === 0 ? leftBorderStyle : {},
+                    ]}
+                >
+                    <Text style={styles.cellText}>{col.cell(row.item)}</Text>
+                </View>
+            ))}
         </View>
     );
 
+    // Helper to render "Total" row (Subtotal, Program Total, Grand Total)
+    const renderTotalRow = (row: TableRow, totalStyle: any) => {
+        const totals = row.totals || {};
+
+        return (
+            <View key={row.id} style={totalStyle} wrap={false}>
+                {columns.map((col, cIdx) => {
+                    let content: React.ReactNode = '';
+
+                    if (col.id === 'description') {
+                        content = row.label;
+                    } else if (
+                        col.id === 'total_qty' ||
+                        col.id.endsWith('_qty')
+                    ) {
+                        content = formatQty(totals[col.id]);
+                    } else if (
+                        col.id === 'total_amount' ||
+                        col.id.endsWith('_amount')
+                    ) {
+                        content = formatCurrency(String(totals[col.id] || 0));
+                    } else {
+                        content = ''; // COA, Item No., UOM, Price are empty for totals
+                    }
+
+                    return (
+                        <View
+                            key={col.id}
+                            style={[
+                                styles.cell,
+                                {
+                                    width: col.width,
+                                    alignItems:
+                                        col.id === 'description'
+                                            ? 'flex-start'
+                                            : col.align === 'right'
+                                              ? 'flex-end'
+                                              : 'center',
+                                },
+                                cIdx === 0 ? leftBorderStyle : {},
+                            ]}
+                        >
+                            <Text style={styles.totalText}>{content}</Text>
+                        </View>
+                    );
+                })}
+            </View>
+        );
+    };
+
     return (
         <View style={styles.table}>
-            {/* 1. HEADER ROW: #DEEAF6 */}
+            {/* Header Row - fixed */}
             <View fixed style={styles.headerRow}>
                 {columns.map((col, cIdx) => (
                     <View
@@ -386,130 +249,51 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                 ))}
             </View>
 
-            {/* 2. TABLE BODY */}
-            {threeTierStructure.map((programGroup, pIdx) => {
-                const programItems = programGroup.categories.flatMap((c) =>
-                    c.coas.flatMap((coa) => coa.items),
-                );
-                const programTotals = calculateTotals(programItems);
-
-                return (
-                    <View key={pIdx}>
-                        {/* PROGRAM BANNER GRID ROW */}
-                        {renderBannerGridRow(
-                            programGroup.title,
-                            styles.programBannerRow,
-                            styles.programBannerText,
-                        )}
-
-                        {programGroup.categories.map((catGroup, cIdx) => {
-                            const categoryItems = catGroup.coas.flatMap(
-                                (coa) => coa.items,
+            {/* Body - Flat loop over rows */}
+            {rows.map((row, index) => {
+                switch (row.type) {
+                    case 'banner':
+                        // Determine banner style based on id prefix
+                        if (row.id.startsWith('prog-')) {
+                            return renderBannerRow(
+                                row,
+                                styles.programBannerRow,
+                                styles.programBannerText,
                             );
-                            const categoryTotals =
-                                calculateTotals(categoryItems);
-
-                            return (
-                                <View key={cIdx}>
-                                    {/* CATEGORY GRID ROW: #D0CECE */}
-                                    {renderBannerGridRow(
-                                        catGroup.categoryName,
-                                        styles.categoryRow,
-                                        styles.categoryText,
-                                    )}
-
-                                    {catGroup.coas.map((coaGroup, coaIdx) => (
-                                        <View key={coaIdx}>
-                                            {/* COA GRID ROW: #FBE4D5 */}
-                                            {renderBannerGridRow(
-                                                coaGroup.accountTitle,
-                                                styles.coaRow,
-                                                styles.coaText,
-                                            )}
-
-                                            {/* ITEM DATA ROWS */}
-                                            {coaGroup.items.map(
-                                                (item, rIdx) => (
-                                                    <View
-                                                        key={rIdx}
-                                                        wrap={false}
-                                                        style={[
-                                                            styles.row,
-                                                            rIdx % 2 === 0
-                                                                ? styles.rowEven
-                                                                : {},
-                                                        ]}
-                                                    >
-                                                        {columns.map(
-                                                            (col, colIdx) => (
-                                                                <View
-                                                                    key={col.id}
-                                                                    style={[
-                                                                        styles.cell,
-                                                                        {
-                                                                            width: col.width,
-                                                                            alignItems:
-                                                                                col.align ===
-                                                                                'right'
-                                                                                    ? 'flex-end'
-                                                                                    : col.align ===
-                                                                                        'center'
-                                                                                      ? 'center'
-                                                                                      : 'flex-start',
-                                                                        },
-                                                                        colIdx ===
-                                                                        0
-                                                                            ? leftBorderStyle
-                                                                            : {},
-                                                                    ]}
-                                                                >
-                                                                    <Text
-                                                                        style={
-                                                                            styles.cellText
-                                                                        }
-                                                                    >
-                                                                        {col.cell(
-                                                                            item,
-                                                                        )}
-                                                                    </Text>
-                                                                </View>
-                                                            ),
-                                                        )}
-                                                    </View>
-                                                ),
-                                            )}
-                                        </View>
-                                    ))}
-
-                                    {/* TOTAL CATEGORY ROW: #FEF2CB */}
-                                    {renderSummaryRow(
-                                        `${catGroup.categoryName} - TOTAL`,
-                                        categoryTotals,
-                                        styles.categoryTotalRow,
-                                        styles.totalText,
-                                    )}
-                                </View>
+                        } else if (row.id.startsWith('cat-')) {
+                            return renderBannerRow(
+                                row,
+                                styles.categoryRow,
+                                styles.categoryText,
                             );
-                        })}
+                        } else if (row.id.startsWith('coa-')) {
+                            return renderBannerRow(
+                                row,
+                                styles.coaRow,
+                                styles.coaText,
+                            );
+                        }
 
-                        {/* TOTAL PROGRAM ROW */}
-                        {renderSummaryRow(
-                            `TOTAL FOR ${programGroup.title}`,
-                            programTotals,
-                            styles.programTotalRow,
-                            styles.totalText,
-                        )}
-                    </View>
-                );
+                        return null;
+
+                    case 'item':
+                        return renderItemRow(row);
+
+                    case 'subtotal':
+                        // Determine if it's a program total or category total based on label or id
+                        if (row.id.startsWith('prog-total-')) {
+                            return renderTotalRow(row, styles.programTotalRow);
+                        }
+
+                        return renderTotalRow(row, styles.categoryTotalRow);
+
+                    case 'grand-total':
+                        return renderTotalRow(row, styles.grandTotalRow);
+
+                    default:
+                        return null;
+                }
             })}
-
-            {/* 3. GRAND TOTAL - FOR THE AIP/PPA */}
-            {renderSummaryRow(
-                'GRAND TOTAL - FOR THE AIP/PPA',
-                grandTotals,
-                styles.grandTotalRow,
-                styles.totalText,
-            )}
         </View>
     );
 }
