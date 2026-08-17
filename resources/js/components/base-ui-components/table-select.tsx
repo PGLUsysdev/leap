@@ -9,7 +9,6 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/base-ui-components/ui/dialog';
-// import type { useTableSelect } from '@/hooks/use-table-select';
 import { cn } from '@/lib/utils';
 import type { PaginatedResponse } from '@/types';
 import { Button } from './ui/button';
@@ -133,7 +132,7 @@ export function TableSelectButton<TData>({
                     className={cn(
                         'min-w-0 flex-1',
                         wrapText
-                            ? 'pr-2 break-words whitespace-normal'
+                            ? 'pr-2 wrap-break-word whitespace-normal'
                             : 'truncate pr-2',
                     )}
                 >
@@ -141,11 +140,13 @@ export function TableSelectButton<TData>({
                 </span>
                 <ChevronsUpDown className="shrink-0" />
             </Button>
+
             <ButtonGroupSeparator />
+
             <Button
                 type="button"
                 variant="secondary"
-                className={cn(wrapText && 'h-auto')}
+                className={cn(wrapText ? 'h-auto' : 'h-10')}
                 aria-label="clear selection"
                 aria-invalid={invalid}
                 onClick={onClear}
