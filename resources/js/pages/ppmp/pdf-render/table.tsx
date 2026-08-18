@@ -1,9 +1,11 @@
+// resources\js\pages\ppmp\pdf-render\table.tsx
+
 import { View, Text, StyleSheet } from '@react-pdf/renderer';
 import React from 'react';
 import { formatCurrency } from '@/lib/utils';
-import { formatQty } from './colDefs';
-import type { ColumnDef } from './colDefs';
-import type { TableRow } from './preparePpmpRows';
+import { formatQty } from './ppmp/cols';
+import type { TableRow } from './types';
+import type { ColumnDef } from './types';
 
 const styles = StyleSheet.create({
     table: { width: '100%', marginVertical: -0.5 },
@@ -16,7 +18,7 @@ const styles = StyleSheet.create({
         borderTopColor: '#000000',
     },
     headerCell: {
-        padding: 2,
+        padding: 1.5,
         borderRightWidth: 0.5,
         borderRightColor: '#000000',
         borderBottomWidth: 0.5,
@@ -103,6 +105,32 @@ const styles = StyleSheet.create({
         alignItems: 'stretch',
     },
     totalText: { fontSize: 5, fontWeight: 'bold', color: '#000000' },
+    spacer: {
+        flexDirection: 'row',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#000000',
+        minHeight: 11,
+        alignItems: 'stretch',
+    },
+    summarySubtotalRow: {
+        flexDirection: 'row',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#000000',
+        minHeight: 11,
+        alignItems: 'stretch',
+    },
+    summaryGrandTotalRow: {
+        flexDirection: 'row',
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#000000',
+        minHeight: 13,
+        alignItems: 'stretch',
+    },
+    summaryTotalText: {
+        fontSize: 5,
+        fontWeight: 'bold',
+        color: '#000000',
+    },
 });
 
 const leftBorderStyle = {
@@ -113,6 +141,7 @@ const leftBorderStyle = {
 interface PpmpPdfTableProps<T> {
     columns: ColumnDef<T>[];
     rows: TableRow[];
+    headerStyle?: any;
 }
 
 // Helper to determine total row text alignment based on column id.
@@ -125,6 +154,8 @@ function getTotalTextAlign(columnId: string): 'left' | 'center' | 'right' {
         return 'right';
     }
 
+    if (columnId === 'total' || /^q[1-4]$/.test(columnId)) return 'right';
+
     // For other columns (coa, item_no, uom, price), we default to left.
     // Price could be right, but since we don't display it in totals, it doesn't matter.
     return 'left';
@@ -133,6 +164,7 @@ function getTotalTextAlign(columnId: string): 'left' | 'center' | 'right' {
 export function PpmpPdfTable<T extends Record<string, any>>({
     columns = [],
     rows = [],
+    headerStyle,
 }: PpmpPdfTableProps<T>) {
     console.log(rows);
 
@@ -215,28 +247,24 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         content = formatQty(totals[col.id]);
                     } else if (
                         col.id === 'total_amount' ||
-                        col.id.endsWith('_amount')
+                        col.id.endsWith('_amount') ||
+                        col.id === 'total' || // ← added
+                        /^q[1-4]$/.test(col.id) // ← added
                     ) {
                         content = formatCurrency(String(totals[col.id] || 0));
                     } else {
                         content = '';
                     }
 
-                    // Determine text alignment based on column id
                     const align = getTotalTextAlign(col.id);
-                    const textStyle = {
-                        ...styles.totalText,
-                        textAlign: align,
-                    };
+                    const textStyle = { ...styles.totalText, textAlign: align };
 
                     return (
                         <View
                             key={col.id}
                             style={[
                                 styles.cell,
-                                {
-                                    width: col.width,
-                                },
+                                { width: col.width },
                                 cIdx === 0 ? leftBorderStyle : {},
                             ]}
                         >
@@ -248,10 +276,28 @@ export function PpmpPdfTable<T extends Record<string, any>>({
         );
     };
 
+    const renderSpacerRow = (row: TableRow) => (
+        <View key={row.id} style={styles.spacer}>
+            {columns.map((col, idx) => (
+                <View
+                    key={col.id}
+                    style={[
+                        {
+                            width: col.width,
+                            borderRightWidth: 0.5,
+                            borderRightColor: '#000000',
+                        },
+                        idx === 0 ? leftBorderStyle : {},
+                    ]}
+                />
+            ))}
+        </View>
+    );
+
     return (
         <View style={styles.table}>
             {/* Header Row - fixed */}
-            <View fixed style={styles.headerRow}>
+            <View fixed style={[styles.headerRow, headerStyle]}>
                 {columns.map((col, cIdx) => (
                     <View
                         key={col.id}
@@ -296,6 +342,13 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         return renderItemRow(row);
 
                     case 'subtotal':
+                        if (row.id.startsWith('summary-')) {
+                            return renderTotalRow(
+                                row,
+                                styles.summarySubtotalRow,
+                            );
+                        }
+
                         if (row.id.startsWith('prog-total-')) {
                             return renderTotalRow(row, styles.programTotalRow);
                         }
@@ -303,7 +356,17 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         return renderTotalRow(row, styles.categoryTotalRow);
 
                     case 'grand-total':
+                        if (row.id.startsWith('summary-')) {
+                            return renderTotalRow(
+                                row,
+                                styles.summaryGrandTotalRow,
+                            );
+                        }
+
                         return renderTotalRow(row, styles.grandTotalRow);
+
+                    case 'spacer':
+                        return renderSpacerRow(row);
 
                     default:
                         return null;

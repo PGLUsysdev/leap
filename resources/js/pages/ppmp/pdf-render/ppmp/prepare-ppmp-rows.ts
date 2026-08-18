@@ -1,12 +1,6 @@
-export type TableRowType = 'banner' | 'item' | 'subtotal' | 'grand-total';
+// resources\js\pages\ppmp\pdf-render\ppmp\prepare-ppmp-rows.ts
 
-export interface TableRow {
-    id: string;
-    type: TableRowType;
-    label?: string; // Used for banners and total rows
-    item?: any; // Used for item rows
-    totals?: Record<string, number>; // Used for total rows
-}
+import type { TableRow } from '../types';
 
 // Helper to calculate totals from an array of items
 function calculateTotals(items: any[]): Record<string, number> {
@@ -53,8 +47,6 @@ function calculateTotals(items: any[]): Record<string, number> {
 
 export function preparePpmpRows(rawItems: any[]): TableRow[] {
     const rows: TableRow[] = [];
-
-    // 1. Bucket raw items into nested Maps
     const programMap = new Map<
         string,
         Map<string, Map<string, { title: string; items: any[] }>>
@@ -94,7 +86,6 @@ export function preparePpmpRows(rawItems: any[]): TableRow[] {
         coaMap.get(coaKey)!.items.push(item);
     });
 
-    // 2. Flatten directly into row definitions
     for (const [programTitle, categoryMap] of programMap) {
         // Program Banner
         rows.push({
@@ -104,46 +95,45 @@ export function preparePpmpRows(rawItems: any[]): TableRow[] {
         });
 
         for (const [categoryName, coaMap] of categoryMap) {
-            // Category Banner
+            // Category Banner – include program
             rows.push({
-                id: `cat-${categoryName}`,
+                id: `cat-${programTitle}-${categoryName}`,
                 type: 'banner',
                 label: categoryName,
             });
 
             for (const [coaKey, coaData] of coaMap) {
                 const { title: coaTitle, items } = coaData;
-
-                // COA Banner – now uses the title
+                // COA Banner – include program and category
                 rows.push({
-                    id: `coa-${coaKey}`,
+                    id: `coa-${programTitle}-${categoryName}-${coaKey}`,
                     type: 'banner',
-                    label: coaTitle, // <-- this is the account_title
+                    label: coaTitle,
                 });
 
-                // Item rows
-                items.forEach((item) => {
+                // Item rows – stable ID
+                items.forEach((item, idx) => {
                     rows.push({
-                        id: `item-${item.id || Math.random()}`,
+                        id: `item-${item.id || idx}`,
                         type: 'item',
                         item,
                     });
                 });
             }
 
-            // Category Subtotal – collect items from all COAs in this category
+            // Category Subtotal – include program
             const categoryItems = Array.from(coaMap.values()).flatMap(
                 (coaData) => coaData.items,
             );
             rows.push({
-                id: `cat-total-${categoryName}`,
+                id: `cat-total-${programTitle}-${categoryName}`,
                 type: 'subtotal',
                 label: `${categoryName} - TOTAL`,
                 totals: calculateTotals(categoryItems),
             });
         }
 
-        // Program Subtotal – collect items from all categories in this program
+        // Program Subtotal
         const programItems = Array.from(categoryMap.values()).flatMap(
             (coaMap) =>
                 Array.from(coaMap.values()).flatMap((coaData) => coaData.items),

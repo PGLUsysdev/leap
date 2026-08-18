@@ -1,14 +1,9 @@
+// resources\js\pages\ppmp\pdf-render\ppmp\cols.tsx
+
 import { Text } from '@react-pdf/renderer';
 import Decimal from 'decimal.js';
-import type React from 'react';
 import { formatCurrency } from '@/lib/utils';
-
-export interface ColumnDef<T> {
-    id: string;
-    header: React.ReactNode; // now a ReactNode, not a string
-    width: string;
-    cell: (item: T) => React.ReactNode;
-}
+import type { ColumnDef } from '../types';
 
 export const formatQty = (val?: number) =>
     val && val > 0 ? val.toString() : '';
@@ -29,10 +24,11 @@ const MONTHS = [
 ];
 
 const REG_QTY_COL_WIDTH = '1.5%';
+const ITEM_NO_COL_WIDTH = '1.6%';
 const TOTAL_QTY_COL_WIDTH = '2.5%';
 const AMT_COL_WIDTH = '3.8%';
 const COA_COL_WIDTH = '6.8%';
-const DESC_COL_WIDTH = '15.5%';
+const DESC_COL_WIDTH = '15.4%';
 const UOM_COL_WIDTH = '2.5%';
 
 // Helper for consistent cell styling
@@ -68,7 +64,7 @@ export const getPpmpColumnDefs = <
     {
         id: 'item_no',
         header: <Text style={headerStyle('center')}>Item No.</Text>,
-        width: REG_QTY_COL_WIDTH,
+        width: ITEM_NO_COL_WIDTH,
         cell: (item) => (
             <Text style={cellStyle('center')}>
                 {item.ppmp_price_list?.item_number ?? item.item_number ?? '-'}

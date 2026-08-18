@@ -43,9 +43,9 @@ import type {
     // FundingSource,
     // SharedData,
 } from '@/types';
-import { PpmpSummaryDocument } from './coa-summary-pdf/PpmpSummaryDocument';
 import ppmpColumns from './columns/ppmp-columns';
-import { PpmpDocument } from './pdf-render/PpmpDocument';
+import { PpmpSummaryDocument } from './pdf-render/coa-summary/document';
+import { PpmpDocument } from './pdf-render/ppmp/document';
 // import { router, usePage } from '@inertiajs/react';
 // import { Decimal } from 'decimal.js';
 // import { DeleteDialog } from '@/components/delete-dialog';

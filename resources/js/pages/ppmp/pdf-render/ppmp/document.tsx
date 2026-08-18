@@ -1,3 +1,5 @@
+// resources\js\pages\ppmp\pdf-render\ppmp\document.tsx
+
 import {
     Document,
     Page,
@@ -8,9 +10,9 @@ import {
 } from '@react-pdf/renderer';
 import React from 'react';
 import type { AipEntry, FiscalYear, PpaFundingSource } from '@/types';
-import { getPpmpColumnDefs } from './colDefs';
-import { PpmpPdfTable } from './PpmpPdfTable';
-import { preparePpmpRows } from './preparePpmpRows';
+import { PpmpPdfTable } from '../table';
+import { getPpmpColumnDefs } from './cols';
+import { preparePpmpRows } from './prepare-ppmp-rows';
 
 Font.registerHyphenationCallback((word) => [word]);
 

@@ -1,4 +1,5 @@
-// PpmpSummaryDocument.tsx
+// resources\js\pages\ppmp\pdf-render\coa-summary\document.tsx
+
 import {
     Document,
     Page,
@@ -9,8 +10,9 @@ import {
 } from '@react-pdf/renderer';
 import React from 'react';
 import type { AipEntry, FiscalYear, PpaFundingSource } from '@/types';
-import { getSummaryColumnDefs } from './colDefsSummary';
-import { PpmpSummaryTable } from './PpmpSummaryTable';
+import { PpmpPdfTable } from '../table'; // generic table
+import { getSummaryColumnDefs } from './cols';
+import { prepareSummaryRows } from './prepare-summary-rows';
 
 Font.registerHyphenationCallback((word) => [word]);
 
@@ -36,6 +38,10 @@ const styles = StyleSheet.create({
     },
 });
 
+const headerRowNoBg = {
+    backgroundColor: 'transparent', // or remove background entirely
+};
+
 interface PpmpSummaryDocumentProps {
     aipEntry?: AipEntry;
     fiscalYear?: FiscalYear;
@@ -46,35 +52,36 @@ interface PpmpSummaryDocumentProps {
 
 export const PpmpSummaryDocument: React.FC<PpmpSummaryDocumentProps> = ({
     aipEntry,
-    groupedData,
+    groupedData = [],
     ppaFundingSource,
     sheetNumber = 1,
 }) => {
     const columns = getSummaryColumnDefs();
-
-    // Helper to get AIP reference code – adjust as needed
-    const aipRefCode = '-';
-    const fundingSource =
-        ppaFundingSource?.funding_source?.code ??
-        ppaFundingSource?.funding_source?.title ??
-        '-';
-    const ppaName = aipEntry?.ppa?.name ?? '-';
+    const rows = prepareSummaryRows(groupedData);
 
     return (
         <Document>
             <Page size={[612, 936]} orientation="landscape" style={styles.page}>
-                {/* ---- 4‑ROW HEADER (values only, left‑aligned) ---- */}
-                <View style={{ marginBottom: 0 }}>
+                {/* Header */}
+                <View>
                     <Text style={styles.headerText}>SHEET # {sheetNumber}</Text>
-                    <Text style={styles.headerText}>{fundingSource}</Text>
-                    <Text style={styles.headerText}>{aipRefCode}</Text>
-                    <Text style={styles.headerText}>{ppaName}</Text>
+                    <Text style={styles.headerText}>
+                        {ppaFundingSource?.funding_source?.code || '-'}
+                    </Text>
+                    <Text style={styles.headerText}>-</Text>
+                    <Text style={styles.headerText}>
+                        {aipEntry?.ppa?.name || '-'}
+                    </Text>
                 </View>
 
-                {/* ---- The Summary Table ---- */}
-                <PpmpSummaryTable columns={columns} groupedData={groupedData} />
+                {/* Table */}
+                <PpmpPdfTable
+                    columns={columns}
+                    rows={rows}
+                    headerStyle={headerRowNoBg}
+                />
 
-                {/* Footer with page numbers */}
+                {/* Footer */}
                 <View style={styles.footer} fixed>
                     <Text></Text>
                     <Text

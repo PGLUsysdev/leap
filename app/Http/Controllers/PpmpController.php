@@ -128,6 +128,7 @@ class PpmpController extends Controller
                 'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory',
             ])
                 ->where('ppa_funding_source_id', $ppaFundingSource->id)
+                // ->limit(50)
                 ->get()
                 ->sortBy('ppmpPriceList.item_number')
                 ->values(),
