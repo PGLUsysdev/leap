@@ -46,6 +46,7 @@ import type {
 import ppmpColumns from './columns/ppmp-columns';
 import { PpmpSummaryDocument } from './pdf-render/coa-summary/document';
 import { PpmpDocument } from './pdf-render/ppmp/document';
+import { Separator } from '@/components/base-ui-components/ui/separator';
 // import { router, usePage } from '@inertiajs/react';
 // import { Decimal } from 'decimal.js';
 // import { DeleteDialog } from '@/components/delete-dialog';
@@ -124,7 +125,24 @@ export default function PpmpPage({
     // fundingSourceId,
     // isSupplemental = false,
 }: PpmpPageProps) {
-    // console.log(ppmpItems);
+    const jsonString = JSON.stringify({
+        aipEntry,
+        categories,
+        chartOfAccounts,
+        fiscalYear,
+        ppaFundingSource,
+        ppmpItems,
+        priceLists,
+    });
+
+    // 2. Calculate size in Bytes, KB, and MB
+    const bytes = new Blob([jsonString]).size;
+    const kilobytes = (bytes / 1024).toFixed(2);
+    const megabytes = (bytes / (1024 * 1024)).toFixed(2);
+
+    console.log(
+        `Props Payload Size: ${bytes} B | ${kilobytes} KB | ${megabytes} MB`,
+    );
 
     // Counter so editing multiple cells at once keeps the indicator on
     const [savingCount, setSavingCount] = useState(0);
@@ -445,6 +463,22 @@ export default function PpmpPage({
                             </div>
                             <div className="text-sm">aip reference code</div>
                             <div className="text-sm">{aipEntry?.ppa?.name}</div>
+                        </div>
+
+                        <div className="w-100">
+                            <div className="flex justify-between">
+                                <div>MOOE</div>
+                                <div>{'amount'}</div>
+                            </div>
+                            <div className="flex justify-between">
+                                <div>CO</div>
+                                <div>{'amount'}</div>
+                            </div>
+                            <Separator orientation="horizontal" />
+                            <div className="flex justify-between">
+                                <div>TOTAL</div>
+                                <div>{'amount'}</div>
+                            </div>
                         </div>
                     </div>
 

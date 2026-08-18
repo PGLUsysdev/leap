@@ -38,10 +38,28 @@ class PpmpController extends Controller
         $categoryFilter = $request->input('category_id');
 
         // === Price Lists (filtered by COA and/or Category) ===
-        $priceListsQuery = PpmpPriceList::with(
-            'chartOfAccountPpmpCategory.chartOfAccount',
-            'chartOfAccountPpmpCategory.ppmpCategory',
-        );
+        $priceListsQuery = PpmpPriceList::select([
+            'id',
+            'item_number',
+            'description',
+            'unit_of_measurement',
+            'price',
+            'chart_of_account_ppmp_category_id',
+        ])->with([
+            'chartOfAccountPpmpCategory' => function ($q) {
+                $q->select([
+                    'id',
+                    'chart_of_account_id',
+                    'ppmp_category_id',
+                ])->with([
+                    'chartOfAccount' => fn($q) => $q->select([
+                        'id',
+                        'account_title',
+                    ]),
+                    'ppmpCategory' => fn($q) => $q->select(['id', 'name']),
+                ]);
+            },
+        ]);
 
         if ($coaFilter) {
             $priceListsQuery->whereHas('chartOfAccountPpmpCategory', function (
@@ -79,7 +97,12 @@ class PpmpController extends Controller
         $priceLists = $priceListsQuery->paginate(100, ['*'], 'price_list_page');
 
         // === Chart of Accounts (filtered by Category) ===
-        $coaQuery = ChartOfAccount::whereIn('expense_class', ['MOOE', 'CO']);
+        $coaQuery = ChartOfAccount::select([
+            'id',
+            'account_number',
+            'account_title',
+            'expense_class',
+        ])->whereIn('expense_class', ['MOOE', 'CO']);
 
         if ($categoryFilter) {
             $coaQuery->whereHas('chartOfAccountPpmpCategories', function (
@@ -101,7 +124,7 @@ class PpmpController extends Controller
         $chartOfAccounts = $coaQuery->paginate(100, ['*'], 'coa_page');
 
         // === Categories (filtered by COA) ===
-        $categoryQuery = PpmpCategory::query();
+        $categoryQuery = PpmpCategory::query()->select(['id', 'name']);
 
         if ($coaFilter) {
             $categoryQuery->whereHas('chartOfAccountPpmpCategories', function (
@@ -123,12 +146,69 @@ class PpmpController extends Controller
             'chartOfAccounts' => $chartOfAccounts,
             'fiscalYear' => $fiscalYear,
             'ppaFundingSource' => $ppaFundingSource->load('fundingSource'),
-            'ppmpItems' => Ppmp::with([
-                'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
-                'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory',
+            'ppmpItems' => Ppmp::select([
+                'id',
+                'ppa_funding_source_id',
+                'ppmp_price_list_id',
+                'jan_qty',
+                'feb_qty',
+                'mar_qty',
+                'apr_qty',
+                'may_qty',
+                'jun_qty',
+                'jul_qty',
+                'aug_qty',
+                'sep_qty',
+                'oct_qty',
+                'nov_qty',
+                'dec_qty',
+                'jan_amount',
+                'feb_amount',
+                'mar_amount',
+                'apr_amount',
+                'may_amount',
+                'jun_amount',
+                'jul_amount',
+                'aug_amount',
+                'sep_amount',
+                'oct_amount',
+                'nov_amount',
+                'dec_amount',
             ])
+                ->with([
+                    'ppmpPriceList' => function ($q) {
+                        $q->select([
+                            'id',
+                            'item_number',
+                            'description',
+                            'unit_of_measurement',
+                            'price',
+                            'chart_of_account_ppmp_category_id',
+                        ])->with([
+                            'chartOfAccountPpmpCategory' => function ($q) {
+                                $q->select([
+                                    'id',
+                                    'chart_of_account_id',
+                                    'ppmp_category_id',
+                                ])->with([
+                                    'chartOfAccount' => fn($q) => $q->select([
+                                        'id',
+                                        'account_number',
+                                        'account_title',
+                                        'expense_class',
+                                    ]),
+                                    'ppmpCategory' => fn($q) => $q->select([
+                                        'id',
+                                        'name',
+                                        'is_non_procurement',
+                                    ]),
+                                ]);
+                            },
+                        ]);
+                    },
+                ])
                 ->where('ppa_funding_source_id', $ppaFundingSource->id)
-                // ->limit(50)
+                // ->limit(20)
                 ->get()
                 ->sortBy('ppmpPriceList.item_number')
                 ->values(),

@@ -1,10 +1,15 @@
 import { router } from '@inertiajs/react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
-import { Trash } from 'lucide-react';
-import { useState } from 'react';
+import { Trash, Info } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from '@/components/ui/hover-card';
 import { formatCurrency } from '@/lib/utils';
 import { updateMonthlyQuantity } from '@/routes/ppmp';
 import type { Ppmp } from '@/types';
@@ -47,69 +52,128 @@ const EditableCell: React.FC<EditableCellProps> = ({
     );
     const [isFocused, setIsFocused] = useState(false);
 
-    // Raw digits while editing, comma-grouped once blurred.
-    // Deriving the display value keeps the commas even if the
-    // server response re-renders this cell with the raw number.
-    const displayValue = isFocused
-        ? localValue
-        : formatQuantity(localValue || '0');
+    // Ref to always access the latest localValue inside the debounced callback
+    const localValueRef = useRef<string>(localValue);
+    useEffect(() => {
+        localValueRef.current = localValue;
+    }, [localValue]);
 
-    // Enter commits the same way as blur, so the value is
-    // formatted and saved exactly once.
+    // Timeout ID for debounce
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+        };
+    }, []);
+
+    // Core commit logic: compares with original and sends request if changed
+    const commitChanges = useCallback(
+        (quantity: number) => {
+            // Clear any pending debounce
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+                timeoutRef.current = null;
+            }
+
+            // Parse the original value from the table data
+            const originalRaw = getValue();
+            const originalQuantity =
+                parseInt(String(originalRaw ?? '').replace(/,/g, ''), 10) || 0;
+
+            // No change – just re‑format the display
+            if (quantity === originalQuantity) {
+                setLocalValue(String(quantity));
+
+                return;
+            }
+
+            // Optimistic update + API call
+            router
+                .optimistic((props: PageProps) => {
+                    const ppmpItems = props.ppmpItems;
+                    const updatedItems = ppmpItems.map((item) => {
+                        if (item.id === rowData.id) {
+                            return {
+                                ...item,
+                                [column.id]: quantity,
+                            };
+                        }
+
+                        return item;
+                    });
+
+                    return { ppmpItems: updatedItems };
+                })
+                .put(
+                    updateMonthlyQuantity(rowData.id).url,
+                    {
+                        month: column.id,
+                        quantity: quantity,
+                    },
+                    {
+                        preserveScroll: true,
+                        preserveState: true,
+                        onStart: () =>
+                            table.options.meta?.onSavingChange?.(true),
+                        onFinish: () =>
+                            table.options.meta?.onSavingChange?.(false),
+                        onError: () => {
+                            // Revert to the server value on error
+                            const serverVal = getValue();
+                            setLocalValue(
+                                String(serverVal ?? '').replace(/,/g, ''),
+                            );
+                        },
+                    },
+                );
+
+            // Update local display (will be formatted on blur)
+            setLocalValue(String(quantity));
+        },
+        [getValue, rowData.id, column.id, table],
+    );
+
+    // Debounced commit: called 3 seconds after the last keystroke
+    const scheduleDebouncedCommit = useCallback(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+
+        timeoutRef.current = setTimeout(() => {
+            const quantity = parseInt(localValueRef.current, 10) || 0;
+            commitChanges(quantity);
+        }, 300);
+    }, [commitChanges]);
+
+    // ---- Event handlers ----
+
     function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
         if (e.key === 'Enter') {
-            e.currentTarget.blur();
+            e.currentTarget.blur(); // triggers blur, which commits immediately
         }
     }
 
     function handleBlur() {
         setIsFocused(false);
-
         const quantity = parseInt(localValue, 10) || 0;
-        const originalQuantity =
-            parseInt(String(getValue() ?? '').replace(/,/g, ''), 10) || 0;
-
-        // Nothing changed — just re-format the display, no API call.
-        if (quantity === originalQuantity) {
-            setLocalValue(String(quantity));
-
-            return;
-        }
-
-        router
-            .optimistic((props: PageProps) => {
-                const ppmpItems = props.ppmpItems;
-
-                const updatedItems = ppmpItems.map((item) => {
-                    if (item.id === rowData.id) {
-                        return {
-                            ...item,
-                            [column.id]: quantity,
-                        };
-                    }
-
-                    return item;
-                });
-
-                return { ppmpItems: updatedItems };
-            })
-            .put(
-                updateMonthlyQuantity(rowData.id).url,
-                {
-                    month: column.id,
-                    quantity: quantity,
-                },
-                {
-                    preserveScroll: true,
-                    preserveState: true,
-                    onStart: () => table.options.meta?.onSavingChange?.(true),
-                    onFinish: () => table.options.meta?.onSavingChange?.(false),
-                    onError: () => setLocalValue(String(getValue())),
-                },
-            );
-
-        setLocalValue(String(quantity));
+        commitChanges(quantity);
     }
+
+    function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const raw = e.target.value.replace(/[^0-9]/g, '');
+        setLocalValue(raw);
+        scheduleDebouncedCommit();
+    }
+
+    // Display formatting: raw digits when focused, otherwise grouped with commas
+    const displayValue = isFocused
+        ? localValue
+        : formatQuantity(localValue || '0');
 
     return (
         <Input
@@ -121,9 +185,7 @@ const EditableCell: React.FC<EditableCellProps> = ({
                 }
             }}
             onBlur={handleBlur}
-            onChange={(e) =>
-                setLocalValue(e.target.value.replace(/[^0-9]/g, ''))
-            }
+            onChange={onChange}
             onDragStart={(e) => e.preventDefault()}
             onFocus={(e) => {
                 e.currentTarget.select();
@@ -245,21 +307,45 @@ const getMonthlyAmount = (row: Ppmp, month: MonthConfig): Decimal =>
 const columnHelper = createColumnHelper<Ppmp>();
 
 const columns = [
+    columnHelper.accessor(
+        'ppmp_price_list.chart_of_account_ppmp_category.chart_of_account.expense_class',
+        {
+            size: 100,
+            header: () => (
+                <div className="text-center text-wrap">Expense Class</div>
+            ),
+            cell: (info) => (
+                <div className="text-center text-wrap">{info.getValue()}</div>
+            ),
+        },
+    ),
+    columnHelper.accessor(
+        'ppmp_price_list.chart_of_account_ppmp_category.chart_of_account.account_title',
+        {
+            size: 300,
+            header: () => (
+                <div className="text-center text-wrap">Chart of Account</div>
+            ),
+            cell: (info) => (
+                <div className="text-center text-wrap">{info.getValue()}</div>
+            ),
+        },
+    ),
     columnHelper.accessor('ppmp_price_list.item_number', {
         size: 100,
         header: () => <div className="text-center text-wrap">Item No.</div>,
-        cell: (info) => (
-            <div className="text-wrap slashed-zero tabular-nums">
-                {info.getValue()}
-            </div>
-        ),
+        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.accessor('ppmp_price_list.description', {
         size: 400,
         enableGlobalFilter: true,
         header: () => <div className="text-center text-wrap">Description</div>,
         cell: (info) => {
-            return <div className="text-wrap">{info.getValue()}</div>;
+            return (
+                <div className="text-wrap">
+                    <span>{info.getValue()}</span>
+                </div>
+            );
         },
     }),
     columnHelper.accessor('ppmp_price_list.unit_of_measurement', {
