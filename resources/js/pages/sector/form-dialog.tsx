@@ -36,9 +36,8 @@ const formSchema = z.object({
     code: z
         .string()
         .trim()
-        .min(1, { message: 'Code is required' })
-        .max(4, { message: 'Code must be at most 4 characters' })
-        .regex(/^\d+$/, { message: 'Code must contain only numbers' }),
+        .length(4, { message: 'Code must be exactly 4 digits' })
+        .regex(/^\d{4}$/, { message: 'Code must contain only 4 numbers' }),
     name: z
         .string()
         .trim()

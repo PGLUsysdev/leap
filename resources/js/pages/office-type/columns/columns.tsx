@@ -11,7 +11,7 @@ const columns = [
         header: () => <div className="px-1">Code</div>,
         cell: (value) => (
             <div className="px-1 text-wrap slashed-zero tabular-nums">
-                {value.getValue()}
+                {value.getValue().padStart(2, '0')}
             </div>
         ),
     }),

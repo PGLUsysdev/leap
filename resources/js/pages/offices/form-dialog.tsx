@@ -154,10 +154,10 @@ export default function FormDialog({
     }, [errors]); // This triggers when errors object changes
 
     function onSubmit(data: FormValues) {
-        const paddedCode = data.code.padStart(3, '0');
+        // const paddedCode = data.code.padStart(3, '0');
         const payload = {
             ...data,
-            code: paddedCode,
+            code: data.code,
             parent_id: data.parent_id === 'none' ? null : data.parent_id,
         };
 
@@ -274,8 +274,11 @@ export default function FormDialog({
                                             const lguLevelCode =
                                                 selectedLguLevel?.code || '0';
                                             const officeTypeCode =
-                                                selectedOfficeType?.code ||
-                                                '00';
+                                                selectedOfficeType?.code
+                                                    ? String(
+                                                          selectedOfficeType.code,
+                                                      ).padStart(2, '0')
+                                                    : '00';
                                             // Pad suffix to 3 digits for preview
                                             const suffixCode = suffixRaw?.trim()
                                                 ? suffixRaw.padStart(3, '0')

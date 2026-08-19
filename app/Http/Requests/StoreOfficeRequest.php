@@ -30,7 +30,7 @@ class StoreOfficeRequest extends FormRequest
             'name' => 'required|string|max:100',
             'acronym' => 'nullable|string|max:20',
             'is_lee' => 'boolean',
-            'code' => 'required|string|max:3',
+            'code' => ['required', 'string', 'min:1', 'max:3'],
         ];
     }
 }

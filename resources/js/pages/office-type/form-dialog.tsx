@@ -85,6 +85,9 @@ export default function FormDialog({
     }, [errors]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
+        const codeAsInt = parseInt(data.code, 10);
+        data.code = String(codeAsInt);
+
         setSubmitting(true);
 
         const options = {

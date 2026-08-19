@@ -31,11 +31,14 @@ class Office extends Model
     {
         return Attribute::make(
             get: function () {
-                // Use relation if loaded, otherwise the property is null.
-                $sectorCode = $this->sector?->code ?? str_repeat('0', 10);
-                $lguCode = $this->lguLevel?->code ?? str_repeat('0', 10);
-                $officeTypeCode =
-                    $this->officeType?->code ?? str_repeat('0', 10);
+                $sectorCode = $this->sector?->code ?? '0000';
+                $lguCode = $this->lguLevel?->code ?? '0';
+                $officeTypeCode = str_pad(
+                    $this->officeType?->code ?? '00',
+                    2,
+                    '0',
+                    STR_PAD_LEFT,
+                );
                 $officeCode = str_pad(
                     (string) ($this->code ?? ''),
                     3,
@@ -53,6 +56,7 @@ class Office extends Model
             },
         );
     }
+
     // hasMany
     public function children(): HasMany
     {
