@@ -57,9 +57,13 @@ const columns = [
         id: 'full_code',
         size: 220,
         header: () => <div className="px-1">AIP Reference Code</div>,
-        cell: (info) => (
-            <div className="px-1 font-mono text-wrap">{info.getValue()}</div>
-        ),
+        cell: (info) => {
+            return (
+                <div className="px-1 font-mono text-wrap">
+                    {info.getValue()}
+                </div>
+            );
+        },
         meta: { rowSpan: true },
     }),
     columnHelper.accessor('name', {

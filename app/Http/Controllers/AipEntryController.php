@@ -425,16 +425,12 @@ class AipEntryController extends Controller
             ])
             ->with(
                 'ppa:id,office_id,parent_id,name,type,code_suffix,is_active,sort_order,fiscal_year_id,supplemental_aip_id,is_supplemental,is_ps_pool',
-                // 'ppa.office:id,sector_id,lgu_level_id,office_type_id,parent_id,code,name,acronym,is_lee',
-                'ppa.office:id,name,acronym',
-                // 'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
-                'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
-                // 'ppaFundingSources.fundingSource:id,fund_type,code,title,description',
-                'ppaFundingSources.fundingSource:id,code,title',
-                // 'ppaFundingSources.ccTypology:id,code,description,response_type,strategic_priority_id,sub_sector_id,category_code,item_num,id_nccap_activity',
-                'ppaFundingSources.ccTypology:id,code',
+                'ppa.office:id,sector_id,lgu_level_id,office_type_id,parent_id,code,name,acronym,is_lee',
+                'ppa.office.sector:id,code',
+                'ppa.office.lguLevel:id,code',
+                'ppa.office.officeType:id,code',
             )
-            // ->limit(50)
+            // ->limit(100)
             ->get();
 
         // Attach per-entry permissions so the AIP entry form dialog can

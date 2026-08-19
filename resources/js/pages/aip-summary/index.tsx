@@ -231,8 +231,9 @@ export default function AipSummary({
     fundingSources,
 }: AipSummaryProps) {
     console.log({
-        fiscalYear,
-        // newAipEntries, offices
+        // fiscalYear,
+        newAipEntries,
+        // offices,
     });
 
     // const json = JSON.stringify(newAipEntries);

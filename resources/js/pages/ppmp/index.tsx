@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { PDFViewer } from '@react-pdf/renderer';
+import { Decimal } from 'decimal.js';
 import { Check, Filter, FileUp } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
@@ -28,7 +29,9 @@ import {
     ScrollArea,
     ScrollBar,
 } from '@/components/base-ui-components/ui/scroll-area';
+import { Separator } from '@/components/base-ui-components/ui/separator';
 import { Spinner } from '@/components/base-ui-components/ui/spinner';
+import { formatCurrency } from '@/lib/utils';
 import FormDialog from '@/pages/ppmp/form-dialog';
 import { index, summary } from '@/routes/aip';
 import type {
@@ -46,7 +49,6 @@ import type {
 import ppmpColumns from './columns/ppmp-columns';
 import { PpmpSummaryDocument } from './pdf-render/coa-summary/document';
 import { PpmpDocument } from './pdf-render/ppmp/document';
-import { Separator } from '@/components/base-ui-components/ui/separator';
 // import { router, usePage } from '@inertiajs/react';
 // import { Decimal } from 'decimal.js';
 // import { DeleteDialog } from '@/components/delete-dialog';
@@ -170,6 +172,54 @@ export default function PpmpPage({
                     ?.chart_of_account?.expense_class === expenseClassFilter,
         );
     }, [ppmpItems, expenseClassFilter]);
+
+    const MONTHS = [
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
+    ] as const;
+
+    const getItemTotal = (item: Ppmp): Decimal => {
+        const price = new Decimal(item.ppmp_price_list?.price || 0);
+
+        return MONTHS.reduce(
+            (acc, month) =>
+                acc.plus(new Decimal(item[`${month}_qty`] || 0).times(price)),
+            new Decimal(0),
+        );
+    };
+
+    const totals = useMemo(() => {
+        let mooe = new Decimal(0);
+        let co = new Decimal(0);
+        let total = new Decimal(0);
+
+        ppmpItems.forEach((item) => {
+            const amount = getItemTotal(item);
+            total = total.plus(amount);
+
+            const expenseClass =
+                item.ppmp_price_list?.chart_of_account_ppmp_category
+                    ?.chart_of_account?.expense_class;
+
+            if (expenseClass === 'MOOE') {
+                mooe = mooe.plus(amount);
+            } else if (expenseClass === 'CO') {
+                co = co.plus(amount);
+            }
+        });
+
+        return { mooe, co, total };
+    }, [ppmpItems]);
 
     // const filterLabel = {
     //     ALL: 'All items',
@@ -461,23 +511,31 @@ export default function PpmpPage({
                             <div className="text-sm">
                                 {ppaFundingSource.funding_source?.code || 'N/A'}
                             </div>
-                            <div className="text-sm">aip reference code</div>
+                            <div className="text-sm">
+                                {aipEntry.ppa?.full_code || '-'}
+                            </div>
                             <div className="text-sm">{aipEntry?.ppa?.name}</div>
                         </div>
 
                         <div className="w-100">
                             <div className="flex justify-between">
                                 <div>MOOE</div>
-                                <div>{'amount'}</div>
+                                <div className="slashed-zero tabular-nums">
+                                    {formatCurrency(totals.mooe.toString())}
+                                </div>
                             </div>
                             <div className="flex justify-between">
                                 <div>CO</div>
-                                <div>{'amount'}</div>
+                                <div className="slashed-zero tabular-nums">
+                                    {formatCurrency(totals.co.toString())}
+                                </div>
                             </div>
                             <Separator orientation="horizontal" />
                             <div className="flex justify-between">
                                 <div>TOTAL</div>
-                                <div>{'amount'}</div>
+                                <div className="slashed-zero tabular-nums">
+                                    {formatCurrency(totals.total.toString())}
+                                </div>
                             </div>
                         </div>
                     </div>

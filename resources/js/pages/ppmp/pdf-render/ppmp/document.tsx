@@ -208,7 +208,9 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                                 justifyContent: 'center',
                             }}
                         >
-                            <Text style={{ fontWeight: 'bold' }}>{'-'}</Text>
+                            <Text style={{ fontWeight: 'bold' }}>
+                                {aipEntry?.ppa?.full_code || '-'}
+                            </Text>
                         </View>
                         <View
                             style={{

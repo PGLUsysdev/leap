@@ -68,7 +68,9 @@ export const PpmpSummaryDocument: React.FC<PpmpSummaryDocumentProps> = ({
                     <Text style={styles.headerText}>
                         {ppaFundingSource?.funding_source?.code || '-'}
                     </Text>
-                    <Text style={styles.headerText}>-</Text>
+                    <Text style={styles.headerText}>
+                        {aipEntry?.ppa?.full_code || '-'}
+                    </Text>
                     <Text style={styles.headerText}>
                         {aipEntry?.ppa?.name || '-'}
                     </Text>
