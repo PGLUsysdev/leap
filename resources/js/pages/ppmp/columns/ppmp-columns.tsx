@@ -1,15 +1,10 @@
 import { router } from '@inertiajs/react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
-import { Trash, Info } from 'lucide-react';
+import { Trash } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/base-ui-components/ui/button';
 import { Input } from '@/components/base-ui-components/ui/input';
-import {
-    HoverCard,
-    HoverCardContent,
-    HoverCardTrigger,
-} from '@/components/ui/hover-card';
 import { formatCurrency } from '@/lib/utils';
 import { updateMonthlyQuantity } from '@/routes/ppmp';
 import type { Ppmp } from '@/types';
