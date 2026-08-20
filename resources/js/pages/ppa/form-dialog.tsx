@@ -54,7 +54,7 @@ const formSchema = z.object({
     office_id: z.string().min(1, 'Implementing office is required'),
     name: z.string().min(1, 'Name is required'),
     code_suffix: z.string().optional(),
-    type: z.enum(['Program', 'Project', 'Activity', 'Sub-Activity']),
+    type: z.string(),
     is_active: z.boolean(),
 });
 
@@ -70,6 +70,7 @@ interface PpaFormDialogProps {
     offices: Office[];
     auth: Auth;
     selectedOfficeId?: number | null;
+    ppaTypePadding: Record<string, number>;
 }
 
 export default function PpaFormDialog({
@@ -82,6 +83,7 @@ export default function PpaFormDialog({
     offices,
     auth,
     selectedOfficeId,
+    ppaTypePadding = {},
 }: PpaFormDialogProps) {
     const isEditing = mode === 'edit';
     const isAddingChild = mode === 'add' && !!parentPpa;
@@ -110,8 +112,8 @@ export default function PpaFormDialog({
 
     useEffect(() => {
         if (!isOpen) {
-return;
-}
+            return;
+        }
 
         if (isEditing && editPpa) {
             form.reset({
@@ -147,41 +149,30 @@ return;
     const getCodePreview = () => {
         // For add mode, show type-specific auto-generated placeholder
         if (!isEditing) {
-            // Determine placeholder based on type
-            let suffix: string;
-
-            switch (targetType) {
-                case 'Program':
-                    suffix = 'XXX'; // 3 digits
-                    break;
-                case 'Project':
-                    suffix = 'XX'; // 2 digits
-                    break;
-                case 'Activity':
-                    suffix = 'XX'; // 2 digits
-                    break;
-                case 'Sub-Activity':
-                    suffix = 'X'; // 1 digit, dynamic
-                    break;
-                default:
-                    suffix = 'XXX';
-            }
+            const padding = ppaTypePadding?.[targetType] || 0;
+            const suffixPlaceholder = padding > 0 ? 'X'.repeat(padding) : 'X';
 
             if (isAddingChild && parentPpa?.full_code) {
-                return `${parentPpa.full_code}-${suffix}`;
+                return `${parentPpa.full_code}-${suffixPlaceholder}`;
             }
 
             const officeFullCode = offices.find(
                 (o) => o.id === watchedOfficeId,
             )?.full_code;
 
-            return `${officeFullCode || '0000-000-0-00-000'}-${suffix}`;
+            return `${officeFullCode || '0000-000-0-00-000'}-${suffixPlaceholder}`;
         }
 
-        // For edit mode, show the actual suffix
-        const suffix = codeSuffix || '000';
+        // For edit mode, show the actual suffix padded
+        const currentType = editPpa?.type ?? targetType;
+        const padding = ppaTypePadding?.[currentType] || 0;
+        const rawSuffix = codeSuffix || '';
+        const suffix =
+            padding > 0
+                ? rawSuffix.padStart(padding, '0')
+                : rawSuffix || '0';
 
-        if (editPpa?.full_code && editPpa.type !== 'Program') {
+        if (editPpa?.parent_id && editPpa.full_code) {
             const baseCode = editPpa.full_code
                 .split('-')
                 .slice(0, -1)

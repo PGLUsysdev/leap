@@ -10,50 +10,34 @@ import type { Ppa } from '@/types';
 
 const columnHelper = createColumnHelper<Ppa>();
 
-const isValidParentType = (targetType: string, sourceType: string): boolean => {
-    if (sourceType === 'Project') {
-        return targetType === 'Program';
-    }
-
-    if (sourceType === 'Activity') {
-        return targetType === 'Project';
-    }
-
-    if (sourceType === 'Sub-Activity') {
-        return targetType === 'Activity';
-    }
-
-    return false;
+const isValidParentType = (
+    targetType: string,
+    sourceType: string,
+    ppaTypes: string[] = [],
+): boolean => {
+    const targetIndex = ppaTypes.indexOf(targetType);
+    const sourceIndex = ppaTypes.indexOf(sourceType);
+    return (
+        targetIndex !== -1 &&
+        sourceIndex !== -1 &&
+        targetIndex === sourceIndex - 1
+    );
 };
 
-const canNavigateInto = (targetType: string, sourceType: string): boolean => {
-    if (targetType === 'Sub-Activity') {
+const canNavigateInto = (
+    targetType: string,
+    sourceType: string,
+    ppaTypes: string[] = [],
+): boolean => {
+    const targetIndex = ppaTypes.indexOf(targetType);
+    const sourceIndex = ppaTypes.indexOf(sourceType);
+    if (targetIndex === -1 || sourceIndex === -1) {
         return false;
-    } // Nothing is below Sub-Activity
-
-    switch (sourceType) {
-        case 'Program':
-            return false; // Programs stay at Root; no need to go deeper
-
-        case 'Project':
-            // Can only go into Programs to look for Project siblings
-            return targetType === 'Program';
-
-        case 'Activity':
-            // Can go into Programs or Projects to find Activity parents/siblings
-            return targetType === 'Program' || targetType === 'Project';
-
-        case 'Sub-Activity':
-            // Can go into anything except other Sub-Activities
-            return (
-                targetType === 'Program' ||
-                targetType === 'Project' ||
-                targetType === 'Activity'
-            );
-
-        default:
-            return false;
     }
+    if (targetIndex === ppaTypes.length - 1) {
+        return false;
+    }
+    return targetIndex < sourceIndex;
 };
 
 const columns = [
@@ -81,9 +65,11 @@ const columns = [
             const ppa = info.row.original;
             const meta = info.table.options.meta as any;
             const source = meta.ppaToMove;
+            const ppaTypes = meta.ppaTypes || [];
 
             const isSelf = String(ppa.id) === String(source?.id);
-            const isParent = source && isValidParentType(ppa.type, source.type);
+            const isParent =
+                source && isValidParentType(ppa.type, source.type, ppaTypes);
             const isSibling = source && ppa.type === source.type;
 
             return (
@@ -159,29 +145,20 @@ const columns = [
             const meta = table.options.meta as any;
             const source = meta.ppaToMove;
             const target = row.original;
+            const ppaTypes = meta.ppaTypes || [];
             const childrenCount = target.children_count;
 
-            // Logic 1: Standard Sub-Activity check
-            const isSubActivity = target.type === 'Sub-Activity';
+            const isLastLeaf =
+                ppaTypes.length > 0 &&
+                target.type === ppaTypes[ppaTypes.length - 1];
 
-            // Logic 2: Boundary check
             const isNavigationAllowed = source
-                ? canNavigateInto(target.type, source.type)
+                ? canNavigateInto(target.type, source.type, ppaTypes)
                 : false;
 
-            // Logic 3: Prevent navigating into yourself while moving yourself
             const isSelf = source && String(target.id) === String(source.id);
 
             return (
-                // <Button
-                //     size="icon"
-                //     variant="outline"
-                //     onClick={() => meta?.onShowChildren?.(target)}
-                //     disabled={isSubActivity || !isNavigationAllowed || isSelf}
-                // >
-                //     {childrenCount}
-                // </Button>
-
                 <ButtonGroup>
                     <Button
                         variant="outline"
@@ -196,7 +173,7 @@ const columns = [
                         title="Open PPA"
                         onClick={() => meta?.onShowChildren?.(target)}
                         disabled={
-                            isSubActivity || !isNavigationAllowed || isSelf
+                            isLastLeaf || !isNavigationAllowed || isSelf
                         }
                     >
                         <FolderOpen />

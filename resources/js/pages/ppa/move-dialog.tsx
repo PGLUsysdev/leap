@@ -32,22 +32,21 @@ interface PpaMoveDialogProps {
     filters: Filter;
     dialogPpaTree: PaginatedResponse<Ppa> | [];
     dialogCurrent: Ppa[];
+    ppaTypes: Ppa['type'][];
 }
 
-const isValidParentType = (targetType: string, sourceType: string): boolean => {
-    if (sourceType === 'Project') {
-        return targetType === 'Program';
-    }
-
-    if (sourceType === 'Activity') {
-        return targetType === 'Project';
-    }
-
-    if (sourceType === 'Sub-Activity') {
-        return targetType === 'Activity';
-    }
-
-    return false;
+const isValidParentType = (
+    targetType: string,
+    sourceType: string,
+    ppaTypes: string[] = [],
+): boolean => {
+    const targetIndex = ppaTypes.indexOf(targetType);
+    const sourceIndex = ppaTypes.indexOf(sourceType);
+    return (
+        targetIndex !== -1 &&
+        sourceIndex !== -1 &&
+        targetIndex === sourceIndex - 1
+    );
 };
 
 export default function PpaMoveDialog({
@@ -57,6 +56,7 @@ export default function PpaMoveDialog({
     dialogPpaTree = [],
     dialogCurrent = [],
     filters,
+    ppaTypes = [],
 }: PpaMoveDialogProps) {
     const [selectedTarget, setSelectedTarget] = useState<Ppa | null>(null);
     const [loading, setLoading] = useState(false);
@@ -69,7 +69,7 @@ export default function PpaMoveDialog({
     const buttonLabels = useMemo(() => {
         const currentFolder =
             dialogCurrent.length > 0 ? dialogCurrent[0] : null;
-        const isProgram = ppaToMove?.type === 'Program';
+        const isProgram = ppaToMove?.type === (ppaTypes[0] || 'Program');
         const isSameFolder =
             ppaToMove &&
             currentFolder &&
@@ -139,6 +139,7 @@ export default function PpaMoveDialog({
             const canMoveHere = isValidParentType(
                 currentFolder.type,
                 ppaToMove.type,
+                ppaTypes,
             );
 
             return {
@@ -157,7 +158,7 @@ export default function PpaMoveDialog({
         }
 
         return defaultState;
-    }, [selectedTarget, ppaToMove, dialogCurrent]);
+    }, [selectedTarget, ppaToMove, dialogCurrent, ppaTypes]);
 
     const handleMove = (direction: 'top' | 'bottom' | 'into') => {
         const finalTargetId = buttonLabels.targetId;
@@ -302,6 +303,7 @@ setSelectedTarget(null);
                                 const isParent = isValidParentType(
                                     ppa.type,
                                     ppaToMove?.type ?? '',
+                                    ppaTypes,
                                 );
 
                                 if ((isSibling || isParent) && !isSelf) {
@@ -323,6 +325,7 @@ setSelectedTarget(null);
                                 {
                                     ppaToMove: ppaToMove,
                                     onShowChildren: handleShowChildren,
+                                    ppaTypes: ppaTypes,
                                 } as any
                             }
                             className="h-1000"

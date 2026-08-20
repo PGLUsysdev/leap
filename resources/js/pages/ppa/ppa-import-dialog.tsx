@@ -22,6 +22,7 @@ interface PpaImportDialogProps {
     dialogCurrent: Ppa[];
     filters: Filter;
     selectedOfficeId?: number | null;
+    ppaTypes?: Ppa['type'][];
 }
 
 export default function PpaImportDialog({
@@ -31,6 +32,7 @@ export default function PpaImportDialog({
     dialogPpaTree,
     dialogCurrent,
     selectedOfficeId,
+    ppaTypes = [],
 }: PpaImportDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
@@ -273,6 +275,7 @@ return [];
                         onToggle: handleToggle,
                         onToggleAll: handleToggleAll,
                         onShowChildren: handleShowChildren,
+                        ppaTypes: ppaTypes,
                     }}
                 ></DataTable>
 

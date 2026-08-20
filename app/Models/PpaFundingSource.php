@@ -33,7 +33,6 @@ class PpaFundingSource extends Model
     // }
 
     protected $fillable = [
-        // 'id',
         'aip_entry_id',
         'funding_source_id',
         'ps_amount',
@@ -48,6 +47,11 @@ class PpaFundingSource extends Model
     ];
 
     // hasMany
+    public function aipOutput()
+    {
+        return $this->belongsTo(AipOutput::class, 'aip_output_id');
+    }
+
     public function ppmps(): HasMany
     {
         return $this->hasMany(Ppmp::class, 'ppa_funding_source_id');

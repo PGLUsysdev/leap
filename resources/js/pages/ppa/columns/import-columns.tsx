@@ -133,7 +133,12 @@ const columns = [
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
             const ppa = row.original;
-            const canOpen = ppa.type !== 'Sub-Activity';
+            const ppaTypes = meta?.ppaTypes || [];
+            const isLastLeaf =
+                ppaTypes.length > 0
+                    ? ppa.type === ppaTypes[ppaTypes.length - 1]
+                    : false;
+            const canOpen = !isLastLeaf;
             const childrenCount = ppa.children_count;
 
             return (

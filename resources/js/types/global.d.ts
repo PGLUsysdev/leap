@@ -21,8 +21,8 @@ declare module '@inertiajs/core' {
 
 declare module '@tanstack/react-table' {
     interface TableMeta<TData extends RowData> {
-        onEdit?: (id: number) => void;
-        onDelete?: (id: number) => void;
+        onEdit?: ((id: number) => void) | ((data: TData) => void);
+        onDelete?: ((id: number) => void) | ((data: TData) => void);
         onDeletePpmpItem?: (item: Ppmp) => void;
         disabled?: boolean;
         year?: FiscalYear;
@@ -30,7 +30,7 @@ declare module '@tanstack/react-table' {
         onUpdate?: (data: TData) => void;
         onAdd?: (
             data: TData,
-            type?: 'Program' | 'Project' | 'Activity' | 'Sub-Activity',
+            type?: string,
         ) => void;
         onUpdateStatus?: (
             data: TData,
@@ -48,6 +48,8 @@ declare module '@tanstack/react-table' {
         onToggleAll?: (data: TData[], isChecked: boolean) => void;
         selectedIds?: Set<number>;
         existingIds?: Set<number>;
+        ppaTypes?: string[];
+        ppaToMove?: any;
         can?: {
             add?: boolean;
             edit?: boolean;

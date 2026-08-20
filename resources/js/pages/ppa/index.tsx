@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 // Layouts & UI Components
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
@@ -33,13 +33,6 @@ import type {
 } from '@/types';
 import columns from './columns/columns';
 
-const NEXT_TYPE_MAP: Record<Ppa['type'], Ppa['type']> = {
-    Program: 'Project',
-    Project: 'Activity',
-    Activity: 'Sub-Activity',
-    'Sub-Activity': 'Sub-Activity',
-};
-
 interface PpaPageProps {
     offices: Office[];
     ppaTree: PaginatedResponse<Ppa>;
@@ -54,6 +47,8 @@ interface PpaPageProps {
     showAllOffices?: boolean;
     selectedOfficeId?: number;
     parentOffices?: Office[];
+    ppaTypes: Ppa['type'][];
+    ppaTypePadding: Record<string, number>;
 }
 
 export default function PpaPage({
@@ -67,37 +62,21 @@ export default function PpaPage({
     showAllOffices,
     selectedOfficeId,
     parentOffices,
+    ppaTypes = [],
+    ppaTypePadding = {},
 }: PpaPageProps) {
-    console.log({
-        // offices,
-        ppaTree,
-        // current,
-        // filters,
-        // dialogPpaTree,
-        // dialogCurrent,
-        // can,
-        // showAllOffices,
-        // selectedOfficeId,
-        // parentOffices,
-    });
-
     const { data, ...paginationData } = ppaTree;
 
     const page = usePage<SharedData>();
     const { auth } = usePage<SharedData>().props;
     const activeFiscalYear = (page.props as any).activeFiscalYear;
 
-    console.log('activeFiscalYear:', activeFiscalYear);
-    console.log('auth:', auth);
-    console.log('current user office_id:', auth.user?.office_id);
-    console.log('ppaTree:', ppaTree);
-    console.log('ppaTree total:', ppaTree?.total);
-    console.log('filters:', filters);
+    const rootType = ppaTypes[0] || 'Program';
 
     // Form Dialog States
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
-    const [targetType, setTargetType] = useState<Ppa['type']>('Program');
+    const [targetType, setTargetType] = useState<Ppa['type']>(rootType);
 
     // Explicitly separated states for "Parent" (Add) and "Self" (Edit)
     const [parentPpa, setParentPpa] = useState<Ppa | null>(null);
@@ -117,8 +96,31 @@ export default function PpaPage({
     const [isErrorOpen, setIsErrorOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+    const nextTypeMap = useMemo(() => {
+        const map: Record<string, string | null> = {};
+
+        for (let i = 0; i < ppaTypes.length; i++) {
+            map[ppaTypes[i]] = ppaTypes[i + 1] || null;
+        }
+
+        return map;
+    }, [ppaTypes]);
+
+    const getNextType = (currentType: Ppa['type']): Ppa['type'] | null => {
+        return nextTypeMap[currentType] as Ppa['type'] | null;
+    };
+
+    const nextType =
+        current.length > 0
+            ? (getNextType(current[0].type) ?? rootType)
+            : rootType;
+
+    const canAddNext =
+        current.length === 0 || getNextType(current[0].type) !== null;
+
     // Handlers
-    function handleAddChild(parent: Ppa, childType: Ppa['type'] = 'Program') {
+    function handleAddChild(parent: Ppa) {
+        const childType = getNextType(parent.type) ?? rootType;
         setFormMode('add');
         setTargetType(childType);
         setParentPpa(parent);
@@ -253,16 +255,13 @@ export default function PpaPage({
         );
     }
 
-    const nextType =
-        current.length > 0 ? NEXT_TYPE_MAP[current[0].type] : 'Program';
-
     function handleAddNew() {
         setFormMode('add');
         setEditPpa(null);
 
         if (current.length === 0) {
-            // We are at the very top - create root Program
-            setTargetType('Program');
+            // We are at the very top - create root type
+            setTargetType(rootType);
             setParentPpa(null);
         } else {
             // We are viewing children of current - create child of next type under current
@@ -287,6 +286,7 @@ export default function PpaPage({
                         onReorder: handleReorder,
                         onMove: handleMoveOpen,
                         onShowChildren: handleShowChildren,
+                        ppaTypes: ppaTypes,
                     }}
                 >
                     <div className="flex items-center gap-2">
@@ -331,13 +331,11 @@ export default function PpaPage({
                                 Import from Last Year
                             </Button>
                         )}
-                        {can?.add &&
-                            (current.length === 0 ||
-                                current[0].type !== 'Sub-Activity') && (
-                                <Button onClick={handleAddNew}>
-                                    New {nextType}
-                                </Button>
-                            )}
+                        {can?.add && canAddNext && (
+                            <Button onClick={handleAddNew}>
+                                New {nextType}
+                            </Button>
+                        )}
                     </div>
                 </DataTable>
 
@@ -354,6 +352,7 @@ export default function PpaPage({
                 offices={offices}
                 auth={auth}
                 selectedOfficeId={selectedOfficeId}
+                ppaTypePadding={ppaTypePadding}
             />
 
             <PpaMoveDialog
@@ -363,6 +362,7 @@ export default function PpaPage({
                 dialogPpaTree={dialogPpaTree}
                 dialogCurrent={dialogCurrent}
                 filters={filters}
+                ppaTypes={ppaTypes}
             />
 
             <PpaImportDialog
@@ -372,6 +372,7 @@ export default function PpaPage({
                 dialogPpaTree={dialogPpaTree}
                 dialogCurrent={dialogCurrent}
                 selectedOfficeId={selectedOfficeId}
+                ppaTypes={ppaTypes}
             />
 
             <DeleteDialog
@@ -380,7 +381,6 @@ export default function PpaPage({
                 title="Delete PPA?"
                 description={
                     <span className="grid gap-2">
-                        {/* Fixed: span is valid inside <p> */}
                         <span>
                             Are you sure you want to remove{' '}
                             <span className="font-bold text-foreground">
@@ -407,119 +407,36 @@ export default function PpaPage({
     );
 }
 
-// PpaPage.layout = {
-//     breadcrumbs: [
-//         // shows all programs
-//         {
-//             title: 'PPA Master Library',
-//             href: index().url,
-//         },
-
-//         // shows all project of selected program
-//         {
-//             title: "[program name]'s Projects",
-//             href: index().url, // put in id of program
-//         },
-
-//         // shows all activities of selected project
-//         {
-//             title: "[activity name]'s Activities",
-//             href: index().url, // put in id of project
-//         },
-
-//         // shows all subactivities of selected activity
-//         {
-//             title: "[activity name]'s Subactivities",
-//             href: index().url, // put in id of activity
-//         },
-//     ],
-// };
-
 PpaPage.layout = (props: PpaPageProps) => {
-    // current = [currentPpa, parent, grandparent, ...] (deepest first)
-    // reversed = [grandparent, parent, currentPpa] (root first)
-    const ancestors = [...props.current].reverse();
+    const items = [
+        { title: 'PPA Master Library', href: index().url },
+    ];
 
-    return {
-        breadcrumbs: [
-            // Root — shows all programs
-            { title: 'PPA Master Library', href: index().url },
+    const ancestors = [...(props.current || [])].reverse();
+    const ppaTypes = props.ppaTypes || [];
 
-            // Program level — shows all projects of selected program
-            ...(ancestors[0]
-                ? [
-                      {
-                          title: `${ancestors[0].name}'s Projects`,
-                          href: index({
-                              query: {
-                                  id: ancestors[0].id,
-                                  selected_office_id:
-                                      props.filters?.selected_office_id,
-                              },
-                          }).url,
-                      },
-                  ]
-                : []),
-
-            // Project level — shows all activities of selected project
-            ...(ancestors[1]
-                ? [
-                      {
-                          title: `${ancestors[1].name}'s Activities`,
-                          href: index({
-                              query: {
-                                  id: ancestors[1].id,
-                                  selected_office_id:
-                                      props.filters?.selected_office_id,
-                              },
-                          }).url,
-                      },
-                  ]
-                : []),
-
-            // Activity level — shows all subactivities of selected activity
-            ...(ancestors[2]
-                ? [
-                      {
-                          title: `${ancestors[2].name}'s Subactivities`,
-                          href: index({
-                              query: {
-                                  id: ancestors[2].id,
-                                  selected_office_id:
-                                      props.filters?.selected_office_id,
-                              },
-                          }).url,
-                      },
-                  ]
-                : []),
-        ],
+    const getNextType = (currentType: string): string | null => {
+        const idx = ppaTypes.indexOf(currentType);
+        if (idx !== -1 && idx + 1 < ppaTypes.length) {
+            return ppaTypes[idx + 1];
+        }
+        return null;
     };
+
+    ancestors.forEach((ppa, i) => {
+        const isLast = i === ancestors.length - 1;
+        const childType = getNextType(ppa.type);
+
+        items.push({
+            title: isLast && childType ? `${ppa.name}'s ${childType}s` : ppa.name,
+            href: index({
+                query: {
+                    id: ppa.id,
+                    selected_office_id: props.filters?.selected_office_id,
+                },
+            }).url,
+        });
+    });
+
+    return { breadcrumbs: items };
 };
-
-// example: /ppa?id=1&page=1
-
-// PpaPage.layout = (props: PpaPageProps) => {
-//     const items: BreadcrumbItem[] = [
-//         { title: 'PPA Master Library', href: index().url },
-//     ];
-
-//     // props.current = [current, parent, grandparent, root] — deepest first
-//     const ancestors = [...props.current].reverse(); // root → ... → current
-
-//     ancestors.forEach((ppa, i) => {
-//         const childType = NEXT_TYPE_MAP[ppa.type]; // Program→Project, Project→Activity, etc.
-//         const isLast = i === ancestors.length - 1;
-
-//         items.push({
-//             title: isLast ? `${ppa.name}'s ${childType}s` : ppa.name,
-//             href: index({
-//                 query: {
-//                     id: ppa.id,
-//                     selected_office_id: props.filters?.selected_office_id,
-//                 },
-//             }).url,
-//         });
-//     });
-
-//     return { breadcrumbs: items };
-// };

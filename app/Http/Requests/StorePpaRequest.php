@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePpaRequest extends FormRequest
 {
@@ -22,12 +23,14 @@ class StorePpaRequest extends FormRequest
      */
     public function rules(): array
     {
+        $allowed = array_keys(config('ppa.type_padding', []));
+
         return [
             'parent_id' => 'nullable|exists:ppas,id',
             'office_id' => 'required|exists:offices,id',
             'name' => 'required|string',
-            'type' => 'required|in:Program,Project,Activity,Sub-Activity',
-            'code_suffix' => 'nullable|string|max:10', // Increased to accommodate dynamic Sub-Activity
+            'type' => ['required', 'string', Rule::in($allowed)],
+            'code_suffix' => 'nullable|string|max:10',
             'is_active' => 'boolean',
             'supplemental_aip_id' => 'nullable|exists:supplemental_aips,id',
             'is_supplemental' => 'boolean',

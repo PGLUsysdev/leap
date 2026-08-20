@@ -73,6 +73,8 @@ interface AipSummaryProps {
     psCoaAutoTotals: Record<string, number>;
     psPoolPpaId?: number | null;
     newAipEntries: AipEntry[];
+    ppaTypes: string[];
+    ppaTypePadding: Record<string, number>;
 }
 
 // const existingPpaIds = (aipEntries: Ppa[]) => {
@@ -229,6 +231,7 @@ export default function AipSummary({
     newAipEntries,
     offices,
     fundingSources,
+    ppaTypes,
 }: AipSummaryProps) {
     console.log({
         // fiscalYear,
@@ -984,6 +987,7 @@ export default function AipSummary({
                 fiscalYearId={fiscalYear.id}
                 existingPpaIds={existingPpaIds}
                 supplementalAipId={null}
+                ppaTypes={ppaTypes}
             />
 
             {/* <Deferred

@@ -166,12 +166,13 @@ export interface PpaFundingSource {
     cc_typology?: { id: number; code: string; description: string };
 }
 
-export type PpaTye = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
+export type PpaType = string;
+export type PpaTye = string;
 
 export interface Ppa {
     id: number;
     name: string;
-    type: PpaTye;
+    type: PpaType;
     code_suffix: string;
     is_active: boolean;
     sort_order: number;

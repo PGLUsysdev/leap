@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Ppa;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePpaRequest extends FormRequest
 {
@@ -23,12 +24,14 @@ class UpdatePpaRequest extends FormRequest
      */
     public function rules(): array
     {
+        $allowed = array_keys(config('ppa.type_padding', []));
+
         return [
             'office_id' => 'required|exists:offices,id',
             'parent_id' => 'nullable|exists:ppas,id',
             'name' => 'required|string',
-            'type' => 'required|in:Program,Project,Activity,Sub-Activity',
-            'code_suffix' => 'nullable|string|max:10', // Increased to accommodate dynamic Sub-Activity
+            'type' => ['required', 'string', Rule::in($allowed)],
+            'code_suffix' => 'nullable|string|max:10',
             'is_active' => 'boolean',
         ];
     }
@@ -63,27 +66,20 @@ class UpdatePpaRequest extends FormRequest
                     return;
                 }
 
-                // Validate parent type based on child type
-                $validParentTypes = match ($type) {
-                    'Project' => ['Program'],
-                    'Activity' => ['Project'],
-                    'Sub-Activity' => ['Activity'],
-                    'Program' => [], // Programs cannot have a parent
-                    default => [],
-                };
+                // Dynamic parent type validation based on config
+                $allowed = array_keys(config('ppa.type_padding', []));
+                $typeIndex = array_search($type, $allowed);
+                $expectedParent = ($typeIndex !== false && $typeIndex > 0)
+                    ? $allowed[$typeIndex - 1]
+                    : null;
 
-                if (! in_array($parent->type, $validParentTypes)) {
-                    $expectedParent = match ($type) {
-                        'Project' => 'Program',
-                        'Activity' => 'Project',
-                        'Sub-Activity' => 'Activity',
-                        default => 'none',
-                    };
+                if ($expectedParent === null || $parent->type !== $expectedParent) {
+                    $expectedLabel = $expectedParent ?? 'none';
                     $validator
                         ->errors()
                         ->add(
                             'parent_id',
-                            "A {$type} can only be moved under a {$expectedParent}.",
+                            "A {$type} can only be moved under a {$expectedLabel}.",
                         );
                 }
             }

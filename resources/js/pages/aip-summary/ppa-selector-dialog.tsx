@@ -2,7 +2,6 @@ import { router } from '@inertiajs/react';
 import { ChevronRight, Home, Info } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -11,6 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/base-ui-components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import type { Ppa, PaginatedResponse, Filter } from '@/types';
 import columns from './columns/import-columns';
@@ -24,6 +24,7 @@ interface PpaSelectorDialogProps {
     existingPpaIds: number[];
     filters: Filter;
     supplementalAipId?: number | null;
+    ppaTypes: string[];
 }
 
 export default function PpaSelectorDialog({
@@ -35,6 +36,7 @@ export default function PpaSelectorDialog({
     fiscalYearId,
     existingPpaIds = [],
     supplementalAipId = null,
+    ppaTypes,
 }: PpaSelectorDialogProps) {
     const [selectedItems, setSelectedItems] = useState<Map<number, Ppa>>(
         new Map(),
@@ -256,15 +258,14 @@ export default function PpaSelectorDialog({
                         searchParamName="dialog_search"
                         pageParamName="dialog_page"
                         only={['dialogPpaTree', 'dialogCurrent', 'filters']}
-                        meta={
-                            {
-                                selectedIds: new Set(selectedItems.keys()),
-                                existingIds: existingIdsSet,
-                                onToggle: handleToggle,
-                                onNavigate: handleNavigate,
-                                onToggleAll: handleToggleAll,
-                            } as any
-                        }
+                        meta={{
+                            selectedIds: new Set(selectedItems.keys()),
+                            existingIds: existingIdsSet,
+                            onToggle: handleToggle,
+                            onNavigate: handleNavigate,
+                            onToggleAll: handleToggleAll,
+                            ppaTypes: ppaTypes,
+                        }}
                         className="h-1000"
                     />
                 )}

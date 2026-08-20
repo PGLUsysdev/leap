@@ -15,7 +15,6 @@ class Ppa extends Model
     use HasFactory;
 
     protected $fillable = [
-        // 'id',
         'office_id',
         'parent_id',
         'name',
@@ -31,44 +30,32 @@ class Ppa extends Model
 
     protected $appends = ['full_code'];
 
+    public function getPaddingLength(): int
+    {
+        return config('ppa.type_padding.' . $this->type, 0);
+    }
+
     protected function fullCode(): Attribute
     {
         return Attribute::make(
             get: function () {
                 $suffix = (string) ($this->code_suffix ?? '');
+                $padding = $this->getPaddingLength();
 
-                $paddedSuffix = match ($this->type) {
-                    'Program', 'Project' => str_pad(
-                        $suffix,
-                        3,
-                        '0',
-                        STR_PAD_LEFT,
-                    ),
-                    'Activity' => str_pad($suffix, 2, '0', STR_PAD_LEFT),
-                    'Sub-Activity' => $suffix,
-                    default => $suffix,
-                };
+                $paddedSuffix =
+                    $padding > 0
+                        ? str_pad($suffix, $padding, '0', STR_PAD_LEFT)
+                        : $suffix;
 
-                // Recursively build parent code
                 if ($this->parent_id) {
-                    $parent = $this->parent; // Assuming relation is eager-loaded
+                    $parent = $this->parent;
                     if ($parent) {
                         return $parent->full_code . '-' . $paddedSuffix;
                     }
-
-                    // Handle missing parent explicitly
                     return 'ORPHAN-' . $paddedSuffix;
                 }
 
-                $officePrefix =
-                    $this->office?->full_code ??
-                    str_repeat('0', 10) .
-                        '-' .
-                        str_repeat('0', 10) .
-                        '-' .
-                        str_repeat('0', 10) .
-                        '-000';
-
+                $officePrefix = $this->office?->full_code ?? '0000-0-00-000';
                 return $officePrefix . '-' . $paddedSuffix;
             },
         );
