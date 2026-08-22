@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AipCostingController;
 use App\Http\Controllers\AipEntryController;
+use App\Http\Controllers\AipOutputController;
 use App\Http\Controllers\AipRefCodeController;
 use App\Http\Controllers\AipSummaryImportController;
 use App\Http\Controllers\CcStrategicPriorityController;
@@ -15,7 +16,6 @@ use App\Http\Controllers\FundingSourceController;
 use App\Http\Controllers\IosController;
 use App\Http\Controllers\LguLevelController;
 use App\Http\Controllers\OfficeController;
-use App\Http\Controllers\PriceListImportController;
 use App\Http\Controllers\OfficeTypeController;
 use App\Http\Controllers\PlantillaPositionController;
 use App\Http\Controllers\PositionController;
@@ -26,6 +26,7 @@ use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\PpmpController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
+use App\Http\Controllers\PriceListImportController;
 use App\Http\Controllers\PsBreakdownController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SalaryStandardController;
@@ -47,9 +48,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name(
         'dashboard',
     );
-    Route::get('home', fn() => Inertia::render('home'));
+    Route::get('home', fn () => Inertia::render('home'));
 
-    Route::get('test-combobox', fn() => Inertia::render('test-combobox'));
+    Route::get('test-combobox', fn () => Inertia::render('test-combobox'));
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -91,22 +92,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         );
         Route::post('import', [AipEntryController::class, 'import']);
     });
-    Route::patch('/aip-entries/{aipEntry}', [
-        AipEntryController::class,
-        'update',
-    ]);
     Route::delete('/aip-entries/{aipEntry}', [
         AipEntryController::class,
         'destroy',
     ])->name('aip-entry.update');
-    Route::post('/aip-entries/{aipEntry}/ppa-funding-sources', [
+
+    // --- AIP Outputs ---
+    Route::post('/aip-entries/{aipEntry}/outputs', [
+        AipOutputController::class,
+        'store',
+    ])->name('aip-outputs.store');
+    Route::patch('/aip-outputs/{aipOutput}', [
+        AipOutputController::class,
+        'update',
+    ])->name('aip-outputs.update');
+    Route::delete('/aip-outputs/{aipOutput}', [
+        AipOutputController::class,
+        'destroy',
+    ])->name('aip-outputs.destroy');
+
+    // Funding sources scoped to an AIP output
+    Route::post('/aip-outputs/{aipOutput}/ppa-funding-sources', [
         PpaFundingSourceController::class,
         'store',
-    ])->name('aip-entries.ppa-funding-sources.store');
+    ])->name('aip-outputs.ppa-funding-sources.store');
     Route::delete(
-        '/aip-entries/{aipEntry}/ppa-funding-sources/{ppaFundingSource}',
+        '/aip-outputs/{aipOutput}/ppa-funding-sources/{ppaFundingSource}',
         [PpaFundingSourceController::class, 'destroy'],
-    )->name('aip-entries.ppa-funding-sources.destroy');
+    )->name('aip-outputs.ppa-funding-sources.destroy');
 
     // --- Supplemental AIPs ---
     Route::post('/supplemental-aips', [
@@ -525,4 +538,4 @@ Route::post('price-list-import/quantities', [
     'importQuantities',
 ])->name('price-list-import.quantities');
 
-require __DIR__ . '/settings.php';
+require __DIR__.'/settings.php';

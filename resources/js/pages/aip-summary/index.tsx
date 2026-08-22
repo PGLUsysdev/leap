@@ -32,6 +32,7 @@ import type {
     PriceList,
     PpmpCategory,
     AipEntry,
+    AipOutput,
     PpaFundingSource,
 } from '@/types';
 import newColumns from './columns/new-columns';
@@ -175,23 +176,62 @@ function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
 
 type FundingSourceRow = NumberedAipEntry & {
     current_fs: PpaFundingSource | null;
+    output: AipOutput | null;
+    // Flat grouping keys used by DataTable column meta.spanKey:
+    entryId: number;
+    outputId: number | null;
 };
 
 function expandByFundingSource(
     entries: NumberedAipEntry[],
 ): FundingSourceRow[] {
     return entries.flatMap((entry): FundingSourceRow[] => {
-        const sources = entry.ppa_funding_sources ?? [];
+        const outputs = entry.outputs ?? [];
 
-        if (sources.length === 0) {
-            return [{ ...entry, id: entry.id, current_fs: null }];
+        if (outputs.length === 0) {
+            return [
+                {
+                    ...entry,
+                    id: entry.id,
+                    current_fs: null,
+                    output: null,
+                    entryId: entry.id,
+                    outputId: null,
+                },
+            ];
         }
 
-        return sources.map((fs): FundingSourceRow => ({
-            ...entry,
-            id: entry.id,
-            current_fs: fs,
-        }));
+        const rows: FundingSourceRow[] = [];
+
+        for (const output of outputs) {
+            const sources = output.funding_sources ?? [];
+
+            if (sources.length === 0) {
+                rows.push({
+                    ...entry,
+                    id: entry.id,
+                    current_fs: null,
+                    output,
+                    entryId: entry.id,
+                    outputId: output.id,
+                });
+
+                continue;
+            }
+
+            for (const fs of sources) {
+                rows.push({
+                    ...entry,
+                    id: entry.id,
+                    current_fs: fs,
+                    output,
+                    entryId: entry.id,
+                    outputId: output.id,
+                });
+            }
+        }
+
+        return rows;
     });
 }
 

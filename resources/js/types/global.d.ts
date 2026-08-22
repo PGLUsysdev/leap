@@ -20,18 +20,29 @@ declare module '@inertiajs/core' {
 }
 
 declare module '@tanstack/react-table' {
+    // Generic params must match TanStack's ColumnMeta exactly for merging,
+    // even though they are not referenced here.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    interface ColumnMeta<TData extends RowData, TValue> {
+        /** Opt-in: merge this column's cells vertically across grouped rows. */
+        rowSpan?: boolean;
+        /**
+         * Row field used to group rows for spanning when `rowSpan` is set.
+         * Defaults to `'id'`.
+         */
+        spanKey?: string;
+    }
+
     interface TableMeta<TData extends RowData> {
         onEdit?: ((id: number) => void) | ((data: TData) => void);
         onDelete?: ((id: number) => void) | ((data: TData) => void);
         onDeletePpmpItem?: (item: Ppmp) => void;
+        onOpenPpmp?: (id: number) => void;
         disabled?: boolean;
         year?: FiscalYear;
 
         onUpdate?: (data: TData) => void;
-        onAdd?: (
-            data: TData,
-            type?: string,
-        ) => void;
+        onAdd?: (data: TData, type?: string) => void;
         onUpdateStatus?: (
             data: TData,
             status: 'draft' | 'open' | 'locked' | 'archived',
@@ -75,5 +86,10 @@ declare module '@tanstack/react-table' {
         disableOpenAip?: boolean;
         psPoolPpaId?: number | null;
         onSetAsPsPool?: (data: TData) => void;
+
+        // AIP outputs management
+        onEditOutput?: (data: TData) => void;
+        onDeleteOutput?: (data: TData) => void;
+        onEditFundingSources?: (data: TData) => void;
     }
 }

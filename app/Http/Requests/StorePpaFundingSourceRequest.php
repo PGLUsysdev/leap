@@ -8,10 +8,16 @@ class StorePpaFundingSourceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $aipEntry = $this->route('aipEntry');
+        $aipOutput = $this->route('aipOutput');
 
-        return $aipEntry &&
-            $this->user()?->can('editFundingSources', $aipEntry);
+        if (! $aipOutput instanceof \App\Models\AipOutput) {
+            return false;
+        }
+
+        return (bool) $this->user()?->can(
+            'editFundingSources',
+            $aipOutput->aipEntry,
+        );
     }
 
     public function rules(): array

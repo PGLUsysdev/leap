@@ -292,25 +292,63 @@ export default function Table<TData>({
 
     const rows = table.getRowModel().rows;
 
+    /**
+     * Row-span data per spanned column id. Each spanned column groups rows
+     * by its own `meta.spanKey` (defaulting to `'id'`), so e.g. PPA-level
+     * columns can group by `entryId` while output-level columns group by
+     * `outputId`.
+     */
     const visibleSpans = useMemo(() => {
-        const firstVisibleIdx: Record<string, number> = {};
-        const visibleCounts: Record<string, number> = {};
+        const spansByColumn: Record<
+            string,
+            {
+                firstVisibleIdx: Record<string, number>;
+                visibleCounts: Record<string, number>;
+            }
+        > = {};
 
-        rows.forEach((row, index) => {
-            const id = (row.original as any).id;
+        if (!withRowSpan) {
+            return spansByColumn;
+        }
 
-            if (firstVisibleIdx[id] === undefined) {
-                firstVisibleIdx[id] = index;
+        table.getAllLeafColumns().forEach((column) => {
+            const columnMeta = column.columnDef.meta as
+                { rowSpan?: boolean; spanKey?: string } | undefined;
+
+            if (!columnMeta?.rowSpan) {
+                return;
             }
 
-            visibleCounts[id] = (visibleCounts[id] || 0) + 1;
+            const spanKey = columnMeta.spanKey ?? 'id';
+            const firstVisibleIdx: Record<string, number> = {};
+            const visibleCounts: Record<string, number> = {};
+
+            rows.forEach((row, index) => {
+                const rawKey = (row.original as Record<string, unknown>)?.[
+                    spanKey
+                ];
+
+                if (rawKey === undefined || rawKey === null) {
+                    return;
+                }
+
+                const key = String(rawKey);
+
+                if (firstVisibleIdx[key] === undefined) {
+                    firstVisibleIdx[key] = index;
+                }
+
+                visibleCounts[key] = (visibleCounts[key] || 0) + 1;
+            });
+
+            spansByColumn[column.id] = {
+                firstVisibleIdx,
+                visibleCounts,
+            };
         });
 
-        return {
-            firstVisibleIdx,
-            visibleCounts,
-        };
-    }, [rows]);
+        return spansByColumn;
+    }, [rows, table, withRowSpan]);
 
     return (
         <div className={cn('flex h-full min-h-0 flex-col', className)}>
@@ -440,17 +478,38 @@ export default function Table<TData>({
                                                 columnMeta?.rowSpan;
 
                                             const rowData = row.original as any;
-                                            const ppaId = rowData.id;
 
-                                            const isFirstVisible =
-                                                visibleSpans.firstVisibleIdx[
-                                                    ppaId
-                                                ] === rowIndex;
+                                            let isFirstVisible = true;
+                                            let spanSize: number | undefined =
+                                                1;
 
-                                            const spanSize =
-                                                visibleSpans.visibleCounts[
-                                                    ppaId
-                                                ];
+                                            if (isSpannedColumn) {
+                                                const spanKey: string =
+                                                    columnMeta?.spanKey ?? 'id';
+                                                const spanData =
+                                                    visibleSpans[
+                                                        cell.column.id
+                                                    ];
+                                                const rawKey =
+                                                    rowData?.[spanKey];
+                                                const key =
+                                                    rawKey === undefined ||
+                                                    rawKey === null
+                                                        ? null
+                                                        : String(rawKey);
+
+                                                if (key !== null && spanData) {
+                                                    isFirstVisible =
+                                                        spanData
+                                                            .firstVisibleIdx[
+                                                            key
+                                                        ] === rowIndex;
+                                                    spanSize =
+                                                        spanData.visibleCounts[
+                                                            key
+                                                        ] ?? 1;
+                                                }
+                                            }
 
                                             if (
                                                 isSpannedColumn &&

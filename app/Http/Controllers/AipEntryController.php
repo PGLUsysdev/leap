@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAipEntryRequest;
-use App\Http\Requests\UpdateAipEntryRequest;
 use App\Models\AipEntry;
 use App\Models\CcTypology;
 use App\Models\ChartOfAccount;
@@ -19,7 +18,6 @@ use App\Models\SupplementalAip;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class AipEntryController extends Controller
@@ -57,35 +55,55 @@ class AipEntryController extends Controller
             ->select([
                 'id',
                 'ppa_id',
-                'start_date',
-                'end_date',
-                'expected_output',
                 'supplemental_aip_id',
                 'is_supplemental',
-                // 'created_at',
-                // 'updated_at',
             ])
-            ->with(
+            ->with([
                 'ppa:id,office_id,parent_id,name,type,code_suffix,is_active,sort_order,fiscal_year_id,supplemental_aip_id,is_supplemental,is_ps_pool',
-                // 'ppa.office:id,sector_id,lgu_level_id,office_type_id,parent_id,code,name,acronym,is_lee',
                 'ppa.office:id,sector_id,lgu_level_id,office_type_id,parent_id,code,name,acronym,is_lee',
                 'ppa.office.sector:id,code',
                 'ppa.office.lguLevel:id,code',
                 'ppa.office.officeType:id,code',
-                // 'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
-                'ppaFundingSources:id,aip_entry_id,funding_source_id,ps_amount,mooe_amount,fe_amount,co_amount,ccet_adaptation,ccet_mitigation,supplemental_aip_id,is_supplemental,cc_typology_id',
-                // 'ppaFundingSources.fundingSource:id,fund_type,code,title,description',
-                'ppaFundingSources.fundingSource:id,code,title',
-                // 'ppaFundingSources.ccTypology:id,code,description,response_type,strategic_priority_id,sub_sector_id,category_code,item_num,id_nccap_activity',
-                'ppaFundingSources.ccTypology:id,code',
-            )
+                'outputs' => function ($query) {
+                    $query
+                        ->select([
+                            'id',
+                            'aip_entry_id',
+                            'office_id',
+                            'expected_output',
+                            'start_date',
+                            'end_date',
+                            'sort_order',
+                        ])
+                        ->orderBy('sort_order');
+                },
+                'outputs.office:id,name,acronym',
+                'outputs.fundingSources' => function ($query) {
+                    $query->select([
+                        'id',
+                        'aip_output_id',
+                        'funding_source_id',
+                        'ps_amount',
+                        'mooe_amount',
+                        'fe_amount',
+                        'co_amount',
+                        'ccet_adaptation',
+                        'ccet_mitigation',
+                        'supplemental_aip_id',
+                        'is_supplemental',
+                        'cc_typology_id',
+                    ]);
+                },
+                'outputs.fundingSources.fundingSource:id,code,title',
+                'outputs.fundingSources.ccTypology:id,code',
+            ])
             // ->limit(100)
             ->get();
 
         // Attach per-entry permissions so the AIP entry form dialog can
         // enable/disable its controls based on the user's rights.
         $newAipEntries->each(function ($entry) {
-            if (!$entry->ppa) {
+            if (! $entry->ppa) {
                 return;
             }
 
@@ -126,10 +144,10 @@ class AipEntryController extends Controller
             //     )
             //     : [],
             'fundingSources' => Inertia::defer(
-                fn() => FundingSource::all(),
+                fn () => FundingSource::all(),
             )->once(),
             'chartOfAccounts' => Inertia::defer(
-                fn() => ChartOfAccount::select(
+                fn () => ChartOfAccount::select(
                     'id',
                     'account_number',
                     'account_title',
@@ -139,7 +157,7 @@ class AipEntryController extends Controller
                     ->get(),
             ),
             'priceLists' => Inertia::defer(
-                fn() => PpmpPriceList::with([
+                fn () => PpmpPriceList::with([
                     'chartOfAccountPpmpCategory.chartOfAccount',
                     'chartOfAccountPpmpCategory.ppmpCategory',
                 ])
@@ -147,12 +165,12 @@ class AipEntryController extends Controller
                     ->get(),
             ),
             'ppmpCategories' => Inertia::defer(
-                fn() => PpmpCategory::with([
+                fn () => PpmpCategory::with([
                     'chartOfAccountPpmpCategories.chartOfAccount',
                 ])->get(),
             ),
             'ccTypologies' => Inertia::defer(
-                fn() => CcTypology::select(
+                fn () => CcTypology::select(
                     'id',
                     'code',
                     'description',
@@ -166,7 +184,7 @@ class AipEntryController extends Controller
                     ->orderBy('code')
                     ->get(),
             ),
-            'offices' => Inertia::defer(fn() => Office::all())->once(),
+            'offices' => Inertia::defer(fn () => Office::all())->once(),
             'filters' => $request->all(),
             // 'supplementalAips' => \App\Models\SupplementalAip::where(
             //     'fiscal_year_id',
@@ -212,6 +230,7 @@ class AipEntryController extends Controller
                 $search = $request->query('dialog_search');
                 $boundaryId = $request->query('dialog_boundary_id');
                 $targetParentId = $id ?: $boundaryId;
+
                 return Ppa::whereIn('office_id', $officeIds)
                     ->where('fiscal_year_id', $yearId)
                     ->where('parent_id', $targetParentId)
@@ -249,6 +268,7 @@ class AipEntryController extends Controller
                 $id =
                     $request->query('dialog_id') ?:
                     $request->query('dialog_boundary_id');
+
                 return $id ? $this->getPpaBreadcrumbs($id) : [];
             }),
             'ppaTypes' => array_keys(config('ppa.type_padding')),
@@ -324,8 +344,8 @@ class AipEntryController extends Controller
                         'supplemental_aip_id' => $saipId ?: null,
                     ],
                     [
-                        'start_date' => $fiscalYear->year . '-01-01',
-                        'end_date' => $fiscalYear->year . '-12-31',
+                        'start_date' => $fiscalYear->year.'-01-01',
+                        'end_date' => $fiscalYear->year.'-12-31',
                         'expected_output' => '-',
                         'is_supplemental' => (bool) $saipId,
                     ],
@@ -353,216 +373,6 @@ class AipEntryController extends Controller
     public function edit(AipEntry $aipEntry)
     {
         //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateAipEntryRequest $request, AipEntry $aipEntry)
-    {
-        $data = $request->validated();
-
-        Log::info($data);
-
-        $aipEntry->update([
-            'office_id' => $data['officeId'] ?? null,
-            'start_date' => $data['startDate'] ?? null,
-            'end_date' => $data['endDate'] ?? null,
-            'expected_output' => $data['expectedOutput'] ?? null,
-        ]);
-
-        // $aipEntry->update($request->validate([]));
-
-        // ---
-
-        // $user = auth()->user();
-        // $validated = $request->validated();
-        // $ppa = $aipEntry->ppa;
-
-        // if (!$ppa) {
-        //     abort(404, 'Associated PPA not found.');
-        // }
-
-        // $canEdit = $user->can('update', $aipEntry);
-        // $canEditFunding = $user->can('editFundingSources', $aipEntry);
-
-        // $saipId = $validated['supplemental_aip_id'] ?? null;
-
-        // $detailsChanged =
-        //     $validated['expected_output'] !== $aipEntry->expected_output ||
-        //     $validated['start_date'] !== $aipEntry->start_date ||
-        //     $validated['end_date'] !== $aipEntry->end_date ||
-        //     (int) $validated['office_id'] !== $ppa->office_id;
-
-        // $fundingChanged = $this->fundingSourcesChanged(
-        //     $validated['ppa_funding_sources'] ?? [],
-        //     $aipEntry,
-        //     $saipId,
-        // );
-
-        // if ($detailsChanged && !$canEdit) {
-        //     abort(403, 'You do not have permission to edit AIP entry details.');
-        // }
-
-        // if ($fundingChanged && !$canEditFunding) {
-        //     abort(403, 'You do not have permission to edit funding sources.');
-        // }
-
-        // if (!$detailsChanged && !$fundingChanged) {
-        //     abort(403, 'No changes detected.');
-        // }
-
-        // $currentFundingSourceQuery = $aipEntry->ppaFundingSources();
-        // if ($saipId) {
-        //     $currentFundingSourceQuery->where('supplemental_aip_id', $saipId);
-        // } else {
-        //     $currentFundingSourceQuery->whereNull('supplemental_aip_id');
-        // }
-
-        // $currentFundingSourceIds = $currentFundingSourceQuery
-        //     ->pluck('funding_source_id')
-        //     ->toArray();
-
-        // $newFundingSourceIds = collect($validated['ppa_funding_sources'] ?? [])
-        //     ->pluck('funding_source_id')
-        //     ->toArray();
-
-        // $idsToRemove = array_diff(
-        //     $currentFundingSourceIds,
-        //     $newFundingSourceIds,
-        // );
-
-        // \DB::transaction(function () use (
-        //     $validated,
-        //     $aipEntry,
-        //     $ppa,
-        //     $idsToRemove,
-        //     $saipId,
-        //     $canEdit,
-        //     $canEditFunding,
-        // ) {
-        //     if ($canEdit) {
-        //         $aipEntry->update([
-        //             'expected_output' => $validated['expected_output'],
-        //             'start_date' => $validated['start_date'],
-        //             'end_date' => $validated['end_date'],
-        //         ]);
-
-        //         $ppa->update(['office_id' => $validated['office_id']]);
-        //     }
-
-        //     if ($canEditFunding) {
-        //         $sourcesToRemove = $aipEntry
-        //             ->ppaFundingSources()
-        //             ->whereIn('funding_source_id', $idsToRemove);
-        //         if ($saipId) {
-        //             $sourcesToRemove->where('supplemental_aip_id', $saipId);
-        //         } else {
-        //             $sourcesToRemove->whereNull('supplemental_aip_id');
-        //         }
-
-        //         $ppaFundingSourceIds = $sourcesToRemove->pluck('id');
-
-        //         Ppmp::whereIn(
-        //             'ppa_funding_source_id',
-        //             $ppaFundingSourceIds,
-        //         )->delete();
-
-        //         $sourcesToRemove->delete();
-
-        //         foreach ($validated['ppa_funding_sources'] ?? [] as $source) {
-        //             $aipEntry->ppaFundingSources()->updateOrCreate(
-        //                 [
-        //                     'funding_source_id' => $source['funding_source_id'],
-        //                     'supplemental_aip_id' => $saipId ?: null,
-        //                 ],
-        //                 [
-        //                     'ps_amount' => $source['ps_amount'],
-        //                     'mooe_amount' => $source['mooe_amount'],
-        //                     'fe_amount' => $source['fe_amount'],
-        //                     'co_amount' => $source['co_amount'],
-        //                     'ccet_adaptation' =>
-        //                         $source['ccet_adaptation'] ?? 0,
-        //                     'ccet_mitigation' =>
-        //                         $source['ccet_mitigation'] ?? 0,
-        //                     'cc_typology_id' =>
-        //                         $source['cc_typology_id'] ?? null,
-        //                     'is_supplemental' => (bool) $saipId,
-        //                 ],
-        //             );
-        //         }
-        //     }
-        // });
-
-        // // PS Pool sync: if this PPA is the PS pool, auto-calculate ps_amount
-        // // onto the GF Proper funding source (id=1), creating it if needed.
-        // if ($ppa->is_ps_pool && $canEditFunding) {
-        //     PsBreakdownController::syncPoolPsAmount($aipEntry, $saipId);
-        // }
-
-        // // return back()->with('success', 'AIP Entry updated successfully.');
-    }
-
-    private function fundingSourcesChanged(
-        array $submittedSources,
-        AipEntry $aipEntry,
-        $saipId,
-    ): bool {
-        $current = $aipEntry
-            ->ppaFundingSources()
-            ->when($saipId, fn($q) => $q->where('supplemental_aip_id', $saipId))
-            ->when(!$saipId, fn($q) => $q->whereNull('supplemental_aip_id'))
-            ->get()
-            ->filter(fn($source) => $source->funding_source_id !== null)
-            ->values();
-
-        if ($current->count() !== count($submittedSources)) {
-            return true;
-        }
-
-        foreach ($submittedSources as $source) {
-            $match = $current->firstWhere(
-                'funding_source_id',
-                $source['funding_source_id'],
-            );
-            if (!$match) {
-                return true;
-            }
-            if ((float) $match->ps_amount !== (float) $source['ps_amount']) {
-                return true;
-            }
-            if (
-                (float) $match->mooe_amount !== (float) $source['mooe_amount']
-            ) {
-                return true;
-            }
-            if ((float) $match->fe_amount !== (float) $source['fe_amount']) {
-                return true;
-            }
-            if ((float) $match->co_amount !== (float) $source['co_amount']) {
-                return true;
-            }
-            if (
-                (float) $match->ccet_adaptation !==
-                (float) ($source['ccet_adaptation'] ?? 0)
-            ) {
-                return true;
-            }
-            if (
-                (float) $match->ccet_mitigation !==
-                (float) ($source['ccet_mitigation'] ?? 0)
-            ) {
-                return true;
-            }
-            if (
-                ($match->cc_typology_id ?? '') !==
-                ($source['cc_typology_id'] ?? '')
-            ) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -599,21 +409,30 @@ class AipEntryController extends Controller
                 ->pluck('id')
                 ->toArray();
 
-            if (!empty($aipEntryIdsToDelete)) {
-                // 1. REFACTORED: Delete PPMP records
-                // We find PPMPs that belong to the PpaFundingSources linked to these AipEntries
+            if (! empty($aipEntryIdsToDelete)) {
+                // Outputs of these entries; their funding sources hang off them
+                $outputIdsToDelete = DB::table('aip_outputs')
+                    ->whereIn('aip_entry_id', $aipEntryIdsToDelete)
+                    ->pluck('id');
+
+                // 1. Delete PPMP records tied to funding sources of these outputs
                 Ppmp::whereHas('ppaFundingSource', function ($query) use (
-                    $aipEntryIdsToDelete,
+                    $outputIdsToDelete,
                 ) {
-                    $query->whereIn('aip_entry_id', $aipEntryIdsToDelete);
+                    $query->whereIn('aip_output_id', $outputIdsToDelete);
                 })->delete();
 
                 // 2. Delete the Funding Source bridge records
                 DB::table('ppa_funding_sources')
-                    ->whereIn('aip_entry_id', $aipEntryIdsToDelete)
+                    ->whereIn('aip_output_id', $outputIdsToDelete)
                     ->delete();
 
-                // 3. Delete the AIP entries
+                // 3. Delete the outputs themselves
+                DB::table('aip_outputs')
+                    ->whereIn('id', $outputIdsToDelete)
+                    ->delete();
+
+                // 4. Delete the AIP entries
                 AipEntry::whereIn('id', $aipEntryIdsToDelete)->delete();
             }
 
@@ -627,7 +446,7 @@ class AipEntryController extends Controller
             DB::rollBack();
 
             return back()->withErrors([
-                'error' => 'Failed: ' . $e->getMessage(),
+                'error' => 'Failed: '.$e->getMessage(),
             ]);
         }
     }

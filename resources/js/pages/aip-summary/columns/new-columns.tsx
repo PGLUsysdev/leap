@@ -3,11 +3,15 @@ import { Decimal } from 'decimal.js';
 import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
 import { Badge } from '@/components/base-ui-components/ui/badge';
 import { Button } from '@/components/base-ui-components/ui/button';
-import type { AipEntry, PpaFundingSource } from '@/types';
+import type { AipEntry, AipOutput, PpaFundingSource } from '@/types';
 
 type FundingSourceRow = AipEntry & {
     number: string;
     current_fs: PpaFundingSource | null;
+    output: AipOutput | null;
+    // Flat grouping keys used by DataTable column meta.spanKey:
+    entryId: number;
+    outputId: number | null;
 };
 
 const columnHelper = createColumnHelper<FundingSourceRow>();
@@ -87,7 +91,7 @@ const columns = [
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
         // footer: () => <div className="font-bold">Total</div>,
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'entryId' },
     }),
     columnHelper.accessor('ppa.name', {
         size: 600,
@@ -121,9 +125,9 @@ const columns = [
                 </div>
             );
         },
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'entryId' },
     }),
-    columnHelper.accessor('ppa.office.acronym', {
+    columnHelper.accessor('output.office.acronym', {
         size: 400,
         header: () => (
             <div className="text-center text-wrap">
@@ -135,7 +139,7 @@ const columns = [
                 {formatText(info.getValue())}
             </div>
         ),
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'outputId' },
     }),
     columnHelper.group({
         id: 'schedule',
@@ -146,7 +150,7 @@ const columns = [
             </div>
         ),
         columns: [
-            columnHelper.accessor('start_date', {
+            columnHelper.accessor('output.start_date', {
                 size: 100,
                 header: () => (
                     <div className="text-center text-wrap">Starting Date</div>
@@ -156,9 +160,9 @@ const columns = [
                         {formatDateCell(info.getValue())}
                     </div>
                 ),
-                meta: { rowSpan: true },
+                meta: { rowSpan: true, spanKey: 'outputId' },
             }),
-            columnHelper.accessor('end_date', {
+            columnHelper.accessor('output.end_date', {
                 size: 100,
                 header: () => (
                     <div className="text-center text-wrap">Completion Date</div>
@@ -168,11 +172,11 @@ const columns = [
                         {formatDateCell(info.getValue())}
                     </div>
                 ),
-                meta: { rowSpan: true },
+                meta: { rowSpan: true, spanKey: 'outputId' },
             }),
         ],
     }),
-    columnHelper.accessor('expected_output', {
+    columnHelper.accessor('output.expected_output', {
         size: 600,
         header: () => (
             <div className="text-center text-wrap">Expected Outputs</div>
@@ -180,7 +184,7 @@ const columns = [
         cell: (info) => (
             <div className="text-wrap">{formatText(info.getValue())}</div>
         ),
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'outputId' },
     }),
     columnHelper.accessor('ppa_funding_sources', {
         id: 'fs',
@@ -543,7 +547,7 @@ const columns = [
                 </div>
             );
         },
-        meta: { rowSpan: true },
+        meta: { rowSpan: true, spanKey: 'entryId' },
     }),
 ];
 

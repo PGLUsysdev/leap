@@ -113,19 +113,40 @@ export interface SupplementalAip {
 
 export interface AipEntry {
     id: number;
-    start_date: string | null;
-    end_date: string | null;
-    expected_output: string | null;
     is_supplemental: boolean;
-    created_at: string | null;
-    updated_at: string | null;
 
     ppa_id: number;
     supplemental_aip_id: number | null;
 
     ppa?: Ppa;
     supplemental_aip?: SupplementalAip;
+
+    outputs?: AipOutput[];
+
+    /** @deprecated Moved to AipOutput (entry.outputs[].start_date). */
+    start_date?: string | null;
+    /** @deprecated Moved to AipOutput (entry.outputs[].end_date). */
+    end_date?: string | null;
+    /** @deprecated Moved to AipOutput (entry.outputs[].expected_output). */
+    expected_output?: string | null;
+    /** @deprecated Replaced by entry.outputs[].funding_sources. */
     ppa_funding_sources?: PpaFundingSource[];
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
+export interface AipOutput {
+    id: number;
+    aip_entry_id: number;
+    office_id: number;
+
+    expected_output: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    sort_order: number;
+
+    office?: Office;
+    funding_sources?: PpaFundingSource[];
 }
 
 export interface FundingSource {
@@ -156,7 +177,9 @@ export interface PpaFundingSource {
     created_at: string | null;
     updated_at: string | null;
 
-    aip_entry_id: number;
+    aip_output_id: number | null;
+    /** @deprecated Replaced by aip_output_id. */
+    aip_entry_id?: number | null;
     funding_source_id: number;
     supplemental_aip_id: number | null;
     cc_typology_id: number | null;
