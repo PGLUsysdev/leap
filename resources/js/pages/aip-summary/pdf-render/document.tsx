@@ -1,6 +1,8 @@
 import { Document, Page, View, Text, StyleSheet, Font } from "@react-pdf/renderer";
 import React from "react";
+import { formatCurrency } from "@/lib/utils";
 import { PpmpPdfTable } from "@/pages/ppmp/pdf-render/table";
+import type { ColumnDef, TableRow } from "@/pages/ppmp/pdf-render/types";
 import type { AipEntry, FiscalYear } from "@/types";
 import { getAipSummaryColumnDefs } from "./cols";
 import { prepareAipSummaryRows } from "./prepare-rows";
@@ -159,24 +161,6 @@ const aipRowStyleResolver = (row: any) => {
         }
     }
 
-    if (row.type === "grand-total") {
-        return {
-            rowStyle: {
-                flexDirection: "row",
-                backgroundColor: "#00B050",
-                borderBottomWidth: 0.5,
-                borderBottomColor: "#000000",
-                minHeight: 13,
-                alignItems: "stretch",
-            },
-            textStyle: {
-                fontSize: 5,
-                fontWeight: "bold",
-                color: "#000000",
-            },
-        };
-    }
-
     if (row.type === "item" && !row.isLastInPpaGroup) {
         return {
             rowStyle: {
@@ -186,6 +170,75 @@ const aipRowStyleResolver = (row: any) => {
     }
 
     return null; // fallback to default
+};
+
+// Custom grand total: "TOTAL" spans the first seven columns, amounts fill the
+// remaining columns, no background - borders only. The top border is provided
+// by the last item row's bottom border to avoid a doubled line.
+const renderAipGrandTotal = (row: TableRow, columns: ColumnDef<any>[]) => {
+    const totals = row.totals || {};
+    const LABEL_SPAN_END = 6; // ref_code through funding_source
+
+    const labelWidth = columns
+        .slice(0, LABEL_SPAN_END + 1)
+        .reduce((sum, col) => sum + parseFloat(col.width), 0);
+
+    return (
+        <View
+            key={row.id}
+            wrap={false}
+            style={{
+                flexDirection: "row",
+                borderBottomWidth: 0.5,
+                borderBottomColor: "#000000",
+                minHeight: 13,
+                alignItems: "stretch",
+            }}
+        >
+            {/* Label spanning the first seven columns */}
+            <View
+                style={{
+                    width: `${labelWidth}%`,
+                    borderLeftWidth: 0.5,
+                    borderLeftColor: "#000000",
+                    borderRightWidth: 0.5,
+                    borderRightColor: "#000000",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    paddingHorizontal: 2,
+                }}
+            >
+                <Text style={{ fontSize: 5, fontWeight: "bold", color: "#000000" }}>TOTAL</Text>
+            </View>
+
+            {/* Amount + CC typology columns */}
+            {columns.slice(LABEL_SPAN_END + 1).map((col) => (
+                <View
+                    key={col.id}
+                    style={{
+                        width: col.width,
+                        borderRightWidth: 0.5,
+                        borderRightColor: "#000000",
+                        justifyContent: "center",
+                        paddingHorizontal: 1,
+                    }}
+                >
+                    <Text
+                        style={{
+                            fontSize: 5,
+                            fontWeight: "bold",
+                            color: "#000000",
+                            textAlign: col.id === "cc_typology" ? "center" : "right",
+                        }}
+                    >
+                        {col.id === "cc_typology"
+                            ? ""
+                            : formatCurrency(String(totals[col.id] || 0))}
+                    </Text>
+                </View>
+            ))}
+        </View>
+    );
 };
 
 export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
@@ -237,6 +290,7 @@ export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
                     rowStyleResolver={aipRowStyleResolver}
                     headerComponent={null}
                     cellVerticalAlign="flex-start"
+                    grandTotalComponent={renderAipGrandTotal}
                 />
 
                 {/* Signature Block */}

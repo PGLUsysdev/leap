@@ -149,6 +149,7 @@ interface PpmpPdfTableProps<T> {
         textStyle?: any;
     } | null;
     cellVerticalAlign?: "flex-start" | "center" | "flex-end";
+    grandTotalComponent?: (row: TableRow, columns: ColumnDef<T>[]) => React.ReactNode;
 }
 
 // Helper to determine total row text alignment based on column id.
@@ -175,6 +176,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
     headerComponent,
     rowStyleResolver,
     cellVerticalAlign = "center",
+    grandTotalComponent,
 }: PpmpPdfTableProps<T>) {
     // Helper to render content that might already be a <Text> element.
     // If it's not a <Text>, wrap it with default styles.
@@ -364,6 +366,10 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         return renderTotalRow(row, styles.categoryTotalRow);
 
                     case "grand-total":
+                        if (grandTotalComponent) {
+                            return grandTotalComponent(row, columns);
+                        }
+
                         if (custom?.rowStyle) {
                             return renderTotalRow(row, custom.rowStyle, custom.textStyle);
                         }

@@ -16,7 +16,6 @@ const leftBorderStyle = {
 const styles = StyleSheet.create({
     tableHeaderContainer: {
         flexDirection: "row",
-        backgroundColor: "#DEEAF6",
         borderTopWidth: 0.5,
         borderBottomWidth: 0.5,
         borderTopColor: "#000000",
@@ -103,10 +102,10 @@ const HEADER_STRUCTURE: (SingleHeaderEntry | GroupHeaderEntry)[] = [
         type: "group",
         label: "AMOUNT (In thousand pesos)",
         columns: [
-            { index: 7, label: "PS" },
-            { index: 8, label: "MOOE" },
-            { index: 9, label: "FE" },
-            { index: 10, label: "CO" },
+            { index: 7, label: "PERSONAL SERVICES (PS)" },
+            { index: 8, label: "MAINTENANCE & OTHER OPERATING EXPENSES (MOOE)" },
+            { index: 9, label: "FINANCIAL EXPENSES (FE)" },
+            { index: 10, label: "CAPITAL OUTLAY (CO)" },
             { index: 11, label: "TOTAL" },
         ],
     },
