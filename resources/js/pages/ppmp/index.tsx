@@ -1,19 +1,19 @@
-import { router } from '@inertiajs/react';
-import { PDFViewer } from '@react-pdf/renderer';
-import { Decimal } from 'decimal.js';
-import { Check, Filter, FileUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import DeleteDialog from '@/components/base-ui-components/delete-dialog';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { router } from "@inertiajs/react";
+import { PDFViewer } from "@react-pdf/renderer";
+import { Decimal } from "decimal.js";
+import { Check, Filter, FileUp } from "lucide-react";
+import { useMemo, useState } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
+import DeleteDialog from "@/components/base-ui-components/delete-dialog";
+import { Badge } from "@/components/base-ui-components/ui/badge";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
     // DialogDescription,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from "@/components/base-ui-components/ui/dialog";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,16 +24,13 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/base-ui-components/ui/dropdown-menu';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { Separator } from '@/components/base-ui-components/ui/separator';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
-import { formatCurrency } from '@/lib/utils';
-import FormDialog from '@/pages/ppmp/form-dialog';
-import { index, summary } from '@/routes/aip';
+} from "@/components/base-ui-components/ui/dropdown-menu";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { Separator } from "@/components/base-ui-components/ui/separator";
+import { Spinner } from "@/components/base-ui-components/ui/spinner";
+import { formatCurrency } from "@/lib/utils";
+import FormDialog from "@/pages/ppmp/form-dialog";
+import { index, summary } from "@/routes/aip";
 import type {
     AipEntry,
     ChartOfAccount,
@@ -45,10 +42,10 @@ import type {
     PaginatedResponse,
     // FundingSource,
     // SharedData,
-} from '@/types';
-import ppmpColumns from './columns/ppmp-columns';
-import { PpmpSummaryDocument } from './pdf-render/coa-summary/document';
-import { PpmpDocument } from './pdf-render/ppmp/document';
+} from "@/types";
+import ppmpColumns from "./columns/ppmp-columns";
+import { PpmpSummaryDocument } from "./pdf-render/coa-summary/document";
+import { PpmpDocument } from "./pdf-render/ppmp/document";
 // import { router, usePage } from '@inertiajs/react';
 // import { Decimal } from 'decimal.js';
 // import { DeleteDialog } from '@/components/delete-dialog';
@@ -142,9 +139,7 @@ export default function PpmpPage({
     const kilobytes = (bytes / 1024).toFixed(2);
     const megabytes = (bytes / (1024 * 1024)).toFixed(2);
 
-    console.log(
-        `Props Payload Size: ${bytes} B | ${kilobytes} KB | ${megabytes} MB`,
-    );
+    console.log(`Props Payload Size: ${bytes} B | ${kilobytes} KB | ${megabytes} MB`);
 
     // Counter so editing multiple cells at once keeps the indicator on
     const [savingCount, setSavingCount] = useState(0);
@@ -157,43 +152,40 @@ export default function PpmpPage({
     const [openCoaPdfPreview, setOpenCoaPdfPreview] = useState(false);
 
     // View filter: show all items, or only MOOE/CO expense-class items
-    const [expenseClassFilter, setExpenseClassFilter] = useState<
-        'ALL' | 'MOOE' | 'CO'
-    >('ALL');
+    const [expenseClassFilter, setExpenseClassFilter] = useState<"ALL" | "MOOE" | "CO">("ALL");
 
     const filteredPpmpItems = useMemo(() => {
-        if (expenseClassFilter === 'ALL') {
+        if (expenseClassFilter === "ALL") {
             return ppmpItems;
         }
 
         return ppmpItems.filter(
             (item) =>
-                item.ppmp_price_list?.chart_of_account_ppmp_category
-                    ?.chart_of_account?.expense_class === expenseClassFilter,
+                item.ppmp_price_list?.chart_of_account_ppmp_category?.chart_of_account
+                    ?.expense_class === expenseClassFilter,
         );
     }, [ppmpItems, expenseClassFilter]);
 
     const MONTHS = [
-        'jan',
-        'feb',
-        'mar',
-        'apr',
-        'may',
-        'jun',
-        'jul',
-        'aug',
-        'sep',
-        'oct',
-        'nov',
-        'dec',
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "may",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "oct",
+        "nov",
+        "dec",
     ] as const;
 
     const getItemTotal = (item: Ppmp): Decimal => {
         const price = new Decimal(item.ppmp_price_list?.price || 0);
 
         return MONTHS.reduce(
-            (acc, month) =>
-                acc.plus(new Decimal(item[`${month}_qty`] || 0).times(price)),
+            (acc, month) => acc.plus(new Decimal(item[`${month}_qty`] || 0).times(price)),
             new Decimal(0),
         );
     };
@@ -208,12 +200,12 @@ export default function PpmpPage({
             total = total.plus(amount);
 
             const expenseClass =
-                item.ppmp_price_list?.chart_of_account_ppmp_category
-                    ?.chart_of_account?.expense_class;
+                item.ppmp_price_list?.chart_of_account_ppmp_category?.chart_of_account
+                    ?.expense_class;
 
-            if (expenseClass === 'MOOE') {
+            if (expenseClass === "MOOE") {
                 mooe = mooe.plus(amount);
-            } else if (expenseClass === 'CO') {
+            } else if (expenseClass === "CO") {
                 co = co.plus(amount);
             }
         });
@@ -244,7 +236,7 @@ export default function PpmpPage({
                 setDeleteDialogOpen(false);
                 setSelectedPpmp(null);
                 // Optional: reload ppmpItems to update totals
-                router.reload({ only: ['ppmpItems'] });
+                router.reload({ only: ["ppmpItems"] });
             },
             onError: () => {
                 setIsDeleting(false);
@@ -505,15 +497,11 @@ export default function PpmpPage({
                 >
                     <div className="flex w-full items-center justify-between">
                         <div>
+                            <div className="text-sm">{aipEntry?.ppa?.office?.acronym || "N/A"}</div>
                             <div className="text-sm">
-                                {aipEntry?.ppa?.office?.acronym || 'N/A'}
+                                {ppaFundingSource.funding_source?.code || "N/A"}
                             </div>
-                            <div className="text-sm">
-                                {ppaFundingSource.funding_source?.code || 'N/A'}
-                            </div>
-                            <div className="text-sm">
-                                {aipEntry.ppa?.full_code || '-'}
-                            </div>
+                            <div className="text-sm">{aipEntry.ppa?.full_code || "-"}</div>
                             <div className="text-sm">{aipEntry?.ppa?.name}</div>
                         </div>
 
@@ -631,9 +619,7 @@ export default function PpmpPage({
                     meta={{
                         year: fiscalYear,
                         onSavingChange: (saving: boolean) =>
-                            setSavingCount((c) =>
-                                Math.max(0, c + (saving ? 1 : -1)),
-                            ),
+                            setSavingCount((c) => Math.max(0, c + (saving ? 1 : -1))),
                         onDeletePpmpItem: handleDeleteDialogOpen,
                     }}
                 >
@@ -651,27 +637,16 @@ export default function PpmpPage({
                                 <DropdownMenuRadioGroup
                                     value={expenseClassFilter}
                                     onValueChange={(value) =>
-                                        setExpenseClassFilter(
-                                            value as 'ALL' | 'MOOE' | 'CO',
-                                        )
+                                        setExpenseClassFilter(value as "ALL" | "MOOE" | "CO")
                                     }
                                 >
-                                    <DropdownMenuRadioItem
-                                        value="ALL"
-                                        closeOnClick
-                                    >
+                                    <DropdownMenuRadioItem value="ALL" closeOnClick>
                                         All items
                                     </DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem
-                                        value="MOOE"
-                                        closeOnClick
-                                    >
+                                    <DropdownMenuRadioItem value="MOOE" closeOnClick>
                                         MOOE only
                                     </DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem
-                                        value="CO"
-                                        closeOnClick
-                                    >
+                                    <DropdownMenuRadioItem value="CO" closeOnClick>
                                         CO only
                                     </DropdownMenuRadioItem>
                                 </DropdownMenuRadioGroup>
@@ -679,41 +654,27 @@ export default function PpmpPage({
                         </DropdownMenu>
 
                         <DropdownMenu>
-                            <DropdownMenuTrigger
-                                render={<Button variant="outline" />}
-                            >
+                            <DropdownMenuTrigger render={<Button variant="outline" />}>
                                 <FileUp />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuGroup>
-                                    <DropdownMenuLabel>
-                                        Export
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuItem
-                                        onClick={() => setOpenPdfPreview(true)}
-                                    >
+                                    <DropdownMenuLabel>Export</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => setOpenPdfPreview(true)}>
                                         PDF
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
-                                    <DropdownMenuLabel>
-                                        Generate
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuItem
-                                        onClick={() =>
-                                            setOpenCoaPdfPreview(true)
-                                        }
-                                    >
+                                    <DropdownMenuLabel>Generate</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => setOpenCoaPdfPreview(true)}>
                                         COA Summary
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                             </DropdownMenuContent>
                         </DropdownMenu>
 
-                        <Button onClick={() => setOpenFormDialog(true)}>
-                            Add Price List
-                        </Button>
+                        <Button onClick={() => setOpenFormDialog(true)}>Add Price List</Button>
 
                         {isSaving ? (
                             <Badge variant="secondary">
@@ -849,7 +810,7 @@ export default function PpmpPage({
                 ppaFundingSourceId={ppaFundingSource.id} // NEW
                 onSuccess={() => {
                     // Optionally refetch PPMP items after creation
-                    router.reload({ only: ['ppmpItems'] });
+                    router.reload({ only: ["ppmpItems"] });
                 }}
 
                 // selectedEntry={activeAipEntry || aipEntry}
@@ -865,7 +826,7 @@ export default function PpmpPage({
                 title="Remove from PPMP?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
+                        Are you sure you want to remove{" "}
                         <span className="font-bold text-foreground">
                             "{selectedPpmp?.ppmp_price_list?.description}"
                         </span>
@@ -886,17 +847,17 @@ export default function PpmpPage({
 
                     <div
                         style={{
-                            width: '100vw',
-                            height: '94vh',
+                            width: "100vw",
+                            height: "94vh",
                             margin: 0,
                             padding: 0,
                         }}
                     >
                         <PDFViewer
                             style={{
-                                width: '100%',
-                                height: '100%',
-                                border: 'none',
+                                width: "100%",
+                                height: "100%",
+                                border: "none",
                             }}
                         >
                             <PpmpDocument
@@ -910,10 +871,7 @@ export default function PpmpPage({
                 </DialogContent>
             </Dialog>
 
-            <Dialog
-                open={openCoaPdfPreview}
-                onOpenChange={setOpenCoaPdfPreview}
-            >
+            <Dialog open={openCoaPdfPreview} onOpenChange={setOpenCoaPdfPreview}>
                 <DialogContent className="fixed! inset-0! h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! gap-0 rounded-none! p-0">
                     <div className="p-4">
                         <DialogHeader>
@@ -923,17 +881,17 @@ export default function PpmpPage({
 
                     <div
                         style={{
-                            width: '100vw',
-                            height: '94vh',
+                            width: "100vw",
+                            height: "94vh",
                             margin: 0,
                             padding: 0,
                         }}
                     >
                         <PDFViewer
                             style={{
-                                width: '100%',
-                                height: '100%',
-                                border: 'none',
+                                width: "100%",
+                                height: "100%",
+                                border: "none",
                             }}
                         >
                             <PpmpSummaryDocument
@@ -1009,11 +967,11 @@ export default function PpmpPage({
 
 PpmpPage.layout = ({ fiscalYear }: PpmpPageProps) => ({
     breadcrumbs: [
-        { title: 'Annual Investment Programs', href: index() },
+        { title: "Annual Investment Programs", href: index() },
         {
             title: `AIP Summary FY ${fiscalYear.year}`,
             href: summary({ fiscalYear: fiscalYear.id }),
         },
-        { title: 'PPMP Management', href: '#' },
+        { title: "PPMP Management", href: "#" },
     ],
 });

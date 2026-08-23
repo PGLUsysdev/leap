@@ -1,7 +1,7 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, ExternalLink, FileText } from 'lucide-react';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Pencil, ExternalLink, FileText } from "lucide-react";
+import { Badge } from "@/components/base-ui-components/ui/badge";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -9,36 +9,36 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
-} from '@/components/base-ui-components/ui/dropdown-menu';
-import type { FiscalYear } from '@/types';
+} from "@/components/base-ui-components/ui/dropdown-menu";
+import type { FiscalYear } from "@/types";
 
 const columnHelper = createColumnHelper<FiscalYear>();
 
 const columns = [
-    columnHelper.accessor('year', {
+    columnHelper.accessor("year", {
         header: () => <div className="px-1">Fiscal Year</div>,
         size: 150,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
-    columnHelper.accessor('status', {
+    columnHelper.accessor("status", {
         header: () => <div className="px-1">Status</div>,
         size: 150,
         cell: (info) => {
             const status = info.getValue();
 
             const STATUS_MAP = {
-                draft: { label: 'Draft', variant: 'secondary' as const },
-                open: { label: 'Open', variant: 'default' as const },
-                locked: { label: 'Locked', variant: 'outline' as const },
+                draft: { label: "Draft", variant: "secondary" as const },
+                open: { label: "Open", variant: "default" as const },
+                locked: { label: "Locked", variant: "outline" as const },
                 archived: {
-                    label: 'Archived',
-                    variant: 'outline' as const,
+                    label: "Archived",
+                    variant: "outline" as const,
                 },
             } as const;
 
             const config = STATUS_MAP[status] || {
                 label: status,
-                variant: 'secondary',
+                variant: "secondary",
             };
 
             return (
@@ -50,38 +50,38 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor('created_at', {
+    columnHelper.accessor("created_at", {
         header: () => <div className="px-1">Created At</div>,
         size: 200,
         cell: (info) => {
             const rawValue = info.getValue();
             const date = new Date(String(rawValue));
-            const formattedDate = date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
+            const formattedDate = date.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
             });
 
             return <div className="px-1 text-wrap">{formattedDate}</div>;
         },
     }),
-    columnHelper.accessor('updated_at', {
+    columnHelper.accessor("updated_at", {
         header: () => <div className="px-1">Updated At</div>,
         size: 200,
         cell: (info) => {
             const rawValue = info.getValue();
             const date = new Date(String(rawValue));
-            const formattedDate = date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
+            const formattedDate = date.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
             });
 
             return <div className="px-1 text-wrap">{formattedDate}</div>;
         },
     }),
     columnHelper.display({
-        id: 'actions',
+        id: "actions",
         size: 154,
         cell: ({ row, table }) => {
             const initialStatus = row.original.status;
@@ -95,9 +95,7 @@ const columns = [
                                     variant="outline"
                                     size="icon"
                                     title="Change AIP status"
-                                    disabled={
-                                        !table.options.meta?.canUpdateStatus
-                                    }
+                                    disabled={!table.options.meta?.canUpdateStatus}
                                 >
                                     <Pencil />
                                 </Button>
@@ -105,39 +103,28 @@ const columns = [
                         ></DropdownMenuTrigger>
                         <DropdownMenuContent>
                             <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                    Change AIP Status
-                                </DropdownMenuLabel>
+                                <DropdownMenuLabel>Change AIP Status</DropdownMenuLabel>
                                 <DropdownMenuItem
                                     onClick={() =>
-                                        table.options.meta?.onUpdateStatus?.(
-                                            row.original,
-                                            'draft',
-                                        )
+                                        table.options.meta?.onUpdateStatus?.(row.original, "draft")
                                     }
-                                    disabled={initialStatus === 'draft'}
+                                    disabled={initialStatus === "draft"}
                                 >
                                     Draft
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() =>
-                                        table.options.meta?.onUpdateStatus?.(
-                                            row.original,
-                                            'open',
-                                        )
+                                        table.options.meta?.onUpdateStatus?.(row.original, "open")
                                     }
-                                    disabled={initialStatus === 'open'}
+                                    disabled={initialStatus === "open"}
                                 >
                                     Open
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     onClick={() =>
-                                        table.options.meta?.onUpdateStatus?.(
-                                            row.original,
-                                            'locked',
-                                        )
+                                        table.options.meta?.onUpdateStatus?.(row.original, "locked")
                                     }
-                                    disabled={initialStatus === 'locked'}
+                                    disabled={initialStatus === "locked"}
                                 >
                                     Locked
                                 </DropdownMenuItem>
@@ -145,10 +132,10 @@ const columns = [
                                     onClick={() =>
                                         table.options.meta?.onUpdateStatus?.(
                                             row.original,
-                                            'archived',
+                                            "archived",
                                         )
                                     }
-                                    disabled={initialStatus === 'archived'}
+                                    disabled={initialStatus === "archived"}
                                 >
                                     Archived
                                 </DropdownMenuItem>
@@ -173,12 +160,9 @@ const columns = [
                         size="icon"
                         title="Open AIP"
                         disabled={
-                            !table.options.meta?.canOpenAip ||
-                            table.options.meta?.disableOpenAip
+                            !table.options.meta?.canOpenAip || table.options.meta?.disableOpenAip
                         }
-                        onClick={() =>
-                            table.options.meta?.onOpen?.(row.original)
-                        }
+                        onClick={() => table.options.meta?.onOpen?.(row.original)}
                     >
                         <ExternalLink />
                     </Button>
@@ -189,9 +173,7 @@ const columns = [
                         size="icon"
                         disabled={!table.options.meta?.canOpenPpmpSummary}
                         onClick={() => {
-                            table.options.meta?.onOpenPpmpSummary?.(
-                                row.original,
-                            );
+                            table.options.meta?.onOpenPpmpSummary?.(row.original);
                         }}
                     >
                         <ExternalLink />

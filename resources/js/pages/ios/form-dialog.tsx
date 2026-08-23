@@ -1,34 +1,34 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import * as z from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { router } from "@inertiajs/react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import * as z from "zod";
 
-import { FormDialogShell } from '@/components/form-dialog-shell';
-import { Field, FieldLabel, FieldError } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { FormDialogShell } from "@/components/form-dialog-shell";
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import type { Ios, SalaryGradeOption } from '@/types';
-import iosCodes from './ios_codes.js';
+} from "@/components/ui/select";
+import type { Ios, SalaryGradeOption } from "@/types";
+import iosCodes from "./ios_codes.js";
 
 const formSchema = z.object({
-    occupational_service_code: z.string().min(1, 'Required'),
-    occupational_group_code: z.string().min(1, 'Required'),
-    class_id: z.string().min(1, 'Required'),
-    class: z.string().min(1, 'Required'),
+    occupational_service_code: z.string().min(1, "Required"),
+    occupational_group_code: z.string().min(1, "Required"),
+    class_id: z.string().min(1, "Required"),
+    class: z.string().min(1, "Required"),
     salary_grade: z
         .string()
-        .min(1, 'Required')
+        .min(1, "Required")
         .refine(
             (val) => !val || (Number(val) >= 1 && Number(val) <= 33),
-            'Salary grade must be between 1 and 33',
+            "Salary grade must be between 1 and 33",
         ),
 });
 
@@ -41,32 +41,24 @@ interface FormDialogProps {
     salaryGrades: SalaryGradeOption[];
 }
 
-export default function FormDialog({
-    open,
-    onOpenChange,
-    data,
-    salaryGrades,
-}: FormDialogProps) {
+export default function FormDialog({ open, onOpenChange, data, salaryGrades }: FormDialogProps) {
     const [submitting, setSubmitting] = useState(false);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            occupational_service_code: '',
-            occupational_group_code: '',
-            class_id: '',
-            class: '',
-            salary_grade: '',
+            occupational_service_code: "",
+            occupational_group_code: "",
+            class_id: "",
+            class: "",
+            salary_grade: "",
         },
     });
 
-    const selectedServiceCode = form.watch('occupational_service_code');
+    const selectedServiceCode = form.watch("occupational_service_code");
 
     const selectedService = useMemo(
-        () =>
-            iosCodes.find(
-                (s) => s.occupational_service_code === selectedServiceCode,
-            ),
+        () => iosCodes.find((s) => s.occupational_service_code === selectedServiceCode),
         [selectedServiceCode],
     );
 
@@ -81,11 +73,11 @@ export default function FormDialog({
             });
         } else {
             form.reset({
-                occupational_service_code: '',
-                occupational_group_code: '',
-                class_id: '',
-                class: '',
-                salary_grade: '',
+                occupational_service_code: "",
+                occupational_group_code: "",
+                class_id: "",
+                class: "",
+                salary_grade: "",
             });
         }
     }, [data, form]);
@@ -93,16 +85,14 @@ export default function FormDialog({
     // Reset group code when service changes
     useEffect(() => {
         if (selectedService) {
-            const currentGroup = form.getValues('occupational_group_code');
-            const isValid = selectedService.groups.some(
-                (g) => g.group_code === currentGroup,
-            );
+            const currentGroup = form.getValues("occupational_group_code");
+            const isValid = selectedService.groups.some((g) => g.group_code === currentGroup);
 
             if (!isValid) {
-                form.setValue('occupational_group_code', '');
+                form.setValue("occupational_group_code", "");
             }
         } else {
-            form.setValue('occupational_group_code', '');
+            form.setValue("occupational_group_code", "");
         }
     }, [selectedServiceCode, selectedService, form]);
 
@@ -133,7 +123,7 @@ export default function FormDialog({
         if (data) {
             router.patch(`/ios/${data.id}`, payload, options);
         } else {
-            router.post('/ios', payload, options);
+            router.post("/ios", payload, options);
         }
     }
 
@@ -143,10 +133,10 @@ export default function FormDialog({
         <FormDialogShell
             open={open}
             onOpenChange={onOpenChange}
-            title={isEditing ? 'Edit IOS' : 'Add New IOS'}
+            title={isEditing ? "Edit IOS" : "Add New IOS"}
             description={undefined}
             formId="ios-form"
-            submitLabel={isEditing ? 'Save Changes' : 'Add IOS'}
+            submitLabel={isEditing ? "Save Changes" : "Add IOS"}
             submittingLabel="Saving..."
             isLoading={submitting}
             onCancel={() => {
@@ -184,25 +174,17 @@ export default function FormDialog({
                                         <SelectContent>
                                             {iosCodes.map((service) => (
                                                 <SelectItem
-                                                    key={
-                                                        service.occupational_service_code
-                                                    }
-                                                    value={
-                                                        service.occupational_service_code
-                                                    }
+                                                    key={service.occupational_service_code}
+                                                    value={service.occupational_service_code}
                                                 >
-                                                    {
-                                                        service.occupational_service_code
-                                                    }{' '}
-                                                    — {service.name}
+                                                    {service.occupational_service_code} —{" "}
+                                                    {service.name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -213,9 +195,7 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Occupational Group
-                                    </FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>Occupational Group</FieldLabel>
                                     <Select
                                         name={field.name}
                                         value={field.value}
@@ -229,29 +209,24 @@ export default function FormDialog({
                                             <SelectValue
                                                 placeholder={
                                                     selectedService
-                                                        ? 'Select group'
-                                                        : 'Select a service first'
+                                                        ? "Select group"
+                                                        : "Select a service first"
                                                 }
                                             />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {selectedService?.groups.map(
-                                                (group) => (
-                                                    <SelectItem
-                                                        key={group.group_code}
-                                                        value={group.group_code}
-                                                    >
-                                                        {group.group_code} —{' '}
-                                                        {group.group_name}
-                                                    </SelectItem>
-                                                ),
-                                            )}
+                                            {selectedService?.groups.map((group) => (
+                                                <SelectItem
+                                                    key={group.group_code}
+                                                    value={group.group_code}
+                                                >
+                                                    {group.group_code} — {group.group_name}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -262,18 +237,10 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Class ID
-                                    </FieldLabel>
-                                    <Input
-                                        id={field.name}
-                                        {...field}
-                                        placeholder="e.g. ADA1"
-                                    />
+                                    <FieldLabel htmlFor={field.name}>Class ID</FieldLabel>
+                                    <Input id={field.name} {...field} placeholder="e.g. ADA1" />
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -284,18 +251,14 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Class
-                                    </FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>Class</FieldLabel>
                                     <Input
                                         id={field.name}
                                         {...field}
                                         placeholder="e.g. Administrative Aide I"
                                     />
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -306,9 +269,7 @@ export default function FormDialog({
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>
-                                        Salary Grade
-                                    </FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>Salary Grade</FieldLabel>
                                     <Select
                                         name={field.name}
                                         value={field.value}
@@ -324,38 +285,24 @@ export default function FormDialog({
                                             {salaryGrades.map((sg) => (
                                                 <SelectItem
                                                     key={sg.salary_grade}
-                                                    value={String(
-                                                        sg.salary_grade,
-                                                    )}
+                                                    value={String(sg.salary_grade)}
                                                 >
-                                                    SG {sg.salary_grade} —{' '}
-                                                    {new Intl.NumberFormat(
-                                                        'en-PH',
-                                                        {
-                                                            style: 'currency',
-                                                            currency: 'PHP',
-                                                        },
-                                                    ).format(
-                                                        Number(sg.min_rate),
-                                                    )}{' '}
-                                                    –{' '}
-                                                    {new Intl.NumberFormat(
-                                                        'en-PH',
-                                                        {
-                                                            style: 'currency',
-                                                            currency: 'PHP',
-                                                        },
-                                                    ).format(
-                                                        Number(sg.max_rate),
-                                                    )}
+                                                    SG {sg.salary_grade} —{" "}
+                                                    {new Intl.NumberFormat("en-PH", {
+                                                        style: "currency",
+                                                        currency: "PHP",
+                                                    }).format(Number(sg.min_rate))}{" "}
+                                                    –{" "}
+                                                    {new Intl.NumberFormat("en-PH", {
+                                                        style: "currency",
+                                                        currency: "PHP",
+                                                    }).format(Number(sg.max_rate))}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}

@@ -1,13 +1,9 @@
-import { useMemo } from 'react';
-import {
-    Field,
-    FieldDescription,
-    FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import { cn } from '@/lib/utils';
-import type { FundingSource } from '@/types';
-import type { PpaFundingSourceRow } from './extract';
+import { useMemo } from "react";
+import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
+import { cn } from "@/lib/utils";
+import type { FundingSource } from "@/types";
+import type { PpaFundingSourceRow } from "./extract";
 
 interface FundingSourceMapProps {
     fundingSources: PpaFundingSourceRow[];
@@ -20,7 +16,7 @@ interface FundingSourceEntry {
     excelCode: string;
     mappedToCode: string;
     resolvedId: number | null;
-    status: 'mapped' | 'unmapped' | 'not_found';
+    status: "mapped" | "unmapped" | "not_found";
     count: number;
 }
 
@@ -58,20 +54,18 @@ export function FundingSourceMap({
         return [...codeCounts.keys()].sort().map((excelCode) => {
             // Try exact match first, then case-insensitive fallback
             const mappedToCode =
-                mappings[excelCode] ??
-                mappingKeyLookup.get(excelCode.toLowerCase()) ??
-                excelCode;
+                mappings[excelCode] ?? mappingKeyLookup.get(excelCode.toLowerCase()) ?? excelCode;
 
             const resolvedId = dbCodeToId.get(mappedToCode) ?? null;
 
-            let status: FundingSourceEntry['status'];
+            let status: FundingSourceEntry["status"];
 
             if (resolvedId !== null) {
-                status = 'mapped';
+                status = "mapped";
             } else if (mappedToCode !== excelCode) {
-                status = 'not_found';
+                status = "not_found";
             } else {
-                status = 'unmapped';
+                status = "unmapped";
             }
 
             return {
@@ -98,7 +92,7 @@ export function FundingSourceMap({
         });
     }
 
-    const mappedCount = entries.filter((e) => e.status === 'mapped').length;
+    const mappedCount = entries.filter((e) => e.status === "mapped").length;
     const totalCount = entries.length;
 
     if (totalCount === 0) {
@@ -112,10 +106,9 @@ export function FundingSourceMap({
                     Funding Source Mapping ({mappedCount}/{totalCount} mapped)
                 </FieldLabel>
                 <FieldDescription>
-                    Map the funding source codes from the Excel file to codes in
-                    the database. Codes that match directly are pre-filled. Edit
-                    the "Map to DB Code" column for codes that need a different
-                    mapping.
+                    Map the funding source codes from the Excel file to codes in the database. Codes
+                    that match directly are pre-filled. Edit the "Map to DB Code" column for codes
+                    that need a different mapping.
                 </FieldDescription>
             </Field>
 
@@ -123,25 +116,15 @@ export function FundingSourceMap({
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="bg-muted/50">
-                            <th className="px-3 py-2 text-left font-medium">
-                                Excel Code
-                            </th>
-                            <th className="px-3 py-2 text-left font-medium">
-                                Map to DB Code
-                            </th>
-                            <th className="px-3 py-2 text-center font-medium">
-                                Status
-                            </th>
-                            <th className="px-3 py-2 text-right font-medium">
-                                Rows
-                            </th>
+                            <th className="px-3 py-2 text-left font-medium">Excel Code</th>
+                            <th className="px-3 py-2 text-left font-medium">Map to DB Code</th>
+                            <th className="px-3 py-2 text-center font-medium">Status</th>
+                            <th className="px-3 py-2 text-right font-medium">Rows</th>
                         </tr>
                     </thead>
                     <tbody>
                         {entries.map((entry) => {
-                            const isDbCodeValid = dbCodes.includes(
-                                entry.mappedToCode,
-                            );
+                            const isDbCodeValid = dbCodes.includes(entry.mappedToCode);
 
                             return (
                                 <tr key={entry.excelCode} className="border-t">
@@ -152,26 +135,19 @@ export function FundingSourceMap({
                                         <Input
                                             value={entry.mappedToCode}
                                             onChange={(e) =>
-                                                handleCodeChange(
-                                                    entry.excelCode,
-                                                    e.target.value,
-                                                )
+                                                handleCodeChange(entry.excelCode, e.target.value)
                                             }
                                             list="db-codes"
                                             className={cn(
-                                                'h-7 text-xs',
-                                                !isDbCodeValid &&
-                                                    'border-destructive',
+                                                "h-7 text-xs",
+                                                !isDbCodeValid && "border-destructive",
                                             )}
                                         />
                                     </td>
                                     <td className="px-3 py-2 text-center">
                                         {isDbCodeValid ? (
-                                            <span className="text-xs text-green-600">
-                                                ✓ mapped
-                                            </span>
-                                        ) : entry.mappedToCode ===
-                                          entry.excelCode ? (
+                                            <span className="text-xs text-green-600">✓ mapped</span>
+                                        ) : entry.mappedToCode === entry.excelCode ? (
                                             <span className="text-xs text-amber-600">
                                                 ? unmapped
                                             </span>

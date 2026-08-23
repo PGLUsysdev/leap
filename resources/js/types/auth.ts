@@ -1,4 +1,4 @@
-import type { Office, Role, Position } from './index';
+import type { Office, Role, Position } from "./index";
 
 export type User = {
     id: number;

@@ -47,14 +47,14 @@ const groupByChartOfAccount = (ppmps: Ppmp[]) => {
         const coa = ppmp.ppmp_price_list?.chart_of_account_ppmp_category?.chart_of_account;
 
         if (!coa) {
-continue;
-}
+            continue;
+        }
 
         const expenseClass = coa.expense_class;
 
         if (expenseClass !== "MOOE" && expenseClass !== "CO") {
-continue;
-} // only MOOE and CO
+            continue;
+        } // only MOOE and CO
 
         const targetMap = expenseClass === "MOOE" ? mooeMap : coMap;
         const coaId = coa.id;

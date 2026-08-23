@@ -1,4 +1,4 @@
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -6,9 +6,9 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
+} from "@/components/base-ui-components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 interface FormDialogShellProps {
     open: boolean;
@@ -46,12 +46,7 @@ export function FormDialogShell({
 }: FormDialogShellProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange} modal={isLoading}>
-            <DialogContent
-                className={cn(
-                    'flex max-h-[90vh] flex-col sm:max-w-2xl',
-                    className,
-                )}
-            >
+            <DialogContent className={cn("flex max-h-[90vh] flex-col sm:max-w-2xl", className)}>
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
@@ -73,20 +68,11 @@ export function FormDialogShell({
                         </Button>
                     )}
 
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onCancel}
-                        disabled={isLoading}
-                    >
+                    <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
                         Cancel
                     </Button>
 
-                    <Button
-                        type="submit"
-                        form={formId}
-                        disabled={isLoading || submitDisabled}
-                    >
+                    <Button type="submit" form={formId} disabled={isLoading || submitDisabled}>
                         {isLoading ? (
                             <span className="flex items-center gap-1">
                                 <Spinner />

@@ -1,41 +1,33 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, Trash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import type { FundingSource } from '@/types';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Pencil, Trash } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { FundingSource } from "@/types";
 
 const columnHelper = createColumnHelper<FundingSource>();
 
 const columns = [
-    columnHelper.accessor('fund_type', {
+    columnHelper.accessor("fund_type", {
         size: 100,
         header: () => <div className="px-1">Fund Type</div>,
-        cell: (value) => (
-            <div className="px-1 text-wrap">{value.getValue()}</div>
-        ),
+        cell: (value) => <div className="px-1 text-wrap">{value.getValue()}</div>,
     }),
-    columnHelper.accessor('code', {
+    columnHelper.accessor("code", {
         size: 100,
         header: () => <div className="px-1">Code</div>,
-        cell: (value) => (
-            <div className="px-1 text-wrap">{value.getValue()}</div>
-        ),
+        cell: (value) => <div className="px-1 text-wrap">{value.getValue()}</div>,
     }),
-    columnHelper.accessor('title', {
+    columnHelper.accessor("title", {
         size: 300,
         header: () => <div className="px-1">Title</div>,
-        cell: (value) => (
-            <div className="px-1 text-wrap">{value.getValue()}</div>
-        ),
+        cell: (value) => <div className="px-1 text-wrap">{value.getValue()}</div>,
     }),
-    columnHelper.accessor('description', {
+    columnHelper.accessor("description", {
         size: 300,
         header: () => <div className="px-1">Description</div>,
-        cell: (value) => (
-            <div className="px-1 text-wrap">{value.getValue() ?? '-'}</div>
-        ),
+        cell: (value) => <div className="px-1 text-wrap">{value.getValue() ?? "-"}</div>,
     }),
     columnHelper.display({
-        id: 'actions',
+        id: "actions",
         size: 82,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">

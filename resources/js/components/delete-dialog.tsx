@@ -5,9 +5,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogDescription,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 interface DeleteDialogProps {
     isOpen: boolean;
@@ -24,12 +24,12 @@ interface DeleteDialogProps {
 export function DeleteDialog({
     isOpen,
     onOpenChange,
-    title = 'Are you absolutely sure?',
+    title = "Are you absolutely sure?",
     description,
     onConfirm,
     onCancel,
-    confirmText = 'Delete',
-    cancelText = 'Cancel',
+    confirmText = "Delete",
+    cancelText = "Cancel",
     isLoading,
 }: DeleteDialogProps) {
     // console.log(isOpen);
@@ -44,31 +44,19 @@ export function DeleteDialog({
 
     return (
         <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-            <AlertDialogContent
-                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
-            >
+            <AlertDialogContent onEscapeKeyDown={(e) => isLoading && e.preventDefault()}>
                 <AlertDialogHeader>
                     <AlertDialogTitle>{title}</AlertDialogTitle>
 
-                    <AlertDialogDescription>
-                        {description}
-                    </AlertDialogDescription>
+                    <AlertDialogDescription>{description}</AlertDialogDescription>
                 </AlertDialogHeader>
 
                 <AlertDialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={onCancel}
-                        disabled={isLoading}
-                    >
+                    <Button variant="outline" onClick={onCancel} disabled={isLoading}>
                         {cancelText}
                     </Button>
 
-                    <Button
-                        variant="destructive"
-                        onClick={onConfirm}
-                        disabled={isLoading}
-                    >
+                    <Button variant="destructive" onClick={onConfirm} disabled={isLoading}>
                         {isLoading ? (
                             <span className="flex items-center gap-1">
                                 <Spinner /> <span>Deleting</span>

@@ -1,11 +1,11 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { router, usePage } from '@inertiajs/react';
-import { ChevronsUpDown } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
-import * as z from 'zod';
-import { TableSelect } from '@/components/base-ui-components/table-select';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { router, usePage } from "@inertiajs/react";
+import { ChevronsUpDown } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import * as z from "zod";
+import { TableSelect } from "@/components/base-ui-components/table-select";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -13,23 +13,13 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
-import {
-    Field,
-    FieldError,
-    FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-} from '@/components/base-ui-components/ui/toggle-group';
-import type { ChartOfAccount, PpmpCategory } from '@/types';
-import coaCols from './columns/coa-cols';
+} from "@/components/base-ui-components/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
+import type { ChartOfAccount, PpmpCategory } from "@/types";
+import coaCols from "./columns/coa-cols";
 
 interface FormDialogProps {
     open: boolean;
@@ -39,11 +29,11 @@ interface FormDialogProps {
 }
 
 const formSchema = z.object({
-    name: z.string().trim().min(1, { message: 'Name is required' }),
+    name: z.string().trim().min(1, { message: "Name is required" }),
     is_non_procurement: z.boolean(),
     chart_of_accounts: z
         .array(z.number())
-        .min(1, { message: 'Select at least one chart of account' }),
+        .min(1, { message: "Select at least one chart of account" }),
 });
 
 export default function FormDialog({
@@ -65,7 +55,7 @@ export default function FormDialog({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: '',
+            name: "",
             chart_of_accounts: [],
             is_non_procurement: false,
         },
@@ -84,7 +74,7 @@ export default function FormDialog({
                               ) || [],
                       }
                     : {
-                          name: '',
+                          name: "",
                           chart_of_accounts: [],
                           is_non_procurement: false,
                       },
@@ -94,7 +84,7 @@ export default function FormDialog({
 
     const watchedCoaIds = useWatch({
         control: form.control,
-        name: 'chart_of_accounts',
+        name: "chart_of_accounts",
     });
     const initialChartOfAccounts = useMemo(
         () =>
@@ -142,8 +132,8 @@ export default function FormDialog({
                 onError: (submitErrors) => {
                     if (
                         submitErrors &&
-                        typeof submitErrors === 'object' &&
-                        'force_delete' in submitErrors
+                        typeof submitErrors === "object" &&
+                        "force_delete" in submitErrors
                     ) {
                         setShowForceDeleteDialog(true);
                     }
@@ -151,7 +141,7 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post('/ppmp-categories', data, {
+            router.post("/ppmp-categories", data, {
                 preserveScroll: true,
                 preserveState: true,
                 onStart: () => setIsLoading(true),
@@ -185,14 +175,12 @@ export default function FormDialog({
                 <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-3xl">
                     <DialogHeader className="flex-none">
                         <DialogTitle>
-                            {isEditing
-                                ? 'Edit PPMP Category'
-                                : 'Add New PPMP Category'}
+                            {isEditing ? "Edit PPMP Category" : "Add New PPMP Category"}
                         </DialogTitle>
                         <DialogDescription>
                             {isEditing
-                                ? 'Modify the details of the existing PPMP category below.'
-                                : 'Fill in the information to create a new PPMP category record.'}
+                                ? "Modify the details of the existing PPMP category below."
+                                : "Fill in the information to create a new PPMP category record."}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -209,31 +197,19 @@ export default function FormDialog({
                                             name="name"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
-                                                    <FieldLabel
-                                                        htmlFor={field.name}
-                                                    >
+                                                <Field data-invalid={fieldState.invalid}>
+                                                    <FieldLabel htmlFor={field.name}>
                                                         Name
                                                     </FieldLabel>
                                                     <Input
                                                         {...field}
                                                         id={field.name}
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
+                                                        aria-invalid={fieldState.invalid}
                                                         placeholder="Category name..."
                                                         autoComplete="off"
                                                     />
                                                     {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                                        <FieldError errors={[fieldState.error]} />
                                                     )}
                                                 </Field>
                                             )}
@@ -245,11 +221,7 @@ export default function FormDialog({
                                             name="is_non_procurement"
                                             control={form.control}
                                             render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                >
+                                                <Field data-invalid={fieldState.invalid}>
                                                     <FieldLabel
                                                         htmlFor={field.name}
                                                         className="font-normal"
@@ -260,18 +232,13 @@ export default function FormDialog({
                                                     <ToggleGroup
                                                         value={[
                                                             field.value
-                                                                ? 'non_procurement'
-                                                                : 'procurement',
+                                                                ? "non_procurement"
+                                                                : "procurement",
                                                         ]}
-                                                        onValueChange={(
-                                                            value,
-                                                        ) => {
-                                                            if (
-                                                                value.length > 0
-                                                            ) {
+                                                        onValueChange={(value) => {
+                                                            if (value.length > 0) {
                                                                 field.onChange(
-                                                                    value[0] ===
-                                                                        'non_procurement',
+                                                                    value[0] === "non_procurement",
                                                                 );
                                                             }
                                                         }}
@@ -303,28 +270,20 @@ export default function FormDialog({
                                     name="chart_of_accounts"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
-                                            <FieldLabel>
-                                                Chart of Accounts
-                                            </FieldLabel>
+                                        <Field data-invalid={fieldState.invalid}>
+                                            <FieldLabel>Chart of Accounts</FieldLabel>
 
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                onClick={() =>
-                                                    setOpenCoaTableSelect(true)
-                                                }
+                                                onClick={() => setOpenCoaTableSelect(true)}
                                                 className="w-full justify-start"
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                             >
                                                 <div className="flex w-full items-center justify-between">
                                                     {field.value.length > 0
                                                         ? `${field.value.length} selected`
-                                                        : 'Select chart of accounts'}
+                                                        : "Select chart of accounts"}
 
                                                     <ChevronsUpDown />
                                                 </div>
@@ -335,16 +294,11 @@ export default function FormDialog({
                                                     {[...new Set(field.value)]
                                                         .map((id) =>
                                                             chartOfAccounts.find(
-                                                                (coa) =>
-                                                                    coa.id ===
-                                                                    id,
+                                                                (coa) => coa.id === id,
                                                             ),
                                                         )
-                                                        .filter(
-                                                            (
-                                                                coa,
-                                                            ): coa is ChartOfAccount =>
-                                                                Boolean(coa),
+                                                        .filter((coa): coa is ChartOfAccount =>
+                                                            Boolean(coa),
                                                         )
                                                         .map((coa) => (
                                                             <li
@@ -353,13 +307,9 @@ export default function FormDialog({
                                                             >
                                                                 <span>
                                                                     <code className="mr-2 rounded bg-muted px-1 py-0.5 text-xs">
-                                                                        {
-                                                                            coa.account_number
-                                                                        }
+                                                                        {coa.account_number}
                                                                     </code>
-                                                                    {
-                                                                        coa.account_title
-                                                                    }
+                                                                    {coa.account_title}
                                                                 </span>
                                                                 <Button
                                                                     type="button"
@@ -368,16 +318,10 @@ export default function FormDialog({
                                                                     onClick={() => {
                                                                         const newValue =
                                                                             field.value?.filter(
-                                                                                (
-                                                                                    id,
-                                                                                ) =>
-                                                                                    id !==
-                                                                                    coa.id,
-                                                                            ) ||
-                                                                            [];
-                                                                        field.onChange(
-                                                                            newValue,
-                                                                        );
+                                                                                (id) =>
+                                                                                    id !== coa.id,
+                                                                            ) || [];
+                                                                        field.onChange(newValue);
                                                                     }}
                                                                 >
                                                                     ×
@@ -388,9 +332,7 @@ export default function FormDialog({
                                             )}
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </Field>
                                     )}
@@ -431,17 +373,15 @@ export default function FormDialog({
                                 if (initialData) {
                                     form.reset({
                                         name: initialData.name,
-                                        is_non_procurement:
-                                            initialData.is_non_procurement,
+                                        is_non_procurement: initialData.is_non_procurement,
                                         chart_of_accounts:
                                             initialData.chart_of_account_ppmp_categories?.map(
-                                                (pivot) =>
-                                                    pivot.chart_of_account_id,
+                                                (pivot) => pivot.chart_of_account_id,
                                             ) || [],
                                     });
                                 } else {
                                     form.reset({
-                                        name: '',
+                                        name: "",
                                         chart_of_accounts: [],
                                         is_non_procurement: false,
                                     });
@@ -450,57 +390,44 @@ export default function FormDialog({
                         >
                             Reset
                         </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => handleOpenChange(false)}
-                        >
+                        <Button variant="outline" onClick={() => handleOpenChange(false)}>
                             Close
                         </Button>
                         <Button type="submit" form="ppmp-category-form">
-                            {isEditing ? 'Save Changes' : 'Create Category'}
+                            {isEditing ? "Save Changes" : "Create Category"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            <Dialog
-                open={showUnsavedDialog}
-                onOpenChange={setShowUnsavedDialog}
-            >
+            <Dialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Unsaved Changes</DialogTitle>
                         <DialogDescription>
-                            You have unsaved changes to the chart of accounts.
-                            Do you want to discard these changes?
+                            You have unsaved changes to the chart of accounts. Do you want to
+                            discard these changes?
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={handleUnsavedCancel}>
                             Cancel
                         </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleUnsavedConfirm}
-                        >
+                        <Button variant="destructive" onClick={handleUnsavedConfirm}>
                             Discard Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            <Dialog
-                open={showForceDeleteDialog}
-                onOpenChange={setShowForceDeleteDialog}
-            >
+            <Dialog open={showForceDeleteDialog} onOpenChange={setShowForceDeleteDialog}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Remove Chart of Accounts?</DialogTitle>
                         <DialogDescription>
-                            Some of the chart of accounts you removed have
-                            dependent PPMP price list items. Continuing will
-                            delete those price list items as well. This action
-                            cannot be undone.
+                            Some of the chart of accounts you removed have dependent PPMP price list
+                            items. Continuing will delete those price list items as well. This
+                            action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -519,7 +446,7 @@ export default function FormDialog({
                             onClick={handleForceSave}
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Saving...' : 'Continue'}
+                            {isLoading ? "Saving..." : "Continue"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -527,15 +454,12 @@ export default function FormDialog({
 
             <TableSelect
                 columns={coaCols}
-                data={chartOfAccounts.filter(
-                    (coa) =>
-                        !watchedCoaIds?.includes(coa.id),
-                )}
+                data={chartOfAccounts.filter((coa) => !watchedCoaIds?.includes(coa.id))}
                 open={openCoaTableSelect}
                 onOpenChange={setOpenCoaTableSelect}
                 onRowSelect={(row) => {
-                    const current = form.getValues('chart_of_accounts') || [];
-                    form.setValue('chart_of_accounts', [...new Set([...current, row.id])], {
+                    const current = form.getValues("chart_of_accounts") || [];
+                    form.setValue("chart_of_accounts", [...new Set([...current, row.id])], {
                         shouldDirty: true,
                         shouldValidate: true,
                     });

@@ -1,8 +1,4 @@
-export function generateYearRange(
-    currentYear: number,
-    past: number,
-    future: number,
-) {
+export function generateYearRange(currentYear: number, past: number, future: number) {
     const years = [];
     const startYear = currentYear - past;
     const endYear = currentYear + future;

@@ -1,7 +1,7 @@
-import { ChevronsUpDown, Delete } from 'lucide-react';
-import type { useTableSelect } from '@/hooks/use-table-select';
-import { Button } from './ui/button';
-import { ButtonGroup, ButtonGroupSeparator } from './ui/button-group';
+import { ChevronsUpDown, Delete } from "lucide-react";
+import type { useTableSelect } from "@/hooks/use-table-select";
+import { Button } from "./ui/button";
+import { ButtonGroup, ButtonGroupSeparator } from "./ui/button-group";
 
 interface TableSelectButtonProps<TData> {
     hook: ReturnType<typeof useTableSelect<TData>>;
@@ -16,7 +16,7 @@ export function TableSelectButton<TData>({
     hook,
     displayValue,
     placeholder,
-    valueKey = 'id' as keyof TData,
+    valueKey = "id" as keyof TData,
     invalid,
     onClear,
 }: TableSelectButtonProps<TData>) {

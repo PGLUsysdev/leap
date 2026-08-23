@@ -1,15 +1,12 @@
 // resources\js\pages\aip-summary\output-funding-sources-dialog.tsx
 
-import { router } from '@inertiajs/react';
-import { Check } from 'lucide-react';
-import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import {
-    TableSelect,
-    useTableSelect,
-} from '@/components/base-ui-components/table-select';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { router } from "@inertiajs/react";
+import { Check } from "lucide-react";
+import { useState } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
+import { TableSelect, useTableSelect } from "@/components/base-ui-components/table-select";
+import { Badge } from "@/components/base-ui-components/ui/badge";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -17,8 +14,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
+} from "@/components/base-ui-components/ui/dialog";
+import { Spinner } from "@/components/base-ui-components/ui/spinner";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -28,12 +25,12 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { index as ppmpIndex } from '@/routes/aip/summary/ppmp';
-import { destroy, store } from '@/routes/aip-outputs/ppa-funding-sources';
-import type { AipOutput, FundingSource } from '@/types';
-import fundingSourceColumns from './columns/funding-source-columns';
-import ppaFundingSourceColumns from './columns/ppa-funding-source-columns';
+} from "@/components/ui/alert-dialog";
+import { index as ppmpIndex } from "@/routes/aip/summary/ppmp";
+import { destroy, store } from "@/routes/aip-outputs/ppa-funding-sources";
+import type { AipOutput, FundingSource } from "@/types";
+import fundingSourceColumns from "./columns/funding-source-columns";
+import ppaFundingSourceColumns from "./columns/ppa-funding-source-columns";
 
 interface OutputFundingSourcesDialogProps {
     open: boolean;
@@ -50,9 +47,7 @@ export default function OutputFundingSourcesDialog({
     fundingSources,
     fiscalYearId,
 }: OutputFundingSourcesDialogProps) {
-    const [loadingState, setLoadingState] = useState<
-        'idle' | 'saving' | 'saved'
-    >('idle');
+    const [loadingState, setLoadingState] = useState<"idle" | "saving" | "saved">("idle");
     const [selectedFsId, setSelectedFsId] = useState<number | null>(null);
     const [openAlertDelete, setOpenAlertDelete] = useState(false);
 
@@ -78,7 +73,7 @@ export default function OutputFundingSourcesDialog({
             return;
         }
 
-        setLoadingState('saving');
+        setLoadingState("saving");
 
         router.post(
             store({ aipOutput: output.id }).url,
@@ -89,10 +84,10 @@ export default function OutputFundingSourcesDialog({
                 preserveState: true,
                 preserveScroll: true,
                 onSuccess: () => {
-                    setLoadingState('saved');
+                    setLoadingState("saved");
                 },
                 onError: (errors) => {
-                    setLoadingState('idle');
+                    setLoadingState("idle");
                     console.error(errors);
                 },
             },
@@ -109,7 +104,7 @@ export default function OutputFundingSourcesDialog({
             return;
         }
 
-        setLoadingState('saving');
+        setLoadingState("saving");
 
         router.delete(
             destroy({
@@ -120,12 +115,12 @@ export default function OutputFundingSourcesDialog({
                 preserveState: true,
                 preserveScroll: true,
                 onSuccess: () => {
-                    setLoadingState('saved');
+                    setLoadingState("saved");
                     setOpenAlertDelete(false);
                     setSelectedFsId(null);
                 },
                 onError: (errors) => {
-                    setLoadingState('idle');
+                    setLoadingState("idle");
                     setOpenAlertDelete(false);
                     console.error(errors);
                 },
@@ -140,9 +135,8 @@ export default function OutputFundingSourcesDialog({
                     <DialogHeader className="flex-none px-4 pb-2">
                         <DialogTitle>Manage Funding Sources</DialogTitle>
                         <DialogDescription>
-                            Add or remove funding sources for this expected
-                            output. Amounts are managed via PPMP and PS
-                            breakdown.
+                            Add or remove funding sources for this expected output. Amounts are
+                            managed via PPMP and PS breakdown.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -152,7 +146,7 @@ export default function OutputFundingSourcesDialog({
                         className="pr-2"
                         meta={{
                             onDelete: onDeleteFundingSource,
-                            disabled: loadingState === 'saving',
+                            disabled: loadingState === "saving",
                             onOpenPpmp: (fsId: number) => {
                                 router.visit(
                                     ppmpIndex({
@@ -161,7 +155,7 @@ export default function OutputFundingSourcesDialog({
                                         ppaFundingSource: fsId,
                                     }).url,
                                     {
-                                        method: 'get',
+                                        method: "get",
                                     },
                                 );
                             },
@@ -170,7 +164,7 @@ export default function OutputFundingSourcesDialog({
                         <div className="flex gap-1">
                             <Button
                                 onClick={() => fundingSourceHook.setOpen(true)}
-                                disabled={loadingState === 'saving'}
+                                disabled={loadingState === "saving"}
                             >
                                 Add Funding Source
                             </Button>
@@ -179,19 +173,13 @@ export default function OutputFundingSourcesDialog({
                     </DataTable>
 
                     <DialogFooter className="mx-0 items-center sm:justify-between">
-                        <Badge
-                            variant={
-                                loadingState === 'saving'
-                                    ? 'secondary'
-                                    : 'ghost'
-                            }
-                        >
-                            {loadingState === 'saving' && (
+                        <Badge variant={loadingState === "saving" ? "secondary" : "ghost"}>
+                            {loadingState === "saving" && (
                                 <>
                                     <Spinner /> Saving…
                                 </>
                             )}
-                            {loadingState === 'idle' && (
+                            {loadingState === "idle" && (
                                 <>
                                     <Check /> Saved
                                 </>
@@ -201,7 +189,7 @@ export default function OutputFundingSourcesDialog({
                         <Button
                             variant="outline"
                             onClick={() => onOpenChange(false)}
-                            disabled={loadingState === 'saving'}
+                            disabled={loadingState === "saving"}
                         >
                             Close
                         </Button>
@@ -223,45 +211,32 @@ export default function OutputFundingSourcesDialog({
                 className="sm:max-w-[40rem]"
             />
 
-            <AlertDialog
-                open={openAlertDelete}
-                onOpenChange={setOpenAlertDelete}
-            >
+            <AlertDialog open={openAlertDelete} onOpenChange={setOpenAlertDelete}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>
-                            Delete funding source{' '}
-                            {output.funding_sources?.find(
-                                (fs) => fs.id === selectedFsId,
-                            )?.funding_source?.code ?? ''}
+                            Delete funding source{" "}
+                            {output.funding_sources?.find((fs) => fs.id === selectedFsId)
+                                ?.funding_source?.code ?? ""}
                             ?
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. The following data
-                            will be permanently deleted:
+                            This action cannot be undone. The following data will be permanently
+                            deleted:
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
                     <ul className="list-disc pl-5 text-sm text-muted-foreground">
-                        <li>
-                            This funding source allocation (PS, MOOE, FE, CO ,
-                            CCET amounts)
-                        </li>
-                        <li>
-                            All PPMP line items assigned to this funding source
-                        </li>
-                        <li>
-                            All PS breakdown entries for this funding source
-                        </li>
+                        <li>This funding source allocation (PS, MOOE, FE, CO , CCET amounts)</li>
+                        <li>All PPMP line items assigned to this funding source</li>
+                        <li>All PS breakdown entries for this funding source</li>
                     </ul>
 
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             variant="destructive"
-                            onClick={() =>
-                                handleDeleteFundingSource(selectedFsId)
-                            }
+                            onClick={() => handleDeleteFundingSource(selectedFsId)}
                         >
                             Continue
                         </AlertDialogAction>

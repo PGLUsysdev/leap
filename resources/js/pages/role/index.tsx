@@ -1,16 +1,13 @@
-import { router } from '@inertiajs/react';
-import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { DeleteDialog } from '@/components/delete-dialog';
-import { Button } from '@/components/ui/button';
-import type { Role } from '@/types';
-import columns from './columns/columns';
-import FormDialog from './form-dialog';
-import PermissionDialog from './permission-dialog';
+import { router } from "@inertiajs/react";
+import { useState } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { DeleteDialog } from "@/components/delete-dialog";
+import { Button } from "@/components/ui/button";
+import type { Role } from "@/types";
+import columns from "./columns/columns";
+import FormDialog from "./form-dialog";
+import PermissionDialog from "./permission-dialog";
 
 interface RolePageProps {
     roles: Role[];
@@ -86,17 +83,9 @@ export default function RolePage({ roles, can }: RolePageProps) {
                 <ScrollBar orientation="vertical" />
             </ScrollArea>
 
-            <FormDialog
-                open={openForm}
-                onOpenChange={setOpenForm}
-                data={selectedRole}
-            />
+            <FormDialog open={openForm} onOpenChange={setOpenForm} data={selectedRole} />
 
-            <PermissionDialog
-                open={openPerms}
-                onOpenChange={setOpenPerms}
-                role={selectedRole}
-            />
+            <PermissionDialog open={openPerms} onOpenChange={setOpenPerms} role={selectedRole} />
 
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
@@ -104,11 +93,8 @@ export default function RolePage({ roles, can }: RolePageProps) {
                 title="Delete Role?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
-                        <span className="font-bold text-foreground">
-                            "{selectedRole?.name}"
-                        </span>
-                        ?
+                        Are you sure you want to remove{" "}
+                        <span className="font-bold text-foreground">"{selectedRole?.name}"</span>?
                     </>
                 }
                 onConfirm={handleDelete}
@@ -122,4 +108,4 @@ export default function RolePage({ roles, can }: RolePageProps) {
     );
 }
 
-RolePage.layout = { breadcrumbs: [{ title: 'Roles', href: '#' }] };
+RolePage.layout = { breadcrumbs: [{ title: "Roles", href: "#" }] };

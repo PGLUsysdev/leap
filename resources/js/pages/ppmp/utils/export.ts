@@ -113,8 +113,8 @@ export async function exportToExcel({
             const key = item.is_non_procurement ? "true" : "false";
 
             if (!acc[key]) {
-acc[key] = [];
-}
+                acc[key] = [];
+            }
 
             acc[key].push(item);
 
@@ -159,8 +159,8 @@ acc[key] = [];
                 const key = item.category?.id?.toString() || "undefined";
 
                 if (!acc[key]) {
-acc[key] = [];
-}
+                    acc[key] = [];
+                }
 
                 acc[key].push(item);
 
@@ -175,8 +175,8 @@ acc[key] = [];
                                 const subKey = item.coa?.id?.toString() || "undefined";
 
                                 if (!acc[subKey]) {
-acc[subKey] = [];
-}
+                                    acc[subKey] = [];
+                                }
 
                                 acc[subKey].push(item);
 
@@ -528,8 +528,8 @@ export async function exportToPrint({
             const key = item.is_non_procurement ? "true" : "false";
 
             if (!acc[key]) {
-acc[key] = [];
-}
+                acc[key] = [];
+            }
 
             acc[key].push(item);
 
@@ -561,8 +561,8 @@ acc[key] = [];
             const key = item.category?.id?.toString() || "undefined";
 
             if (!acc[key]) {
-acc[key] = [];
-}
+                acc[key] = [];
+            }
 
             acc[key].push(item);
 
@@ -586,8 +586,8 @@ acc[key] = [];
                 const key = item.coa?.id?.toString() || "undefined";
 
                 if (!acc[key]) {
-acc[key] = [];
-}
+                    acc[key] = [];
+                }
 
                 acc[key].push(item);
 
@@ -692,22 +692,22 @@ acc[key] = [];
                     .fill("")
                     .map((_, i) => {
                         if (i === 2) {
-return `${categoryName} - TOTAL`;
-}
+                            return `${categoryName} - TOTAL`;
+                        }
 
                         if (i === 4) {
-return categoryTotalPrice.toLocaleString(undefined, {
+                            return categoryTotalPrice.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
-}
+                        }
 
                         if (i === 6) {
-return categoryTotalAmount.toLocaleString(undefined, {
+                            return categoryTotalAmount.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
-}
+                        }
 
                         const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
 
@@ -737,15 +737,15 @@ return categoryTotalAmount.toLocaleString(undefined, {
                 .fill("")
                 .map((_, i) => {
                     if (i === 2) {
-return `TOTAL - FOR ${procurementType}`;
-}
+                        return `TOTAL - FOR ${procurementType}`;
+                    }
 
                     if (i === 6) {
-return procurementTypeTotalAmount.toLocaleString(undefined, {
+                        return procurementTypeTotalAmount.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         });
-}
+                    }
 
                     const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
 
@@ -783,15 +783,15 @@ return procurementTypeTotalAmount.toLocaleString(undefined, {
             .fill("")
             .map((_, i) => {
                 if (i === 2) {
-return "GRAND TOTAL - FOR THE AIP/PPA";
-}
+                    return "GRAND TOTAL - FOR THE AIP/PPA";
+                }
 
                 if (i === 6) {
-return grandTotalAmount.toLocaleString(undefined, {
+                    return grandTotalAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     });
-}
+                }
 
                 const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
 
@@ -1060,8 +1060,8 @@ export async function exportToPDF({
             const key = item.is_non_procurement ? "true" : "false";
 
             if (!acc[key]) {
-acc[key] = [];
-}
+                acc[key] = [];
+            }
 
             acc[key].push(item);
 
@@ -1093,8 +1093,8 @@ acc[key] = [];
             const key = item.category?.id?.toString() || "undefined";
 
             if (!acc[key]) {
-acc[key] = [];
-}
+                acc[key] = [];
+            }
 
             acc[key].push(item);
 
@@ -1118,8 +1118,8 @@ acc[key] = [];
                 const key = item.coa?.id?.toString() || "undefined";
 
                 if (!acc[key]) {
-acc[key] = [];
-}
+                    acc[key] = [];
+                }
 
                 acc[key].push(item);
 
@@ -1224,22 +1224,22 @@ acc[key] = [];
                     .fill("")
                     .map((_, i) => {
                         if (i === 2) {
-return `${categoryName} - TOTAL`;
-}
+                            return `${categoryName} - TOTAL`;
+                        }
 
                         if (i === 4) {
-return categoryTotalPrice.toLocaleString(undefined, {
+                            return categoryTotalPrice.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
-}
+                        }
 
                         if (i === 6) {
-return categoryTotalAmount.toLocaleString(undefined, {
+                            return categoryTotalAmount.toLocaleString(undefined, {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                             });
-}
+                        }
 
                         const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
 
@@ -1269,15 +1269,15 @@ return categoryTotalAmount.toLocaleString(undefined, {
                 .fill("")
                 .map((_, i) => {
                     if (i === 2) {
-return `TOTAL - FOR ${procurementType}`;
-}
+                        return `TOTAL - FOR ${procurementType}`;
+                    }
 
                     if (i === 6) {
-return procurementTypeTotalAmount.toLocaleString(undefined, {
+                        return procurementTypeTotalAmount.toLocaleString(undefined, {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                         });
-}
+                    }
 
                     const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
 
@@ -1315,15 +1315,15 @@ return procurementTypeTotalAmount.toLocaleString(undefined, {
             .fill("")
             .map((_, i) => {
                 if (i === 2) {
-return "GRAND TOTAL - FOR THE AIP/PPA";
-}
+                    return "GRAND TOTAL - FOR THE AIP/PPA";
+                }
 
                 if (i === 6) {
-return grandTotalAmount.toLocaleString(undefined, {
+                    return grandTotalAmount.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                     });
-}
+                }
 
                 const monthAmtCols = [8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
 

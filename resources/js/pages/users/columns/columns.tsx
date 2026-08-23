@@ -1,34 +1,32 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
-import type { User } from '@/types';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Pencil } from "lucide-react";
+import { Button } from "@/components/base-ui-components/ui/button";
+import type { User } from "@/types";
 
 const columnHelper = createColumnHelper<User>();
 
 const columns = [
-    columnHelper.accessor('name', {
+    columnHelper.accessor("name", {
         size: 200,
         header: () => <div className="px-1">Name</div>,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
-    columnHelper.accessor('email', {
+    columnHelper.accessor("email", {
         size: 250,
         header: () => <div className="px-1">Email</div>,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
-    columnHelper.accessor('office.name', {
+    columnHelper.accessor("office.name", {
         size: 300,
         header: () => <div className="px-1">Department / Office</div>,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
-    columnHelper.accessor('role.name', {
+    columnHelper.accessor("role.name", {
         size: 100,
         header: () => <div className="px-1">Role</div>,
-        cell: (info) => (
-            <div className="px-1 text-wrap">{info.getValue() ?? '-'}</div>
-        ),
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue() ?? "-"}</div>,
     }),
-    columnHelper.accessor('position', {
+    columnHelper.accessor("position", {
         size: 200,
         header: () => <div className="px-1">Assigned Position</div>,
         cell: (info) => {
@@ -41,31 +39,27 @@ const columns = [
             return (
                 <div className="px-1 text-wrap">
                     {position.item_number}
-                    {position.ios ? ` — ${position.ios.class}` : ''}
+                    {position.ios ? ` — ${position.ios.class}` : ""}
                 </div>
             );
         },
     }),
-    columnHelper.accessor('step', {
+    columnHelper.accessor("step", {
         size: 100,
         header: () => <div className="px-1">Step</div>,
         cell: (info) => {
             const step = info.getValue();
 
-            return (
-                <div className="px-1 text-wrap slashed-zero tabular-nums">
-                    {step ?? '-'}
-                </div>
-            );
+            return <div className="px-1 text-wrap slashed-zero tabular-nums">{step ?? "-"}</div>;
         },
     }),
-    columnHelper.accessor('status', {
+    columnHelper.accessor("status", {
         size: 100,
         header: () => <div className="px-1">Status</div>,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.display({
-        id: 'actions',
+        id: "actions",
         size: 46,
         cell: ({ row, table }) => {
             const meta = table.options.meta as
@@ -79,8 +73,7 @@ const columns = [
             const editAll = meta?.editAll ?? false;
             const editOwn = meta?.editOwn ?? false;
             const userOfficeId = meta?.userOfficeId ?? null;
-            const canEditRow =
-                editAll || (editOwn && row.original.office_id === userOfficeId);
+            const canEditRow = editAll || (editOwn && row.original.office_id === userOfficeId);
 
             return (
                 <div>

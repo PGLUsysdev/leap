@@ -57,8 +57,8 @@ export function computePsCoaTotals(
 
     for (const coa of chartOfAccounts) {
         if (coa.expense_class !== "PS") {
-continue;
-}
+            continue;
+        }
 
         let total = 0;
 

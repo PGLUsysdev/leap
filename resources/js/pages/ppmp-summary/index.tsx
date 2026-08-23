@@ -1,12 +1,9 @@
 // import { type BreadcrumbItem } from '@/types';
-import { useMemo } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { index as aipIndex } from '@/routes/aip';
-import { getPriceListColumns } from './columns/columns';
+import { useMemo } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { index as aipIndex } from "@/routes/aip";
+import { getPriceListColumns } from "./columns/columns";
 
 interface PpmpSummaryPageProps {
     priceLists: any[];
@@ -19,10 +16,7 @@ export default function PpmpSummaryPage({
 }: PpmpSummaryPageProps) {
     // console.log(priceLists);
 
-    const columns = useMemo(
-        () => getPriceListColumns(priceLists),
-        [priceLists],
-    );
+    const columns = useMemo(() => getPriceListColumns(priceLists), [priceLists]);
 
     return (
         <>
@@ -43,7 +37,7 @@ export default function PpmpSummaryPage({
 
 PpmpSummaryPage.layout = {
     breadcrumbs: [
-        { title: 'Annual Investment Programs', href: aipIndex() },
-        { title: `PPMP Summary`, href: '#' },
+        { title: "Annual Investment Programs", href: aipIndex() },
+        { title: `PPMP Summary`, href: "#" },
     ],
 };

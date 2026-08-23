@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router } from "@inertiajs/react";
 import {
     Move,
     FolderOpen,
@@ -7,10 +7,10 @@ import {
     Info,
     Home,
     ChevronRight,
-} from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
-import NewTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
+} from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import NewTable from "@/components/base-ui-components/data-table";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -18,12 +18,12 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
-import type { Ppa, PaginatedResponse, Filter } from '@/types';
-import columns from './columns/move-columns';
+} from "@/components/base-ui-components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
+import type { Ppa, PaginatedResponse, Filter } from "@/types";
+import columns from "./columns/move-columns";
 
 interface PpaMoveDialogProps {
     isOpen: boolean;
@@ -32,7 +32,7 @@ interface PpaMoveDialogProps {
     filters: Filter;
     dialogPpaTree: PaginatedResponse<Ppa> | [];
     dialogCurrent: Ppa[];
-    ppaTypes: Ppa['type'][];
+    ppaTypes: Ppa["type"][];
 }
 
 const isValidParentType = (
@@ -42,11 +42,7 @@ const isValidParentType = (
 ): boolean => {
     const targetIndex = ppaTypes.indexOf(targetType);
     const sourceIndex = ppaTypes.indexOf(sourceType);
-    return (
-        targetIndex !== -1 &&
-        sourceIndex !== -1 &&
-        targetIndex === sourceIndex - 1
-    );
+    return targetIndex !== -1 && sourceIndex !== -1 && targetIndex === sourceIndex - 1;
 };
 
 export default function PpaMoveDialog({
@@ -67,20 +63,16 @@ export default function PpaMoveDialog({
     }, [filters?.dialog_id]);
 
     const buttonLabels = useMemo(() => {
-        const currentFolder =
-            dialogCurrent.length > 0 ? dialogCurrent[0] : null;
-        const isProgram = ppaToMove?.type === (ppaTypes[0] || 'Program');
-        const isSameFolder =
-            ppaToMove &&
-            currentFolder &&
-            ppaToMove.parent_id === currentFolder.id;
+        const currentFolder = dialogCurrent.length > 0 ? dialogCurrent[0] : null;
+        const isProgram = ppaToMove?.type === (ppaTypes[0] || "Program");
+        const isSameFolder = ppaToMove && currentFolder && ppaToMove.parent_id === currentFolder.id;
 
         const defaultState = {
             showSiblingButtons: false,
             siblingEnabled: false,
             showMoveHereButton: true,
             moveHereEnabled: false,
-            moveHereLabel: 'Select a destination',
+            moveHereLabel: "Select a destination",
             moveHereIcon: <Info className="mr-2 h-4 w-4" />,
             targetId: null as number | null,
         };
@@ -92,15 +84,14 @@ export default function PpaMoveDialog({
         // RULE 1: ROOT PROGRAMS OR MOVING WITHIN THE SAME FOLDER
         // Must ONLY allow "Move Above / Below" sibling actions, kept disabled until selected
         if (isProgram || isSameFolder) {
-            const isSelectedSibling =
-                selectedTarget && selectedTarget.type === ppaToMove.type;
+            const isSelectedSibling = selectedTarget && selectedTarget.type === ppaToMove.type;
 
             return {
                 showSiblingButtons: true,
                 siblingEnabled: !!isSelectedSibling,
                 showMoveHereButton: false,
                 moveHereEnabled: false,
-                moveHereLabel: '',
+                moveHereLabel: "",
                 moveHereIcon: null,
                 targetId: isSelectedSibling ? selectedTarget.id : null,
             };
@@ -116,7 +107,7 @@ export default function PpaMoveDialog({
                     siblingEnabled: true,
                     showMoveHereButton: false,
                     moveHereEnabled: false,
-                    moveHereLabel: '',
+                    moveHereLabel: "",
                     moveHereIcon: null,
                     targetId: selectedTarget.id,
                 };
@@ -127,7 +118,7 @@ export default function PpaMoveDialog({
                     siblingEnabled: false,
                     showMoveHereButton: true,
                     moveHereEnabled: true,
-                    moveHereLabel: 'Move Into Folder',
+                    moveHereLabel: "Move Into Folder",
                     moveHereIcon: <FolderOpen className="mr-2 h-4 w-4" />,
                     targetId: selectedTarget.id,
                 };
@@ -136,18 +127,14 @@ export default function PpaMoveDialog({
 
         // RULE 3: EMPTY SELECTION, INSIDE ANOTHER FOLDER
         if (currentFolder) {
-            const canMoveHere = isValidParentType(
-                currentFolder.type,
-                ppaToMove.type,
-                ppaTypes,
-            );
+            const canMoveHere = isValidParentType(currentFolder.type, ppaToMove.type, ppaTypes);
 
             return {
                 showSiblingButtons: false,
                 siblingEnabled: false,
                 showMoveHereButton: true,
                 moveHereEnabled: canMoveHere,
-                moveHereLabel: canMoveHere ? 'Move Here' : 'Cannot place here',
+                moveHereLabel: canMoveHere ? "Move Here" : "Cannot place here",
                 moveHereIcon: canMoveHere ? (
                     <ArrowDownToLine className="mr-2 h-4 w-4" />
                 ) : (
@@ -160,7 +147,7 @@ export default function PpaMoveDialog({
         return defaultState;
     }, [selectedTarget, ppaToMove, dialogCurrent, ppaTypes]);
 
-    const handleMove = (direction: 'top' | 'bottom' | 'into') => {
+    const handleMove = (direction: "top" | "bottom" | "into") => {
         const finalTargetId = buttonLabels.targetId;
 
         if (!finalTargetId || !ppaToMove) {
@@ -182,35 +169,35 @@ export default function PpaMoveDialog({
 
     function handleShowChildren(ppa: Ppa) {
         router.get(
-            'ppa',
+            "ppa",
             {
                 ...filters,
-                dialog_mode: 'move',
+                dialog_mode: "move",
                 dialog_id: ppa.id,
                 dialog_page: 1,
             },
             {
                 preserveState: true,
-                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                only: ["dialogPpaTree", "dialogCurrent", "filters"],
             },
         );
     }
 
     function navigateToBreadcrumb(id: number | null) {
         router.get(
-            'ppa',
+            "ppa",
             { ...filters, dialog_id: id, dialog_page: 1 },
             {
                 preserveState: true,
-                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                only: ["dialogPpaTree", "dialogCurrent", "filters"],
             },
         );
     }
 
     const handleOpenChange = (open: boolean) => {
         if (!open) {
-setSelectedTarget(null);
-}
+            setSelectedTarget(null);
+        }
 
         onOpenChange(open);
     };
@@ -237,10 +224,7 @@ setSelectedTarget(null);
                     </Button>
 
                     {[...dialogCurrent].reverse().map((item) => (
-                        <div
-                            key={item.id}
-                            className="flex min-w-0 items-center gap-2"
-                        >
+                        <div key={item.id} className="flex min-w-0 items-center gap-2">
                             <ChevronRight className="h-4 w-4 shrink-0 opacity-30" />
 
                             <Button
@@ -275,10 +259,7 @@ setSelectedTarget(null);
                                         </p>
                                     </div>
                                 </div>
-                                <Badge
-                                    variant="outline"
-                                    className="bg-background"
-                                >
+                                <Badge variant="outline" className="bg-background">
                                     {ppaToMove?.type}
                                 </Badge>
                             </div>
@@ -302,7 +283,7 @@ setSelectedTarget(null);
                                 const isSibling = ppa.type === ppaToMove?.type;
                                 const isParent = isValidParentType(
                                     ppa.type,
-                                    ppaToMove?.type ?? '',
+                                    ppaToMove?.type ?? "",
                                     ppaTypes,
                                 );
 
@@ -310,17 +291,13 @@ setSelectedTarget(null);
                                     setSelectedTarget(ppa);
                                 }
                             }}
-                            selectedValue={
-                                selectedTarget ? String(selectedTarget.id) : ''
-                            }
+                            selectedValue={selectedTarget ? String(selectedTarget.id) : ""}
                             selectedKey="id"
-                            disabledValue={
-                                ppaToMove ? String(ppaToMove.id) : ''
-                            }
+                            disabledValue={ppaToMove ? String(ppaToMove.id) : ""}
                             disabledKey="id"
                             pageParamName="dialog_page"
                             searchParamName="dialog_search"
-                            only={['dialogPpaTree', 'dialogCurrent', 'filters']}
+                            only={["dialogPpaTree", "dialogCurrent", "filters"]}
                             meta={
                                 {
                                     ppaToMove: ppaToMove,
@@ -363,24 +340,18 @@ setSelectedTarget(null);
                                 <>
                                     <Button
                                         variant="outline"
-                                        onClick={() => handleMove('top')}
-                                        disabled={
-                                            !buttonLabels.siblingEnabled ||
-                                            loading
-                                        }
+                                        onClick={() => handleMove("top")}
+                                        disabled={!buttonLabels.siblingEnabled || loading}
                                     >
-                                        <ArrowUpToLine className="mr-2 h-4 w-4" />{' '}
-                                        Move Above Sibling
+                                        <ArrowUpToLine className="mr-2 h-4 w-4" /> Move Above
+                                        Sibling
                                     </Button>
                                     <Button
-                                        onClick={() => handleMove('bottom')}
-                                        disabled={
-                                            !buttonLabels.siblingEnabled ||
-                                            loading
-                                        }
+                                        onClick={() => handleMove("bottom")}
+                                        disabled={!buttonLabels.siblingEnabled || loading}
                                     >
-                                        <ArrowDownToLine className="mr-2 h-4 w-4" />{' '}
-                                        Move Below Sibling
+                                        <ArrowDownToLine className="mr-2 h-4 w-4" /> Move Below
+                                        Sibling
                                     </Button>
                                 </>
                             )}
@@ -388,10 +359,8 @@ setSelectedTarget(null);
                             {/* CONDITION B: Show single dynamic "Move Here" / "Move Into Folder" action button */}
                             {buttonLabels.showMoveHereButton && (
                                 <Button
-                                    onClick={() => handleMove('into')}
-                                    disabled={
-                                        !buttonLabels.moveHereEnabled || loading
-                                    }
+                                    onClick={() => handleMove("into")}
+                                    disabled={!buttonLabels.moveHereEnabled || loading}
                                     className="gap-2"
                                 >
                                     {loading ? (

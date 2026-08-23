@@ -1,4 +1,4 @@
-import type ExcelJS from 'exceljs';
+import type ExcelJS from "exceljs";
 
 interface ColumnMap {
     ppa: string;
@@ -22,7 +22,7 @@ interface ExtractConfig {
     columnMap: ColumnMap;
 }
 
-export type NodeType = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
+export type NodeType = "Program" | "Project" | "Activity" | "Sub-Activity";
 
 export interface PpaRow {
     tempId: number;
@@ -58,19 +58,19 @@ export interface ExtractResult {
 
 function getType(value: string): NodeType | null {
     if (/^[A-Z]\.\s/.test(value)) {
-        return 'Program';
+        return "Program";
     }
 
     if (/^\d+\.\d+\.\d+\.\s/.test(value)) {
-        return 'Sub-Activity';
+        return "Sub-Activity";
     }
 
     if (/^\d+\.\d+\.\s/.test(value)) {
-        return 'Activity';
+        return "Activity";
     }
 
     if (/^\d+\.\s/.test(value)) {
-        return 'Project';
+        return "Project";
     }
 
     return null;
@@ -78,15 +78,15 @@ function getType(value: string): NodeType | null {
 
 function cleanName(value: string): string {
     return value
-        .replace(/^[A-Z]\.\s*/, '')
-        .replace(/^\d+(?:\.\d+)*\.\s*/, '')
+        .replace(/^[A-Z]\.\s*/, "")
+        .replace(/^\d+(?:\.\d+)*\.\s*/, "")
         .trim();
 }
 
 function cellText(cell: ExcelJS.Cell): string | null {
     let value: any = cell.value;
 
-    if (typeof value === 'object' && value !== null && 'result' in value) {
+    if (typeof value === "object" && value !== null && "result" in value) {
         value = value.result;
     }
 
@@ -100,19 +100,19 @@ function cellText(cell: ExcelJS.Cell): string | null {
 function cellNumber(cell: ExcelJS.Cell): number | null {
     let value: any = cell.value;
 
-    if (typeof value === 'object' && value !== null && 'result' in value) {
+    if (typeof value === "object" && value !== null && "result" in value) {
         value = value.result;
     }
 
-    if (value == null || value === '') {
+    if (value == null || value === "") {
         return null;
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
         return value;
     }
 
-    const parsed = Number(String(value).replace(/,/g, '').trim());
+    const parsed = Number(String(value).replace(/,/g, "").trim());
 
     return Number.isNaN(parsed) ? null : parsed;
 }
@@ -152,24 +152,24 @@ export function extractData(config: ExtractConfig): ExtractResult {
         let parentTempId: number | null = null;
 
         switch (type) {
-            case 'Program':
+            case "Program":
                 currentProgramTempId = tempId;
                 currentProjectTempId = null;
                 currentActivityTempId = null;
                 break;
 
-            case 'Project':
+            case "Project":
                 parentTempId = currentProgramTempId;
                 currentProjectTempId = tempId;
                 currentActivityTempId = null;
                 break;
 
-            case 'Activity':
+            case "Activity":
                 parentTempId = currentProjectTempId;
                 currentActivityTempId = tempId;
                 break;
 
-            case 'Sub-Activity':
+            case "Sub-Activity":
                 parentTempId = currentActivityTempId;
                 break;
         }

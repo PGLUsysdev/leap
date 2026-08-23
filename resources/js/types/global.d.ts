@@ -1,14 +1,14 @@
-import type { Auth } from '@/types/auth';
-import type { FiscalYear } from '.';
+import type { Auth } from "@/types/auth";
+import type { FiscalYear } from ".";
 
-declare module 'react' {
+declare module "react" {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     interface InputHTMLAttributes<T> {
         passwordrules?: string;
     }
 }
 
-declare module '@inertiajs/core' {
+declare module "@inertiajs/core" {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
@@ -19,7 +19,7 @@ declare module '@inertiajs/core' {
     }
 }
 
-declare module '@tanstack/react-table' {
+declare module "@tanstack/react-table" {
     // Generic params must match TanStack's ColumnMeta exactly for merging,
     // even though they are not referenced here.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -43,10 +43,7 @@ declare module '@tanstack/react-table' {
 
         onUpdate?: (data: TData) => void;
         onAdd?: (data: TData, type?: string) => void;
-        onUpdateStatus?: (
-            data: TData,
-            status: 'draft' | 'open' | 'locked' | 'archived',
-        ) => void;
+        onUpdateStatus?: (data: TData, status: "draft" | "open" | "locked" | "archived") => void;
         onOpen?: (data: TData) => void;
         onGeneratePdf?: (data: TData) => void;
         onOpenPpmpSummary?: (data: TData) => void;

@@ -187,12 +187,12 @@ const fmt = (v: string) => {
     const num = parseFloat(v || "0");
 
     if (isNaN(num) || !isFinite(num)) {
-return "-";
-}
+        return "-";
+    }
 
     if (num === 0) {
-return "-";
-}
+        return "-";
+    }
 
     return num.toLocaleString(undefined, {
         minimumFractionDigits: 2,
@@ -220,8 +220,8 @@ const MyDocument = ({ sections, psComputationData }: MyDocumentProps) => {
     // match the same per-position logic used in the PS Breakdown table.
     const effectivePsSection: SectionData = (() => {
         if (!psComputationData) {
-return sections.ps;
-}
+            return sections.ps;
+        }
 
         const { positions, chartOfAccounts, rates, annualRateMap } = psComputationData;
         const psCoas = chartOfAccounts.filter((coa) => coa.expense_class === "PS");
@@ -233,8 +233,8 @@ return sections.ps;
                 const val = getCellNumericValue(pos, coa, rates, annualRateMap);
 
                 if (val !== null) {
-total += val;
-}
+                    total += val;
+                }
             }
 
             return {

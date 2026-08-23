@@ -1,13 +1,13 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Decimal } from 'decimal.js';
-import { Plus, Pencil, Trash, ShieldCheck } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { FlattenedPpa, PpaFundingSource } from '@/types';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Decimal } from "decimal.js";
+import { Plus, Pencil, Trash, ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { FlattenedPpa, PpaFundingSource } from "@/types";
 
 export const formatNumber = (val: string | null) => {
     if (!val) {
-        return '-';
+        return "-";
     }
 
     const num = parseFloat(val);
@@ -17,25 +17,25 @@ export const formatNumber = (val: string | null) => {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
           })
-        : '-';
+        : "-";
 };
 
 export const formatDate = (dateString: string) => {
     const months = [
-        'Jan',
-        'Feb',
-        'Mar',
-        'Apr',
-        'May',
-        'Jun',
-        'Jul',
-        'Aug',
-        'Sep',
-        'Oct',
-        'Nov',
-        'Dec',
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
     ];
-    const dateSplit = dateString.split('-');
+    const dateSplit = dateString.split("-");
 
     return `${months[Number(dateSplit[1]) - 1]}-${dateSplit[0].slice(2)}`;
 };
@@ -43,8 +43,7 @@ export const formatDate = (dateString: string) => {
 const sumField = (rows: any[], field: keyof PpaFundingSource) => {
     return rows.reduce((sum, row) => {
         const value = row.original.current_fs?.[field];
-        const num =
-            typeof value === 'string' ? parseFloat(value) : (value ?? 0);
+        const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
 
         return sum + (isNaN(num) ? 0 : num);
     }, 0);
@@ -53,38 +52,27 @@ const sumField = (rows: any[], field: keyof PpaFundingSource) => {
 const columnHelper = createColumnHelper<FlattenedPpa>();
 
 const columns = [
-    columnHelper.accessor('full_code', {
-        id: 'full_code',
+    columnHelper.accessor("full_code", {
+        id: "full_code",
         size: 220,
         header: () => <div className="px-1">AIP Reference Code</div>,
         cell: (info) => {
-            return (
-                <div className="px-1 font-mono text-wrap">
-                    {info.getValue()}
-                </div>
-            );
+            return <div className="px-1 font-mono text-wrap">{info.getValue()}</div>;
         },
         meta: { rowSpan: true },
     }),
-    columnHelper.accessor('name', {
-        id: 'name',
+    columnHelper.accessor("name", {
+        id: "name",
         size: 400,
-        header: () => (
-            <div className="px-1">Program/Project/Activity Description</div>
-        ),
+        header: () => <div className="px-1">Program/Project/Activity Description</div>,
         cell: ({ row }) => {
             const ppa = row.original;
 
             return (
                 <div className="px-1">
-                    <div
-                        style={{ paddingLeft: `${ppa.depth * 20}px` }}
-                        className="flex gap-2"
-                    >
+                    <div style={{ paddingLeft: `${ppa.depth * 20}px` }} className="flex gap-2">
                         {row.original.depth > 0 && (
-                            <span className="text-muted-foreground opacity-50">
-                                ↳
-                            </span>
+                            <span className="text-muted-foreground opacity-50">↳</span>
                         )}
 
                         <div className="flex flex-col">
@@ -94,9 +82,7 @@ const columns = [
                             <div className="flex flex-wrap items-center gap-1.5">
                                 <span
                                     className={`wrap-break-words leading-tight whitespace-normal ${
-                                        ppa.depth === 0
-                                            ? 'font-bold'
-                                            : 'font-medium'
+                                        ppa.depth === 0 ? "font-bold" : "font-medium"
                                     }`}
                                 >
                                     {ppa.name}
@@ -119,8 +105,8 @@ const columns = [
         },
         meta: { rowSpan: true },
     }),
-    columnHelper.accessor('office.acronym', {
-        id: 'office_acronym',
+    columnHelper.accessor("office.acronym", {
+        id: "office_acronym",
         size: 200,
         header: () => <div className="px-1">Implementing Office</div>,
         cell: ({ row }) => {
@@ -134,157 +120,125 @@ const columns = [
                 );
             }
 
-            return (
-                <div className="px-1 text-wrap">{office?.acronym || '-'}</div>
-            );
+            return <div className="px-1 text-wrap">{office?.acronym || "-"}</div>;
         },
         meta: { rowSpan: true },
     }),
     columnHelper.group({
-        id: 'schedule',
+        id: "schedule",
         size: 200,
         header: () => <div className="px-1 text-left">Schedule</div>,
         columns: [
-            columnHelper.accessor('aip_entry', {
-                id: 'start_date',
+            columnHelper.accessor("aip_entry", {
+                id: "start_date",
                 size: 100,
                 header: () => <div className="px-1">Start</div>,
                 cell: (info) => (
                     <div className="px-1 text-wrap">
                         {info.getValue()?.start_date
                             ? formatDate(info.getValue()?.start_date)
-                            : '-'}
+                            : "-"}
                     </div>
                 ),
                 meta: { rowSpan: true },
             }),
-            columnHelper.accessor('aip_entry', {
-                id: 'end_date',
+            columnHelper.accessor("aip_entry", {
+                id: "end_date",
                 size: 100,
                 header: () => <div className="px-1">End</div>,
                 cell: (info) => (
                     <div className="px-1 text-wrap">
-                        {info.getValue()?.end_date
-                            ? formatDate(info.getValue()?.end_date)
-                            : '-'}
+                        {info.getValue()?.end_date ? formatDate(info.getValue()?.end_date) : "-"}
                     </div>
                 ),
                 meta: { rowSpan: true },
             }),
         ],
     }),
-    columnHelper.accessor('aip_entry', {
-        id: 'expected_output',
+    columnHelper.accessor("aip_entry", {
+        id: "expected_output",
         size: 400,
         header: () => <div className="px-1">Expected Outputs</div>,
         cell: (info) => (
-            <div className="px-1 text-wrap">
-                {info.getValue()?.expected_output || '—'}
-            </div>
+            <div className="px-1 text-wrap">{info.getValue()?.expected_output || "—"}</div>
         ),
         meta: { rowSpan: true },
     }),
-    columnHelper.accessor('current_fs.funding_source.code', {
-        id: 'funding_sources',
+    columnHelper.accessor("current_fs.funding_source.code", {
+        id: "funding_sources",
         size: 300,
         header: () => <div className="px-1">Funding Source</div>,
         cell: (info) => (
             <div className="px-1 text-wrap">
-                {info.getValue() ? <Badge>{info.getValue()}</Badge> : '-'}
+                {info.getValue() ? <Badge>{info.getValue()}</Badge> : "-"}
             </div>
         ),
     }),
 
     // --- GROUPED AMOUNTS ---
     columnHelper.group({
-        id: 'amount',
+        id: "amount",
         // size: 100,
-        header: () => (
-            <div className="px-1 text-center">Amount (in thousand pesos)</div>
-        ),
+        header: () => <div className="px-1 text-center">Amount (in thousand pesos)</div>,
         columns: [
-            columnHelper.accessor('current_fs.ps_amount', {
-                id: 'ps_amount',
+            columnHelper.accessor("current_fs.ps_amount", {
+                id: "ps_amount",
                 size: 150,
                 header: () => <div className="px-1 text-right">PS</div>,
                 cell: (info) => (
-                    <div className="px-1 text-right text-wrap">
-                        {formatNumber(info.getValue())}
-                    </div>
+                    <div className="px-1 text-right text-wrap">{formatNumber(info.getValue())}</div>
                 ),
                 footer: ({ table }) => {
                     const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'ps_amount');
+                    const total = sumField(rows, "ps_amount");
 
-                    return (
-                        <div className="px-1 text-right">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
+                    return <div className="px-1 text-right">{formatNumber(total.toString())}</div>;
                 },
             }),
-            columnHelper.accessor('current_fs.mooe_amount', {
-                id: 'mooe_amount',
+            columnHelper.accessor("current_fs.mooe_amount", {
+                id: "mooe_amount",
                 size: 150,
                 header: () => <div className="px-1 text-right">MOOE</div>,
                 cell: (info) => (
-                    <div className="px-1 text-right text-wrap">
-                        {formatNumber(info.getValue())}
-                    </div>
+                    <div className="px-1 text-right text-wrap">{formatNumber(info.getValue())}</div>
                 ),
                 footer: ({ table }) => {
                     const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'mooe_amount');
+                    const total = sumField(rows, "mooe_amount");
 
-                    return (
-                        <div className="px-1 text-right">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
+                    return <div className="px-1 text-right">{formatNumber(total.toString())}</div>;
                 },
             }),
-            columnHelper.accessor('current_fs.fe_amount', {
-                id: 'fe_amount',
+            columnHelper.accessor("current_fs.fe_amount", {
+                id: "fe_amount",
                 size: 150,
                 header: () => <div className="px-1 text-right">FE</div>,
                 cell: (info) => (
-                    <div className="px-1 text-right text-wrap">
-                        {formatNumber(info.getValue())}
-                    </div>
+                    <div className="px-1 text-right text-wrap">{formatNumber(info.getValue())}</div>
                 ),
                 footer: ({ table }) => {
                     const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'fe_amount');
+                    const total = sumField(rows, "fe_amount");
 
-                    return (
-                        <div className="px-1 text-right">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
+                    return <div className="px-1 text-right">{formatNumber(total.toString())}</div>;
                 },
             }),
-            columnHelper.accessor('current_fs.co_amount', {
-                id: 'co_amount',
+            columnHelper.accessor("current_fs.co_amount", {
+                id: "co_amount",
                 size: 150,
                 header: () => <div className="px-1 text-right">CO</div>,
                 cell: (info) => (
-                    <div className="px-1 text-right text-wrap">
-                        {formatNumber(info.getValue())}
-                    </div>
+                    <div className="px-1 text-right text-wrap">{formatNumber(info.getValue())}</div>
                 ),
                 footer: ({ table }) => {
                     const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'co_amount');
+                    const total = sumField(rows, "co_amount");
 
-                    return (
-                        <div className="px-1 text-right">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
+                    return <div className="px-1 text-right">{formatNumber(total.toString())}</div>;
                 },
             }),
             columnHelper.display({
-                id: 'amount_total',
+                id: "amount_total",
                 size: 150,
                 header: () => <div className="px-1 text-right">Total</div>,
                 cell: ({ row }) => {
@@ -322,11 +276,7 @@ const columns = [
                         return sum + rowTotal.toNumber();
                     }, 0);
 
-                    return (
-                        <div className="px-1 text-right">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
+                    return <div className="px-1 text-right">{formatNumber(total.toString())}</div>;
                 },
             }),
         ],
@@ -334,71 +284,55 @@ const columns = [
 
     // --- GROUPED CLIMATE CHANGE ---
     columnHelper.group({
-        id: 'climateChange',
+        id: "climateChange",
         // size: 100,
-        header: () => (
-            <div className="px-1 text-center">Climate Change Expenditure</div>
-        ),
+        header: () => <div className="px-1 text-center">Climate Change Expenditure</div>,
         columns: [
-            columnHelper.accessor('current_fs.ccet_adaptation', {
-                id: 'cc_adaptation',
+            columnHelper.accessor("current_fs.ccet_adaptation", {
+                id: "cc_adaptation",
                 size: 150,
                 header: () => <div className="px-1 text-right">Adaptation</div>,
                 cell: (info) => (
-                    <div className="px-1 text-right text-wrap">
-                        {formatNumber(info.getValue())}
-                    </div>
+                    <div className="px-1 text-right text-wrap">{formatNumber(info.getValue())}</div>
                 ),
                 footer: ({ table }) => {
                     const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'ccet_adaptation');
+                    const total = sumField(rows, "ccet_adaptation");
 
-                    return (
-                        <div className="px-1 text-right">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
+                    return <div className="px-1 text-right">{formatNumber(total.toString())}</div>;
                 },
             }),
-            columnHelper.accessor('current_fs.ccet_mitigation', {
-                id: 'cc_mitigation',
+            columnHelper.accessor("current_fs.ccet_mitigation", {
+                id: "cc_mitigation",
                 size: 150,
-                header: () => (
-                    <div className="px-1 text-right text-wrap">Mitigation</div>
-                ),
+                header: () => <div className="px-1 text-right text-wrap">Mitigation</div>,
                 cell: (info) => (
-                    <div className="px-1 text-right">
-                        {formatNumber(info.getValue())}
-                    </div>
+                    <div className="px-1 text-right">{formatNumber(info.getValue())}</div>
                 ),
                 footer: ({ table }) => {
                     const rows = table.getFilteredRowModel().flatRows;
-                    const total = sumField(rows, 'ccet_mitigation');
+                    const total = sumField(rows, "ccet_mitigation");
 
-                    return (
-                        <div className="px-1 text-right">
-                            {formatNumber(total.toString())}
-                        </div>
-                    );
+                    return <div className="px-1 text-right">{formatNumber(total.toString())}</div>;
                 },
             }),
         ],
     }),
 
-    columnHelper.accessor('current_fs.cc_typology.code', {
-        id: 'cc_typology_code',
+    columnHelper.accessor("current_fs.cc_typology.code", {
+        id: "cc_typology_code",
         size: 100,
         header: () => <div className="px-1">Typology</div>,
         cell: (info) => {
             const code = info.getValue();
 
-            return <div className="px-1 text-wrap">{code || '-'}</div>;
+            return <div className="px-1 text-wrap">{code || "-"}</div>;
         },
         footer: () => <div className="px-1">-</div>,
     }),
 
     columnHelper.display({
-        id: 'actions',
+        id: "actions",
         size: 154,
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
@@ -413,9 +347,7 @@ const columns = [
             const canViewPsBreakdown = can?.viewPsBreakdown;
 
             if (isReadOnly) {
-                return (
-                    <div className="text-center text-muted-foreground">-</div>
-                );
+                return <div className="text-center text-muted-foreground">-</div>;
             }
 
             return (
@@ -424,9 +356,7 @@ const columns = [
                         size="icon"
                         variant="outline"
                         onClick={() => meta?.onAdd?.(row.original)}
-                        disabled={
-                            row.original.type === 'Sub-Activity' || !canImport
-                        }
+                        disabled={row.original.type === "Sub-Activity" || !canImport}
                     >
                         <Plus />
                     </Button>
@@ -449,25 +379,24 @@ const columns = [
                         size="icon"
                         variant="outline"
                         className={
-                            row.original.type === 'Program' &&
-                            !row.original.is_ps_pool
-                                ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
-                                : 'border-gray-300 text-gray-300'
+                            row.original.type === "Program" && !row.original.is_ps_pool
+                                ? "border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+                                : "border-gray-300 text-gray-300"
                         }
                         onClick={() => meta?.onSetAsPsPool?.(row.original)}
                         disabled={
-                            row.original.type !== 'Program' ||
+                            row.original.type !== "Program" ||
                             row.original.is_ps_pool ||
                             !canSetPsPool
                         }
                         title={
                             !canSetPsPool
                                 ? "You don't have permission to set the PS pool"
-                                : row.original.type !== 'Program'
-                                  ? 'Only Programs can be designated as the PS pool'
+                                : row.original.type !== "Program"
+                                  ? "Only Programs can be designated as the PS pool"
                                   : row.original.is_ps_pool
-                                    ? 'This Program is already the PS pool'
-                                    : 'Designate this Program as the PS pool'
+                                    ? "This Program is already the PS pool"
+                                    : "Designate this Program as the PS pool"
                         }
                     >
                         <ShieldCheck className="h-4 w-4" />

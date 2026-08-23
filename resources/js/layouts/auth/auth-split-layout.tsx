@@ -1,13 +1,9 @@
-import { Link, usePage } from '@inertiajs/react';
-import AppLogoIcon from '@/components/app-logo-icon';
-import { home } from '@/routes';
-import type { AuthLayoutProps } from '@/types';
+import { Link, usePage } from "@inertiajs/react";
+import AppLogoIcon from "@/components/app-logo-icon";
+import { home } from "@/routes";
+import type { AuthLayoutProps } from "@/types";
 
-export default function AuthSplitLayout({
-    children,
-    title,
-    description,
-}: AuthLayoutProps) {
+export default function AuthSplitLayout({ children, title, description }: AuthLayoutProps) {
     const { name } = usePage().props;
 
     return (
@@ -29,9 +25,7 @@ export default function AuthSplitLayout({
                     </Link>*/}
                     <div className="flex flex-col items-start gap-2 text-left sm:items-center sm:text-center">
                         <h1 className="text-xl font-medium">{title}</h1>
-                        <p className="text-sm text-balance text-muted-foreground">
-                            {description}
-                        </p>
+                        <p className="text-sm text-balance text-muted-foreground">{description}</p>
                     </div>
                     {children}
                 </div>

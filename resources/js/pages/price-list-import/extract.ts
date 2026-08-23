@@ -1,4 +1,4 @@
-import type ExcelJS from 'exceljs';
+import type ExcelJS from "exceljs";
 
 interface ColumnMap {
     chartOfAccount: string;
@@ -32,9 +32,9 @@ interface ExtractConfig {
 
 export function parseExcludeRows(raw: string): number[] {
     return raw
-        .split(',')
+        .split(",")
         .map((s) => s.trim())
-        .filter((s) => s !== '')
+        .filter((s) => s !== "")
         .map(Number)
         .filter((n) => !Number.isNaN(n));
 }
@@ -71,8 +71,8 @@ export interface ExtractResult {
 function cellText(cell: ExcelJS.Cell): string | null {
     let value: any = cell.value;
 
-    if (typeof value === 'object' && value !== null) {
-        if ('result' in value) {
+    if (typeof value === "object" && value !== null) {
+        if ("result" in value) {
             value = value.result;
         } else {
             return null;
@@ -94,35 +94,34 @@ function isSubtotalRow(name: string): boolean {
     );
 }
 
-export const NON_PROC_CATEGORY_PREFIX = 'Non-Procurement Items - ';
+export const NON_PROC_CATEGORY_PREFIX = "Non-Procurement Items - ";
 
 function cellNumber(cell: ExcelJS.Cell): number | null {
     let value: any = cell.value;
 
-    if (typeof value === 'object' && value !== null) {
-        if ('result' in value) {
+    if (typeof value === "object" && value !== null) {
+        if ("result" in value) {
             value = value.result;
         } else {
             return null;
         }
     }
 
-    if (value == null || value === '') {
+    if (value == null || value === "") {
         return null;
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
         return value;
     }
 
-    const parsed = Number(String(value).replace(/,/g, '').trim());
+    const parsed = Number(String(value).replace(/,/g, "").trim());
 
     return Number.isNaN(parsed) ? null : parsed;
 }
 
 export function extractData(config: ExtractConfig): ExtractResult {
-    const { worksheet, startRow, endRow, nonProcurementStartRow, columnMap } =
-        config;
+    const { worksheet, startRow, endRow, nonProcurementStartRow, columnMap } = config;
 
     const items: PriceListItem[] = [];
     const chartOfAccountSet = new Set<string>();
@@ -160,13 +159,7 @@ export function extractData(config: ExtractConfig): ExtractResult {
         const decQty = cellNumber(row.getCell(columnMap.decQty));
 
         // Skip fully empty rows
-        if (
-            !chartOfAccount &&
-            !category &&
-            !description &&
-            !unit &&
-            price === null
-        ) {
+        if (!chartOfAccount && !category && !description && !unit && price === null) {
             continue;
         }
 
@@ -184,15 +177,9 @@ export function extractData(config: ExtractConfig): ExtractResult {
 
                 // Look ahead to distinguish category header vs COA label
                 let isCoaLabel = false;
-                for (
-                    let lookRow = rowNumber + 1;
-                    lookRow <= lastRow;
-                    lookRow++
-                ) {
+                for (let lookRow = rowNumber + 1; lookRow <= lastRow; lookRow++) {
                     const nextRow = worksheet.getRow(lookRow);
-                    const nextCoa = cellText(
-                        nextRow.getCell(columnMap.chartOfAccount),
-                    );
+                    const nextCoa = cellText(nextRow.getCell(columnMap.chartOfAccount));
 
                     if (nextCoa) {
                         if (nextCoa === headerName) {
@@ -237,8 +224,8 @@ export function extractData(config: ExtractConfig): ExtractResult {
         if (!categorySet.has(itemCategory)) {
             const source =
                 rowNumber >= nonProcurementStartRow
-                    ? 'NON-PROC synthetic'
-                    : 'PROC synthetic (COA as category)';
+                    ? "NON-PROC synthetic"
+                    : "PROC synthetic (COA as category)";
             console.log(
                 `[Row ${rowNumber}] Category added from ITEM: "${itemCategory}" (${source})`,
             );
@@ -252,7 +239,7 @@ export function extractData(config: ExtractConfig): ExtractResult {
             tempId: nextTempId++,
             chartOfAccount,
             description,
-            unitOfMeasurement: unit ?? '',
+            unitOfMeasurement: unit ?? "",
             price,
             category: itemCategory,
             itemNumber,
@@ -276,7 +263,7 @@ export function extractData(config: ExtractConfig): ExtractResult {
         uniqueChartOfAccounts: [...chartOfAccountSet].sort(),
         uniqueCategories: [...categorySet].sort(),
         uniquePairs: [...pairsSet].sort().map((p) => {
-            const [category, chartOfAccount] = p.split('|');
+            const [category, chartOfAccount] = p.split("|");
             return { category, chartOfAccount };
         }),
     };
@@ -338,11 +325,8 @@ export interface ExtractQuantitiesConfig {
     excludeRows?: number[];
 }
 
-export function extractQuantities(
-    config: ExtractQuantitiesConfig,
-): QuantityRow[] {
-    const { worksheet, startRow, endRow, nonProcurementStartRow, columnMap } =
-        config;
+export function extractQuantities(config: ExtractQuantitiesConfig): QuantityRow[] {
+    const { worksheet, startRow, endRow, nonProcurementStartRow, columnMap } = config;
     const rows: QuantityRow[] = [];
     const lastRow = endRow ?? worksheet.rowCount;
     let nextTempId = 1;
@@ -356,7 +340,7 @@ export function extractQuantities(
         const row = worksheet.getRow(rowNumber);
         const chartOfAccount = cellText(row.getCell(columnMap.chartOfAccount));
         const category = cellText(row.getCell(columnMap.category));
-        const description = cellText(row.getCell(columnMap.description)) ?? '';
+        const description = cellText(row.getCell(columnMap.description)) ?? "";
 
         if (!chartOfAccount) {
             const headerName = category ?? description;
@@ -369,15 +353,9 @@ export function extractQuantities(
 
                 let isCoaLabel = false;
 
-                for (
-                    let lookRow = rowNumber + 1;
-                    lookRow <= lastRow;
-                    lookRow++
-                ) {
+                for (let lookRow = rowNumber + 1; lookRow <= lastRow; lookRow++) {
                     const nextRow = worksheet.getRow(lookRow);
-                    const nextCoa = cellText(
-                        nextRow.getCell(columnMap.chartOfAccount),
-                    );
+                    const nextCoa = cellText(nextRow.getCell(columnMap.chartOfAccount));
 
                     if (nextCoa) {
                         if (nextCoa === headerName) {
@@ -423,7 +401,7 @@ export function extractQuantities(
             category: itemCategory,
             chartOfAccount,
             description,
-            unitOfMeasurement: cellText(row.getCell(columnMap.unit)) ?? '',
+            unitOfMeasurement: cellText(row.getCell(columnMap.unit)) ?? "",
             price: cellNumber(row.getCell(columnMap.price)),
             total,
             janQty: cellNumber(row.getCell(columnMap.janQty)),

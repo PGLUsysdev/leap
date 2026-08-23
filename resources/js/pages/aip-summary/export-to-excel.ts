@@ -116,8 +116,8 @@ const expandPpaByFundingSource = (ppas: Ppa[], depth = 0, currentScope?: any): F
 // Format date to MM-DD format
 const formatDate = (value: string | null | undefined) => {
     if (!value) {
-return "-";
-}
+        return "-";
+    }
 
     const parts = value.split("-");
 
@@ -150,8 +150,8 @@ const formatNumber = (value: any) => {
     const num = parseFloat(value);
 
     if (!value || isNaN(num) || num === 0) {
-return "-";
-}
+        return "-";
+    }
 
     return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 2,

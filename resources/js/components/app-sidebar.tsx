@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage } from "@inertiajs/react";
 import {
     // BookOpen,
     // FolderGit2,
@@ -20,8 +20,8 @@ import {
     Network,
     Scale,
     AppWindow,
-} from 'lucide-react';
-import AppLogo from '@/components/app-logo';
+} from "lucide-react";
+import AppLogo from "@/components/app-logo";
 // import { NavFooter } from "@/components/nav-footer";
 import {
     Sidebar,
@@ -31,168 +31,168 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/base-ui-components/ui/sidebar';
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
-import { dashboard } from '@/routes';
-import { index as aipIndex } from '@/routes/aip';
-import { index as ccStrategicPriorityIndex } from '@/routes/cc-strategic-priority';
-import { index as ccSubSectorIndex } from '@/routes/cc-sub-sector';
-import { index as ccTypologyIndex } from '@/routes/cc-typology';
-import { manage as chartOfAccountsManage } from '@/routes/chart-of-accounts';
-import { index as fundingSourcesIndex } from '@/routes/funding-sources';
-import { index as iosIndex } from '@/routes/ios';
-import { index as lguLevelsIndex } from '@/routes/lgu-levels';
-import { index as officeTypesIndex } from '@/routes/office-types';
-import { index as officesIndex } from '@/routes/offices';
-import { index as positionIndex } from '@/routes/position';
-import { index as ppaIndex } from '@/routes/ppa';
-import { index as ppmpCategoriesIndex } from '@/routes/ppmp-categories';
-import { index as priceListsIndex } from '@/routes/price-lists';
-import { index as rolesIndex } from '@/routes/roles';
-import { index as salaryStandardIndex } from '@/routes/salary-standard';
-import { index as sectorsIndex } from '@/routes/sectors';
-import { index as usersIndex } from '@/routes/users';
-import type { NavItem, SharedData } from '@/types';
+} from "@/components/base-ui-components/ui/sidebar";
+import { NavMain } from "@/components/nav-main";
+import { NavUser } from "@/components/nav-user";
+import { dashboard } from "@/routes";
+import { index as aipIndex } from "@/routes/aip";
+import { index as ccStrategicPriorityIndex } from "@/routes/cc-strategic-priority";
+import { index as ccSubSectorIndex } from "@/routes/cc-sub-sector";
+import { index as ccTypologyIndex } from "@/routes/cc-typology";
+import { manage as chartOfAccountsManage } from "@/routes/chart-of-accounts";
+import { index as fundingSourcesIndex } from "@/routes/funding-sources";
+import { index as iosIndex } from "@/routes/ios";
+import { index as lguLevelsIndex } from "@/routes/lgu-levels";
+import { index as officeTypesIndex } from "@/routes/office-types";
+import { index as officesIndex } from "@/routes/offices";
+import { index as positionIndex } from "@/routes/position";
+import { index as ppaIndex } from "@/routes/ppa";
+import { index as ppmpCategoriesIndex } from "@/routes/ppmp-categories";
+import { index as priceListsIndex } from "@/routes/price-lists";
+import { index as rolesIndex } from "@/routes/roles";
+import { index as salaryStandardIndex } from "@/routes/salary-standard";
+import { index as sectorsIndex } from "@/routes/sectors";
+import { index as usersIndex } from "@/routes/users";
+import type { NavItem, SharedData } from "@/types";
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: "Dashboard",
         href: dashboard(),
         icon: LayoutGrid,
     },
     {
-        title: '',
-        href: '',
-        type: 'separator',
+        title: "",
+        href: "",
+        type: "separator",
     },
     {
-        title: 'Annual Investment Programs',
+        title: "Annual Investment Programs",
         href: aipIndex(),
         icon: FolderTree,
-        permission: 'fiscal-year.view',
+        permission: "fiscal-year.view",
     },
     {
-        title: 'PPA Masterlist',
+        title: "PPA Masterlist",
         href: ppaIndex(),
         icon: ClipboardList,
-        permission: 'ppa.view',
+        permission: "ppa.view",
     },
     {
-        title: 'Offices',
+        title: "Offices",
         href: officesIndex(),
         icon: Building2,
-        permission: 'office.view',
+        permission: "office.view",
     },
     {
-        title: 'Sectors',
+        title: "Sectors",
         href: sectorsIndex(),
         icon: PieChart,
-        permission: 'sector.view',
+        permission: "sector.view",
     },
     {
-        title: 'LGU Levels',
+        title: "LGU Levels",
         href: lguLevelsIndex(),
         icon: Layers,
-        permission: 'lgu-level.view',
+        permission: "lgu-level.view",
     },
     {
-        title: 'Office Types',
+        title: "Office Types",
         href: officeTypesIndex(),
         icon: Briefcase,
-        permission: 'office-type.view',
+        permission: "office-type.view",
     },
     {
-        title: '',
-        href: '',
-        type: 'separator',
+        title: "",
+        href: "",
+        type: "separator",
     },
     {
-        title: 'Price Lists',
+        title: "Price Lists",
         href: priceListsIndex(),
         icon: Receipt,
-        permission: 'price-list.view',
+        permission: "price-list.view",
     },
     {
-        title: 'PPMP Categories',
+        title: "PPMP Categories",
         href: ppmpCategoriesIndex(),
         icon: Tags,
-        permission: 'ppmp-category.view',
+        permission: "ppmp-category.view",
     },
     {
-        title: 'Chart of Accounts',
+        title: "Chart of Accounts",
         href: chartOfAccountsManage(),
         icon: Calculator,
-        permission: 'chart-of-account.view',
+        permission: "chart-of-account.view",
     },
     {
-        title: 'Funding Sources',
+        title: "Funding Sources",
         href: fundingSourcesIndex(),
         icon: Landmark,
-        permission: 'funding-source.view',
+        permission: "funding-source.view",
     },
     {
-        title: '',
-        href: '',
-        type: 'separator',
+        title: "",
+        href: "",
+        type: "separator",
     },
     {
-        title: 'CC Typology',
+        title: "CC Typology",
         href: ccTypologyIndex(),
         icon: ChartNetwork,
-        permission: 'cc-typology.view',
+        permission: "cc-typology.view",
     },
     {
-        title: 'CC Strategic Priorities',
+        title: "CC Strategic Priorities",
         href: ccStrategicPriorityIndex(),
         icon: Waypoints,
-        permission: 'cc-strategic-priority.view',
+        permission: "cc-strategic-priority.view",
     },
     {
-        title: 'CC Sub Sectors',
+        title: "CC Sub Sectors",
         href: ccSubSectorIndex(),
         icon: Network,
-        permission: 'cc-sub-sector.view',
+        permission: "cc-sub-sector.view",
     },
     {
-        title: '',
-        href: '',
-        type: 'separator',
+        title: "",
+        href: "",
+        type: "separator",
     },
     {
-        title: 'Salary Standards',
+        title: "Salary Standards",
         href: salaryStandardIndex(),
         icon: Scale,
-        permission: 'salary-standard.view',
+        permission: "salary-standard.view",
     },
     {
-        title: 'IOS',
+        title: "IOS",
         href: iosIndex(),
         icon: AppWindow,
-        permission: 'ios.view',
+        permission: "ios.view",
     },
     {
-        title: 'Positions',
+        title: "Positions",
         href: positionIndex(),
         icon: Briefcase,
-        permission: 'position.view',
+        permission: "position.view",
     },
     {
-        title: '',
-        href: '',
-        type: 'separator',
+        title: "",
+        href: "",
+        type: "separator",
     },
     {
-        title: 'Roles',
+        title: "Roles",
         href: rolesIndex(),
         icon: ShieldCheck,
-        permission: 'role.view',
+        permission: "role.view",
     },
     {
-        title: 'Users',
+        title: "Users",
         href: usersIndex(),
         icon: Users,
-        permission: 'user.view',
+        permission: "user.view",
     },
 ];
 
@@ -218,10 +218,10 @@ export function AppSidebar() {
     );
 
     const filteredNavItems = allowedItems.filter((item, index) => {
-        if (item.type === 'separator') {
+        if (item.type === "separator") {
             const nextItem = allowedItems[index + 1];
 
-            if (!nextItem || nextItem.type === 'separator') {
+            if (!nextItem || nextItem.type === "separator") {
                 return false;
             }
         }
@@ -239,10 +239,7 @@ export function AppSidebar() {
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>*/}
-                        <SidebarMenuButton
-                            size="lg"
-                            render={<Link href={dashboard()} prefetch />}
-                        >
+                        <SidebarMenuButton size="lg" render={<Link href={dashboard()} prefetch />}>
                             <AppLogo />
                         </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -1,6 +1,6 @@
-import { Button } from '@/components/base-ui-components/ui/button';
-import { Field, FieldLabel } from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
+import { Button } from "@/components/base-ui-components/ui/button";
+import { Field, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
 import {
     Select,
     SelectContent,
@@ -8,22 +8,22 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
-import { Switch } from '@/components/base-ui-components/ui/switch';
+} from "@/components/base-ui-components/ui/select";
+import { Switch } from "@/components/base-ui-components/ui/switch";
 
 const monthlyQtyColumns = [
-    ['janQty', 'Jan'],
-    ['febQty', 'Feb'],
-    ['marQty', 'Mar'],
-    ['aprQty', 'Apr'],
-    ['mayQty', 'May'],
-    ['junQty', 'Jun'],
-    ['julQty', 'Jul'],
-    ['augQty', 'Aug'],
-    ['sepQty', 'Sep'],
-    ['octQty', 'Oct'],
-    ['novQty', 'Nov'],
-    ['decQty', 'Dec'],
+    ["janQty", "Jan"],
+    ["febQty", "Feb"],
+    ["marQty", "Mar"],
+    ["aprQty", "Apr"],
+    ["mayQty", "May"],
+    ["junQty", "Jun"],
+    ["julQty", "Jul"],
+    ["augQty", "Aug"],
+    ["sepQty", "Sep"],
+    ["octQty", "Oct"],
+    ["novQty", "Nov"],
+    ["decQty", "Dec"],
 ] as const;
 
 export type MonthKey = (typeof monthlyQtyColumns)[number][0];
@@ -66,7 +66,7 @@ export interface SheetConfig {
 }
 
 interface CalibrationPanelProps {
-    mode: 'price-list' | 'quantities';
+    mode: "price-list" | "quantities";
     selectedSheets: string[];
     calibrations: Record<string, SheetConfig>;
     currentSheet: string;
@@ -85,17 +85,13 @@ export function CalibrationPanel({
     onCurrentSheetChange,
     onUpdateSheet,
     onExtract,
-    extractLabel = 'Extract',
+    extractLabel = "Extract",
     disabled = false,
 }: CalibrationPanelProps) {
     const currentConfig = calibrations[currentSheet];
 
     if (!currentConfig) {
-        return (
-            <div className="text-muted-foreground">
-                No calibration for selected sheet
-            </div>
-        );
+        return <div className="text-muted-foreground">No calibration for selected sheet</div>;
     }
 
     const currentColumns = currentConfig.columnMap;
@@ -104,10 +100,7 @@ export function CalibrationPanel({
         onUpdateSheet(currentSheet, { [field]: value });
     };
 
-    const updateColumn = (
-        field: keyof (PriceListColumnMap | QuantityColumnMap),
-        value: string,
-    ) => {
+    const updateColumn = (field: keyof (PriceListColumnMap | QuantityColumnMap), value: string) => {
         const upper = value.toUpperCase();
         onUpdateSheet(currentSheet, {
             columnMap: { ...currentColumns, [field]: upper },
@@ -118,8 +111,7 @@ export function CalibrationPanel({
         onUpdateSheet(currentSheet, { useCustom: !checked });
     };
 
-    const showSheetSelector =
-        mode === 'price-list' && selectedSheets.length > 1;
+    const showSheetSelector = mode === "price-list" && selectedSheets.length > 1;
 
     return (
         <div className="space-y-4">
@@ -148,9 +140,7 @@ export function CalibrationPanel({
                 ) : (
                     <div>
                         <FieldLabel>Calibrating sheet</FieldLabel>
-                        <div className="mt-1 text-sm font-medium">
-                            {currentSheet}
-                        </div>
+                        <div className="mt-1 text-sm font-medium">{currentSheet}</div>
                     </div>
                 )}
 
@@ -173,9 +163,7 @@ export function CalibrationPanel({
                         <Input
                             type="number"
                             value={currentConfig.startRow}
-                            onChange={(e) =>
-                                updateField('startRow', Number(e.target.value))
-                            }
+                            onChange={(e) => updateField("startRow", Number(e.target.value))}
                             className="w-20"
                             disabled={!currentConfig.useCustom}
                         />
@@ -184,13 +172,11 @@ export function CalibrationPanel({
                         <FieldLabel>Non‑Proc Start Row</FieldLabel>
                         <Input
                             type="number"
-                            value={currentConfig.nonProcurementStartRow ?? ''}
+                            value={currentConfig.nonProcurementStartRow ?? ""}
                             onChange={(e) =>
                                 updateField(
-                                    'nonProcurementStartRow',
-                                    e.target.value
-                                        ? Number(e.target.value)
-                                        : undefined,
+                                    "nonProcurementStartRow",
+                                    e.target.value ? Number(e.target.value) : undefined,
                                 )
                             }
                             className="w-20"
@@ -201,13 +187,11 @@ export function CalibrationPanel({
                         <FieldLabel>End Row</FieldLabel>
                         <Input
                             type="number"
-                            value={currentConfig.endRow ?? ''}
+                            value={currentConfig.endRow ?? ""}
                             onChange={(e) =>
                                 updateField(
-                                    'endRow',
-                                    e.target.value
-                                        ? Number(e.target.value)
-                                        : undefined,
+                                    "endRow",
+                                    e.target.value ? Number(e.target.value) : undefined,
                                 )
                             }
                             className="w-20"
@@ -218,9 +202,7 @@ export function CalibrationPanel({
                         <FieldLabel>Exclude Rows</FieldLabel>
                         <Input
                             value={currentConfig.excludeRows}
-                            onChange={(e) =>
-                                updateField('excludeRows', e.target.value)
-                            }
+                            onChange={(e) => updateField("excludeRows", e.target.value)}
                             className="w-40"
                             placeholder="e.g. 1118, 1120"
                             disabled={!currentConfig.useCustom}
@@ -232,10 +214,8 @@ export function CalibrationPanel({
                     <Field>
                         <FieldLabel>COA</FieldLabel>
                         <Input
-                            value={currentColumns?.chartOfAccount ?? ''}
-                            onChange={(e) =>
-                                updateColumn('chartOfAccount', e.target.value)
-                            }
+                            value={currentColumns?.chartOfAccount ?? ""}
+                            onChange={(e) => updateColumn("chartOfAccount", e.target.value)}
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
@@ -243,10 +223,8 @@ export function CalibrationPanel({
                     <Field>
                         <FieldLabel>Category</FieldLabel>
                         <Input
-                            value={currentColumns?.category ?? ''}
-                            onChange={(e) =>
-                                updateColumn('category', e.target.value)
-                            }
+                            value={currentColumns?.category ?? ""}
+                            onChange={(e) => updateColumn("category", e.target.value)}
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
@@ -254,10 +232,8 @@ export function CalibrationPanel({
                     <Field>
                         <FieldLabel>Description</FieldLabel>
                         <Input
-                            value={currentColumns?.description ?? ''}
-                            onChange={(e) =>
-                                updateColumn('description', e.target.value)
-                            }
+                            value={currentColumns?.description ?? ""}
+                            onChange={(e) => updateColumn("description", e.target.value)}
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
@@ -265,10 +241,8 @@ export function CalibrationPanel({
                     <Field>
                         <FieldLabel>Unit</FieldLabel>
                         <Input
-                            value={currentColumns?.unit ?? ''}
-                            onChange={(e) =>
-                                updateColumn('unit', e.target.value)
-                            }
+                            value={currentColumns?.unit ?? ""}
+                            onChange={(e) => updateColumn("unit", e.target.value)}
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
@@ -276,26 +250,19 @@ export function CalibrationPanel({
                     <Field>
                         <FieldLabel>Price</FieldLabel>
                         <Input
-                            value={currentColumns?.price ?? ''}
-                            onChange={(e) =>
-                                updateColumn('price', e.target.value)
-                            }
+                            value={currentColumns?.price ?? ""}
+                            onChange={(e) => updateColumn("price", e.target.value)}
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
                     </Field>
 
-                    {mode === 'price-list' ? (
+                    {mode === "price-list" ? (
                         <Field>
                             <FieldLabel>Item#</FieldLabel>
                             <Input
-                                value={
-                                    (currentColumns as PriceListColumnMap)
-                                        ?.itemNumber ?? ''
-                                }
-                                onChange={(e) =>
-                                    updateColumn('itemNumber', e.target.value)
-                                }
+                                value={(currentColumns as PriceListColumnMap)?.itemNumber ?? ""}
+                                onChange={(e) => updateColumn("itemNumber", e.target.value)}
                                 className="w-16"
                                 disabled={!currentConfig.useCustom}
                             />
@@ -304,13 +271,8 @@ export function CalibrationPanel({
                         <Field>
                             <FieldLabel>Total</FieldLabel>
                             <Input
-                                value={
-                                    (currentColumns as QuantityColumnMap)
-                                        ?.total ?? ''
-                                }
-                                onChange={(e) =>
-                                    updateColumn('total', e.target.value)
-                                }
+                                value={(currentColumns as QuantityColumnMap)?.total ?? ""}
+                                onChange={(e) => updateColumn("total", e.target.value)}
                                 className="w-16"
                                 disabled={!currentConfig.useCustom}
                             />
@@ -327,15 +289,8 @@ export function CalibrationPanel({
                             <Field key={key}>
                                 <FieldLabel>{label}</FieldLabel>
                                 <Input
-                                    value={
-                                        currentColumns?.[key as MonthKey] ?? ''
-                                    }
-                                    onChange={(e) =>
-                                        updateColumn(
-                                            key as MonthKey,
-                                            e.target.value,
-                                        )
-                                    }
+                                    value={currentColumns?.[key as MonthKey] ?? ""}
+                                    onChange={(e) => updateColumn(key as MonthKey, e.target.value)}
                                     className="w-16"
                                     disabled={!currentConfig.useCustom}
                                 />

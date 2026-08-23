@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface UseTableSelectArgs<TData> {
     data: TData[];
@@ -9,13 +9,11 @@ interface UseTableSelectArgs<TData> {
 export function useTableSelect<TData>({
     data,
     value,
-    valueKey = 'id' as keyof TData,
+    valueKey = "id" as keyof TData,
 }: UseTableSelectArgs<TData>) {
     const [open, setOpen] = useState(false);
 
-    const selectedItem = value
-        ? data.find((item) => String(item[valueKey]) === value)
-        : undefined;
+    const selectedItem = value ? data.find((item) => String(item[valueKey]) === value) : undefined;
 
     return {
         open,

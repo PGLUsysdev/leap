@@ -1,20 +1,14 @@
-import { router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
-import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
-import { CommandSelect } from '@/components/command-select';
-import FormDialog from '@/pages/aip/form-dialog';
-import { index } from '@/routes/ppmp-summaries';
-import type {
-    FiscalYear,
-    FiscalYearStatus,
-    App,
-    Office,
-    SharedData,
-} from '@/types';
-import columns from './columns/columns';
-import PdfPreviewDialog from './pdf-preview-dialog';
+import { router, usePage } from "@inertiajs/react";
+import { useState } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
+import { Button } from "@/components/base-ui-components/ui/button";
+import { ScrollArea } from "@/components/base-ui-components/ui/scroll-area";
+import { CommandSelect } from "@/components/command-select";
+import FormDialog from "@/pages/aip/form-dialog";
+import { index } from "@/routes/ppmp-summaries";
+import type { FiscalYear, FiscalYearStatus, App, Office, SharedData } from "@/types";
+import columns from "./columns/columns";
+import PdfPreviewDialog from "./pdf-preview-dialog";
 
 interface AipProps {
     fiscalYears: FiscalYear[];
@@ -31,12 +25,7 @@ interface AipProps {
     };
 }
 
-export default function AipPage({
-    fiscalYears,
-    app,
-    offices = [],
-    can,
-}: AipProps) {
+export default function AipPage({ fiscalYears, app, offices = [], can }: AipProps) {
     const { auth } = usePage<SharedData>().props;
 
     const [openFormDialog, setOpenFormDialog] = useState(false);
@@ -45,22 +34,18 @@ export default function AipPage({
 
     const params = new URLSearchParams(window.location.search);
     const [selectedOfficeId, setSelectedOfficeId] = useState<string>(
-        params.get('selected_office_id') ?? '',
+        params.get("selected_office_id") ?? "",
     );
 
     const canOpenAip = can?.showSummaryOwn || can?.showSummaryAll;
     const isOpenAipDisabled = can?.showSummaryAll && !selectedOfficeId;
 
     function onUpdateStatus(data: FiscalYear, status: FiscalYearStatus) {
-        router.patch(
-            `/aip/${data.id}/status`,
-            { status },
-            { preserveScroll: true },
-        );
+        router.patch(`/aip/${data.id}/status`, { status }, { preserveScroll: true });
     }
 
     function handleOfficeChange(officeId: string | number | null) {
-        const id = officeId?.toString() ?? '';
+        const id = officeId?.toString() ?? "";
         setSelectedOfficeId(id);
         router.visit(window.location.pathname, {
             data: { selected_office_id: id },
@@ -93,7 +78,7 @@ export default function AipPage({
         }
 
         router.reload({
-            only: ['app'],
+            only: ["app"],
             data,
             onSuccess: () => setOpenPdfPreviewDialog(true),
         });
@@ -114,8 +99,7 @@ export default function AipPage({
                         canOpenAip: canOpenAip ?? false,
                         disableOpenAip: isOpenAipDisabled,
                         canGenerateApp:
-                            (can?.generateAppAll ?? false) ||
-                            (can?.generateAppOwn ?? false),
+                            (can?.generateAppAll ?? false) || (can?.generateAppOwn ?? false),
                         canOpenPpmpSummary: can?.openPpmpSummary ?? false,
                         onUpdateStatus,
                         onOpen: handleOpenAipSummary,
@@ -130,11 +114,9 @@ export default function AipPage({
                                     value={selectedOfficeId}
                                     onChange={handleOfficeChange}
                                     options={offices}
-                                    getOptionValue={(office) =>
-                                        office.id.toString()
-                                    }
+                                    getOptionValue={(office) => office.id.toString()}
                                     getOptionSearchText={(office) =>
-                                        `${office.acronym ?? ''} ${office.name}`
+                                        `${office.acronym ?? ""} ${office.name}`
                                     }
                                     renderTrigger={(office) => (
                                         <span className="truncate">
@@ -144,7 +126,7 @@ export default function AipPage({
                                     renderOption={(office) => (
                                         <div className="grid w-full grid-cols-4 gap-4">
                                             <span className="col-span-1">
-                                                {office.acronym ?? '-'}
+                                                {office.acronym ?? "-"}
                                             </span>
                                             <span className="col-span-3 whitespace-normal">
                                                 {office.name}
@@ -159,19 +141,12 @@ export default function AipPage({
                             </div>
                         )}
 
-                        {can?.add && (
-                            <Button onClick={handleOpenFormDialog}>
-                                Initialize AIP
-                            </Button>
-                        )}
+                        {can?.add && <Button onClick={handleOpenFormDialog}>Initialize AIP</Button>}
                     </div>
                 </DataTable>
             </ScrollArea>
 
-            <FormDialog
-                open={openFormDialog}
-                onOpenChange={setOpenFormDialog}
-            />
+            <FormDialog open={openFormDialog} onOpenChange={setOpenFormDialog} />
 
             <PdfPreviewDialog
                 open={openPdfPreviewDialog}
@@ -189,8 +164,8 @@ export default function AipPage({
 AipPage.layout = {
     breadcrumbs: [
         {
-            title: 'Annual Investment Programs',
-            href: '#',
+            title: "Annual Investment Programs",
+            href: "#",
         },
     ],
 };

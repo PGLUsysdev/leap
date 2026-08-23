@@ -1,21 +1,19 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Pencil, Trash2 } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
-import type { Position } from '@/types';
+import { createColumnHelper } from "@tanstack/react-table";
+import { Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/base-ui-components/ui/button";
+import type { Position } from "@/types";
 
 const columnHelper = createColumnHelper<Position>();
 
 const columns = [
-    columnHelper.accessor('item_number', {
+    columnHelper.accessor("item_number", {
         size: 100,
         header: () => <div className="px-1">Item No.</div>,
         cell: (info) => (
-            <div className="px-1 text-wrap slashed-zero tabular-nums">
-                {info.getValue()}
-            </div>
+            <div className="px-1 text-wrap slashed-zero tabular-nums">{info.getValue()}</div>
         ),
     }),
-    columnHelper.accessor('office_id', {
+    columnHelper.accessor("office_id", {
         size: 100,
         header: () => <div className="px-1">Office</div>,
         cell: (info) => {
@@ -29,21 +27,17 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor('ios_id', {
+    columnHelper.accessor("ios_id", {
         size: 200,
         header: () => <div className="px-1">Class</div>,
         cell: (info) => {
             const row = info.row.original;
 
-            return (
-                <div className="px-1 text-wrap">
-                    {row.ios?.class ?? info.getValue()}
-                </div>
-            );
+            return <div className="px-1 text-wrap">{row.ios?.class ?? info.getValue()}</div>;
         },
     }),
-    columnHelper.accessor('ios_id', {
-        id: 'salary_grade',
+    columnHelper.accessor("ios_id", {
+        id: "salary_grade",
         size: 110,
         header: () => <div className="px-1">Salary Grade</div>,
         cell: (info) => {
@@ -56,23 +50,17 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor('employment_type', {
+    columnHelper.accessor("employment_type", {
         size: 150,
         header: () => <div className="px-1">Employment Type</div>,
-        cell: (info) => (
-            <div className="px-1 text-wrap capitalize">{info.getValue()}</div>
-        ),
+        cell: (info) => <div className="px-1 text-wrap capitalize">{info.getValue()}</div>,
     }),
-    columnHelper.accessor('is_funded', {
+    columnHelper.accessor("is_funded", {
         size: 100,
         header: () => <div className="px-1">Funded</div>,
-        cell: (info) => (
-            <div className="px-1 text-wrap">
-                {info.getValue() ? 'Yes' : 'No'}
-            </div>
-        ),
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue() ? "Yes" : "No"}</div>,
     }),
-    columnHelper.accessor('status', {
+    columnHelper.accessor("status", {
         size: 100,
         header: () => <div className="px-1">Status</div>,
         cell: (info) => {
@@ -82,7 +70,7 @@ const columns = [
         },
     }),
     columnHelper.display({
-        id: 'actions',
+        id: "actions",
         size: 82,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">

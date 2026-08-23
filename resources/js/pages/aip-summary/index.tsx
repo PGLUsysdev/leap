@@ -1,9 +1,9 @@
 // resources\js\pages\aip-summary\index.tsx
 
-import { router, usePage } from '@inertiajs/react';
-import { Library, ShieldCheck } from 'lucide-react';
-import { useState, useCallback, useMemo } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
+import { router, usePage } from "@inertiajs/react";
+import { Library, ShieldCheck } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,15 +13,12 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/base-ui-components/ui/alert-dialog';
-import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { DeleteDialog } from '@/components/delete-dialog';
-import FormDialog from '@/pages/aip-summary/form-dialog';
-import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
+} from "@/components/base-ui-components/ui/alert-dialog";
+import { Button } from "@/components/base-ui-components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { DeleteDialog } from "@/components/delete-dialog";
+import FormDialog from "@/pages/aip-summary/form-dialog";
+import PpaSelectorDialog from "@/pages/aip-summary/ppa-selector-dialog";
 import type {
     FiscalYear,
     Ppa,
@@ -36,8 +33,8 @@ import type {
     AipEntry,
     AipOutput,
     PpaFundingSource,
-} from '@/types';
-import newColumns from './columns/new-columns';
+} from "@/types";
+import newColumns from "./columns/new-columns";
 
 interface AipSummaryProps {
     fiscalYear: FiscalYear;
@@ -109,7 +106,7 @@ interface AipSummaryProps {
 type NumberedAipEntry = AipEntry & { number: string };
 
 function toLetters(n: number): string {
-    let s = '';
+    let s = "";
 
     while (n > 0) {
         n--;
@@ -141,15 +138,11 @@ function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
     }
 
     const sortSiblings = (list: AipEntry[]) =>
-        list.sort(
-            (a, b) => (a.ppa?.sort_order ?? 0) - (b.ppa?.sort_order ?? 0),
-        );
+        list.sort((a, b) => (a.ppa?.sort_order ?? 0) - (b.ppa?.sort_order ?? 0));
 
     const counters: number[] = [];
     const result: NumberedAipEntry[] = [];
-    const stack: { entry: AipEntry; depth: number }[] = [
-        ...sortSiblings(byParent.get(null) ?? []),
-    ]
+    const stack: { entry: AipEntry; depth: number }[] = [...sortSiblings(byParent.get(null) ?? [])]
         .reverse()
         .map((entry) => ({ entry, depth: 0 }));
 
@@ -160,9 +153,7 @@ function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
         counters.length = depth + 1;
 
         const number =
-            (depth === 0
-                ? toLetters(counters[0])
-                : counters.slice(1, depth + 1).join('.')) + '.';
+            (depth === 0 ? toLetters(counters[0]) : counters.slice(1, depth + 1).join(".")) + ".";
 
         result.push({ ...entry, number });
 
@@ -184,9 +175,7 @@ type FundingSourceRow = NumberedAipEntry & {
     outputId: number | null;
 };
 
-function expandByFundingSource(
-    entries: NumberedAipEntry[],
-): FundingSourceRow[] {
+function expandByFundingSource(entries: NumberedAipEntry[]): FundingSourceRow[] {
     return entries.flatMap((entry): FundingSourceRow[] => {
         const outputs = entry.outputs ?? [];
 
@@ -307,7 +296,7 @@ export default function AipSummary({
             {
                 preserveState: true,
                 preserveScroll: true,
-                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                only: ["dialogPpaTree", "dialogCurrent", "filters"],
                 onSuccess: () => {
                     setIsSelectorOpen(true);
                 },
@@ -328,7 +317,7 @@ export default function AipSummary({
                 {
                     preserveState: true,
                     preserveScroll: true,
-                    only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
+                    only: ["dialogPpaTree", "dialogCurrent", "filters"],
                     onSuccess: () => {
                         setIsSelectorOpen(true);
                     },
@@ -346,9 +335,7 @@ export default function AipSummary({
 
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [deleteEntry, setDeleteEntry] = useState<NumberedAipEntry | null>(
-        null,
-    );
+    const [deleteEntry, setDeleteEntry] = useState<NumberedAipEntry | null>(null);
 
     function handleEdit(id: number) {
         setSelectedItemId(id);
@@ -394,7 +381,7 @@ export default function AipSummary({
                 setDeleteEntry(null);
             },
             onFinish: () => setIsLoading(false),
-            onError: (error) => console.error('error', error),
+            onError: (error) => console.error("error", error),
         });
     }
 
@@ -615,9 +602,7 @@ export default function AipSummary({
     // };
 
     const [isSetPsPoolDialogOpen, setIsSetPsPoolDialogOpen] = useState(false);
-    const [psPoolTarget, setPsPoolTarget] = useState<NumberedAipEntry | null>(
-        null,
-    );
+    const [psPoolTarget, setPsPoolTarget] = useState<NumberedAipEntry | null>(null);
 
     const handleSetAsPsPool = useCallback((entry: NumberedAipEntry) => {
         setPsPoolTarget(entry);
@@ -769,7 +754,7 @@ export default function AipSummary({
     //         ? `saip-${currentScope.supplemental_aip_id}`
     //         : currentScope.scope;
 
-    console.log('selectedItemId', selectedItemId);
+    console.log("selectedItemId", selectedItemId);
 
     return (
         <>
@@ -932,9 +917,7 @@ export default function AipSummary({
                 <DataTable
                     className="pr-3"
                     columns={newColumns}
-                    data={expandByFundingSource(
-                        sortFlatLikeTree(newAipEntries),
-                    )}
+                    data={expandByFundingSource(sortFlatLikeTree(newAipEntries))}
                     meta={{
                         onEdit: handleEdit,
                         onAdd: handleAddEntry,
@@ -1010,8 +993,7 @@ export default function AipSummary({
                         )}*/}
                     {can.import && (
                         <Button onClick={handleImportLibrary}>
-                            <Library className="mr-2 h-4 w-4" /> Import from
-                            Library
+                            <Library className="mr-2 h-4 w-4" /> Import from Library
                         </Button>
                     )}
                     {/*</div>*/}
@@ -1088,14 +1070,14 @@ export default function AipSummary({
                 title="Remove from AIP Summary?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
+                        Are you sure you want to remove{" "}
                         <span className="font-bold text-foreground">
                             "{deleteEntry?.ppa?.name}"
                         </span>
                         ?
                         <span className="mt-2 block font-semibold text-destructive italic">
-                            This will also remove all nested sub-PPAs and
-                            activities including all their PPMPs.
+                            This will also remove all nested sub-PPAs and activities including all
+                            their PPMPs.
                         </span>
                     </>
                 }
@@ -1124,13 +1106,12 @@ export default function AipSummary({
                             Set PS Pool?
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Designate{' '}
+                            Designate{" "}
                             <span className="font-semibold text-foreground">
                                 "{psPoolTarget?.ppa?.name}"
-                            </span>{' '}
-                            as the PS Pool for this fiscal year. This will
-                            change the Personal Services (PS) allocations as
-                            follows:
+                            </span>{" "}
+                            as the PS Pool for this fiscal year. This will change the Personal
+                            Services (PS) allocations as follows:
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
@@ -1140,12 +1121,10 @@ export default function AipSummary({
                             <span>
                                 <span className="font-medium text-foreground">
                                     Personal Services consolidation.
-                                </span>{' '}
-                                All PS amounts across the office are moved into
-                                this Program&apos;s single{' '}
-                                <span className="font-semibold">
-                                    General Fund (GF Proper)
-                                </span>{' '}
+                                </span>{" "}
+                                All PS amounts across the office are moved into this Program&apos;s
+                                single{" "}
+                                <span className="font-semibold">General Fund (GF Proper)</span>{" "}
                                 funding source.
                             </span>
                         </li>
@@ -1154,10 +1133,9 @@ export default function AipSummary({
                             <span>
                                 <span className="font-medium text-foreground">
                                     PS-only funding source.
-                                </span>{' '}
-                                This Program will have exactly one funding
-                                source (GF Proper) and will carry PS only —{' '}
-                                MOOE, FE, and CO are set to zero.
+                                </span>{" "}
+                                This Program will have exactly one funding source (GF Proper) and
+                                will carry PS only — MOOE, FE, and CO are set to zero.
                             </span>
                         </li>
                         <li className="flex gap-2">
@@ -1165,10 +1143,9 @@ export default function AipSummary({
                             <span>
                                 <span className="font-medium text-foreground">
                                     Previous PS Pool reset.
-                                </span>{' '}
-                                If another Program was the PS Pool, its funding
-                                sources and amounts are cleared and it reverts
-                                to a normal entry.
+                                </span>{" "}
+                                If another Program was the PS Pool, its funding sources and amounts
+                                are cleared and it reverts to a normal entry.
                             </span>
                         </li>
                     </ul>
@@ -1185,7 +1162,7 @@ export default function AipSummary({
                             onClick={handleSetAsPsPoolConfirm}
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Setting...' : 'Set PS Pool'}
+                            {isLoading ? "Setting..." : "Set PS Pool"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1330,7 +1307,7 @@ export default function AipSummary({
 
 AipSummary.layout = {
     breadcrumbs: [
-        { title: 'Annual Investment Programs', href: '/aip' },
-        { title: 'AIP Summary', href: '#' },
+        { title: "Annual Investment Programs", href: "/aip" },
+        { title: "AIP Summary", href: "#" },
     ],
 };

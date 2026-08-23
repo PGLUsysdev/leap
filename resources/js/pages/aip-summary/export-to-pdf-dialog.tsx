@@ -89,8 +89,8 @@ export default function ExportToPdfDialog({
         const num = parseFloat(value);
 
         if (!value || isNaN(num) || num === 0) {
-return "-";
-}
+            return "-";
+        }
 
         return new Intl.NumberFormat("en-US", {
             minimumFractionDigits: 2,
@@ -100,8 +100,8 @@ return "-";
 
     const formatDate = (value: string | null | undefined) => {
         if (!value) {
-return "-";
-}
+            return "-";
+        }
 
         const parts = value.split("-");
 
@@ -164,8 +164,8 @@ return "-";
                     const id = src.funding_source_id;
 
                     if (!id) {
-return;
-}
+                        return;
+                    }
 
                     if (!grouped.has(id)) {
                         grouped.set(id, {
@@ -243,12 +243,12 @@ return;
                             >
                                 {(() => {
                                     if (colIndex === 0) {
-return item.full_code || "-";
-}
+                                        return item.full_code || "-";
+                                    }
 
                                     if (colIndex === 1) {
-return displayTitle || "-";
-}
+                                        return displayTitle || "-";
+                                    }
 
                                     if (colIndex === 2) {
                                         const office = item.office;
@@ -261,16 +261,16 @@ return displayTitle || "-";
                                     }
 
                                     if (colIndex === 3) {
-return formatDate(aipEntry?.start_date);
-}
+                                        return formatDate(aipEntry?.start_date);
+                                    }
 
                                     if (colIndex === 4) {
-return formatDate(aipEntry?.end_date);
-}
+                                        return formatDate(aipEntry?.end_date);
+                                    }
 
                                     if (colIndex === 5) {
-return aipEntry?.expected_output || "-";
-}
+                                        return aipEntry?.expected_output || "-";
+                                    }
 
                                     return "-";
                                 })()}
@@ -331,41 +331,41 @@ return aipEntry?.expected_output || "-";
                                                 >
                                                     {(() => {
                                                         if (colIndex === 6) {
-return fs.funding_source?.code || "-";
-}
+                                                            return fs.funding_source?.code || "-";
+                                                        }
 
                                                         if (colIndex === 7) {
-return formatNumber(fs.ps_amount);
-}
+                                                            return formatNumber(fs.ps_amount);
+                                                        }
 
                                                         if (colIndex === 8) {
-return formatNumber(fs.mooe_amount);
-}
+                                                            return formatNumber(fs.mooe_amount);
+                                                        }
 
                                                         if (colIndex === 9) {
-return formatNumber(fs.fe_amount);
-}
+                                                            return formatNumber(fs.fe_amount);
+                                                        }
 
                                                         if (colIndex === 10) {
-return formatNumber(fs.co_amount);
-}
+                                                            return formatNumber(fs.co_amount);
+                                                        }
 
                                                         if (colIndex === 11) {
-return formatNumber(total);
-}
+                                                            return formatNumber(total);
+                                                        }
 
                                                         if (colIndex === 12) {
-return formatNumber(fs.ccet_adaptation);
-}
+                                                            return formatNumber(fs.ccet_adaptation);
+                                                        }
 
                                                         if (colIndex === 13) {
-return formatNumber(fs.ccet_mitigation);
-}
+                                                            return formatNumber(fs.ccet_mitigation);
+                                                        }
 
                                                         // Always return something for Col 14 to keep vertical line intact
                                                         if (colIndex === 14) {
-return fs?.cc_typology?.code || "-";
-}
+                                                            return fs?.cc_typology?.code || "-";
+                                                        }
 
                                                         return "-";
                                                     })()}
@@ -417,8 +417,8 @@ return fs?.cc_typology?.code || "-";
                 });
 
                 if (item.children) {
-traverse(item.children);
-}
+                    traverse(item.children);
+                }
             });
         };
 

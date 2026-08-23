@@ -1,15 +1,12 @@
-import { router } from '@inertiajs/react';
-import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { DeleteDialog } from '@/components/delete-dialog';
-import type { OfficeType } from '@/types';
-import columns from './columns/columns';
-import FormDialog from './form-dialog';
+import { router } from "@inertiajs/react";
+import { useState } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
+import { Button } from "@/components/base-ui-components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { DeleteDialog } from "@/components/delete-dialog";
+import type { OfficeType } from "@/types";
+import columns from "./columns/columns";
+import FormDialog from "./form-dialog";
 
 interface OfficeTypePageProps {
     officeTypes: OfficeType[];
@@ -20,13 +17,9 @@ interface OfficeTypePageProps {
     };
 }
 
-export default function OfficeTypePage({
-    officeTypes,
-    can,
-}: OfficeTypePageProps) {
+export default function OfficeTypePage({ officeTypes, can }: OfficeTypePageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedOfficeType, setSelectedOfficeType] =
-        useState<OfficeType | null>(null);
+    const [selectedOfficeType, setSelectedOfficeType] = useState<OfficeType | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -79,9 +72,7 @@ export default function OfficeTypePage({
                         canDelete: can?.delete ?? false,
                     }}
                 >
-                    {can?.add && (
-                        <Button onClick={handleAdd}>Add Office Type</Button>
-                    )}
+                    {can?.add && <Button onClick={handleAdd}>Add Office Type</Button>}
                 </DataTable>
 
                 <ScrollBar orientation="vertical" />
@@ -99,7 +90,7 @@ export default function OfficeTypePage({
                 title="Delete Office Type?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
+                        Are you sure you want to remove{" "}
                         <span className="font-bold text-foreground">
                             "{selectedOfficeType?.name}"
                         </span>
@@ -117,4 +108,4 @@ export default function OfficeTypePage({
     );
 }
 
-OfficeTypePage.layout = { breadcrumbs: [{ title: 'Office Types', href: '#' }] };
+OfficeTypePage.layout = { breadcrumbs: [{ title: "Office Types", href: "#" }] };

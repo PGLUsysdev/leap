@@ -1,13 +1,10 @@
-import { useMemo, useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { index as aipIndex, summary } from '@/routes/aip';
-import type { ChartOfAccount, Position, PsBreakdownItem } from '@/types';
-import getPsBreakdownCols from './columns/ps-breakdown-cols';
-import PreviewPdfDialog from './pdf-preview-dialog';
+import { useMemo, useState } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { index as aipIndex, summary } from "@/routes/aip";
+import type { ChartOfAccount, Position, PsBreakdownItem } from "@/types";
+import getPsBreakdownCols from "./columns/ps-breakdown-cols";
+import PreviewPdfDialog from "./pdf-preview-dialog";
 
 interface PsBreakdownProps {
     chartOfAccounts: ChartOfAccount[];
@@ -47,23 +44,17 @@ export default function PsBreakdown({
                 rates,
                 annualRateMap,
             ),
-        [
-            chartOfAccounts,
-            breakdownItems,
-            ppaFundingSourceId,
-            rates,
-            annualRateMap,
-        ],
+        [chartOfAccounts, breakdownItems, ppaFundingSourceId, rates, annualRateMap],
     );
 
     // Build sections for the PDF preview — PS is computed from raw data;
     // MOOE/FE/CO have no data in this context.
     const pdfSections = useMemo(
         () => ({
-            ps: { total: '0.00', coas: [] },
-            mooe: { total: '0.00', coas: [] },
-            fe: { total: '0.00', coas: [] },
-            co: { total: '0.00', coas: [] },
+            ps: { total: "0.00", coas: [] },
+            mooe: { total: "0.00", coas: [] },
+            fe: { total: "0.00", coas: [] },
+            co: { total: "0.00", coas: [] },
         }),
         [],
     );
@@ -71,11 +62,7 @@ export default function PsBreakdown({
     return (
         <>
             <ScrollArea className="h-[calc(100vh-3rem)] w-full">
-                <DataTable
-                    data={positions}
-                    columns={psBreakdownCols}
-                    showFooter={true}
-                >
+                <DataTable data={positions} columns={psBreakdownCols} showFooter={true}>
                     {/*<div>
                         {can?.export && (
                             <Button
@@ -108,11 +95,11 @@ export default function PsBreakdown({
 
 PsBreakdown.layout = ({ fiscalYear }: PsBreakdownProps) => ({
     breadcrumbs: [
-        { title: 'Annual Investment Programs', href: aipIndex() },
+        { title: "Annual Investment Programs", href: aipIndex() },
         {
             title: `AIP Summary FY ${fiscalYear.year}`,
             href: summary({ fiscalYear: fiscalYear.id }),
         },
-        { title: 'Personnel Services Breakdown', href: '#' },
+        { title: "Personnel Services Breakdown", href: "#" },
     ],
 });

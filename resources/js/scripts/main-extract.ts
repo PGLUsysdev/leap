@@ -1,29 +1,29 @@
-import { writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import ExcelJS from 'exceljs';
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
+import ExcelJS from "exceljs";
 
-const FILE_NAME = 'Reference-1_-PGLU-AIP-CY-2027-2.xlsx';
-const SHEET_NAME = 'G11_PICTO';
+const FILE_NAME = "Reference-1_-PGLU-AIP-CY-2027-2.xlsx";
+const SHEET_NAME = "G11_PICTO";
 
 const START_ROW = 9;
 
 const COL = {
-    ppa: 'B',
-    startDate: 'D',
-    endDate: 'E',
-    expectedOutput: 'F',
+    ppa: "B",
+    startDate: "D",
+    endDate: "E",
+    expectedOutput: "F",
 
-    fundingSourceId: 'G',
-    psAmount: 'H',
-    mooeAmount: 'I',
-    feAmount: 'J',
-    coAmount: 'K',
-    ccetAdaptation: 'M',
-    ccetMitigation: 'N',
-    ccTypologyId: 'O',
+    fundingSourceId: "G",
+    psAmount: "H",
+    mooeAmount: "I",
+    feAmount: "J",
+    coAmount: "K",
+    ccetAdaptation: "M",
+    ccetMitigation: "N",
+    ccTypologyId: "O",
 };
 
-type NodeType = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
+type NodeType = "Program" | "Project" | "Activity" | "Sub-Activity";
 
 interface Ppa {
     id: number;
@@ -55,19 +55,19 @@ interface PpaFundingSource {
 
 function getType(value: string): NodeType | null {
     if (/^[A-Z]\.\s/.test(value)) {
-        return 'Program';
+        return "Program";
     }
 
     if (/^\d+\.\d+\.\d+\.\s/.test(value)) {
-        return 'Sub-Activity';
+        return "Sub-Activity";
     }
 
     if (/^\d+\.\d+\.\s/.test(value)) {
-        return 'Activity';
+        return "Activity";
     }
 
     if (/^\d+\.\s/.test(value)) {
-        return 'Project';
+        return "Project";
     }
 
     return null;
@@ -75,19 +75,19 @@ function getType(value: string): NodeType | null {
 
 function cleanName(value: string): string {
     return value
-        .replace(/^[A-Z]\.\s*/, '')
-        .replace(/^\d+(?:\.\d+)*\.\s*/, '')
+        .replace(/^[A-Z]\.\s*/, "")
+        .replace(/^\d+(?:\.\d+)*\.\s*/, "")
         .trim();
 }
 
 function escapePhp(value: string): string {
-    return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 function cellText(cell: ExcelJS.Cell): string | null {
     let value: any = cell.value;
 
-    if (typeof value === 'object' && value !== null && 'result' in value) {
+    if (typeof value === "object" && value !== null && "result" in value) {
         value = value.result;
     }
 
@@ -101,29 +101,29 @@ function cellText(cell: ExcelJS.Cell): string | null {
 function cellNumber(cell: ExcelJS.Cell): number | null {
     let value: any = cell.value;
 
-    if (typeof value === 'object' && value !== null && 'result' in value) {
+    if (typeof value === "object" && value !== null && "result" in value) {
         value = value.result;
     }
 
-    if (value == null || value === '') {
+    if (value == null || value === "") {
         return null;
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
         return value;
     }
 
-    const parsed = Number(String(value).replace(/,/g, '').trim());
+    const parsed = Number(String(value).replace(/,/g, "").trim());
 
     return Number.isNaN(parsed) ? null : parsed;
 }
 
 function phpValue(value: string | number | null): string {
     if (value === null) {
-        return 'null';
+        return "null";
     }
 
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
         return String(value);
     }
 
@@ -136,12 +136,12 @@ ${data
     .map(
         (item) => `    [
         'id' => ${item.id},
-        'parent_id' => ${item.parent_id === null ? 'null' : item.parent_id},
+        'parent_id' => ${item.parent_id === null ? "null" : item.parent_id},
         'name' => '${escapePhp(item.name)}',
         'type' => '${item.type}',
     ]`,
     )
-    .join(',\n')}
+    .join(",\n")}
 ];`;
 }
 
@@ -157,7 +157,7 @@ ${data
         'expected_output' => ${phpValue(item.expected_output)},
     ]`,
     )
-    .join(',\n')}
+    .join(",\n")}
 ];`;
 }
 
@@ -178,7 +178,7 @@ ${data
         'cc_typology_id' => ${phpValue(item.cc_typology_id)},
     ]`,
     )
-    .join(',\n')}
+    .join(",\n")}
 ];`;
 }
 
@@ -203,11 +203,7 @@ async function main() {
     let currentProjectId: number | null = null;
     let currentActivityId: number | null = null;
 
-    for (
-        let rowNumber = START_ROW;
-        rowNumber <= worksheet.rowCount;
-        rowNumber++
-    ) {
+    for (let rowNumber = START_ROW; rowNumber <= worksheet.rowCount; rowNumber++) {
         const row = worksheet.getRow(rowNumber);
 
         const raw = cellText(row.getCell(COL.ppa));
@@ -227,24 +223,24 @@ async function main() {
         let parentId: number | null = null;
 
         switch (type) {
-            case 'Program':
+            case "Program":
                 currentProgramId = id;
                 currentProjectId = null;
                 currentActivityId = null;
                 break;
 
-            case 'Project':
+            case "Project":
                 parentId = currentProgramId;
                 currentProjectId = id;
                 currentActivityId = null;
                 break;
 
-            case 'Activity':
+            case "Activity":
                 parentId = currentProjectId;
                 currentActivityId = id;
                 break;
 
-            case 'Sub-Activity':
+            case "Sub-Activity":
                 parentId = currentActivityId;
                 break;
         }
@@ -278,22 +274,14 @@ async function main() {
         });
     }
 
-    await writeFile(
-        path.join(import.meta.dirname, 'ppa.php'),
-        ppaPhp(ppas),
-        'utf8',
-    );
+    await writeFile(path.join(import.meta.dirname, "ppa.php"), ppaPhp(ppas), "utf8");
+
+    await writeFile(path.join(import.meta.dirname, "aip_entries.php"), aipPhp(aipEntries), "utf8");
 
     await writeFile(
-        path.join(import.meta.dirname, 'aip_entries.php'),
-        aipPhp(aipEntries),
-        'utf8',
-    );
-
-    await writeFile(
-        path.join(import.meta.dirname, 'ppa_funding_sources.php'),
+        path.join(import.meta.dirname, "ppa_funding_sources.php"),
         fundingSourcePhp(fundingSources),
-        'utf8',
+        "utf8",
     );
 
     console.log(`Generated ${ppas.length} PPAs.`);

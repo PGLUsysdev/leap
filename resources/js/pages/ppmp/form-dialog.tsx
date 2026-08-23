@@ -1,15 +1,15 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
-import { useForm, Controller, useWatch } from 'react-hook-form';
-import { z } from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { router } from "@inertiajs/react";
+import { useEffect, useRef, useState } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
+import { z } from "zod";
 
 import {
     TableSelect,
     useTableSelect,
     TableSelectButton,
-} from '@/components/base-ui-components/table-select';
-import { Button } from '@/components/base-ui-components/ui/button';
+} from "@/components/base-ui-components/table-select";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -17,23 +17,14 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
-import {
-    Field,
-    FieldLabel,
-    FieldError,
-} from '@/components/base-ui-components/ui/field';
+} from "@/components/base-ui-components/ui/dialog";
+import { Field, FieldLabel, FieldError } from "@/components/base-ui-components/ui/field";
 
-import type {
-    ChartOfAccount,
-    PaginatedResponse,
-    PpmpCategory,
-    PriceList,
-} from '@/types';
+import type { ChartOfAccount, PaginatedResponse, PpmpCategory, PriceList } from "@/types";
 
-import categoryColumns from './columns/category-columns';
-import coaColumns from './columns/coa-columns';
-import priceListColumns from './columns/price-list-columns';
+import categoryColumns from "./columns/category-columns";
+import coaColumns from "./columns/coa-columns";
+import priceListColumns from "./columns/price-list-columns";
 
 const ppmpFormSchema = z.object({
     ppmp_price_list_id: z.number().nullable().optional(),
@@ -89,35 +80,26 @@ export default function PpmpFormDialog({
     // Use useWatch to subscribe to specific fields
     const watchedPriceListId = useWatch({
         control,
-        name: 'ppmp_price_list_id',
+        name: "ppmp_price_list_id",
     });
-    const watchedCoaId = useWatch({ control, name: 'coa_id' });
-    const watchedCategoryId = useWatch({ control, name: 'category_id' });
+    const watchedCoaId = useWatch({ control, name: "coa_id" });
+    const watchedCategoryId = useWatch({ control, name: "category_id" });
 
-    const isLocked =
-        watchedPriceListId !== null && watchedPriceListId !== undefined;
+    const isLocked = watchedPriceListId !== null && watchedPriceListId !== undefined;
 
     // ---- Selected objects (persist across pagination/filter changes) ----
-    const [selectedPriceListObj, setSelectedPriceListObj] =
-        useState<PriceList | null>(null);
-    const [selectedCoaObj, setSelectedCoaObj] = useState<ChartOfAccount | null>(
-        null,
-    );
-    const [selectedCategoryObj, setSelectedCategoryObj] =
-        useState<PpmpCategory | null>(null);
+    const [selectedPriceListObj, setSelectedPriceListObj] = useState<PriceList | null>(null);
+    const [selectedCoaObj, setSelectedCoaObj] = useState<ChartOfAccount | null>(null);
+    const [selectedCategoryObj, setSelectedCategoryObj] = useState<PpmpCategory | null>(null);
 
     // ---- Trigger partial reload when a price list is selected ----
     useEffect(() => {
         if (selectedPriceListObj) {
-            const coaId =
-                selectedPriceListObj.chart_of_account_ppmp_category
-                    ?.chart_of_account_id;
-            const catId =
-                selectedPriceListObj.chart_of_account_ppmp_category
-                    ?.ppmp_category_id;
+            const coaId = selectedPriceListObj.chart_of_account_ppmp_category?.chart_of_account_id;
+            const catId = selectedPriceListObj.chart_of_account_ppmp_category?.ppmp_category_id;
 
             router.reload({
-                only: ['priceLists', 'chartOfAccounts', 'categories'],
+                only: ["priceLists", "chartOfAccounts", "categories"],
                 data: {
                     coa_id: coaId ?? undefined,
                     category_id: catId ?? undefined,
@@ -134,18 +116,15 @@ export default function PpmpFormDialog({
     useEffect(() => {
         if (selectedPriceListObj) {
             const coa =
-                selectedPriceListObj.chart_of_account_ppmp_category
-                    ?.chart_of_account ?? null;
-            const cat =
-                selectedPriceListObj.chart_of_account_ppmp_category
-                    ?.ppmp_category ?? null;
+                selectedPriceListObj.chart_of_account_ppmp_category?.chart_of_account ?? null;
+            const cat = selectedPriceListObj.chart_of_account_ppmp_category?.ppmp_category ?? null;
 
             if (coa) setSelectedCoaObj(coa);
 
             if (cat) setSelectedCategoryObj(cat);
 
-            setValue('coa_id', coa?.id ?? null, { shouldValidate: false });
-            setValue('category_id', cat?.id ?? null, { shouldValidate: false });
+            setValue("coa_id", coa?.id ?? null, { shouldValidate: false });
+            setValue("category_id", cat?.id ?? null, { shouldValidate: false });
         }
     }, [selectedPriceListObj, setValue]);
 
@@ -173,7 +152,7 @@ export default function PpmpFormDialog({
         };
 
         router.reload({
-            only: ['priceLists', 'chartOfAccounts', 'categories'],
+            only: ["priceLists", "chartOfAccounts", "categories"],
             data: {
                 coa_id: watchedCoaId ?? undefined,
                 category_id: watchedCategoryId ?? undefined,
@@ -194,7 +173,7 @@ export default function PpmpFormDialog({
             setSelectedCategoryObj(null);
 
             router.reload({
-                only: ['priceLists', 'chartOfAccounts', 'categories'],
+                only: ["priceLists", "chartOfAccounts", "categories"],
                 data: {
                     coa_id: undefined,
                     category_id: undefined,
@@ -216,25 +195,25 @@ export default function PpmpFormDialog({
     const priceListSelect = useTableSelect<PriceList>({
         data: priceListData,
         value: watchedPriceListId?.toString() ?? undefined,
-        valueKey: 'id',
+        valueKey: "id",
     });
 
     const coaSelect = useTableSelect<ChartOfAccount>({
         data: coaData,
         value: watchedCoaId?.toString() ?? undefined,
-        valueKey: 'id',
+        valueKey: "id",
     });
 
     const categorySelect = useTableSelect<PpmpCategory>({
         data: categoryData,
         value: watchedCategoryId?.toString() ?? undefined,
-        valueKey: 'id',
+        valueKey: "id",
     });
 
     // ---- Handlers ----
     const handlePriceListSelect = (row: PriceList) => {
         setSelectedPriceListObj(row);
-        setValue('ppmp_price_list_id', row.id, { shouldValidate: true });
+        setValue("ppmp_price_list_id", row.id, { shouldValidate: true });
         priceListSelect.setOpen(false);
     };
 
@@ -245,10 +224,10 @@ export default function PpmpFormDialog({
 
         if (watchedPriceListId) {
             setSelectedPriceListObj(null);
-            setValue('ppmp_price_list_id', null);
+            setValue("ppmp_price_list_id", null);
         }
 
-        setValue('coa_id', row.id, { shouldValidate: true });
+        setValue("coa_id", row.id, { shouldValidate: true });
         coaSelect.setOpen(false);
     };
 
@@ -259,29 +238,29 @@ export default function PpmpFormDialog({
 
         if (watchedPriceListId) {
             setSelectedPriceListObj(null);
-            setValue('ppmp_price_list_id', null);
+            setValue("ppmp_price_list_id", null);
         }
 
-        setValue('category_id', row.id, { shouldValidate: true });
+        setValue("category_id", row.id, { shouldValidate: true });
         categorySelect.setOpen(false);
     };
 
     const handleClearPriceList = () => {
         setSelectedPriceListObj(null);
-        setValue('ppmp_price_list_id', null);
+        setValue("ppmp_price_list_id", null);
     };
 
     const handleClearCoa = () => {
         if (!isLocked) {
             setSelectedCoaObj(null);
-            setValue('coa_id', null);
+            setValue("coa_id", null);
         }
     };
 
     const handleClearCategory = () => {
         if (!isLocked) {
             setSelectedCategoryObj(null);
-            setValue('category_id', null);
+            setValue("category_id", null);
         }
     };
 
@@ -292,7 +271,7 @@ export default function PpmpFormDialog({
         setSelectedCategoryObj(null);
 
         router.reload({
-            only: ['priceLists', 'chartOfAccounts', 'categories'],
+            only: ["priceLists", "chartOfAccounts", "categories"],
             data: {
                 coa_id: undefined,
                 category_id: undefined,
@@ -313,7 +292,7 @@ export default function PpmpFormDialog({
         setSubmitError(null);
 
         router.post(
-            '/ppmp', // adjust to your store route
+            "/ppmp", // adjust to your store route
             {
                 ppa_funding_source_id: ppaFundingSourceId,
                 ppmp_price_list_id: data.ppmp_price_list_id,
@@ -328,7 +307,7 @@ export default function PpmpFormDialog({
                 },
                 onError: (errors) => {
                     setIsSubmitting(false);
-                    setSubmitError(errors?.message || 'Failed to add item.');
+                    setSubmitError(errors?.message || "Failed to add item.");
                 },
                 onFinish: () => setIsSubmitting(false),
             },
@@ -342,15 +321,11 @@ export default function PpmpFormDialog({
                     <DialogHeader>
                         <DialogTitle>Add PPMP Item</DialogTitle>
                         <DialogDescription>
-                            Select a price list or manually choose a COA and
-                            category.
+                            Select a price list or manually choose a COA and category.
                         </DialogDescription>
                     </DialogHeader>
 
-                    <form
-                        onSubmit={handleSubmit(handleFormSubmit)}
-                        className="flex flex-col gap-4"
-                    >
+                    <form onSubmit={handleSubmit(handleFormSubmit)} className="flex flex-col gap-4">
                         {/* Price List */}
                         <Controller
                             name="ppmp_price_list_id"
@@ -360,9 +335,7 @@ export default function PpmpFormDialog({
                                     <FieldLabel>Price List</FieldLabel>
                                     <TableSelectButton
                                         hook={priceListSelect}
-                                        displayValue={() =>
-                                            selectedPriceListObj?.description
-                                        }
+                                        displayValue={() => selectedPriceListObj?.description}
                                         placeholder="Select price list..."
                                         onClear={handleClearPriceList}
                                         wrapText={true}
@@ -373,26 +346,18 @@ export default function PpmpFormDialog({
                                             <div>
                                                 <span className="font-medium">
                                                     Unit of Measurement:
-                                                </span>{' '}
-                                                {
-                                                    selectedPriceListObj.unit_of_measurement
-                                                }
+                                                </span>{" "}
+                                                {selectedPriceListObj.unit_of_measurement}
                                             </div>
                                             <div>
-                                                <span className="font-medium">
-                                                    Price:
-                                                </span>{' '}
-                                                {formatPrice(
-                                                    selectedPriceListObj.price,
-                                                )}
+                                                <span className="font-medium">Price:</span>{" "}
+                                                {formatPrice(selectedPriceListObj.price)}
                                             </div>
                                         </div>
                                     )}
 
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -407,17 +372,13 @@ export default function PpmpFormDialog({
                                     <FieldLabel>PPMP Category</FieldLabel>
                                     <TableSelectButton
                                         hook={categorySelect}
-                                        displayValue={() =>
-                                            selectedCategoryObj?.name
-                                        }
+                                        displayValue={() => selectedCategoryObj?.name}
                                         placeholder="Select category..."
                                         disabled={isLocked}
                                         onClear={handleClearCategory}
                                     />
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
@@ -432,35 +393,23 @@ export default function PpmpFormDialog({
                                     <FieldLabel>Chart of Account</FieldLabel>
                                     <TableSelectButton
                                         hook={coaSelect}
-                                        displayValue={() =>
-                                            selectedCoaObj?.account_title
-                                        }
+                                        displayValue={() => selectedCoaObj?.account_title}
                                         placeholder="Select COA..."
                                         disabled={isLocked}
                                         onClear={handleClearCoa}
                                     />
                                     {fieldState.invalid && (
-                                        <FieldError
-                                            errors={[fieldState.error]}
-                                        />
+                                        <FieldError errors={[fieldState.error]} />
                                     )}
                                 </Field>
                             )}
                         />
 
                         <DialogFooter>
-                            <Button
-                                variant="secondary"
-                                type="button"
-                                onClick={handleReset}
-                            >
+                            <Button variant="secondary" type="button" onClick={handleReset}>
                                 Reset
                             </Button>
-                            <Button
-                                variant="outline"
-                                type="button"
-                                onClick={handleCancel}
-                            >
+                            <Button variant="outline" type="button" onClick={handleCancel}>
                                 Cancel
                             </Button>
                             <Button type="submit">Add Item</Button>

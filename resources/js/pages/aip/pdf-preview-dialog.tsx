@@ -100,14 +100,14 @@ const styles = StyleSheet.create({
 
 const formatNumber = (value: number | string | undefined) => {
     if (value === undefined || value === null) {
-return "-";
-}
+        return "-";
+    }
 
     const num = typeof value === "string" ? parseFloat(value) : value;
 
     if (isNaN(num) || num === 0) {
-return "-";
-}
+        return "-";
+    }
 
     return new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 2,
@@ -1402,8 +1402,8 @@ export default function PdfPreviewDialog({
 
     const handleOfficeChange = (officeId: string) => {
         if (!fiscalYear) {
-return;
-}
+            return;
+        }
 
         setSelectedOfficeId(officeId);
         setIsReloading(true);
@@ -1416,8 +1416,8 @@ return;
 
     const getOfficeLabel = () => {
         if (!canGenerateAppAll) {
-return `${auth.user.office?.name || "My Office"}`;
-}
+            return `${auth.user.office?.name || "My Office"}`;
+        }
 
         if (selectedOfficeId === "all") {
             const mainOffice = offices.find((o) => o.id === 1);
@@ -1431,8 +1431,8 @@ return `${auth.user.office?.name || "My Office"}`;
     };
 
     if (!fiscalYear) {
-return null;
-}
+        return null;
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

@@ -1,11 +1,11 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from '@inertiajs/react';
-import { useEffect } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
-import * as z from 'zod';
-import { TableSelect } from '@/components/base-ui-components/table-select';
-import { TableSelectButton } from '@/components/base-ui-components/table-select-button';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { router } from "@inertiajs/react";
+import { useEffect } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import * as z from "zod";
+import { TableSelect } from "@/components/base-ui-components/table-select";
+import { TableSelectButton } from "@/components/base-ui-components/table-select-button";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -13,27 +13,15 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
-import {
-    Field,
-    FieldError,
-    FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { useTableSelect } from '@/hooks/use-table-select';
-import { store, update } from '@/routes/price-lists';
-import type {
-    PriceList,
-    ChartOfAccount,
-    PpmpCategory,
-    ChartOfAccountPpmpCategory,
-} from '@/types';
-import categoryCols from './columns/category-columns';
-import coaCols from './columns/coa-columns';
+} from "@/components/base-ui-components/ui/dialog";
+import { Field, FieldError, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { useTableSelect } from "@/hooks/use-table-select";
+import { store, update } from "@/routes/price-lists";
+import type { PriceList, ChartOfAccount, PpmpCategory, ChartOfAccountPpmpCategory } from "@/types";
+import categoryCols from "./columns/category-columns";
+import coaCols from "./columns/coa-columns";
 
 interface FormDialogProps {
     open: boolean;
@@ -51,8 +39,8 @@ const formSchema = z.object({
     uom: z.string().min(1),
     price: z
         .string()
-        .min(1, 'Price is required')
-        .regex(/^\d*\.?\d+$/, 'Price must be a positive decimal number'),
+        .min(1, "Price is required")
+        .regex(/^\d*\.?\d+$/, "Price must be a positive decimal number"),
 });
 
 export default function FormDialog({
@@ -66,30 +54,28 @@ export default function FormDialog({
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            coa_id: '',
-            category_id: '',
-            item_name: '',
-            uom: '',
-            price: '',
+            coa_id: "",
+            category_id: "",
+            item_name: "",
+            uom: "",
+            price: "",
         },
     });
 
-    const watchCoaId = useWatch({ control: form.control, name: 'coa_id' });
+    const watchCoaId = useWatch({ control: form.control, name: "coa_id" });
     const watchCategoryId = useWatch({
         control: form.control,
-        name: 'category_id',
+        name: "category_id",
     });
 
     useEffect(() => {
         if (selectedPriceList) {
             form.reset({
                 coa_id: String(
-                    selectedPriceList.chart_of_account_ppmp_category
-                        ?.chart_of_account_id ?? '',
+                    selectedPriceList.chart_of_account_ppmp_category?.chart_of_account_id ?? "",
                 ),
                 category_id: String(
-                    selectedPriceList.chart_of_account_ppmp_category
-                        ?.ppmp_category_id ?? '',
+                    selectedPriceList.chart_of_account_ppmp_category?.ppmp_category_id ?? "",
                 ),
                 item_name: selectedPriceList.description,
                 uom: selectedPriceList.unit_of_measurement,
@@ -97,11 +83,11 @@ export default function FormDialog({
             });
         } else {
             form.reset({
-                coa_id: '',
-                category_id: '',
-                item_name: '',
-                uom: '',
-                price: '',
+                coa_id: "",
+                category_id: "",
+                item_name: "",
+                uom: "",
+                price: "",
             });
         }
     }, [selectedPriceList, form]);
@@ -125,7 +111,7 @@ export default function FormDialog({
 
         if (selectedPriceList) {
             router.visit(update({ ppmpPriceList: selectedPriceList.id }).url, {
-                method: 'patch',
+                method: "patch",
                 data: payload,
                 preserveState: true,
                 preserveScroll: true,
@@ -136,7 +122,7 @@ export default function FormDialog({
             });
         } else {
             router.visit(store().url, {
-                method: 'post',
+                method: "post",
                 data: payload,
                 preserveState: true,
                 preserveScroll: true,
@@ -157,9 +143,7 @@ export default function FormDialog({
             .filter((pair) => String(pair.ppmp_category_id) === watchCategoryId)
             .map((pair) => String(pair.chart_of_account_id));
 
-        return chartOfAccounts.filter((coa) =>
-            allowedCoaIds.includes(String(coa.id)),
-        );
+        return chartOfAccounts.filter((coa) => allowedCoaIds.includes(String(coa.id)));
     }
 
     function filterPpmpCategories() {
@@ -171,9 +155,7 @@ export default function FormDialog({
             .filter((pair) => String(pair.chart_of_account_id) === watchCoaId)
             .map((pair) => String(pair.ppmp_category_id));
 
-        return ppmpCategories.filter((cat) =>
-            allowedCategoryIds.includes(String(cat.id)),
-        );
+        return ppmpCategories.filter((cat) => allowedCategoryIds.includes(String(cat.id)));
     }
 
     //
@@ -194,14 +176,12 @@ export default function FormDialog({
                 <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-md">
                     <DialogHeader className="flex-none">
                         <DialogTitle>
-                            {selectedPriceList
-                                ? 'Edit Price List'
-                                : 'Create Price List'}
+                            {selectedPriceList ? "Edit Price List" : "Create Price List"}
                         </DialogTitle>
                         <DialogDescription>
                             {selectedPriceList
-                                ? 'Update the details for this price list item.'
-                                : 'Fill in the details to add a new price list item.'}
+                                ? "Update the details for this price list item."
+                                : "Fill in the details to add a new price list item."}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -216,32 +196,24 @@ export default function FormDialog({
                                     name="coa_id"
                                     control={form.control}
                                     render={({ fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldLabel htmlFor="form-price-list-coa-id">
                                                 Chart of Accounts
                                             </FieldLabel>
 
                                             <TableSelectButton
                                                 hook={coaHook}
-                                                displayValue={(item) =>
-                                                    item?.account_title
-                                                }
-                                                placeholder={
-                                                    'Select Chart of Account'
-                                                }
+                                                displayValue={(item) => item?.account_title}
+                                                placeholder={"Select Chart of Account"}
                                                 invalid={fieldState.invalid}
                                                 onClear={() =>
-                                                    form.resetField('coa_id', {
-                                                        defaultValue: '',
+                                                    form.resetField("coa_id", {
+                                                        defaultValue: "",
                                                     })
                                                 }
                                             />
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </Field>
                                     )}
@@ -250,33 +222,24 @@ export default function FormDialog({
                                     name="category_id"
                                     control={form.control}
                                     render={({ fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldLabel htmlFor="form-price-list-category-id">
                                                 Category
                                             </FieldLabel>
 
                                             <TableSelectButton
                                                 hook={categoryHook}
-                                                displayValue={(item) =>
-                                                    item?.name
-                                                }
+                                                displayValue={(item) => item?.name}
                                                 placeholder="Select Category"
                                                 invalid={fieldState.invalid}
                                                 onClear={() =>
-                                                    form.resetField(
-                                                        'category_id',
-                                                        {
-                                                            defaultValue: '',
-                                                        },
-                                                    )
+                                                    form.resetField("category_id", {
+                                                        defaultValue: "",
+                                                    })
                                                 }
                                             />
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </Field>
                                     )}
@@ -285,25 +248,19 @@ export default function FormDialog({
                                     name="item_name"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldLabel htmlFor="form-price-list-item-name">
                                                 Item Name
                                             </FieldLabel>
                                             <Input
                                                 {...field}
                                                 id="form-price-list-item-name"
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="Enter item name"
                                                 autoComplete="off"
                                             />
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </Field>
                                     )}
@@ -312,25 +269,19 @@ export default function FormDialog({
                                     name="uom"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldLabel htmlFor="form-price-list-uom">
                                                 Unit of Measurement
                                             </FieldLabel>
                                             <Input
                                                 {...field}
                                                 id="form-price-list-uom"
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="Enter unit of measurement"
                                                 autoComplete="off"
                                             />
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </Field>
                                     )}
@@ -339,25 +290,19 @@ export default function FormDialog({
                                     name="price"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                        >
+                                        <Field data-invalid={fieldState.invalid}>
                                             <FieldLabel htmlFor="form-price-list-price">
                                                 Price
                                             </FieldLabel>
                                             <Input
                                                 {...field}
                                                 id="form-price-list-price"
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="0.00"
                                                 autoComplete="off"
                                             />
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </Field>
                                     )}
@@ -375,17 +320,14 @@ export default function FormDialog({
                                 if (selectedPriceList) {
                                     form.reset({
                                         coa_id: String(
-                                            selectedPriceList
-                                                .chart_of_account_ppmp_category
-                                                ?.chart_of_account_id ?? '',
+                                            selectedPriceList.chart_of_account_ppmp_category
+                                                ?.chart_of_account_id ?? "",
                                         ),
                                         category_id: String(
-                                            selectedPriceList
-                                                .chart_of_account_ppmp_category
-                                                ?.ppmp_category_id ?? '',
+                                            selectedPriceList.chart_of_account_ppmp_category
+                                                ?.ppmp_category_id ?? "",
                                         ),
-                                        item_name:
-                                            selectedPriceList.description,
+                                        item_name: selectedPriceList.description,
                                         uom: selectedPriceList.unit_of_measurement,
                                         price: selectedPriceList.price,
                                     });
@@ -417,7 +359,7 @@ export default function FormDialog({
                 open={coaHook.open}
                 onOpenChange={coaHook.setOpen}
                 onRowSelect={(row) => {
-                    form.setValue('coa_id', String(row.id), {
+                    form.setValue("coa_id", String(row.id), {
                         shouldValidate: true,
                     });
                 }}
@@ -434,7 +376,7 @@ export default function FormDialog({
                 open={categoryHook.open}
                 onOpenChange={categoryHook.setOpen}
                 onRowSelect={(row) => {
-                    form.setValue('category_id', String(row.id), {
+                    form.setValue("category_id", String(row.id), {
                         shouldValidate: true,
                     });
                 }}

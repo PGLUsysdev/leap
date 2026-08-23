@@ -1,10 +1,10 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-const INPUT_FILE = 'ppa.json';
-const OUTPUT_FILE = 'ppa.php.json';
+const INPUT_FILE = "ppa.json";
+const OUTPUT_FILE = "ppa.php.json";
 
-type NodeType = 'Program' | 'Project' | 'Activity' | 'Sub-Activity';
+type NodeType = "Program" | "Project" | "Activity" | "Sub-Activity";
 
 interface Item {
     id: number;
@@ -15,19 +15,19 @@ interface Item {
 
 function getType(value: string): NodeType | null {
     if (/^[A-Z]\.\s/.test(value)) {
-        return 'Program';
+        return "Program";
     }
 
     if (/^\d+\.\d+\.\d+\.\s/.test(value)) {
-        return 'Sub-Activity';
+        return "Sub-Activity";
     }
 
     if (/^\d+\.\d+\.\s/.test(value)) {
-        return 'Activity';
+        return "Activity";
     }
 
     if (/^\d+\.\s/.test(value)) {
-        return 'Project';
+        return "Project";
     }
 
     return null;
@@ -35,32 +35,32 @@ function getType(value: string): NodeType | null {
 
 function cleanName(value: string): string {
     return value
-        .replace(/^[A-Z]\.\s*/, '')
-        .replace(/^\d+(?:\.\d+)*\.\s*/, '')
+        .replace(/^[A-Z]\.\s*/, "")
+        .replace(/^\d+(?:\.\d+)*\.\s*/, "")
         .trim();
 }
 
 function escapePhpString(value: string): string {
-    return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
 function toPhpArray(data: Item[]): string {
     const rows = data.map(
         (item) => `    [
         'id' => ${item.id},
-        'parent_id' => ${item.parent_id === null ? 'null' : item.parent_id},
+        'parent_id' => ${item.parent_id === null ? "null" : item.parent_id},
         'name' => '${escapePhpString(item.name)}',
         'type' => '${item.type}',
     ]`,
     );
 
-    return `[\n${rows.join(',\n')}\n];`;
+    return `[\n${rows.join(",\n")}\n];`;
 }
 
 async function main() {
     const inputPath = path.join(import.meta.dirname, INPUT_FILE);
 
-    const data: string[] = JSON.parse(await readFile(inputPath, 'utf8'));
+    const data: string[] = JSON.parse(await readFile(inputPath, "utf8"));
 
     const result: Item[] = [];
 
@@ -80,24 +80,24 @@ async function main() {
         let parentId: number | null = null;
 
         switch (type) {
-            case 'Program':
+            case "Program":
                 currentProgramId = id;
                 currentProjectId = null;
                 currentActivityId = null;
                 break;
 
-            case 'Project':
+            case "Project":
                 parentId = currentProgramId;
                 currentProjectId = id;
                 currentActivityId = null;
                 break;
 
-            case 'Activity':
+            case "Activity":
                 parentId = currentProjectId;
                 currentActivityId = id;
                 break;
 
-            case 'Sub-Activity':
+            case "Sub-Activity":
                 parentId = currentActivityId;
                 break;
         }
@@ -114,7 +114,7 @@ async function main() {
 
     const outputPath = path.join(import.meta.dirname, OUTPUT_FILE);
 
-    await writeFile(outputPath, toPhpArray(result), 'utf8');
+    await writeFile(outputPath, toPhpArray(result), "utf8");
 
     console.log(`Saved ${result.length} items to ${OUTPUT_FILE}`);
 }

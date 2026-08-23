@@ -72,8 +72,8 @@ function getScopedPermissionKeys(node: PermissionNode): string[] {
     const keys: string[] = [];
 
     if (!node.scopedPermissions) {
-return keys;
-}
+        return keys;
+    }
 
     for (const sp of node.scopedPermissions) {
         if (sp.scopes.length === 0) {
@@ -124,8 +124,8 @@ function PermissionRow({
 
     useEffect(() => {
         if (!viewKey) {
-return;
-}
+            return;
+        }
 
         const viewOn = selected.has(viewKey);
         const scopedKeys = getScopedPermissionKeys(node);
@@ -240,8 +240,8 @@ return;
                                     }
                                     onValueChange={(value) => {
                                         if (sp.key === "show" && !value) {
-return;
-}
+                                            return;
+                                        }
 
                                         if (sp.scopes.length === 0) {
                                             const key = `${node.key}.${sp.key}`;
@@ -332,8 +332,8 @@ export default function PermissionDialog({ open, onOpenChange, role }: Permissio
 
     useEffect(() => {
         if (!open || !role) {
-return;
-}
+            return;
+        }
 
         setIsLoading(true);
         fetch(`/roles/${role.id}/permissions`, {
@@ -348,8 +348,8 @@ return;
 
     const handleSave = useCallback(() => {
         if (!role) {
-return;
-}
+            return;
+        }
 
         setIsLoading(true);
         router.post(

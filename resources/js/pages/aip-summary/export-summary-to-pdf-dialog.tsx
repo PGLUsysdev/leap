@@ -23,8 +23,8 @@ const collectAllFundingSources = (ppas: Ppa[]) => {
             }
 
             if (ppa.children) {
-traverse(ppa.children);
-}
+                traverse(ppa.children);
+            }
         }
     };
 
@@ -130,8 +130,8 @@ export default function ExportSummaryToPdfDialog({
 
     const formatNumber = (value: number) => {
         if (!value) {
-return "-";
-}
+            return "-";
+        }
 
         return value.toLocaleString("en-US", {
             minimumFractionDigits: 2,

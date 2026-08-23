@@ -1,8 +1,7 @@
 import { DataTable } from "@/components/data-table";
 import AppLayout from "@/layouts/app-layout";
-import type {BreadcrumbItem} from "@/types";
+import type { BreadcrumbItem } from "@/types";
 import type { User, Ppa } from "@/types";
-
 
 import AipSummaryCols from "./aip-summary-cols/columns";
 import columns from "./data-table/columns";

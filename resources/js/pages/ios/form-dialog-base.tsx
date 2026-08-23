@@ -1,9 +1,9 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
-import { useForm, Controller, useWatch } from 'react-hook-form';
-import * as z from 'zod';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { router } from "@inertiajs/react";
+import { useEffect, useMemo, useState } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
+import * as z from "zod";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -11,39 +11,36 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from "@/components/base-ui-components/ui/dialog";
 import {
     Field,
     FieldLabel,
     FieldError,
     FieldContent,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
-import type { Ios, SalaryGradeOption } from '@/types';
-import iosCodes from './ios_codes.js';
+} from "@/components/base-ui-components/ui/select";
+import type { Ios, SalaryGradeOption } from "@/types";
+import iosCodes from "./ios_codes.js";
 
 const formSchema = z.object({
-    occupational_service_code: z.string().min(1, 'Required'),
-    occupational_group_code: z.string().min(1, 'Required'),
-    class_id: z.string().min(1, 'Required'),
-    class: z.string().min(1, 'Required'),
+    occupational_service_code: z.string().min(1, "Required"),
+    occupational_group_code: z.string().min(1, "Required"),
+    class_id: z.string().min(1, "Required"),
+    class: z.string().min(1, "Required"),
     salary_grade: z
         .string()
-        .min(1, 'Required')
+        .min(1, "Required")
         .refine(
             (val) => !val || (Number(val) >= 1 && Number(val) <= 33),
-            'Salary grade must be between 1 and 33',
+            "Salary grade must be between 1 and 33",
         ),
 });
 
@@ -56,35 +53,27 @@ interface FormDialogProps {
     salaryGrades: SalaryGradeOption[];
 }
 
-export default function FormDialog({
-    open,
-    onOpenChange,
-    data,
-    salaryGrades,
-}: FormDialogProps) {
+export default function FormDialog({ open, onOpenChange, data, salaryGrades }: FormDialogProps) {
     const [submitting, setSubmitting] = useState(false);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            occupational_service_code: '',
-            occupational_group_code: '',
-            class_id: '',
-            class: '',
-            salary_grade: '',
+            occupational_service_code: "",
+            occupational_group_code: "",
+            class_id: "",
+            class: "",
+            salary_grade: "",
         },
     });
 
     const selectedServiceCode = useWatch({
         control: form.control,
-        name: 'occupational_service_code',
+        name: "occupational_service_code",
     });
 
     const selectedService = useMemo(
-        () =>
-            iosCodes.find(
-                (s) => s.occupational_service_code === selectedServiceCode,
-            ),
+        () => iosCodes.find((s) => s.occupational_service_code === selectedServiceCode),
         [selectedServiceCode],
     );
 
@@ -99,27 +88,25 @@ export default function FormDialog({
             });
         } else {
             form.reset({
-                occupational_service_code: '',
-                occupational_group_code: '',
-                class_id: '',
-                class: '',
-                salary_grade: '',
+                occupational_service_code: "",
+                occupational_group_code: "",
+                class_id: "",
+                class: "",
+                salary_grade: "",
             });
         }
     }, [data, form]);
 
     useEffect(() => {
         if (selectedService) {
-            const currentGroup = form.getValues('occupational_group_code');
-            const isValid = selectedService.groups.some(
-                (g) => g.group_code === currentGroup,
-            );
+            const currentGroup = form.getValues("occupational_group_code");
+            const isValid = selectedService.groups.some((g) => g.group_code === currentGroup);
 
             if (!isValid) {
-                form.setValue('occupational_group_code', '');
+                form.setValue("occupational_group_code", "");
             }
         } else {
-            form.setValue('occupational_group_code', '');
+            form.setValue("occupational_group_code", "");
         }
     }, [selectedServiceCode, selectedService, form]);
 
@@ -150,7 +137,7 @@ export default function FormDialog({
         if (data) {
             router.patch(`/ios/${data.id}`, payload, options);
         } else {
-            router.post('/ios', payload, options);
+            router.post("/ios", payload, options);
         }
     }
 
@@ -160,13 +147,11 @@ export default function FormDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>
-                        {isEditing ? 'Edit IOS' : 'Add New IOS'}
-                    </DialogTitle>
+                    <DialogTitle>{isEditing ? "Edit IOS" : "Add New IOS"}</DialogTitle>
                     <DialogDescription>
                         {isEditing
-                            ? 'Modify the details of the existing IOS record below.'
-                            : 'Fill in the information to create a new IOS record.'}
+                            ? "Modify the details of the existing IOS record below."
+                            : "Fill in the information to create a new IOS record."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -193,9 +178,7 @@ export default function FormDialog({
                                             >
                                                 <SelectTrigger
                                                     className="w-full"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                 >
                                                     <SelectValue placeholder="Select service" />
                                                 </SelectTrigger>
@@ -203,26 +186,20 @@ export default function FormDialog({
                                                 <SelectContent>
                                                     {iosCodes.map((service) => (
                                                         <SelectItem
-                                                            key={
-                                                                service.occupational_service_code
-                                                            }
+                                                            key={service.occupational_service_code}
                                                             value={
                                                                 service.occupational_service_code
                                                             }
                                                         >
-                                                            {
-                                                                service.occupational_service_code
-                                                            }{' '}
-                                                            — {service.name}
+                                                            {service.occupational_service_code} —{" "}
+                                                            {service.name}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -245,48 +222,31 @@ export default function FormDialog({
                                             >
                                                 <SelectTrigger
                                                     className="w-full"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                 >
                                                     {selectedService ? (
                                                         <SelectValue placeholder="Select group" />
                                                     ) : (
                                                         <span className="text-muted-foreground">
-                                                            Select a service
-                                                            first
+                                                            Select a service first
                                                         </span>
                                                     )}
                                                 </SelectTrigger>
 
                                                 <SelectContent>
-                                                    {selectedService?.groups.map(
-                                                        (group) => (
-                                                            <SelectItem
-                                                                key={
-                                                                    group.group_code
-                                                                }
-                                                                value={
-                                                                    group.group_code
-                                                                }
-                                                            >
-                                                                {
-                                                                    group.group_code
-                                                                }{' '}
-                                                                —{' '}
-                                                                {
-                                                                    group.group_name
-                                                                }
-                                                            </SelectItem>
-                                                        ),
-                                                    )}
+                                                    {selectedService?.groups.map((group) => (
+                                                        <SelectItem
+                                                            key={group.group_code}
+                                                            value={group.group_code}
+                                                        >
+                                                            {group.group_code} — {group.group_name}
+                                                        </SelectItem>
+                                                    ))}
                                                 </SelectContent>
                                             </Select>
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -299,24 +259,18 @@ export default function FormDialog({
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Class ID
-                                            </FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>Class ID</FieldLabel>
 
                                             <Input
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="e.g. ADA1"
                                                 autoComplete="off"
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -329,24 +283,18 @@ export default function FormDialog({
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Class
-                                            </FieldLabel>
+                                            <FieldLabel htmlFor={field.name}>Class</FieldLabel>
 
                                             <Input
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
+                                                aria-invalid={fieldState.invalid}
                                                 placeholder="e.g. Administrative Aide I"
                                                 autoComplete="off"
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -369,9 +317,7 @@ export default function FormDialog({
                                             >
                                                 <SelectTrigger
                                                     className="w-full"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
+                                                    aria-invalid={fieldState.invalid}
                                                 >
                                                     <SelectValue placeholder="Select salary grade" />
                                                 </SelectTrigger>
@@ -379,49 +325,26 @@ export default function FormDialog({
                                                 <SelectContent>
                                                     {salaryGrades.map((sg) => (
                                                         <SelectItem
-                                                            key={
-                                                                sg.salary_grade
-                                                            }
-                                                            value={String(
-                                                                sg.salary_grade,
-                                                            )}
+                                                            key={sg.salary_grade}
+                                                            value={String(sg.salary_grade)}
                                                         >
-                                                            SG {sg.salary_grade}{' '}
-                                                            —{' '}
-                                                            {new Intl.NumberFormat(
-                                                                'en-PH',
-                                                                {
-                                                                    style: 'currency',
-                                                                    currency:
-                                                                        'PHP',
-                                                                },
-                                                            ).format(
-                                                                Number(
-                                                                    sg.min_rate,
-                                                                ),
-                                                            )}{' '}
-                                                            –{' '}
-                                                            {new Intl.NumberFormat(
-                                                                'en-PH',
-                                                                {
-                                                                    style: 'currency',
-                                                                    currency:
-                                                                        'PHP',
-                                                                },
-                                                            ).format(
-                                                                Number(
-                                                                    sg.max_rate,
-                                                                ),
-                                                            )}
+                                                            SG {sg.salary_grade} —{" "}
+                                                            {new Intl.NumberFormat("en-PH", {
+                                                                style: "currency",
+                                                                currency: "PHP",
+                                                            }).format(Number(sg.min_rate))}{" "}
+                                                            –{" "}
+                                                            {new Intl.NumberFormat("en-PH", {
+                                                                style: "currency",
+                                                                currency: "PHP",
+                                                            }).format(Number(sg.max_rate))}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
 
                                             {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
+                                                <FieldError errors={[fieldState.error]} />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -446,11 +369,7 @@ export default function FormDialog({
                     </Button>
 
                     <Button type="submit" form="ios-form" disabled={submitting}>
-                        {submitting
-                            ? 'Saving...'
-                            : isEditing
-                              ? 'Save Changes'
-                              : 'Add IOS'}
+                        {submitting ? "Saving..." : isEditing ? "Save Changes" : "Add IOS"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

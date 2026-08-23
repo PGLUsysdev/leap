@@ -1,11 +1,8 @@
-import { router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+import { router, usePage } from "@inertiajs/react";
+import { useState } from "react";
+import DataTable from "@/components/base-ui-components/data-table";
+import { Button } from "@/components/base-ui-components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -15,19 +12,12 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import type { SharedData } from '@/types';
-import type {
-    FiscalYear,
-    Ios,
-    Office,
-    PaginatedResponse,
-    Position,
-    SalaryStandard,
-} from '@/types';
-import columns from './columns/position-cols';
-import FormDialog from './form-dailog';
-import PreviewPdfDialog from './pdf-preview-dialog';
+} from "@/components/ui/alert-dialog";
+import type { SharedData } from "@/types";
+import type { FiscalYear, Ios, Office, PaginatedResponse, Position, SalaryStandard } from "@/types";
+import columns from "./columns/position-cols";
+import FormDialog from "./form-dailog";
+import PreviewPdfDialog from "./pdf-preview-dialog";
 
 interface PositionPageProps {
     positions: Position[];
@@ -62,14 +52,10 @@ export default function PositionPage({
         ? positions.filter((p) => p.office_id === userOfficeId)
         : positions;
 
-    const [selectedPosition, setSelectedPosition] = useState<Position | null>(
-        null,
-    );
+    const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
     const [openForm, setOpenForm] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
-    const [pdfFormType, setPdfFormType] = useState<
-        'permanent' | 'casual' | null
-    >(null);
+    const [pdfFormType, setPdfFormType] = useState<"permanent" | "casual" | null>(null);
     const openPdfPreview = pdfFormType !== null;
 
     function handleEdit(data: Position) {
@@ -123,13 +109,13 @@ export default function PositionPage({
                             <>
                                 <Button
                                     variant="secondary"
-                                    onClick={() => setPdfFormType('permanent')}
+                                    onClick={() => setPdfFormType("permanent")}
                                 >
                                     Generate LBP Form No. 3
                                 </Button>
                                 <Button
                                     variant="secondary"
-                                    onClick={() => setPdfFormType('casual')}
+                                    onClick={() => setPdfFormType("casual")}
                                 >
                                     Generate LBP Form No. 3a
                                 </Button>
@@ -167,14 +153,8 @@ export default function PositionPage({
                         setPdfFormType(null);
                     }
                 }}
-                positions={officePositions.filter(
-                    (p) => p.employment_type === pdfFormType,
-                )}
-                title={
-                    pdfFormType === 'permanent'
-                        ? 'LBP Form No. 3'
-                        : 'LBP Form No. 3a'
-                }
+                positions={officePositions.filter((p) => p.employment_type === pdfFormType)}
+                title={pdfFormType === "permanent" ? "LBP Form No. 3" : "LBP Form No. 3a"}
                 currentStandards={currentStandards}
                 budgetStandards={budgetStandards}
                 currentFiscalYear={currentFiscalYear}
@@ -188,24 +168,19 @@ export default function PositionPage({
                         <AlertDialogDescription>
                             {selectedPosition?.user ? (
                                 <>
-                                    This position is currently assigned to{' '}
-                                    <strong>
-                                        {selectedPosition.user.name}
-                                    </strong>
-                                    . Continuing will unassign this user from
-                                    the position. This action cannot be undone.
+                                    This position is currently assigned to{" "}
+                                    <strong>{selectedPosition.user.name}</strong>. Continuing will
+                                    unassign this user from the position. This action cannot be
+                                    undone.
                                 </>
                             ) : (
-                                'Are you sure you want to delete this position? This action cannot be undone.'
+                                "Are you sure you want to delete this position? This action cannot be undone."
                             )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            variant="destructive"
-                            onClick={confirmDelete}
-                        >
+                        <AlertDialogAction variant="destructive" onClick={confirmDelete}>
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -215,4 +190,4 @@ export default function PositionPage({
     );
 }
 
-PositionPage.layout = { breadcrumbs: [{ title: 'Positions', href: '#' }] };
+PositionPage.layout = { breadcrumbs: [{ title: "Positions", href: "#" }] };

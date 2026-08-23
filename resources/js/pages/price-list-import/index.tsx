@@ -1,9 +1,9 @@
-import { router } from '@inertiajs/react';
-import ExcelJS from 'exceljs';
-import type { ChangeEvent } from 'react';
-import { useMemo, useState } from 'react';
-import { toast } from 'sonner';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { router } from "@inertiajs/react";
+import ExcelJS from "exceljs";
+import type { ChangeEvent } from "react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Combobox,
     ComboboxContent,
@@ -11,7 +11,7 @@ import {
     ComboboxInput,
     ComboboxItem,
     ComboboxList,
-} from '@/components/base-ui-components/ui/combobox';
+} from "@/components/base-ui-components/ui/combobox";
 import {
     Dialog,
     DialogClose,
@@ -20,18 +20,14 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
-import {
-    Field,
-    FieldDescription,
-    FieldLabel,
-} from '@/components/base-ui-components/ui/field';
+} from "@/components/base-ui-components/ui/dialog";
+import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
 import {
     HoverCard,
     HoverCardContent,
     HoverCardTrigger,
-} from '@/components/base-ui-components/ui/hover-card';
-import { Input } from '@/components/base-ui-components/ui/input';
+} from "@/components/base-ui-components/ui/hover-card";
+import { Input } from "@/components/base-ui-components/ui/input";
 import {
     Select,
     SelectContent,
@@ -39,9 +35,9 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
-import { Switch } from '@/components/base-ui-components/ui/switch';
+} from "@/components/base-ui-components/ui/select";
+import { Spinner } from "@/components/base-ui-components/ui/spinner";
+import { Switch } from "@/components/base-ui-components/ui/switch";
 import {
     Table,
     TableBody,
@@ -49,19 +45,12 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/base-ui-components/ui/table';
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-} from '@/components/base-ui-components/ui/toggle-group';
-import type {
-    ChartOfAccount,
-    ChartOfAccountPpmpCategory,
-    PpmpCategory,
-} from '@/types';
-import { CalibrationPanel, type SheetConfig } from './calibration-panel';
-import { extractData, extractQuantities, parseExcludeRows } from './extract';
-import type { ExtractResult, QuantityRow } from './extract';
+} from "@/components/base-ui-components/ui/table";
+import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
+import type { ChartOfAccount, ChartOfAccountPpmpCategory, PpmpCategory } from "@/types";
+import { CalibrationPanel, type SheetConfig } from "./calibration-panel";
+import { extractData, extractQuantities, parseExcludeRows } from "./extract";
+import type { ExtractResult, QuantityRow } from "./extract";
 
 interface PriceListImportProps {
     chartOfAccounts: ChartOfAccount[];
@@ -91,7 +80,7 @@ export default function PriceListImport({
     ppas,
     fundingSources,
 }: PriceListImportProps) {
-    const [mode, setMode] = useState<'price-list' | 'quantities' | null>(null);
+    const [mode, setMode] = useState<"price-list" | "quantities" | null>(null);
     const [sheets, setSheets] = useState<string[]>([]);
     const [_workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
@@ -114,9 +103,9 @@ export default function PriceListImport({
         resolvedCategory: string | null;
         resolvedCoa: string | null;
     }> | null>(null);
-    const [pairOverrides, setPairOverrides] = useState<
-        Record<string, { coaId: number | null }>
-    >({});
+    const [pairOverrides, setPairOverrides] = useState<Record<string, { coaId: number | null }>>(
+        {},
+    );
     const [uniqueItems, setUniqueItems] = useState<Array<{
         description: string;
         category: string;
@@ -131,29 +120,20 @@ export default function PriceListImport({
     const [importing, setImporting] = useState(false);
 
     // --- state for quantities flow ---
-    const [quantityRows, setQuantityRows] = useState<QuantityRow[] | null>(
-        null,
-    );
+    const [quantityRows, setQuantityRows] = useState<QuantityRow[] | null>(null);
     const [quantityMatches, setQuantityMatches] = useState<
         Record<number, { itemId: number | null }>
     >({});
     const [quantityChecked, setQuantityChecked] = useState(false);
-    const [quantityImportDialogOpen, setQuantityImportDialogOpen] =
-        useState(false);
+    const [quantityImportDialogOpen, setQuantityImportDialogOpen] = useState(false);
     const [quantityImporting, setQuantityImporting] = useState(false);
-    const [targetFiscalYearId, setTargetFiscalYearId] = useState<number | null>(
-        null,
-    );
+    const [targetFiscalYearId, setTargetFiscalYearId] = useState<number | null>(null);
     const [targetPpaId, setTargetPpaId] = useState<number | null>(null);
-    const [targetFundingSourceId, setTargetFundingSourceId] = useState<
-        number | null
-    >(null);
+    const [targetFundingSourceId, setTargetFundingSourceId] = useState<number | null>(null);
 
     // --- core calibration state: per-sheet configs ---
-    const [calibrations, setCalibrations] = useState<
-        Record<string, SheetConfig>
-    >({});
-    const [currentSheet, setCurrentSheet] = useState<string>('');
+    const [calibrations, setCalibrations] = useState<Record<string, SheetConfig>>({});
+    const [currentSheet, setCurrentSheet] = useState<string>("");
 
     // --- common UI state ---
     const [loading, setLoading] = useState(false);
@@ -165,34 +145,34 @@ export default function PriceListImport({
     const [manualCat, setManualCat] = useState<Record<string, number>>({});
 
     // Helper: get default config for a given mode
-    function getDefaultConfig(mode: 'price-list' | 'quantities'): SheetConfig {
+    function getDefaultConfig(mode: "price-list" | "quantities"): SheetConfig {
         const commonColumns = {
-            chartOfAccount: 'D',
-            category: 'F',
-            description: 'F',
-            unit: 'G',
-            price: 'H',
-            janQty: 'K',
-            febQty: 'M',
-            marQty: 'O',
-            aprQty: 'Q',
-            mayQty: 'S',
-            junQty: 'U',
-            julQty: 'W',
-            augQty: 'Y',
-            sepQty: 'AA',
-            octQty: 'AC',
-            novQty: 'AE',
-            decQty: 'AG',
+            chartOfAccount: "D",
+            category: "F",
+            description: "F",
+            unit: "G",
+            price: "H",
+            janQty: "K",
+            febQty: "M",
+            marQty: "O",
+            aprQty: "Q",
+            mayQty: "S",
+            junQty: "U",
+            julQty: "W",
+            augQty: "Y",
+            sepQty: "AA",
+            octQty: "AC",
+            novQty: "AE",
+            decQty: "AG",
         };
         const defaultStart = 8;
         const defaultEnd = 1280;
         const defaultNonProc = 1258;
 
         const columnMap =
-            mode === 'price-list'
-                ? ({ ...commonColumns, itemNumber: 'E' } as const)
-                : ({ ...commonColumns, total: 'J' } as const);
+            mode === "price-list"
+                ? ({ ...commonColumns, itemNumber: "E" } as const)
+                : ({ ...commonColumns, total: "J" } as const);
 
         return {
             useCustom: false,
@@ -200,7 +180,7 @@ export default function PriceListImport({
             endRow: defaultEnd,
             nonProcurementStartRow: defaultNonProc,
             columnMap,
-            excludeRows: '',
+            excludeRows: "",
         };
     }
 
@@ -291,9 +271,7 @@ export default function PriceListImport({
     );
     const ppaComboboxItems = useMemo(
         () =>
-            ppas
-                .filter((p) => p.fiscal_year_id === targetFiscalYearId)
-                .map((p) => `ppa:${p.name}`),
+            ppas.filter((p) => p.fiscal_year_id === targetFiscalYearId).map((p) => `ppa:${p.name}`),
         [ppas, targetFiscalYearId],
     );
 
@@ -317,20 +295,13 @@ export default function PriceListImport({
             if (itemMatches[itemKey]) continue;
             if (dbDescriptionSet.has(normalize(item.description))) continue;
 
-            const catId =
-                manualCat[item.category] ??
-                catLookup.get(normalize(item.category));
+            const catId = manualCat[item.category] ?? catLookup.get(normalize(item.category));
             const coaId =
-                pairOverrides[`${item.category}|${item.chartOfAccount}`]
-                    ?.coaId ??
+                pairOverrides[`${item.category}|${item.chartOfAccount}`]?.coaId ??
                 manualCoa[item.chartOfAccount] ??
                 coaLookup.get(normalize(item.chartOfAccount));
 
-            if (
-                catId == null ||
-                coaId == null ||
-                !dbPairsSet.has(`${coaId}|${catId}`)
-            ) {
+            if (catId == null || coaId == null || !dbPairsSet.has(`${coaId}|${catId}`)) {
                 skippedNoMatch++;
                 continue;
             }
@@ -369,18 +340,18 @@ export default function PriceListImport({
         if (!quantityRows) return null;
 
         const monthKeys = [
-            'janQty',
-            'febQty',
-            'marQty',
-            'aprQty',
-            'mayQty',
-            'junQty',
-            'julQty',
-            'augQty',
-            'sepQty',
-            'octQty',
-            'novQty',
-            'decQty',
+            "janQty",
+            "febQty",
+            "marQty",
+            "aprQty",
+            "mayQty",
+            "junQty",
+            "julQty",
+            "augQty",
+            "sepQty",
+            "octQty",
+            "novQty",
+            "decQty",
         ] as const;
 
         const rows: Array<{
@@ -415,18 +386,18 @@ export default function PriceListImport({
             const monthQty = (key: (typeof monthKeys)[number]) => row[key] ?? 0;
             rows.push({
                 ppmp_price_list_id: itemId,
-                jan_qty: monthQty('janQty'),
-                feb_qty: monthQty('febQty'),
-                mar_qty: monthQty('marQty'),
-                apr_qty: monthQty('aprQty'),
-                may_qty: monthQty('mayQty'),
-                jun_qty: monthQty('junQty'),
-                jul_qty: monthQty('julQty'),
-                aug_qty: monthQty('augQty'),
-                sep_qty: monthQty('sepQty'),
-                oct_qty: monthQty('octQty'),
-                nov_qty: monthQty('novQty'),
-                dec_qty: monthQty('decQty'),
+                jan_qty: monthQty("janQty"),
+                feb_qty: monthQty("febQty"),
+                mar_qty: monthQty("marQty"),
+                apr_qty: monthQty("aprQty"),
+                may_qty: monthQty("mayQty"),
+                jun_qty: monthQty("junQty"),
+                jul_qty: monthQty("julQty"),
+                aug_qty: monthQty("augQty"),
+                sep_qty: monthQty("sepQty"),
+                oct_qty: monthQty("octQty"),
+                nov_qty: monthQty("novQty"),
+                dec_qty: monthQty("decQty"),
             });
         }
 
@@ -446,7 +417,7 @@ export default function PriceListImport({
         setManualCoa({});
         setManualCat({});
         setCalibrations({});
-        setCurrentSheet('');
+        setCurrentSheet("");
         setConfirmed(false);
         resetQuantityCycle();
     }
@@ -484,7 +455,7 @@ export default function PriceListImport({
         resetAllStates();
     }
 
-    function handleModeChange(nextMode: 'price-list' | 'quantities') {
+    function handleModeChange(nextMode: "price-list" | "quantities") {
         resetAllStates();
         setSelectedSheets([]);
         setMode(nextMode);
@@ -497,7 +468,7 @@ export default function PriceListImport({
             configs[sheet] = getDefaultConfig(modeType);
         }
         setCalibrations(configs);
-        setCurrentSheet(selectedSheets[0] ?? '');
+        setCurrentSheet(selectedSheets[0] ?? "");
         setConfirmed(true);
         resetQuantityCycle();
     }
@@ -534,9 +505,7 @@ export default function PriceListImport({
             }
 
             const config = calibrations[sheet];
-            const effective = config.useCustom
-                ? config
-                : getDefaultConfig('price-list');
+            const effective = config.useCustom ? config : getDefaultConfig("price-list");
             const result = extractData({
                 worksheet: ws,
                 startRow: effective.startRow,
@@ -617,9 +586,7 @@ export default function PriceListImport({
             }
 
             const config = calibrations[sheet];
-            const effective = config.useCustom
-                ? config
-                : getDefaultConfig('price-list');
+            const effective = config.useCustom ? config : getDefaultConfig("price-list");
             const result = extractData({
                 worksheet: ws,
                 startRow: effective.startRow,
@@ -686,9 +653,7 @@ export default function PriceListImport({
         }
 
         const config = calibrations[sheet];
-        const effective = config.useCustom
-            ? config
-            : getDefaultConfig('quantities');
+        const effective = config.useCustom ? config : getDefaultConfig("quantities");
         const rows = extractQuantities({
             worksheet: ws,
             startRow: effective.startRow,
@@ -717,26 +682,18 @@ export default function PriceListImport({
     function handleConfirmImport() {
         if (!importPlan || importPlan.items.length === 0 || importing) return;
         setImporting(true);
-        router.post(
-            '/price-list-import' as const,
-            { items: importPlan.items } as never,
-            {
-                onSuccess: () => setImportDialogOpen(false),
-                onFinish: () => setImporting(false),
-            },
-        );
+        router.post("/price-list-import" as const, { items: importPlan.items } as never, {
+            onSuccess: () => setImportDialogOpen(false),
+            onFinish: () => setImporting(false),
+        });
     }
 
     function handleConfirmImportQuantities() {
-        if (
-            !quantityImportPlan ||
-            quantityImportPlan.rows.length === 0 ||
-            quantityImporting
-        )
+        if (!quantityImportPlan || quantityImportPlan.rows.length === 0 || quantityImporting)
             return;
         setQuantityImporting(true);
         router.post(
-            '/price-list-import/quantities' as const,
+            "/price-list-import/quantities" as const,
             {
                 fiscal_year_id: targetFiscalYearId,
                 ppa_id: targetPpaId,
@@ -753,20 +710,15 @@ export default function PriceListImport({
     function handleMapResolved() {
         if (!extracted) return;
         const mapped = extracted.pairs.map((pair) => {
-            const catId =
-                manualCat[pair.category] ??
-                catLookup.get(normalize(pair.category));
+            const catId = manualCat[pair.category] ?? catLookup.get(normalize(pair.category));
             const coaId =
-                manualCoa[pair.chartOfAccount] ??
-                coaLookup.get(normalize(pair.chartOfAccount));
+                manualCoa[pair.chartOfAccount] ?? coaLookup.get(normalize(pair.chartOfAccount));
             return {
                 category: pair.category,
                 chartOfAccount: pair.chartOfAccount,
                 categoryId: catId ?? null,
                 coaId: coaId ?? null,
-                resolvedCategory: catId
-                    ? (idToCatName.get(catId) ?? null)
-                    : null,
+                resolvedCategory: catId ? (idToCatName.get(catId) ?? null) : null,
                 resolvedCoa: coaId ? (idToCoaTitle.get(coaId) ?? null) : null,
             };
         });
@@ -809,18 +761,14 @@ export default function PriceListImport({
                     <FieldLabel>Import Route</FieldLabel>
                     <div className="flex gap-2">
                         <Button
-                            variant={
-                                mode === 'price-list' ? 'default' : 'outline'
-                            }
-                            onClick={() => handleModeChange('price-list')}
+                            variant={mode === "price-list" ? "default" : "outline"}
+                            onClick={() => handleModeChange("price-list")}
                         >
                             Price List Import
                         </Button>
                         <Button
-                            variant={
-                                mode === 'quantities' ? 'default' : 'outline'
-                            }
-                            onClick={() => handleModeChange('quantities')}
+                            variant={mode === "quantities" ? "default" : "outline"}
+                            onClick={() => handleModeChange("quantities")}
                         >
                             Monthly Quantities
                         </Button>
@@ -828,33 +776,28 @@ export default function PriceListImport({
                 </Field>
             )}
 
-            {mode === 'quantities' && !confirmed && (
+            {mode === "quantities" && !confirmed && (
                 <p className="mt-2 text-sm text-muted-foreground">
-                    Monthly Quantities import will import monthly quantities
-                    into the PPMP table for a specific PPA, funding source, and
-                    fiscal year.
+                    Monthly Quantities import will import monthly quantities into the PPMP table for
+                    a specific PPA, funding source, and fiscal year.
                 </p>
             )}
 
             {mode && sheets.length > 0 && (
                 <Field>
                     <FieldLabel>Sheets</FieldLabel>
-                    {mode === 'quantities' && (
+                    {mode === "quantities" && (
                         <FieldDescription>Select one sheet.</FieldDescription>
                     )}
                     <ToggleGroup
-                        multiple={mode !== 'quantities'}
+                        multiple={mode !== "quantities"}
                         value={selectedSheets}
                         onValueChange={handleSheetsChange}
                         orientation="horizontal"
                         className="flex-wrap"
                     >
                         {sheets.map((sheet) => (
-                            <ToggleGroupItem
-                                key={sheet}
-                                value={sheet}
-                                className="border"
-                            >
+                            <ToggleGroupItem key={sheet} value={sheet} className="border">
                                 {sheet}
                             </ToggleGroupItem>
                         ))}
@@ -868,1122 +811,500 @@ export default function PriceListImport({
                 </div>
             )}
 
-            {mode === 'quantities' &&
-                confirmed &&
-                selectedSheets.length > 0 && (
-                    <div className="mt-4 space-y-4">
-                        <p className="text-sm">
-                            Confirmed sheet:{' '}
-                            <span className="font-medium">
-                                {selectedSheets[0]}
-                            </span>
-                        </p>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setConfirmed(false)}
-                        >
-                            ← Change sheet selection
-                        </Button>
+            {mode === "quantities" && confirmed && selectedSheets.length > 0 && (
+                <div className="mt-4 space-y-4">
+                    <p className="text-sm">
+                        Confirmed sheet: <span className="font-medium">{selectedSheets[0]}</span>
+                    </p>
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmed(false)}>
+                        ← Change sheet selection
+                    </Button>
 
-                        <div className="rounded-lg border p-4">
-                            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                Target
-                            </h3>
-                            <div className="grid grid-cols-5 gap-4">
-                                <Field>
-                                    <FieldLabel>Fiscal Year</FieldLabel>
-                                    <Select
-                                        value={
-                                            targetFiscalYearId
-                                                ? String(targetFiscalYearId)
-                                                : ''
-                                        }
-                                        onValueChange={(v) => {
-                                            setTargetFiscalYearId(
-                                                v ? Number(v) : null,
-                                            );
+                    <div className="rounded-lg border p-4">
+                        <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Target</h3>
+                        <div className="grid grid-cols-5 gap-4">
+                            <Field>
+                                <FieldLabel>Fiscal Year</FieldLabel>
+                                <Select
+                                    value={targetFiscalYearId ? String(targetFiscalYearId) : ""}
+                                    onValueChange={(v) => {
+                                        setTargetFiscalYearId(v ? Number(v) : null);
+                                        setTargetPpaId(null);
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select fiscal year" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {fiscalYears.map((fy) => (
+                                                <SelectItem key={fy.id} value={String(fy.id)}>
+                                                    {fy.year}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                            <Field className="col-span-2">
+                                <FieldLabel>PPA</FieldLabel>
+                                <Combobox
+                                    items={ppaComboboxItems}
+                                    value={
+                                        targetPpaId
+                                            ? `ppa:${ppas.find((p) => p.id === targetPpaId)?.name ?? ""}`
+                                            : ""
+                                    }
+                                    onValueChange={(v) => {
+                                        if (!v) {
                                             setTargetPpaId(null);
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select fiscal year" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {fiscalYears.map((fy) => (
-                                                    <SelectItem
-                                                        key={fy.id}
-                                                        value={String(fy.id)}
-                                                    >
-                                                        {fy.year}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                </Field>
-                                <Field className="col-span-2">
-                                    <FieldLabel>PPA</FieldLabel>
-                                    <Combobox
-                                        items={ppaComboboxItems}
-                                        value={
-                                            targetPpaId
-                                                ? `ppa:${ppas.find((p) => p.id === targetPpaId)?.name ?? ''}`
-                                                : ''
+
+                                            return;
                                         }
-                                        onValueChange={(v) => {
-                                            if (!v) {
-                                                setTargetPpaId(null);
 
-                                                return;
-                                            }
+                                        const name = v.replace(/^[^:]+:/, "");
+                                        const ppa = ppas.find(
+                                            (p) =>
+                                                p.fiscal_year_id === targetFiscalYearId &&
+                                                p.name === name,
+                                        );
 
-                                            const name = v.replace(
-                                                /^[^:]+:/,
-                                                '',
-                                            );
-                                            const ppa = ppas.find(
-                                                (p) =>
-                                                    p.fiscal_year_id ===
-                                                        targetFiscalYearId &&
-                                                    p.name === name,
-                                            );
-
-                                            if (ppa) {
-                                                setTargetPpaId(ppa.id);
-                                            }
-                                        }}
-                                    >
-                                        <ComboboxInput
-                                            placeholder="Select PPA..."
-                                            showClear
-                                            disabled={!targetFiscalYearId}
-                                            className="w-1000"
-                                        />
-                                        <ComboboxContent>
-                                            <ComboboxEmpty>
-                                                {targetFiscalYearId
-                                                    ? 'No PPA found.'
-                                                    : 'Select a fiscal year first.'}
-                                            </ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item) => (
-                                                    <ComboboxItem
-                                                        key={item}
-                                                        value={item}
-                                                    >
-                                                        {item.replace(
-                                                            /^[^:]+:/,
-                                                            '',
-                                                        )}
-                                                    </ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
-                                </Field>
-                                <Field className="col-span-2">
-                                    <FieldLabel>Funding Source</FieldLabel>
-                                    <Select
-                                        value={
-                                            targetFundingSourceId
-                                                ? String(targetFundingSourceId)
-                                                : ''
+                                        if (ppa) {
+                                            setTargetPpaId(ppa.id);
                                         }
-                                        onValueChange={(v) =>
-                                            setTargetFundingSourceId(
-                                                v ? Number(v) : null,
-                                            )
-                                        }
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select funding source" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {fundingSources.map((fs) => (
-                                                    <SelectItem
-                                                        key={fs.id}
-                                                        value={String(fs.id)}
-                                                    >
-                                                        [{fs.code}] {fs.title}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                </Field>
-                            </div>
-                            <p className="mt-2 text-sm text-muted-foreground">
-                                Resolved target:{' '}
-                                {targetFiscalYearId &&
-                                targetPpaId &&
-                                targetFundingSourceId
-                                    ? `${fiscalYears.find((fy) => fy.id === targetFiscalYearId)?.year ?? '—'} — ${
-                                          ppas.find((p) => p.id === targetPpaId)
-                                              ?.name ?? '—'
-                                      } — [${
-                                          fundingSources.find(
-                                              (fs) =>
-                                                  fs.id ===
-                                                  targetFundingSourceId,
-                                          )?.code ?? '—'
-                                      }]`
-                                    : '—'}
-                            </p>
-                        </div>
-
-                        <CalibrationPanel
-                            mode="quantities"
-                            selectedSheets={selectedSheets}
-                            calibrations={calibrations}
-                            currentSheet={currentSheet}
-                            onCurrentSheetChange={setCurrentSheet}
-                            onUpdateSheet={(sheet, updates) => {
-                                setCalibrations((prev) => ({
-                                    ...prev,
-                                    [sheet]: { ...prev[sheet], ...updates },
-                                }));
-                            }}
-                            onExtract={handleExtractQuantities}
-                            extractLabel="Extract Quantities"
-                            disabled={!selectedSheets.length}
-                        />
-
-                        {quantityRows && (
-                            // ... (same table and import dialog as before)
-                            <div className="mt-6">
-                                <div className="mb-2 flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-muted-foreground">
-                                        Extracted Items ({quantityRows.length})
-                                    </h3>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleCheckDbMatches}
-                                        >
-                                            Check DB Matches
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                setQuantityImportDialogOpen(
-                                                    true,
-                                                )
-                                            }
-                                            disabled={
-                                                !quantityImportPlan ||
-                                                quantityImportPlan.rows
-                                                    .length === 0 ||
-                                                quantityImportPlan.unmatched >
-                                                    0 ||
-                                                !targetFiscalYearId ||
-                                                !targetPpaId ||
-                                                !targetFundingSourceId ||
-                                                quantityImporting
-                                            }
-                                        >
-                                            {quantityImporting && <Spinner />}
-                                            Import{' '}
-                                            {quantityImportPlan?.rows.length ??
-                                                0}{' '}
-                                            Quantities
-                                        </Button>
-                                    </div>
-                                </div>
-                                {quantityImportPlan &&
-                                    quantityImportPlan.unmatched > 0 && (
-                                        <p className="mb-2 text-sm text-destructive">
-                                            {quantityImportPlan.unmatched}{' '}
-                                            item(s) without a DB match — resolve
-                                            them before importing.
-                                        </p>
-                                    )}
-                                {quantityImportPlan &&
-                                    quantityImportPlan.skippedNoQty > 0 && (
-                                        <p className="mb-2 text-sm text-muted-foreground">
-                                            {quantityImportPlan.skippedNoQty}{' '}
-                                            row(s) with no quantities will be
-                                            skipped.
-                                        </p>
-                                    )}
-                                <div className="max-h-96 overflow-auto rounded-md border">
-                                    <Table>
-                                        <TableHeader className="sticky top-0 z-10 bg-background">
-                                            <TableRow>
-                                                <TableHead>
-                                                    Description
-                                                </TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead>
-                                                    Chart of Account
-                                                </TableHead>
-                                                <TableHead>Unit</TableHead>
-                                                <TableHead className="text-right">
-                                                    Price
-                                                </TableHead>
-                                                <TableHead className="text-right">
-                                                    Total
-                                                </TableHead>
-                                                <TableHead>In DB</TableHead>
-                                                <TableHead>Match</TableHead>
-                                                <TableHead>Jan</TableHead>
-                                                <TableHead>Feb</TableHead>
-                                                <TableHead>Mar</TableHead>
-                                                <TableHead>Apr</TableHead>
-                                                <TableHead>May</TableHead>
-                                                <TableHead>Jun</TableHead>
-                                                <TableHead>Jul</TableHead>
-                                                <TableHead>Aug</TableHead>
-                                                <TableHead>Sep</TableHead>
-                                                <TableHead>Oct</TableHead>
-                                                <TableHead>Nov</TableHead>
-                                                <TableHead>Dec</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {quantityRows.map((row) => {
-                                                const match =
-                                                    quantityMatches[row.tempId];
-                                                const matchedItem =
-                                                    match?.itemId
-                                                        ? priceListItems.find(
-                                                              (p) =>
-                                                                  p.id ===
-                                                                  match.itemId,
-                                                          )
-                                                        : null;
-                                                return (
-                                                    <TableRow key={row.tempId}>
-                                                        <TableCell className="max-w-64 truncate">
-                                                            {row.description}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-40 truncate">
-                                                            {row.category}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-48 truncate">
-                                                            {row.chartOfAccount}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {
-                                                                row.unitOfMeasurement
-                                                            }
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.price ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.total ?? '—'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {!quantityChecked ? (
-                                                                <span className="text-muted-foreground">
-                                                                    —
-                                                                </span>
-                                                            ) : match?.itemId ? (
-                                                                <HoverCard>
-                                                                    <HoverCardTrigger
-                                                                        render={
-                                                                            <span className="cursor-pointer text-emerald-600">
-                                                                                ✓
-                                                                                exists
-                                                                            </span>
-                                                                        }
-                                                                    />
-                                                                    <HoverCardContent>
-                                                                        {matchedItem
-                                                                            ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
-                                                                            : ''}
-                                                                    </HoverCardContent>
-                                                                </HoverCard>
-                                                            ) : (
-                                                                <span className="text-amber-600">
-                                                                    ✗ new
-                                                                </span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Combobox
-                                                                items={
-                                                                    pliComboboxItems
-                                                                }
-                                                                value={
-                                                                    matchedItem
-                                                                        ? `pli:${matchedItem.description}`
-                                                                        : ''
-                                                                }
-                                                                onValueChange={(
-                                                                    v,
-                                                                ) => {
-                                                                    setQuantityMatches(
-                                                                        (
-                                                                            prev,
-                                                                        ) => {
-                                                                            const next =
-                                                                                {
-                                                                                    ...prev,
-                                                                                };
-                                                                            if (
-                                                                                !v
-                                                                            ) {
-                                                                                next[
-                                                                                    row.tempId
-                                                                                ] =
-                                                                                    {
-                                                                                        itemId: null,
-                                                                                    };
-                                                                                return next;
-                                                                            }
-                                                                            const name =
-                                                                                v.replace(
-                                                                                    /^[^:]+:/,
-                                                                                    '',
-                                                                                );
-                                                                            const dbItem =
-                                                                                priceListItems.find(
-                                                                                    (
-                                                                                        p,
-                                                                                    ) =>
-                                                                                        p.description ===
-                                                                                        name,
-                                                                                );
-                                                                            if (
-                                                                                dbItem
-                                                                            ) {
-                                                                                next[
-                                                                                    row.tempId
-                                                                                ] =
-                                                                                    {
-                                                                                        itemId: dbItem.id,
-                                                                                    };
-                                                                            }
-                                                                            return next;
-                                                                        },
-                                                                    );
-                                                                }}
-                                                            >
-                                                                <ComboboxInput
-                                                                    placeholder="Search price list item..."
-                                                                    showClear
-                                                                />
-                                                                <ComboboxContent>
-                                                                    <ComboboxEmpty>
-                                                                        No items
-                                                                        found.
-                                                                    </ComboboxEmpty>
-                                                                    <ComboboxList>
-                                                                        {(
-                                                                            item,
-                                                                        ) => (
-                                                                            <ComboboxItem
-                                                                                key={
-                                                                                    item
-                                                                                }
-                                                                                value={
-                                                                                    item
-                                                                                }
-                                                                            >
-                                                                                {item.replace(
-                                                                                    /^[^:]+:/,
-                                                                                    '',
-                                                                                )}
-                                                                            </ComboboxItem>
-                                                                        )}
-                                                                    </ComboboxList>
-                                                                </ComboboxContent>
-                                                            </Combobox>
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.janQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.febQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.marQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.aprQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.mayQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.junQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.julQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.augQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.sepQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.octQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.novQty ?? ''}
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            {row.decQty ?? ''}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </div>
-                        )}
-
-                        <Dialog
-                            open={quantityImportDialogOpen}
-                            onOpenChange={setQuantityImportDialogOpen}
-                        >
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        Confirm Quantity Import
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                        You're about to import{' '}
-                                        {quantityImportPlan?.rows.length ?? 0}{' '}
-                                        monthly quantity row(s) for{' '}
-                                        {targetFiscalYearId &&
-                                        targetPpaId &&
-                                        targetFundingSourceId
-                                            ? `${fiscalYears.find((fy) => fy.id === targetFiscalYearId)?.year ?? '—'} — ${
-                                                  ppas.find(
-                                                      (p) =>
-                                                          p.id === targetPpaId,
-                                                  )?.name ?? '—'
-                                              } — [${
-                                                  fundingSources.find(
-                                                      (fs) =>
-                                                          fs.id ===
-                                                          targetFundingSourceId,
-                                                  )?.code ?? '—'
-                                              }]`
-                                            : 'the selected target'}
-                                        . Existing monthly quantities for
-                                        matched items will be overwritten.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                {quantityImportPlan &&
-                                    quantityImportPlan.skippedNoQty > 0 && (
-                                        <div className="space-y-1 text-sm text-muted-foreground">
-                                            Skipped:
-                                            <p>
-                                                {
-                                                    quantityImportPlan.skippedNoQty
-                                                }{' '}
-                                                — no monthly quantities
-                                            </p>
-                                        </div>
-                                    )}
-                                <DialogFooter>
-                                    <DialogClose
-                                        render={
-                                            <Button variant="outline">
-                                                Cancel
-                                            </Button>
-                                        }
+                                    }}
+                                >
+                                    <ComboboxInput
+                                        placeholder="Select PPA..."
+                                        showClear
+                                        disabled={!targetFiscalYearId}
+                                        className="w-1000"
                                     />
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>
+                                            {targetFiscalYearId
+                                                ? "No PPA found."
+                                                : "Select a fiscal year first."}
+                                        </ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem key={item} value={item}>
+                                                    {item.replace(/^[^:]+:/, "")}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+                            </Field>
+                            <Field className="col-span-2">
+                                <FieldLabel>Funding Source</FieldLabel>
+                                <Select
+                                    value={
+                                        targetFundingSourceId ? String(targetFundingSourceId) : ""
+                                    }
+                                    onValueChange={(v) =>
+                                        setTargetFundingSourceId(v ? Number(v) : null)
+                                    }
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select funding source" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {fundingSources.map((fs) => (
+                                                <SelectItem key={fs.id} value={String(fs.id)}>
+                                                    [{fs.code}] {fs.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        </div>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Resolved target:{" "}
+                            {targetFiscalYearId && targetPpaId && targetFundingSourceId
+                                ? `${fiscalYears.find((fy) => fy.id === targetFiscalYearId)?.year ?? "—"} — ${
+                                      ppas.find((p) => p.id === targetPpaId)?.name ?? "—"
+                                  } — [${
+                                      fundingSources.find((fs) => fs.id === targetFundingSourceId)
+                                          ?.code ?? "—"
+                                  }]`
+                                : "—"}
+                        </p>
+                    </div>
+
+                    <CalibrationPanel
+                        mode="quantities"
+                        selectedSheets={selectedSheets}
+                        calibrations={calibrations}
+                        currentSheet={currentSheet}
+                        onCurrentSheetChange={setCurrentSheet}
+                        onUpdateSheet={(sheet, updates) => {
+                            setCalibrations((prev) => ({
+                                ...prev,
+                                [sheet]: { ...prev[sheet], ...updates },
+                            }));
+                        }}
+                        onExtract={handleExtractQuantities}
+                        extractLabel="Extract Quantities"
+                        disabled={!selectedSheets.length}
+                    />
+
+                    {quantityRows && (
+                        // ... (same table and import dialog as before)
+                        <div className="mt-6">
+                            <div className="mb-2 flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-muted-foreground">
+                                    Extracted Items ({quantityRows.length})
+                                </h3>
+                                <div className="flex items-center gap-2">
                                     <Button
-                                        onClick={handleConfirmImportQuantities}
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCheckDbMatches}
+                                    >
+                                        Check DB Matches
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setQuantityImportDialogOpen(true)}
                                         disabled={
                                             !quantityImportPlan ||
-                                            quantityImportPlan.rows.length ===
-                                                0 ||
+                                            quantityImportPlan.rows.length === 0 ||
+                                            quantityImportPlan.unmatched > 0 ||
+                                            !targetFiscalYearId ||
+                                            !targetPpaId ||
+                                            !targetFundingSourceId ||
                                             quantityImporting
                                         }
                                     >
-                                        {quantityImporting
-                                            ? 'Importing...'
-                                            : 'Confirm'}
+                                        {quantityImporting && <Spinner />}
+                                        Import {quantityImportPlan?.rows.length ?? 0} Quantities
                                     </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                )}
-
-            {mode === 'price-list' &&
-                confirmed &&
-                selectedSheets.length > 0 && (
-                    <>
-                        <CalibrationPanel
-                            mode="price-list"
-                            selectedSheets={selectedSheets}
-                            calibrations={calibrations}
-                            currentSheet={currentSheet}
-                            onCurrentSheetChange={setCurrentSheet}
-                            onUpdateSheet={(sheet, updates) => {
-                                setCalibrations((prev) => ({
-                                    ...prev,
-                                    [sheet]: { ...prev[sheet], ...updates },
-                                }));
-                            }}
-                            onExtract={handleExtractCoaAndCategory}
-                            extractLabel="Extract COA & Category"
-                            disabled={!currentSheet}
-                        />
-
-                        <div className="mt-4 flex gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={handleMapResolved}
-                                disabled={!extracted}
-                            >
-                                Map Resolved
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={handleExtractUniqueItems}
-                                disabled={!mappedPairs}
-                            >
-                                Show Unique Items
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={handleRefetch}
-                                disabled={refetching}
-                            >
-                                {refetching && <Spinner />}
-                                Refetch DB Data
-                            </Button>
-                        </div>
-
-                        {extracted && (
-                            // ... (same extracted tables and mappedPairs as before)
-                            <>
-                                <div className="flex flex-col gap-4 rounded border p-4">
-                                    <div>
-                                        <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                            Categories (
-                                            {extracted.categories.length})
-                                        </h3>
-                                        <div className="max-h-80 overflow-y-auto rounded-md border">
-                                            <Table>
-                                                <TableHeader className="sticky top-0 z-10 bg-background">
-                                                    <TableRow>
-                                                        <TableHead>
-                                                            Category
-                                                        </TableHead>
-                                                        <TableHead className="text-right">
-                                                            Sheets
-                                                        </TableHead>
-                                                        <TableHead>
-                                                            Map to DB
-                                                        </TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {extracted.categories.map(
-                                                        (cat) => {
-                                                            const autoId =
-                                                                catLookup.get(
-                                                                    normalize(
-                                                                        cat.name,
-                                                                    ),
-                                                                );
-                                                            const currentId =
-                                                                manualCat[
-                                                                    cat.name
-                                                                ] ?? autoId;
-                                                            const currentName =
-                                                                currentId
-                                                                    ? idToCatName.get(
-                                                                          currentId,
-                                                                      )
-                                                                    : undefined;
-                                                            const comboboxValue =
-                                                                currentName
-                                                                    ? `cat:${currentName}`
-                                                                    : '';
-                                                            return (
-                                                                <TableRow
-                                                                    key={
-                                                                        cat.name
-                                                                    }
-                                                                >
-                                                                    <TableCell className="max-w-64 truncate">
-                                                                        {
-                                                                            cat.name
-                                                                        }
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right">
-                                                                        <HoverCard>
-                                                                            <HoverCardTrigger
-                                                                                render={
-                                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                        {
-                                                                                            cat
-                                                                                                .sheets
-                                                                                                .length
-                                                                                        }
-
-                                                                                        /
-                                                                                        {
-                                                                                            selectedSheets.length
-                                                                                        }
-                                                                                    </span>
-                                                                                }
-                                                                            />
-                                                                            <HoverCardContent>
-                                                                                {cat
-                                                                                    .sheets
-                                                                                    .length ===
-                                                                                selectedSheets.length
-                                                                                    ? `Appears in ${cat.sheets.length} — all sheets`
-                                                                                    : `Appears in: ${cat.sheets.join(', ')}`}
-                                                                            </HoverCardContent>
-                                                                        </HoverCard>
-                                                                    </TableCell>
-                                                                    <TableCell>
-                                                                        <Combobox
-                                                                            items={
-                                                                                catComboboxItems
-                                                                            }
-                                                                            value={
-                                                                                comboboxValue
-                                                                            }
-                                                                            onValueChange={(
-                                                                                v,
-                                                                            ) => {
-                                                                                if (
-                                                                                    !v
-                                                                                )
-                                                                                    return;
-                                                                                const name =
-                                                                                    v.replace(
-                                                                                        /^[^:]+:/,
-                                                                                        '',
-                                                                                    );
-                                                                                const id =
-                                                                                    catNameToId.get(
-                                                                                        name,
-                                                                                    );
-                                                                                if (
-                                                                                    id
-                                                                                ) {
-                                                                                    setManualCat(
-                                                                                        (
-                                                                                            prev,
-                                                                                        ) => ({
-                                                                                            ...prev,
-                                                                                            [cat.name]:
-                                                                                                id,
-                                                                                        }),
-                                                                                    );
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <ComboboxInput placeholder="Search category..." />
-                                                                            <ComboboxContent>
-                                                                                <ComboboxEmpty>
-                                                                                    No
-                                                                                    items
-                                                                                    found.
-                                                                                </ComboboxEmpty>
-                                                                                <ComboboxList>
-                                                                                    {(
-                                                                                        item,
-                                                                                    ) => (
-                                                                                        <ComboboxItem
-                                                                                            key={
-                                                                                                item
-                                                                                            }
-                                                                                            value={
-                                                                                                item
-                                                                                            }
-                                                                                        >
-                                                                                            {item.replace(
-                                                                                                /^[^:]+:/,
-                                                                                                '',
-                                                                                            )}
-                                                                                        </ComboboxItem>
-                                                                                    )}
-                                                                                </ComboboxList>
-                                                                            </ComboboxContent>
-                                                                        </Combobox>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        },
-                                                    )}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                            COAs (
-                                            {extracted.chartOfAccounts.length})
-                                        </h3>
-                                        <div className="max-h-80 overflow-y-auto rounded-md border">
-                                            <Table>
-                                                <TableHeader className="sticky top-0 z-10 bg-background">
-                                                    <TableRow>
-                                                        <TableHead>
-                                                            Chart of Account
-                                                        </TableHead>
-                                                        <TableHead className="text-right">
-                                                            Sheets
-                                                        </TableHead>
-                                                        <TableHead>
-                                                            Map to DB
-                                                        </TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {extracted.chartOfAccounts.map(
-                                                        (coa) => {
-                                                            const autoId =
-                                                                coaLookup.get(
-                                                                    normalize(
-                                                                        coa.name,
-                                                                    ),
-                                                                );
-                                                            const currentId =
-                                                                manualCoa[
-                                                                    coa.name
-                                                                ] ?? autoId;
-                                                            const currentTitle =
-                                                                currentId
-                                                                    ? idToCoaTitle.get(
-                                                                          currentId,
-                                                                      )
-                                                                    : undefined;
-                                                            const comboboxValue =
-                                                                currentTitle
-                                                                    ? `coa:${currentTitle}`
-                                                                    : '';
-                                                            return (
-                                                                <TableRow
-                                                                    key={
-                                                                        coa.name
-                                                                    }
-                                                                >
-                                                                    <TableCell className="max-w-64 truncate">
-                                                                        {
-                                                                            coa.name
-                                                                        }
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right">
-                                                                        <HoverCard>
-                                                                            <HoverCardTrigger
-                                                                                render={
-                                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                        {
-                                                                                            coa
-                                                                                                .sheets
-                                                                                                .length
-                                                                                        }
-
-                                                                                        /
-                                                                                        {
-                                                                                            selectedSheets.length
-                                                                                        }
-                                                                                    </span>
-                                                                                }
-                                                                            />
-                                                                            <HoverCardContent>
-                                                                                {coa
-                                                                                    .sheets
-                                                                                    .length ===
-                                                                                selectedSheets.length
-                                                                                    ? `Appears in ${coa.sheets.length} — all sheets`
-                                                                                    : `Appears in: ${coa.sheets.join(', ')}`}
-                                                                            </HoverCardContent>
-                                                                        </HoverCard>
-                                                                    </TableCell>
-                                                                    <TableCell>
-                                                                        <Combobox
-                                                                            items={
-                                                                                coaComboboxItems
-                                                                            }
-                                                                            value={
-                                                                                comboboxValue
-                                                                            }
-                                                                            onValueChange={(
-                                                                                v,
-                                                                            ) => {
-                                                                                if (
-                                                                                    !v
-                                                                                )
-                                                                                    return;
-                                                                                const name =
-                                                                                    v.replace(
-                                                                                        /^[^:]+:/,
-                                                                                        '',
-                                                                                    );
-                                                                                const id =
-                                                                                    coaNameToId.get(
-                                                                                        name,
-                                                                                    );
-                                                                                if (
-                                                                                    id
-                                                                                ) {
-                                                                                    setManualCoa(
-                                                                                        (
-                                                                                            prev,
-                                                                                        ) => ({
-                                                                                            ...prev,
-                                                                                            [coa.name]:
-                                                                                                id,
-                                                                                        }),
-                                                                                    );
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <ComboboxInput placeholder="Search chart of account..." />
-                                                                            <ComboboxContent>
-                                                                                <ComboboxEmpty>
-                                                                                    No
-                                                                                    items
-                                                                                    found.
-                                                                                </ComboboxEmpty>
-                                                                                <ComboboxList>
-                                                                                    {(
-                                                                                        item,
-                                                                                    ) => (
-                                                                                        <ComboboxItem
-                                                                                            key={
-                                                                                                item
-                                                                                            }
-                                                                                            value={
-                                                                                                item
-                                                                                            }
-                                                                                        >
-                                                                                            {item.replace(
-                                                                                                /^[^:]+:/,
-                                                                                                '',
-                                                                                            )}
-                                                                                        </ComboboxItem>
-                                                                                    )}
-                                                                                </ComboboxList>
-                                                                            </ComboboxContent>
-                                                                        </Combobox>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        },
-                                                    )}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </div>
                                 </div>
+                            </div>
+                            {quantityImportPlan && quantityImportPlan.unmatched > 0 && (
+                                <p className="mb-2 text-sm text-destructive">
+                                    {quantityImportPlan.unmatched} item(s) without a DB match —
+                                    resolve them before importing.
+                                </p>
+                            )}
+                            {quantityImportPlan && quantityImportPlan.skippedNoQty > 0 && (
+                                <p className="mb-2 text-sm text-muted-foreground">
+                                    {quantityImportPlan.skippedNoQty} row(s) with no quantities will
+                                    be skipped.
+                                </p>
+                            )}
+                            <div className="max-h-96 overflow-auto rounded-md border">
+                                <Table>
+                                    <TableHeader className="sticky top-0 z-10 bg-background">
+                                        <TableRow>
+                                            <TableHead>Description</TableHead>
+                                            <TableHead>Category</TableHead>
+                                            <TableHead>Chart of Account</TableHead>
+                                            <TableHead>Unit</TableHead>
+                                            <TableHead className="text-right">Price</TableHead>
+                                            <TableHead className="text-right">Total</TableHead>
+                                            <TableHead>In DB</TableHead>
+                                            <TableHead>Match</TableHead>
+                                            <TableHead>Jan</TableHead>
+                                            <TableHead>Feb</TableHead>
+                                            <TableHead>Mar</TableHead>
+                                            <TableHead>Apr</TableHead>
+                                            <TableHead>May</TableHead>
+                                            <TableHead>Jun</TableHead>
+                                            <TableHead>Jul</TableHead>
+                                            <TableHead>Aug</TableHead>
+                                            <TableHead>Sep</TableHead>
+                                            <TableHead>Oct</TableHead>
+                                            <TableHead>Nov</TableHead>
+                                            <TableHead>Dec</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {quantityRows.map((row) => {
+                                            const match = quantityMatches[row.tempId];
+                                            const matchedItem = match?.itemId
+                                                ? priceListItems.find((p) => p.id === match.itemId)
+                                                : null;
+                                            return (
+                                                <TableRow key={row.tempId}>
+                                                    <TableCell className="max-w-64 truncate">
+                                                        {row.description}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-40 truncate">
+                                                        {row.category}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-48 truncate">
+                                                        {row.chartOfAccount}
+                                                    </TableCell>
+                                                    <TableCell>{row.unitOfMeasurement}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.price ?? "—"}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.total ?? "—"}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {!quantityChecked ? (
+                                                            <span className="text-muted-foreground">
+                                                                —
+                                                            </span>
+                                                        ) : match?.itemId ? (
+                                                            <HoverCard>
+                                                                <HoverCardTrigger
+                                                                    render={
+                                                                        <span className="cursor-pointer text-emerald-600">
+                                                                            ✓ exists
+                                                                        </span>
+                                                                    }
+                                                                />
+                                                                <HoverCardContent>
+                                                                    {matchedItem
+                                                                        ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
+                                                                        : ""}
+                                                                </HoverCardContent>
+                                                            </HoverCard>
+                                                        ) : (
+                                                            <span className="text-amber-600">
+                                                                ✗ new
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Combobox
+                                                            items={pliComboboxItems}
+                                                            value={
+                                                                matchedItem
+                                                                    ? `pli:${matchedItem.description}`
+                                                                    : ""
+                                                            }
+                                                            onValueChange={(v) => {
+                                                                setQuantityMatches((prev) => {
+                                                                    const next = {
+                                                                        ...prev,
+                                                                    };
+                                                                    if (!v) {
+                                                                        next[row.tempId] = {
+                                                                            itemId: null,
+                                                                        };
+                                                                        return next;
+                                                                    }
+                                                                    const name = v.replace(
+                                                                        /^[^:]+:/,
+                                                                        "",
+                                                                    );
+                                                                    const dbItem =
+                                                                        priceListItems.find(
+                                                                            (p) =>
+                                                                                p.description ===
+                                                                                name,
+                                                                        );
+                                                                    if (dbItem) {
+                                                                        next[row.tempId] = {
+                                                                            itemId: dbItem.id,
+                                                                        };
+                                                                    }
+                                                                    return next;
+                                                                });
+                                                            }}
+                                                        >
+                                                            <ComboboxInput
+                                                                placeholder="Search price list item..."
+                                                                showClear
+                                                            />
+                                                            <ComboboxContent>
+                                                                <ComboboxEmpty>
+                                                                    No items found.
+                                                                </ComboboxEmpty>
+                                                                <ComboboxList>
+                                                                    {(item) => (
+                                                                        <ComboboxItem
+                                                                            key={item}
+                                                                            value={item}
+                                                                        >
+                                                                            {item.replace(
+                                                                                /^[^:]+:/,
+                                                                                "",
+                                                                            )}
+                                                                        </ComboboxItem>
+                                                                    )}
+                                                                </ComboboxList>
+                                                            </ComboboxContent>
+                                                        </Combobox>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.janQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.febQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.marQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.aprQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.mayQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.junQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.julQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.augQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.sepQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.octQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.novQty ?? ""}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        {row.decQty ?? ""}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    )}
 
-                                <div className="mt-6">
+                    <Dialog
+                        open={quantityImportDialogOpen}
+                        onOpenChange={setQuantityImportDialogOpen}
+                    >
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Confirm Quantity Import</DialogTitle>
+                                <DialogDescription>
+                                    You're about to import {quantityImportPlan?.rows.length ?? 0}{" "}
+                                    monthly quantity row(s) for{" "}
+                                    {targetFiscalYearId && targetPpaId && targetFundingSourceId
+                                        ? `${fiscalYears.find((fy) => fy.id === targetFiscalYearId)?.year ?? "—"} — ${
+                                              ppas.find((p) => p.id === targetPpaId)?.name ?? "—"
+                                          } — [${
+                                              fundingSources.find(
+                                                  (fs) => fs.id === targetFundingSourceId,
+                                              )?.code ?? "—"
+                                          }]`
+                                        : "the selected target"}
+                                    . Existing monthly quantities for matched items will be
+                                    overwritten.
+                                </DialogDescription>
+                            </DialogHeader>
+                            {quantityImportPlan && quantityImportPlan.skippedNoQty > 0 && (
+                                <div className="space-y-1 text-sm text-muted-foreground">
+                                    Skipped:
+                                    <p>{quantityImportPlan.skippedNoQty} — no monthly quantities</p>
+                                </div>
+                            )}
+                            <DialogFooter>
+                                <DialogClose render={<Button variant="outline">Cancel</Button>} />
+                                <Button
+                                    onClick={handleConfirmImportQuantities}
+                                    disabled={
+                                        !quantityImportPlan ||
+                                        quantityImportPlan.rows.length === 0 ||
+                                        quantityImporting
+                                    }
+                                >
+                                    {quantityImporting ? "Importing..." : "Confirm"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            )}
+
+            {mode === "price-list" && confirmed && selectedSheets.length > 0 && (
+                <>
+                    <CalibrationPanel
+                        mode="price-list"
+                        selectedSheets={selectedSheets}
+                        calibrations={calibrations}
+                        currentSheet={currentSheet}
+                        onCurrentSheetChange={setCurrentSheet}
+                        onUpdateSheet={(sheet, updates) => {
+                            setCalibrations((prev) => ({
+                                ...prev,
+                                [sheet]: { ...prev[sheet], ...updates },
+                            }));
+                        }}
+                        onExtract={handleExtractCoaAndCategory}
+                        extractLabel="Extract COA & Category"
+                        disabled={!currentSheet}
+                    />
+
+                    <div className="mt-4 flex gap-2">
+                        <Button variant="outline" onClick={handleMapResolved} disabled={!extracted}>
+                            Map Resolved
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleExtractUniqueItems}
+                            disabled={!mappedPairs}
+                        >
+                            Show Unique Items
+                        </Button>
+                        <Button variant="outline" onClick={handleRefetch} disabled={refetching}>
+                            {refetching && <Spinner />}
+                            Refetch DB Data
+                        </Button>
+                    </div>
+
+                    {extracted && (
+                        // ... (same extracted tables and mappedPairs as before)
+                        <>
+                            <div className="flex flex-col gap-4 rounded border p-4">
+                                <div>
                                     <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                        Category ↔ COA Pairs (
-                                        {extracted.pairs.length})
+                                        Categories ({extracted.categories.length})
                                     </h3>
                                     <div className="max-h-80 overflow-y-auto rounded-md border">
                                         <Table>
                                             <TableHeader className="sticky top-0 z-10 bg-background">
                                                 <TableRow>
-                                                    <TableHead>
-                                                        Category
-                                                    </TableHead>
-                                                    <TableHead>
-                                                        Chart of Account
-                                                    </TableHead>
+                                                    <TableHead>Category</TableHead>
                                                     <TableHead className="text-right">
                                                         Sheets
                                                     </TableHead>
+                                                    <TableHead>Map to DB</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
-                                                {extracted.pairs.map((pair) => (
-                                                    <TableRow
-                                                        key={`${pair.category}|${pair.chartOfAccount}`}
-                                                    >
-                                                        <TableCell className="max-w-40 truncate">
-                                                            {pair.category}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-48 truncate">
-                                                            {
-                                                                pair.chartOfAccount
-                                                            }
-                                                        </TableCell>
-                                                        <TableCell className="text-right">
-                                                            <HoverCard>
-                                                                <HoverCardTrigger
-                                                                    render={
-                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                            {
-                                                                                pair
-                                                                                    .sheets
-                                                                                    .length
-                                                                            }
-                                                                            /
-                                                                            {
-                                                                                selectedSheets.length
-                                                                            }
-                                                                        </span>
-                                                                    }
-                                                                />
-                                                                <HoverCardContent>
-                                                                    {pair.sheets
-                                                                        .length ===
-                                                                    selectedSheets.length
-                                                                        ? `Appears in ${pair.sheets.length} — all sheets`
-                                                                        : `Appears in: ${pair.sheets.join(', ')}`}
-                                                                </HoverCardContent>
-                                                            </HoverCard>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-
-                        {uniqueItems && (
-                            <div className="mt-6">
-                                <div className="mb-2 flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-muted-foreground">
-                                        Unique Items (
-                                        {hideExisting
-                                            ? uniqueItems.filter(
-                                                  (item) =>
-                                                      !itemMatches[
-                                                          `${item.description}|${item.category}|${item.chartOfAccount}`
-                                                      ] &&
-                                                      !dbDescriptionSet.has(
-                                                          normalize(
-                                                              item.description,
-                                                          ),
-                                                      ),
-                                              ).length
-                                            : uniqueItems.length}
-                                        )
-                                    </h3>
-                                    <div className="flex items-center gap-4">
-                                        <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                            Hide exists
-                                            <Switch
-                                                checked={hideExisting}
-                                                onCheckedChange={
-                                                    setHideExisting
-                                                }
-                                                size="sm"
-                                            />
-                                        </label>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() =>
-                                                setImportDialogOpen(true)
-                                            }
-                                            disabled={
-                                                !importPlan ||
-                                                importPlan.items.length === 0 ||
-                                                importing
-                                            }
-                                        >
-                                            {importing && <Spinner />}
-                                            Import{' '}
-                                            {importPlan?.items.length ?? 0} New
-                                            Items
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div className="max-h-80 overflow-y-auto rounded-md border">
-                                    <Table>
-                                        <TableHeader className="sticky top-0 z-10 bg-background">
-                                            <TableRow>
-                                                <TableHead>
-                                                    Description
-                                                </TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead>
-                                                    Chart of Account
-                                                </TableHead>
-                                                <TableHead className="text-right">
-                                                    Sheets
-                                                </TableHead>
-                                                <TableHead>In DB</TableHead>
-                                                <TableHead>Match</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {uniqueItems
-                                                .filter((item) => {
-                                                    if (!hideExisting)
-                                                        return true;
-                                                    const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
-                                                    return (
-                                                        !itemMatches[itemKey] &&
-                                                        !dbDescriptionSet.has(
-                                                            normalize(
-                                                                item.description,
-                                                            ),
-                                                        )
+                                                {extracted.categories.map((cat) => {
+                                                    const autoId = catLookup.get(
+                                                        normalize(cat.name),
                                                     );
-                                                })
-                                                .map((item) => {
-                                                    const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
-                                                    const matchedId =
-                                                        itemMatches[itemKey];
-                                                    const matchedItem =
-                                                        matchedId
-                                                            ? pliById.get(
-                                                                  matchedId,
-                                                              )
-                                                            : null;
-                                                    const exactInDb =
-                                                        dbDescriptionSet.has(
-                                                            normalize(
-                                                                item.description,
-                                                            ),
-                                                        );
-                                                    const inDb = matchedId
-                                                        ? true
-                                                        : exactInDb;
-                                                    const comboboxValue =
-                                                        matchedItem
-                                                            ? `pli:${matchedItem.description}`
-                                                            : exactInDb
-                                                              ? `pli:${item.description}`
-                                                              : '';
+                                                    const currentId = manualCat[cat.name] ?? autoId;
+                                                    const currentName = currentId
+                                                        ? idToCatName.get(currentId)
+                                                        : undefined;
+                                                    const comboboxValue = currentName
+                                                        ? `cat:${currentName}`
+                                                        : "";
                                                     return (
-                                                        <TableRow key={itemKey}>
+                                                        <TableRow key={cat.name}>
                                                             <TableCell className="max-w-64 truncate">
-                                                                {
-                                                                    item.description
-                                                                }
-                                                            </TableCell>
-                                                            <TableCell className="max-w-40 truncate">
-                                                                {item.category}
-                                                            </TableCell>
-                                                            <TableCell className="max-w-48 truncate">
-                                                                {
-                                                                    item.chartOfAccount
-                                                                }
+                                                                {cat.name}
                                                             </TableCell>
                                                             <TableCell className="text-right">
                                                                 <HoverCard>
                                                                     <HoverCardTrigger
                                                                         render={
                                                                             <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                {
-                                                                                    item
-                                                                                        .sheets
-                                                                                        .length
-                                                                                }
-
-                                                                                /
+                                                                                {cat.sheets.length}/
                                                                                 {
                                                                                     selectedSheets.length
                                                                                 }
@@ -1991,120 +1312,49 @@ export default function PriceListImport({
                                                                         }
                                                                     />
                                                                     <HoverCardContent>
-                                                                        {item
-                                                                            .sheets
-                                                                            .length ===
+                                                                        {cat.sheets.length ===
                                                                         selectedSheets.length
-                                                                            ? `Appears in ${item.sheets.length} — all sheets`
-                                                                            : `Appears in: ${item.sheets.join(', ')}`}
+                                                                            ? `Appears in ${cat.sheets.length} — all sheets`
+                                                                            : `Appears in: ${cat.sheets.join(", ")}`}
                                                                     </HoverCardContent>
                                                                 </HoverCard>
                                                             </TableCell>
                                                             <TableCell>
-                                                                {matchedId ? (
-                                                                    <HoverCard>
-                                                                        <HoverCardTrigger
-                                                                            render={
-                                                                                <span className="cursor-pointer text-blue-600">
-                                                                                    ✓
-                                                                                    matched
-                                                                                </span>
-                                                                            }
-                                                                        />
-                                                                        <HoverCardContent>
-                                                                            {matchedItem
-                                                                                ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
-                                                                                : ''}
-                                                                        </HoverCardContent>
-                                                                    </HoverCard>
-                                                                ) : exactInDb ? (
-                                                                    <span className="text-emerald-600">
-                                                                        ✓ exists
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-amber-600">
-                                                                        ✗ new
-                                                                    </span>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
                                                                 <Combobox
-                                                                    items={
-                                                                        pliComboboxItems
-                                                                    }
-                                                                    value={
-                                                                        comboboxValue
-                                                                    }
-                                                                    onValueChange={(
-                                                                        v,
-                                                                    ) => {
-                                                                        setItemMatches(
-                                                                            (
-                                                                                prev,
-                                                                            ) => {
-                                                                                const next =
-                                                                                    {
-                                                                                        ...prev,
-                                                                                    };
-                                                                                if (
-                                                                                    !v
-                                                                                ) {
-                                                                                    delete next[
-                                                                                        itemKey
-                                                                                    ];
-                                                                                    return next;
-                                                                                }
-                                                                                const name =
-                                                                                    v.replace(
-                                                                                        /^[^:]+:/,
-                                                                                        '',
-                                                                                    );
-                                                                                const dbItem =
-                                                                                    priceListItems.find(
-                                                                                        (
-                                                                                            p,
-                                                                                        ) =>
-                                                                                            p.description ===
-                                                                                            name,
-                                                                                    );
-                                                                                if (
-                                                                                    dbItem
-                                                                                ) {
-                                                                                    next[
-                                                                                        itemKey
-                                                                                    ] =
-                                                                                        dbItem.id;
-                                                                                }
-                                                                                return next;
-                                                                            },
+                                                                    items={catComboboxItems}
+                                                                    value={comboboxValue}
+                                                                    onValueChange={(v) => {
+                                                                        if (!v) return;
+                                                                        const name = v.replace(
+                                                                            /^[^:]+:/,
+                                                                            "",
                                                                         );
+                                                                        const id =
+                                                                            catNameToId.get(name);
+                                                                        if (id) {
+                                                                            setManualCat(
+                                                                                (prev) => ({
+                                                                                    ...prev,
+                                                                                    [cat.name]: id,
+                                                                                }),
+                                                                            );
+                                                                        }
                                                                     }}
                                                                 >
-                                                                    <ComboboxInput
-                                                                        placeholder="Search price list item..."
-                                                                        showClear
-                                                                    />
+                                                                    <ComboboxInput placeholder="Search category..." />
                                                                     <ComboboxContent>
                                                                         <ComboboxEmpty>
-                                                                            No
-                                                                            items
-                                                                            found.
+                                                                            No items found.
                                                                         </ComboboxEmpty>
                                                                         <ComboboxList>
-                                                                            {(
-                                                                                item,
-                                                                            ) => (
+                                                                            {(item) => (
                                                                                 <ComboboxItem
-                                                                                    key={
-                                                                                        item
-                                                                                    }
-                                                                                    value={
-                                                                                        item
-                                                                                    }
+                                                                                    key={item}
+                                                                                    value={item}
                                                                                 >
                                                                                     {item.replace(
                                                                                         /^[^:]+:/,
-                                                                                        '',
+                                                                                        "",
                                                                                     )}
                                                                                 </ComboboxItem>
                                                                             )}
@@ -2115,258 +1365,540 @@ export default function PriceListImport({
                                                         </TableRow>
                                                     );
                                                 })}
-                                        </TableBody>
-                                    </Table>
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                        COAs ({extracted.chartOfAccounts.length})
+                                    </h3>
+                                    <div className="max-h-80 overflow-y-auto rounded-md border">
+                                        <Table>
+                                            <TableHeader className="sticky top-0 z-10 bg-background">
+                                                <TableRow>
+                                                    <TableHead>Chart of Account</TableHead>
+                                                    <TableHead className="text-right">
+                                                        Sheets
+                                                    </TableHead>
+                                                    <TableHead>Map to DB</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {extracted.chartOfAccounts.map((coa) => {
+                                                    const autoId = coaLookup.get(
+                                                        normalize(coa.name),
+                                                    );
+                                                    const currentId = manualCoa[coa.name] ?? autoId;
+                                                    const currentTitle = currentId
+                                                        ? idToCoaTitle.get(currentId)
+                                                        : undefined;
+                                                    const comboboxValue = currentTitle
+                                                        ? `coa:${currentTitle}`
+                                                        : "";
+                                                    return (
+                                                        <TableRow key={coa.name}>
+                                                            <TableCell className="max-w-64 truncate">
+                                                                {coa.name}
+                                                            </TableCell>
+                                                            <TableCell className="text-right">
+                                                                <HoverCard>
+                                                                    <HoverCardTrigger
+                                                                        render={
+                                                                            <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                                {coa.sheets.length}/
+                                                                                {
+                                                                                    selectedSheets.length
+                                                                                }
+                                                                            </span>
+                                                                        }
+                                                                    />
+                                                                    <HoverCardContent>
+                                                                        {coa.sheets.length ===
+                                                                        selectedSheets.length
+                                                                            ? `Appears in ${coa.sheets.length} — all sheets`
+                                                                            : `Appears in: ${coa.sheets.join(", ")}`}
+                                                                    </HoverCardContent>
+                                                                </HoverCard>
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Combobox
+                                                                    items={coaComboboxItems}
+                                                                    value={comboboxValue}
+                                                                    onValueChange={(v) => {
+                                                                        if (!v) return;
+                                                                        const name = v.replace(
+                                                                            /^[^:]+:/,
+                                                                            "",
+                                                                        );
+                                                                        const id =
+                                                                            coaNameToId.get(name);
+                                                                        if (id) {
+                                                                            setManualCoa(
+                                                                                (prev) => ({
+                                                                                    ...prev,
+                                                                                    [coa.name]: id,
+                                                                                }),
+                                                                            );
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <ComboboxInput placeholder="Search chart of account..." />
+                                                                    <ComboboxContent>
+                                                                        <ComboboxEmpty>
+                                                                            No items found.
+                                                                        </ComboboxEmpty>
+                                                                        <ComboboxList>
+                                                                            {(item) => (
+                                                                                <ComboboxItem
+                                                                                    key={item}
+                                                                                    value={item}
+                                                                                >
+                                                                                    {item.replace(
+                                                                                        /^[^:]+:/,
+                                                                                        "",
+                                                                                    )}
+                                                                                </ComboboxItem>
+                                                                            )}
+                                                                        </ComboboxList>
+                                                                    </ComboboxContent>
+                                                                </Combobox>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
                                 </div>
                             </div>
-                        )}
 
-                        <Dialog
-                            open={importDialogOpen}
-                            onOpenChange={setImportDialogOpen}
-                        >
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>Confirm Import</DialogTitle>
-                                    <DialogDescription>
-                                        You're about to import{' '}
-                                        {importPlan?.items.length ?? 0} new
-                                        price list item(s) into the database.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                {importPlan &&
-                                    (importPlan.skippedNoMatch > 0 ||
-                                        importPlan.skippedNoPrice > 0 ||
-                                        importPlan.skippedMissingUnit > 0) && (
-                                        <div className="space-y-1 text-sm text-muted-foreground">
-                                            Skipped:
-                                            {importPlan.skippedNoMatch > 0 && (
-                                                <p>
-                                                    {importPlan.skippedNoMatch}{' '}
-                                                    — category/COA pair not in
-                                                    database
-                                                </p>
-                                            )}
-                                            {importPlan.skippedNoPrice > 0 && (
-                                                <p>
-                                                    {importPlan.skippedNoPrice}{' '}
-                                                    — no price
-                                                </p>
-                                            )}
-                                            {importPlan.skippedMissingUnit >
-                                                0 && (
-                                                <p>
-                                                    {
-                                                        importPlan.skippedMissingUnit
-                                                    }{' '}
-                                                    — no unit of measurement
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
-                                <DialogFooter>
-                                    <DialogClose
-                                        render={
-                                            <Button variant="outline">
-                                                Cancel
-                                            </Button>
-                                        }
-                                    />
-                                    <Button
-                                        onClick={handleConfirmImport}
-                                        disabled={
-                                            !importPlan ||
-                                            importPlan.items.length === 0 ||
-                                            importing
-                                        }
-                                    >
-                                        {importing ? 'Importing...' : 'Confirm'}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-
-                        {mappedPairs && (
                             <div className="mt-6">
                                 <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
-                                    Mapped Category ↔ COA Pairs (
-                                    {mappedPairs.length})
+                                    Category ↔ COA Pairs ({extracted.pairs.length})
                                 </h3>
                                 <div className="max-h-80 overflow-y-auto rounded-md border">
                                     <Table>
                                         <TableHeader className="sticky top-0 z-10 bg-background">
                                             <TableRow>
                                                 <TableHead>Category</TableHead>
-                                                <TableHead>
-                                                    Resolved Category
-                                                </TableHead>
-                                                <TableHead>
-                                                    Chart of Account
-                                                </TableHead>
-                                                <TableHead>
-                                                    Resolved COA
-                                                </TableHead>
-                                                <TableHead>DB Pair</TableHead>
+                                                <TableHead>Chart of Account</TableHead>
+                                                <TableHead className="text-right">Sheets</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {mappedPairs.map((pair) => {
-                                                const overrideKey = `${pair.category}|${pair.chartOfAccount}`;
-                                                const override =
-                                                    pairOverrides[overrideKey];
-                                                const effCoaId =
-                                                    override?.coaId ??
-                                                    pair.coaId;
-                                                const effCatId =
-                                                    pair.categoryId;
-                                                const effCoaTitle = effCoaId
-                                                    ? (idToCoaTitle.get(
-                                                          effCoaId,
-                                                      ) ?? null)
-                                                    : null;
-                                                const comboboxValue =
-                                                    effCoaTitle
-                                                        ? `coa:${effCoaTitle}`
-                                                        : '';
-                                                const pairExists =
-                                                    effCoaId !== null &&
-                                                    effCatId !== null &&
-                                                    dbPairsSet.has(
-                                                        `${effCoaId}|${effCatId}`,
-                                                    );
-                                                const pairResolvable =
-                                                    effCoaId !== null &&
-                                                    effCatId !== null;
+                                            {extracted.pairs.map((pair) => (
+                                                <TableRow
+                                                    key={`${pair.category}|${pair.chartOfAccount}`}
+                                                >
+                                                    <TableCell className="max-w-40 truncate">
+                                                        {pair.category}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-48 truncate">
+                                                        {pair.chartOfAccount}
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <HoverCard>
+                                                            <HoverCardTrigger
+                                                                render={
+                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                        {pair.sheets.length}/
+                                                                        {selectedSheets.length}
+                                                                    </span>
+                                                                }
+                                                            />
+                                                            <HoverCardContent>
+                                                                {pair.sheets.length ===
+                                                                selectedSheets.length
+                                                                    ? `Appears in ${pair.sheets.length} — all sheets`
+                                                                    : `Appears in: ${pair.sheets.join(", ")}`}
+                                                            </HoverCardContent>
+                                                        </HoverCard>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+                        </>
+                    )}
+
+                    {uniqueItems && (
+                        <div className="mt-6">
+                            <div className="mb-2 flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-muted-foreground">
+                                    Unique Items (
+                                    {hideExisting
+                                        ? uniqueItems.filter(
+                                              (item) =>
+                                                  !itemMatches[
+                                                      `${item.description}|${item.category}|${item.chartOfAccount}`
+                                                  ] &&
+                                                  !dbDescriptionSet.has(
+                                                      normalize(item.description),
+                                                  ),
+                                          ).length
+                                        : uniqueItems.length}
+                                    )
+                                </h3>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex cursor-pointer items-center gap-2 text-sm">
+                                        Hide exists
+                                        <Switch
+                                            checked={hideExisting}
+                                            onCheckedChange={setHideExisting}
+                                            size="sm"
+                                        />
+                                    </label>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setImportDialogOpen(true)}
+                                        disabled={
+                                            !importPlan ||
+                                            importPlan.items.length === 0 ||
+                                            importing
+                                        }
+                                    >
+                                        {importing && <Spinner />}
+                                        Import {importPlan?.items.length ?? 0} New Items
+                                    </Button>
+                                </div>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto rounded-md border">
+                                <Table>
+                                    <TableHeader className="sticky top-0 z-10 bg-background">
+                                        <TableRow>
+                                            <TableHead>Description</TableHead>
+                                            <TableHead>Category</TableHead>
+                                            <TableHead>Chart of Account</TableHead>
+                                            <TableHead className="text-right">Sheets</TableHead>
+                                            <TableHead>In DB</TableHead>
+                                            <TableHead>Match</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {uniqueItems
+                                            .filter((item) => {
+                                                if (!hideExisting) return true;
+                                                const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
                                                 return (
-                                                    <TableRow key={overrideKey}>
-                                                        <TableCell className="max-w-40 truncate">
-                                                            {pair.category}
+                                                    !itemMatches[itemKey] &&
+                                                    !dbDescriptionSet.has(
+                                                        normalize(item.description),
+                                                    )
+                                                );
+                                            })
+                                            .map((item) => {
+                                                const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
+                                                const matchedId = itemMatches[itemKey];
+                                                const matchedItem = matchedId
+                                                    ? pliById.get(matchedId)
+                                                    : null;
+                                                const exactInDb = dbDescriptionSet.has(
+                                                    normalize(item.description),
+                                                );
+                                                const inDb = matchedId ? true : exactInDb;
+                                                const comboboxValue = matchedItem
+                                                    ? `pli:${matchedItem.description}`
+                                                    : exactInDb
+                                                      ? `pli:${item.description}`
+                                                      : "";
+                                                return (
+                                                    <TableRow key={itemKey}>
+                                                        <TableCell className="max-w-64 truncate">
+                                                            {item.description}
                                                         </TableCell>
                                                         <TableCell className="max-w-40 truncate">
-                                                            {pair.resolvedCategory ??
-                                                                '—'}
+                                                            {item.category}
                                                         </TableCell>
                                                         <TableCell className="max-w-48 truncate">
-                                                            {
-                                                                pair.chartOfAccount
-                                                            }
+                                                            {item.chartOfAccount}
                                                         </TableCell>
-                                                        <TableCell className="max-w-48 truncate">
+                                                        <TableCell className="text-right">
+                                                            <HoverCard>
+                                                                <HoverCardTrigger
+                                                                    render={
+                                                                        <span className="cursor-pointer text-xs text-muted-foreground">
+                                                                            {item.sheets.length}/
+                                                                            {selectedSheets.length}
+                                                                        </span>
+                                                                    }
+                                                                />
+                                                                <HoverCardContent>
+                                                                    {item.sheets.length ===
+                                                                    selectedSheets.length
+                                                                        ? `Appears in ${item.sheets.length} — all sheets`
+                                                                        : `Appears in: ${item.sheets.join(", ")}`}
+                                                                </HoverCardContent>
+                                                            </HoverCard>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {matchedId ? (
+                                                                <HoverCard>
+                                                                    <HoverCardTrigger
+                                                                        render={
+                                                                            <span className="cursor-pointer text-blue-600">
+                                                                                ✓ matched
+                                                                            </span>
+                                                                        }
+                                                                    />
+                                                                    <HoverCardContent>
+                                                                        {matchedItem
+                                                                            ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
+                                                                            : ""}
+                                                                    </HoverCardContent>
+                                                                </HoverCard>
+                                                            ) : exactInDb ? (
+                                                                <span className="text-emerald-600">
+                                                                    ✓ exists
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-amber-600">
+                                                                    ✗ new
+                                                                </span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell>
                                                             <Combobox
-                                                                items={
-                                                                    coaComboboxItems
-                                                                }
-                                                                value={
-                                                                    comboboxValue
-                                                                }
-                                                                onValueChange={(
-                                                                    v,
-                                                                ) => {
-                                                                    setPairOverrides(
-                                                                        (
-                                                                            prev,
-                                                                        ) => {
-                                                                            const next =
-                                                                                {
-                                                                                    ...prev,
-                                                                                };
-                                                                            if (
-                                                                                !v
-                                                                            ) {
-                                                                                delete next[
-                                                                                    overrideKey
-                                                                                ];
-                                                                                return next;
-                                                                            }
-                                                                            const name =
-                                                                                v.replace(
-                                                                                    /^[^:]+:/,
-                                                                                    '',
-                                                                                );
-                                                                            const id =
-                                                                                coaNameToId.get(
-                                                                                    name,
-                                                                                );
-                                                                            if (
-                                                                                id
-                                                                            ) {
-                                                                                next[
-                                                                                    overrideKey
-                                                                                ] =
-                                                                                    {
-                                                                                        coaId: id,
-                                                                                    };
-                                                                            }
+                                                                items={pliComboboxItems}
+                                                                value={comboboxValue}
+                                                                onValueChange={(v) => {
+                                                                    setItemMatches((prev) => {
+                                                                        const next = {
+                                                                            ...prev,
+                                                                        };
+                                                                        if (!v) {
+                                                                            delete next[itemKey];
                                                                             return next;
-                                                                        },
-                                                                    );
+                                                                        }
+                                                                        const name = v.replace(
+                                                                            /^[^:]+:/,
+                                                                            "",
+                                                                        );
+                                                                        const dbItem =
+                                                                            priceListItems.find(
+                                                                                (p) =>
+                                                                                    p.description ===
+                                                                                    name,
+                                                                            );
+                                                                        if (dbItem) {
+                                                                            next[itemKey] =
+                                                                                dbItem.id;
+                                                                        }
+                                                                        return next;
+                                                                    });
                                                                 }}
                                                             >
                                                                 <ComboboxInput
-                                                                    placeholder="Search chart of account..."
+                                                                    placeholder="Search price list item..."
                                                                     showClear
                                                                 />
                                                                 <ComboboxContent>
                                                                     <ComboboxEmpty>
-                                                                        No items
-                                                                        found.
+                                                                        No items found.
                                                                     </ComboboxEmpty>
                                                                     <ComboboxList>
-                                                                        {(
-                                                                            item,
-                                                                        ) => (
+                                                                        {(item) => (
                                                                             <ComboboxItem
-                                                                                key={
-                                                                                    item
-                                                                                }
-                                                                                value={
-                                                                                    item
-                                                                                }
+                                                                                key={item}
+                                                                                value={item}
                                                                             >
                                                                                 {item.replace(
                                                                                     /^[^:]+:/,
-                                                                                    '',
+                                                                                    "",
                                                                                 )}
                                                                             </ComboboxItem>
                                                                         )}
                                                                     </ComboboxList>
                                                                 </ComboboxContent>
                                                             </Combobox>
-                                                            {override && (
-                                                                <span className="ml-2 text-xs text-blue-600">
-                                                                    custom
-                                                                </span>
-                                                            )}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {pairResolvable ? (
-                                                                pairExists ? (
-                                                                    <span className="text-emerald-600">
-                                                                        ✓ exists
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-amber-600">
-                                                                        ✗ not
-                                                                        found
-                                                                    </span>
-                                                                )
-                                                            ) : (
-                                                                <span className="text-destructive">
-                                                                    ⚠
-                                                                    unresolvable
-                                                                </span>
-                                                            )}
                                                         </TableCell>
                                                     </TableRow>
                                                 );
                                             })}
-                                        </TableBody>
-                                    </Table>
-                                </div>
+                                    </TableBody>
+                                </Table>
                             </div>
-                        )}
-                    </>
-                )}
+                        </div>
+                    )}
+
+                    <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Confirm Import</DialogTitle>
+                                <DialogDescription>
+                                    You're about to import {importPlan?.items.length ?? 0} new price
+                                    list item(s) into the database.
+                                </DialogDescription>
+                            </DialogHeader>
+                            {importPlan &&
+                                (importPlan.skippedNoMatch > 0 ||
+                                    importPlan.skippedNoPrice > 0 ||
+                                    importPlan.skippedMissingUnit > 0) && (
+                                    <div className="space-y-1 text-sm text-muted-foreground">
+                                        Skipped:
+                                        {importPlan.skippedNoMatch > 0 && (
+                                            <p>
+                                                {importPlan.skippedNoMatch} — category/COA pair not
+                                                in database
+                                            </p>
+                                        )}
+                                        {importPlan.skippedNoPrice > 0 && (
+                                            <p>{importPlan.skippedNoPrice} — no price</p>
+                                        )}
+                                        {importPlan.skippedMissingUnit > 0 && (
+                                            <p>
+                                                {importPlan.skippedMissingUnit} — no unit of
+                                                measurement
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            <DialogFooter>
+                                <DialogClose render={<Button variant="outline">Cancel</Button>} />
+                                <Button
+                                    onClick={handleConfirmImport}
+                                    disabled={
+                                        !importPlan || importPlan.items.length === 0 || importing
+                                    }
+                                >
+                                    {importing ? "Importing..." : "Confirm"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {mappedPairs && (
+                        <div className="mt-6">
+                            <h3 className="mb-2 text-sm font-semibold text-muted-foreground">
+                                Mapped Category ↔ COA Pairs ({mappedPairs.length})
+                            </h3>
+                            <div className="max-h-80 overflow-y-auto rounded-md border">
+                                <Table>
+                                    <TableHeader className="sticky top-0 z-10 bg-background">
+                                        <TableRow>
+                                            <TableHead>Category</TableHead>
+                                            <TableHead>Resolved Category</TableHead>
+                                            <TableHead>Chart of Account</TableHead>
+                                            <TableHead>Resolved COA</TableHead>
+                                            <TableHead>DB Pair</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {mappedPairs.map((pair) => {
+                                            const overrideKey = `${pair.category}|${pair.chartOfAccount}`;
+                                            const override = pairOverrides[overrideKey];
+                                            const effCoaId = override?.coaId ?? pair.coaId;
+                                            const effCatId = pair.categoryId;
+                                            const effCoaTitle = effCoaId
+                                                ? (idToCoaTitle.get(effCoaId) ?? null)
+                                                : null;
+                                            const comboboxValue = effCoaTitle
+                                                ? `coa:${effCoaTitle}`
+                                                : "";
+                                            const pairExists =
+                                                effCoaId !== null &&
+                                                effCatId !== null &&
+                                                dbPairsSet.has(`${effCoaId}|${effCatId}`);
+                                            const pairResolvable =
+                                                effCoaId !== null && effCatId !== null;
+                                            return (
+                                                <TableRow key={overrideKey}>
+                                                    <TableCell className="max-w-40 truncate">
+                                                        {pair.category}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-40 truncate">
+                                                        {pair.resolvedCategory ?? "—"}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-48 truncate">
+                                                        {pair.chartOfAccount}
+                                                    </TableCell>
+                                                    <TableCell className="max-w-48 truncate">
+                                                        <Combobox
+                                                            items={coaComboboxItems}
+                                                            value={comboboxValue}
+                                                            onValueChange={(v) => {
+                                                                setPairOverrides((prev) => {
+                                                                    const next = {
+                                                                        ...prev,
+                                                                    };
+                                                                    if (!v) {
+                                                                        delete next[overrideKey];
+                                                                        return next;
+                                                                    }
+                                                                    const name = v.replace(
+                                                                        /^[^:]+:/,
+                                                                        "",
+                                                                    );
+                                                                    const id =
+                                                                        coaNameToId.get(name);
+                                                                    if (id) {
+                                                                        next[overrideKey] = {
+                                                                            coaId: id,
+                                                                        };
+                                                                    }
+                                                                    return next;
+                                                                });
+                                                            }}
+                                                        >
+                                                            <ComboboxInput
+                                                                placeholder="Search chart of account..."
+                                                                showClear
+                                                            />
+                                                            <ComboboxContent>
+                                                                <ComboboxEmpty>
+                                                                    No items found.
+                                                                </ComboboxEmpty>
+                                                                <ComboboxList>
+                                                                    {(item) => (
+                                                                        <ComboboxItem
+                                                                            key={item}
+                                                                            value={item}
+                                                                        >
+                                                                            {item.replace(
+                                                                                /^[^:]+:/,
+                                                                                "",
+                                                                            )}
+                                                                        </ComboboxItem>
+                                                                    )}
+                                                                </ComboboxList>
+                                                            </ComboboxContent>
+                                                        </Combobox>
+                                                        {override && (
+                                                            <span className="ml-2 text-xs text-blue-600">
+                                                                custom
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {pairResolvable ? (
+                                                            pairExists ? (
+                                                                <span className="text-emerald-600">
+                                                                    ✓ exists
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-amber-600">
+                                                                    ✗ not found
+                                                                </span>
+                                                            )
+                                                        ) : (
+                                                            <span className="text-destructive">
+                                                                ⚠ unresolvable
+                                                            </span>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+                    )}
+                </>
+            )}
         </div>
     );
 }
@@ -2374,8 +1906,8 @@ export default function PriceListImport({
 PriceListImport.layout = {
     breadcrumbs: [
         {
-            title: 'Price List Importer',
-            href: '#',
+            title: "Price List Importer",
+            href: "#",
         },
     ],
 };

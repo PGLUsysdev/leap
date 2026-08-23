@@ -1,5 +1,5 @@
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
+import DataTable from "@/components/base-ui-components/data-table";
+import { Button } from "@/components/base-ui-components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -7,9 +7,9 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
-import type { PriceList, PaginatedResponse } from '@/types';
-import columns from './columns/columns';
+} from "@/components/base-ui-components/ui/dialog";
+import type { PriceList, PaginatedResponse } from "@/types";
+import columns from "./columns/columns";
 
 interface MoveDialogProps {
     open: boolean;
@@ -18,8 +18,8 @@ interface MoveDialogProps {
     moveTarget: PriceList | null;
     onMoveTargetChange: (item: PriceList | null) => void;
     dialogData: PriceList[];
-    dialogPaginationData?: Omit<PaginatedResponse<PriceList>, 'data'>;
-    onMoveItem: (position: 'up' | 'down') => void;
+    dialogPaginationData?: Omit<PaginatedResponse<PriceList>, "data">;
+    onMoveItem: (position: "up" | "down") => void;
     title: string;
     description: string;
 }
@@ -60,9 +60,7 @@ export default function MoveDialog({
                 <div className="p-4">
                     <div className="rounded-lg border bg-muted/50 p-3 text-sm">
                         <span className="text-muted-foreground">Moving: </span>
-                        <span className="font-medium">
-                            {selectedItem?.description}
-                        </span>
+                        <span className="font-medium">{selectedItem?.description}</span>
                     </div>
                 </div>
 
@@ -74,41 +72,29 @@ export default function MoveDialog({
                         className="h-1000"
                         variant="select"
                         onRowClick={onMoveTargetChange}
-                        selectedValue={String(moveTarget?.id ?? '')}
+                        selectedValue={String(moveTarget?.id ?? "")}
                         selectedKey="id"
-                        disabledValue={String(selectedItem?.id ?? '')}
+                        disabledValue={String(selectedItem?.id ?? "")}
                         disabledKey="id"
                         pageParamName="dialog_page"
                         perPageParamName="dialog_per_page"
                         searchParamName="dialog_search"
-                        only={['paginatedDialogPriceList']}
+                        only={["paginatedDialogPriceList"]}
                     ></DataTable>
                 </div>
 
                 <div className="p-4 pt-0">
                     <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => onMoveTargetChange(null)}
-                        >
+                        <Button variant="outline" onClick={() => onMoveTargetChange(null)}>
                             Reset
                         </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                        >
+                        <Button variant="outline" onClick={() => onOpenChange(false)}>
                             Close
                         </Button>
-                        <Button
-                            disabled={!moveTarget}
-                            onClick={() => onMoveItem('down')}
-                        >
+                        <Button disabled={!moveTarget} onClick={() => onMoveItem("down")}>
                             Move Down
                         </Button>
-                        <Button
-                            disabled={!moveTarget}
-                            onClick={() => onMoveItem('up')}
-                        >
+                        <Button disabled={!moveTarget} onClick={() => onMoveItem("up")}>
                             Move Up
                         </Button>
                     </DialogFooter>

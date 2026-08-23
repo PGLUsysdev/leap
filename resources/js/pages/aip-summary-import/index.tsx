@@ -1,14 +1,10 @@
-import { router } from '@inertiajs/react';
-import ExcelJS from 'exceljs';
-import type { ChangeEvent } from 'react';
-import { useState } from 'react';
-import { Button } from '@/components/base-ui-components/ui/button';
-import {
-    Field,
-    FieldDescription,
-    FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
+import { router } from "@inertiajs/react";
+import ExcelJS from "exceljs";
+import type { ChangeEvent } from "react";
+import { useState } from "react";
+import { Button } from "@/components/base-ui-components/ui/button";
+import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
 import {
     Select,
     SelectContent,
@@ -16,11 +12,11 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
-import type { FiscalYear, FundingSource, Office } from '@/types';
-import { extractData } from './extract';
-import type { ExtractResult } from './extract';
-import { FundingSourceMap } from './funding-source-map';
+} from "@/components/base-ui-components/ui/select";
+import type { FiscalYear, FundingSource, Office } from "@/types";
+import { extractData } from "./extract";
+import type { ExtractResult } from "./extract";
+import { FundingSourceMap } from "./funding-source-map";
 
 interface ColumnMapping {
     ppa: string;
@@ -38,23 +34,23 @@ interface ColumnMapping {
 }
 
 const defaultColumnMapping: ColumnMapping = {
-    ppa: 'B',
-    startDate: 'D',
-    endDate: 'E',
-    expectedOutput: 'F',
-    fundingSourceId: 'G',
-    psAmount: 'H',
-    mooeAmount: 'I',
-    feAmount: 'J',
-    coAmount: 'K',
-    ccetAdaptation: 'M',
-    ccetMitigation: 'N',
-    ccTypologyId: 'O',
+    ppa: "B",
+    startDate: "D",
+    endDate: "E",
+    expectedOutput: "F",
+    fundingSourceId: "G",
+    psAmount: "H",
+    mooeAmount: "I",
+    feAmount: "J",
+    coAmount: "K",
+    ccetAdaptation: "M",
+    ccetMitigation: "N",
+    ccTypologyId: "O",
 };
 
 const DEFAULT_FUNDING_CODE_MAP: Record<string, string> = {
-    'GF-Proper': 'GF Proper',
-    '5% GAD': 'GF-5% GAD',
+    "GF-Proper": "GF Proper",
+    "5% GAD": "GF-5% GAD",
 };
 
 interface AipSummaryImportProps {
@@ -70,21 +66,19 @@ export default function AipSummaryImport({
 }: AipSummaryImportProps) {
     const [sheets, setSheets] = useState<string[]>([]);
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
-    const [selectedSheet, setSelectedSheet] = useState('');
+    const [selectedSheet, setSelectedSheet] = useState("");
     const [startRow, setStartRow] = useState(9);
     const [endRow, setEndRow] = useState<number | undefined>(undefined);
-    const [columnMap, setColumnMap] =
-        useState<ColumnMapping>(defaultColumnMapping);
+    const [columnMap, setColumnMap] = useState<ColumnMapping>(defaultColumnMapping);
     const [result, setResult] = useState<ExtractResult | null>(null);
     const [psPoolTempId, setPsPoolTempId] = useState<number | null>(null);
-    const [fundingCodeMappings, setFundingCodeMappings] = useState<
-        Record<string, string>
-    >(DEFAULT_FUNDING_CODE_MAP);
-    const latestDraftYear = years.find((fy) => fy.status === 'draft');
+    const [fundingCodeMappings, setFundingCodeMappings] =
+        useState<Record<string, string>>(DEFAULT_FUNDING_CODE_MAP);
+    const latestDraftYear = years.find((fy) => fy.status === "draft");
     const [selectedFiscalYear, setSelectedFiscalYear] = useState(
-        latestDraftYear ? String(latestDraftYear.id) : '',
+        latestDraftYear ? String(latestDraftYear.id) : "",
     );
-    const [selectedOfficeId, setSelectedOfficeId] = useState('');
+    const [selectedOfficeId, setSelectedOfficeId] = useState("");
 
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -125,20 +119,15 @@ export default function AipSummaryImport({
         setResult(data);
         setPsPoolTempId(null);
         setFundingCodeMappings(DEFAULT_FUNDING_CODE_MAP);
-        console.log('Extract result:', data);
+        console.log("Extract result:", data);
     }
 
     function handleImport() {
-        if (
-            !result ||
-            !selectedFiscalYear ||
-            !selectedOfficeId ||
-            !psPoolTempId
-        ) {
+        if (!result || !selectedFiscalYear || !selectedOfficeId || !psPoolTempId) {
             return;
         }
 
-        router.post('/aip-summary-import', {
+        router.post("/aip-summary-import", {
             fiscal_year_id: selectedFiscalYear,
             office_id: selectedOfficeId,
             ps_pool_temp_id: psPoolTempId,
@@ -149,7 +138,7 @@ export default function AipSummaryImport({
         });
     }
 
-    const programs = result?.ppas.filter((p) => p.type === 'Program') ?? [];
+    const programs = result?.ppas.filter((p) => p.type === "Program") ?? [];
 
     function updateColumn(key: keyof ColumnMapping, value: string) {
         setColumnMap((prev) => ({ ...prev, [key]: value.toUpperCase() }));
@@ -159,22 +148,14 @@ export default function AipSummaryImport({
         <>
             <Field>
                 <FieldLabel htmlFor="file">Excel File</FieldLabel>
-                <Input
-                    id="file"
-                    type="file"
-                    accept=".xlsx"
-                    onChange={handleFileChange}
-                />
+                <Input id="file" type="file" accept=".xlsx" onChange={handleFileChange} />
                 <FieldDescription>Select an Excel file.</FieldDescription>
             </Field>
 
             {sheets.length > 0 && (
                 <Field>
                     <FieldLabel>Sheet</FieldLabel>
-                    <Select
-                        value={selectedSheet}
-                        onValueChange={setSelectedSheet}
-                    >
+                    <Select value={selectedSheet} onValueChange={setSelectedSheet}>
                         <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select sheet" />
                         </SelectTrigger>
@@ -206,10 +187,7 @@ export default function AipSummaryImport({
                                 <SelectContent>
                                     <SelectGroup>
                                         {years.map((fy) => (
-                                            <SelectItem
-                                                key={fy.id}
-                                                value={String(fy.id)}
-                                            >
+                                            <SelectItem key={fy.id} value={String(fy.id)}>
                                                 {fy.year} ({fy.status})
                                             </SelectItem>
                                         ))}
@@ -220,20 +198,14 @@ export default function AipSummaryImport({
 
                         <Field>
                             <FieldLabel>Office</FieldLabel>
-                            <Select
-                                value={selectedOfficeId}
-                                onValueChange={setSelectedOfficeId}
-                            >
+                            <Select value={selectedOfficeId} onValueChange={setSelectedOfficeId}>
                                 <SelectTrigger className="w-[220px]">
                                     <SelectValue placeholder="Select office" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectGroup>
                                         {offices.map((office) => (
-                                            <SelectItem
-                                                key={office.id}
-                                                value={String(office.id)}
-                                            >
+                                            <SelectItem key={office.id} value={String(office.id)}>
                                                 {office.acronym || office.name}
                                             </SelectItem>
                                         ))}
@@ -245,33 +217,23 @@ export default function AipSummaryImport({
 
                     <div className="mt-4 flex gap-4">
                         <Field>
-                            <FieldLabel htmlFor="startRow">
-                                Start Row
-                            </FieldLabel>
+                            <FieldLabel htmlFor="startRow">Start Row</FieldLabel>
                             <Input
                                 id="startRow"
                                 type="number"
                                 value={startRow}
-                                onChange={(e) =>
-                                    setStartRow(Number(e.target.value))
-                                }
+                                onChange={(e) => setStartRow(Number(e.target.value))}
                             />
                         </Field>
 
                         <Field>
-                            <FieldLabel htmlFor="endRow">
-                                End Row (optional)
-                            </FieldLabel>
+                            <FieldLabel htmlFor="endRow">End Row (optional)</FieldLabel>
                             <Input
                                 id="endRow"
                                 type="number"
-                                value={endRow ?? ''}
+                                value={endRow ?? ""}
                                 onChange={(e) =>
-                                    setEndRow(
-                                        e.target.value
-                                            ? Number(e.target.value)
-                                            : undefined,
-                                    )
+                                    setEndRow(e.target.value ? Number(e.target.value) : undefined)
                                 }
                             />
                             <FieldDescription>
@@ -285,9 +247,7 @@ export default function AipSummaryImport({
                             <FieldLabel>PPA</FieldLabel>
                             <Input
                                 value={columnMap.ppa}
-                                onChange={(e) =>
-                                    updateColumn('ppa', e.target.value)
-                                }
+                                onChange={(e) => updateColumn("ppa", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -295,9 +255,7 @@ export default function AipSummaryImport({
                             <FieldLabel>Start Date</FieldLabel>
                             <Input
                                 value={columnMap.startDate}
-                                onChange={(e) =>
-                                    updateColumn('startDate', e.target.value)
-                                }
+                                onChange={(e) => updateColumn("startDate", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -305,9 +263,7 @@ export default function AipSummaryImport({
                             <FieldLabel>End Date</FieldLabel>
                             <Input
                                 value={columnMap.endDate}
-                                onChange={(e) =>
-                                    updateColumn('endDate', e.target.value)
-                                }
+                                onChange={(e) => updateColumn("endDate", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -315,12 +271,7 @@ export default function AipSummaryImport({
                             <FieldLabel>Expected Output</FieldLabel>
                             <Input
                                 value={columnMap.expectedOutput}
-                                onChange={(e) =>
-                                    updateColumn(
-                                        'expectedOutput',
-                                        e.target.value,
-                                    )
-                                }
+                                onChange={(e) => updateColumn("expectedOutput", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -328,12 +279,7 @@ export default function AipSummaryImport({
                             <FieldLabel>Funding Source ID</FieldLabel>
                             <Input
                                 value={columnMap.fundingSourceId}
-                                onChange={(e) =>
-                                    updateColumn(
-                                        'fundingSourceId',
-                                        e.target.value,
-                                    )
-                                }
+                                onChange={(e) => updateColumn("fundingSourceId", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -341,9 +287,7 @@ export default function AipSummaryImport({
                             <FieldLabel>PS Amount</FieldLabel>
                             <Input
                                 value={columnMap.psAmount}
-                                onChange={(e) =>
-                                    updateColumn('psAmount', e.target.value)
-                                }
+                                onChange={(e) => updateColumn("psAmount", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -351,9 +295,7 @@ export default function AipSummaryImport({
                             <FieldLabel>MOOE Amount</FieldLabel>
                             <Input
                                 value={columnMap.mooeAmount}
-                                onChange={(e) =>
-                                    updateColumn('mooeAmount', e.target.value)
-                                }
+                                onChange={(e) => updateColumn("mooeAmount", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -361,9 +303,7 @@ export default function AipSummaryImport({
                             <FieldLabel>FE Amount</FieldLabel>
                             <Input
                                 value={columnMap.feAmount}
-                                onChange={(e) =>
-                                    updateColumn('feAmount', e.target.value)
-                                }
+                                onChange={(e) => updateColumn("feAmount", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -371,9 +311,7 @@ export default function AipSummaryImport({
                             <FieldLabel>CO Amount</FieldLabel>
                             <Input
                                 value={columnMap.coAmount}
-                                onChange={(e) =>
-                                    updateColumn('coAmount', e.target.value)
-                                }
+                                onChange={(e) => updateColumn("coAmount", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -381,12 +319,7 @@ export default function AipSummaryImport({
                             <FieldLabel>CCET Adaptation</FieldLabel>
                             <Input
                                 value={columnMap.ccetAdaptation}
-                                onChange={(e) =>
-                                    updateColumn(
-                                        'ccetAdaptation',
-                                        e.target.value,
-                                    )
-                                }
+                                onChange={(e) => updateColumn("ccetAdaptation", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -394,12 +327,7 @@ export default function AipSummaryImport({
                             <FieldLabel>CCET Mitigation</FieldLabel>
                             <Input
                                 value={columnMap.ccetMitigation}
-                                onChange={(e) =>
-                                    updateColumn(
-                                        'ccetMitigation',
-                                        e.target.value,
-                                    )
-                                }
+                                onChange={(e) => updateColumn("ccetMitigation", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -407,9 +335,7 @@ export default function AipSummaryImport({
                             <FieldLabel>CC Typology ID</FieldLabel>
                             <Input
                                 value={columnMap.ccTypologyId}
-                                onChange={(e) =>
-                                    updateColumn('ccTypologyId', e.target.value)
-                                }
+                                onChange={(e) => updateColumn("ccTypologyId", e.target.value)}
                                 className="w-16"
                             />
                         </Field>
@@ -423,8 +349,7 @@ export default function AipSummaryImport({
 
                     {result && (
                         <div className="mt-2 text-sm text-muted-foreground">
-                            Found {result.ppas.length} PPAs,{' '}
-                            {result.aipEntries.length} entries,{' '}
+                            Found {result.ppas.length} PPAs, {result.aipEntries.length} entries,{" "}
                             {result.fundingSources.length} funding sources.
                         </div>
                     )}
@@ -433,10 +358,8 @@ export default function AipSummaryImport({
                         <Field>
                             <FieldLabel>PS Pool Program</FieldLabel>
                             <Select
-                                value={psPoolTempId ? String(psPoolTempId) : ''}
-                                onValueChange={(v) =>
-                                    setPsPoolTempId(Number(v))
-                                }
+                                value={psPoolTempId ? String(psPoolTempId) : ""}
+                                onValueChange={(v) => setPsPoolTempId(Number(v))}
                             >
                                 <SelectTrigger className="w-[400px]">
                                     <SelectValue placeholder="Select which Program is the PS pool..." />
@@ -444,10 +367,7 @@ export default function AipSummaryImport({
                                 <SelectContent>
                                     <SelectGroup>
                                         {programs.map((p) => (
-                                            <SelectItem
-                                                key={p.tempId}
-                                                value={String(p.tempId)}
-                                            >
+                                            <SelectItem key={p.tempId} value={String(p.tempId)}>
                                                 [{p.tempId}] {p.name}
                                             </SelectItem>
                                         ))}
@@ -455,8 +375,7 @@ export default function AipSummaryImport({
                                 </SelectContent>
                             </Select>
                             <FieldDescription>
-                                Personal Services amounts can only be assigned
-                                to this Program.
+                                Personal Services amounts can only be assigned to this Program.
                             </FieldDescription>
                         </Field>
                     )}
@@ -470,9 +389,7 @@ export default function AipSummaryImport({
 
                     {result && psPoolTempId && (
                         <div className="mt-6">
-                            <Button onClick={handleImport}>
-                                Import to Database
-                            </Button>
+                            <Button onClick={handleImport}>Import to Database</Button>
                         </div>
                     )}
                 </>
@@ -484,8 +401,8 @@ export default function AipSummaryImport({
 AipSummaryImport.layout = {
     breadcrumbs: [
         {
-            title: 'AIP Summary Importer',
-            href: '#',
+            title: "AIP Summary Importer",
+            href: "#",
         },
     ],
 };
