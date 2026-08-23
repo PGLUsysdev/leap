@@ -1,3 +1,5 @@
+// resources\js\pages\aip-summary\form-dialog.tsx
+
 import { router } from "@inertiajs/react";
 import { Plus } from "lucide-react";
 import { useState } from "react";

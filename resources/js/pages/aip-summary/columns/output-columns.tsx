@@ -36,7 +36,7 @@ const columns = [
         header: () => <div className="text-center text-wrap">#</div>,
         cell: (info) => <div className="text-center tabular-nums">{info.getValue()}</div>,
     }),
-    columnHelper.accessor("office.acronym", {
+    columnHelper.accessor((row) => row.offices?.map((o) => o.acronym).join(" / "), {
         id: "office",
         size: 150,
         header: () => <div className="text-center text-wrap">Office</div>,

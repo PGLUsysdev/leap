@@ -138,14 +138,13 @@ export interface AipEntry {
 export interface AipOutput {
     id: number;
     aip_entry_id: number;
-    office_id: number;
 
     expected_output: string | null;
     start_date: string | null;
     end_date: string | null;
     sort_order: number;
 
-    office?: Office;
+    offices?: Office[];
     funding_sources?: PpaFundingSource[];
 }
 

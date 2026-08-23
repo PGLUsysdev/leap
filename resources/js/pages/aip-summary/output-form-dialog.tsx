@@ -1,3 +1,5 @@
+// resources\js\pages\aip-summary\output-form-dialog.tsx
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "@inertiajs/react";
 import { Check } from "lucide-react";
@@ -36,7 +38,7 @@ interface OutputFormDialogProps {
 }
 
 const outputFormSchema = z.object({
-    officeId: z.string().min(1, "Office is required"),
+    officeIds: z.array(z.string()).min(1, "Office is required"),
     startDate: z.date().optional(),
     endDate: z.date().optional(),
     expectedOutput: z.string().optional(),
@@ -65,18 +67,18 @@ export default function OutputFormDialog({
     const form = useForm<OutputFormValues>({
         resolver: zodResolver(outputFormSchema),
         defaultValues: {
-            officeId: "",
+            officeIds: [],
             startDate: undefined,
             endDate: undefined,
             expectedOutput: "",
         },
     });
 
-    const watchOfficeId = useWatch({ control: form.control, name: "officeId" });
+    const watchOfficeIds = useWatch({ control: form.control, name: "officeIds" });
 
     const officeHook = useTableSelect({
         data: offices ?? [],
-        value: watchOfficeId ? String(watchOfficeId) : undefined,
+        value: watchOfficeIds?.[0] ? String(watchOfficeIds[0]) : undefined,
     });
 
     useEffect(() => {
@@ -84,16 +86,17 @@ export default function OutputFormDialog({
 
         if (isEditing && output) {
             form.reset({
-                officeId: output.office_id != null ? String(output.office_id) : "",
+                officeIds: output.offices?.map((o) => String(o.id)) ?? [],
                 startDate: toDate(output.start_date),
                 endDate: toDate(output.end_date),
                 expectedOutput: output.expected_output ?? "",
             });
         } else {
             // New output: default to PPA's office
-            const defaultOfficeId = entry.ppa?.office_id != null ? String(entry.ppa.office_id) : "";
+            const defaultOfficeIds =
+                entry.ppa?.office_id != null ? [String(entry.ppa.office_id)] : [];
             form.reset({
-                officeId: defaultOfficeId,
+                officeIds: defaultOfficeIds,
                 startDate: undefined,
                 endDate: undefined,
                 expectedOutput: "",
@@ -103,7 +106,7 @@ export default function OutputFormDialog({
 
     function onSubmit(values: OutputFormValues) {
         const payload = {
-            office_id: Number(values.officeId),
+            office_ids: values.officeIds.map(Number),
             start_date: toIsoDate(values.startDate),
             end_date: toIsoDate(values.endDate),
             expected_output: values.expectedOutput?.trim() || null,
@@ -165,7 +168,7 @@ export default function OutputFormDialog({
                         />
 
                         <Controller
-                            name="officeId"
+                            name="officeIds"
                             control={form.control}
                             render={({ fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
@@ -178,7 +181,7 @@ export default function OutputFormDialog({
                                         displayValue={(item) => item?.acronym ?? undefined}
                                         placeholder="Select office"
                                         onClear={() =>
-                                            form.setValue("officeId", "", {
+                                            form.setValue("officeIds", [], {
                                                 shouldValidate: true,
                                             })
                                         }
@@ -267,7 +270,7 @@ export default function OutputFormDialog({
                 open={officeHook.open}
                 onOpenChange={officeHook.setOpen}
                 onRowSelect={(row) => {
-                    form.setValue("officeId", String(row.id), {
+                    form.setValue("officeIds", [String(row.id)], {
                         shouldValidate: true,
                     });
                 }}

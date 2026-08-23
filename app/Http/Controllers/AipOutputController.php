@@ -17,10 +17,15 @@ class AipOutputController extends Controller
         Gate::authorize('update', $aipEntry);
 
         $data = $request->validated();
+        $officeIds = $this->resolveOfficeIds($data);
         $data['sort_order'] ??=
             ((int) $aipEntry->outputs()->max('sort_order')) + 1;
 
-        $aipEntry->outputs()->create($data);
+        $aipOutput = $aipEntry->outputs()->create($data);
+
+        if ($officeIds !== null && $officeIds !== []) {
+            $aipOutput->offices()->sync($officeIds);
+        }
 
         // return back()->with('success', 'Output added successfully.');
     }
@@ -31,7 +36,14 @@ class AipOutputController extends Controller
     ) {
         Gate::authorize('update', $aipOutput->aipEntry);
 
-        $aipOutput->update($request->validated());
+        $data = $request->validated();
+        $officeIds = $this->resolveOfficeIds($data);
+
+        if ($officeIds !== null && $officeIds !== []) {
+            $aipOutput->offices()->sync($officeIds);
+        }
+
+        $aipOutput->update($data);
 
         // return back()->with('success', 'Output updated successfully.');
     }
@@ -51,5 +63,23 @@ class AipOutputController extends Controller
         });
 
         // return back()->with('success', 'Output deleted successfully.');
+    }
+
+    /**
+     * Normalize office input into a list of office IDs.
+     * Supports both the legacy single `office_id` and `office_ids` array.
+     */
+    private function resolveOfficeIds(array &$data): ?array
+    {
+        $ids = $data['office_ids'] ??
+            (isset($data['office_id']) ? [$data['office_id']] : null);
+
+        unset($data['office_ids'], $data['office_id']);
+
+        if ($ids === null) {
+            return null;
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
     }
 }

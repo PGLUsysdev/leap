@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Office extends Model
@@ -76,6 +77,13 @@ class Office extends Model
     public function supplementalAips(): HasMany
     {
         return $this->hasMany(SupplementalAip::class, 'office_id');
+    }
+
+    // belongsToMany
+    public function aipOutputs(): BelongsToMany
+    {
+        return $this->belongsToMany(AipOutput::class, 'aip_output_office')
+            ->withTimestamps();
     }
 
     // belongsTo

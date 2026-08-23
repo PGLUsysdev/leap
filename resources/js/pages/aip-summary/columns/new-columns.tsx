@@ -103,7 +103,8 @@ const columns = [
         },
         meta: { rowSpan: true, spanKey: "entryId" },
     }),
-    columnHelper.accessor("output.office.acronym", {
+    columnHelper.accessor((row) => row.output?.offices?.map((o) => o.acronym).join(" / "), {
+        id: "office",
         size: 400,
         header: () => (
             <div className="text-center text-wrap">Implementing Office / Department / Location</div>

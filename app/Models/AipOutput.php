@@ -8,7 +8,6 @@ class AipOutput extends Model
 {
     protected $fillable = [
         'aip_entry_id',
-        'office_id',
         'expected_output',
         'start_date',
         'end_date',
@@ -21,9 +20,10 @@ class AipOutput extends Model
         return $this->belongsTo(AipEntry::class);
     }
 
-    public function office()
+    public function offices()
     {
-        return $this->belongsTo(Office::class);
+        return $this->belongsToMany(Office::class, 'aip_output_office')
+            ->withTimestamps();
     }
 
     // Funding sources directly linked to this output

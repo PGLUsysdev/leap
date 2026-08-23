@@ -69,7 +69,6 @@ class AipEntryController extends Controller
                         ->select([
                             'id',
                             'aip_entry_id',
-                            'office_id',
                             'expected_output',
                             'start_date',
                             'end_date',
@@ -77,7 +76,7 @@ class AipEntryController extends Controller
                         ])
                         ->orderBy('sort_order');
                 },
-                'outputs.office:id,name,acronym',
+                'outputs.offices:id,name,acronym',
                 'outputs.fundingSources' => function ($query) {
                     $query->select([
                         'id',
