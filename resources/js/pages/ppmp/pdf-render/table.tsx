@@ -142,6 +142,13 @@ interface PpmpPdfTableProps<T> {
     columns: ColumnDef<T>[];
     rows: TableRow[];
     headerStyle?: any;
+    // undefined -> default header row; ReactNode -> replaces default header; null -> no header
+    headerComponent?: React.ReactNode;
+    rowStyleResolver?: (row: TableRow) => {
+        rowStyle?: any;
+        textStyle?: any;
+    } | null;
+    cellVerticalAlign?: "flex-start" | "center" | "flex-end";
 }
 
 // Helper to determine total row text alignment based on column id.
@@ -165,9 +172,10 @@ export function PpmpPdfTable<T extends Record<string, any>>({
     columns = [],
     rows = [],
     headerStyle,
+    headerComponent,
+    rowStyleResolver,
+    cellVerticalAlign = "center",
 }: PpmpPdfTableProps<T>) {
-    console.log(rows);
-
     // Helper to render content that might already be a <Text> element.
     // If it's not a <Text>, wrap it with default styles.
     const renderContent = (content: React.ReactNode, defaultStyle: any) => {
@@ -191,6 +199,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                             styles.cell,
                             {
                                 width: col.width,
+                                justifyContent: cellVerticalAlign,
                                 alignItems: isDescription ? "flex-start" : "center",
                             },
                             cIdx === 0 ? leftBorderStyle : {},
@@ -204,12 +213,16 @@ export function PpmpPdfTable<T extends Record<string, any>>({
     );
 
     // Helper to render "Item" row
-    const renderItemRow = (row: TableRow) => (
-        <View key={row.id} wrap={false} style={[styles.row]}>
+    const renderItemRow = (row: TableRow, customRowStyle?: any) => (
+        <View key={row.id} wrap={false} style={[styles.row, customRowStyle]}>
             {columns.map((col, colIdx) => (
                 <View
                     key={col.id}
-                    style={[styles.cell, { width: col.width }, colIdx === 0 ? leftBorderStyle : {}]}
+                    style={[
+                        styles.cell,
+                        { width: col.width, justifyContent: cellVerticalAlign },
+                        colIdx === 0 ? leftBorderStyle : {},
+                    ]}
                 >
                     {renderContent(col.cell(row.item), styles.cellText)}
                 </View>
@@ -218,7 +231,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
     );
 
     // Helper to render "Total" row (Subtotal, Program Total, Grand Total)
-    const renderTotalRow = (row: TableRow, totalStyle: any) => {
+    const renderTotalRow = (row: TableRow, totalStyle: any, textStyleOverride?: any) => {
         const totals = row.totals || {};
 
         return (
@@ -242,14 +255,17 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                     }
 
                     const align = getTotalTextAlign(col.id);
-                    const textStyle = { ...styles.totalText, textAlign: align };
+                    const textStyle = {
+                        ...(textStyleOverride ?? styles.totalText),
+                        textAlign: align,
+                    };
 
                     return (
                         <View
                             key={col.id}
                             style={[
                                 styles.cell,
-                                { width: col.width },
+                                { width: col.width, justifyContent: cellVerticalAlign },
                                 cIdx === 0 ? leftBorderStyle : {},
                             ]}
                         >
@@ -281,26 +297,40 @@ export function PpmpPdfTable<T extends Record<string, any>>({
 
     return (
         <View style={styles.table}>
-            {/* Header Row - fixed */}
-            <View fixed style={[styles.headerRow, headerStyle]}>
-                {columns.map((col, cIdx) => (
-                    <View
-                        key={col.id}
-                        style={[
-                            styles.headerCell,
-                            { width: col.width },
-                            cIdx === 0 ? leftBorderStyle : {},
-                        ]}
-                    >
-                        {renderContent(col.header, styles.headerText)}
-                    </View>
-                ))}
-            </View>
+            {/* Header: default row when prop absent, custom node when given, none when null */}
+            {headerComponent === undefined ? (
+                <View fixed style={[styles.headerRow, headerStyle]}>
+                    {columns.map((col, cIdx) => (
+                        <View
+                            key={col.id}
+                            style={[
+                                styles.headerCell,
+                                { width: col.width },
+                                cIdx === 0 ? leftBorderStyle : {},
+                            ]}
+                        >
+                            {renderContent(col.header, styles.headerText)}
+                        </View>
+                    ))}
+                </View>
+            ) : headerComponent ? (
+                <View fixed>{headerComponent}</View>
+            ) : null}
 
             {/* Body - Flat loop over rows */}
             {rows.map((row) => {
+                const custom = rowStyleResolver ? rowStyleResolver(row) : null;
+
                 switch (row.type) {
                     case "banner":
+                        if (custom?.rowStyle) {
+                            return renderBannerRow(
+                                row,
+                                custom.rowStyle,
+                                custom.textStyle ?? styles.programBannerText,
+                            );
+                        }
+
                         if (row.id.startsWith("prog-")) {
                             return renderBannerRow(
                                 row,
@@ -316,9 +346,13 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         return null;
 
                     case "item":
-                        return renderItemRow(row);
+                        return renderItemRow(row, custom?.rowStyle);
 
                     case "subtotal":
+                        if (custom?.rowStyle) {
+                            return renderTotalRow(row, custom.rowStyle, custom.textStyle);
+                        }
+
                         if (row.id.startsWith("summary-")) {
                             return renderTotalRow(row, styles.summarySubtotalRow);
                         }
@@ -330,6 +364,10 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         return renderTotalRow(row, styles.categoryTotalRow);
 
                     case "grand-total":
+                        if (custom?.rowStyle) {
+                            return renderTotalRow(row, custom.rowStyle, custom.textStyle);
+                        }
+
                         if (row.id.startsWith("summary-")) {
                             return renderTotalRow(row, styles.summaryGrandTotalRow);
                         }

@@ -44,6 +44,7 @@ import type {
     PpaFundingSource,
 } from "@/types";
 import newColumns from "./columns/new-columns";
+import ExportToPdfDialog from "./export-to-pdf-dialog";
 
 interface AipSummaryProps {
     fiscalYear: FiscalYear;
@@ -272,6 +273,7 @@ export default function AipSummary({
     offices,
     fundingSources,
     ppaTypes,
+    currentScope = { scope: "original", supplemental_aip_id: null },
 }: AipSummaryProps) {
     console.log({
         // fiscalYear,
@@ -339,12 +341,15 @@ export default function AipSummary({
     // const { auth } = usePage<SharedData>().props;
     const { auth } = usePage<SharedData>().props;
 
+    console.log(auth);
+
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
     const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
 
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [deleteEntry, setDeleteEntry] = useState<NumberedAipEntry | null>(null);
+    const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
     function handleEdit(id: number) {
         setSelectedItemId(id);
@@ -763,7 +768,7 @@ export default function AipSummary({
     //         ? `saip-${currentScope.supplemental_aip_id}`
     //         : currentScope.scope;
 
-    console.log("selectedItemId", selectedItemId);
+    console.log(expandByFundingSource(sortFlatLikeTree(newAipEntries)));
 
     return (
         <>
@@ -1008,7 +1013,7 @@ export default function AipSummary({
                             <DropdownMenuContent className="w-40" align="end">
                                 <DropdownMenuGroup>
                                     <DropdownMenuLabel>Export</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => console.log("start here")}>
+                                    <DropdownMenuItem onClick={() => setIsExportDialogOpen(true)}>
                                         AIP Summary Form
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
@@ -1192,6 +1197,15 @@ export default function AipSummary({
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <ExportToPdfDialog
+                open={isExportDialogOpen}
+                onOpenChange={setIsExportDialogOpen}
+                aipEntries={newAipEntries}
+                fiscalYear={fiscalYear}
+                officeName={auth.user.office?.name || ""}
+                currentScope={currentScope}
+            />
 
             {/* <FormDialog
                 open={isFormDialogOpen}

@@ -2,7 +2,7 @@
 
 export interface ColumnDef<T> {
     id: string;
-    header: React.ReactNode;
+    header?: React.ReactNode;
     width: string;
     cell: (item: T) => React.ReactNode;
 }
@@ -15,4 +15,5 @@ export interface TableRow {
     label?: string;
     item?: any;
     totals?: Record<string, number>;
+    isLastInPpaGroup?: boolean;
 }

@@ -37,13 +37,11 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        Log::info($request->user());
-
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user()->loadMissing('office'),
                 'permissions' =>
                     $request
                         ->user()
