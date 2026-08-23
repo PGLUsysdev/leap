@@ -8,10 +8,9 @@ import { useForm, Controller, useWatch } from "react-hook-form";
 import * as z from "zod";
 import { DatePicker } from "@/components/base-ui-components/date-picker";
 import {
-    TableSelect,
-    TableSelectButton,
-    useTableSelect,
-} from "@/components/base-ui-components/table-select";
+    MultiTableSelect,
+    MultiTableSelectButton,
+} from "@/components/base-ui-components/multi-table-select";
 import { Badge } from "@/components/base-ui-components/ui/badge";
 import { Button } from "@/components/base-ui-components/ui/button";
 import {
@@ -63,6 +62,7 @@ export default function OutputFormDialog({
 }: OutputFormDialogProps) {
     const isEditing = !!output;
     const [loadingState, setLoadingState] = useState<"idle" | "saving" | "saved">("idle");
+    const [pickerOpen, setPickerOpen] = useState(false);
 
     const form = useForm<OutputFormValues>({
         resolver: zodResolver(outputFormSchema),
@@ -76,10 +76,11 @@ export default function OutputFormDialog({
 
     const watchOfficeIds = useWatch({ control: form.control, name: "officeIds" });
 
-    const officeHook = useTableSelect({
-        data: offices ?? [],
-        value: watchOfficeIds?.[0] ? String(watchOfficeIds[0]) : undefined,
-    });
+    // Display text in selection order, skipping ids missing from the office list
+    const displayText = (watchOfficeIds ?? [])
+        .map((id) => offices?.find((o) => String(o.id) === id)?.acronym)
+        .filter(Boolean)
+        .join(" / ");
 
     useEffect(() => {
         if (!open) return;
@@ -143,7 +144,7 @@ export default function OutputFormDialog({
                         <DialogTitle>{isEditing ? "Edit Output" : "Add New Output"}</DialogTitle>
                         <DialogDescription>
                             {isEditing
-                                ? "Update the office, schedule, and description for this expected output."
+                                ? "Update the offices, schedule, and description for this expected output."
                                 : "Create a new expected output for this entry."}
                         </DialogDescription>
                     </DialogHeader>
@@ -175,11 +176,11 @@ export default function OutputFormDialog({
                                     <FieldLabel>
                                         Implementing Office / Department / Location
                                     </FieldLabel>
-                                    <TableSelectButton
+                                    <MultiTableSelectButton
                                         invalid={fieldState.invalid}
-                                        hook={officeHook}
-                                        displayValue={(item) => item?.acronym ?? undefined}
-                                        placeholder="Select office"
+                                        displayText={displayText || undefined}
+                                        placeholder="Select implementing offices"
+                                        onOpen={() => setPickerOpen(true)}
                                         onClear={() =>
                                             form.setValue("officeIds", [], {
                                                 shouldValidate: true,
@@ -264,19 +265,23 @@ export default function OutputFormDialog({
                 </DialogContent>
             </Dialog>
 
-            <TableSelect<Office>
+            <MultiTableSelect<Office>
                 data={offices ?? []}
                 columns={officeColumns}
-                open={officeHook.open}
-                onOpenChange={officeHook.setOpen}
-                onRowSelect={(row) => {
-                    form.setValue("officeIds", [String(row.id)], {
-                        shouldValidate: true,
-                    });
-                }}
-                value={officeHook.value}
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
+                selectedValues={watchOfficeIds?.map(String) ?? []}
                 valueKey="id"
+                title="Implementing Offices"
+                description="Select one or more offices for this output."
                 className="sm:max-w-[30rem]"
+                onConfirm={(selected) => {
+                    form.setValue(
+                        "officeIds",
+                        selected.map((o) => String(o.id)),
+                        { shouldValidate: true },
+                    );
+                }}
             />
         </>
     );

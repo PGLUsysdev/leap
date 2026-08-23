@@ -1,3 +1,5 @@
+// resources\js\pages\ppmp\index.tsx
+
 import { router } from "@inertiajs/react";
 import { PDFViewer } from "@react-pdf/renderer";
 import { Decimal } from "decimal.js";

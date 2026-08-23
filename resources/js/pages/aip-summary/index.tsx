@@ -1,7 +1,7 @@
 // resources\js\pages\aip-summary\index.tsx
 
 import { router, usePage } from "@inertiajs/react";
-import { Library, ShieldCheck } from "lucide-react";
+import { FileUp, Library, ShieldCheck } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import DataTable from "@/components/base-ui-components/data-table";
 import {
@@ -15,6 +15,15 @@ import {
     AlertDialogTitle,
 } from "@/components/base-ui-components/ui/alert-dialog";
 import { Button } from "@/components/base-ui-components/ui/button";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/base-ui-components/ui/dropdown-menu";
 import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import { DeleteDialog } from "@/components/delete-dialog";
 import FormDialog from "@/pages/aip-summary/form-dialog";
@@ -991,11 +1000,27 @@ export default function AipSummary({
                                 Library
                             </Button>
                         )}*/}
-                    {can.import && (
-                        <Button onClick={handleImportLibrary}>
-                            <Library className="mr-2 h-4 w-4" /> Import from Library
-                        </Button>
-                    )}
+                    <div className="flex gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
+                                <FileUp />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-40" align="end">
+                                <DropdownMenuGroup>
+                                    <DropdownMenuLabel>Export</DropdownMenuLabel>
+                                    <DropdownMenuItem onClick={() => console.log("start here")}>
+                                        AIP Summary Form
+                                    </DropdownMenuItem>
+                                </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {can.import && (
+                            <Button onClick={handleImportLibrary}>
+                                <Library className="mr-2 h-4 w-4" /> Import from Library
+                            </Button>
+                        )}
+                    </div>
                     {/*</div>*/}
                 </DataTable>
 
