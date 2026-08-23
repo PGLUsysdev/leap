@@ -22,7 +22,7 @@ class AipOutputController extends Controller
 
         $aipEntry->outputs()->create($data);
 
-        return back()->with('success', 'Output added successfully.');
+        // return back()->with('success', 'Output added successfully.');
     }
 
     public function update(
@@ -33,7 +33,7 @@ class AipOutputController extends Controller
 
         $aipOutput->update($request->validated());
 
-        return back()->with('success', 'Output updated successfully.');
+        // return back()->with('success', 'Output updated successfully.');
     }
 
     public function destroy(AipOutput $aipOutput)
@@ -50,6 +50,6 @@ class AipOutputController extends Controller
             $aipOutput->delete();
         });
 
-        return back()->with('success', 'Output deleted successfully.');
+        // return back()->with('success', 'Output deleted successfully.');
     }
 }

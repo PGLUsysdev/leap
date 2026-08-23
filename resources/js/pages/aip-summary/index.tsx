@@ -1,3 +1,5 @@
+// resources\js\pages\aip-summary\index.tsx
+
 import { router, usePage } from '@inertiajs/react';
 import { Library, ShieldCheck } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';

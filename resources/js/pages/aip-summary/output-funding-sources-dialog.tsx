@@ -1,3 +1,5 @@
+// resources\js\pages\aip-summary\output-funding-sources-dialog.tsx
+
 import { router } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useState } from 'react';
@@ -153,11 +155,11 @@ export default function OutputFundingSourcesDialog({
                             disabled: loadingState === 'saving',
                             onOpenPpmp: (fsId: number) => {
                                 router.visit(
-                                    ppmpIndex([
-                                        fiscalYearId,
-                                        output.aip_entry_id,
-                                        fsId,
-                                    ]).url,
+                                    ppmpIndex({
+                                        fiscalYear: fiscalYearId,
+                                        aipEntry: output.aip_entry_id,
+                                        ppaFundingSource: fsId,
+                                    }).url,
                                     {
                                         method: 'get',
                                     },

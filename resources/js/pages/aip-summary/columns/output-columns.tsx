@@ -1,3 +1,5 @@
+// resources\js\pages\aip-summary\columns\output-columns.tsx
+
 import { createColumnHelper } from '@tanstack/react-table';
 import { Coins, Pencil, Trash } from 'lucide-react';
 import { Button } from '@/components/base-ui-components/ui/button';

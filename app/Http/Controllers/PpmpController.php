@@ -13,7 +13,6 @@ use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PpmpController extends Controller
@@ -29,7 +28,7 @@ class PpmpController extends Controller
     ) {
         Gate::authorize('viewAny', [Ppmp::class, $aipEntry]);
 
-        if ($ppaFundingSource->aip_entry_id !== $aipEntry->id) {
+        if ($ppaFundingSource->aipOutput?->aip_entry_id !== $aipEntry->id) {
             abort(404);
         }
 
@@ -52,11 +51,11 @@ class PpmpController extends Controller
                     'chart_of_account_id',
                     'ppmp_category_id',
                 ])->with([
-                    'chartOfAccount' => fn($q) => $q->select([
+                    'chartOfAccount' => fn ($q) => $q->select([
                         'id',
                         'account_title',
                     ]),
-                    'ppmpCategory' => fn($q) => $q->select(['id', 'name']),
+                    'ppmpCategory' => fn ($q) => $q->select(['id', 'name']),
                 ]);
             },
         ]);
@@ -191,13 +190,13 @@ class PpmpController extends Controller
                                     'chart_of_account_id',
                                     'ppmp_category_id',
                                 ])->with([
-                                    'chartOfAccount' => fn($q) => $q->select([
+                                    'chartOfAccount' => fn ($q) => $q->select([
                                         'id',
                                         'account_number',
                                         'account_title',
                                         'expense_class',
                                     ]),
-                                    'ppmpCategory' => fn($q) => $q->select([
+                                    'ppmpCategory' => fn ($q) => $q->select([
                                         'id',
                                         'name',
                                         'is_non_procurement',
@@ -239,8 +238,8 @@ class PpmpController extends Controller
         ]);
 
         if ($request->filled('month') && $request->filled('quantity')) {
-            $monthQty = $validated['month'] . '_qty';
-            $monthAmount = $validated['month'] . '_amount';
+            $monthQty = $validated['month'].'_qty';
+            $monthAmount = $validated['month'].'_amount';
             $unitPrice = $ppmp->ppmpPriceList?->price ?? 0;
             $newQty = (int) round($validated['quantity']);
 
@@ -324,7 +323,7 @@ class PpmpController extends Controller
 
         $targetColumn = $columnMap[$expenseClass] ?? null;
 
-        if (!$targetColumn) {
+        if (! $targetColumn) {
             return;
         }
 

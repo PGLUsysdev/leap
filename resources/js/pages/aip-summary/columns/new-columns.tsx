@@ -1,3 +1,5 @@
+// resources\js\pages\aip-summary\columns\new-columns.tsx
+
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
 import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
