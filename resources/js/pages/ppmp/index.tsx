@@ -670,7 +670,7 @@ export default function PpmpPage({
                                 <DropdownMenuGroup>
                                     <DropdownMenuLabel>Generate</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => setOpenCoaPdfPreview(true)}>
-                                        COA Summary
+                                        PPMP by COA
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                             </DropdownMenuContent>
@@ -877,7 +877,7 @@ export default function PpmpPage({
                 <DialogContent className="fixed! inset-0! h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! gap-0 rounded-none! p-0">
                     <div className="p-4">
                         <DialogHeader>
-                            <DialogTitle>COA Summary Preview</DialogTitle>
+                            <DialogTitle>PPMP by COA Preview</DialogTitle>
                         </DialogHeader>
                     </div>
 

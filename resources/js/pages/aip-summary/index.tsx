@@ -1010,11 +1010,14 @@ export default function AipSummary({
                             <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
                                 <FileUp />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-40" align="end">
+                            <DropdownMenuContent className="w-50" align="end">
                                 <DropdownMenuGroup>
                                     <DropdownMenuLabel>Export</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => setIsExportDialogOpen(true)}>
                                         AIP Summary Form
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => console.log("")}>
+                                        Amounts by Funding Source
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                             </DropdownMenuContent>

@@ -41,7 +41,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user()->loadMissing('office'),
+                'user' => $request->user()?->loadMissing('office'),
                 'permissions' =>
                     $request
                         ->user()
