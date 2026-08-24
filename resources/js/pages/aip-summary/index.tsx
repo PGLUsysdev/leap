@@ -1,7 +1,7 @@
 // resources\js\pages\aip-summary\index.tsx
 
 import { router, usePage } from "@inertiajs/react";
-import { FileUp, Library, ShieldCheck } from "lucide-react";
+import { FileUp, Library, Sheet, ShieldCheck } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import DataTable from "@/components/base-ui-components/data-table";
 import {
@@ -45,6 +45,7 @@ import type {
 } from "@/types";
 import newColumns from "./columns/new-columns";
 import ExportToPdfDialog from "./export-to-pdf-dialog";
+import ExportSummaryToPdfDialog from "./pdf-render/amounts-by-fs/pdf-preview-dialog";
 
 interface AipSummaryProps {
     fiscalYear: FiscalYear;
@@ -350,6 +351,7 @@ export default function AipSummary({
     const [isLoading, setIsLoading] = useState(false);
     const [deleteEntry, setDeleteEntry] = useState<NumberedAipEntry | null>(null);
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+    const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
 
     function handleEdit(id: number) {
         setSelectedItemId(id);
@@ -1010,14 +1012,14 @@ export default function AipSummary({
                             <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
                                 <FileUp />
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-50" align="end">
+                            <DropdownMenuContent className="w-55" align="end">
                                 <DropdownMenuGroup>
                                     <DropdownMenuLabel>Export</DropdownMenuLabel>
                                     <DropdownMenuItem onClick={() => setIsExportDialogOpen(true)}>
-                                        AIP Summary Form
+                                        <Sheet /> AIP Summary Form
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => console.log("")}>
-                                        Amounts by Funding Source
+                                    <DropdownMenuItem onClick={() => setIsSummaryExportOpen(true)}>
+                                        <Sheet /> Amounts by Funding Source
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                             </DropdownMenuContent>
@@ -1204,6 +1206,15 @@ export default function AipSummary({
             <ExportToPdfDialog
                 open={isExportDialogOpen}
                 onOpenChange={setIsExportDialogOpen}
+                aipEntries={newAipEntries}
+                fiscalYear={fiscalYear}
+                officeName={auth.user.office?.name || ""}
+                currentScope={currentScope}
+            />
+
+            <ExportSummaryToPdfDialog
+                open={isSummaryExportOpen}
+                onOpenChange={setIsSummaryExportOpen}
                 aipEntries={newAipEntries}
                 fiscalYear={fiscalYear}
                 officeName={auth.user.office?.name || ""}
