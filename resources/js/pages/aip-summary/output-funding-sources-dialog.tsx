@@ -182,7 +182,8 @@ export default function OutputFundingSourcesDialog({
                         <DialogTitle>Manage Funding Sources</DialogTitle>
                         <DialogDescription>
                             Add or remove funding sources. PS and FE amounts can be edited directly
-                            in the table. PS is only editable if the parent PPA is a PS Pool.
+                            in the table. PS is only editable if the parent PPA is a PS Pool, and a
+                            PS Pool can only contain PS amounts.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -211,7 +212,15 @@ export default function OutputFundingSourcesDialog({
                             }}
                         >
                             <div className="flex gap-1">
-                                <Button onClick={() => fundingSourceHook.setOpen(true)}>
+                                <Button
+                                    onClick={() => fundingSourceHook.setOpen(true)}
+                                    disabled={isPsPool}
+                                    title={
+                                        isPsPool
+                                            ? "A PS Pool can only contain PS amounts"
+                                            : undefined
+                                    }
+                                >
                                     Add Funding Source
                                 </Button>
                                 <Button>LBP Form 2</Button>

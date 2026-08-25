@@ -433,23 +433,27 @@ const columns = [
                         size="icon"
                         variant="outline"
                         className={
-                            row.original.ppa?.type === "Program" && !row.original.ppa?.is_ps_pool
+                            (row.original.ppa?.type === "Program" ||
+                                row.original.ppa?.parent_id == null) &&
+                            !row.original.ppa?.is_ps_pool
                                 ? "border-emerald-500 text-emerald-600 hover:bg-emerald-50"
                                 : "border-gray-300 text-gray-300"
                         }
                         onClick={() => meta?.onSetAsPsPool?.(row.original)}
                         disabled={
-                            row.original.ppa?.type !== "Program" ||
+                            (row.original.ppa?.type !== "Program" &&
+                                row.original.ppa?.parent_id != null) ||
                             row.original.ppa?.is_ps_pool ||
                             !meta?.canSetPsPool
                         }
                         title={
                             !meta?.canSetPsPool
                                 ? "You don't have permission to set the PS pool"
-                                : row.original.ppa?.type !== "Program"
-                                  ? "Only Programs can be designated as the PS pool"
-                                  : row.original.ppa?.is_ps_pool
-                                    ? "This Program is already the PS pool"
+                                : row.original.ppa?.is_ps_pool
+                                  ? "This Program is already the PS pool"
+                                  : row.original.ppa?.type !== "Program" &&
+                                      row.original.ppa?.parent_id != null
+                                    ? "Only Programs or root PPAs can be designated as the PS pool"
                                     : "Designate this Program as the PS pool"
                         }
                     >

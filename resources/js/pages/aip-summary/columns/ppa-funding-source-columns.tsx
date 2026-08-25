@@ -149,13 +149,21 @@ function AmountCell({
 }) {
     const meta = table.options.meta;
     const isPs = field === "ps_amount";
-    const isDisabled = Boolean(isPs && !meta?.isPsPool);
+    const isPool = Boolean(meta?.isPsPool);
+    // A PS pool holds only PS — every other amount is locked on it,
+    // and PS is locked everywhere else.
+    const isDisabled = isPs ? !isPool : isPool;
+    const tooltip = isDisabled
+        ? isPs
+            ? "PS can only be edited for PS Pool PPAs"
+            : "A PS Pool can only contain PS amounts"
+        : "";
 
     return (
         <EditableAmountCell
             value={row.original[field]}
             disabled={isDisabled}
-            tooltip={isDisabled ? "PS can only be edited for PS Pool PPAs" : ""}
+            tooltip={tooltip}
             onSave={(val) => meta?.onSaveAmount?.(row.original.id, field, val)}
         />
     );
@@ -214,15 +222,22 @@ const columns = [
         header: () => <div className="text-center text-wrap">CC Typology Code</div>,
         cell: ({ row, table }) => {
             const meta = table.options.meta;
+            const poolLocked = Boolean(meta?.isPsPool);
 
             return (
-                <EditableCcTypologyCell
-                    value={row.original.cc_typology_id}
-                    ccTypologies={meta?.ccTypologies ?? []}
-                    onOpen={() => meta?.onSaveCcTypology?.(row.original.id)}
-                    onClear={() => meta?.onClearCcTypology?.(row.original.id)}
-                    disabled={Boolean(meta?.isSaving)}
-                />
+                <div
+                    title={
+                        poolLocked ? "A PS Pool can only contain PS amounts" : undefined
+                    }
+                >
+                    <EditableCcTypologyCell
+                        value={row.original.cc_typology_id}
+                        ccTypologies={meta?.ccTypologies ?? []}
+                        onOpen={() => meta?.onSaveCcTypology?.(row.original.id)}
+                        onClear={() => meta?.onClearCcTypology?.(row.original.id)}
+                        disabled={Boolean(meta?.isSaving) || poolLocked}
+                    />
+                </div>
             );
         },
     }),
@@ -233,6 +248,7 @@ const columns = [
             const rowData = row.original;
             const meta = table.options.meta;
             const isOptimistic = (rowData as any).isOptimistic === true;
+            const poolLocked = Boolean(meta?.isPsPool);
 
             return (
                 <div className="flex gap-1">
@@ -243,7 +259,15 @@ const columns = [
                         <DropdownMenuContent align="end" className="min-w-36">
                             <DropdownMenuGroup>
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => meta?.onOpenPpmp?.(rowData.id)}>
+                                <DropdownMenuItem
+                                    disabled={poolLocked}
+                                    onClick={() => meta?.onOpenPpmp?.(rowData.id)}
+                                    title={
+                                        poolLocked
+                                            ? "A PS Pool cannot have PPMP items"
+                                            : undefined
+                                    }
+                                >
                                     <ShoppingBasket />
                                     PPMP
                                 </DropdownMenuItem>
@@ -263,7 +287,8 @@ const columns = [
                         onClick={() =>
                             (meta?.onDelete as ((id: number) => void) | undefined)?.(rowData.id)
                         }
-                        disabled={isOptimistic || Boolean(meta?.disabled)}
+                        disabled={isOptimistic || poolLocked || Boolean(meta?.disabled)}
+                        title={poolLocked ? "PS Pool funding sources cannot be deleted" : undefined}
                     >
                         <Trash />
                     </Button>

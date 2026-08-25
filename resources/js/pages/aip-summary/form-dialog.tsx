@@ -26,8 +26,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { destroy, store, update } from "@/routes/aip-outputs";
-import type { AipEntry, AipOutput, FundingSource, Office } from "@/types";
+import { destroy } from "@/routes/aip-outputs";
+import type { AipEntry, AipOutput, CcTypology, FundingSource, Office } from "@/types";
 import outputColumns from "./columns/output-columns";
 import OutputFormDialog from "./output-form-dialog";
 import OutputFundingSourcesDialog from "./output-funding-sources-dialog";
@@ -110,12 +110,15 @@ export default function FormDialog({
     const liveSelectedOutput =
         selectedOutput != null ? (outputs.find((o) => o.id === selectedOutput.id) ?? null) : null;
 
+    const isPsPool = data?.ppa?.is_ps_pool ?? false;
+
     // Meta for output columns
     const outputMeta = {
         onEditFundingSources: handleEditFundingSources,
         onEditOutput: handleEditOutput,
         onDeleteOutput: handleDeleteOutput,
-        disabled: loadingState === "saving",
+        disabled: loadingState === "saving" || isPsPool,
+        isPsPool,
     };
 
     return (
@@ -157,7 +160,12 @@ export default function FormDialog({
                             >
                                 <Button
                                     onClick={handleAddOutput}
-                                    disabled={loadingState === "saving"}
+                                    disabled={loadingState === "saving" || isPsPool}
+                                    title={
+                                        isPsPool
+                                            ? "A PS Pool cannot have additional outputs"
+                                            : undefined
+                                    }
                                 >
                                     <Plus className="mr-1 h-4 w-4" /> Add Output
                                 </Button>

@@ -33,7 +33,7 @@ class PpaFundingSource extends Model
     // }
 
     protected $fillable = [
-        'aip_entry_id',
+        'aip_output_id',
         'funding_source_id',
         'ps_amount',
         'mooe_amount',
@@ -61,11 +61,6 @@ class PpaFundingSource extends Model
     public function fundingSource(): BelongsTo
     {
         return $this->belongsTo(FundingSource::class, 'funding_source_id');
-    }
-
-    public function aipEntry(): BelongsTo
-    {
-        return $this->belongsTo(AipEntry::class, 'aip_entry_id');
     }
 
     public function supplementalAip(): BelongsTo

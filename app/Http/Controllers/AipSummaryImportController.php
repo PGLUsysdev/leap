@@ -157,9 +157,9 @@ class AipSummaryImportController extends Controller
                 PpaFundingSource::create([
                     'aip_entry_id' => $realAipEntryId,
                     'funding_source_id' => $resolvedFundingSourceId,
-                    'ps_amount' => $fs['ps_amount'],
+                    // 'ps_amount' => $fs['ps_amount'],
                     'mooe_amount' => $fs['mooe_amount'],
-                    'fe_amount' => $fs['fe_amount'],
+                    // 'fe_amount' => $fs['fe_amount'],
                     'co_amount' => $fs['co_amount'],
                     'ccet_adaptation' => $fs['ccet_adaptation'],
                     'ccet_mitigation' => $fs['ccet_mitigation'],

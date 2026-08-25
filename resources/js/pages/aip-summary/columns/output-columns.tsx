@@ -94,7 +94,7 @@ const columns = [
                     <Button
                         size="icon"
                         variant="destructive"
-                        title="Delete output"
+                        title={meta?.isPsPool ? "PS Pool outputs cannot be deleted" : "Delete output"}
                         disabled={Boolean(meta?.disabled)}
                         onClick={() => meta?.onDeleteOutput?.(output)}
                     >

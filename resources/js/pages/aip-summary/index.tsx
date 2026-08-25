@@ -1156,32 +1156,31 @@ export default function AipSummary({
                             <span className="text-emerald-600">•</span>
                             <span>
                                 <span className="font-medium text-foreground">
-                                    Personal Services consolidation.
+                                    PS handover.
                                 </span>{" "}
-                                All PS amounts across the office are moved into this Program&apos;s
-                                single{" "}
-                                <span className="font-semibold">General Fund (GF Proper)</span>{" "}
-                                funding source.
+                                The previous PS Pool&apos;s PS amount is transferred to this
+                                Program, all of its funding sources are removed, and it loses its
+                                PS Pool designation.
                             </span>
                         </li>
                         <li className="flex gap-2">
                             <span className="text-emerald-600">•</span>
                             <span>
                                 <span className="font-medium text-foreground">
-                                    PS-only funding source.
+                                    Single PS-only funding source.
                                 </span>{" "}
-                                This Program will have exactly one funding source (GF Proper) and
-                                will carry PS only — MOOE, FE, and CO are set to zero.
+                                All funding sources currently assigned to this Program will be
+                                permanently removed and replaced with exactly one{" "}
+                                <span className="font-semibold">General Fund (GF Proper)</span>{" "}
+                                funding source holding only the transferred PS.
                             </span>
                         </li>
                         <li className="flex gap-2">
                             <span className="text-amber-600">•</span>
                             <span>
-                                <span className="font-medium text-foreground">
-                                    Previous PS Pool reset.
-                                </span>{" "}
-                                If another Program was the PS Pool, its funding sources and amounts
-                                are cleared and it reverts to a normal entry.
+                                <span className="font-medium text-foreground">PS-only rule.</span>{" "}
+                                A PS Pool can only contain a PS amount — MOOE, FE, CO, and CCET
+                                amounts cannot be entered on it.
                             </span>
                         </li>
                     </ul>

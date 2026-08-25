@@ -7,6 +7,7 @@ use App\Http\Requests\UpdatePpaFundingSourceRequest;
 use App\Models\AipOutput;
 use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
+use Illuminate\Validation\ValidationException;
 
 class PpaFundingSourceController extends Controller
 {
@@ -63,23 +64,18 @@ class PpaFundingSourceController extends Controller
         UpdatePpaFundingSourceRequest $request,
         PpaFundingSource $ppaFundingSource,
     ) {
-        // $user = auth()->user();
-        // if (!$user->can('editFundingSources', $ppaFundingSource->aipEntry)) {
-        //     abort(403, 'You do not have permission to edit funding sources.');
-        // }
-
         $validated = $request->validated();
 
-        // // Optional: enforce PS‑pool rule (only if you want to keep it)
-        // if (isset($validated['ps_amount']) && (float) $validated['ps_amount'] > 0) {
-        //     $ppa = $ppaFundingSource->aipEntry?->ppa;
-        //     if (!$ppa || !$ppa->is_ps_pool) {
-        //         return back()->withErrors([
-        //             'ps_amount' =>
-        //                 'Personal Services (PS) can only be allocated to the designated PS pool Program.',
-        //         ]);
-        //     }
-        // }
+        // A PS pool holds only a ps_amount — reject every other amount.
+        if ($ppaFundingSource->aipOutput?->aipEntry?->ppa?->is_ps_pool) {
+            foreach (['fe_amount', 'ccet_adaptation', 'ccet_mitigation'] as $field) {
+                if (array_key_exists($field, $validated) && (float) $validated[$field] !== 0.0) {
+                    throw ValidationException::withMessages([
+                        $field => 'A PS Pool can only hold Personal Services (PS) amounts.',
+                    ]);
+                }
+            }
+        }
 
         $ppaFundingSource->update($validated);
     }

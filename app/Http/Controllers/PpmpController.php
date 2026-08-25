@@ -317,8 +317,8 @@ class PpmpController extends Controller
         $columnMap = [
             'MOOE' => 'mooe_amount',
             'CO' => 'co_amount',
-            'PS' => 'ps_amount',
-            'FE' => 'fe_amount',
+            // 'PS' => 'ps_amount',
+            // 'FE' => 'fe_amount',
         ];
 
         $targetColumn = $columnMap[$expenseClass] ?? null;

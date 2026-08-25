@@ -322,9 +322,9 @@ class PriceListImportController extends Controller
     private function syncBridgeTotals(PpaFundingSource $bridge): void
     {
         $columnMap = [
-            'PS' => 'ps_amount',
+            // 'PS' => 'ps_amount',
             'MOOE' => 'mooe_amount',
-            'FE' => 'fe_amount',
+            // 'FE' => 'fe_amount',
             'CO' => 'co_amount',
         ];
 
@@ -365,9 +365,9 @@ class PriceListImportController extends Controller
         }
 
         $bridge->update([
-            'ps_amount' => $totals['ps_amount'],
+            // 'ps_amount' => $totals['ps_amount'],
             'mooe_amount' => $totals['mooe_amount'],
-            'fe_amount' => $totals['fe_amount'],
+            // 'fe_amount' => $totals['fe_amount'],
             'co_amount' => $totals['co_amount'],
             'updated_at' => now(),
         ]);

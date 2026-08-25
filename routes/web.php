@@ -27,7 +27,7 @@ use App\Http\Controllers\PpmpController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
 use App\Http\Controllers\PriceListImportController;
-use App\Http\Controllers\PsBreakdownController;
+// use App\Http\Controllers\PsBreakdownController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SalaryStandardController;
 use App\Http\Controllers\SectorController;
@@ -383,22 +383,23 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'salary-standard.index',
     );
 
-    // ps breakdown
-    Route::get('/aip/{fiscalYear}/summary/{aipEntry}/ps-breakdown', [
-        PsBreakdownController::class,
-        'index',
-    ])->name('ps-breakdown.index');
-    Route::post('/ps-breakdown-items', [PsBreakdownController::class, 'store'])->name(
-        'ps-breakdown-items.store',
-    );
-    Route::delete('/ps-breakdown-items/{psBreakdownItem}', [
-        PsBreakdownController::class,
-        'destroy',
-    ])->name('ps-breakdown-items.destroy');
-    Route::post('/ps-breakdown-items/recalculate', [
-        PsBreakdownController::class,
-        'recalculate',
-    ])->name('ps-breakdown-items.recalculate');
+    // ps breakdown (disabled: controller gutted — PS amounts are now managed
+    // manually through the funding sources dialog on PS Pool PPAs only)
+    // Route::get('/aip/{fiscalYear}/summary/{aipEntry}/ps-breakdown', [
+    //     PsBreakdownController::class,
+    //     'index',
+    // ])->name('ps-breakdown.index');
+    // Route::post('/ps-breakdown-items', [PsBreakdownController::class, 'store'])->name(
+    //     'ps-breakdown-items.store',
+    // );
+    // Route::delete('/ps-breakdown-items/{psBreakdownItem}', [
+    //     PsBreakdownController::class,
+    //     'destroy',
+    // ])->name('ps-breakdown-items.destroy');
+    // Route::post('/ps-breakdown-items/recalculate', [
+    //     PsBreakdownController::class,
+    //     'recalculate',
+    // ])->name('ps-breakdown-items.recalculate');
 
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
