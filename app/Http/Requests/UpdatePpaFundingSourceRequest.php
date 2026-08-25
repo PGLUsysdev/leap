@@ -12,7 +12,7 @@ class UpdatePpaFundingSourceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,11 @@ class UpdatePpaFundingSourceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'ps_amount' => ['nullable', 'numeric', 'min:0'],
+            'fe_amount' => ['nullable', 'numeric', 'min:0'],
+            'ccet_adaptation' => ['nullable', 'numeric', 'min:0'],
+            'ccet_mitigation' => ['nullable', 'numeric', 'min:0'],
+            'cc_typology_id' => ['nullable', 'integer', 'exists:cc_typologies,id'],
         ];
     }
 }

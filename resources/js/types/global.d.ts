@@ -1,5 +1,5 @@
 import type { Auth } from "@/types/auth";
-import type { FiscalYear } from ".";
+import type { FiscalYear, CcTypology } from ".";
 
 declare module "react" {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -88,5 +88,17 @@ declare module "@tanstack/react-table" {
         onEditOutput?: (data: TData) => void;
         onDeleteOutput?: (data: TData) => void;
         onEditFundingSources?: (data: TData) => void;
+
+        // Editable PPA funding source columns
+        onSaveAmount?: (
+            id: number,
+            field: "ps_amount" | "fe_amount" | "ccet_adaptation" | "ccet_mitigation",
+            value: number,
+        ) => void;
+        onSaveCcTypology?: (id: number) => void;
+        onClearCcTypology?: (id: number) => void;
+        isPsPool?: boolean;
+        ccTypologies?: CcTypology[];
+        isSaving?: boolean;
     }
 }

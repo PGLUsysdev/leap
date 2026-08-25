@@ -182,7 +182,7 @@ class AipEntryController extends Controller
                     ])
                     ->orderBy('code')
                     ->get(),
-            ),
+            )->once(),
             'offices' => Inertia::defer(fn () => Office::all())->once(),
             'filters' => $request->all(),
             // 'supplementalAips' => \App\Models\SupplementalAip::where(

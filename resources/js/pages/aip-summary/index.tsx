@@ -275,6 +275,7 @@ export default function AipSummary({
     fundingSources,
     ppaTypes,
     currentScope = { scope: "original", supplemental_aip_id: null },
+    ccTypologies,
 }: AipSummaryProps) {
     console.log({
         // fiscalYear,
@@ -931,7 +932,6 @@ export default function AipSummary({
                 </div>*/}
 
                 <DataTable
-                    className="pr-3"
                     columns={newColumns}
                     data={expandByFundingSource(sortFlatLikeTree(newAipEntries))}
                     meta={{
@@ -1079,6 +1079,7 @@ export default function AipSummary({
                 offices={offices}
                 fundingSources={fundingSources}
                 fiscalYearId={fiscalYear.id}
+                ccTypologies={ccTypologies}
 
                 // data={selectedEntry}
                 // fiscalYear={fiscalYear}

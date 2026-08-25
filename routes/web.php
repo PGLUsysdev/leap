@@ -101,6 +101,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         PpaFundingSourceController::class,
         'destroy',
     ])->name('aip-outputs.ppa-funding-sources.destroy');
+    Route::put('/ppa-funding-sources/{ppaFundingSource}', [
+        PpaFundingSourceController::class,
+        'update',
+    ])->name('ppa-funding-sources.update');
 
     // --- Supplemental AIPs ---
     Route::post('/supplemental-aips', [SupplementalAipController::class, 'store'])->name(

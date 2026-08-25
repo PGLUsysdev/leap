@@ -38,6 +38,7 @@ interface FormDialogProps {
     data?: AipEntry;
     offices?: Office[];
     fundingSources?: FundingSource[];
+    ccTypologies?: CcTypology[];
     fiscalYearId: number;
 }
 
@@ -47,6 +48,7 @@ export default function FormDialog({
     data,
     offices,
     fundingSources,
+    ccTypologies,
     fiscalYearId,
 }: FormDialogProps) {
     const [loadingState, setLoadingState] = useState<"idle" | "saving" | "saved">("idle");
@@ -142,7 +144,7 @@ export default function FormDialog({
                                 </Card>
                             </div>
 
-                            <Separator className="my-4" />
+                            <Separator className="mt-4" />
 
                             {/* Outputs Table */}
                             <DataTable
@@ -209,7 +211,9 @@ export default function FormDialog({
                 onOpenChange={setOpenFundingDialog}
                 output={liveSelectedOutput}
                 fundingSources={fundingSources}
+                ccTypologies={ccTypologies}
                 fiscalYearId={fiscalYearId}
+                isPsPool={data?.ppa?.is_ps_pool ?? false}
             />
         </>
     );

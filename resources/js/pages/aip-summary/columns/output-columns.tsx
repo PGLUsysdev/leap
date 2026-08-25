@@ -30,12 +30,12 @@ function formatDateCell(value: string | null | undefined) {
 }
 
 const columns = [
-    columnHelper.accessor("sort_order", {
-        id: "sort_order",
-        size: 50,
-        header: () => <div className="text-center text-wrap">#</div>,
-        cell: (info) => <div className="text-center tabular-nums">{info.getValue()}</div>,
-    }),
+    // columnHelper.accessor("sort_order", {
+    //     id: "sort_order",
+    //     size: 50,
+    //     header: () => <div className="text-center text-wrap">#</div>,
+    //     cell: (info) => <div className="text-center tabular-nums">{info.getValue()}</div>,
+    // }),
     columnHelper.accessor((row) => row.offices?.map((o) => o.acronym).join(" / "), {
         id: "office",
         size: 150,
@@ -44,7 +44,7 @@ const columns = [
     }),
     columnHelper.accessor("start_date", {
         id: "start_date",
-        size: 90,
+        size: 100,
         header: () => <div className="text-center text-wrap">Start</div>,
         cell: (info) => (
             <div className="text-center text-wrap">{formatDateCell(info.getValue())}</div>
@@ -52,7 +52,7 @@ const columns = [
     }),
     columnHelper.accessor("end_date", {
         id: "end_date",
-        size: 90,
+        size: 100,
         header: () => <div className="text-center text-wrap">End</div>,
         cell: (info) => (
             <div className="text-center text-wrap">{formatDateCell(info.getValue())}</div>
