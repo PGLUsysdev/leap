@@ -13,12 +13,15 @@ use App\Http\Controllers\ChartOfAccountController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FiscalYearController;
 use App\Http\Controllers\FundingSourceController;
-use App\Http\Controllers\IosController;
+// Disabled for now — PS logic refactor in progress (kept for later).
+// use App\Http\Controllers\IosController;
 use App\Http\Controllers\LguLevelController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\OfficeTypeController;
-use App\Http\Controllers\PlantillaPositionController;
-use App\Http\Controllers\PositionController;
+// Disabled for now — PS logic refactor in progress (kept for later).
+// use App\Http\Controllers\PlantillaPositionController;
+// Disabled for now — PS logic refactor in progress (kept for later).
+// use App\Http\Controllers\PositionController;
 use App\Http\Controllers\PpaController;
 use App\Http\Controllers\PpaFundingSourceController;
 use App\Http\Controllers\PpaListController;
@@ -29,7 +32,8 @@ use App\Http\Controllers\PpmpSummaryController;
 use App\Http\Controllers\PriceListImportController;
 // use App\Http\Controllers\PsBreakdownController;
 use App\Http\Controllers\RoleController;
-use App\Http\Controllers\SalaryStandardController;
+// Disabled for now — PS logic refactor in progress (kept for later).
+// use App\Http\Controllers\SalaryStandardController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\SupplementalAipController;
 use App\Http\Controllers\UserController;
@@ -351,37 +355,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'cc-typology.destroy',
     );
 
-    // position
-    Route::get('position', [PositionController::class, 'index'])->name('position.index');
-    Route::post('position', [PositionController::class, 'store'])->name('position.store');
-    Route::patch('position/{position}', [PositionController::class, 'update'])->name(
-        'position.update',
-    );
-    Route::delete('position/{position}', [PositionController::class, 'destroy'])->name(
-        'position.destroy',
-    );
-    Route::post('plantilla-position', [PlantillaPositionController::class, 'store'])->name(
-        'plantilla-position.store',
-    );
-    Route::patch('plantilla-position/{plantillaPosition}', [
-        PlantillaPositionController::class,
-        'update',
-    ])->name('plantilla-position.update');
-    Route::delete('plantilla-position/{plantillaPosition}', [
-        PlantillaPositionController::class,
-        'destroy',
-    ])->name('plantilla-position.destroy');
+    // position / plantilla-position (disabled for now — PS logic refactor in
+    // progress; kept for later)
+    // Route::get('position', [PositionController::class, 'index'])->name('position.index');
+    // Route::post('position', [PositionController::class, 'store'])->name('position.store');
+    // Route::patch('position/{position}', [PositionController::class, 'update'])->name(
+    //     'position.update',
+    // );
+    // Route::delete('position/{position}', [PositionController::class, 'destroy'])->name(
+    //     'position.destroy',
+    // );
+    // Route::post('plantilla-position', [PlantillaPositionController::class, 'store'])->name(
+    //     'plantilla-position.store',
+    // );
+    // Route::patch('plantilla-position/{plantillaPosition}', [
+    //     PlantillaPositionController::class,
+    //     'update',
+    // ])->name('plantilla-position.update');
+    // Route::delete('plantilla-position/{plantillaPosition}', [
+    //     PlantillaPositionController::class,
+    //     'destroy',
+    // ])->name('plantilla-position.destroy');
 
-    // ios
-    Route::get('ios', [IosController::class, 'index'])->name('ios.index');
-    Route::post('ios', [IosController::class, 'store'])->name('ios.store');
-    Route::patch('ios/{ios}', [IosController::class, 'update'])->name('ios.update');
-    Route::delete('ios/{ios}', [IosController::class, 'destroy'])->name('ios.destroy');
+    // ios (disabled for now — PS logic refactor in progress; kept for later)
+    // Route::get('ios', [IosController::class, 'index'])->name('ios.index');
+    // Route::post('ios', [IosController::class, 'store'])->name('ios.store');
+    // Route::patch('ios/{ios}', [IosController::class, 'update'])->name('ios.update');
+    // Route::delete('ios/{ios}', [IosController::class, 'destroy'])->name('ios.destroy');
 
-    // salary standard
-    Route::get('salary-standard', [SalaryStandardController::class, 'index'])->name(
-        'salary-standard.index',
-    );
+    // salary standard (disabled for now — PS logic refactor in progress; kept for later)
+    // Route::get('salary-standard', [SalaryStandardController::class, 'index'])->name(
+    //     'salary-standard.index',
+    // );
 
     // ps breakdown (disabled: controller gutted — PS amounts are now managed
     // manually through the funding sources dialog on PS Pool PPAs only)

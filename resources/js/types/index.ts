@@ -6,11 +6,6 @@ import type { InertiaLinkProps } from "@inertiajs/react";
 import type { LucideIcon } from "lucide-react";
 import type { Auth, User } from "./auth";
 
-export interface BreadcrumbItem {
-    title: string | null;
-    href: string | null;
-}
-
 export interface NavGroup {
     title: string;
     items: NavItem[];
