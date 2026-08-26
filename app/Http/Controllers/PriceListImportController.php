@@ -11,6 +11,7 @@ use App\Models\PpaFundingSource;
 use App\Models\Ppmp;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
+use App\Services\PpaFundingSourceTotalsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
@@ -92,8 +93,8 @@ class PriceListImportController extends Controller
         ]);
 
         Log::info(
-            'PriceListImport: received ' .
-                count($validated['items']) .
+            'PriceListImport: received '.
+                count($validated['items']).
                 ' items, validating',
         );
 
@@ -109,11 +110,12 @@ class PriceListImportController extends Controller
                     'ppmp_category_id' => $data['ppmp_category_id'],
                 ])->first();
 
-                if (!$junction) {
+                if (! $junction) {
                     $errors[] =
-                        'Row ' .
-                        ($i + 1) .
+                        'Row '.
+                        ($i + 1).
                         ': category/COA pair not found in database';
+
                     continue;
                 }
 
@@ -130,20 +132,19 @@ class PriceListImportController extends Controller
 
                 $created++;
             } catch (\Exception $e) {
-                $errors[] = 'Row ' . ($i + 1) . ': ' . $e->getMessage();
+                $errors[] = 'Row '.($i + 1).': '.$e->getMessage();
             }
         }
 
         Log::info(
-            "PriceListImport: created {$created}, errors " . count($errors),
+            "PriceListImport: created {$created}, errors ".count($errors),
         );
 
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             Inertia::flash('toast', [
                 'type' => 'error',
-                'message' =>
-                    "Partially imported {$created} items with " .
-                    count($errors) .
+                'message' => "Partially imported {$created} items with ".
+                    count($errors).
                     ' errors.',
             ]);
 
@@ -162,8 +163,10 @@ class PriceListImportController extends Controller
      * Import monthly quantities into the ppmps table for the selected
      * PPA, funding source, and fiscal year.
      */
-    public function importQuantities(Request $request)
-    {
+    public function importQuantities(
+        Request $request,
+        PpaFundingSourceTotalsService $totalsService,
+    ) {
         Gate::authorize('addPriceList', Ppmp::class);
 
         $months = [
@@ -205,11 +208,11 @@ class PriceListImportController extends Controller
         ]);
 
         Log::info(
-            'PriceListImport.quantities: received ' .
-                count($validated['rows']) .
-                ' rows for ppa ' .
-                $validated['ppa_id'] .
-                ' / funding source ' .
+            'PriceListImport.quantities: received '.
+                count($validated['rows']).
+                ' rows for ppa '.
+                $validated['ppa_id'].
+                ' / funding source '.
                 $validated['funding_source_id'],
         );
 
@@ -225,11 +228,10 @@ class PriceListImportController extends Controller
             })
             ->first();
 
-        if (!$bridge) {
+        if (! $bridge) {
             Inertia::flash('toast', [
                 'type' => 'error',
-                'message' =>
-                    'No funding source found for the selected PPA and fiscal year.',
+                'message' => 'No funding source found for the selected PPA and fiscal year.',
             ]);
 
             return redirect()->back();
@@ -247,58 +249,71 @@ class PriceListImportController extends Controller
         $skippedNoQty = 0;
         $errors = [];
 
-        foreach ($validated['rows'] as $i => $data) {
-            try {
-                $attributes = [];
-                $qtySum = 0;
+        // Suppress the PpmpObserver during the bulk write; totals are
+        // synced once for the whole batch below.
+        Ppmp::withoutEvents(function () use (
+            &$created,
+            &$updated,
+            &$skippedNoQty,
+            &$errors,
+            $validated,
+            $months,
+            $priceListItems,
+        ) {
+            foreach ($validated['rows'] as $i => $data) {
+                try {
+                    $attributes = [];
+                    $qtySum = 0;
 
-                foreach ($months as $month) {
-                    $qty = (int) round($data["{$month}_qty"] ?? 0);
-                    $attributes["{$month}_qty"] = $qty;
-                    $qtySum += $qty;
+                    foreach ($months as $month) {
+                        $qty = (int) round($data["{$month}_qty"] ?? 0);
+                        $attributes["{$month}_qty"] = $qty;
+                        $qtySum += $qty;
+                    }
+
+                    // Skip rows with no quantities at all
+                    if ($qtySum === 0) {
+                        $skippedNoQty++;
+
+                        continue;
+                    }
+
+                    $price =
+                        $priceListItems->get($data['ppmp_price_list_id'])
+                            ?->price ?? 0;
+
+                    foreach ($months as $month) {
+                        $qty = $attributes["{$month}_qty"];
+                        $attributes["{$month}_amount"] = $qty * (float) $price;
+                    }
+
+                    $ppmp = Ppmp::updateOrCreate(
+                        [
+                            'ppa_funding_source_id' => $bridge->id,
+                            'ppmp_price_list_id' => $data['ppmp_price_list_id'],
+                        ],
+                        $attributes,
+                    );
+
+                    $ppmp->wasRecentlyCreated ? $created++ : $updated++;
+                } catch (\Exception $e) {
+                    $errors[] = 'Row '.($i + 1).': '.$e->getMessage();
                 }
-
-                // Skip rows with no quantities at all
-                if ($qtySum === 0) {
-                    $skippedNoQty++;
-
-                    continue;
-                }
-
-                $price = $priceListItems->get($data['ppmp_price_list_id'])?->price ?? 0;
-
-                foreach ($months as $month) {
-                    $qty = $attributes["{$month}_qty"];
-                    $attributes["{$month}_amount"] = $qty * (float) $price;
-                }
-
-                $ppmp = Ppmp::updateOrCreate(
-                    [
-                        'ppa_funding_source_id' => $bridge->id,
-                        'ppmp_price_list_id' => $data['ppmp_price_list_id'],
-                    ],
-                    $attributes,
-                );
-
-                $ppmp->wasRecentlyCreated ? $created++ : $updated++;
-            } catch (\Exception $e) {
-                $errors[] = 'Row ' . ($i + 1) . ': ' . $e->getMessage();
             }
-        }
+        });
 
-        $this->syncBridgeTotals($bridge);
+        $totalsService->syncOne($bridge);
 
         Log::info(
-            "PriceListImport.quantities: created {$created}, updated {$updated}, skipped {$skippedNoQty}, errors " .
+            "PriceListImport.quantities: created {$created}, updated {$updated}, skipped {$skippedNoQty}, errors ".
                 count($errors),
         );
 
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             Inertia::flash('toast', [
                 'type' => 'error',
-                'message' =>
-                    'Partially imported with ' .
-                    count($errors) .
+                'message' => 'Partially imported with '.
+                    count($errors).
                     ' errors.',
             ]);
 
@@ -317,59 +332,5 @@ class PriceListImportController extends Controller
         ]);
 
         return redirect()->back();
-    }
-
-    private function syncBridgeTotals(PpaFundingSource $bridge): void
-    {
-        $columnMap = [
-            // 'PS' => 'ps_amount',
-            'MOOE' => 'mooe_amount',
-            // 'FE' => 'fe_amount',
-            'CO' => 'co_amount',
-        ];
-
-        $totals = array_fill_keys(array_values($columnMap), 0);
-
-        $ppmps = Ppmp::where('ppa_funding_source_id', $bridge->id)
-            ->whereHas(
-                'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
-            )
-            ->with(
-                'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount:id,expense_class',
-            )
-            ->get();
-
-        foreach ($ppmps as $ppmp) {
-            $expenseClass =
-                $ppmp->ppmpPriceList?->chartOfAccountPpmpCategory
-                    ?->chartOfAccount?->expense_class;
-            $target = $columnMap[$expenseClass] ?? null;
-
-            if (!$target) {
-                continue;
-            }
-
-            $totals[$target] +=
-                (float) $ppmp->jan_amount +
-                (float) $ppmp->feb_amount +
-                (float) $ppmp->mar_amount +
-                (float) $ppmp->apr_amount +
-                (float) $ppmp->may_amount +
-                (float) $ppmp->jun_amount +
-                (float) $ppmp->jul_amount +
-                (float) $ppmp->aug_amount +
-                (float) $ppmp->sep_amount +
-                (float) $ppmp->oct_amount +
-                (float) $ppmp->nov_amount +
-                (float) $ppmp->dec_amount;
-        }
-
-        $bridge->update([
-            // 'ps_amount' => $totals['ps_amount'],
-            'mooe_amount' => $totals['mooe_amount'],
-            // 'fe_amount' => $totals['fe_amount'],
-            'co_amount' => $totals['co_amount'],
-            'updated_at' => now(),
-        ]);
     }
 }

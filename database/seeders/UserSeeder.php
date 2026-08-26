@@ -96,8 +96,6 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('12345678'), // set to 12345678
                 'role_id' => $role ? $role->id : null,
                 'office_id' => $office ? $office->id : null,
-                'position_id' => null,
-                'step' => null,
                 'status' => 'active',
             ]);
         }

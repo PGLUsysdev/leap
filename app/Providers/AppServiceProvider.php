@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Ppmp;
+use App\Observers\PpmpObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Ppmp::observe(PpmpObserver::class);
+
         $this->configureDefaults();
     }
 
@@ -36,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands(app()->isProduction());
 
         Password::defaults(
-            fn(): ?Password => app()->isProduction()
+            fn (): ?Password => app()->isProduction()
                 ? Password::min(8)
                     ->mixedCase()
                     ->letters()

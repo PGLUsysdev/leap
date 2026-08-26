@@ -20,7 +20,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
-import type { App, AuthData, FiscalYear, Office } from "@/types";
+import type { App, Auth, FiscalYear, Office } from "@/types";
 
 // import {
 //     Select,
@@ -33,10 +33,10 @@ import type { App, AuthData, FiscalYear, Office } from "@/types";
 interface PdfPreviewDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    data: App[];
+    data: App;
     fiscalYear: FiscalYear | null;
     offices: Office[];
-    auth: AuthData;
+    auth: Auth;
     canGenerateAppAll?: boolean;
 }
 
@@ -58,10 +58,10 @@ const styles = StyleSheet.create({
         textAlign: "center",
     },
     headerGroup: { flexDirection: "column", padding: 0 },
-    borderRight: { borderRightWidth: 1 },
-    borderBottom: { borderBottomWidth: 1 },
-    borderLeft: { borderLeftWidth: 1 },
-    borderTop: { borderTopWidth: 1 },
+    borderRight: { borderRightWidth: 0.5 },
+    borderBottom: { borderBottomWidth: 0.5 },
+    borderLeft: { borderLeftWidth: 0.5 },
+    borderTop: { borderTopWidth: 0.5 },
     row: { flexDirection: "row" },
     centered: { justifyContent: "center", alignItems: "center" },
     flex1: { flex: 1 },
@@ -120,7 +120,7 @@ const MyDocument = ({
     fiscalYear,
     officeLabel, // Added prop to make the header work
 }: {
-    data: App[];
+    data: App;
     fiscalYear: FiscalYear;
     officeLabel: string;
 }) => {
@@ -191,8 +191,8 @@ const MyDocument = ({
                         <View
                             style={{
                                 width: `${COLUMN_WIDTHS.slice(0, 5).reduce((a, b) => a + b, 0)}%`,
-                                borderLeftWidth: 1,
-                                borderRightWidth: 1,
+                                borderLeftWidth: 0.5,
+                                borderRightWidth: 0.5,
                                 justifyContent: "flex-end",
                             }}
                         >
@@ -236,13 +236,13 @@ const MyDocument = ({
                                 styles.headerGroup,
                                 {
                                     width: `${COLUMN_WIDTHS[5]}%`,
-                                    borderRightWidth: 1,
+                                    borderRightWidth: 0.5,
                                 },
                             ]}
                         >
                             <View
                                 style={{
-                                    borderBottomWidth: 1,
+                                    borderBottomWidth: 0.5,
                                     flex: 2,
                                     justifyContent: "flex-end",
                                 }}
@@ -279,13 +279,13 @@ const MyDocument = ({
                                 styles.headerGroup,
                                 {
                                     width: `${COLUMN_WIDTHS.slice(6, 10).reduce((a, b) => a + b, 0)}%`,
-                                    borderRightWidth: 1,
+                                    borderRightWidth: 0.5,
                                 },
                             ]}
                         >
                             <View
                                 style={{
-                                    borderBottomWidth: 1,
+                                    borderBottomWidth: 0.5,
                                     flex: 2,
                                     justifyContent: "flex-end",
                                 }}
@@ -307,7 +307,7 @@ const MyDocument = ({
                                 <View
                                     style={{
                                         width: "50%",
-                                        borderRightWidth: 1,
+                                        borderRightWidth: 0.5,
                                         justifyContent: "flex-end",
                                     }}
                                 >
@@ -347,7 +347,7 @@ const MyDocument = ({
                         <View
                             style={{
                                 width: `${COLUMN_WIDTHS.slice(10, 14).reduce((a, b) => a + b, 0)}%`,
-                                borderRightWidth: 1,
+                                borderRightWidth: 0.5,
                                 justifyContent: "flex-end",
                                 backgroundColor: "#f9f9f9",
                             }}
@@ -434,8 +434,8 @@ const MyDocument = ({
                         >
                             <View
                                 style={{
-                                    borderBottomWidth: 1,
-                                    borderRightWidth: 1,
+                                    borderBottomWidth: 0.5,
+                                    borderRightWidth: 0.5,
                                     justifyContent: "center",
                                     flex: 0.5,
                                 }}
@@ -956,7 +956,7 @@ const MyDocument = ({
 
                     {(() => {
                         const allCategoryTotals = Object.entries(data).map(
-                            ([categoryName, chartOfAccounts]: [string, any]) => {
+                            ([, chartOfAccounts]: [string, any]) => {
                                 const categoryItems = Object.values(
                                     chartOfAccounts,
                                 ).flat() as any[];

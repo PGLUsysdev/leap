@@ -47,8 +47,6 @@ class User extends Authenticatable implements PasskeyUser
         'status',
         'office_id',
         'role_id',
-        'position_id',
-        'step',
     ];
 
     /**
@@ -87,11 +85,6 @@ class User extends Authenticatable implements PasskeyUser
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'role_id');
-    }
-
-    public function position(): BelongsTo
-    {
-        return $this->belongsTo(Position::class);
     }
 
     //

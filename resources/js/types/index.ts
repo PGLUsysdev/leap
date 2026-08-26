@@ -382,8 +382,13 @@ export interface Role {
 
 // not a table in the database
 
-export interface App {
-    ppmp_price_list: PriceList;
+export interface AppItem {
+    ppmp_price_list: {
+        item_number?: string | null;
+        description?: string | null;
+        unit_of_measurement?: string | null;
+        price?: number | null;
+    };
 
     q1_qty: number;
     q2_qty: number;
@@ -397,6 +402,12 @@ export interface App {
     q4_amount: number;
     total_amount: number;
 }
+
+/**
+ * APP payload from FiscalYearController@index — nested grouping of
+ * PPMP category -> chart-of-account title -> aggregated items.
+ */
+export type App = Record<string, Record<string, AppItem[]>>;
 
 export interface PaginationLink {
     active: boolean;

@@ -52,6 +52,23 @@ class PpaFundingSource extends Model
         return $this->belongsTo(AipOutput::class, 'aip_output_id');
     }
 
+    /**
+     * The owning AIP entry, resolved through the output.
+     * (ppa_funding_sources.aip_entry_id was dropped; rows link to
+     * aip_outputs which in turn belong to aip_entries.)
+     */
+    public function aipEntry()
+    {
+        return $this->hasOneThrough(
+            AipEntry::class,
+            AipOutput::class,
+            'id', // FK on aip_outputs matched against aip_output_id below
+            'id', // PK on aip_entries
+            'aip_output_id', // local key on ppa_funding_sources
+            'aip_entry_id', // FK on aip_outputs
+        );
+    }
+
     public function ppmps(): HasMany
     {
         return $this->hasMany(Ppmp::class, 'ppa_funding_source_id');

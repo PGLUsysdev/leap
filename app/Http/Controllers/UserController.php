@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Office;
-use App\Models\Position;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +24,7 @@ class UserController extends Controller
         $user->loadMissing('role.permissionRoles.permission');
         $permissions = $user->role->permissionRoles->pluck('permission.name');
 
-        $usersQuery = User::with(['office', 'role', 'position.ios']);
+        $usersQuery = User::with(['office', 'role']);
 
         if (! $permissions->contains('user.show.all')) {
             $usersQuery->where('office_id', $user->office_id);
@@ -35,13 +34,6 @@ class UserController extends Controller
             'users' => $usersQuery->get(),
             'roles' => Role::all(['id', 'name']),
             'offices' => Office::all(['id', 'name', 'acronym', 'parent_id']),
-            'positions' => Position::with('ios:id,class,salary_grade')->get([
-                'id',
-                'item_number',
-                'ios_id',
-                'office_id',
-                'status',
-            ]),
             'can' => [
                 'editAll' => $permissions->contains('user.edit.all'),
                 'editOwn' => $permissions->contains('user.edit.own'),
@@ -125,55 +117,7 @@ class UserController extends Controller
             abort_unless($officeOk && $roleOk, 403);
         }
 
-        $oldPositionId = $user->position_id;
-
         $user->update($data);
-
-        $newPositionId = $user->position_id;
-
-        if ($oldPositionId !== $newPositionId) {
-            if ($oldPositionId) {
-                Position::where('id', $oldPositionId)->update([
-                    'status' => 'vacant',
-                ]);
-            }
-
-            if ($newPositionId) {
-                Position::where('id', $newPositionId)->update([
-                    'status' => 'occupied',
-                ]);
-            }
-        }
-
-        // Recalculate PS amounts if position changed
-        if ($oldPositionId !== $newPositionId) {
-            if ($oldPositionId) {
-                $oldPosition = Position::find($oldPositionId);
-                if ($oldPosition) {
-                    PsBreakdownController::recalculateOfficePsAmounts(
-                        $oldPosition->office_id,
-                    );
-                }
-            }
-            if ($newPositionId) {
-                $newPosition = Position::find($newPositionId);
-                if ($newPosition) {
-                    PsBreakdownController::recalculateOfficePsAmounts(
-                        $newPosition->office_id,
-                    );
-                }
-            }
-        }
-
-        // Also recalculate if step changed (same position, different step)
-        if (array_key_exists('step', $data) && $user->position_id) {
-            $pos = Position::find($user->position_id);
-            if ($pos) {
-                PsBreakdownController::recalculateOfficePsAmounts(
-                    $pos->office_id,
-                );
-            }
-        }
 
         return back()->with('status', 'User updated successfully.');
     }

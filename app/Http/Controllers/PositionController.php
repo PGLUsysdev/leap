@@ -96,12 +96,6 @@ class PositionController extends Controller
      */
     public function destroy(Position $position)
     {
-        // Unassign any users before deleting
-        $position->user()?->update([
-            'position_id' => null,
-            'step' => null,
-        ]);
-
         $officeId = $position->office_id;
         $position->delete();
 

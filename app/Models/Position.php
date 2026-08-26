@@ -6,7 +6,6 @@ use Database\Factories\PositionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Position extends Model
 {
@@ -21,11 +20,6 @@ class Position extends Model
         'is_funded',
         'status',
     ];
-
-    public function user(): HasOne
-    {
-        return $this->hasOne(User::class, 'position_id');
-    }
 
     public function ios(): BelongsTo
     {

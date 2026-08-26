@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DataTable from "@/components/base-ui-components/data-table";
 import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import type { Office, Position, Role, User } from "@/types";
+import type { Office, Role, User } from "@/types";
 import columns from "./columns/columns";
 import FormDialog from "./form-dialog";
 
@@ -9,7 +9,6 @@ interface UsersIndexProps {
     users: User[] | null;
     roles: Role[];
     offices: Office[];
-    positions: Position[];
     can?: {
         editAll: boolean;
         editOwn: boolean;
@@ -21,7 +20,7 @@ interface UsersIndexProps {
     };
 }
 
-export default function UsersIndex({ users, roles, offices, positions, can }: UsersIndexProps) {
+export default function UsersIndex({ users, roles, offices, can }: UsersIndexProps) {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [openFormDialog, setOpenFormDialog] = useState(false);
 
@@ -50,7 +49,6 @@ export default function UsersIndex({ users, roles, offices, positions, can }: Us
             <FormDialog
                 roles={roles}
                 offices={offices}
-                positions={positions}
                 editOfficeAll={can?.editOfficeAll ?? false}
                 editOfficeOwn={can?.editOfficeOwn ?? false}
                 editRoleAll={can?.editRoleAll ?? false}

@@ -269,12 +269,6 @@ class PpmpController extends Controller
             $monthQty => $roundedQuantity,
             $monthAmount => $roundedQuantity * $unitPrice,
         ]);
-
-        $this->updatePpaFundingSourceTotals(
-            $ppmp->ppaFundingSource,
-            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-                ->expense_class,
-        );
     }
 
     /**
@@ -300,51 +294,6 @@ class PpmpController extends Controller
     {
         Gate::authorize('deletePriceList', $ppmp);
 
-        $bridge = $ppmp->ppaFundingSource;
-        $expenseClass =
-            $ppmp->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
-                ->expense_class;
-
         $ppmp->delete();
-
-        $this->updatePpaFundingSourceTotals($bridge, $expenseClass);
-    }
-
-    private function updatePpaFundingSourceTotals(
-        PpaFundingSource $bridge,
-        $expenseClass,
-    ) {
-        $columnMap = [
-            'MOOE' => 'mooe_amount',
-            'CO' => 'co_amount',
-            // 'PS' => 'ps_amount',
-            // 'FE' => 'fe_amount',
-        ];
-
-        $targetColumn = $columnMap[$expenseClass] ?? null;
-
-        if (! $targetColumn) {
-            return;
-        }
-
-        // Sum every month for this specific Bridge Record
-        $totalAmount =
-            Ppmp::where('ppa_funding_source_id', $bridge->id)
-                ->whereHas(
-                    'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
-                    function ($query) use ($expenseClass) {
-                        $query->where('expense_class', $expenseClass);
-                    },
-                )
-                ->selectRaw(
-                    'SUM(jan_amount + feb_amount + mar_amount + apr_amount + may_amount + jun_amount + jul_amount + aug_amount + sep_amount + oct_amount + nov_amount + dec_amount) as total',
-                )
-                ->value('total') ?? 0;
-
-        // Update the bridge record directly
-        $bridge->update([
-            $targetColumn => $totalAmount,
-            'updated_at' => now(),
-        ]);
     }
 }

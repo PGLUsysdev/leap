@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { router } from "@inertiajs/react";
 import { useEffect, useState } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/base-ui-components/ui/button";
 import {
@@ -18,7 +18,6 @@ import {
     FieldError,
     FieldContent,
 } from "@/components/base-ui-components/ui/field";
-import { Input } from "@/components/base-ui-components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import {
     Select,
@@ -28,20 +27,12 @@ import {
     SelectValue,
 } from "@/components/base-ui-components/ui/select";
 import { CommandSelect } from "@/components/command-select";
-import type { Office, Position, Role, User } from "@/types";
+import type { Office, Role, User } from "@/types";
 
 const formSchema = z.object({
     status: z.enum(["pending", "active", "inactive"]),
     role_id: z.string().optional(),
     office_id: z.string().optional(),
-    position_id: z.string().optional(),
-    step: z
-        .string()
-        .optional()
-        .refine(
-            (val) => !val || (Number(val) >= 1 && Number(val) <= 8),
-            "Step must be between 1 and 8",
-        ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -52,7 +43,6 @@ interface FormDialogProps {
     data: User | null;
     roles: Role[];
     offices: Office[];
-    positions: Position[];
     editOfficeAll: boolean;
     editOfficeOwn: boolean;
     editRoleAll: boolean;
@@ -66,7 +56,6 @@ export default function FormDialog({
     data,
     roles,
     offices,
-    positions,
     editOfficeAll,
     editOfficeOwn,
     editRoleAll,
@@ -81,8 +70,6 @@ export default function FormDialog({
             status: "pending",
             role_id: "",
             office_id: "",
-            position_id: "",
-            step: "",
         },
     });
 
@@ -93,28 +80,15 @@ export default function FormDialog({
                 status: data.status as FormValues["status"],
                 role_id: String(data.role?.id ?? ""),
                 office_id: String(data.office_id ?? ""),
-                position_id: data.position_id ? String(data.position_id) : "",
-                step: data.step ? String(data.step) : "",
             });
         } else {
             form.reset({
                 status: "pending",
                 role_id: "",
                 office_id: "",
-                position_id: "",
-                step: "",
             });
         }
     }, [data, form]);
-
-    const watchedOfficeId = useWatch({
-        control: form.control,
-        name: "office_id",
-    });
-
-    const officePositions = watchedOfficeId
-        ? positions.filter((p) => p.office_id === Number(watchedOfficeId))
-        : positions;
 
     function canEditOffice() {
         if (editOfficeAll) {
@@ -151,8 +125,6 @@ export default function FormDialog({
             status: values.status,
             role_id: values.role_id ? Number(values.role_id) : null,
             office_id: values.office_id ? Number(values.office_id) : null,
-            position_id: values.position_id ? Number(values.position_id) : null,
-            step: values.step ? Number(values.step) : null,
         };
 
         router.patch(`/users/${data.id}`, payload, {
@@ -300,77 +272,6 @@ export default function FormDialog({
                                                 heading="Offices"
                                                 showClear={false}
                                                 disabled
-                                            />
-                                            {fieldState.invalid && (
-                                                <FieldError errors={[fieldState.error]} />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
-
-                            <Controller
-                                name="position_id"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>
-                                                Assigned Position
-                                            </FieldLabel>
-                                            <Select
-                                                value={field.value}
-                                                onValueChange={field.onChange}
-                                            >
-                                                <SelectTrigger
-                                                    id={field.name}
-                                                    aria-invalid={fieldState.invalid}
-                                                >
-                                                    <SelectValue placeholder="Select position" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="">None</SelectItem>
-                                                    {officePositions
-                                                        .filter(
-                                                            (p) =>
-                                                                p.status !== "occupied" ||
-                                                                p.id === data?.position_id,
-                                                        )
-                                                        .map((position) => (
-                                                            <SelectItem
-                                                                key={position.id}
-                                                                value={String(position.id)}
-                                                            >
-                                                                {position.item_number}
-                                                                {position.ios
-                                                                    ? ` — ${position.ios.class} (SG ${position.ios.salary_grade})`
-                                                                    : ""}
-                                                            </SelectItem>
-                                                        ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {fieldState.invalid && (
-                                                <FieldError errors={[fieldState.error]} />
-                                            )}
-                                        </FieldContent>
-                                    </Field>
-                                )}
-                            />
-
-                            <Controller
-                                name="step"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field data-invalid={fieldState.invalid}>
-                                        <FieldContent>
-                                            <FieldLabel htmlFor={field.name}>Step</FieldLabel>
-                                            <Input
-                                                id={field.name}
-                                                {...field}
-                                                type="number"
-                                                min={1}
-                                                max={8}
-                                                placeholder="1 – 8"
                                             />
                                             {fieldState.invalid && (
                                                 <FieldError errors={[fieldState.error]} />

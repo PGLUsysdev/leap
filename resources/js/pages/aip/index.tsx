@@ -8,11 +8,11 @@ import FormDialog from "@/pages/aip/form-dialog";
 import { index } from "@/routes/ppmp-summaries";
 import type { FiscalYear, FiscalYearStatus, App, Office, SharedData } from "@/types";
 import columns from "./columns/columns";
-import PdfPreviewDialog from "./pdf-preview-dialog";
+import PdfPreviewDialog from "./pdf-render/pdf-preview-dialog";
 
 interface AipProps {
     fiscalYears: FiscalYear[];
-    app: App[];
+    app: App | null;
     offices: Office[];
     can?: {
         add: boolean;
@@ -31,11 +31,13 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
     const [openFormDialog, setOpenFormDialog] = useState(false);
     const [openPdfPreviewDialog, setOpenPdfPreviewDialog] = useState(false);
     const [selectedYear, setSelectedYear] = useState<FiscalYear | null>(null);
+    const [isAppReloading, setIsAppReloading] = useState(false);
 
     const params = new URLSearchParams(window.location.search);
     const [selectedOfficeId, setSelectedOfficeId] = useState<string>(
         params.get("selected_office_id") ?? "",
     );
+    const [appOfficeId, setAppOfficeId] = useState<string>("");
 
     const canOpenAip = can?.showSummaryOwn || can?.showSummaryAll;
     const isOpenAipDisabled = can?.showSummaryAll && !selectedOfficeId;
@@ -68,19 +70,41 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
         setOpenFormDialog(true);
     }
 
-    function handleGeneratePdf(selectedYearId: FiscalYear) {
-        setSelectedYear(selectedYearId);
+    function handleGeneratePdf(year: FiscalYear) {
+        setSelectedYear(year);
 
-        const data: Record<string, any> = { fiscal_year_id: selectedYearId.id };
+        // Default office scope: consolidated for all-scope users, own office otherwise.
+        const defaultOfficeId = can?.generateAppAll ? "all" : String(auth.user.office_id ?? "");
+        setAppOfficeId(defaultOfficeId);
+
+        const data: Record<string, any> = { fiscal_year_id: year.id };
 
         if (!can?.generateAppAll && can?.generateAppOwn) {
             data.office_id = auth.user.office_id;
         }
 
+        setIsAppReloading(true);
+
         router.reload({
             only: ["app"],
             data,
             onSuccess: () => setOpenPdfPreviewDialog(true),
+            onFinish: () => setIsAppReloading(false),
+        });
+    }
+
+    function handleAppOfficeChange(officeId: string) {
+        if (!selectedYear) {
+            return;
+        }
+
+        setAppOfficeId(officeId);
+        setIsAppReloading(true);
+
+        router.reload({
+            only: ["app"],
+            data: { fiscal_year_id: selectedYear.id, office_id: officeId },
+            onFinish: () => setIsAppReloading(false),
         });
     }
 
@@ -156,6 +180,9 @@ export default function AipPage({ fiscalYears, app, offices = [], can }: AipProp
                 offices={offices}
                 auth={auth}
                 canGenerateAppAll={can?.generateAppAll}
+                selectedOfficeId={appOfficeId}
+                onOfficeChange={handleAppOfficeChange}
+                isReloading={isAppReloading}
             />
         </>
     );

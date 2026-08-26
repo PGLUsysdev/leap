@@ -1,4 +1,4 @@
-import type { Office, Role, Position } from "./index";
+import type { Office, Role } from "./index";
 
 export type User = {
     id: number;
@@ -12,15 +12,12 @@ export type User = {
     [key: string]: unknown;
 
     status?: string;
-    step: number | null;
 
     office?: Office;
     role?: Role;
-    position?: Position;
 
     office_id: number | null;
     role_id: number | null;
-    position_id: number | null;
 };
 
 export type Auth = {
