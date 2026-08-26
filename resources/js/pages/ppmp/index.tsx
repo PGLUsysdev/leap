@@ -1,7 +1,6 @@
 // resources\js\pages\ppmp\index.tsx
 
 import { router } from "@inertiajs/react";
-import { PDFViewer } from "@react-pdf/renderer";
 import { Decimal } from "decimal.js";
 import { Check, Filter, FileUp } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -30,6 +29,8 @@ import {
 import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import { Separator } from "@/components/base-ui-components/ui/separator";
 import { Spinner } from "@/components/base-ui-components/ui/spinner";
+import { PdfPreviewPane } from "@/lib/pdf/pdf-preview-pane";
+import { usePdfPreview } from "@/lib/pdf/use-pdf-preview";
 import { formatCurrency } from "@/lib/utils";
 import FormDialog from "@/pages/ppmp/form-dialog";
 import { index, summary } from "@/routes/aip";
@@ -46,8 +47,6 @@ import type {
     // SharedData,
 } from "@/types";
 import ppmpColumns from "./columns/ppmp-columns";
-import { PpmpSummaryDocument } from "./pdf-render/coa-summary/document";
-import { PpmpDocument } from "./pdf-render/ppmp/document";
 // import { router, usePage } from '@inertiajs/react';
 // import { Decimal } from 'decimal.js';
 // import { DeleteDialog } from '@/components/delete-dialog';
@@ -152,6 +151,23 @@ export default function PpmpPage({
     const [isDeleting, setIsDeleting] = useState(false);
     const [openPdfPreview, setOpenPdfPreview] = useState(false);
     const [openCoaPdfPreview, setOpenCoaPdfPreview] = useState(false);
+
+    // Shared, worker-rendered PDF payloads; only generated while open so
+    // closing a preview releases the blob URL instead of regenerating.
+    const pdfPayload = useMemo(
+        () => ({ aipEntry, fiscalYear, groupedData: ppmpItems, ppaFundingSource }),
+        [aipEntry, fiscalYear, ppaFundingSource, ppmpItems],
+    );
+
+    const { url: ppmpPdfUrl, status: ppmpPdfStatus } = usePdfPreview(
+        "ppmp",
+        openPdfPreview ? pdfPayload : null,
+    );
+
+    const { url: coaPdfUrl, status: coaPdfStatus } = usePdfPreview(
+        "ppmp-coa-summary",
+        openCoaPdfPreview ? pdfPayload : null,
+    );
 
     // View filter: show all items, or only MOOE/CO expense-class items
     const [expenseClassFilter, setExpenseClassFilter] = useState<"ALL" | "MOOE" | "CO">("ALL");
@@ -848,6 +864,7 @@ export default function PpmpPage({
                     </div>
 
                     <div
+                        className="relative"
                         style={{
                             width: "100vw",
                             height: "94vh",
@@ -855,20 +872,12 @@ export default function PpmpPage({
                             padding: 0,
                         }}
                     >
-                        <PDFViewer
-                            style={{
-                                width: "100%",
-                                height: "100%",
-                                border: "none",
-                            }}
-                        >
-                            <PpmpDocument
-                                aipEntry={aipEntry}
-                                fiscalYear={fiscalYear}
-                                groupedData={ppmpItems}
-                                ppaFundingSource={ppaFundingSource}
-                            ></PpmpDocument>
-                        </PDFViewer>
+                        <PdfPreviewPane
+                            url={ppmpPdfUrl}
+                            status={ppmpPdfStatus}
+                            busy={ppmpPdfStatus === "generating"}
+                            title="PPMP Preview"
+                        />
                     </div>
                 </DialogContent>
             </Dialog>
@@ -882,6 +891,7 @@ export default function PpmpPage({
                     </div>
 
                     <div
+                        className="relative"
                         style={{
                             width: "100vw",
                             height: "94vh",
@@ -889,20 +899,12 @@ export default function PpmpPage({
                             padding: 0,
                         }}
                     >
-                        <PDFViewer
-                            style={{
-                                width: "100%",
-                                height: "100%",
-                                border: "none",
-                            }}
-                        >
-                            <PpmpSummaryDocument
-                                aipEntry={aipEntry}
-                                fiscalYear={fiscalYear}
-                                groupedData={ppmpItems}
-                                ppaFundingSource={ppaFundingSource}
-                            ></PpmpSummaryDocument>
-                        </PDFViewer>
+                        <PdfPreviewPane
+                            url={coaPdfUrl}
+                            status={coaPdfStatus}
+                            busy={coaPdfStatus === "generating"}
+                            title="PPMP by COA Preview"
+                        />
                     </div>
                 </DialogContent>
             </Dialog>

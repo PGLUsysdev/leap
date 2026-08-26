@@ -1,6 +1,6 @@
 // resources\js\pages\aip\pdf-render\pdf-preview-dialog.tsx
 
-import { PDFViewer } from "@react-pdf/renderer";
+import { useMemo } from "react";
 import {
     Command,
     CommandEmpty,
@@ -17,9 +17,9 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Spinner } from "@/components/ui/spinner";
+import { PdfPreviewPane } from "@/lib/pdf/pdf-preview-pane";
+import { usePdfPreview } from "@/lib/pdf/use-pdf-preview";
 import type { App, Auth, FiscalYear, Office } from "@/types";
-import { AppDocument } from "./document";
 
 interface PdfPreviewDialogProps {
     open: boolean;
@@ -67,9 +67,23 @@ export default function PdfPreviewDialog({
     onOfficeChange,
     isReloading = false,
 }: PdfPreviewDialogProps) {
-    if (!fiscalYear || !data) {
+    const officeLabel = useMemo(
+        () => getOfficeLabel(auth, offices, canGenerateAppAll, selectedOfficeId),
+        [auth, offices, canGenerateAppAll, selectedOfficeId],
+    );
+
+    const payload = useMemo(
+        () => (data && fiscalYear ? { data, fiscalYear, officeLabel } : null),
+        [data, fiscalYear, officeLabel],
+    );
+
+    const { url, status } = usePdfPreview("app", payload);
+
+    if (!open || !fiscalYear || !data) {
         return null;
     }
+
+    const busy = isReloading || status === "generating";
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,25 +144,13 @@ export default function PdfPreviewDialog({
                         </div>
                     )}
 
-                    <div className="relative flex-1 bg-gray-500">
-                        {isReloading && (
-                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 backdrop-blur-[1px]">
-                                <Spinner className="h-10 w-10 animate-spin text-white" />
-                            </div>
-                        )}
-
-                        <PDFViewer width="100%" height="100%" style={{ border: "none" }}>
-                            <AppDocument
-                                data={data}
-                                fiscalYear={fiscalYear}
-                                officeLabel={getOfficeLabel(
-                                    auth,
-                                    offices,
-                                    canGenerateAppAll,
-                                    selectedOfficeId,
-                                )}
-                            />
-                        </PDFViewer>
+                    <div className="relative flex-1">
+                        <PdfPreviewPane
+                            url={url}
+                            status={status}
+                            busy={busy}
+                            title={`APP Preview ${fiscalYear.year}`}
+                        />
                     </div>
                 </div>
             </DialogContent>
