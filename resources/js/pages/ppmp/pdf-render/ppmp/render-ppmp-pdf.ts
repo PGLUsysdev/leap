@@ -10,6 +10,10 @@ export interface PpmpPdfPayload {
     fiscalYear?: FiscalYear;
     groupedData?: any[];
     ppaFundingSource?: PpaFundingSource;
+    signatories: {
+        deptHead: string;
+        deptHeadPosition: string;
+    };
 }
 
 /**

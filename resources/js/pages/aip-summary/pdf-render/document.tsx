@@ -47,23 +47,30 @@ const styles = StyleSheet.create({
     },
     signatureBox: {
         width: "23%",
-        textAlign: "center",
+        textAlign: "left",
     },
     signatureLabel: {
         fontSize: 6,
-        color: "#475569",
         marginBottom: 20,
+        textAlign: "left",
+        fontWeight: "bold",
+    },
+    signatureName: {
+        fontSize: 7,
+        fontWeight: "bold",
+        textAlign: "left",
+        textDecoration: "underline",
+        marginBottom: 2,
     },
     signatureNameLine: {
         borderBottomWidth: 0.5,
-        borderBottomColor: "#0F172A",
         paddingBottom: 2,
         marginBottom: 2,
+        minHeight: 9,
     },
     signatureTitle: {
-        fontSize: 6,
-        color: "#334155",
-        textTransform: "uppercase",
+        fontSize: 5,
+        textAlign: "left",
     },
     footer: {
         position: "absolute",
@@ -82,6 +89,16 @@ interface AipSummaryDocumentProps {
     fiscalYear: FiscalYear;
     officeName: string;
     currentScope?: { scope: string; supplemental_aip_id: number | null };
+    signatories: {
+        preparedName: string;
+        preparedPosition: string;
+        reviewedName: string;
+        reviewedPosition: string;
+        approvedName: string;
+        approvedPosition: string;
+        conformeName: string;
+        conformePosition: string;
+    };
 }
 
 // Row style resolver for AIP Summary
@@ -246,6 +263,7 @@ export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
     fiscalYear,
     officeName,
     currentScope,
+    signatories,
 }) => {
     const columns = getAipSummaryColumnDefs();
     const rows = prepareAipSummaryRows(aipEntries);
@@ -293,30 +311,67 @@ export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
                     grandTotalComponent={renderAipGrandTotal}
                 />
 
-                {/* Signature Block */}
+                {/* Signature Block — 4 editable signatories + positions, left-aligned, name bold underlined (full-width line when empty) */}
                 <View style={styles.signatureSection} wrap={false}>
                     <View style={styles.signatureBox}>
                         <Text style={styles.signatureLabel}>Prepared by:</Text>
-                        <View style={styles.signatureNameLine} />
+                        {signatories.preparedName.trim() ? (
+                            <Text style={styles.signatureName}>
+                                {signatories.preparedName.trim()}
+                            </Text>
+                        ) : (
+                            <View style={styles.signatureNameLine}>
+                                <Text style={{ fontSize: 7 }}> </Text>
+                            </View>
+                        )}
                         <Text style={styles.signatureTitle}>
-                            Provincial Planning and Development Coordinator
+                            {signatories.preparedPosition.trim() ||
+                                "Provincial Planning & Dev't Coordinator"}
                         </Text>
                     </View>
                     <View style={styles.signatureBox}>
                         <Text style={styles.signatureLabel}>Reviewed by:</Text>
-                        <View style={styles.signatureNameLine} />
-                        <Text style={styles.signatureTitle}>Provincial Budget Officer</Text>
+                        {signatories.reviewedName.trim() ? (
+                            <Text style={styles.signatureName}>
+                                {signatories.reviewedName.trim()}
+                            </Text>
+                        ) : (
+                            <View style={styles.signatureNameLine}>
+                                <Text style={{ fontSize: 7 }}> </Text>
+                            </View>
+                        )}
+                        <Text style={styles.signatureTitle}>
+                            {signatories.reviewedPosition.trim() || "OIC-Provincial Budget Officer"}
+                        </Text>
                     </View>
                     <View style={styles.signatureBox}>
                         <Text style={styles.signatureLabel}>Approved by:</Text>
-                        <View style={styles.signatureNameLine} />
-                        <Text style={styles.signatureTitle}>Provincial Governor</Text>
+                        {signatories.approvedName.trim() ? (
+                            <Text style={styles.signatureName}>
+                                {signatories.approvedName.trim()}
+                            </Text>
+                        ) : (
+                            <View style={styles.signatureNameLine}>
+                                <Text style={{ fontSize: 7 }}> </Text>
+                            </View>
+                        )}
+                        <Text style={styles.signatureTitle}>
+                            {signatories.approvedPosition.trim() || "Provincial Governor"}
+                        </Text>
                     </View>
                     <View style={styles.signatureBox}>
                         <Text style={styles.signatureLabel}>Conforme:</Text>
-                        <View style={styles.signatureNameLine} />
+                        {signatories.conformeName.trim() ? (
+                            <Text style={styles.signatureName}>
+                                {signatories.conformeName.trim()}
+                            </Text>
+                        ) : (
+                            <View style={styles.signatureNameLine}>
+                                <Text style={{ fontSize: 7 }}> </Text>
+                            </View>
+                        )}
                         <Text style={styles.signatureTitle}>
-                            Unit Head, {officeName.toUpperCase()}
+                            {signatories.conformePosition.trim() || "-"}
                         </Text>
                     </View>
                 </View>

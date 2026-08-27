@@ -103,9 +103,15 @@ interface AppDocumentProps {
     data: App;
     fiscalYear: FiscalYear;
     officeLabel: string;
+    signatories: {
+        deptHead: string;
+        deptHeadPosition: string;
+        gov: string;
+        govPosition: string;
+    };
 }
 
-export function AppDocument({ data, fiscalYear, officeLabel }: AppDocumentProps) {
+export function AppDocument({ data, fiscalYear, officeLabel, signatories }: AppDocumentProps) {
     const columns = getAppColumnDefs();
     const rows = prepareAppRows(data);
     const grandTotal = getGrandTotalAmount(data);
@@ -148,13 +154,21 @@ export function AppDocument({ data, fiscalYear, officeLabel }: AppDocumentProps)
 
                     <View style={styles.signatureWrapper}>
                         <View style={styles.sigBlock}>
-                            <Text style={styles.sigName}>____________________________</Text>
-                            <Text style={styles.sigTitle}>Head of Office / Department Head</Text>
+                            <Text style={styles.sigName}>
+                                {signatories.deptHead.trim() || "____________________________"}
+                            </Text>
+                            <Text style={styles.sigTitle}>
+                                {signatories.deptHeadPosition.trim() || "Department Head"}
+                            </Text>
                         </View>
 
                         <View style={styles.sigBlock}>
-                            <Text style={styles.sigName}>____________________________</Text>
-                            <Text style={styles.sigTitle}>Provincial Governor</Text>
+                            <Text style={styles.sigName}>
+                                {signatories.gov.trim() || "____________________________"}
+                            </Text>
+                            <Text style={styles.sigTitle}>
+                                {signatories.govPosition.trim() || "Provincial Governor"}
+                            </Text>
                         </View>
                     </View>
                 </View>

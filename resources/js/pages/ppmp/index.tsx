@@ -3,7 +3,7 @@
 import { router } from "@inertiajs/react";
 import { Decimal } from "decimal.js";
 import { Check, Filter, FileUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DataTable from "@/components/base-ui-components/data-table";
 import DeleteDialog from "@/components/base-ui-components/delete-dialog";
 import { Badge } from "@/components/base-ui-components/ui/badge";
@@ -26,6 +26,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/base-ui-components/ui/dropdown-menu";
+import { Field, FieldGroup, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import { Separator } from "@/components/base-ui-components/ui/separator";
 import { Spinner } from "@/components/base-ui-components/ui/spinner";
@@ -152,11 +154,43 @@ export default function PpmpPage({
     const [openPdfPreview, setOpenPdfPreview] = useState(false);
     const [openCoaPdfPreview, setOpenCoaPdfPreview] = useState(false);
 
+    // Department Head signatory — left, name bold underlined, position regular as-is
+    const [deptHead, setDeptHead] = useState("");
+    const [deptHeadPosition, setDeptHeadPosition] = useState("Department Head");
+    const [debouncedSignatories, setDebouncedSignatories] = useState({
+        deptHead: "",
+        deptHeadPosition: "Department Head",
+    });
+
+    useEffect(() => {
+        const id = setTimeout(() => {
+            setDebouncedSignatories({ deptHead, deptHeadPosition });
+        }, 300);
+
+        return () => clearTimeout(id);
+    }, [deptHead, deptHeadPosition]);
+
+    function handlePpmpOpenChange(nextOpen: boolean) {
+        if (!nextOpen) {
+            setDeptHead("");
+            setDeptHeadPosition("Department Head");
+            setDebouncedSignatories({ deptHead: "", deptHeadPosition: "Department Head" });
+        }
+
+        setOpenPdfPreview(nextOpen);
+    }
+
     // Shared, worker-rendered PDF payloads; only generated while open so
     // closing a preview releases the blob URL instead of regenerating.
     const pdfPayload = useMemo(
-        () => ({ aipEntry, fiscalYear, groupedData: ppmpItems, ppaFundingSource }),
-        [aipEntry, fiscalYear, ppaFundingSource, ppmpItems],
+        () => ({
+            aipEntry,
+            fiscalYear,
+            groupedData: ppmpItems,
+            ppaFundingSource,
+            signatories: debouncedSignatories,
+        }),
+        [aipEntry, fiscalYear, ppaFundingSource, ppmpItems, debouncedSignatories],
     );
 
     const { url: ppmpPdfUrl, status: ppmpPdfStatus } = usePdfPreview(
@@ -855,29 +889,46 @@ export default function PpmpPage({
                 handleDelete={handleDelete}
             />
 
-            <Dialog open={openPdfPreview} onOpenChange={setOpenPdfPreview}>
-                <DialogContent className="fixed! inset-0! h-screen! w-screen! max-w-none! translate-x-0! translate-y-0! gap-0 rounded-none! p-0">
-                    <div className="p-4">
-                        <DialogHeader>
-                            <DialogTitle>PPMP Preview</DialogTitle>
-                        </DialogHeader>
-                    </div>
+            <Dialog open={openPdfPreview} onOpenChange={handlePpmpOpenChange}>
+                <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
+                    <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b p-4">
+                        <DialogTitle>PPMP Preview</DialogTitle>
+                    </DialogHeader>
 
-                    <div
-                        className="relative"
-                        style={{
-                            width: "100vw",
-                            height: "94vh",
-                            margin: 0,
-                            padding: 0,
-                        }}
-                    >
-                        <PdfPreviewPane
-                            url={ppmpPdfUrl}
-                            status={ppmpPdfStatus}
-                            busy={ppmpPdfStatus === "generating"}
-                            title="PPMP Preview"
-                        />
+                    <div className="flex flex-1 overflow-hidden">
+                        <div className="flex w-[340px] shrink-0 flex-col gap-4 overflow-auto border-r p-4">
+                            <FieldGroup>
+                                <Field>
+                                    <FieldLabel htmlFor="ppmp-sig-dept-head">Department Head — Name</FieldLabel>
+                                    <Input
+                                        id="ppmp-sig-dept-head"
+                                        placeholder="Enter department head name"
+                                        value={deptHead}
+                                        onChange={(e) => setDeptHead(e.target.value)}
+                                    />
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="ppmp-sig-dept-head-position">
+                                        Department Head — Position
+                                    </FieldLabel>
+                                    <Input
+                                        id="ppmp-sig-dept-head-position"
+                                        placeholder="Department Head"
+                                        value={deptHeadPosition}
+                                        onChange={(e) => setDeptHeadPosition(e.target.value)}
+                                    />
+                                </Field>
+                            </FieldGroup>
+                        </div>
+
+                        <div className="relative flex-1 bg-[#3c3c3c]">
+                            <PdfPreviewPane
+                                url={ppmpPdfUrl}
+                                status={ppmpPdfStatus}
+                                busy={ppmpPdfStatus === "generating"}
+                                title="PPMP Preview"
+                            />
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

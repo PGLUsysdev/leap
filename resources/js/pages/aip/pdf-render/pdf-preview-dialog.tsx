@@ -1,6 +1,9 @@
 // resources\js\pages\aip\pdf-render\pdf-preview-dialog.tsx
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Field, FieldGroup, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Input } from "@/components/base-ui-components/ui/input";
+import { Separator } from "@/components/base-ui-components/ui/separator";
 import {
     Command,
     CommandEmpty,
@@ -67,14 +70,53 @@ export default function PdfPreviewDialog({
     onOfficeChange,
     isReloading = false,
 }: PdfPreviewDialogProps) {
+    const [deptHead, setDeptHead] = useState("");
+    const [deptHeadPosition, setDeptHeadPosition] = useState("Department Head");
+    const [gov, setGov] = useState("");
+    const [govPosition, setGovPosition] = useState("Provincial Governor");
+    const [debouncedSignatories, setDebouncedSignatories] = useState({
+        deptHead: "",
+        deptHeadPosition: "Department Head",
+        gov: "",
+        govPosition: "Provincial Governor",
+    });
+
+    useEffect(() => {
+        const id = setTimeout(() => {
+            setDebouncedSignatories({ deptHead, deptHeadPosition, gov, govPosition });
+        }, 300);
+
+        return () => clearTimeout(id);
+    }, [deptHead, deptHeadPosition, gov, govPosition]);
+
+    function handleOpenChange(nextOpen: boolean) {
+        if (!nextOpen) {
+            setDeptHead("");
+            setDeptHeadPosition("Department Head");
+            setGov("");
+            setGovPosition("Provincial Governor");
+            setDebouncedSignatories({
+                deptHead: "",
+                deptHeadPosition: "Department Head",
+                gov: "",
+                govPosition: "Provincial Governor",
+            });
+        }
+
+        onOpenChange(nextOpen);
+    }
+
     const officeLabel = useMemo(
         () => getOfficeLabel(auth, offices, canGenerateAppAll, selectedOfficeId),
         [auth, offices, canGenerateAppAll, selectedOfficeId],
     );
 
     const payload = useMemo(
-        () => (data && fiscalYear ? { data, fiscalYear, officeLabel } : null),
-        [data, fiscalYear, officeLabel],
+        () =>
+            data && fiscalYear
+                ? { data, fiscalYear, officeLabel, signatories: debouncedSignatories }
+                : null,
+        [data, fiscalYear, officeLabel, debouncedSignatories],
     );
 
     const { url, status } = usePdfPreview("app", payload);
@@ -86,7 +128,7 @@ export default function PdfPreviewDialog({
     const busy = isReloading || status === "generating";
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="flex h-[100vh] flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
                 <DialogHeader className="flex flex-row items-center justify-between space-y-0 border-b p-4">
                     <DialogTitle>APP Preview - {fiscalYear.year}</DialogTitle>
@@ -95,54 +137,88 @@ export default function PdfPreviewDialog({
                 </DialogHeader>
 
                 <div className="flex flex-1 overflow-hidden">
-                    {canGenerateAppAll && (
-                        <div className="p-4">
-                            <Command className="max-w-md rounded-lg border">
-                                <CommandInput placeholder="Type a command or search..." />
+                    <div className="flex w-[340px] shrink-0 flex-col gap-4 overflow-auto border-r p-4">
+                        <Command className="rounded-lg border">
+                            <CommandInput placeholder="Type a command or search..." />
 
-                                <CommandList className="max-h-none">
-                                    <CommandEmpty>No results found.</CommandEmpty>
+                            <CommandList className="max-h-none">
+                                <CommandEmpty>No results found.</CommandEmpty>
 
-                                    <CommandGroup heading="Offices">
+                                <CommandGroup heading="Offices">
+                                    <CommandItem
+                                        value="all"
+                                        className="flex"
+                                        onSelect={() => onOfficeChange("all")}
+                                        data-checked={selectedOfficeId === "all"}
+                                    >
+                                        Consolidated (Whole PGLU)
+                                    </CommandItem>
+
+                                    <CommandSeparator />
+
+                                    {offices.map((office) => (
                                         <CommandItem
-                                            value="all"
-                                            className="flex"
-                                            onSelect={() => onOfficeChange("all")}
-                                            data-checked={selectedOfficeId === "all"}
+                                            key={office.id}
+                                            value={`${office.acronym} ${office.name}`}
+                                            className="flex items-start"
+                                            onSelect={() => onOfficeChange(office.id.toString())}
+                                            data-checked={selectedOfficeId === office.id.toString()}
                                         >
-                                            Consolidated (Whole PGLU)
+                                            <div className="grid w-full grid-cols-3">
+                                                <span className="col-span-1">{office.acronym}</span>
+
+                                                <span className="col-span-2">{office.name}</span>
+                                            </div>
                                         </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
 
-                                        <CommandSeparator />
+                        <Separator />
 
-                                        {offices.map((office) => (
-                                            <CommandItem
-                                                key={office.id}
-                                                value={`${office.acronym} ${office.name}`}
-                                                className="flex items-start"
-                                                onSelect={() =>
-                                                    onOfficeChange(office.id.toString())
-                                                }
-                                                data-checked={
-                                                    selectedOfficeId === office.id.toString()
-                                                }
-                                            >
-                                                <div className="grid w-full grid-cols-3">
-                                                    <span className="col-span-1">
-                                                        {office.acronym}
-                                                    </span>
+                        <FieldGroup>
+                            <Field>
+                                <FieldLabel htmlFor="sig-dept-head">Department Head — Name</FieldLabel>
+                                <Input
+                                    id="sig-dept-head"
+                                    placeholder="Enter department head name"
+                                    value={deptHead}
+                                    onChange={(e) => setDeptHead(e.target.value)}
+                                />
+                            </Field>
 
-                                                    <span className="col-span-2">
-                                                        {office.name}
-                                                    </span>
-                                                </div>
-                                            </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </div>
-                    )}
+                            <Field>
+                                <FieldLabel htmlFor="sig-dept-head-position">Department Head — Position</FieldLabel>
+                                <Input
+                                    id="sig-dept-head-position"
+                                    placeholder="Department Head"
+                                    value={deptHeadPosition}
+                                    onChange={(e) => setDeptHeadPosition(e.target.value)}
+                                />
+                            </Field>
+
+                            <Field>
+                                <FieldLabel htmlFor="sig-gov">Provincial Governor — Name</FieldLabel>
+                                <Input
+                                    id="sig-gov"
+                                    placeholder="Enter provincial governor name"
+                                    value={gov}
+                                    onChange={(e) => setGov(e.target.value)}
+                                />
+                            </Field>
+
+                            <Field>
+                                <FieldLabel htmlFor="sig-gov-position">Provincial Governor — Position</FieldLabel>
+                                <Input
+                                    id="sig-gov-position"
+                                    placeholder="Provincial Governor"
+                                    value={govPosition}
+                                    onChange={(e) => setGovPosition(e.target.value)}
+                                />
+                            </Field>
+                        </FieldGroup>
+                    </div>
 
                     <div className="relative flex-1">
                         <PdfPreviewPane

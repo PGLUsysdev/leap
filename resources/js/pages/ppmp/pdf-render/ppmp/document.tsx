@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     signatureSection: {
         marginTop: 15,
         flexDirection: "row",
-        justifyContent: "space-between",
+        justifyContent: "center",
     },
     signatureBox: {
         width: "30%",
@@ -62,21 +62,27 @@ const styles = StyleSheet.create({
     },
     signatureLabel: {
         fontSize: 6,
-        color: "#475569",
         marginBottom: 20,
+        textAlign: "center",
     },
     signatureName: {
         fontSize: 7,
         fontWeight: "bold",
-        textTransform: "uppercase",
+        textAlign: "center",
+        textDecoration: "underline",
+        marginBottom: 2,
+    },
+    signatureNameLine: {
         borderBottomWidth: 0.5,
         borderBottomColor: "#0F172A",
         paddingBottom: 2,
+        marginBottom: 2,
+        minHeight: 9,
     },
     signatureTitle: {
         fontSize: 6,
-        color: "#334155",
         marginTop: 2,
+        textAlign: "center",
     },
     footer: {
         position: "absolute",
@@ -97,6 +103,10 @@ interface PpmpDocumentProps {
     groupedData?: any[]; // now optional – defaults to []
     officeName?: string;
     ppaFundingSource?: PpaFundingSource;
+    signatories: {
+        deptHead: string;
+        deptHeadPosition: string;
+    };
 }
 
 export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
@@ -104,6 +114,7 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
     fiscalYear,
     groupedData = [], // empty array fallback (no mock data)
     ppaFundingSource,
+    signatories,
 }) => {
     // console.log({ aipEntry, fiscalYear, groupedData, ppaFundingSource });
 
@@ -268,24 +279,18 @@ export const PpmpDocument: React.FC<PpmpDocumentProps> = ({
                 {/* Dynamic Table – now receives groupedData (empty by default) */}
                 <PpmpPdfTable columns={columns} rows={rows} />
 
-                {/* Signatures Block – unchanged */}
                 <View style={styles.signatureSection} wrap={false}>
                     <View style={styles.signatureBox}>
-                        <Text style={styles.signatureLabel}>Prepared By:</Text>
-                        <Text style={styles.signatureName}>JUAN DELA CRUZ</Text>
-                        <Text style={styles.signatureTitle}>PPMP Focal Person / End-User</Text>
-                    </View>
-
-                    <View style={styles.signatureBox}>
-                        <Text style={styles.signatureLabel}>Recommending Approval:</Text>
-                        <Text style={styles.signatureName}>MARIA SANTOS</Text>
-                        <Text style={styles.signatureTitle}>Budget Officer / Department Head</Text>
-                    </View>
-
-                    <View style={styles.signatureBox}>
-                        <Text style={styles.signatureLabel}>Approved By:</Text>
-                        <Text style={styles.signatureName}>HON. CITY MAYOR</Text>
-                        <Text style={styles.signatureTitle}>Local Chief Executive</Text>
+                        {signatories.deptHead.trim() ? (
+                            <Text style={styles.signatureName}>{signatories.deptHead.trim()}</Text>
+                        ) : (
+                            <View style={styles.signatureNameLine}>
+                                <Text style={{ fontSize: 7 }}> </Text>
+                            </View>
+                        )}
+                        <Text style={styles.signatureTitle}>
+                            {signatories.deptHeadPosition.trim() || "Department Head"}
+                        </Text>
                     </View>
                 </View>
 

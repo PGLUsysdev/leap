@@ -10,6 +10,16 @@ export interface AipSummaryPdfPayload {
     fiscalYear: FiscalYear;
     officeName: string;
     currentScope?: { scope: string; supplemental_aip_id: number | null };
+    signatories: {
+        preparedName: string;
+        preparedPosition: string;
+        reviewedName: string;
+        reviewedPosition: string;
+        approvedName: string;
+        approvedPosition: string;
+        conformeName: string;
+        conformePosition: string;
+    };
 }
 
 /**

@@ -9,6 +9,12 @@ export interface AppPdfPayload {
     data: App;
     fiscalYear: FiscalYear;
     officeLabel: string;
+    signatories: {
+        deptHead: string;
+        deptHeadPosition: string;
+        gov: string;
+        govPosition: string;
+    };
 }
 
 /**
