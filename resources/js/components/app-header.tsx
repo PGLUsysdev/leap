@@ -1,10 +1,25 @@
 import { Link, usePage } from "@inertiajs/react";
 import { BookOpen, Folder, LayoutGrid, Menu, Search } from "lucide-react";
+import { Fragment } from "react";
 import AppLogo from "@/components/app-logo";
 import AppLogoIcon from "@/components/app-logo-icon";
-import { Breadcrumbs } from "@/components/breadcrumbs";
+import {
+    Breadcrumb,
+    BreadcrumbEllipsis,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/base-ui-components/ui/breadcrumb";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu as BaseDropdownMenu,
+    DropdownMenuContent as BaseDropdownMenuContent,
+    DropdownMenuItem as BaseDropdownMenuItem,
+    DropdownMenuTrigger as BaseDropdownMenuTrigger,
+} from "@/components/base-ui-components/ui/dropdown-menu";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,11 +37,12 @@ import { UserMenuContent } from "@/components/user-menu-content";
 import { useCurrentUrl } from "@/hooks/use-current-url";
 import { useInitials } from "@/hooks/use-initials";
 import { cn, toUrl } from "@/lib/utils";
+import { collapseBreadcrumbs } from "@/lib/breadcrumb-collapse";
 import { dashboard } from "@/routes";
-import type { BreadcrumbItem, NavItem } from "@/types";
+import type { BreadcrumbItem as BreadcrumbItemType, NavItem } from "@/types";
 
 type Props = {
-    breadcrumbs?: BreadcrumbItem[];
+    breadcrumbs?: BreadcrumbItemType[];
 };
 
 const mainNavItems: NavItem[] = [
@@ -57,6 +73,28 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
     const { auth } = page.props;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
+    const { visibleHead, hidden, tail, showEllipsis } = collapseBreadcrumbs(breadcrumbs, 4);
+
+    const renderItem = (item: BreadcrumbItemType, isLast: boolean) => (
+        <BreadcrumbItem key={`${item.title}-${item.href}`} className="min-w-0 shrink-0">
+            {isLast ? (
+                <BreadcrumbPage
+                    className="max-w-[14rem] truncate lg:max-w-[18rem]"
+                    title={item.title}
+                >
+                    {item.title}
+                </BreadcrumbPage>
+            ) : (
+                <BreadcrumbLink
+                    render={<Link href={item.href} />}
+                    className="max-w-[14rem] truncate lg:max-w-[18rem]"
+                    title={item.title}
+                >
+                    {item.title}
+                </BreadcrumbLink>
+            )}
+        </BreadcrumbItem>
+    );
 
     return (
         <>
@@ -204,9 +242,73 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                 </div>
             </div>
             {breadcrumbs.length > 1 && (
-                <div className="flex w-full border-b border-sidebar-border/70">
-                    <div className="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl">
-                        <Breadcrumbs breadcrumbs={breadcrumbs} />
+                <div className="flex w-full overflow-hidden border-b border-sidebar-border/70">
+                    <div className="mx-auto flex h-12 w-full min-w-0 items-center justify-start overflow-hidden px-4 text-neutral-500 md:max-w-7xl">
+                        <Breadcrumb className="min-w-0 flex-1 overflow-hidden">
+                            <BreadcrumbList className="flex-nowrap overflow-hidden">
+                                {showEllipsis ? (
+                                    <>
+                                        {visibleHead.map((item) => (
+                                            <Fragment key={`head-${item.title}-${item.href}`}>
+                                                {renderItem(item, false)}
+                                                <BreadcrumbSeparator />
+                                            </Fragment>
+                                        ))}
+                                        <BreadcrumbItem>
+                                            <BaseDropdownMenu>
+                                                <BaseDropdownMenuTrigger
+                                                    render={
+                                                        <button
+                                                            type="button"
+                                                            className="flex items-center justify-center rounded-md p-1 hover:bg-accent hover:text-accent-foreground"
+                                                            aria-label="More breadcrumbs"
+                                                        />
+                                                    }
+                                                >
+                                                    <BreadcrumbEllipsis />
+                                                </BaseDropdownMenuTrigger>
+                                                <BaseDropdownMenuContent
+                                                    align="start"
+                                                    sideOffset={8}
+                                                    className="w-60 max-w-[40rem]"
+                                                >
+                                                    {hidden.map((item) => (
+                                                        <BaseDropdownMenuItem
+                                                            key={`hidden-${item.title}-${item.href}`}
+                                                            render={<Link href={item.href} />}
+                                                        >
+                                                            <span className="truncate">
+                                                                {item.title}
+                                                            </span>
+                                                        </BaseDropdownMenuItem>
+                                                    ))}
+                                                </BaseDropdownMenuContent>
+                                            </BaseDropdownMenu>
+                                        </BreadcrumbItem>
+                                        <BreadcrumbSeparator />
+                                        {tail.map((item, idx) => {
+                                            const isLast = idx === tail.length - 1;
+                                            return (
+                                                <Fragment key={`tail-${item.title}-${item.href}`}>
+                                                    {renderItem(item, isLast)}
+                                                    {!isLast && <BreadcrumbSeparator />}
+                                                </Fragment>
+                                            );
+                                        })}
+                                    </>
+                                ) : (
+                                    breadcrumbs.map((item, index) => {
+                                        const isLast = index === breadcrumbs.length - 1;
+                                        return (
+                                            <Fragment key={`${item.title}-${index}`}>
+                                                {renderItem(item, isLast)}
+                                                {!isLast && <BreadcrumbSeparator />}
+                                            </Fragment>
+                                        );
+                                    })
+                                )}
+                            </BreadcrumbList>
+                        </Breadcrumb>
                     </div>
                 </div>
             )}

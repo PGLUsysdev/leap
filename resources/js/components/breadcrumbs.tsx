@@ -1,3 +1,4 @@
+/** @deprecated Radix wrapper — retained for reference, not used. Use Base UI breadcrumb directly: `@/components/base-ui-components/ui/breadcrumb` with `render` prop (see AppSidebarHeader). */
 import { Link } from "@inertiajs/react";
 import { Fragment } from "react";
 import {
