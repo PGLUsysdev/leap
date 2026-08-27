@@ -679,9 +679,8 @@ export default function PpmpPage({
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 render={
-                                    <Button variant="outline" size="sm">
+                                    <Button variant="outline" size="icon">
                                         <Filter />
-                                        {/*{filterLabel}*/}
                                     </Button>
                                 }
                             />
@@ -706,7 +705,7 @@ export default function PpmpPage({
                         </DropdownMenu>
 
                         <DropdownMenu>
-                            <DropdownMenuTrigger render={<Button variant="outline" />}>
+                            <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
                                 <FileUp />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
@@ -899,7 +898,9 @@ export default function PpmpPage({
                         <div className="flex w-[340px] shrink-0 flex-col gap-4 overflow-auto border-r p-4">
                             <FieldGroup>
                                 <Field>
-                                    <FieldLabel htmlFor="ppmp-sig-dept-head">Department Head — Name</FieldLabel>
+                                    <FieldLabel htmlFor="ppmp-sig-dept-head">
+                                        Department Head — Name
+                                    </FieldLabel>
                                     <Input
                                         id="ppmp-sig-dept-head"
                                         placeholder="Enter department head name"
