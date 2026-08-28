@@ -21,6 +21,7 @@ class ChartOfAccountController extends Controller
             'chartOfAccounts' => ChartOfAccount::select([
                 'id',
                 'account_number',
+                'path',
                 'account_title',
                 'account_type',
                 'expense_class',

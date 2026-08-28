@@ -1,12 +1,13 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { Pencil, Trash } from "lucide-react";
+import { Badge } from "@/components/base-ui-components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ChartOfAccount } from "@/types";
 
-const columnHelper = createColumnHelper<ChartOfAccount>();
+const columnHelper = createColumnHelper<ChartOfAccount & { path: string | null }>();
 
 const columns = [
-    columnHelper.accessor("account_number", {
+    columnHelper.accessor("path", {
         size: 150,
         header: () => <div className="px-1">Account Number</div>,
         cell: (value) => (
@@ -45,13 +46,29 @@ const columns = [
     }),
     columnHelper.accessor("is_postable", {
         size: 100,
-        header: () => <div className="px-1">Postable</div>,
-        cell: (value) => <div className="px-1 text-wrap">{value.getValue() ? "Yes" : "No"}</div>,
+        header: () => <div className="px-1 text-center">Postable</div>,
+        cell: (value) => (
+            <div className="flex justify-center">
+                {value.getValue() ? (
+                    <Badge variant="default">true</Badge>
+                ) : (
+                    <Badge variant="destructive">false</Badge>
+                )}
+            </div>
+        ),
     }),
     columnHelper.accessor("is_active", {
         size: 100,
-        header: () => <div className="px-1">Active</div>,
-        cell: (value) => <div className="px-1 text-wrap">{value.getValue() ? "Yes" : "No"}</div>,
+        header: () => <div className="px-1 text-center">Active</div>,
+        cell: (value) => (
+            <div className="flex justify-center">
+                {value.getValue() ? (
+                    <Badge variant="default">true</Badge>
+                ) : (
+                    <Badge variant="destructive">false</Badge>
+                )}
+            </div>
+        ),
     }),
     columnHelper.display({
         id: "actions",
