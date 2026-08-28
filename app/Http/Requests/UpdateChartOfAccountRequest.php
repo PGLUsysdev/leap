@@ -22,16 +22,20 @@ class UpdateChartOfAccountRequest extends FormRequest
      */
     public function rules(): array
     {
+        $id = $this->route('chartOfAccount')?->id ?? $this->route('chart_of_account')?->id;
+
         return [
-            'account_number' => 'required|string|max:255|unique:chart_of_accounts,account_number,'.
-                $this->route('chartOfAccount')->id,
+            'account_number' => 'required|string|max:20',
+            'path' => ['required', 'string', 'max:255', 'regex:/^\d-\d{2}-\d{2}-\d{3}$/', 'unique:chart_of_accounts,path,' . $id],
+            'parent_id' => ['nullable', 'exists:chart_of_accounts,id'],
+            'level' => ['nullable', 'integer', 'min:1', 'max:5'],
             'account_title' => 'required|string|max:255',
-            'account_type' => 'required|in:ASSET,LIABILITY,EQUITY,REVENUE,EXPENSE',
+            'account_type' => 'nullable|in:ASSET,LIABILITY,EQUITY,REVENUE,EXPENSE',
             'expense_class' => 'nullable|in:PS,MOOE,FE,CO',
             'account_series' => 'nullable|string|max:50',
             'is_postable' => 'required|boolean',
             'is_active' => 'required|boolean',
-            'normal_balance' => 'required|in:DEBIT,CREDIT',
+            'normal_balance' => 'nullable|in:DEBIT,CREDIT',
             'description' => 'nullable|string',
         ];
     }

@@ -6,7 +6,7 @@ import { Button } from "@/components/base-ui-components/ui/button";
 import { Label } from "@/components/base-ui-components/ui/label";
 import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import { Switch } from "@/components/base-ui-components/ui/switch";
-import { DeleteDialog } from "@/components/delete-dialog";
+import DeleteDialog from "@/components/base-ui-components/delete-dialog";
 import FormDialog from "@/pages/chart-of-account/form-dialog-base";
 import type { ChartOfAccount } from "@/types";
 import columns from "./columns/columns";
@@ -94,6 +94,7 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
                         canDelete: can?.delete ?? false,
                         onEdit: handleEdit,
                         onDelete: handleDeleteDialogOpen,
+                        chartOfAccounts,
                     }}
                 >
                     <div className="flex items-center gap-2 px-1 py-2">
@@ -118,7 +119,8 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
             <FormDialog
                 open={open}
                 onOpenChange={handleDialogOpenChange}
-                initialData={selectedAccount}
+                initialData={selectedAccount as any}
+                chartOfAccounts={chartOfAccounts as any}
             />
 
             <DeleteDialog

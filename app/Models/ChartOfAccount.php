@@ -16,8 +16,12 @@ class ChartOfAccount extends Model
     protected $fillable = [
         'account_number',
         'account_title',
+        'account_type',
+        'expense_class',
+        'account_series',
         'parent_id',
         'path',
+        'level',
         'is_postable',
         'is_active',
         'normal_balance',
