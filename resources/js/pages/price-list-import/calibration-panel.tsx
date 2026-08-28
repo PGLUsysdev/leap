@@ -1,5 +1,5 @@
 import { Button } from "@/components/base-ui-components/ui/button";
-import { Field, FieldLabel } from "@/components/base-ui-components/ui/field";
+import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
 import { Input } from "@/components/base-ui-components/ui/input";
 import {
     Select,
@@ -115,6 +115,12 @@ export function CalibrationPanel({
 
     return (
         <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/10 p-3 text-sm">
+                <p className="font-medium">Where is your data?</p>
+                <p className="text-muted-foreground">
+                    Tell us which rows and columns to read. Defaults work for the standard template.
+                </p>
+            </div>
             <div className="flex items-center gap-4">
                 {showSheetSelector ? (
                     <Field className="w-60">
@@ -136,11 +142,17 @@ export function CalibrationPanel({
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
+                        <FieldDescription>
+                            Pick which sheet these settings apply to
+                        </FieldDescription>
                     </Field>
                 ) : (
                     <div>
                         <FieldLabel>Calibrating sheet</FieldLabel>
                         <div className="mt-1 text-sm font-medium">{currentSheet}</div>
+                        <p className="text-xs text-muted-foreground">
+                            All settings below apply to this sheet
+                        </p>
                     </div>
                 )}
 
@@ -153,10 +165,16 @@ export function CalibrationPanel({
                             size="sm"
                         />
                     </label>
+                    <span className="text-xs text-muted-foreground">
+                        {currentConfig.useCustom ? "Custom" : "Standard template"}
+                    </span>
                 </div>
             </div>
 
             <div className="rounded-lg border p-4">
+                <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                    Row range — what to read
+                </p>
                 <div className="flex flex-wrap gap-4">
                     <Field>
                         <FieldLabel>Start Row</FieldLabel>
@@ -167,6 +185,9 @@ export function CalibrationPanel({
                             className="w-20"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>
+                            First data row (skips headers). Default 8
+                        </FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel>Non‑Proc Start Row</FieldLabel>
@@ -182,6 +203,9 @@ export function CalibrationPanel({
                             className="w-20"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>
+                            Where “Non-Procurement” section starts. Default 1258
+                        </FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel>End Row</FieldLabel>
@@ -197,6 +221,7 @@ export function CalibrationPanel({
                             className="w-20"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>Last row to read. Blank = until end</FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel>Exclude Rows</FieldLabel>
@@ -207,10 +232,20 @@ export function CalibrationPanel({
                             placeholder="e.g. 1118, 1120"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>Comma-separated rows to skip (totals)</FieldDescription>
                     </Field>
                 </div>
 
-                <div className="mt-4 grid grid-cols-6 gap-2">
+                <div className="mt-4">
+                    <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                        Columns — which Excel column holds each field
+                    </p>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                        Letters refer to Excel columns (A, B, C…). Description &amp; Category often
+                        share column F — that’s normal for this template.
+                    </p>
+                </div>
+                <div className="mt-2 grid grid-cols-6 gap-3">
                     <Field>
                         <FieldLabel>COA</FieldLabel>
                         <Input
@@ -219,6 +254,7 @@ export function CalibrationPanel({
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>Account no./title — col D</FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel>Category</FieldLabel>
@@ -228,6 +264,7 @@ export function CalibrationPanel({
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>PPMP category — col F</FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel>Description</FieldLabel>
@@ -237,6 +274,7 @@ export function CalibrationPanel({
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>Item name — col F</FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel>Unit</FieldLabel>
@@ -246,6 +284,7 @@ export function CalibrationPanel({
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>pcs, box — col G</FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel>Price</FieldLabel>
@@ -255,6 +294,7 @@ export function CalibrationPanel({
                             className="w-16"
                             disabled={!currentConfig.useCustom}
                         />
+                        <FieldDescription>Unit price — col H</FieldDescription>
                     </Field>
 
                     {mode === "price-list" ? (
@@ -266,6 +306,7 @@ export function CalibrationPanel({
                                 className="w-16"
                                 disabled={!currentConfig.useCustom}
                             />
+                            <FieldDescription>No. — col E</FieldDescription>
                         </Field>
                     ) : (
                         <Field>
@@ -276,13 +317,18 @@ export function CalibrationPanel({
                                 className="w-16"
                                 disabled={!currentConfig.useCustom}
                             />
+                            <FieldDescription>Row total — col J</FieldDescription>
                         </Field>
                     )}
                 </div>
 
                 <div className="mt-4">
-                    <p className="mb-2 text-sm font-medium text-muted-foreground">
+                    <p className="mb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         Monthly Quantities
+                    </p>
+                    <p className="mb-2 text-xs text-muted-foreground">
+                        Each column is a month’s quantity (K=Jan, M=Feb … AG=Dec). Used only when
+                        reading quantities, but kept here for alignment.
                     </p>
                     <div className="grid grid-cols-4 gap-2">
                         {monthlyQtyColumns.map(([key, label]) => (
@@ -294,6 +340,9 @@ export function CalibrationPanel({
                                     className="w-16"
                                     disabled={!currentConfig.useCustom}
                                 />
+                                <FieldDescription>
+                                    Col {currentColumns?.[key as MonthKey] ?? "—"}
+                                </FieldDescription>
                             </Field>
                         ))}
                     </div>

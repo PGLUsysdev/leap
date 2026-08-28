@@ -16,11 +16,8 @@ class ChartOfAccount extends Model
     protected $fillable = [
         'account_number',
         'account_title',
-        'account_type',
-        'expense_class',
-        'account_series',
         'parent_id',
-        'level',
+        'path',
         'is_postable',
         'is_active',
         'normal_balance',
@@ -28,26 +25,22 @@ class ChartOfAccount extends Model
     ];
 
     protected $casts = [
-        'is_manual' => 'boolean',
+        'is_postable' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
-    // hasMany
     public function children(): HasMany
     {
         return $this->hasMany(ChartOfAccount::class, 'parent_id');
     }
 
-    public function chartOfAccountPpmpCategories(): HasMany
-    {
-        return $this->hasMany(
-            ChartOfAccountPpmpCategory::class,
-            'chart_of_account_id',
-        );
-    }
-
-    // belongsTo
     public function parent(): BelongsTo
     {
         return $this->belongsTo(ChartOfAccount::class, 'parent_id');
+    }
+
+    public function chartOfAccountPpmpCategories(): HasMany
+    {
+        return $this->hasMany(ChartOfAccountPpmpCategory::class, 'chart_of_account_id');
     }
 }

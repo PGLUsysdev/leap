@@ -19,6 +19,64 @@ use Inertia\Inertia;
 
 class PriceListImportController extends Controller
 {
+    // ------------------------------------------------------------------
+    // Normalization helpers (Spec §4 - 2-Layer Matching)
+    // ------------------------------------------------------------------
+    private function normalize(string $value): string
+    {
+        $trimmed = trim($value);
+        $collapsed = preg_replace('/\s+/', ' ', $trimmed);
+        return strtolower($collapsed ?? $trimmed);
+    }
+
+    private function sanitizeCoa(string $value): string
+    {
+        return str_replace(['-', '.', '/'], '', $this->normalize($value));
+    }
+
+    private function sanitizeCategory(string $value): string
+    {
+        return $this->normalize(str_replace('-', ' ', $value));
+    }
+
+    /**
+     * Attempt 2-layer resolution for COA raw string against DB maps.
+     * Returns [id, layer] where layer is 'strict'|'sanitized'|null
+     */
+    private function resolveCoaId(string $raw, array $strictMap, array $sanitizedMap): array
+    {
+        $n = $this->normalize($raw);
+        if (isset($strictMap[$n])) {
+            return [$strictMap[$n], 'strict'];
+        }
+        $s = $this->sanitizeCoa($raw);
+        if (isset($sanitizedMap[$s])) {
+            return [$sanitizedMap[$s], 'sanitized'];
+        }
+        return [null, null];
+    }
+
+    private function resolveCategoryId(string $raw, array $strictMap, array $sanitizedMap): array
+    {
+        $n = $this->normalize($raw);
+        if (isset($strictMap[$n])) {
+            return [$strictMap[$n], 'strict'];
+        }
+        $s = $this->sanitizeCategory($raw);
+        if (isset($sanitizedMap[$s])) {
+            return [$sanitizedMap[$s], 'sanitized'];
+        }
+        return [null, null];
+    }
+
+    /**
+     * Normalized equality for description/UOM (trim + collapse + lower)
+     */
+    private function normalizedEquals(string $a, string $b): bool
+    {
+        return $this->normalize($a) === $this->normalize($b);
+    }
+
     /**
      * Display the import page with reference data.
      */
@@ -34,6 +92,7 @@ class PriceListImportController extends Controller
         $ppmpCategories = PpmpCategory::get(['id', 'name']);
 
         $dbPairs = ChartOfAccountPpmpCategory::get([
+            'id',
             'chart_of_account_id',
             'ppmp_category_id',
         ]);
@@ -43,6 +102,7 @@ class PriceListImportController extends Controller
             'description',
             'unit_of_measurement',
             'price',
+            'chart_of_account_ppmp_category_id',
         ]);
 
         $fiscalYears = FiscalYear::orderByDesc('year')->get(['id', 'year']);
@@ -70,9 +130,14 @@ class PriceListImportController extends Controller
 
     /**
      * Import resolved price list items.
+     * Spec §5 Upsert: (junction_id + description + UOM) = uniqueness, update price if exists.
+     * Spec §8 Reporting: inserted/updated/warnings/errors with per-row details.
+     * Spec §9 Validation: description, UOM, price>0, COA/CAT + junction.
      */
     public function store(Request $request)
     {
+        Gate::authorize('create', PpmpPriceList::class);
+
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.chart_of_account_id' => [
@@ -88,8 +153,11 @@ class PriceListImportController extends Controller
             'items.*.description' => ['required', 'string'],
             // DB column is VARCHAR(20) NOT NULL
             'items.*.unit_of_measurement' => ['required', 'string', 'max:20'],
-            // DB column is DECIMAL(19,2) NOT NULL
-            'items.*.price' => ['required', 'numeric', 'min:0'],
+            // Spec §9: price must be >0 (was min:0)
+            'items.*.price' => ['required', 'numeric', 'min:0.01'],
+            // Optional raw strings for 2-layer warning tracking (forward-compat)
+            'items.*.chart_of_account_raw' => ['nullable', 'string'],
+            'items.*.ppmp_category_raw' => ['nullable', 'string'],
         ]);
 
         Log::info(
@@ -98,12 +166,75 @@ class PriceListImportController extends Controller
                 ' items, validating',
         );
 
+        $inserted = 0;
+        $updated = 0;
+        $warnings = [];
         $errors = [];
-        $created = 0;
+        $errorDetails = [];
+        $warningDetails = [];
         $itemNumber = PpmpPriceList::max('item_number') ?? 0;
 
+        // Build strict/sanitized maps for warning detection when raw provided
+        $strictCoaMap = [];
+        $sanitizedCoaMap = [];
+        foreach (ChartOfAccount::whereIn('expense_class', ['MOOE', 'CO'])->get(['id','account_number','account_title']) as $coa) {
+            // account_number strict
+            $strictCoaMap[$this->normalize($coa->account_number)] = $coa->id;
+            $strictCoaMap[$this->normalize($coa->account_title)] = $coa->id;
+            $sanitizedCoaMap[$this->sanitizeCoa($coa->account_number)] = $coa->id;
+            $sanitizedCoaMap[$this->sanitizeCoa($coa->account_title)] = $coa->id;
+        }
+        $strictCatMap = [];
+        $sanitizedCatMap = [];
+        foreach (PpmpCategory::get(['id','name']) as $cat) {
+            $strictCatMap[$this->normalize($cat->name)] = $cat->id;
+            $sanitizedCatMap[$this->sanitizeCategory($cat->name)] = $cat->id;
+        }
+
         foreach ($validated['items'] as $i => $data) {
+            $rowNum = $i + 1;
             try {
+                $descRaw = trim((string) $data['description']);
+                $uomRaw = trim((string) $data['unit_of_measurement']);
+                $price = (float) $data['price'];
+
+                // Spec §9 per-row validations (beyond Laravel rules which already checked)
+                if ($descRaw === '') {
+                    $msg = "Row {$rowNum}: Description is empty";
+                    $errors[] = $msg;
+                    $errorDetails[] = ['row' => $rowNum, 'field' => 'description', 'message' => $msg, 'raw' => $data];
+                    continue;
+                }
+                if ($uomRaw === '' || mb_strlen($uomRaw) > 20) {
+                    $msg = "Row {$rowNum}: Unit of measurement empty or >20 chars";
+                    $errors[] = $msg;
+                    $errorDetails[] = ['row' => $rowNum, 'field' => 'unit_of_measurement', 'message' => $msg, 'raw' => $data];
+                    continue;
+                }
+                if ($price <= 0) {
+                    $msg = "Row {$rowNum}: Unit price must be >0 (got {$price})";
+                    $errors[] = $msg;
+                    $errorDetails[] = ['row' => $rowNum, 'field' => 'price', 'message' => $msg, 'raw' => $data];
+                    continue;
+                }
+
+                // Optional 2-layer warning tracking when raw strings supplied
+                if (!empty($data['chart_of_account_raw'])) {
+                    [, $coaLayer] = $this->resolveCoaId($data['chart_of_account_raw'], $strictCoaMap, $sanitizedCoaMap);
+                    if ($coaLayer === 'sanitized') {
+                        $warningDetails[] = ['row' => $rowNum, 'field' => 'chart_of_account', 'raw' => $data['chart_of_account_raw'], 'resolved' => $data['chart_of_account_id'], 'message' => "COA auto-corrected (removed -./)"];
+                    } elseif ($coaLayer === null) {
+                        // Should not happen because id validated, but log inconsistency
+                        $warningDetails[] = ['row' => $rowNum, 'field' => 'chart_of_account', 'raw' => $data['chart_of_account_raw'], 'message' => 'COA raw did not match resolved id'];
+                    }
+                }
+                if (!empty($data['ppmp_category_raw'])) {
+                    [, $catLayer] = $this->resolveCategoryId($data['ppmp_category_raw'], $strictCatMap, $sanitizedCatMap);
+                    if ($catLayer === 'sanitized') {
+                        $warningDetails[] = ['row' => $rowNum, 'field' => 'ppmp_category', 'raw' => $data['ppmp_category_raw'], 'resolved' => $data['ppmp_category_id'], 'message' => "Category auto-corrected (replaced - with space)"];
+                    }
+                }
+
                 // The pair must already exist; unconfirmed pairs are skipped
                 $junction = ChartOfAccountPpmpCategory::where([
                     'chart_of_account_id' => $data['chart_of_account_id'],
@@ -111,51 +242,82 @@ class PriceListImportController extends Controller
                 ])->first();
 
                 if (! $junction) {
-                    $errors[] =
-                        'Row '.
-                        ($i + 1).
-                        ': category/COA pair not found in database';
-
+                    $msg = "Row {$rowNum}: category/COA pair not found in database (chart_of_account_id={$data['chart_of_account_id']}, ppmp_category_id={$data['ppmp_category_id']})";
+                    $errors[] = $msg;
+                    $errorDetails[] = ['row' => $rowNum, 'field' => 'junction', 'message' => $msg, 'raw' => $data];
                     continue;
                 }
 
-                $itemNumber++;
+                // Spec §5 Upsert: lookup existing by junction + normalized description + normalized UOM
+                $existing = PpmpPriceList::where('chart_of_account_ppmp_category_id', $junction->id)
+                    ->get()
+                    ->first(function ($item) use ($descRaw, $uomRaw) {
+                        return $this->normalizedEquals($item->description, $descRaw)
+                            && $this->normalizedEquals($item->unit_of_measurement, $uomRaw);
+                    });
 
-                PpmpPriceList::create([
-                    'item_number' => $itemNumber,
-                    'sort_order' => $itemNumber,
-                    'description' => $data['description'],
-                    'unit_of_measurement' => $data['unit_of_measurement'],
-                    'price' => $data['price'],
-                    'chart_of_account_ppmp_category_id' => $junction->id,
-                ]);
-
-                $created++;
+                if ($existing) {
+                    // Update price (and optionally item_number/sort_order if needed)
+                    $needsUpdate = ((float)$existing->price !== $price);
+                    if ($needsUpdate) {
+                        $existing->update(['price' => $price]);
+                    }
+                    $updated++;
+                    if ($needsUpdate) {
+                        Log::info("PriceListImport: Row {$rowNum} updated price for existing id {$existing->id}");
+                    }
+                } else {
+                    $itemNumber++;
+                    PpmpPriceList::create([
+                        'item_number' => $itemNumber,
+                        'sort_order' => $itemNumber,
+                        'description' => $descRaw,
+                        'unit_of_measurement' => $uomRaw,
+                        'price' => $price,
+                        'chart_of_account_ppmp_category_id' => $junction->id,
+                    ]);
+                    $inserted++;
+                }
             } catch (\Exception $e) {
-                $errors[] = 'Row '.($i + 1).': '.$e->getMessage();
+                $msg = 'Row '.($i + 1).': '.$e->getMessage();
+                $errors[] = $msg;
+                $errorDetails[] = ['row' => $i+1, 'message' => $msg, 'exception' => $e->getMessage()];
             }
         }
 
+        $total = count($validated['items']);
+        $warningsCount = count($warningDetails);
+        $errorsCount = count($errors);
+        $hasErrors = $errorsCount > 0;
+        $hasWarnings = $warningsCount > 0;
+
         Log::info(
-            "PriceListImport: created {$created}, errors ".count($errors),
+            "PriceListImport: inserted {$inserted}, updated {$updated}, warnings {$warningsCount}, errors {$errorsCount} / total {$total}",
         );
 
-        if (! empty($errors)) {
-            Inertia::flash('toast', [
-                'type' => 'error',
-                'message' => "Partially imported {$created} items with ".
-                    count($errors).
-                    ' errors.',
-            ]);
+        $report = [
+            'total' => $total,
+            'inserted' => $inserted,
+            'updated' => $updated,
+            'warnings' => $warningsCount,
+            'errors' => $errorsCount,
+            'warningDetails' => $warningDetails,
+            'errorDetails' => $errorDetails,
+            'status' => $hasErrors ? ($inserted + $updated > 0 ? 'partial_success' : 'failed') : ($hasWarnings ? 'success_with_warnings' : 'success'),
+        ];
 
+        Inertia::flash('importReport', $report);
+
+        if ($hasErrors) {
+            $msg = "Import completed: {$inserted} inserted, {$updated} updated, {$warningsCount} warnings, {$errorsCount} errors.";
+            if ($warningsCount > 0) $msg .= " {$warningsCount} auto-corrected.";
+            Inertia::flash('toast', ['type' => 'error', 'message' => $msg]);
             return redirect()->back();
         }
 
-        Inertia::flash('toast', [
-            'type' => 'success',
-            'message' => "Imported {$created} price list items successfully.",
-        ]);
-
+        $msg = "Imported {$inserted} new, updated {$updated} existing item(s).";
+        if ($warningsCount > 0) $msg .= " {$warningsCount} auto-corrected.";
+        Inertia::flash('toast', ['type' => 'success', 'message' => $msg]);
         return redirect()->back();
     }
 
@@ -248,6 +410,7 @@ class PriceListImportController extends Controller
         $updated = 0;
         $skippedNoQty = 0;
         $errors = [];
+        $errorDetails = [];
 
         // Suppress the PpmpObserver during the bulk write; totals are
         // synced once for the whole batch below.
@@ -256,6 +419,7 @@ class PriceListImportController extends Controller
             &$updated,
             &$skippedNoQty,
             &$errors,
+            &$errorDetails,
             $validated,
             $months,
             $priceListItems,
@@ -297,7 +461,9 @@ class PriceListImportController extends Controller
 
                     $ppmp->wasRecentlyCreated ? $created++ : $updated++;
                 } catch (\Exception $e) {
-                    $errors[] = 'Row '.($i + 1).': '.$e->getMessage();
+                    $msg = 'Row '.($i + 1).': '.$e->getMessage();
+                    $errors[] = $msg;
+                    $errorDetails[] = ['row' => $i+1, 'message' => $msg];
                 }
             }
         });
@@ -309,12 +475,23 @@ class PriceListImportController extends Controller
                 count($errors),
         );
 
+        $report = [
+            'total' => count($validated['rows']),
+            'inserted' => $created,
+            'updated' => $updated,
+            'skippedNoQty' => $skippedNoQty,
+            'errors' => count($errors),
+            'errorDetails' => $errorDetails,
+            'status' => !empty($errors) ? 'partial_success' : 'success',
+        ];
+        Inertia::flash('importReport', $report);
+
         if (! empty($errors)) {
             Inertia::flash('toast', [
                 'type' => 'error',
                 'message' => 'Partially imported with '.
                     count($errors).
-                    ' errors.',
+                    ' errors. Created '.$created.', updated '.$updated.'.',
             ]);
 
             return redirect()->back();
