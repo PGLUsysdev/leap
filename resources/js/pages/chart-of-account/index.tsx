@@ -2,11 +2,11 @@ import { router } from "@inertiajs/react";
 import { useState } from "react";
 // import { DataTable } from '@/components/data-table';
 import DataTable from "@/components/base-ui-components/data-table";
+import { Button } from "@/components/base-ui-components/ui/button";
+import { Label } from "@/components/base-ui-components/ui/label";
 import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import { Switch } from "@/components/base-ui-components/ui/switch";
 import { DeleteDialog } from "@/components/delete-dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import FormDialog from "@/pages/chart-of-account/form-dialog-base";
 import type { ChartOfAccount } from "@/types";
 import columns from "./columns/columns";
@@ -122,8 +122,12 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
             />
 
             <DeleteDialog
-                isOpen={isDeleteDialogOpen}
-                onOpenChange={setIsDeleteDialogOpen}
+                open={isDeleteDialogOpen}
+                onOpenChange={(open) => {
+                    setIsDeleteDialogOpen(open);
+
+                    if (!open) setSelectedAccount(null);
+                }}
                 title="Delete Chart of Account?"
                 description={
                     <>
@@ -134,12 +138,8 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
                         ?
                     </>
                 }
-                onConfirm={handleDelete}
-                onCancel={() => {
-                    setIsDeleteDialogOpen(false);
-                    setSelectedAccount(null);
-                }}
-                isLoading={isLoading}
+                loading={isLoading}
+                handleDelete={handleDelete}
             />
         </>
     );

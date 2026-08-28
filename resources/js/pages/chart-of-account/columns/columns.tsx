@@ -1,7 +1,7 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { Pencil, Trash } from "lucide-react";
 import { Badge } from "@/components/base-ui-components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/base-ui-components/ui/button";
 import type { ChartOfAccount } from "@/types";
 
 const columnHelper = createColumnHelper<ChartOfAccount & { path: string | null }>();
