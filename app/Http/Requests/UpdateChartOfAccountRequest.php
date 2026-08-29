@@ -26,7 +26,7 @@ class UpdateChartOfAccountRequest extends FormRequest
 
         return [
             'account_number' => 'required|string|max:20',
-            'path' => ['required', 'string', 'max:255', 'regex:/^\d-\d{2}-\d{2}-\d{3}$/', 'unique:chart_of_accounts,path,' . $id],
+            'path' => ['required', 'string', 'max:255', 'regex:/^\d(-\d{2}){0,2}(-\d{3})?$/', 'unique:chart_of_accounts,path,' . $id],
             'parent_id' => ['nullable', 'exists:chart_of_accounts,id'],
             'level' => ['nullable', 'integer', 'min:1', 'max:5'],
             'account_title' => 'required|string|max:255',
