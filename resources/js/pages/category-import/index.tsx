@@ -352,6 +352,22 @@ export default function CategoryImport() {
                                     const coaNorm = coaRaw ? normalize(coaRaw) : null;
                                     const dataNorm = normalize(dataRaw);
 
+                                    // Don't include actual header row labels (e.g. "Description") or group headers themselves
+                                    if (dataNorm === "description") continue;
+                                    if (additionalItemsHeaderRow && r === additionalItemsHeaderRow) continue;
+                                    if (nonProcurementHeaderRow && r === nonProcurementHeaderRow) continue;
+                                    // also skip the known group header texts if calibration not set or off-by-one
+                                    if (dataNorm === "non-procurement requirements" || dataNorm === "additional items" || dataNorm === "procurement requirements") continue;
+
+                                    // Skip entire Additional Items and Non-Procurement groups (after their headers it's just items, no categories needed)
+                                    if (additionalItemsHeaderRow && r > additionalItemsHeaderRow) {
+                                        // r is in additional or beyond; if non-procurement also set, both are skipped together
+                                        continue;
+                                    }
+                                    if (nonProcurementHeaderRow && r > nonProcurementHeaderRow) {
+                                        continue;
+                                    }
+
                                     if (coaNorm) {
                                         skippedCoaNotEmpty.push({
                                             row: r,
@@ -389,6 +405,30 @@ export default function CategoryImport() {
                                     filtered.push({ row: r, raw: dataRaw, normalized: dataNorm });
                                 }
 
+                                // Strict dedupe by normalized (exact equality after normalize: trim→collapse→lowercase)
+                                const seen = new Map<string, { raw: string; normalized: string; rows: number[] }>();
+                                const duplicates: Array<{
+                                    normalized: string;
+                                    keptRow: number;
+                                    duplicateRow: number;
+                                    duplicateRaw: string;
+                                }> = [];
+                                for (const c of filtered) {
+                                    const existing = seen.get(c.normalized);
+                                    if (!existing) {
+                                        seen.set(c.normalized, { raw: c.raw, normalized: c.normalized, rows: [c.row] });
+                                    } else {
+                                        existing.rows.push(c.row);
+                                        duplicates.push({
+                                            normalized: c.normalized,
+                                            keptRow: existing.rows[0],
+                                            duplicateRow: c.row,
+                                            duplicateRaw: c.raw,
+                                        });
+                                    }
+                                }
+                                const unique = [...seen.values()].map((v) => ({ ...v, count: v.rows.length }));
+
                                 console.log(
                                     `Filtered column ${dataColumn} (COA ${coaColumn} empty, TOTAL excluded (suffix/prefix after normalize), COA labels excluded via next-row COA match) from "${selectedSheet}":`,
                                     filtered,
@@ -401,6 +441,29 @@ export default function CategoryImport() {
                                         status: "passed — category only",
                                     })),
                                 );
+                                console.log(
+                                    `Found ${filtered.length} raw, ${unique.length} unique (strict normalized equality), ${duplicates.length} duplicates`,
+                                );
+                                console.table(
+                                    unique.map((u) => ({
+                                        normalized: u.normalized,
+                                        raw: u.raw,
+                                        rows: u.rows.join(", "),
+                                        count: u.count,
+                                        status: u.count > 1 ? "duplicate — kept first" : "unique",
+                                    })),
+                                );
+                                if (duplicates.length > 0) {
+                                    console.table(
+                                        duplicates.map((d) => ({
+                                            normalized: d.normalized,
+                                            keptRow: d.keptRow,
+                                            duplicateRow: d.duplicateRow,
+                                            duplicateRaw: d.duplicateRaw,
+                                            status: "duplicate — normalized exact",
+                                        })),
+                                    );
+                                }
                                 console.log(
                                     `Found ${filtered.length} categories, ${excludedCoa.length} excluded: COA label (next-row COA match), ${excludedTotal.length} excluded: TOTAL (suffix/prefix after normalize), ${skippedCoaNotEmpty.length} excluded: COA not empty`,
                                 );
@@ -659,11 +722,13 @@ export default function CategoryImport() {
                                             continue;
                                         }
 
-                                        // COA label detection: next row's COA == this data
+                                        // COA label detection: next row's COA == this data (normalize only)
                                         let isCoaLabel = false;
+                                        let nextCoaRaw: string | null = null;
+                                        let nextCoaNorm: string | null = null;
                                         if (r + 1 <= lastRow) {
-                                            const nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
-                                            const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+                                            nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
+                                            nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
                                             if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) {
                                                 isCoaLabel = true;
                                             }
@@ -686,6 +751,15 @@ export default function CategoryImport() {
                                                 currentCat.coas.push({ ...currentCoa });
                                             }
                                             currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
+                                            continue;
+                                        }
+
+                                        // Row 1118 case: D empty, not total, not COA label, but next row has a COA (next_D not empty) and mismatched → intended COA but inconsistent, don't treat as cat
+                                        if (nextCoaNorm && dataNorm) {
+                                            errors.push({
+                                                row: r,
+                                                message: `COA label "${dataRaw}" at row ${r} mismatched next D "${nextCoaRaw}" after normalize (expected same) — not treated as category`,
+                                            });
                                             continue;
                                         }
 
