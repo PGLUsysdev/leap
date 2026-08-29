@@ -436,4 +436,8 @@ Route::get('category-import', [CategoryImportController::class, 'index'])->name(
     'category-import.index',
 );
 
+Route::post('category-import', [CategoryImportController::class, 'store'])->name(
+    'category-import.store',
+);
+
 require __DIR__ . '/settings.php';
