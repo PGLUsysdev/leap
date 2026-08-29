@@ -27,6 +27,7 @@ use App\Http\Controllers\PpaFundingSourceController;
 use App\Http\Controllers\PpaListController;
 use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\PpmpController;
+use App\Http\Controllers\CategoryImportController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
 use App\Http\Controllers\PriceListImportController;
@@ -430,5 +431,9 @@ Route::post('price-list-import/quantities', [
     PriceListImportController::class,
     'importQuantities',
 ])->name('price-list-import.quantities');
+
+Route::get('category-import', [CategoryImportController::class, 'index'])->name(
+    'category-import.index',
+);
 
 require __DIR__ . '/settings.php';
