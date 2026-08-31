@@ -14,6 +14,7 @@ import {
     SelectValue,
 } from "@/components/base-ui-components/ui/select";
 import type { FiscalYear, FundingSource, Office } from "@/types";
+import { FileSpreadsheet } from "lucide-react";
 import { extractData } from "./extract";
 import type { ExtractResult } from "./extract";
 import { FundingSourceMap } from "./funding-source-map";
@@ -67,6 +68,7 @@ export default function AipSummaryImport({
     const [sheets, setSheets] = useState<string[]>([]);
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [selectedSheet, setSelectedSheet] = useState("");
+    const [fileName, setFileName] = useState<string | null>(null);
     const [startRow, setStartRow] = useState(9);
     const [endRow, setEndRow] = useState<number | undefined>(undefined);
     const [columnMap, setColumnMap] = useState<ColumnMapping>(defaultColumnMapping);
@@ -87,15 +89,37 @@ export default function AipSummaryImport({
             return;
         }
 
-        const wb = new ExcelJS.Workbook();
-        const arrayBuffer = await file.arrayBuffer();
-        await wb.xlsx.load(arrayBuffer);
+        const isXlsx =
+            file.name.toLowerCase().endsWith(".xlsx") ||
+            file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (!isXlsx) {
+            setSheets([]);
+            setWorkbook(null);
+            setSelectedSheet("");
+            setFileName(null);
+            setResult(null);
+            e.target.value = "";
+            return;
+        }
 
-        setWorkbook(wb);
-        setSheets(wb.worksheets.map((ws) => ws.name));
-        setResult(null);
-        setPsPoolTempId(null);
-        setFundingCodeMappings(DEFAULT_FUNDING_CODE_MAP);
+        setFileName(file.name);
+        try {
+            const wb = new ExcelJS.Workbook();
+            const arrayBuffer = await file.arrayBuffer();
+            await wb.xlsx.load(arrayBuffer);
+
+            setWorkbook(wb);
+            setSheets(wb.worksheets.map((ws) => ws.name));
+            setResult(null);
+            setPsPoolTempId(null);
+            setFundingCodeMappings(DEFAULT_FUNDING_CODE_MAP);
+        } catch {
+            setSheets([]);
+            setWorkbook(null);
+            setSelectedSheet("");
+            setFileName(null);
+            setResult(null);
+        }
     }
 
     function handleExtract() {
@@ -151,6 +175,19 @@ export default function AipSummaryImport({
                 <Input id="file" type="file" accept=".xlsx" onChange={handleFileChange} />
                 <FieldDescription>Select an Excel file.</FieldDescription>
             </Field>
+
+            {fileName && (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-muted/30">
+                    <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="font-medium truncate max-w-[42ch]" title={fileName}>
+                        {fileName}
+                    </span>
+                    <span className="hidden text-muted-foreground sm:inline">•</span>
+                    <span className="truncate text-muted-foreground">
+                        {selectedSheet ? `Sheet: ${selectedSheet}` : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"} found`}
+                    </span>
+                </div>
+            )}
 
             {sheets.length > 0 && (
                 <Field>

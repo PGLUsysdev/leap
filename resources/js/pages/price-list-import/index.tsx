@@ -56,6 +56,7 @@ import {
 } from "@/components/base-ui-components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileSpreadsheet } from "lucide-react";
 import type { ChartOfAccount, ChartOfAccountPpmpCategory, PpmpCategory } from "@/types";
 import { CalibrationPanel } from "./calibration-panel";
 import type { SheetConfig } from "./calibration-panel";
@@ -96,6 +97,7 @@ export default function PriceListImport({
     const [sheets, setSheets] = useState<string[]>([]);
     const [_workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+    const [fileName, setFileName] = useState<string | null>(null);
 
     // --- state for price-list import flow ---
     const [extracted, setExtracted] = useState<{
@@ -704,17 +706,41 @@ export default function PriceListImport({
 
         if (!file) return;
 
-        setLoading(true);
-        const wb = new ExcelJS.Workbook();
-        const arrayBuffer = await file.arrayBuffer();
-        await wb.xlsx.load(arrayBuffer);
+        const isXlsx =
+            file.name.toLowerCase().endsWith(".xlsx") ||
+            file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (!isXlsx) {
+            toast.error("Only .xlsx files are allowed.");
+            setSheets([]);
+            setWorkbook(null);
+            setSelectedSheets([]);
+            setFileName(null);
+            e.target.value = "";
+            return;
+        }
 
-        setWorkbook(wb);
-        setSheets(wb.worksheets.map((ws) => ws.name));
-        setMode(null);
-        setSelectedSheets([]);
+        setLoading(true);
+        setFileName(file.name);
+        // reset wizard but keep fileName (resetAllStates does not clear fileName)
         resetAllStates();
-        setLoading(false);
+        try {
+            const wb = new ExcelJS.Workbook();
+            const arrayBuffer = await file.arrayBuffer();
+            await wb.xlsx.load(arrayBuffer);
+
+            setWorkbook(wb);
+            setSheets(wb.worksheets.map((ws) => ws.name));
+            setMode(null);
+            setSelectedSheets([]);
+        } catch {
+            toast.error("Failed to parse .xlsx file. Please ensure it is a valid Excel file.");
+            setSheets([]);
+            setWorkbook(null);
+            setSelectedSheets([]);
+            setFileName(null);
+        } finally {
+            setLoading(false);
+        }
     }
 
     function handleSheetsChange(sheets: string[]) {
@@ -1183,6 +1209,23 @@ export default function PriceListImport({
                     <FieldDescription>Select an Excel file.</FieldDescription>
                 )}
             </Field>
+
+            {fileName && !loading && (
+                <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-muted/30">
+                    <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="font-medium truncate max-w-[42ch]" title={fileName}>
+                        {fileName}
+                    </span>
+                    <span className="hidden text-muted-foreground sm:inline">•</span>
+                    <span className="truncate text-muted-foreground">
+                        {selectedSheets.length > 0
+                            ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}`
+                            : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"} found`}
+                        {mode ? ` • ${mode === "price-list" ? "Price List" : "Quantities"}` : ""}
+                        {confirmed ? " • confirmed" : ""}
+                    </span>
+                </div>
+            )}
 
             {sheets.length > 0 && (
                 <Field>
