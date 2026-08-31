@@ -159,10 +159,11 @@ type CatSheetConfig = {
     headerRow: number;
     additionalItemsHeaderRow?: number;
     nonProcurementHeaderRow?: number;
+    coaLabelMode: "with-label" | "without-label";
 };
 
 function getDefaultCatConfig(): CatSheetConfig {
-    return { dataColumn: "F", coaColumn: "D", headerRow: 7 };
+    return { dataColumn: "F", coaColumn: "D", headerRow: 7, coaLabelMode: "with-label" };
 }
 
 export default function CategoryImport() {
@@ -337,7 +338,7 @@ export default function CategoryImport() {
                 details: [],
             };
         }
-        const { dataColumn, coaColumn, headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg;
+        const { dataColumn, coaColumn, headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow, coaLabelMode } = cfg;
         const lastRow = ws.actualRowCount;
         const procurementStart = headerRow + 1;
         const procurementEnd = additionalItemsHeaderRow
@@ -352,6 +353,7 @@ export default function CategoryImport() {
 
         const errors: Array<{ row: number; message: string }> = [];
         const details: string[] = [];
+        details.push(`COA label mode: ${coaLabelMode === "without-label" ? "Without label (COA on item rows)" : "With label (COA label rows)"}`);
 
         const groups = { procurement: 0, additional: 0, nonProcurement: 0 };
         const countData = (s: number, e: number) => {
@@ -413,15 +415,29 @@ export default function CategoryImport() {
                     errors.push({ row: r, message: `Item at row ${r} ("${dataRaw}") found without active category` });
                     continue;
                 }
-                if (!currentCoa) {
-                    errors.push({ row: r, message: `Item at row ${r} ("${dataRaw}") found without active COA in cat "${currentCat.cat}"` });
+                if (coaLabelMode === "without-label") {
+                    // COA directly on item row – group by COA value, no label rows expected
+                    if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
+                        if (currentCoa) {
+                            if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA` });
+                            currentCat.coas.push({ ...currentCoa });
+                        }
+                        currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
+                    } else {
+                        currentCoa.items += 1;
+                    }
+                    continue;
+                } else {
+                    if (!currentCoa) {
+                        errors.push({ row: r, message: `Item at row ${r} ("${dataRaw}") found without active COA in cat "${currentCat.cat}"` });
+                        continue;
+                    }
+                    if (coaNorm !== normalize(currentCoa.coa)) {
+                        errors.push({ row: r, message: `Item COA mismatch at row ${r}: D="${coaRaw}" != current COA "${currentCoa.coa}" in cat "${currentCat.cat}"` });
+                    }
+                    currentCoa.items += 1;
                     continue;
                 }
-                if (coaNorm !== normalize(currentCoa.coa)) {
-                    errors.push({ row: r, message: `Item COA mismatch at row ${r}: D="${coaRaw}" != current COA "${currentCoa.coa}" in cat "${currentCat.cat}"` });
-                }
-                currentCoa.items += 1;
-                continue;
             }
             if (!dataRaw || !dataNorm) continue;
             if (isTotalRow(dataNorm)) {
@@ -445,29 +461,31 @@ export default function CategoryImport() {
                 }
                 continue;
             }
-            let isCoaLabel = false;
-            let nextCoaRaw: string | null = null;
-            let nextCoaNorm: string | null = null;
-            if (r + 1 <= lastRow) {
-                nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
-                nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
-                if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
-            }
-            if (isCoaLabel) {
-                if (!currentCat) {
-                    errors.push({ row: r, message: `COA "${dataRaw}" at row ${r} found without active category` });
+            if (coaLabelMode === "with-label") {
+                let isCoaLabel = false;
+                let nextCoaRaw: string | null = null;
+                let nextCoaNorm: string | null = null;
+                if (r + 1 <= lastRow) {
+                    nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
+                    nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
+                }
+                if (isCoaLabel) {
+                    if (!currentCat) {
+                        errors.push({ row: r, message: `COA "${dataRaw}" at row ${r} found without active category` });
+                        continue;
+                    }
+                    if (currentCoa) {
+                        if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA` });
+                        currentCat.coas.push({ ...currentCoa });
+                    }
+                    currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
                     continue;
                 }
-                if (currentCoa) {
-                    if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA` });
-                    currentCat.coas.push({ ...currentCoa });
+                if (nextCoaNorm && dataNorm) {
+                    errors.push({ row: r, message: `COA label "${dataRaw}" at row ${r} mismatched next D "${nextCoaRaw}" after normalize (expected same) — not treated as category` });
+                    continue;
                 }
-                currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
-                continue;
-            }
-            if (nextCoaNorm && dataNorm) {
-                errors.push({ row: r, message: `COA label "${dataRaw}" at row ${r} mismatched next D "${nextCoaRaw}" after normalize (expected same) — not treated as category` });
-                continue;
             }
             if (currentCat) {
                 errors.push({ row: r, message: `Category "${dataRaw}" at row ${r} started before previous cat "${currentCat.cat}" (row ${currentCat.catRow}) closed with " - TOTAL"` });
@@ -549,7 +567,7 @@ export default function CategoryImport() {
 
         for (const sheet of selectedSheets) {
             const cfg = getEffectiveConfig(sheet);
-            const { dataColumn, coaColumn, headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg;
+            const { dataColumn, coaColumn, headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow, coaLabelMode } = cfg;
             const ws = workbook!.getWorksheet(sheet);
             if (!ws) continue;
             const startRow = headerRow + 1;
@@ -590,7 +608,7 @@ export default function CategoryImport() {
                     excludedTotal.push({ row: r, raw: dataRaw, normalized: dataNorm, sheet });
                     continue;
                 }
-                if (r + 1 <= lastRow) {
+                if (coaLabelMode === "with-label" && r + 1 <= lastRow) {
                     const nextRow = ws.getRow(r + 1);
                     const nextCoaRaw = cellText(nextRow.getCell(coaColumn));
                     const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
@@ -903,6 +921,28 @@ export default function CategoryImport() {
                                             <FieldDescription>Header {cfg.headerRow}; data starts {cfg.headerRow + 1}</FieldDescription>
                                         </Field>
                                     </div>
+                                    <Field className="mt-4">
+                                        <FieldLabel htmlFor="coa-label-mode">COA items format *</FieldLabel>
+                                        <Select
+                                            value={cfg.coaLabelMode}
+                                            onValueChange={(v) => onChange({ coaLabelMode: v as CatSheetConfig["coaLabelMode"] })}
+                                        >
+                                            <SelectTrigger id="coa-label-mode" className="w-full">
+                                                <SelectValue placeholder="Select format" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    <SelectItem value="with-label">With COA label rows (Category → COA label → Items with D=COA)</SelectItem>
+                                                    <SelectItem value="without-label">Without label (Category → Items with D=COA directly)</SelectItem>
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                        <FieldDescription>
+                                            {cfg.coaLabelMode === "without-label"
+                                                ? "Example: Cat 1 → items with coa 1..., coa 2... (no extra COA label row). Your second table."
+                                                : "Example: Cat 1 → coa 1 label → items, coa 2 label → items (your first table)."}
+                                        </FieldDescription>
+                                    </Field>
                                     <div className="mt-4 grid grid-cols-2 gap-4">
                                         <Field>
                                             <FieldLabel htmlFor="additional-header-row">Additional Items Header Row</FieldLabel>
@@ -947,8 +987,8 @@ export default function CategoryImport() {
                                             <span className="text-muted-foreground">Effective for {selectedSheets.length} sheets: </span>
                                             {selectedSheets.map((s) => {
                                                 const c = calibrations[s] ?? sharedConfig;
-                                                const same = c && cfg && c.headerRow===cfg.headerRow && c.dataColumn===cfg.dataColumn && c.coaColumn===cfg.coaColumn;
-                                                return <Badge key={s} variant={same?"secondary":"outline"} className="mr-1 text-xs">{s}: {c ? `${c.dataColumn}/${c.coaColumn} H${c.headerRow}` : "default"}</Badge>
+                                                const same = c && cfg && c.headerRow===cfg.headerRow && c.dataColumn===cfg.dataColumn && c.coaColumn===cfg.coaColumn && c.coaLabelMode===cfg.coaLabelMode;
+                                                return <Badge key={s} variant={same?"secondary":"outline"} className="mr-1 text-xs">{s}: {c ? `${c.dataColumn}/${c.coaColumn} H${c.headerRow} ${c.coaLabelMode==="without-label"?"no-label":"label"}` : "default"}</Badge>
                                             })}
                                         </div>
                                     )}
