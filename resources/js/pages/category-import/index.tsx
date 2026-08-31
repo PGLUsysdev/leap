@@ -7,6 +7,14 @@ import { Badge } from "@/components/base-ui-components/ui/badge";
 import { Button } from "@/components/base-ui-components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
 import { Input } from "@/components/base-ui-components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/base-ui-components/ui/select";
 import { Spinner } from "@/components/base-ui-components/ui/spinner";
 import { Switch } from "@/components/base-ui-components/ui/switch";
 import {
@@ -103,22 +111,36 @@ type VerifyResult = {
     details: string[];
 };
 
+type CatLocation = { sheet: string; row: number; col: string; address: string };
 type ExtractResult = {
-    filtered: Array<{ row: number; raw: string; normalized: string }>;
-    unique: Array<{ raw: string; normalized: string; rows: number[]; count: number }>;
+    filtered: Array<{ row: number; raw: string; normalized: string; sheet: string; address: string }>;
+    unique: Array<{
+        raw: string;
+        normalized: string;
+        rows: number[];
+        count: number;
+        sheets: string[];
+        sheetCount: number;
+        locations: CatLocation[];
+    }>;
     duplicates: Array<{
         normalized: string;
         keptRow: number;
+        keptSheet: string;
+        keptAddress: string;
         duplicateRow: number;
+        duplicateSheet: string;
+        duplicateAddress: string;
         duplicateRaw: string;
     }>;
-    excludedTotal: Array<{ row: number; raw: string; normalized: string }>;
+    excludedTotal: Array<{ row: number; raw: string; normalized: string; sheet: string }>;
     excludedCoa: Array<{
         row: number;
         raw: string;
         normalized: string;
         nextRowCoaRaw: string;
         nextRowCoaNormalized: string;
+        sheet: string;
     }>;
     skippedCoaNotEmpty: Array<{
         row: number;
@@ -126,38 +148,54 @@ type ExtractResult = {
         coaNormalized: string;
         raw: string;
         normalized: string;
+        sheet: string;
     }>;
-    skippedProblematic: Array<{ row: number; raw: string; normalized: string; reason: string }>;
+    skippedProblematic: Array<{ row: number; raw: string; normalized: string; reason: string; sheet: string }>;
 };
+
+type CatSheetConfig = {
+    dataColumn: string;
+    coaColumn: string;
+    headerRow: number;
+    additionalItemsHeaderRow?: number;
+    nonProcurementHeaderRow?: number;
+};
+
+function getDefaultCatConfig(): CatSheetConfig {
+    return { dataColumn: "F", coaColumn: "D", headerRow: 7 };
+}
 
 export default function CategoryImport() {
     const [sheets, setSheets] = useState<string[]>([]);
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
-    const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
+    const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Calibrations
-    const [dataColumn, setDataColumn] = useState("F");
-    const [coaColumn, setCoaColumn] = useState("D");
-    const [headerRow, setHeaderRow] = useState(7);
-    const [additionalItemsHeaderRow, setAdditionalItemsHeaderRow] = useState<number | undefined>(
-        undefined,
-    );
-    const [nonProcurementHeaderRow, setNonProcurementHeaderRow] = useState<number | undefined>(
-        undefined,
-    );
+    // Calibrations – shared + per-sheet (snapshot mode: shared does not auto-overwrite per-sheet until Apply)
+    const [calibrationMode, setCalibrationMode] = useState<"shared" | "per-sheet">("shared");
+    const [sharedConfig, setSharedConfig] = useState<CatSheetConfig | null>(null);
+    const [calibrations, setCalibrations] = useState<Record<string, CatSheetConfig>>({});
+    const [currentSheet, setCurrentSheet] = useState<string>("");
 
-    const [verifyResult, setVerifyResult] = useState<VerifyResult | null>(null);
+    const [verifyResults, setVerifyResults] = useState<Record<string, VerifyResult>>({});
+    const [activeVerifySheet, setActiveVerifySheet] = useState<string>("");
     const [extractResult, setExtractResult] = useState<ExtractResult | null>(null);
     const [step, setStep] = useState<"upload" | "calibrate" | "verify" | "extract">("upload");
     const [importing, setImporting] = useState(false);
     const [skipProblematic, setSkipProblematic] = useState(false);
 
-    const canCalibrate = !!selectedSheet;
-    const canVerify = canCalibrate && !!workbook && !!selectedSheet;
-    const canExtract = canVerify && !!verifyResult && (verifyResult.valid || skipProblematic);
+    function getEffectiveConfig(sheet: string): CatSheetConfig {
+        if (calibrationMode === "shared" && sharedConfig) return sharedConfig;
+        return calibrations[sheet] ?? sharedConfig ?? getDefaultCatConfig();
+    }
+
+    const canCalibrate = selectedSheets.length > 0;
+    const canVerify = canCalibrate && !!workbook && selectedSheets.length > 0 && !!sharedConfig;
+    const allVerifyValid = selectedSheets.length > 0 && selectedSheets.every((s) => verifyResults[s]?.valid);
+    const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
+    const canExtract = canVerify && hasAnyVerify && (allVerifyValid || skipProblematic);
 
     const extractionStats = useMemo(() => {
         if (!extractResult) return null;
@@ -182,7 +220,10 @@ export default function CategoryImport() {
             setError("Only .xlsx files are allowed.");
             setSheets([]);
             setWorkbook(null);
-            setSelectedSheet(null);
+            setSelectedSheets([]);
+            setCurrentSheet("");
+            setSharedConfig(null);
+            setCalibrations({});
             setFileName(null);
             e.target.value = "";
 
@@ -192,8 +233,12 @@ export default function CategoryImport() {
         setError(null);
         setLoading(true);
         setFileName(file.name);
-        setSelectedSheet(null);
-        setVerifyResult(null);
+        setSelectedSheets([]);
+        setCurrentSheet("");
+        setSharedConfig(null);
+        setCalibrations({});
+        setVerifyResults({});
+        setActiveVerifySheet("");
         setExtractResult(null);
         setStep("upload");
 
@@ -207,39 +252,92 @@ export default function CategoryImport() {
             setError("Failed to parse .xlsx file. Please ensure it is a valid Excel file.");
             setSheets([]);
             setWorkbook(null);
-            setSelectedSheet(null);
+            setSelectedSheets([]);
+            setCurrentSheet("");
+            setSharedConfig(null);
+            setCalibrations({});
         } finally {
             setLoading(false);
         }
     }
 
-    function handleSheetSelect(sheet: string) {
-        setSelectedSheet(sheet);
-        setVerifyResult(null);
-        setExtractResult(null);
-        setSkipProblematic(false);
+    function handleSheetToggle(sheet: string) {
+        setSelectedSheets((prev) => {
+            const next = prev.includes(sheet) ? prev.filter((s) => s !== sheet) : [...prev, sheet];
+            // reset verification when selection changes
+            setVerifyResults({});
+            setActiveVerifySheet(next[0] ?? "");
+            setExtractResult(null);
+            setSkipProblematic(false);
+            if (next.length > 0 && !next.includes(currentSheet)) setCurrentSheet(next[0]);
+            if (next.length === 0) setCurrentSheet("");
+            return next;
+        });
     }
 
-    function handleVerify() {
-        setSkipProblematic(false);
-        setExtractResult(null);
+    function handleSheetSelect(sheet: string) {
+        handleSheetToggle(sheet);
+    }
 
-        if (!workbook || !selectedSheet) return;
+    function ensureCalibrationsInitialized() {
+        if (sharedConfig) return;
+        const def = getDefaultCatConfig();
+        setSharedConfig(def);
+        const clones: Record<string, CatSheetConfig> = {};
+        for (const s of selectedSheets) clones[s] = { ...def };
+        setCalibrations(clones);
+        if (!currentSheet && selectedSheets[0]) setCurrentSheet(selectedSheets[0]);
+    }
 
-        const ws = workbook.getWorksheet(selectedSheet);
+    function handleApplySharedToAll() {
+        if (!sharedConfig) return;
+        const next: Record<string, CatSheetConfig> = {};
+        for (const s of selectedSheets) next[s] = { ...sharedConfig };
+        setCalibrations(next);
+    }
 
-        if (!ws) {
-            setVerifyResult({
+    function handleCopyCurrentToAll() {
+        const src = calibrations[currentSheet] ?? sharedConfig;
+        if (!src) return;
+        const next: Record<string, CatSheetConfig> = {};
+        for (const s of selectedSheets) next[s] = { ...src };
+        setCalibrations(next);
+        // snapshot – do not overwrite sharedConfig
+    }
+
+    function updateSharedConfig(patch: Partial<CatSheetConfig>) {
+        setSharedConfig((prev) => ({ ...(prev ?? getDefaultCatConfig()), ...patch }));
+    }
+
+    function updateCurrentCalibration(patch: Partial<CatSheetConfig>) {
+        if (!currentSheet) return;
+        setCalibrations((prev) => ({
+            ...prev,
+            [currentSheet]: { ...(prev[currentSheet] ?? sharedConfig ?? getDefaultCatConfig()), ...patch },
+        }));
+    }
+
+    function verifySheet(sheet: string, cfg: CatSheetConfig): VerifyResult {
+        if (!workbook) {
+            return {
                 valid: false,
-                message: "Worksheet not found",
-                errors: [{ row: 0, message: "Worksheet not found" }],
+                message: "Workbook not loaded",
+                errors: [{ row: 0, message: "Workbook not loaded" }],
                 groups: { procurement: 0, additional: 0, nonProcurement: 0 },
                 details: [],
-            });
-
-            return;
+            };
         }
-
+        const ws = workbook.getWorksheet(sheet);
+        if (!ws) {
+            return {
+                valid: false,
+                message: `Worksheet "${sheet}" not found`,
+                errors: [{ row: 0, message: `Worksheet "${sheet}" not found` }],
+                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
+                details: [],
+            };
+        }
+        const { dataColumn, coaColumn, headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg;
         const lastRow = ws.actualRowCount;
         const procurementStart = headerRow + 1;
         const procurementEnd = additionalItemsHeaderRow
@@ -258,96 +356,34 @@ export default function CategoryImport() {
         const groups = { procurement: 0, additional: 0, nonProcurement: 0 };
         const countData = (s: number, e: number) => {
             if (s < 0 || e < 0 || s > e) return 0;
-
             let c = 0;
-
             for (let r = s; r <= e && r <= lastRow; r++) {
                 const v = cellText(ws.getRow(r).getCell(dataColumn));
-
                 if (v) c++;
             }
-
             return c;
         };
         groups.procurement = additionalItemsHeaderRow
             ? countData(procurementStart, procurementEnd)
-            : countData(
-                  procurementStart,
-                  nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow,
-              );
-        groups.additional = additionalItemsHeaderRow
-            ? countData(additionalStart, additionalEnd)
-            : 0;
+            : countData(procurementStart, nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow);
+        groups.additional = additionalItemsHeaderRow ? countData(additionalStart, additionalEnd) : 0;
         groups.nonProcurement = nonProcurementHeaderRow ? countData(nonProcStart, nonProcEnd) : 0;
 
-        if (!additionalItemsHeaderRow) {
-            details.push(
-                "Additional Items header not calibrated — skipping additional group check",
-            );
-        }
-
-        if (!nonProcurementHeaderRow) {
-            details.push(
-                "Non-Procurement header not calibrated — skipping non-procurement group check",
-            );
-        }
-
+        if (!additionalItemsHeaderRow) details.push("Additional Items header not calibrated — skipping additional group check");
+        if (!nonProcurementHeaderRow) details.push("Non-Procurement header not calibrated — skipping non-procurement group check");
         if (procurementStart > procurementEnd) {
-            errors.push({
-                row: procurementStart,
-                message: `Procurement range invalid [${procurementStart}..${procurementEnd}] — check header calibrations`,
-            });
+            errors.push({ row: procurementStart, message: `Procurement range invalid [${procurementStart}..${procurementEnd}] — check header calibrations` });
         } else if (groups.procurement === 0) {
-            errors.push({
-                row: procurementStart,
-                message: "No data found in procurement group — check header calibration",
-            });
+            errors.push({ row: procurementStart, message: "No data found in procurement group — check header calibration" });
         }
-
         if (additionalItemsHeaderRow && groups.additional === 0) {
-            errors.push({
-                row: additionalStart,
-                message: "No data found in additional items group",
-            });
+            errors.push({ row: additionalStart, message: "No data found in additional items group" });
         }
 
         const verifyStart = procurementStart;
         const verifyEnd = procurementEnd;
 
-        console.log(
-            `Debug rows ${verifyStart}..${Math.min(verifyStart + 11, lastRow)} (F=${dataColumn}, D=${coaColumn}) after normalize:`,
-        );
-        console.table(
-            Array.from({ length: Math.min(12, lastRow - verifyStart + 1) }, (_, i) => {
-                const r = verifyStart + i;
-                const crow = ws.getRow(r);
-                const cd = cellText(crow.getCell(coaColumn));
-                const fd = cellText(crow.getCell(dataColumn));
-                const cn = cd ? normalize(cd) : null;
-                const fn = fd ? normalize(fd) : null;
-                const nextCd =
-                    r + 1 <= lastRow ? cellText(ws.getRow(r + 1).getCell(coaColumn)) : null;
-                const nextCn = nextCd ? normalize(nextCd) : null;
-
-                return {
-                    row: r,
-                    F_raw: fd ?? "",
-                    F_norm: fn ?? "",
-                    D_raw: cd ?? "",
-                    D_norm: cn ?? "",
-                    next_D_norm: nextCn ?? "",
-                    isTotal: fn ? isTotalRow(fn) : false,
-                    next_D_eq_F: fn && nextCn ? nextCn === fn : false,
-                };
-            }),
-        );
-
-        type CatGroup = {
-            cat: string;
-            catRow: number;
-            coas: Array<{ coa: string; coaRow: number; items: number }>;
-            totalRow?: number;
-        };
+        type CatGroup = { cat: string; catRow: number; coas: Array<{ coa: string; coaRow: number; items: number }>; totalRow?: number };
         const catGroups: CatGroup[] = [];
         let currentCat: CatGroup | null = null;
         let currentCoa: { coa: string; coaRow: number; items: number } | null = null;
@@ -358,9 +394,7 @@ export default function CategoryImport() {
                     currentCat.coas.push({ ...currentCoa });
                     currentCoa = null;
                 }
-
                 if (totalRow) currentCat.totalRow = totalRow;
-
                 catGroups.push(currentCat);
                 currentCat = null;
             }
@@ -370,401 +404,250 @@ export default function CategoryImport() {
             const row = ws.getRow(r);
             const coaRaw = cellText(row.getCell(coaColumn));
             const dataRaw = cellText(row.getCell(dataColumn));
-
             if (!dataRaw && !coaRaw) continue;
-
             const coaNorm = coaRaw ? normalize(coaRaw) : null;
             const dataNorm = dataRaw ? normalize(dataRaw) : null;
-
             if (dataNorm === "description") continue;
-
             if (coaNorm && dataRaw) {
                 if (!currentCat) {
-                    errors.push({
-                        row: r,
-                        message: `Item at row ${r} ("${dataRaw}") found without active category`,
-                    });
+                    errors.push({ row: r, message: `Item at row ${r} ("${dataRaw}") found without active category` });
                     continue;
                 }
-
                 if (!currentCoa) {
-                    errors.push({
-                        row: r,
-                        message: `Item at row ${r} ("${dataRaw}") found without active COA in cat "${currentCat.cat}"`,
-                    });
+                    errors.push({ row: r, message: `Item at row ${r} ("${dataRaw}") found without active COA in cat "${currentCat.cat}"` });
                     continue;
                 }
-
                 if (coaNorm !== normalize(currentCoa.coa)) {
-                    errors.push({
-                        row: r,
-                        message: `Item COA mismatch at row ${r}: D="${coaRaw}" != current COA "${currentCoa.coa}" in cat "${currentCat.cat}"`,
-                    });
+                    errors.push({ row: r, message: `Item COA mismatch at row ${r}: D="${coaRaw}" != current COA "${currentCoa.coa}" in cat "${currentCat.cat}"` });
                 }
-
                 currentCoa.items += 1;
                 continue;
             }
-
             if (!dataRaw || !dataNorm) continue;
-
             if (isTotalRow(dataNorm)) {
                 const expected = currentCat ? normalize(`${currentCat.cat} - total`) : null;
-
                 if (!currentCat) {
-                    errors.push({
-                        row: r,
-                        message: `Total "${dataRaw}" at row ${r} without active category`,
-                    });
+                    errors.push({ row: r, message: `Total "${dataRaw}" at row ${r} without active category` });
                 } else if (expected && dataNorm !== expected) {
-                    if (dataNorm !== expected) {
-                        errors.push({
-                            row: r,
-                            message: `Total mismatch at row ${r}: got "${dataRaw}" (norm "${dataNorm}") expected "${currentCat.cat} - TOTAL"`,
-                        });
-                    }
+                    errors.push({ row: r, message: `Total mismatch at row ${r}: got "${dataRaw}" (norm "${dataNorm}") expected "${currentCat.cat} - TOTAL"` });
                 }
-
                 if (currentCat) {
                     if (currentCoa) {
                         currentCat.coas.push({ ...currentCoa });
                         currentCoa = null;
                     }
-
                     if (currentCat.coas.length === 0) {
-                        errors.push({
-                            row: r,
-                            message: `Category "${currentCat.cat}" at row ${currentCat.catRow} has no COA groups before total`,
-                        });
+                        errors.push({ row: r, message: `Category "${currentCat.cat}" at row ${currentCat.catRow} has no COA groups before total` });
                     } else {
-                        for (const c of currentCat.coas) {
-                            if (c.items === 0) {
-                                errors.push({
-                                    row: c.coaRow,
-                                    message: `COA "${c.coa}" at row ${c.coaRow} in cat "${currentCat.cat}" has no items`,
-                                });
-                            }
-                        }
+                        for (const c of currentCat.coas) if (c.items === 0) errors.push({ row: c.coaRow, message: `COA "${c.coa}" at row ${c.coaRow} in cat "${currentCat.cat}" has no items` });
                     }
-
                     flushCat(r);
                 }
-
                 continue;
             }
-
             let isCoaLabel = false;
             let nextCoaRaw: string | null = null;
             let nextCoaNorm: string | null = null;
-
             if (r + 1 <= lastRow) {
                 nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
                 nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
-
                 if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
             }
-
             if (isCoaLabel) {
                 if (!currentCat) {
-                    errors.push({
-                        row: r,
-                        message: `COA "${dataRaw}" at row ${r} found without active category`,
-                    });
+                    errors.push({ row: r, message: `COA "${dataRaw}" at row ${r} found without active category` });
                     continue;
                 }
-
                 if (currentCoa) {
-                    if (currentCoa.items === 0) {
-                        errors.push({
-                            row: currentCoa.coaRow,
-                            message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA`,
-                        });
-                    }
-
+                    if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA` });
                     currentCat.coas.push({ ...currentCoa });
                 }
-
                 currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
                 continue;
             }
-
             if (nextCoaNorm && dataNorm) {
-                errors.push({
-                    row: r,
-                    message: `COA label "${dataRaw}" at row ${r} mismatched next D "${nextCoaRaw}" after normalize (expected same) — not treated as category`,
-                });
+                errors.push({ row: r, message: `COA label "${dataRaw}" at row ${r} mismatched next D "${nextCoaRaw}" after normalize (expected same) — not treated as category` });
                 continue;
             }
-
             if (currentCat) {
-                errors.push({
-                    row: r,
-                    message: `Category "${dataRaw}" at row ${r} started before previous cat "${currentCat.cat}" (row ${currentCat.catRow}) closed with " - TOTAL"`,
-                });
-
+                errors.push({ row: r, message: `Category "${dataRaw}" at row ${r} started before previous cat "${currentCat.cat}" (row ${currentCat.catRow}) closed with " - TOTAL"` });
                 if (currentCoa) {
-                    if (currentCoa.items === 0) {
-                        errors.push({
-                            row: currentCoa.coaRow,
-                            message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items`,
-                        });
-                    }
-
+                    if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items` });
                     currentCat.coas.push({ ...currentCoa });
                     currentCoa = null;
                 }
-
                 catGroups.push(currentCat);
             }
-
             currentCat = { cat: dataRaw, catRow: r, coas: [] };
             currentCoa = null;
         }
-
         if (currentCat) {
             if (currentCoa) {
-                if (currentCoa.items === 0) {
-                    errors.push({
-                        row: currentCoa.coaRow,
-                        message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items at end`,
-                    });
-                }
-
+                if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items at end` });
                 currentCat.coas.push({ ...currentCoa });
             }
-
-            if (!currentCat.totalRow) {
-                errors.push({
-                    row: currentCat.catRow,
-                    message: `Category "${currentCat.cat}" at row ${currentCat.catRow} missing closing "${currentCat.cat} - TOTAL" (found ${currentCat.coas.length} COA(s))`,
-                });
-            } else if (currentCat.coas.length === 0) {
-                errors.push({
-                    row: currentCat.catRow,
-                    message: `Category "${currentCat.cat}" has no COAs`,
-                });
-            }
-
+            if (!currentCat.totalRow) errors.push({ row: currentCat.catRow, message: `Category "${currentCat.cat}" at row ${currentCat.catRow} missing closing "${currentCat.cat} - TOTAL" (found ${currentCat.coas.length} COA(s))` });
+            else if (currentCat.coas.length === 0) errors.push({ row: currentCat.catRow, message: `Category "${currentCat.cat}" has no COAs` });
             catGroups.push(currentCat);
         }
-
-        console.log("Procurement cat groups:", catGroups);
-        console.log("Groups counts:", groups);
-        details.push(
-            `Procurement groups: ${catGroups.length} cat(s) verified in rows [${verifyStart}..${verifyEnd}] (excluding additional)`,
-        );
-
-        for (const g of catGroups) {
-            details.push(
-                `  Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : " MISSING total"}`,
-            );
+        if (catGroups.length) {
+            details.push(`Procurement groups: ${catGroups.length} cat(s) verified in rows [${verifyStart}..${verifyEnd}] (excluding additional)`);
+            for (const g of catGroups) details.push(`  Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : " MISSING total"}`);
         }
-
-        // Only procurement errors block; non-procurement warnings handled above
-        const procurementErrors = errors.filter(
-            (e) => e.row <= verifyEnd || e.message.includes("Procurement"),
-        );
+        const procurementErrors = errors.filter((e) => e.row <= verifyEnd || e.message.includes("Procurement"));
         const valid = procurementErrors.length === 0;
         const message = valid
-            ? `✅ Format OK — ${catGroups.length} procurement cat group(s) verified` +
-              (groups.additional || groups.nonProcurement
-                  ? ` | Additional: ${groups.additional ? "found" : "—"}, Non-Proc: ${groups.nonProcurement ? "found" : "—"}`
-                  : "")
+            ? `✅ Format OK — ${catGroups.length} procurement cat group(s) verified` + (groups.additional || groups.nonProcurement ? ` | Additional: ${groups.additional ? "found" : "—"}, Non-Proc: ${groups.nonProcurement ? "found" : "—"}` : "")
             : `❌ Found ${errors.length} issue(s) in procurement format`;
-        console.log(message, errors);
+        console.log(`[${sheet}]`, message, errors, catGroups);
+        return { valid, message, errors, groups, details };
+    }
 
-        if (errors.length > 0) console.table(errors);
-
-        const result: VerifyResult = { valid, message, errors, groups, details };
-        setVerifyResult(result);
+    function handleVerify() {
+        setSkipProblematic(false);
+        setExtractResult(null);
+        if (!workbook || selectedSheets.length === 0) return;
+        // ensure calibration initialized
+        if (!sharedConfig) ensureCalibrationsInitialized();
+        const next: Record<string, VerifyResult> = {};
+        for (const sheet of selectedSheets) {
+            const cfg = getEffectiveConfig(sheet);
+            const result = verifySheet(sheet, cfg);
+            next[sheet] = result;
+        }
+        setVerifyResults(next);
+        const firstInvalid = selectedSheets.find((s) => !next[s]?.valid);
+        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? "");
+        if (Object.keys(next).length) console.table(Object.entries(next).map(([sh, r]) => ({ sheet: sh, valid: r.valid, errors: r.errors.length, message: r.message })));
     }
 
     function handleExtract() {
-        if (!workbook || !selectedSheet) return;
+        if (!workbook || selectedSheets.length === 0) return;
 
-        const ws = workbook.getWorksheet(selectedSheet);
+        const filtered: ExtractResult["filtered"] = [];
+        const excludedTotal: ExtractResult["excludedTotal"] = [];
+        const excludedCoa: ExtractResult["excludedCoa"] = [];
+        const skippedCoaNotEmpty: ExtractResult["skippedCoaNotEmpty"] = [];
+        const skippedProblematic: ExtractResult["skippedProblematic"] = [];
 
-        if (!ws) return;
+        // Build per-sheet problematic lookups when skipProblematic is on
+        const problematicBySheet = new Map<string, { rows: Set<number>; norms: Set<string> }>();
+        if (skipProblematic) {
+            for (const sheet of selectedSheets) {
+                const vr = verifyResults[sheet];
+                if (!vr || vr.valid) continue;
+                const rows = new Set<number>();
+                const norms = new Set<string>();
+                for (const e of vr.errors) {
+                    rows.add(e.row);
+                    const quoted = e.message.match(/"([^"]+)"/g);
+                    if (quoted) for (const q of quoted) { const inner = q.slice(1,-1); if(inner) norms.add(normalize(inner)); }
+                }
+                problematicBySheet.set(sheet, { rows, norms });
+            }
+        }
 
-        const filtered: Array<{ row: number; raw: string; normalized: string }> = [];
-        const excludedTotal: Array<{ row: number; raw: string; normalized: string }> = [];
-        const excludedCoa: Array<{
-            row: number;
-            raw: string;
-            normalized: string;
-            nextRowCoaRaw: string;
-            nextRowCoaNormalized: string;
-        }> = [];
-        const skippedCoaNotEmpty: Array<{
-            row: number;
-            coaRaw: string;
-            coaNormalized: string;
-            raw: string;
-            normalized: string;
-        }> = [];
-        const skippedProblematic: Array<{
-            row: number;
-            raw: string;
-            normalized: string;
-            reason: string;
-        }> = [];
-        const startRow = headerRow + 1;
-        const lastRow = ws.actualRowCount;
+        for (const sheet of selectedSheets) {
+            const cfg = getEffectiveConfig(sheet);
+            const { dataColumn, coaColumn, headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg;
+            const ws = workbook!.getWorksheet(sheet);
+            if (!ws) continue;
+            const startRow = headerRow + 1;
+            const lastRow = ws.actualRowCount;
+            const prob = problematicBySheet.get(sheet);
+            const probRows = prob?.rows ?? new Set<number>();
+            const probNorms = prob?.norms ?? new Set<string>();
 
-        // Build problematic sets from verify when skipProblematic is on (exclude all rows flagged in verify)
-        const problematicRows = new Set<number>();
-        const problematicNorms = new Set<string>();
+            for (let r = startRow; r <= lastRow; r++) {
+                const row = ws.getRow(r);
+                const coaRaw = cellText(row.getCell(coaColumn));
+                const dataRaw = cellText(row.getCell(dataColumn));
+                if (!dataRaw) continue;
+                const coaNorm = coaRaw ? normalize(coaRaw) : null;
+                const dataNorm = normalize(dataRaw);
+                if (dataNorm === "description") continue;
+                if (additionalItemsHeaderRow && r === additionalItemsHeaderRow) continue;
+                if (nonProcurementHeaderRow && r === nonProcurementHeaderRow) continue;
+                if (dataNorm === "non-procurement requirements" || dataNorm === "additional items" || dataNorm === "procurement requirements") continue;
+                if (additionalItemsHeaderRow && r > additionalItemsHeaderRow) continue;
+                if (nonProcurementHeaderRow && r > nonProcurementHeaderRow) continue;
 
-        if (skipProblematic && verifyResult && !verifyResult.valid) {
-            for (const e of verifyResult.errors) {
-                problematicRows.add(e.row);
-                // extract quoted strings like "CAT" or 'COA' from message for normalized match
-                const quoted = e.message.match(/"([^"]+)"/g);
+                if (skipProblematic && prob && (probRows.has(r) || probNorms.has(dataNorm))) {
+                    const reason = probRows.has(r) ? `row ${r} flagged in verify (${sheet})` : `normalized "${dataNorm}" flagged (${sheet})`;
+                    skippedProblematic.push({ row: r, raw: dataRaw, normalized: dataNorm, reason, sheet });
+                    continue;
+                }
+                if (skipProblematic && prob && coaNorm && (probRows.has(r) || probNorms.has(coaNorm))) {
+                    skippedProblematic.push({ row: r, raw: dataRaw, normalized: dataNorm, reason: `COA "${coaRaw}" flagged (${sheet})`, sheet });
+                    continue;
+                }
 
-                if (quoted) {
-                    for (const q of quoted) {
-                        const inner = q.slice(1, -1);
-
-                        if (inner) problematicNorms.add(normalize(inner));
+                if (coaNorm) {
+                    skippedCoaNotEmpty.push({ row: r, coaRaw: coaRaw!, coaNormalized: coaNorm, raw: dataRaw, normalized: dataNorm, sheet });
+                    continue;
+                }
+                if (isTotalRow(dataNorm)) {
+                    excludedTotal.push({ row: r, raw: dataRaw, normalized: dataNorm, sheet });
+                    continue;
+                }
+                if (r + 1 <= lastRow) {
+                    const nextRow = ws.getRow(r + 1);
+                    const nextCoaRaw = cellText(nextRow.getCell(coaColumn));
+                    const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+                    if (nextCoaNorm && nextCoaNorm === dataNorm) {
+                        excludedCoa.push({ row: r, raw: dataRaw, normalized: dataNorm, nextRowCoaRaw: nextCoaRaw!, nextRowCoaNormalized: nextCoaNorm, sheet });
+                        continue;
                     }
                 }
+                const address = `${sheet}!${dataColumn}${r}`;
+                filtered.push({ row: r, raw: dataRaw, normalized: dataNorm, sheet, address });
             }
         }
 
-        for (let r = startRow; r <= lastRow; r++) {
-            const row = ws.getRow(r);
-            const coaRaw = cellText(row.getCell(coaColumn));
-            const dataRaw = cellText(row.getCell(dataColumn));
-
-            if (!dataRaw) continue;
-
-            const coaNorm = coaRaw ? normalize(coaRaw) : null;
-            const dataNorm = normalize(dataRaw);
-
-            if (dataNorm === "description") continue;
-
-            if (additionalItemsHeaderRow && r === additionalItemsHeaderRow) continue;
-
-            if (nonProcurementHeaderRow && r === nonProcurementHeaderRow) continue;
-
-            if (
-                dataNorm === "non-procurement requirements" ||
-                dataNorm === "additional items" ||
-                dataNorm === "procurement requirements"
-            ) {
-                continue;
-            }
-
-            if (additionalItemsHeaderRow && r > additionalItemsHeaderRow) continue;
-
-            if (nonProcurementHeaderRow && r > nonProcurementHeaderRow) continue;
-
-            // Skip all rows flagged as problematic when option is on
-            if (skipProblematic && verifyResult && !verifyResult.valid) {
-                if (problematicRows.has(r) || problematicNorms.has(dataNorm)) {
-                    const reason = problematicRows.has(r)
-                        ? `row ${r} flagged in verify`
-                        : `normalized "${dataNorm}" flagged`;
-                    skippedProblematic.push({ row: r, raw: dataRaw, normalized: dataNorm, reason });
-                    continue;
-                }
-
-                // Also skip if raw's normalized was in any error's quoted string (also catches cat - total variants)
-                if (coaNorm && (problematicRows.has(r) || problematicNorms.has(coaNorm))) {
-                    skippedProblematic.push({
-                        row: r,
-                        raw: dataRaw,
-                        normalized: dataNorm,
-                        reason: `COA "${coaRaw}" flagged`,
-                    });
-                    continue;
-                }
-            }
-
-            if (coaNorm) {
-                skippedCoaNotEmpty.push({
-                    row: r,
-                    coaRaw: coaRaw!,
-                    coaNormalized: coaNorm,
-                    raw: dataRaw,
-                    normalized: dataNorm,
-                });
-                continue;
-            }
-
-            if (isTotalRow(dataNorm)) {
-                excludedTotal.push({ row: r, raw: dataRaw, normalized: dataNorm });
-                continue;
-            }
-
-            if (r + 1 <= lastRow) {
-                const nextRow = ws.getRow(r + 1);
-                const nextCoaRaw = cellText(nextRow.getCell(coaColumn));
-                const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
-
-                if (nextCoaNorm && nextCoaNorm === dataNorm) {
-                    excludedCoa.push({
-                        row: r,
-                        raw: dataRaw,
-                        normalized: dataNorm,
-                        nextRowCoaRaw: nextCoaRaw!,
-                        nextRowCoaNormalized: nextCoaNorm,
-                    });
-                    continue;
-                }
-            }
-
-            filtered.push({ row: r, raw: dataRaw, normalized: dataNorm });
-        }
-
-        const seen = new Map<string, { raw: string; normalized: string; rows: number[] }>();
-        const duplicates: Array<{
-            normalized: string;
-            keptRow: number;
-            duplicateRow: number;
-            duplicateRaw: string;
-        }> = [];
+        // Global dedupe across all sheets – keep sheet count + locations
+        type SeenVal = { raw: string; normalized: string; rows: number[]; sheets: string[]; locations: CatLocation[] };
+        const seen = new Map<string, SeenVal>();
+        const duplicates: ExtractResult["duplicates"] = [];
 
         for (const c of filtered) {
             const existing = seen.get(c.normalized);
-
+            const loc: CatLocation = { sheet: c.sheet, row: c.row, col: getEffectiveConfig(c.sheet).dataColumn, address: c.address };
             if (!existing) {
-                seen.set(c.normalized, { raw: c.raw, normalized: c.normalized, rows: [c.row] });
+                seen.set(c.normalized, { raw: c.raw, normalized: c.normalized, rows: [c.row], sheets: [c.sheet], locations: [loc] });
             } else {
                 existing.rows.push(c.row);
+                if (!existing.sheets.includes(c.sheet)) existing.sheets.push(c.sheet);
+                existing.locations.push(loc);
+                const kept = existing.locations[0];
                 duplicates.push({
                     normalized: c.normalized,
-                    keptRow: existing.rows[0],
+                    keptRow: kept.row,
+                    keptSheet: kept.sheet,
+                    keptAddress: kept.address,
                     duplicateRow: c.row,
+                    duplicateSheet: c.sheet,
+                    duplicateAddress: c.address,
                     duplicateRaw: c.raw,
                 });
             }
         }
 
-        const unique = [...seen.values()].map((v) => ({ ...v, count: v.rows.length }));
-        console.log(filtered, unique, duplicates);
+        const unique = [...seen.values()].map((v) => ({
+            raw: v.raw,
+            normalized: v.normalized,
+            rows: v.rows,
+            count: v.locations.length,
+            sheets: v.sheets,
+            sheetCount: v.sheets.length,
+            locations: v.locations,
+        }));
+        // sort by sheetCount desc then raw
+        unique.sort((a,b)=> b.sheetCount - a.sheetCount || a.raw.localeCompare(b.raw));
 
-        if (skippedProblematic.length > 0) {
-            console.table(
-                skippedProblematic.map((s) => ({
-                    row: s.row,
-                    raw: s.raw,
-                    normalized: s.normalized,
-                    reason: s.reason,
-                    status: "skipped: problematic",
-                })),
-            );
-        }
+        console.log("Extract multi-sheet", { filtered, unique, duplicates, excludedTotal, excludedCoa, skippedProblematic });
+        if (skippedProblematic.length > 0) console.table(skippedProblematic.map((s)=>({ sheet: s.sheet, row: s.row, raw: s.raw, reason: s.reason })));
 
-        setExtractResult({
-            filtered,
-            unique,
-            duplicates,
-            excludedTotal,
-            excludedCoa,
-            skippedCoaNotEmpty,
-            skippedProblematic,
-        });
+        setExtractResult({ filtered, unique, duplicates, excludedTotal, excludedCoa, skippedCoaNotEmpty, skippedProblematic });
     }
 
     function handleImport() {
@@ -799,13 +682,13 @@ export default function CategoryImport() {
                         </span>
                         <span className="hidden text-muted-foreground sm:inline">•</span>
                         <span className="truncate text-muted-foreground">
-                            {selectedSheet
-                                ? `Sheet: ${selectedSheet}`
+                            {selectedSheets.length > 0
+                                ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}`
                                 : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"} found`}
                         </span>
-                        {selectedSheet && sheets.length > 1 && (
+                        {selectedSheets.length > 0 && selectedSheets.length !== sheets.length && (
                             <span className="hidden text-xs text-muted-foreground sm:inline">
-                                ({sheets.length} sheets total)
+                                ({sheets.length} total)
                             </span>
                         )}
                     </div>
@@ -814,18 +697,30 @@ export default function CategoryImport() {
                 <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
                     <TabsList variant="line" className="w-full">
                         <TabsTrigger value="upload" className="flex-1">
-                            1. Upload & Sheet
-                            {selectedSheet && (
-                                <span className="ml-1 text-xs text-muted-foreground">✓</span>
+                            1. Upload & Sheets
+                            {selectedSheets.length > 0 && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    {selectedSheets.length}✓
+                                </span>
                             )}
                         </TabsTrigger>
                         <TabsTrigger value="calibrate" disabled={!canCalibrate}>
                             2. Calibrate
+                            {sharedConfig && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    {calibrationMode === "shared" ? "shared" : "per-sheet"}
+                                </span>
+                            )}
                         </TabsTrigger>
                         <TabsTrigger value="verify" disabled={!canVerify}>
                             3. Verify Format
-                            {verifyResult?.valid && (
-                                <span className="ml-1 text-xs text-green-600">✓</span>
+                            {allVerifyValid && (
+                                <span className="ml-1 text-xs text-green-600">✓ {selectedSheets.length}</span>
+                            )}
+                            {!allVerifyValid && hasAnyVerify && (
+                                <span className="ml-1 text-xs text-amber-600">
+                                    {Object.values(verifyResults).filter((r) => r.valid).length}/{selectedSheets.length}
+                                </span>
                             )}
                         </TabsTrigger>
                         <TabsTrigger value="extract" disabled={!canExtract}>
@@ -835,7 +730,7 @@ export default function CategoryImport() {
                                     {extractResult.unique.length}
                                 </span>
                             )}
-                            {!verifyResult?.valid && skipProblematic && (
+                            {!allVerifyValid && skipProblematic && hasAnyVerify && (
                                 <span className="ml-1 text-xs text-amber-600">skip</span>
                             )}
                         </TabsTrigger>
@@ -865,19 +760,18 @@ export default function CategoryImport() {
                         )}
                         {!loading && sheets.length > 0 && (
                             <Field>
-                                <FieldLabel>Sheets — click to select one</FieldLabel>
+                                <FieldLabel>Sheets — click to select one or more (multi-sheet)</FieldLabel>
                                 <div className="flex flex-wrap gap-2 rounded-lg border p-3">
                                     {sheets.map((sheet) => {
-                                        const isSelected = selectedSheet === sheet;
-
+                                        const isSelected = selectedSheets.includes(sheet);
                                         return (
                                             <Badge
                                                 key={sheet}
                                                 variant={isSelected ? "default" : "secondary"}
                                                 className="cursor-pointer text-sm transition-colors hover:opacity-80"
-                                                onClick={() => handleSheetSelect(sheet)}
+                                                onClick={() => handleSheetToggle(sheet)}
                                             >
-                                                {sheet}
+                                                {sheet} {isSelected && "✓"}
                                             </Badge>
                                         );
                                     })}
@@ -885,131 +779,182 @@ export default function CategoryImport() {
                                 <FieldDescription>
                                     Selected:{" "}
                                     <span className="font-medium text-foreground">
-                                        {selectedSheet ?? "none"}
-                                    </span>
+                                        {selectedSheets.length > 0 ? selectedSheets.join(", ") : "none"}
+                                    </span>{" "}
+                                    — {selectedSheets.length}/{sheets.length} sheets
                                 </FieldDescription>
+                                {selectedSheets.length > 1 && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Shared calibration will apply to all {selectedSheets.length} sheets; per-sheet mode lets you adjust individually.
+                                    </p>
+                                )}
                             </Field>
                         )}
                         <div className="flex justify-end">
-                            <Button disabled={!selectedSheet} onClick={() => setStep("calibrate")}>
-                                Next: Calibrate
+                            <Button
+                                disabled={selectedSheets.length === 0}
+                                onClick={() => {
+                                    ensureCalibrationsInitialized();
+                                    setStep("calibrate");
+                                }}
+                            >
+                                Next: Calibrate {selectedSheets.length > 0 && `(${selectedSheets.length} sheets)`}
                             </Button>
                         </div>
                     </TabsContent>
 
                     <TabsContent value="calibrate" className="mt-4 flex flex-col gap-4">
-                        <div className="rounded-lg border p-4">
-                            <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                Calibration
-                            </p>
-                            <div className="grid grid-cols-3 gap-4">
-                                <Field>
-                                    <FieldLabel htmlFor="data-column">Data Column</FieldLabel>
-                                    <Input
-                                        id="data-column"
-                                        value={dataColumn}
-                                        onChange={(e) =>
-                                            setDataColumn(e.target.value.toUpperCase())
+                        <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/20 p-3">
+                            <span className="text-sm font-medium">Scope:</span>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant={calibrationMode === "shared" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                        if (calibrationMode === "per-sheet" && calibrations[currentSheet]) {
+                                            setSharedConfig({ ...calibrations[currentSheet] });
+                                        } else if (!sharedConfig) ensureCalibrationsInitialized();
+                                        setCalibrationMode("shared");
+                                    }}
+                                >
+                                    Shared — all {selectedSheets.length} sheets
+                                </Button>
+                                <Button
+                                    variant={calibrationMode === "per-sheet" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                        if (sharedConfig) {
+                                            const next: Record<string, CatSheetConfig> = {};
+                                            for (const s of selectedSheets) next[s] = { ...sharedConfig, ...(calibrations[s] ?? {}) };
+                                            // keep existing per-sheet overrides
+                                            setCalibrations(next);
+                                            if (!currentSheet && selectedSheets[0]) setCurrentSheet(selectedSheets[0]);
                                         }
-                                        className="w-16"
-                                        placeholder="F"
-                                    />
-                                    <FieldDescription>Category data — default F</FieldDescription>
-                                </Field>
-                                <Field>
-                                    <FieldLabel htmlFor="coa-column">
-                                        Chart of Accounts Column
-                                    </FieldLabel>
-                                    <Input
-                                        id="coa-column"
-                                        value={coaColumn}
-                                        onChange={(e) => setCoaColumn(e.target.value.toUpperCase())}
-                                        className="w-16"
-                                        placeholder="D"
-                                    />
-                                    <FieldDescription>
-                                        COA column — empty means category. Default D
-                                    </FieldDescription>
-                                </Field>
-                                <Field>
-                                    <FieldLabel htmlFor="header-row">Header Row</FieldLabel>
-                                    <Input
-                                        id="header-row"
-                                        type="number"
-                                        value={headerRow}
-                                        onChange={(e) => setHeaderRow(Number(e.target.value) || 0)}
-                                        className="w-20"
-                                        placeholder="7"
-                                    />
-                                    <FieldDescription>
-                                        Header {headerRow}; data starts {headerRow + 1}
-                                    </FieldDescription>
-                                </Field>
+                                        setCalibrationMode("per-sheet");
+                                    }}
+                                >
+                                    Per-sheet
+                                </Button>
                             </div>
-                            <div className="mt-4 grid grid-cols-2 gap-4">
-                                <Field>
-                                    <FieldLabel htmlFor="additional-header-row">
-                                        Additional Items Header Row
-                                    </FieldLabel>
-                                    <Input
-                                        id="additional-header-row"
-                                        type="number"
-                                        value={additionalItemsHeaderRow ?? ""}
-                                        onChange={(e) => {
-                                            const v = e.target.value
-                                                ? Number(e.target.value)
-                                                : undefined;
-                                            setAdditionalItemsHeaderRow(v);
-                                            setVerifyResult(null);
-                                        }}
-                                        className="w-24"
-                                        placeholder="e.g. 85"
-                                    />
-                                    <FieldDescription>
-                                        {additionalItemsHeaderRow
-                                            ? `Resumes at ${additionalItemsHeaderRow + 1}`
-                                            : "Leave empty if none"}
-                                    </FieldDescription>
-                                </Field>
-                                <Field>
-                                    <FieldLabel htmlFor="nonproc-header-row">
-                                        Non-Procurement Header Row
-                                    </FieldLabel>
-                                    <Input
-                                        id="nonproc-header-row"
-                                        type="number"
-                                        value={nonProcurementHeaderRow ?? ""}
-                                        onChange={(e) => {
-                                            const v = e.target.value
-                                                ? Number(e.target.value)
-                                                : undefined;
-                                            setNonProcurementHeaderRow(v);
-                                            setVerifyResult(null);
-                                        }}
-                                        className="w-24"
-                                        placeholder="e.g. 1258"
-                                    />
-                                    <FieldDescription>
-                                        {nonProcurementHeaderRow
-                                            ? `Starts at ${nonProcurementHeaderRow + 1}`
-                                            : "Leave empty if none"}
-                                    </FieldDescription>
-                                </Field>
-                            </div>
-                            <div className="mt-3 text-xs text-muted-foreground">
-                                Groups: procurement [{headerRow + 1}..
-                                {additionalItemsHeaderRow
-                                    ? additionalItemsHeaderRow - 1
-                                    : nonProcurementHeaderRow
-                                      ? nonProcurementHeaderRow - 1
-                                      : "last"}
-                                ] → additional [
-                                {additionalItemsHeaderRow ? additionalItemsHeaderRow + 1 : "—"}..
-                                {nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : "last"}] →
-                                non-proc [
-                                {nonProcurementHeaderRow ? nonProcurementHeaderRow + 1 : "—"}..last]
-                            </div>
+                            <span className="text-xs text-muted-foreground">
+                                {calibrationMode === "shared"
+                                    ? `Start row ${sharedConfig?.headerRow ?? 7} applies to every sheet — change once. Snapshot: use “Apply to all” to overwrite per-sheet.`
+                                    : `Each sheet can differ. Editing ${currentSheet || "—"} only affects that sheet.`}
+                            </span>
+                            {calibrationMode === "shared" ? (
+                                <Button variant="outline" size="sm" onClick={handleApplySharedToAll} disabled={!sharedConfig}>
+                                    Apply shared to all ({selectedSheets.length})
+                                </Button>
+                            ) : (
+                                <Button variant="outline" size="sm" onClick={handleCopyCurrentToAll} disabled={!currentSheet}>
+                                    Copy “{currentSheet}” to all
+                                </Button>
+                            )}
                         </div>
+
+                        {calibrationMode === "per-sheet" && selectedSheets.length > 1 && (
+                            <Field>
+                                <FieldLabel>Editing sheet</FieldLabel>
+                                <Select value={currentSheet} onValueChange={setCurrentSheet}>
+                                    <SelectTrigger className="w-[260px]">
+                                        <SelectValue placeholder="Select sheet to edit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {selectedSheets.map((s) => (
+                                                <SelectItem key={s} value={s}>
+                                                    {s} {verifyResults[s]?.valid ? "✓" : verifyResults[s] ? "❌" : ""}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>Per-sheet calibration — changes affect only the selected sheet.</FieldDescription>
+                            </Field>
+                        )}
+
+                        {(() => {
+                            const cfg = calibrationMode === "shared" ? (sharedConfig ?? getDefaultCatConfig()) : (calibrations[currentSheet] ?? sharedConfig ?? getDefaultCatConfig());
+                            const onChange = (patch: Partial<CatSheetConfig>) => {
+                                if (calibrationMode === "shared") updateSharedConfig(patch);
+                                else updateCurrentCalibration(patch);
+                                setVerifyResults({});
+                                setExtractResult(null);
+                            };
+                            return (
+                                <div className="rounded-lg border p-4">
+                                    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                        Calibration {calibrationMode === "shared" ? `(Shared – ${selectedSheets.length} sheets)` : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
+                                    </p>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <Field>
+                                            <FieldLabel htmlFor="data-column">Data Column</FieldLabel>
+                                            <Input id="data-column" value={cfg.dataColumn} onChange={(e) => onChange({ dataColumn: e.target.value.toUpperCase() })} className="w-16" placeholder="F" />
+                                            <FieldDescription>Category data — default F</FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="coa-column">Chart of Accounts Column</FieldLabel>
+                                            <Input id="coa-column" value={cfg.coaColumn} onChange={(e) => onChange({ coaColumn: e.target.value.toUpperCase() })} className="w-16" placeholder="D" />
+                                            <FieldDescription>COA column — empty means category. Default D</FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="header-row">Header Row</FieldLabel>
+                                            <Input id="header-row" type="number" value={cfg.headerRow} onChange={(e) => onChange({ headerRow: Number(e.target.value) || 0 })} className="w-20" placeholder="7" />
+                                            <FieldDescription>Header {cfg.headerRow}; data starts {cfg.headerRow + 1}</FieldDescription>
+                                        </Field>
+                                    </div>
+                                    <div className="mt-4 grid grid-cols-2 gap-4">
+                                        <Field>
+                                            <FieldLabel htmlFor="additional-header-row">Additional Items Header Row</FieldLabel>
+                                            <Input
+                                                id="additional-header-row"
+                                                type="number"
+                                                value={cfg.additionalItemsHeaderRow ?? ""}
+                                                onChange={(e) => { const v = e.target.value ? Number(e.target.value) : undefined; onChange({ additionalItemsHeaderRow: v }); }}
+                                                className="w-24"
+                                                placeholder="e.g. 85"
+                                            />
+                                            <FieldDescription>{cfg.additionalItemsHeaderRow ? `Resumes at ${cfg.additionalItemsHeaderRow + 1}` : "Leave empty if none"}</FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel htmlFor="nonproc-header-row">Non-Procurement Header Row</FieldLabel>
+                                            <Input
+                                                id="nonproc-header-row"
+                                                type="number"
+                                                value={cfg.nonProcurementHeaderRow ?? ""}
+                                                onChange={(e) => { const v = e.target.value ? Number(e.target.value) : undefined; onChange({ nonProcurementHeaderRow: v }); }}
+                                                className="w-24"
+                                                placeholder="e.g. 1258"
+                                            />
+                                            <FieldDescription>{cfg.nonProcurementHeaderRow ? `Starts at ${cfg.nonProcurementHeaderRow + 1}` : "Leave empty if none"}</FieldDescription>
+                                        </Field>
+                                    </div>
+                                    <div className="mt-3 text-xs text-muted-foreground">
+                                        Groups: procurement [{cfg.headerRow + 1}..
+                                        {cfg.additionalItemsHeaderRow
+                                            ? cfg.additionalItemsHeaderRow - 1
+                                            : cfg.nonProcurementHeaderRow
+                                              ? cfg.nonProcurementHeaderRow - 1
+                                              : "last"}
+                                        ] → additional [
+                                        {cfg.additionalItemsHeaderRow ? cfg.additionalItemsHeaderRow + 1 : "—"}..
+                                        {cfg.nonProcurementHeaderRow ? cfg.nonProcurementHeaderRow - 1 : "last"}] →
+                                        non-proc [
+                                        {cfg.nonProcurementHeaderRow ? cfg.nonProcurementHeaderRow + 1 : "—"}..last]
+                                    </div>
+                                    {calibrationMode === "per-sheet" && (
+                                        <div className="mt-3 text-xs">
+                                            <span className="text-muted-foreground">Effective for {selectedSheets.length} sheets: </span>
+                                            {selectedSheets.map((s) => {
+                                                const c = calibrations[s] ?? sharedConfig;
+                                                const same = c && cfg && c.headerRow===cfg.headerRow && c.dataColumn===cfg.dataColumn && c.coaColumn===cfg.coaColumn;
+                                                return <Badge key={s} variant={same?"secondary":"outline"} className="mr-1 text-xs">{s}: {c ? `${c.dataColumn}/${c.coaColumn} H${c.headerRow}` : "default"}</Badge>
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                         <div className="flex justify-between">
                             <Button variant="outline" onClick={() => setStep("upload")}>
                                 Back
@@ -1023,108 +968,115 @@ export default function CategoryImport() {
                     <TabsContent value="verify" className="mt-4 flex flex-col gap-4">
                         <div className="rounded-lg border p-4">
                             <p className="mb-2 text-sm font-medium">
-                                Verify procurement format (categories not in additional)
+                                Verify procurement format per sheet (categories not in additional)
                             </p>
                             <p className="mb-3 text-xs text-muted-foreground">
-                                Checks procurement cats (excluding additional) follow cat → coa(s) →
-                                items → cat - total (normalize only, suffix/prefix total).
+                                Checks each selected sheet ({selectedSheets.length}) with its calibration ({calibrationMode}) — cat → coa(s) → items → cat - total. Per-sheet results below.
                             </p>
-                            <Button
-                                variant="secondary"
-                                disabled={!canVerify}
-                                onClick={handleVerify}
-                            >
-                                Verify Sheet Format
-                            </Button>
-                            {verifyResult && (
-                                <div
-                                    className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? "border-green-200 bg-green-50 text-green-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}
-                                >
-                                    <div className="font-medium">{verifyResult.message}</div>
-                                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                        <Badge
-                                            variant={
-                                                verifyResult.groups.procurement
-                                                    ? "default"
-                                                    : "secondary"
-                                            }
-                                        >
-                                            Procurement: {verifyResult.groups.procurement} cells
-                                        </Badge>
-                                        <Badge
-                                            variant={
-                                                verifyResult.groups.additional
-                                                    ? "default"
-                                                    : "secondary"
-                                            }
-                                        >
-                                            Additional: {verifyResult.groups.additional} cells
-                                        </Badge>
-                                        <Badge
-                                            variant={
-                                                verifyResult.groups.nonProcurement
-                                                    ? "default"
-                                                    : "secondary"
-                                            }
-                                        >
-                                            Non-Proc: {verifyResult.groups.nonProcurement} cells
-                                        </Badge>
-                                    </div>
-                                    {verifyResult.details.length > 0 && (
-                                        <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
-                                            {verifyResult.details.map((d, i) => (
-                                                <li key={i}>{d}</li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                    {verifyResult.errors.length > 0 && (
-                                        <div className="mt-3">
-                                            <div className="text-xs font-semibold">
-                                                Issues ({verifyResult.errors.length}):
-                                            </div>
-                                            <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5">
-                                                {verifyResult.errors.map((e, i) => (
-                                                    <li key={i}>
-                                                        <span className="font-mono">
-                                                            Row {e.row}:
-                                                        </span>{" "}
-                                                        {e.message}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                            {!verifyResult.valid && (
-                                                <div className="mt-3 flex items-center gap-2 rounded-md border border-amber-200 bg-white p-2">
-                                                    <Switch
-                                                        checked={skipProblematic}
-                                                        onCheckedChange={setSkipProblematic}
-                                                        size="sm"
-                                                    />
-                                                    <span className="text-xs">
-                                                        Skip {verifyResult.errors.length}{" "}
-                                                        problematic row(s) and proceed to extraction
-                                                        (they will show as{" "}
-                                                        <span className="font-medium">
-                                                            skipped: problematic
-                                                        </span>{" "}
-                                                        in Review)
-                                                    </span>
+                            <div className="flex items-center gap-2">
+                                <Button variant="secondary" disabled={!canVerify} onClick={handleVerify}>
+                                    Verify {selectedSheets.length} Sheet{selectedSheets.length === 1 ? "" : "s"}
+                                </Button>
+                                {hasAnyVerify && (
+                                    <span className="text-xs text-muted-foreground">
+                                        {Object.values(verifyResults).filter((r) => r.valid).length}/{selectedSheets.length} valid
+                                        {allVerifyValid && " — all ✅"}
+                                    </span>
+                                )}
+                            </div>
+                            {hasAnyVerify && (
+                                <div className="mt-4 flex flex-wrap gap-2">
+                                    {selectedSheets.map((sh) => {
+                                        const r = verifyResults[sh];
+                                        if (!r) return <Badge key={sh} variant="secondary">{sh}: —</Badge>;
+                                        return <Badge key={sh} variant={r.valid ? "default" : "secondary"} className={r.valid ? "bg-green-600" : "bg-amber-500"}>{sh}: {r.valid ? "✅" : "❌"} {r.errors.length} issues</Badge>;
+                                    })}
+                                </div>
+                            )}
+                            {hasAnyVerify && selectedSheets.length > 1 && (
+                                <Tabs value={activeVerifySheet} onValueChange={setActiveVerifySheet} className="mt-4">
+                                    <TabsList variant="line" className="w-full">
+                                        {selectedSheets.map((sh) => {
+                                            const r = verifyResults[sh];
+                                            return (
+                                                <TabsTrigger key={sh} value={sh} className="flex-1">
+                                                    {sh} {r?.valid ? <span className="ml-1 text-xs text-green-600">✓</span> : r ? <span className="ml-1 text-xs text-amber-600">❌ {r.errors.length}</span> : null}
+                                                </TabsTrigger>
+                                            );
+                                        })}
+                                    </TabsList>
+                                    {selectedSheets.map((sh) => {
+                                        const verifyResult = verifyResults[sh];
+                                        if (!verifyResult) return <TabsContent key={sh} value={sh}><div className="p-4 text-sm text-muted-foreground">Not verified yet.</div></TabsContent>;
+                                        return (
+                                            <TabsContent key={sh} value={sh}>
+                                                <div className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? "border-green-200 bg-green-50 text-green-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
+                                                    <div className="font-medium">{verifyResult.message} <span className="font-normal text-xs opacity-70">— {sh}</span></div>
+                                                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                                        <Badge variant={verifyResult.groups.procurement ? "default" : "secondary"}>Procurement: {verifyResult.groups.procurement} cells</Badge>
+                                                        <Badge variant={verifyResult.groups.additional ? "default" : "secondary"}>Additional: {verifyResult.groups.additional} cells</Badge>
+                                                        <Badge variant={verifyResult.groups.nonProcurement ? "default" : "secondary"}>Non-Proc: {verifyResult.groups.nonProcurement} cells</Badge>
+                                                    </div>
+                                                    {verifyResult.details.length > 0 && (
+                                                        <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
+                                                            {verifyResult.details.map((d, i) => (<li key={i}>{d}</li>))}
+                                                        </ul>
+                                                    )}
+                                                    {verifyResult.errors.length > 0 && (
+                                                        <div className="mt-3">
+                                                            <div className="text-xs font-semibold">Issues ({verifyResult.errors.length}) in {sh}:</div>
+                                                            <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5">
+                                                                {verifyResult.errors.map((e, i) => (<li key={i}><span className="font-mono">Row {e.row}:</span> {e.message}</li>))}
+                                                            </ul>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
+                                            </TabsContent>
+                                        );
+                                    })}
+                                </Tabs>
+                            )}
+                            {hasAnyVerify && selectedSheets.length === 1 && (() => {
+                                const sh = selectedSheets[0];
+                                const verifyResult = verifyResults[sh];
+                                if (!verifyResult) return null;
+                                return (
+                                    <div className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? "border-green-200 bg-green-50 text-green-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
+                                        <div className="font-medium">{verifyResult.message}</div>
+                                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                            <Badge variant={verifyResult.groups.procurement ? "default" : "secondary"}>Procurement: {verifyResult.groups.procurement} cells</Badge>
+                                            <Badge variant={verifyResult.groups.additional ? "default" : "secondary"}>Additional: {verifyResult.groups.additional} cells</Badge>
+                                            <Badge variant={verifyResult.groups.nonProcurement ? "default" : "secondary"}>Non-Proc: {verifyResult.groups.nonProcurement} cells</Badge>
                                         </div>
-                                    )}
+                                        {verifyResult.details.length > 0 && (
+                                            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
+                                                {verifyResult.details.map((d, i) => (<li key={i}>{d}</li>))}
+                                            </ul>
+                                        )}
+                                        {verifyResult.errors.length > 0 && (
+                                            <div className="mt-3">
+                                                <div className="text-xs font-semibold">Issues ({verifyResult.errors.length}):</div>
+                                                <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5">
+                                                    {verifyResult.errors.map((e, i) => (<li key={i}><span className="font-mono">Row {e.row}:</span> {e.message}</li>))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+                            {hasAnyVerify && !allVerifyValid && (
+                                <div className="mt-4 flex items-center gap-2 rounded-md border border-amber-200 bg-white p-2">
+                                    <Switch checked={skipProblematic} onCheckedChange={setSkipProblematic} size="sm" />
+                                    <span className="text-xs">
+                                        Skip {Object.values(verifyResults).reduce((a, r) => a + (r.valid ? 0 : r.errors.length), 0)} problematic row(s) across {selectedSheets.filter((s) => !verifyResults[s]?.valid).length} sheet(s) and proceed to extraction (they will show as <span className="font-medium">skipped: problematic</span> in Review)
+                                    </span>
                                 </div>
                             )}
                         </div>
                         <div className="flex justify-between">
-                            <Button variant="outline" onClick={() => setStep("calibrate")}>
-                                Back
-                            </Button>
+                            <Button variant="outline" onClick={() => setStep("calibrate")}>Back</Button>
                             <Button onClick={() => setStep("extract")} disabled={!canExtract}>
-                                {verifyResult?.valid
-                                    ? "Next: Extract"
-                                    : skipProblematic
-                                      ? "Next: Extract (skipping problematic)"
-                                      : "Fix verification first"}
+                                {allVerifyValid ? `Next: Extract (${selectedSheets.length} sheets)` : skipProblematic && hasAnyVerify ? "Next: Extract (skipping problematic)" : "Fix verification first"}
                             </Button>
                         </div>
                     </TabsContent>
@@ -1132,11 +1084,11 @@ export default function CategoryImport() {
                     <TabsContent value="extract" className="mt-4 flex flex-col gap-4">
                         {!canExtract ? (
                             <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
-                                {verifyResult ? (
+                                {hasAnyVerify ? (
                                     <>
-                                        Verification failed — enable{" "}
+                                        Verification failed — {Object.values(verifyResults).filter((r) => !r.valid).length} sheet(s) invalid — enable{" "}
                                         <span className="font-medium">Skip problematic rows</span>{" "}
-                                        in Verify tab to proceed, or fix sheet format.
+                                        in Verify tab to proceed, or fix sheet format. ({selectedSheets.length} sheets selected, {Object.values(verifyResults).filter((r) => r.valid).length} valid)
                                     </>
                                 ) : (
                                     "Verify format first (must be valid or skipped) to enable extraction."
@@ -1145,14 +1097,12 @@ export default function CategoryImport() {
                         ) : (
                             <>
                                 <div className="flex items-center gap-2">
-                                    <Button onClick={handleExtract} disabled={!selectedSheet}>
-                                        Extract Categories
+                                    <Button onClick={handleExtract} disabled={selectedSheets.length === 0}>
+                                        Extract Categories ({selectedSheets.length} sheets)
                                     </Button>
                                     {extractResult && (
                                         <span className="text-sm text-muted-foreground">
-                                            Raw {extractResult.filtered.length} → Unique{" "}
-                                            {extractResult.unique.length} (duplicates{" "}
-                                            {extractResult.duplicates.length})
+                                            Raw {extractResult.filtered.length} → Unique {extractResult.unique.length} (duplicates {extractResult.duplicates.length}) across {selectedSheets.length} sheets
                                         </span>
                                     )}
                                 </div>
@@ -1205,109 +1155,79 @@ export default function CategoryImport() {
                                         <div className="rounded-lg border">
                                             <div className="p-3">
                                                 <h3 className="text-sm font-semibold">
-                                                    Review — Unique Categories (
-                                                    {extractResult.unique.length})
+                                                    Review — Unique Categories ({extractResult.unique.length}) across {selectedSheets.length} sheets
                                                 </h3>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Strict dedupe by normalized (trim → collapse →
-                                                    lowercase). Duplicates show kept vs duplicate
-                                                    rows.
+                                                    Global dedupe by normalized (trim → collapse → lowercase) across all {selectedSheets.length} sheets. Sheets = distinct sheets count (e.g., 15 means exists in 15 sheets). Locations = sheet!colRow coordinate — hover to see all.
                                                 </p>
                                             </div>
-                                            <div className="max-h-64 overflow-auto">
+                                            <div className="max-h-80 overflow-auto">
                                                 <Table>
                                                     <TableHeader>
                                                         <TableRow>
-                                                            <TableHead>Rows</TableHead>
                                                             <TableHead>Raw</TableHead>
                                                             <TableHead>Normalized</TableHead>
-                                                            <TableHead>Count</TableHead>
+                                                            <TableHead className="text-center">Sheets</TableHead>
+                                                            <TableHead>Locations (coordinate)</TableHead>
+                                                            <TableHead className="text-center">Occurrences</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                        {extractResult.unique
-                                                            .slice(0, 50)
-                                                            .map((u) => (
-                                                                <TableRow key={u.normalized}>
-                                                                    <TableCell className="font-mono text-xs">
-                                                                        {u.rows.join(", ")}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-xs">
-                                                                        {u.raw}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-xs text-muted-foreground">
-                                                                        {u.normalized}
-                                                                    </TableCell>
-                                                                    <TableCell>{u.count}</TableCell>
-                                                                </TableRow>
-                                                            ))}
+                                                        {extractResult.unique.slice(0, 50).map((u) => (
+                                                            <TableRow key={u.normalized}>
+                                                                <TableCell className="max-w-[22ch] truncate text-xs" title={u.raw}>{u.raw}</TableCell>
+                                                                <TableCell className="max-w-[22ch] truncate text-xs text-muted-foreground" title={u.normalized}>{u.normalized}</TableCell>
+                                                                <TableCell className="text-center">
+                                                                    <Badge variant={u.sheetCount === selectedSheets.length ? "default" : u.sheetCount > 1 ? "secondary" : "outline"} className="font-mono text-xs" title={u.sheets.join(", ")}>
+                                                                        {u.sheetCount}/{selectedSheets.length} {u.sheetCount === selectedSheets.length ? "✓" : ""}
+                                                                    </Badge>
+                                                                    <div className="mt-1 max-w-[18ch] truncate text-xs text-muted-foreground" title={u.sheets.join(", ")}>{u.sheets.slice(0,3).join(", ")}{u.sheets.length>3 ? ` +${u.sheets.length-3}`:""}</div>
+                                                                </TableCell>
+                                                                <TableCell className="max-w-[30ch] truncate font-mono text-xs" title={u.locations.map((l)=>l.address).join(", ")}>
+                                                                    {u.locations.slice(0,2).map((l)=>l.address).join(", ")}{u.locations.length>2 ? ` +${u.locations.length-2}` : ""} <span className="text-muted-foreground">({u.locations[0]?.col}{u.locations[0]?.row})</span>
+                                                                </TableCell>
+                                                                <TableCell className="text-center font-mono">{u.count}</TableCell>
+                                                            </TableRow>
+                                                        ))}
                                                     </TableBody>
                                                 </Table>
                                             </div>
-                                            {extractResult.unique.length > 50 && (
-                                                <div className="p-2 text-center text-xs text-muted-foreground">
-                                                    Showing first 50 of{" "}
-                                                    {extractResult.unique.length}
-                                                </div>
-                                            )}
+                                            {extractResult.unique.length > 50 && <div className="p-2 text-center text-xs text-muted-foreground">Showing first 50 of {extractResult.unique.length}</div>}
+                                            <div className="p-3 text-xs text-muted-foreground">
+                                                Total filtered rows: {extractResult.filtered.length} — unique {extractResult.unique.length} — duplicates {extractResult.duplicates.length}. Each unique shows where it was found: e.g., <span className="font-mono">Sheet1!F12</span> = sheet “Sheet1”, column F, row 12.
+                                            </div>
                                         </div>
 
                                         {extractResult.duplicates.length > 0 && (
                                             <div className="rounded-lg border p-3">
-                                                <h4 className="text-xs font-semibold">
-                                                    Duplicates (normalized exact)
-                                                </h4>
-                                                <ul className="mt-1 max-h-32 list-disc overflow-auto pl-5 text-xs">
-                                                    {extractResult.duplicates
-                                                        .slice(0, 10)
-                                                        .map((d, i) => (
-                                                            <li key={i}>
-                                                                <span className="font-mono">
-                                                                    {d.normalized}
-                                                                </span>{" "}
-                                                                — kept {d.keptRow}, duplicate{" "}
-                                                                {d.duplicateRow} (“{d.duplicateRaw}
-                                                                ”)
-                                                            </li>
-                                                        ))}
+                                                <h4 className="text-xs font-semibold">Duplicates (normalized exact) — global across {selectedSheets.length} sheets</h4>
+                                                <ul className="mt-1 max-h-40 list-disc overflow-auto pl-5 text-xs">
+                                                    {extractResult.duplicates.slice(0, 15).map((d, i) => (
+                                                        <li key={i}>
+                                                            <span className="font-mono">{d.normalized}</span> — kept <span className="font-mono">{d.keptAddress}</span> ({d.keptSheet}!{d.keptRow}), duplicate <span className="font-mono">{d.duplicateAddress}</span> (“{d.duplicateRaw}”)
+                                                        </li>
+                                                    ))}
                                                 </ul>
+                                                {extractResult.duplicates.length>15 && <div className="mt-1 text-xs text-muted-foreground">Showing 15 of {extractResult.duplicates.length}</div>}
                                             </div>
                                         )}
 
                                         {extractResult.skippedProblematic.length > 0 && (
                                             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
                                                 <h4 className="text-xs font-semibold text-amber-900">
-                                                    Skipped: Problematic (from Verify)
+                                                    Skipped: Problematic (from Verify) — per sheet
                                                 </h4>
                                                 <p className="text-xs text-amber-800">
-                                                    Excluded all rows flagged in Verify (row match
-                                                    or normalized match). Shown for review.
+                                                    Excluded rows flagged in Verify (row or normalized match) per sheet. Shown for review.
                                                 </p>
-                                                <ul className="mt-1 max-h-32 list-disc overflow-auto pl-5 text-xs text-amber-900">
-                                                    {extractResult.skippedProblematic
-                                                        .slice(0, 20)
-                                                        .map((s, i) => (
-                                                            <li key={i}>
-                                                                <span className="font-mono">
-                                                                    Row {s.row}:
-                                                                </span>{" "}
-                                                                “{s.raw}” →{" "}
-                                                                <span className="font-mono">
-                                                                    {s.normalized}
-                                                                </span>{" "}
-                                                                —{" "}
-                                                                <span className="italic">
-                                                                    {s.reason}
-                                                                </span>
-                                                            </li>
-                                                        ))}
+                                                <ul className="mt-1 max-h-40 list-disc overflow-auto pl-5 text-xs text-amber-900">
+                                                    {extractResult.skippedProblematic.slice(0, 20).map((s, i) => (
+                                                        <li key={i}>
+                                                            <span className="font-mono">{s.sheet}!{s.row}:</span> “{s.raw}” → <span className="font-mono">{s.normalized}</span> — <span className="italic">{s.reason}</span>
+                                                        </li>
+                                                    ))}
                                                 </ul>
-                                                {extractResult.skippedProblematic.length > 20 && (
-                                                    <div className="mt-1 text-xs text-amber-800">
-                                                        Showing first 20 of{" "}
-                                                        {extractResult.skippedProblematic.length}
-                                                    </div>
-                                                )}
+                                                {extractResult.skippedProblematic.length > 20 && <div className="mt-1 text-xs text-amber-800">Showing first 20 of {extractResult.skippedProblematic.length}</div>}
                                             </div>
                                         )}
 
