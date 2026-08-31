@@ -1,6 +1,5 @@
 import { createColumnHelper } from "@tanstack/react-table";
 import { Pencil, Trash } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { PpmpCategory } from "@/types";
 
@@ -20,19 +19,6 @@ const columns = [
                 {value.getValue() ? "Non-Procurement" : "Procurement"}
             </div>
         ),
-    }),
-    columnHelper.accessor("chart_of_account_ppmp_categories", {
-        size: 300,
-        header: () => <div className="px-1">Chart of Accounts</div>,
-        cell: ({ getValue }) => {
-            return (
-                <div className="flex flex-wrap gap-2 px-1">
-                    {getValue().map((item) => {
-                        return <Badge key={item.id}>{item.chart_of_account?.account_title}</Badge>;
-                    })}
-                </div>
-            );
-        },
     }),
     columnHelper.display({
         id: "actions",

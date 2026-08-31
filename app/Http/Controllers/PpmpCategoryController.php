@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePpmpCategoryRequest;
 use App\Http\Requests\UpdatePpmpCategoryRequest;
-use App\Models\ChartOfAccount;
 use App\Models\ChartOfAccountPpmpCategory;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
@@ -25,19 +24,6 @@ class PpmpCategoryController extends Controller
                 'id',
                 'name',
                 'is_non_procurement',
-            ])
-                ->with([
-                    'chartOfAccountPpmpCategories:id,chart_of_account_id,ppmp_category_id',
-                    'chartOfAccountPpmpCategories.chartOfAccount:id,account_number,account_title,expense_class,description',
-                ])
-                ->get(),
-
-            'chartOfAccounts' => ChartOfAccount::select([
-                'id',
-                'account_number',
-                'account_title',
-                'expense_class',
-                'description',
             ])->get(),
 
             'can' => [
@@ -67,17 +53,10 @@ class PpmpCategoryController extends Controller
 
         $validated = $request->validated();
 
-        $ppmpCategory = PpmpCategory::create([
+        PpmpCategory::create([
             'name' => $validated['name'],
             'is_non_procurement' => $validated['is_non_procurement'],
         ]);
-
-        foreach ($validated['chart_of_accounts'] ?? [] as $coaId) {
-            ChartOfAccountPpmpCategory::create([
-                'chart_of_account_id' => $coaId,
-                'ppmp_category_id' => $ppmpCategory->id,
-            ]);
-        }
     }
 
     /**
@@ -111,53 +90,6 @@ class PpmpCategoryController extends Controller
             'name' => $validated['name'],
             'is_non_procurement' => $validated['is_non_procurement'],
         ]);
-
-        $newCoaIds = $validated['chart_of_accounts'] ?? [];
-        $currentPivots = $ppmpCategory->chartOfAccountPpmpCategories()->get();
-
-        // Find pivots being removed (their chart_of_account_id is not in the new list)
-        $removedPivots = $currentPivots->reject(function ($pivot) use (
-            $newCoaIds,
-        ) {
-            return in_array($pivot->chart_of_account_id, $newCoaIds);
-        });
-
-        $hasDependents = $removedPivots->contains(function ($pivot) {
-            return $pivot->ppmpPriceLists()->exists();
-        });
-
-        if ($hasDependents && !request('force')) {
-            return back()->withErrors([
-                'force_delete' =>
-                    'Some chart of accounts being removed have dependent PPMP price list items.',
-            ]);
-        }
-
-        // Delete dependent price lists for removed pivots
-        $removedPivotIds = $removedPivots->pluck('id');
-        PpmpPriceList::whereIn(
-            'chart_of_account_ppmp_category_id',
-            $removedPivotIds,
-        )->delete();
-
-        // Delete removed pivots and create new ones
-        $ppmpCategory
-            ->chartOfAccountPpmpCategories()
-            ->whereIn('id', $removedPivotIds)
-            ->delete();
-
-        foreach ($newCoaIds as $coaId) {
-            $existingPivot = $currentPivots->firstWhere(
-                'chart_of_account_id',
-                $coaId,
-            );
-            if (!$existingPivot) {
-                ChartOfAccountPpmpCategory::create([
-                    'chart_of_account_id' => $coaId,
-                    'ppmp_category_id' => $ppmpCategory->id,
-                ]);
-            }
-        }
     }
 
     /**

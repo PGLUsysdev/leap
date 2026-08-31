@@ -50,6 +50,7 @@ import { index as officesIndex } from "@/routes/offices";
 // import { index as positionIndex } from "@/routes/position";
 import { index as ppaIndex } from "@/routes/ppa";
 import { index as ppmpCategoriesIndex } from "@/routes/ppmp-categories";
+import { index as ppmpCategoryMappingsIndex } from "@/routes/ppmp-category-mappings";
 import { index as priceListsIndex } from "@/routes/price-lists";
 import { index as rolesIndex } from "@/routes/roles";
 // Disabled for now — PS logic refactor in progress (kept for later).
@@ -119,6 +120,12 @@ const mainNavItems: NavItem[] = [
     {
         title: "PPMP Categories",
         href: ppmpCategoriesIndex(),
+        icon: Tags,
+        permission: "ppmp-category.view",
+    },
+    {
+        title: "Category-COA Mappings",
+        href: ppmpCategoryMappingsIndex(),
         icon: Tags,
         permission: "ppmp-category.view",
     },

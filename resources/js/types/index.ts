@@ -248,6 +248,7 @@ export interface CcTypology {
 export interface ChartOfAccount {
     id: number;
     account_number: string;
+    path: string;
     account_title: string;
     account_type: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
     expense_class: "PS" | "MOOE" | "FE" | "CO";

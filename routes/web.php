@@ -265,6 +265,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'destroy',
     ])->name('ppmp-categories.destroy');
 
+    // PPMP Category ↔ COA Mappings
+    Route::get('ppmp-category-mappings', [
+        \App\Http\Controllers\ChartOfAccountPpmpCategoryController::class,
+        'index',
+    ])->name('ppmp-category-mappings.index');
+    Route::post('ppmp-category-mappings', [
+        \App\Http\Controllers\ChartOfAccountPpmpCategoryController::class,
+        'store',
+    ])->name('ppmp-category-mappings.store');
+    Route::delete('ppmp-category-mappings/{chartOfAccountPpmpCategory}', [
+        \App\Http\Controllers\ChartOfAccountPpmpCategoryController::class,
+        'destroy',
+    ])->name('ppmp-category-mappings.destroy');
+
     // Chart of Accounts
     Route::get('chart-of-accounts', [ChartOfAccountController::class, 'index'])->name(
         'chart-of-accounts.manage',
