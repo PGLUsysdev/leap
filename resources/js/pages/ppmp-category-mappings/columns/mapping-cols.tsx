@@ -9,8 +9,13 @@ const columnHelper = createColumnHelper<ChartOfAccountPpmpCategory>();
 const columns = [
     columnHelper.accessor("ppmp_category.name", {
         header: () => <div className="px-1">Category</div>,
-        size: 260,
+        size: 220,
         cell: (info) => <div className="px-1 text-wrap font-medium">{info.getValue() ?? "-"}</div>,
+    }),
+    columnHelper.accessor("ppmp_category.is_additional", {
+        header: () => <div className="px-1">Additional</div>,
+        size: 90,
+        cell: (info) => <div className="px-1 text-wrap">{info.getValue() ? "Yes" : "—"}</div>,
     }),
     columnHelper.accessor("chart_of_account.path", {
         header: () => <div className="px-1">Account No.</div>,

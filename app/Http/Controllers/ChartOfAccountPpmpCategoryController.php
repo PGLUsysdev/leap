@@ -21,13 +21,13 @@ class ChartOfAccountPpmpCategoryController extends Controller
 
         return Inertia::render('ppmp-category-mappings/index', [
             'mappings' => ChartOfAccountPpmpCategory::with([
-                'ppmpCategory:id,name',
+                'ppmpCategory:id,name,is_non_procurement,is_additional',
                 'chartOfAccount:id,account_number,path,account_title,expense_class,description',
             ])
                 ->withCount('ppmpPriceLists')
                 ->orderBy('id')
                 ->get(),
-            'categories' => PpmpCategory::select(['id', 'name'])
+            'categories' => PpmpCategory::select(['id', 'name', 'is_non_procurement', 'is_additional'])
                 ->orderBy('name')
                 ->get(),
             'chartOfAccounts' => ChartOfAccount::select([

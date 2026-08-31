@@ -24,6 +24,7 @@ class PpmpCategoryController extends Controller
                 'id',
                 'name',
                 'is_non_procurement',
+                'is_additional',
             ])->get(),
 
             'can' => [
@@ -56,6 +57,7 @@ class PpmpCategoryController extends Controller
         PpmpCategory::create([
             'name' => $validated['name'],
             'is_non_procurement' => $validated['is_non_procurement'],
+            'is_additional' => $validated['is_additional'],
         ]);
     }
 
@@ -89,6 +91,7 @@ class PpmpCategoryController extends Controller
         $ppmpCategory->update([
             'name' => $validated['name'],
             'is_non_procurement' => $validated['is_non_procurement'],
+            'is_additional' => $validated['is_additional'],
         ]);
     }
 

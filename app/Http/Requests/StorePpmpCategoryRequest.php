@@ -25,6 +25,7 @@ class StorePpmpCategoryRequest extends FormRequest
         return [
             'name' => 'required|string|max:100',
             'is_non_procurement' => 'required|boolean',
+            'is_additional' => 'required|boolean',
         ];
     }
 }

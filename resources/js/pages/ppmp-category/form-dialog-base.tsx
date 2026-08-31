@@ -27,6 +27,7 @@ interface FormDialogProps {
 const formSchema = z.object({
     name: z.string().trim().min(1, { message: "Name is required" }).max(100),
     is_non_procurement: z.boolean(),
+    is_additional: z.boolean(),
 });
 
 export default function FormDialog({ open, onOpenChange, initialData }: FormDialogProps) {
@@ -40,6 +41,7 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
         defaultValues: {
             name: "",
             is_non_procurement: false,
+            is_additional: false,
         },
     });
 
@@ -50,10 +52,12 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                     ? {
                           name: initialData.name,
                           is_non_procurement: initialData.is_non_procurement,
+                          is_additional: initialData.is_additional,
                       }
                     : {
                           name: "",
                           is_non_procurement: false,
+                          is_additional: false,
                       },
             );
         }
@@ -190,6 +194,39 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                                         />
                                     </div>
                                 </div>
+                                <Controller
+                                    name="is_additional"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field data-invalid={fieldState.invalid}>
+                                            <FieldLabel className="font-normal">Additional Items</FieldLabel>
+                                            <ToggleGroup
+                                                value={[field.value ? "additional" : "regular"]}
+                                                onValueChange={(value) => {
+                                                    if (value.length > 0) {
+                                                        field.onChange(value[0] === "additional");
+                                                    }
+                                                }}
+                                                orientation="horizontal"
+                                            >
+                                                <ToggleGroupItem
+                                                    value="regular"
+                                                    aria-label="Regular"
+                                                    className="flex-1 border"
+                                                >
+                                                    Regular
+                                                </ToggleGroupItem>
+                                                <ToggleGroupItem
+                                                    value="additional"
+                                                    aria-label="Additional"
+                                                    className="flex-1 border"
+                                                >
+                                                    Additional
+                                                </ToggleGroupItem>
+                                            </ToggleGroup>
+                                        </Field>
+                                    )}
+                                />
                             </form>
 
                             <ScrollBar orientation="vertical" />
@@ -204,11 +241,13 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                                     form.reset({
                                         name: initialData.name,
                                         is_non_procurement: initialData.is_non_procurement,
+                                        is_additional: initialData.is_additional,
                                     });
                                 } else {
                                     form.reset({
                                         name: "",
                                         is_non_procurement: false,
+                                        is_additional: false,
                                     });
                                 }
                             }}

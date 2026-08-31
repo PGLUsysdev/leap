@@ -12,12 +12,19 @@ const columns = [
         cell: (value) => <div className="px-1 text-wrap">{value.getValue()}</div>,
     }),
     columnHelper.accessor("is_non_procurement", {
-        size: 200,
-        header: () => <div className="px-1">Procurement Type</div>,
+        size: 160,
+        header: () => <div className="px-1">Procurement</div>,
         cell: (value) => (
             <div className="px-1 text-wrap">
-                {value.getValue() ? "Non-Procurement" : "Procurement"}
+                {value.getValue() ? "Non-Proc" : "Procurement"}
             </div>
+        ),
+    }),
+    columnHelper.accessor("is_additional", {
+        size: 120,
+        header: () => <div className="px-1">Additional</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue() ? "Yes" : "—"}</div>
         ),
     }),
     columnHelper.display({
