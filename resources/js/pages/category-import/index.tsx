@@ -16,6 +16,7 @@ import {
     SelectValue,
 } from "@/components/base-ui-components/ui/select";
 import { Spinner } from "@/components/base-ui-components/ui/spinner";
+import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
 import { Switch } from "@/components/base-ui-components/ui/switch";
 import {
     Table,
@@ -922,25 +923,41 @@ export default function CategoryImport() {
                                         </Field>
                                     </div>
                                     <Field className="mt-4">
-                                        <FieldLabel htmlFor="coa-label-mode">COA items format *</FieldLabel>
-                                        <Select
-                                            value={cfg.coaLabelMode}
-                                            onValueChange={(v) => onChange({ coaLabelMode: v as CatSheetConfig["coaLabelMode"] })}
+                                        <FieldLabel>COA items format *</FieldLabel>
+                                        <ToggleGroup
+                                            variant="outline"
+                                            spacing={2}
+                                            value={[cfg.coaLabelMode]}
+                                            onValueChange={(value) => {
+                                                if (value.length > 0) {
+                                                    onChange({ coaLabelMode: value[0] as CatSheetConfig["coaLabelMode"] });
+                                                }
+                                            }}
+                                            className="w-full"
                                         >
-                                            <SelectTrigger id="coa-label-mode" className="w-full">
-                                                <SelectValue placeholder="Select format" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    <SelectItem value="with-label">With COA label rows (Category → COA label → Items with D=COA)</SelectItem>
-                                                    <SelectItem value="without-label">Without label (Category → Items with D=COA directly)</SelectItem>
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
+                                            <ToggleGroupItem
+                                                value="with-label"
+                                                className="flex-1 flex-col items-start gap-1 border p-3 text-left h-auto whitespace-normal"
+                                            >
+                                                <span className="font-medium">With COA label rows</span>
+                                                <span className="text-xs font-normal text-muted-foreground whitespace-normal">
+                                                    Category → COA label in F (next D same) → Items with D=COA
+                                                </span>
+                                                <span className="text-xs text-muted-foreground/70 font-mono">Cat 1 → coa 1 → items / coa 2 → items → Cat 1 - Total</span>
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem
+                                                value="without-label"
+                                                className="flex-1 flex-col items-start gap-1 border p-3 text-left h-auto whitespace-normal"
+                                            >
+                                                <span className="font-medium">Without label</span>
+                                                <span className="text-xs font-normal text-muted-foreground whitespace-normal">
+                                                    Category → Items directly with D=COA (no extra label row)
+                                                </span>
+                                                <span className="text-xs text-muted-foreground/70 font-mono">Cat 1 → items (coa 1), items (coa 2) → Cat 1 - Total</span>
+                                            </ToggleGroupItem>
+                                        </ToggleGroup>
                                         <FieldDescription>
-                                            {cfg.coaLabelMode === "without-label"
-                                                ? "Example: Cat 1 → items with coa 1..., coa 2... (no extra COA label row). Your second table."
-                                                : "Example: Cat 1 → coa 1 label → items, coa 2 label → items (your first table)."}
+                                            Choose the layout your sheets use. Both tables you showed are supported.
                                         </FieldDescription>
                                     </Field>
                                     <div className="mt-4 grid grid-cols-2 gap-4">
