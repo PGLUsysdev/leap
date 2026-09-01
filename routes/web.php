@@ -265,6 +265,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'destroy',
     ])->name('ppmp-categories.destroy');
 
+    // Category COA Mapping
+    Route::get('category-coa-mapping', fn() => Inertia::render('category-coa-mapping/index'))->name(
+        'category-coa-mapping.index',
+    );
+
     // PPMP Category ↔ COA Mappings
     Route::get('ppmp-category-mappings', [
         \App\Http\Controllers\ChartOfAccountPpmpCategoryController::class,
