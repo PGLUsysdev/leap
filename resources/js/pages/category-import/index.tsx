@@ -104,6 +104,63 @@ function isTotalRow(normalized: string): boolean {
     return /\s*-\s*total$/.test(normalized) || /^total\b/.test(normalized);
 }
 
+const SHORT_PROCUREMENT_ROOTS = new Set(["oil", "gas", "ink", "lab", "cop", "car", "med", "law"]);
+
+function levenshtein(a: string, b: string): number {
+    if (a === b) return 0;
+    const al = a.length;
+    const bl = b.length;
+    if (al === 0) return bl;
+    if (bl === 0) return al;
+    let prev = Array(bl + 1)
+        .fill(0)
+        .map((_, i) => i);
+    let cur = Array(bl + 1).fill(0);
+    for (let i = 1; i <= al; i++) {
+        cur[0] = i;
+        for (let j = 1; j <= bl; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        }
+        [prev, cur] = [cur, prev];
+    }
+    return prev[bl];
+}
+
+type ExistingCategory = { id: number; name: string; is_non_procurement: boolean; is_additional: boolean };
+
+function getCategoryMatch(
+    candidateNorm: string,
+    existingCategories: ExistingCategory[],
+): { type: "strict" | "partial" | "none"; match?: ExistingCategory; topMatches?: Array<{ category: ExistingCategory; score: number }> } {
+    // 1. Strict
+    for (const dbCat of existingCategories) {
+        const dbNorm = normalize(dbCat.name);
+        if (candidateNorm === dbNorm) return { type: "strict", match: dbCat };
+    }
+    const partials: Array<{ category: ExistingCategory; score: number }> = [];
+    const candidateLen = candidateNorm.length;
+    for (const dbCat of existingCategories) {
+        const dbNorm = normalize(dbCat.name);
+        const dbLen = dbNorm.length;
+        const levThreshold = dbLen <= 5 ? 1 : dbLen <= 12 ? 2 : 3;
+        const dist = levenshtein(candidateNorm, dbNorm);
+        if (dist <= levThreshold) {
+            partials.push({ category: dbCat, score: dist });
+            continue;
+        }
+        const isEligibleLength = candidateLen >= 4 || SHORT_PROCUREMENT_ROOTS.has(candidateNorm);
+        if (isEligibleLength && (dbNorm.includes(candidateNorm) || candidateNorm.includes(dbNorm))) {
+            partials.push({ category: dbCat, score: 99 });
+        }
+    }
+    if (partials.length > 0) {
+        partials.sort((a, b) => a.score - b.score);
+        return { type: "partial", topMatches: partials.slice(0, 3) };
+    }
+    return { type: "none" };
+}
+
 type VerifyResult = {
     valid: boolean;
     message: string;
@@ -167,7 +224,11 @@ function getDefaultCatConfig(): CatSheetConfig {
     return { dataColumn: "F", coaColumn: "D", headerRow: 7, coaLabelMode: "with-label" };
 }
 
-export default function CategoryImport() {
+interface CategoryImportProps {
+    existingCategories?: ExistingCategory[];
+}
+
+export default function CategoryImport({ existingCategories = [] }: CategoryImportProps) {
     const [sheets, setSheets] = useState<string[]>([]);
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
@@ -187,6 +248,8 @@ export default function CategoryImport() {
     const [step, setStep] = useState<"upload" | "calibrate" | "verify" | "extract">("upload");
     const [importing, setImporting] = useState(false);
     const [skipProblematic, setSkipProblematic] = useState(false);
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [isAdditionalDraft, setIsAdditionalDraft] = useState<Record<string, boolean>>({});
 
     function getEffectiveConfig(sheet: string): CatSheetConfig {
         if (calibrationMode === "shared" && sharedConfig) return sharedConfig;
@@ -667,18 +730,23 @@ export default function CategoryImport() {
         if (skippedProblematic.length > 0) console.table(skippedProblematic.map((s)=>({ sheet: s.sheet, row: s.row, raw: s.raw, reason: s.reason })));
 
         setExtractResult({ filtered, unique, duplicates, excludedTotal, excludedCoa, skippedCoaNotEmpty, skippedProblematic });
+        setSelected(new Set(unique.map((u) => u.normalized)));
+        setIsAdditionalDraft({});
     }
 
     function handleImport() {
         if (!extractResult || extractResult.unique.length === 0) return;
+        const toImport = extractResult.unique.filter((u) => selected.has(u.normalized));
+        if (toImport.length === 0) return;
 
         setImporting(true);
         router.post(
             "/category-import" as const,
             {
-                categories: extractResult.unique.map((u) => ({
+                categories: toImport.map((u) => ({
                     name: u.raw,
                     normalized: u.normalized,
+                    is_additional: isAdditionalDraft[u.normalized] ?? false,
                 })),
             } as never,
             {
@@ -1210,48 +1278,93 @@ export default function CategoryImport() {
                                         </div>
 
                                         <div className="rounded-lg border">
-                                            <div className="p-3">
-                                                <h3 className="text-sm font-semibold">
-                                                    Review — Unique Categories ({extractResult.unique.length}) across {selectedSheets.length} sheets
-                                                </h3>
-                                                <p className="text-xs text-muted-foreground">
-                                                    Global dedupe by normalized (trim → collapse → lowercase) across all {selectedSheets.length} sheets. Sheets = distinct sheets count (e.g., 15 means exists in 15 sheets). Locations = sheet!colRow coordinate — hover to see all.
-                                                </p>
+                                            <div className="p-3 flex items-start justify-between gap-3">
+                                                <div>
+                                                    <h3 className="text-sm font-semibold">
+                                                        Review — Unique Categories ({extractResult.unique.length}) across {selectedSheets.length} sheets
+                                                    </h3>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Global dedupe by normalized across all {selectedSheets.length} sheets. Check to import. Strict = exact normalized match in DB. Partial = substring (≥4 or whitelist oil/gas/ink/lab/cop/car/med/law) or Levenshtein ≤1/2/3. No auto-merge.
+                                                    </p>
+                                                </div>
+                                                <div className="flex gap-1 shrink-0">
+                                                    <Button variant="outline" size="sm" onClick={() => setSelected(new Set(extractResult.unique.map((u)=>u.normalized)))}>Select all</Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>Select none</Button>
+                                                    <Button variant="ghost" size="sm" onClick={() => {
+                                                        const onlyNew = extractResult.unique.filter((u)=> getCategoryMatch(u.normalized, existingCategories).type === "none").map((u)=>u.normalized);
+                                                        setSelected(new Set(onlyNew));
+                                                    }}>Only new</Button>
+                                                </div>
                                             </div>
-                                            <div className="max-h-80 overflow-auto">
+                                            <div className="px-3 pb-2 text-xs text-muted-foreground">
+                                                Selected {selected.size}/{extractResult.unique.length} will be imported. Unchecked stays in sheet only. Default is_additional = false (toggle per row if Additional).
+                                            </div>
+                                            <div className="max-h-96 overflow-auto">
                                                 <Table>
                                                     <TableHeader>
                                                         <TableRow>
+                                                            <TableHead className="w-10 text-center">Import</TableHead>
                                                             <TableHead>Raw</TableHead>
-                                                            <TableHead>Normalized</TableHead>
-                                                            <TableHead className="text-center">Sheets</TableHead>
-                                                            <TableHead>Locations (coordinate)</TableHead>
-                                                            <TableHead className="text-center">Occurrences</TableHead>
+                                                            <TableHead>DB Match</TableHead>
+                                                            <TableHead>Sheets</TableHead>
+                                                            <TableHead>Locations</TableHead>
+                                                            <TableHead className="text-center">Count</TableHead>
+                                                            <TableHead className="text-center">Additional</TableHead>
                                                         </TableRow>
                                                     </TableHeader>
                                                     <TableBody>
-                                                        {extractResult.unique.slice(0, 50).map((u) => (
-                                                            <TableRow key={u.normalized}>
-                                                                <TableCell className="max-w-[22ch] truncate text-xs" title={u.raw}>{u.raw}</TableCell>
-                                                                <TableCell className="max-w-[22ch] truncate text-xs text-muted-foreground" title={u.normalized}>{u.normalized}</TableCell>
-                                                                <TableCell className="text-center">
-                                                                    <Badge variant={u.sheetCount === selectedSheets.length ? "default" : u.sheetCount > 1 ? "secondary" : "outline"} className="font-mono text-xs" title={u.sheets.join(", ")}>
-                                                                        {u.sheetCount}/{selectedSheets.length} {u.sheetCount === selectedSheets.length ? "✓" : ""}
-                                                                    </Badge>
-                                                                    <div className="mt-1 max-w-[18ch] truncate text-xs text-muted-foreground" title={u.sheets.join(", ")}>{u.sheets.slice(0,3).join(", ")}{u.sheets.length>3 ? ` +${u.sheets.length-3}`:""}</div>
-                                                                </TableCell>
-                                                                <TableCell className="max-w-[30ch] truncate font-mono text-xs" title={u.locations.map((l)=>l.address).join(", ")}>
-                                                                    {u.locations.slice(0,2).map((l)=>l.address).join(", ")}{u.locations.length>2 ? ` +${u.locations.length-2}` : ""} <span className="text-muted-foreground">({u.locations[0]?.col}{u.locations[0]?.row})</span>
-                                                                </TableCell>
-                                                                <TableCell className="text-center font-mono">{u.count}</TableCell>
-                                                            </TableRow>
-                                                        ))}
+                                                        {extractResult.unique.slice(0, 80).map((u) => {
+                                                            const match = getCategoryMatch(u.normalized, existingCategories);
+                                                            const isSelected = selected.has(u.normalized);
+                                                            const isStrict = match.type === "strict";
+                                                            const partials = match.type === "partial" ? match.topMatches ?? [] : [];
+                                                            return (
+                                                                <TableRow key={u.normalized}>
+                                                                    <TableCell className="text-center">
+                                                                        <input type="checkbox" checked={isSelected} onChange={(e)=>{
+                                                                            const next = new Set(selected);
+                                                                            if (e.target.checked) next.add(u.normalized); else next.delete(u.normalized);
+                                                                            setSelected(next);
+                                                                        }} className="h-4 w-4" />
+                                                                    </TableCell>
+                                                                    <TableCell className="max-w-[18ch] truncate text-xs" title={u.raw}>{u.raw}</TableCell>
+                                                                    <TableCell className="max-w-[28ch] text-xs">
+                                                                        {isStrict ? (
+                                                                            <Badge variant="secondary" className="bg-amber-100 text-amber-800" title={(match as any).match?.name}>Exists: {(match as any).match?.name}</Badge>
+                                                                        ) : partials.length > 0 ? (
+                                                                            <div className="flex flex-col gap-1">
+                                                                                {partials.map((p, idx)=> (
+                                                                                    <Badge key={idx} variant="outline" className="justify-start truncate text-xs" title={`${p.category.name} (score ${p.score})`}>
+                                                                                        {p.category.name} {p.score===99 ? "(substr)" : `(lev ${p.score})`}
+                                                                                    </Badge>
+                                                                                ))}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <span className="text-muted-foreground">— new</span>
+                                                                        )}
+                                                                        <div className="text-xs text-muted-foreground truncate" title={u.normalized}>{u.normalized}</div>
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center">
+                                                                        <Badge variant={u.sheetCount === selectedSheets.length ? "default" : u.sheetCount > 1 ? "secondary" : "outline"} className="font-mono text-xs" title={u.sheets.join(", ")}>
+                                                                            {u.sheetCount}/{selectedSheets.length}
+                                                                        </Badge>
+                                                                    </TableCell>
+                                                                    <TableCell className="max-w-[22ch] truncate font-mono text-xs" title={u.locations.map((l)=>l.address).join(", ")}>
+                                                                        {u.locations.slice(0,1).map((l)=>l.address).join(", ")}<span className="text-muted-foreground"> ({u.locations[0]?.col}{u.locations[0]?.row})</span>
+                                                                    </TableCell>
+                                                                    <TableCell className="text-center font-mono text-xs">{u.count}</TableCell>
+                                                                    <TableCell className="text-center">
+                                                                        <Switch checked={isAdditionalDraft[u.normalized] ?? false} onCheckedChange={(v)=> setIsAdditionalDraft(prev=> ({...prev, [u.normalized]: v}))} size="sm" />
+                                                                    </TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        })}
                                                     </TableBody>
                                                 </Table>
                                             </div>
-                                            {extractResult.unique.length > 50 && <div className="p-2 text-center text-xs text-muted-foreground">Showing first 50 of {extractResult.unique.length}</div>}
+                                            {extractResult.unique.length > 80 && <div className="p-2 text-center text-xs text-muted-foreground">Showing first 80 of {extractResult.unique.length}</div>}
                                             <div className="p-3 text-xs text-muted-foreground">
-                                                Total filtered rows: {extractResult.filtered.length} — unique {extractResult.unique.length} — duplicates {extractResult.duplicates.length}. Each unique shows where it was found: e.g., <span className="font-mono">Sheet1!F12</span> = sheet “Sheet1”, column F, row 12.
+                                                Total filtered {extractResult.filtered.length} — unique {extractResult.unique.length} — duplicates {extractResult.duplicates.length} — selected {selected.size}. Each unique shows where it was found: <span className="font-mono">Sheet1!F12</span>. Strict = exact DB match; Partial = substring (≥4 or oil/gas/ink/lab/cop/car/med/law) or Levenshtein ≤1/2/3.
                                             </div>
                                         </div>
 
@@ -1292,7 +1405,7 @@ export default function CategoryImport() {
                                             <Button
                                                 onClick={handleImport}
                                                 disabled={
-                                                    importing || extractResult.unique.length === 0
+                                                    importing || selected.size === 0
                                                 }
                                             >
                                                 {importing ? (
@@ -1300,12 +1413,11 @@ export default function CategoryImport() {
                                                         <Spinner /> Importing...
                                                     </>
                                                 ) : (
-                                                    `Import ${extractResult.unique.length} Categories`
+                                                    `Import ${selected.size} Categories`
                                                 )}
                                             </Button>
                                             <span className="text-xs text-muted-foreground">
-                                                Will create ppmp_categories where not exists (strict
-                                                normalized match).
+                                                Will create ppmp_categories where not exists (strict normalized match). Selected {selected.size}/{extractResult.unique.length}. Additional flag per row (default false, sentinels is_additional false).
                                             </span>
                                         </div>
                                     </>

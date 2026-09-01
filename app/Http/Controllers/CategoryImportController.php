@@ -11,7 +11,11 @@ class CategoryImportController extends Controller
 {
     public function index()
     {
-        return Inertia::render('category-import/index');
+        return Inertia::render('category-import/index', [
+            'existingCategories' => PpmpCategory::select(['id', 'name', 'is_non_procurement', 'is_additional'])
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 
     public function store(Request $request)
@@ -22,6 +26,7 @@ class CategoryImportController extends Controller
             'categories' => ['required', 'array', 'min:1'],
             'categories.*.name' => ['required', 'string', 'max:255'],
             'categories.*.normalized' => ['nullable', 'string', 'max:255'],
+            'categories.*.is_additional' => ['sometimes', 'boolean'],
         ]);
 
         $normalize = fn (string $s) => strtolower(trim(preg_replace('/\s+/', ' ', $s) ?? $s));
@@ -46,10 +51,11 @@ class CategoryImportController extends Controller
                 $details[] = ['row' => $i + 1, 'raw' => $raw, 'status' => 'skipped: exists', 'existing' => $existing[$norm]];
                 continue;
             }
-            PpmpCategory::create(['name' => $raw, 'is_non_procurement' => false]);
+            $isAdditional = $cat['is_additional'] ?? false;
+            PpmpCategory::create(['name' => $raw, 'is_non_procurement' => false, 'is_additional' => (bool) $isAdditional]);
             $existing[$norm] = $raw;
             $inserted++;
-            $details[] = ['row' => $i + 1, 'raw' => $raw, 'status' => 'inserted'];
+            $details[] = ['row' => $i + 1, 'raw' => $raw, 'status' => 'inserted', 'is_additional' => (bool) $isAdditional];
         }
 
         Inertia::flash('importReport', [
