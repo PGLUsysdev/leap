@@ -25,7 +25,9 @@ interface AipProps {
     };
 }
 
-export default function AipPage({ fiscalYears, app, offices = [], can }: AipProps) {
+export default function AipPage({ mockdb, fiscalYears, app, offices = [], can }: AipProps) {
+    console.log(mockdb);
+
     const { auth } = usePage<SharedData>().props;
 
     const [openFormDialog, setOpenFormDialog] = useState(false);

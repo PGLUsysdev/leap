@@ -28,6 +28,7 @@ use App\Http\Controllers\PpaListController;
 use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\PpmpController;
 use App\Http\Controllers\CategoryImportController;
+use App\Http\Controllers\CategoryCoaMappingController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
 use App\Http\Controllers\PriceListImportController;
@@ -266,8 +267,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ])->name('ppmp-categories.destroy');
 
     // Category COA Mapping
-    Route::get('category-coa-mapping', fn() => Inertia::render('category-coa-mapping/index'))->name(
+    Route::get('category-coa-mapping', [CategoryCoaMappingController::class, 'index'])->name(
         'category-coa-mapping.index',
+    );
+    Route::post('category-coa-mappings/bulk', [CategoryCoaMappingController::class, 'bulkStore'])->name(
+        'category-coa-mappings.bulkStore',
     );
 
     // PPMP Category ↔ COA Mappings

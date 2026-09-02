@@ -12,6 +12,7 @@ use App\Models\PpmpSummary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Http;
 
 class FiscalYearController extends Controller
 {
@@ -29,30 +30,31 @@ class FiscalYearController extends Controller
         $canShowSummaryOwn = $user->can('showSummaryOwn', AipEntry::class);
         $showOffices = $canGenerateAppAll || $canShowSummaryAll;
 
+        // // 1. Send internal HTTP GET request to Laravel 1
+        // $response = Http::withHeaders([
+        //     'X-Internal-Secret' => config('services.laravel1.secret'),
+        // ])->get(config('services.laravel1.url') . '/api/v1/users');
+
+        // // 2. Safely parse JSON array or fall back to empty array if call fails
+        // $users = $response->successful() ? $response->json('data') : [];
+
         return Inertia::render('aip/index', [
+            // 'mockdb' => $users,
             'fiscalYears' => FiscalYear::orderBy('year', 'asc')->get(),
             'offices' => $showOffices ? Office::get() : [],
             'can' => [
                 'add' => request()->user()->can('create', FiscalYear::class),
-                'updateStatus' => request()
-                    ->user()
-                    ->can('updateStatus', new FiscalYear),
+                'updateStatus' => request()->user()->can('updateStatus', new FiscalYear()),
                 'showSummaryAll' => $canShowSummaryAll,
                 'showSummaryOwn' => $canShowSummaryOwn,
                 'generateAppAll' => $canGenerateAppAll,
                 'generateAppOwn' => $canGenerateAppOwn,
-                'openPpmpSummary' => request()
-                    ->user()
-                    ->can('viewAny', PpmpSummary::class),
+                'openPpmpSummary' => request()->user()->can('viewAny', PpmpSummary::class),
             ],
-            'app' => Inertia::optional(function () use (
-                $request,
-                $user,
-                $canGenerateAppAll,
-            ) {
+            'app' => Inertia::optional(function () use ($request, $user, $canGenerateAppAll) {
                 $id = $request->query('fiscal_year_id'); // fiscal_year_id = 4
 
-                if (! $id) {
+                if (!$id) {
                     return null;
                 }
 
@@ -63,9 +65,7 @@ class FiscalYearController extends Controller
                 $query = Ppmp::with([
                     'ppmpPriceList.chartOfAccountPpmpCategory.chartOfAccount',
                     'ppmpPriceList.chartOfAccountPpmpCategory.ppmpCategory',
-                ])->whereHas('ppaFundingSource.aipEntry.ppa', function (
-                    $query,
-                ) use ($id) {
+                ])->whereHas('ppaFundingSource.aipEntry.ppa', function ($query) use ($id) {
                     $query->where('fiscal_year_id', $id);
                 });
 
@@ -74,40 +74,38 @@ class FiscalYearController extends Controller
                     ->pluck('id');
 
                 if ($targetOfficeId !== 'all') {
-                    $query->whereHas('ppaFundingSource.aipEntry.ppa', function (
-                        $q,
-                    ) use ($officeIds) {
+                    $query->whereHas('ppaFundingSource.aipEntry.ppa', function ($q) use (
+                        $officeIds,
+                    ) {
                         $q->whereIn('office_id', $officeIds);
                     });
                 }
 
                 $items = $query->get();
 
-                $items = $items
-                    ->groupBy('ppmp_price_list_id')
-                    ->map(function ($group) {
-                        $item = clone $group->first();
-                        $months = [
-                            'jan',
-                            'feb',
-                            'mar',
-                            'apr',
-                            'may',
-                            'jun',
-                            'jul',
-                            'aug',
-                            'sep',
-                            'oct',
-                            'nov',
-                            'dec',
-                        ];
-                        foreach ($months as $m) {
-                            $item->{"{$m}_qty"} = $group->sum("{$m}_qty");
-                            $item->{"{$m}_amount"} = $group->sum("{$m}_amount");
-                        }
+                $items = $items->groupBy('ppmp_price_list_id')->map(function ($group) {
+                    $item = clone $group->first();
+                    $months = [
+                        'jan',
+                        'feb',
+                        'mar',
+                        'apr',
+                        'may',
+                        'jun',
+                        'jul',
+                        'aug',
+                        'sep',
+                        'oct',
+                        'nov',
+                        'dec',
+                    ];
+                    foreach ($months as $m) {
+                        $item->{"{$m}_qty"} = $group->sum("{$m}_qty");
+                        $item->{"{$m}_amount"} = $group->sum("{$m}_amount");
+                    }
 
-                        return $item;
-                    });
+                    return $item;
+                });
 
                 return $items
                     ->map(function ($item) {
@@ -124,23 +122,18 @@ class FiscalYearController extends Controller
 
                             $item->$qtyKey = array_reduce(
                                 $mths,
-                                fn ($carry, $m) => $carry +
-                                    (float) $item->{"{$m}_qty"},
+                                fn($carry, $m) => $carry + (float) $item->{"{$m}_qty"},
                                 0,
                             );
                             $item->$amtKey = array_reduce(
                                 $mths,
-                                fn ($carry, $m) => $carry +
-                                    (float) $item->{"{$m}_amount"},
+                                fn($carry, $m) => $carry + (float) $item->{"{$m}_amount"},
                                 0,
                             );
                         }
 
                         $item->total_qty =
-                            $item->q1_qty +
-                            $item->q2_qty +
-                            $item->q3_qty +
-                            $item->q4_qty;
+                            $item->q1_qty + $item->q2_qty + $item->q3_qty + $item->q4_qty;
                         $item->total_amount =
                             $item->q1_amount +
                             $item->q2_amount +
@@ -150,13 +143,12 @@ class FiscalYearController extends Controller
                         return $item;
                     })
                     ->groupBy(function ($item) {
-                        return $item->ppmpPriceList->chartOfAccountPpmpCategory
-                            ->ppmpCategory->name ?? 'Uncategorized';
+                        return $item->ppmpPriceList->chartOfAccountPpmpCategory->ppmpCategory
+                            ->name ?? 'Uncategorized';
                     })
                     ->map(function ($categoryGroup) {
                         return $categoryGroup->groupBy(function ($item) {
-                            return $item->ppmpPriceList
-                                ->chartOfAccountPpmpCategory->chartOfAccount
+                            return $item->ppmpPriceList->chartOfAccountPpmpCategory->chartOfAccount
                                 ->account_title ?? 'General Account';
                         });
                     });
@@ -201,10 +193,8 @@ class FiscalYearController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(
-        UpdateFiscalYearRequest $request,
-        FiscalYear $fiscal_year,
-    ) {
+    public function update(UpdateFiscalYearRequest $request, FiscalYear $fiscal_year)
+    {
         // $fiscal_year->update($request->validated());
     }
 

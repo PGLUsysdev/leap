@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -35,4 +34,8 @@ return [
         ],
     ],
 
+    'laravel1' => [
+        'url' => env('LARAVEL1_API_URL'),
+        'secret' => env('LARAVEL1_API_SECRET'),
+    ],
 ];
