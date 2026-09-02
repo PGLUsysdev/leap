@@ -18,6 +18,7 @@ import {
     ChartNetwork,
     Waypoints,
     Network,
+    Upload,
     // Scale,      // disabled: Salary Standards
     // AppWindow,  // disabled: IOS
 } from "lucide-react";
@@ -55,6 +56,7 @@ import { index as priceListsIndex } from "@/routes/price-lists";
 import { index as rolesIndex } from "@/routes/roles";
 // Disabled for now — PS logic refactor in progress (kept for later).
 // import { index as salaryStandardIndex } from "@/routes/salary-standard";
+import { index as importsIndex } from "@/routes/imports";
 import { index as sectorsIndex } from "@/routes/sectors";
 import { index as usersIndex } from "@/routes/users";
 import type { NavItem, SharedData } from "@/types";
@@ -140,6 +142,11 @@ const mainNavItems: NavItem[] = [
         href: fundingSourcesIndex(),
         icon: Landmark,
         permission: "funding-source.view",
+    },
+    {
+        title: "Imports",
+        href: importsIndex(),
+        icon: Upload,
     },
     {
         title: "",

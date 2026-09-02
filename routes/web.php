@@ -25,6 +25,7 @@ use App\Http\Controllers\OfficeTypeController;
 use App\Http\Controllers\PpaController;
 use App\Http\Controllers\PpaFundingSourceController;
 use App\Http\Controllers\PpaListController;
+use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\PpmpController;
 use App\Http\Controllers\CategoryImportController;
@@ -429,6 +430,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     //     PsBreakdownController::class,
     //     'recalculate',
     // ])->name('ps-breakdown-items.recalculate');
+
+    // Imports Hub - central page for all import features
+    Route::get('imports', [ImportsController::class, 'index'])->name('imports.index');
 
     // Misc
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
