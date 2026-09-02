@@ -24,175 +24,38 @@ import {
     ComboboxItem,
     ComboboxList,
 } from "@/components/base-ui-components/ui/combobox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base-ui-components/ui/tabs";
+import { cellText } from "@/lib/excel/cell-helpers";
+import {
+    normalize,
+    isTotalRow,
+    SHORT_PROCUREMENT_ROOTS,
+    levenshtein,
+    getCategoryMatch,
+    getCoaMatch,
+    type ExistingCategory,
+    type ExistingCoa,
+    columnToNumber,
+    numberToColumn,
+    leftColumn,
+} from "@/lib/ppmp/normalize";
+import {
+    type CategoryCoaSheetConfig,
+    type CategoryCoaColumnConfig,
+    type CategoryCoaRowConfig,
+    getDefaultMappingConfig,
+} from "@/lib/ppmp/sheet-config";
+import { groupSheet } from "@/lib/ppmp/sheet-grouping";
 
-type CategoryCoaColumnConfig = {
-    coa: string;
-    category: string;
+type VerifyFormatResult = {
+    valid: boolean;
+    message: string;
+    errors: Array<{ row: number; message: string }>;
+    groups: { procurement: number; additional: number; nonProcurement: number };
+    details: string[];
 };
 
-type CategoryCoaRowConfig = {
-    headerRow: number;
-    additionalItemsHeaderRow?: number | null;
-    nonProcurementHeaderRow?: number | null;
-};
-
-type CategoryCoaSheetConfig = {
-    columnConfig: CategoryCoaColumnConfig;
-    rowConfig: CategoryCoaRowConfig;
-    coaMatchField: "auto" | "account_number" | "account_title";
-    coaLabelMode: "with-label" | "without-label";
-};
-
-function getDefaultMappingConfig(): CategoryCoaSheetConfig {
-    return {
-        columnConfig: { coa: "D", category: "F" },
-        rowConfig: { headerRow: 7, additionalItemsHeaderRow: null, nonProcurementHeaderRow: null },
-        coaMatchField: "auto",
-        coaLabelMode: "with-label",
-    };
-}
-
-function cellText(cell: ExcelJS.Cell): string | null {
-    let value: unknown = cell.value as unknown;
-    if (value && typeof value === "object") {
-        if ("result" in (value as Record<string, unknown>)) {
-            value = (value as { result: unknown }).result;
-        } else if ("richText" in (value as Record<string, unknown>)) {
-            const rt = (value as { richText: Array<{ text: string }> }).richText;
-            if (Array.isArray(rt)) {
-                const txt = rt.map((r) => r.text).join("").trim();
-                return txt || null;
-            }
-            return null;
-        } else if ("text" in (value as Record<string, unknown>)) {
-            const maybe = value as { text?: string; hyperlink?: string };
-            const txt = (maybe.text ?? maybe.hyperlink ?? "") as string;
-            return String(txt).trim() || null;
-        } else {
-            return null;
-        }
-    }
-    if (value == null) return null;
-    const s = String(value).trim();
-    return s || null;
-}
-
-function normalize(str: string): string {
-    return str.trim().replace(/\s+/g, " ").toLowerCase();
-}
-
-function isTotalRow(normalized: string): boolean {
-    return /\s*-\s*total$/.test(normalized) || /^total\b/.test(normalized);
-}
-
-const SHORT_PROCUREMENT_ROOTS = new Set(["oil", "gas", "ink", "lab", "cop", "car", "med", "law"]);
-
-function levenshtein(a: string, b: string): number {
-    if (a === b) return 0;
-    const al = a.length;
-    const bl = b.length;
-    if (al === 0) return bl;
-    if (bl === 0) return al;
-    let prev = Array(bl + 1)
-        .fill(0)
-        .map((_, i) => i);
-    let cur = Array(bl + 1).fill(0);
-    for (let i = 1; i <= al; i++) {
-        cur[0] = i;
-        for (let j = 1; j <= bl; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
-        }
-        [prev, cur] = [cur, prev];
-    }
-    return prev[bl];
-}
-
-type ExistingCategory = { id: number; name: string; is_non_procurement: boolean; is_additional: boolean };
-type ExistingCoa = { id: number; account_number: string; path: string; account_title: string };
 type ExistingMapping = { chart_of_account_id: number; ppmp_category_id: number };
-
-function getCategoryMatch(
-    candidateNorm: string,
-    existingCategories: ExistingCategory[],
-): { type: "strict" | "partial" | "none"; match?: ExistingCategory; topMatches?: Array<{ category: ExistingCategory; score: number }> } {
-    for (const dbCat of existingCategories) {
-        const dbNorm = normalize(dbCat.name);
-        if (candidateNorm === dbNorm) return { type: "strict", match: dbCat };
-    }
-    const partials: Array<{ category: ExistingCategory; score: number }> = [];
-    const candidateLen = candidateNorm.length;
-    for (const dbCat of existingCategories) {
-        const dbNorm = normalize(dbCat.name);
-        const dbLen = dbNorm.length;
-        const levThreshold = dbLen <= 5 ? 1 : dbLen <= 12 ? 2 : 3;
-        const dist = levenshtein(candidateNorm, dbNorm);
-        if (dist <= levThreshold) {
-            partials.push({ category: dbCat, score: dist });
-            continue;
-        }
-        const isEligibleLength = candidateLen >= 4 || SHORT_PROCUREMENT_ROOTS.has(candidateNorm);
-        if (isEligibleLength && (dbNorm.includes(candidateNorm) || candidateNorm.includes(dbNorm))) {
-            partials.push({ category: dbCat, score: 99 });
-        }
-    }
-    if (partials.length > 0) {
-        partials.sort((a, b) => a.score - b.score);
-        return { type: "partial", topMatches: partials.slice(0, 3) };
-    }
-    return { type: "none" };
-}
-
-function getCoaMatch(
-    candidateNorm: string,
-    existingCoas: ExistingCoa[],
-    mode: CategoryCoaSheetConfig["coaMatchField"],
-): { type: "strict" | "partial" | "none"; match?: ExistingCoa; topMatches?: Array<{ coa: ExistingCoa; score: number }> } {
-    const normalizeCoa = (c: ExistingCoa) => ({
-        title: normalize(c.account_title),
-        number: normalize(c.account_number),
-        path: normalize(c.path),
-        pathNoDash: normalize(c.path.replace(/-/g, " ")),
-    });
-    // Strict first — punctuation-sensitive (whitespace/casing only via normalize)
-    for (const coa of existingCoas) {
-        const n = normalizeCoa(coa);
-        if (mode === "account_title") {
-            if (candidateNorm === n.title) return { type: "strict", match: coa };
-        } else if (mode === "account_number") {
-            if (candidateNorm === n.number || candidateNorm === n.path || candidateNorm === n.pathNoDash) return { type: "strict", match: coa };
-        } else {
-            // auto: title or number or path
-            if (candidateNorm === n.title || candidateNorm === n.number || candidateNorm === n.path || candidateNorm === n.pathNoDash) return { type: "strict", match: coa };
-        }
-    }
-    // Partial: substring or levenshtein on title/path
-    const partials: Array<{ coa: ExistingCoa; score: number }> = [];
-    const candidateLen = candidateNorm.length;
-    for (const coa of existingCoas) {
-        const n = normalizeCoa(coa);
-        const targets = mode === "account_title" ? [n.title] : mode === "account_number" ? [n.number, n.path, n.pathNoDash] : [n.title, n.number, n.path, n.pathNoDash];
-        let bestScore: number | null = null;
-        for (const t of targets) {
-            const tLen = t.length;
-            const levThreshold = tLen <= 5 ? 1 : tLen <= 12 ? 2 : 3;
-            const dist = levenshtein(candidateNorm, t);
-            if (dist <= levThreshold) {
-                bestScore = bestScore === null ? dist : Math.min(bestScore, dist);
-            }
-            const isEligibleLength = candidateLen >= 4;
-            if (isEligibleLength && (t.includes(candidateNorm) || candidateNorm.includes(t))) {
-                bestScore = bestScore === null ? 99 : Math.min(bestScore, 99);
-            }
-        }
-        if (bestScore !== null) partials.push({ coa, score: bestScore });
-    }
-    if (partials.length > 0) {
-        partials.sort((a, b) => a.score - b.score);
-        return { type: "partial", topMatches: partials.slice(0, 3) };
-    }
-    return { type: "none" };
-}
 
 interface CategoryCoaMappingProps {
     existingCategories?: ExistingCategory[];
@@ -207,13 +70,16 @@ export default function CategoryCoaMappingPage({
 }: CategoryCoaMappingProps) {
     const [sheets, setSheets] = useState<string[]>([]);
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
-    const [selectedSheet, setSelectedSheet] = useState<string | null>(null);
+    const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
 
-    // Calibration – from scratch, minimal reference mapping config
-    const [config, setConfig] = useState<CategoryCoaSheetConfig | null>(null);
+    // Calibration – shared + per-sheet (multi-sheet)
+    const [calibrationMode, setCalibrationMode] = useState<"shared" | "per-sheet">("shared");
+    const [sharedConfig, setSharedConfig] = useState<CategoryCoaSheetConfig | null>(null);
+    const [calibrations, setCalibrations] = useState<Record<string, CategoryCoaSheetConfig>>({});
+    const [currentSheet, setCurrentSheet] = useState<string>("");
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>({});
     const [verification, setVerification] = useState<{
         total: number;
@@ -227,6 +93,7 @@ export default function CategoryCoaMappingPage({
             category: string;
             coa: string;
             section: string;
+            sheet: string;
             catRow: number;
             coaRow: number;
             items: number;
@@ -246,12 +113,73 @@ export default function CategoryCoaMappingPage({
         }>;
     } | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [step, setStep] = useState<"upload" | "calibrate" | "verifyFormat" | "verifyMap" | "review">("upload");
+    const [formatResults, setFormatResults] = useState<Record<string, VerifyFormatResult>>({});
+    const [activeFormatSheet, setActiveFormatSheet] = useState<string>("");
+    const [activeVerifySheet, setActiveVerifySheet] = useState<string>("");
+
+    const canCalibrate = selectedSheets.length > 0;
+    const canVerifyFormat = selectedSheets.length > 0 && !!workbook && !!sharedConfig;
+    const hasFormatResult = selectedSheets.length > 0 && selectedSheets.every((s) => !!formatResults[s]);
+    const formatValid = selectedSheets.length > 0 && selectedSheets.every((s) => formatResults[s]?.valid);
+    const canVerifyMap = canVerifyFormat && hasFormatResult && formatValid;
+    const canReview = canVerifyMap && !!verification && verification.total > 0;
+
+    function getEffectiveConfig(sheet: string): CategoryCoaSheetConfig {
+        if (calibrationMode === "shared" && sharedConfig) return sharedConfig;
+        return calibrations[sheet] ?? sharedConfig ?? getDefaultMappingConfig();
+    }
+
+    function ensureCalibrationsInitialized() {
+        if (sharedConfig) return;
+        const def = getDefaultMappingConfig();
+        setSharedConfig(def);
+        const clones: Record<string, CategoryCoaSheetConfig> = {};
+        for (const s of selectedSheets) clones[s] = { ...def, columnConfig: { ...def.columnConfig }, rowConfig: { ...def.rowConfig } };
+        setCalibrations(clones);
+        if (!currentSheet && selectedSheets[0]) setCurrentSheet(selectedSheets[0]);
+    }
+
+    function handleApplySharedToAll() {
+        if (!sharedConfig) return;
+        const next: Record<string, CategoryCoaSheetConfig> = {};
+        for (const s of selectedSheets) next[s] = { ...sharedConfig, columnConfig: { ...sharedConfig.columnConfig }, rowConfig: { ...sharedConfig.rowConfig } };
+        setCalibrations(next);
+    }
+
+    function handleCopyCurrentToAll() {
+        const src = calibrations[currentSheet] ?? sharedConfig;
+        if (!src) return;
+        const next: Record<string, CategoryCoaSheetConfig> = {};
+        for (const s of selectedSheets) next[s] = { ...src, columnConfig: { ...src.columnConfig }, rowConfig: { ...src.rowConfig } };
+        setCalibrations(next);
+    }
+
+    function updateSharedConfig(patch: Partial<CategoryCoaSheetConfig>) {
+        setSharedConfig((prev) => ({ ...(prev ?? getDefaultMappingConfig()), ...patch }));
+    }
+
+    function updateCurrentCalibration(patch: Partial<CategoryCoaSheetConfig>) {
+        if (!currentSheet) return;
+        setCalibrations((prev) => ({
+            ...prev,
+            [currentSheet]: { ...(prev[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig()), ...patch },
+        }));
+    }
+
+    function updateSharedColumnConfig(patch: Partial<CategoryCoaColumnConfig>) {
+        updateSharedConfig({ columnConfig: { ...(sharedConfig?.columnConfig ?? getDefaultMappingConfig().columnConfig), ...patch } });
+    }
+
+    function updateSharedRowConfig(patch: Partial<CategoryCoaRowConfig>) {
+        updateSharedConfig({ rowConfig: { ...(sharedConfig?.rowConfig ?? getDefaultMappingConfig().rowConfig), ...patch } });
+    }
 
     const effectiveVerification = useMemo(() => {
         if (!verification) return null;
         const mappingSet = new Set(existingMappings.map((m) => `${m.ppmp_category_id}|${m.chart_of_account_id}`));
         const effectivePairs = verification.verifiedPairs.map((v) => {
-            const key = `${v.catRow}|${v.coaRow}`;
+            const key = `${v.sheet}|${v.catRow}|${v.coaRow}`;
             const overrideId = coaOverrides[key] ?? null;
             const effectiveCoa = overrideId ? (existingCoas.find((c) => c.id === overrideId) ?? null) : v.coaMatch;
             const effectiveCoaExists = overrideId !== null ? true : v.coaExists;
@@ -339,6 +267,260 @@ export default function CategoryCoaMappingPage({
         );
     }
 
+    function verifyFormatForSheet(sheet: string): VerifyFormatResult | null {
+        if (!workbook || !sheet) return null;
+        const ws = workbook.getWorksheet(sheet);
+        if (!ws) {
+            return {
+                valid: false,
+                message: `Worksheet "${sheet}" not found`,
+                errors: [{ row: 0, message: `Worksheet "${sheet}" not found` }],
+                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
+                details: [],
+            };
+        }
+        const effective = getEffectiveConfig(sheet);
+        const { coaLabelMode } = effective;
+        const dataColumn = effective.columnConfig.category;
+        const coaColumn = effective.columnConfig.coa;
+        const lastRow = ws.actualRowCount;
+        const procurementStart = effective.rowConfig.headerRow + 1;
+        const procurementEnd = effective.rowConfig.additionalItemsHeaderRow
+            ? effective.rowConfig.additionalItemsHeaderRow - 1
+            : effective.rowConfig.nonProcurementHeaderRow
+              ? effective.rowConfig.nonProcurementHeaderRow - 1
+              : lastRow;
+        const additionalStart = effective.rowConfig.additionalItemsHeaderRow ? effective.rowConfig.additionalItemsHeaderRow + 1 : -1;
+        const additionalEnd = effective.rowConfig.nonProcurementHeaderRow ? effective.rowConfig.nonProcurementHeaderRow - 1 : lastRow;
+        const nonProcStart = effective.rowConfig.nonProcurementHeaderRow ? effective.rowConfig.nonProcurementHeaderRow + 1 : -1;
+        const nonProcEnd = lastRow;
+
+        const errors: Array<{ row: number; message: string }> = [];
+        const details: string[] = [];
+        details.push(`COA label mode: ${coaLabelMode === "without-label" ? "Without label (COA on item rows)" : "With label (COA label rows)"}`);
+        details.push(`Ranges: procurement [${procurementStart}..${procurementEnd}] additional [${additionalStart}..${additionalEnd}] non-proc [${nonProcStart}..${nonProcEnd}]`);
+
+        const groups = { procurement: 0, additional: 0, nonProcurement: 0 };
+        const countData = (s: number, e: number) => {
+            if (s < 0 || e < 0 || s > e) return 0;
+            let c = 0;
+            for (let r = s; r <= e && r <= lastRow; r++) {
+                const v = cellText(ws.getRow(r).getCell(dataColumn));
+                if (v) c++;
+            }
+            return c;
+        };
+        groups.procurement = countData(procurementStart, procurementEnd);
+        groups.additional = effective.rowConfig.additionalItemsHeaderRow ? countData(additionalStart, additionalEnd) : 0;
+        groups.nonProcurement = effective.rowConfig.nonProcurementHeaderRow ? countData(nonProcStart, nonProcEnd) : 0;
+
+        if (!effective.rowConfig.additionalItemsHeaderRow) details.push("Additional Items header not calibrated — skipping additional group check");
+        if (!effective.rowConfig.nonProcurementHeaderRow) details.push("Non-Procurement header not calibrated — skipping non-procurement group check");
+        if (procurementStart > procurementEnd) {
+            errors.push({ row: procurementStart, message: `Procurement range invalid [${procurementStart}..${procurementEnd}] — check header calibrations` });
+        } else if (groups.procurement === 0) {
+            errors.push({ row: procurementStart, message: "No data found in procurement group — check header calibration" });
+        }
+        if (effective.rowConfig.additionalItemsHeaderRow && groups.additional === 0) {
+            errors.push({ row: additionalStart, message: "No data found in additional items group" });
+        }
+
+        const verifySection = (sectionName: "procurement" | "additional" | "non-procurement", startRow: number, endRow: number) => {
+            if (startRow < 0 || endRow < 0 || startRow > endRow) return;
+            if (sectionName === "additional" || sectionName === "non-procurement") {
+                // Item-only: header → items (F+D+G+H) → optional section total, no categories
+                // If D/G/H all falsy, it's not a true pricelist (e.g., placeholder "Miscellaneous Goods..." with G/H 0) — skip
+                let itemCount = 0;
+                for (let r = startRow; r <= endRow && r <= lastRow; r++) {
+                    const row = ws.getRow(r);
+                    const coaRaw = cellText(row.getCell(coaColumn));
+                    const dataRaw = cellText(row.getCell(dataColumn));
+                    const unitRaw = cellText(row.getCell(effective.columnConfig.unit));
+                    const priceRaw = cellText(row.getCell(effective.columnConfig.price));
+                    if (!dataRaw && !coaRaw && !unitRaw && !priceRaw) continue;
+                    const dataNorm = dataRaw ? normalize(dataRaw) : null;
+                    if (!dataNorm) continue;
+                    if (dataNorm === "description") continue;
+                    // Skip section header echo and section totals
+                    if (
+                        dataNorm === "additional items for procurement" ||
+                        dataNorm === "additional items" ||
+                        dataNorm === "non-procurement requirements" ||
+                        dataNorm === "non - procurement requirements" ||
+                        dataNorm === "additional items for procurement - total" ||
+                        dataNorm === "non-procurement requirements - total" ||
+                        dataNorm === "non-procurement - total" ||
+                        isTotalRow(dataNorm)
+                    )
+                        continue;
+                    const coaNorm = coaRaw ? normalize(coaRaw) : null;
+                    const isFalsy = (v: string | null) => !v || normalize(v) === "0" || normalize(v) === "-" || normalize(v) === "0.00";
+                    const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, "")) : NaN;
+                    const isFalsyPrice = !priceRaw || priceNum === 0 || Number.isNaN(priceNum) || isFalsy(priceRaw);
+                    const isFalsyUnit = isFalsy(unitRaw);
+                    const isFalsyCoa = !coaNorm;
+                    // If D/G/H all falsy, it's not a true pricelist (placeholder like Miscellaneous... with G/H 0) — skip, not an error
+                    if (isFalsyCoa && isFalsyUnit && isFalsyPrice) continue;
+                    if (coaNorm && dataRaw) {
+                        itemCount++;
+                        continue;
+                    }
+                    if (dataRaw && !coaNorm) {
+                        errors.push({ row: r, message: `${sectionName} item at row ${r} ("${dataRaw}") missing COA (D) in ${sectionName}` });
+                    }
+                }
+                details.push(`${sectionName} items: ${itemCount} pricelist rows checked (no categories) in rows [${startRow}..${endRow}]`);
+                return;
+            }
+            // Procurement: strict cat → coa → items → total
+            type CatGroup = { cat: string; catRow: number; coas: Array<{ coa: string; coaRow: number; items: number }>; totalRow?: number };
+            const catGroups: CatGroup[] = [];
+            let currentCat: CatGroup | null = null;
+            let currentCoa: { coa: string; coaRow: number; items: number } | null = null;
+            const flushCat = (totalRow?: number) => {
+                if (currentCat) {
+                    if (currentCoa) {
+                        currentCat.coas.push(currentCoa);
+                        currentCoa = null;
+                    }
+                    if (totalRow) currentCat.totalRow = totalRow;
+                    catGroups.push(currentCat);
+                    currentCat = null;
+                }
+            };
+            for (let r = startRow; r <= endRow && r <= lastRow; r++) {
+                const row = ws.getRow(r);
+                const coaRaw = cellText(row.getCell(coaColumn));
+                const dataRaw = cellText(row.getCell(dataColumn));
+                if (!dataRaw && !coaRaw) continue;
+                const coaNorm = coaRaw ? normalize(coaRaw) : null;
+                const dataNorm = dataRaw ? normalize(dataRaw) : null;
+                if (dataNorm === "description") continue;
+                if (coaNorm && dataRaw) {
+                    if (!currentCat) {
+                        errors.push({ row: r, message: `Item at row ${r} ("${dataRaw}") found without active category in ${sectionName}` });
+                        continue;
+                    }
+                    if (coaLabelMode === "without-label") {
+                        if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
+                            if (currentCoa) {
+                                if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA (${sectionName})` });
+                                currentCat.coas.push(currentCoa);
+                            }
+                            currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
+                        } else {
+                            currentCoa.items += 1;
+                        }
+                        continue;
+                    } else {
+                        if (!currentCoa) {
+                            errors.push({ row: r, message: `Item at row ${r} ("${dataRaw}") found without active COA in cat "${currentCat.cat}" (${sectionName})` });
+                            continue;
+                        }
+                        if (coaNorm !== normalize(currentCoa.coa)) {
+                            errors.push({ row: r, message: `Item COA mismatch at row ${r}: D="${coaRaw}" != current COA "${currentCoa.coa}" in cat "${currentCat.cat}" (${sectionName})` });
+                        }
+                        currentCoa.items += 1;
+                        continue;
+                    }
+                }
+                if (!dataRaw || !dataNorm) continue;
+                if (isTotalRow(dataNorm)) {
+                    const expected = currentCat ? normalize(`${currentCat.cat} - total`) : null;
+                    if (!currentCat) {
+                        errors.push({ row: r, message: `Total "${dataRaw}" at row ${r} without active category (${sectionName})` });
+                    } else if (expected && dataNorm !== expected) {
+                        errors.push({ row: r, message: `Total mismatch at row ${r}: got "${dataRaw}" (norm "${dataNorm}") expected "${currentCat.cat} - TOTAL" (${sectionName})` });
+                    }
+                    if (currentCat) {
+                        if (currentCoa) {
+                            currentCat.coas.push(currentCoa);
+                            currentCoa = null;
+                        }
+                        if (currentCat.coas.length === 0) {
+                            errors.push({ row: r, message: `Category "${currentCat.cat}" at row ${currentCat.catRow} has no COA groups before total (${sectionName})` });
+                        } else {
+                            for (const c of currentCat.coas) if (c.items === 0) errors.push({ row: c.coaRow, message: `COA "${c.coa}" at row ${c.coaRow} in cat "${currentCat.cat}" has no items (${sectionName})` });
+                        }
+                        flushCat(r);
+                    }
+                    continue;
+                }
+                if (coaLabelMode === "with-label") {
+                    let isCoaLabel = false;
+                    let nextCoaRaw: string | null = null;
+                    let nextCoaNorm: string | null = null;
+                    if (r + 1 <= lastRow) {
+                        nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
+                        nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+                        if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
+                    }
+                    if (isCoaLabel) {
+                        if (!currentCat) {
+                            errors.push({ row: r, message: `COA "${dataRaw}" at row ${r} found without active category (${sectionName})` });
+                            continue;
+                        }
+                        if (currentCoa) {
+                            if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA (${sectionName})` });
+                            currentCat.coas.push(currentCoa);
+                        }
+                        currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
+                        continue;
+                    }
+                }
+                if (currentCat) {
+                    errors.push({ row: r, message: `Category "${dataRaw}" at row ${r} started before previous cat "${currentCat.cat}" (row ${currentCat.catRow}) closed with " - TOTAL" (${sectionName})` });
+                    if (currentCoa) {
+                        if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items (${sectionName})` });
+                        currentCat.coas.push(currentCoa);
+                        currentCoa = null;
+                    }
+                    catGroups.push(currentCat);
+                }
+                currentCat = { cat: dataRaw, catRow: r, coas: [] };
+                currentCoa = null;
+            }
+            if (currentCat) {
+                if (currentCoa) {
+                    if (currentCoa.items === 0) errors.push({ row: currentCoa.coaRow, message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items at end (${sectionName})` });
+                    currentCat.coas.push(currentCoa);
+                }
+                if (!currentCat.totalRow) errors.push({ row: currentCat.catRow, message: `Category "${currentCat.cat}" at row ${currentCat.catRow} missing closing "${currentCat.cat} - TOTAL" (${sectionName}) (found ${currentCat.coas.length} COA(s))` });
+                else if (currentCat.coas.length === 0) errors.push({ row: currentCat.catRow, message: `Category "${currentCat.cat}" has no COAs (${sectionName})` });
+                catGroups.push(currentCat);
+            }
+            if (catGroups.length) {
+                details.push(`${sectionName} groups: ${catGroups.length} cat(s) verified in rows [${startRow}..${endRow}]`);
+                for (const g of catGroups) details.push(`  ${sectionName} Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : " MISSING total"}`);
+            }
+        };
+
+        verifySection("procurement", procurementStart, procurementEnd);
+        if (effective.rowConfig.additionalItemsHeaderRow) verifySection("additional", additionalStart, additionalEnd);
+        if (effective.rowConfig.nonProcurementHeaderRow) verifySection("non-procurement", nonProcStart, nonProcEnd);
+
+        const valid = errors.length === 0;
+        const message = valid ? `✅ Format OK — ${groups.procurement} procurement, ${groups.additional} additional, ${groups.nonProcurement} non-proc cells checked` : `❌ Found ${errors.length} issue(s) in sheet format`;
+        console.log(`[${sheet}] Format Verification`, message, errors, details);
+        return { valid, message, errors, groups, details };
+    }
+
+    function handleVerifyFormat() {
+        if (!workbook || selectedSheets.length === 0) return;
+        const next: Record<string, VerifyFormatResult> = {};
+        for (const sheet of selectedSheets) {
+            const result = verifyFormatForSheet(sheet);
+            if (result) next[sheet] = result;
+        }
+        setFormatResults(next);
+        const firstInvalid = selectedSheets.find((s) => !next[s]?.valid);
+        setActiveFormatSheet(firstInvalid ?? selectedSheets[0] ?? "");
+        setVerification(null);
+        setCoaOverrides({});
+        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? "");
+        if (Object.keys(next).length) console.table(Object.entries(next).map(([sheet, r]) => ({ sheet, valid: r.valid, errors: r.errors.length, message: r.message })));
+    }
+
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -351,8 +533,14 @@ export default function CategoryCoaMappingPage({
             setError("Only .xlsx files are allowed.");
             setSheets([]);
             setWorkbook(null);
-            setSelectedSheet(null);
+            setSelectedSheets([]);
+            setCurrentSheet("");
+            setSharedConfig(null);
+            setCalibrations({});
             setFileName(null);
+            setFormatResults({});
+            setActiveFormatSheet("");
+            setActiveVerifySheet("");
             e.target.value = "";
             return;
         }
@@ -360,10 +548,16 @@ export default function CategoryCoaMappingPage({
         setError(null);
         setLoading(true);
         setFileName(file.name);
-        setSelectedSheet(null);
-        setConfig(null);
+        setSelectedSheets([]);
+        setCurrentSheet("");
+        setSharedConfig(null);
+        setCalibrations({});
+        setFormatResults({});
+        setActiveFormatSheet("");
+        setActiveVerifySheet("");
         setVerification(null);
         setCoaOverrides({});
+        setStep("upload");
 
         try {
             const wb = new ExcelJS.Workbook();
@@ -375,55 +569,118 @@ export default function CategoryCoaMappingPage({
             setError("Failed to parse .xlsx file.");
             setSheets([]);
             setWorkbook(null);
-            setSelectedSheet(null);
+            setSelectedSheets([]);
+            setCurrentSheet("");
+            setSharedConfig(null);
+            setCalibrations({});
             setFileName(null);
         } finally {
             setLoading(false);
         }
     }
 
+    function handleSheetToggle(sheet: string) {
+        setSelectedSheets((prev) => {
+            const next = prev.includes(sheet) ? prev.filter((s) => s !== sheet) : [...prev, sheet];
+            setFormatResults({});
+            setActiveFormatSheet(next[0] ?? "");
+            setActiveVerifySheet(next[0] ?? "");
+            setVerification(null);
+            setCoaOverrides({});
+            if (next.length > 0 && !next.includes(currentSheet)) setCurrentSheet(next[0]);
+            if (next.length === 0) setCurrentSheet("");
+            return next;
+        });
+    }
+
     function handleSheetClick(sheet: string) {
-        setSelectedSheet(sheet);
-        if (!config) {
-            setConfig(getDefaultMappingConfig());
-        }
-        setVerification(null);
-        setCoaOverrides({});
+        handleSheetToggle(sheet);
     }
 
     function handleRowConfigChange(patch: Partial<CategoryCoaRowConfig>) {
-        setConfig((prev) => {
-            const base = prev ?? getDefaultMappingConfig();
-            return { ...base, rowConfig: { ...base.rowConfig, ...patch } };
-        });
+        if (calibrationMode === "shared") {
+            setSharedConfig((prev) => {
+                const base = prev ?? getDefaultMappingConfig();
+                return { ...base, rowConfig: { ...base.rowConfig, ...patch } };
+            });
+        } else {
+            if (!currentSheet) return;
+            setCalibrations((prev) => ({
+                ...prev,
+                [currentSheet]: { ...(prev[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig()), rowConfig: { ...(prev[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig()).rowConfig, ...patch } },
+            }));
+        }
         setVerification(null);
+        setFormatResults({});
+        setActiveFormatSheet(selectedSheets[0] ?? "");
+        setActiveVerifySheet(selectedSheets[0] ?? "");
         setCoaOverrides({});
     }
 
     function handleColumnConfigChange(patch: Partial<CategoryCoaColumnConfig>) {
-        setConfig((prev) => {
-            const base = prev ?? getDefaultMappingConfig();
-            return { ...base, columnConfig: { ...base.columnConfig, ...patch } };
-        });
+        if (calibrationMode === "shared") {
+            setSharedConfig((prev) => {
+                const base = prev ?? getDefaultMappingConfig();
+                return { ...base, columnConfig: { ...base.columnConfig, ...patch } };
+            });
+        } else {
+            if (!currentSheet) return;
+            setCalibrations((prev) => ({
+                ...prev,
+                [currentSheet]: { ...(prev[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig()), columnConfig: { ...(prev[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig()).columnConfig, ...patch } },
+            }));
+        }
         setVerification(null);
+        setFormatResults({});
+        setActiveFormatSheet(selectedSheets[0] ?? "");
+        setActiveVerifySheet(selectedSheets[0] ?? "");
         setCoaOverrides({});
     }
 
     function handleMatchFieldChange(value: CategoryCoaSheetConfig["coaMatchField"]) {
-        setConfig((prev) => ({ ...(prev ?? getDefaultMappingConfig()), coaMatchField: value }));
+        if (calibrationMode === "shared") {
+            setSharedConfig((prev) => ({ ...(prev ?? getDefaultMappingConfig()), coaMatchField: value }));
+        } else {
+            if (!currentSheet) return;
+            setCalibrations((prev) => ({
+                ...prev,
+                [currentSheet]: { ...(prev[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig()), coaMatchField: value },
+            }));
+        }
         setVerification(null);
+        setFormatResults({});
+        setActiveFormatSheet(selectedSheets[0] ?? "");
+        setActiveVerifySheet(selectedSheets[0] ?? "");
         setCoaOverrides({});
     }
 
     function handleCoaLabelModeChange(value: CategoryCoaSheetConfig["coaLabelMode"]) {
-        setConfig((prev) => ({ ...(prev ?? getDefaultMappingConfig()), coaLabelMode: value }));
+        if (calibrationMode === "shared") {
+            setSharedConfig((prev) => ({ ...(prev ?? getDefaultMappingConfig()), coaLabelMode: value }));
+        } else {
+            if (!currentSheet) return;
+            setCalibrations((prev) => ({
+                ...prev,
+                [currentSheet]: { ...(prev[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig()), coaLabelMode: value },
+            }));
+        }
         setVerification(null);
+        setFormatResults({});
+        setActiveFormatSheet(selectedSheets[0] ?? "");
+        setActiveVerifySheet(selectedSheets[0] ?? "");
         setCoaOverrides({});
     }
 
     function handleResetCalibration() {
-        setConfig(getDefaultMappingConfig());
+        if (calibrationMode === "shared") {
+            setSharedConfig(getDefaultMappingConfig());
+        } else {
+            if (currentSheet) setCalibrations((prev) => ({ ...prev, [currentSheet]: getDefaultMappingConfig() }));
+        }
         setVerification(null);
+        setFormatResults({});
+        setActiveFormatSheet(selectedSheets[0] ?? "");
+        setActiveVerifySheet(selectedSheets[0] ?? "");
         setCoaOverrides({});
     }
 
@@ -466,6 +723,18 @@ export default function CategoryCoaMappingPage({
             const coaNorm = coaRaw ? normalize(coaRaw) : null;
             const dataNorm = dataRaw ? normalize(dataRaw) : null;
             if (dataNorm === "description") continue;
+
+            const unitRaw = cellText(row.getCell(cfg.columnConfig.unit));
+            const priceRaw = cellText(row.getCell(cfg.columnConfig.price));
+            const isFalsy = (v: string | null) => !v || normalize(v) === "0" || normalize(v) === "-" || normalize(v) === "0.00";
+            const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, "")) : NaN;
+            const isFalsyPrice = !priceRaw || priceNum === 0 || Number.isNaN(priceNum) || isFalsy(priceRaw);
+            const isFalsyUnit = isFalsy(unitRaw);
+            const isFalsyCoa = !coaNorm;
+            if (isFalsyCoa && isFalsyUnit && isFalsyPrice && dataRaw) {
+                // Placeholder like Miscellaneous... with G/H 0 and no COA — not a true pricelist, skip for additional/non-proc
+                if (sectionName === "additional" || sectionName === "non-procurement") continue;
+            }
 
             // Item row: both F (description) + D (COA) present
             if (coaNorm && dataRaw) {
@@ -581,58 +850,74 @@ export default function CategoryCoaMappingPage({
     }
 
     function handleLogRelationships() {
-        if (!workbook || !selectedSheet) return;
-        const ws = workbook.getWorksheet(selectedSheet);
-        if (!ws) return;
-        const effective = config ?? getDefaultMappingConfig();
-        const lastRow = ws.actualRowCount;
-        const procurementStart = effective.rowConfig.headerRow + 1;
-        const procurementEnd = effective.rowConfig.additionalItemsHeaderRow
-            ? effective.rowConfig.additionalItemsHeaderRow - 1
-            : effective.rowConfig.nonProcurementHeaderRow
-              ? effective.rowConfig.nonProcurementHeaderRow - 1
-              : lastRow;
-        const additionalStart = effective.rowConfig.additionalItemsHeaderRow ? effective.rowConfig.additionalItemsHeaderRow + 1 : -1;
-        const additionalEnd = effective.rowConfig.nonProcurementHeaderRow ? effective.rowConfig.nonProcurementHeaderRow - 1 : lastRow;
-        const nonProcStart = effective.rowConfig.nonProcurementHeaderRow ? effective.rowConfig.nonProcurementHeaderRow + 1 : -1;
-        const nonProcEnd = lastRow;
+        if (!workbook || selectedSheets.length === 0) return;
+        const allSheetData: Array<{ sheet: string; sections: Record<string, any>; pairs: Array<{ category: string; coa: string; catRow: number; coaRow: number; items: number; section: string; sheet: string }> }> = [];
+        const combinedAllPairs: typeof allSheetData[0]["pairs"] = [];
 
-        const sections: Record<string, any> = {};
+        for (const sheet of selectedSheets) {
+            const ws = workbook.getWorksheet(sheet);
+            if (!ws) continue;
+            const effective = getEffectiveConfig(sheet);
+            const lastRow = ws.actualRowCount;
+            const procurementStart = effective.rowConfig.headerRow + 1;
+            const procurementEnd = effective.rowConfig.additionalItemsHeaderRow
+                ? effective.rowConfig.additionalItemsHeaderRow - 1
+                : effective.rowConfig.nonProcurementHeaderRow
+                  ? effective.rowConfig.nonProcurementHeaderRow - 1
+                  : lastRow;
+            const additionalStart = effective.rowConfig.additionalItemsHeaderRow ? effective.rowConfig.additionalItemsHeaderRow + 1 : -1;
+            const additionalEnd = effective.rowConfig.nonProcurementHeaderRow ? effective.rowConfig.nonProcurementHeaderRow - 1 : lastRow;
+            const nonProcStart = effective.rowConfig.nonProcurementHeaderRow ? effective.rowConfig.nonProcurementHeaderRow + 1 : -1;
+            const nonProcEnd = lastRow;
 
-        const proc = extractRelationshipsForSection(ws, effective, "procurement", procurementStart, procurementEnd);
-        sections.procurement = { range: [procurementStart, procurementEnd], catGroups: proc.catGroups, pairs: proc.pairs, count: proc.pairs.length };
+            const sections: Record<string, any> = {};
 
-        if (effective.rowConfig.additionalItemsHeaderRow) {
-            const add = extractRelationshipsForSection(ws, effective, "additional", additionalStart, additionalEnd);
-            sections.additional = { range: [additionalStart, additionalEnd], catGroups: add.catGroups, pairs: add.pairs, count: add.pairs.length };
-        } else {
-            sections.additional = { skipped: "additionalItemsHeaderRow not calibrated" };
+            const proc = extractRelationshipsForSection(ws, effective, "procurement", procurementStart, procurementEnd);
+            const procPairsWithSheet = proc.pairs.map((p) => ({ ...p, sheet }));
+            sections.procurement = { range: [procurementStart, procurementEnd], catGroups: proc.catGroups, pairs: procPairsWithSheet, count: procPairsWithSheet.length };
+
+            if (effective.rowConfig.additionalItemsHeaderRow) {
+                const add = extractRelationshipsForSection(ws, effective, "additional", additionalStart, additionalEnd);
+                const addPairsWithSheet = add.pairs.map((p) => ({ ...p, sheet }));
+                sections.additional = { range: [additionalStart, additionalEnd], catGroups: add.catGroups, pairs: addPairsWithSheet, count: addPairsWithSheet.length };
+            } else {
+                sections.additional = { skipped: "additionalItemsHeaderRow not calibrated" };
+            }
+
+            if (effective.rowConfig.nonProcurementHeaderRow) {
+                const non = extractRelationshipsForSection(ws, effective, "non-procurement", nonProcStart, nonProcEnd);
+                const nonPairsWithSheet = non.pairs.map((p) => ({ ...p, sheet }));
+                sections["non-procurement"] = { range: [nonProcStart, nonProcEnd], catGroups: non.catGroups, pairs: nonPairsWithSheet, count: nonPairsWithSheet.length };
+            } else {
+                sections["non-procurement"] = { skipped: "nonProcurementHeaderRow not calibrated" };
+            }
+
+            const pairsForSheet: typeof procPairsWithSheet = [];
+            pairsForSheet.push(...procPairsWithSheet);
+            if ((sections.additional as any).pairs) pairsForSheet.push(...(sections.additional as any).pairs);
+            if ((sections["non-procurement"] as any).pairs) pairsForSheet.push(...(sections["non-procurement"] as any).pairs);
+
+            allSheetData.push({ sheet, sections, pairs: pairsForSheet });
+            combinedAllPairs.push(...pairsForSheet);
         }
 
-        if (effective.rowConfig.nonProcurementHeaderRow) {
-            const non = extractRelationshipsForSection(ws, effective, "non-procurement", nonProcStart, nonProcEnd);
-            sections["non-procurement"] = { range: [nonProcStart, nonProcEnd], catGroups: non.catGroups, pairs: non.pairs, count: non.pairs.length };
-        } else {
-            sections["non-procurement"] = { skipped: "nonProcurementHeaderRow not calibrated" };
-        }
-
-        const allPairs = [...(sections.procurement.pairs ?? []), ...(sections.additional.pairs ?? []), ...(sections["non-procurement"].pairs ?? [])];
-        // dedupe across sections by normalized category|coa
-        const seen = new Map<string, (typeof allPairs)[number]>();
-        for (const p of allPairs) {
+        // dedupe across sheets and sections by normalized category|coa
+        const seen = new Map<string, (typeof combinedAllPairs)[number]>();
+        for (const p of combinedAllPairs) {
             const key = `${normalize(p.category)}|${normalize(p.coa)}`;
             if (!seen.has(key)) seen.set(key, p);
         }
         const uniquePairs = [...seen.values()];
-        const duplicates = allPairs.length - uniquePairs.length;
+        const duplicates = combinedAllPairs.length - uniquePairs.length;
 
-        // DB verification: category exists, coa exists, mapping exists
+        // DB verification: category exists, coa exists, mapping exists (global across sheets)
         const mappingSet = new Set(existingMappings.map((m) => `${m.ppmp_category_id}|${m.chart_of_account_id}`));
         const verifiedPairs = uniquePairs.map((p) => {
             const catNorm = normalize(p.category);
             const coaNorm = normalize(p.coa);
+            const sheetCfg = getEffectiveConfig((p as any).sheet);
             const catRes = getCategoryMatch(catNorm, existingCategories);
-            const coaRes = getCoaMatch(coaNorm, existingCoas, effective.coaMatchField);
+            const coaRes = getCoaMatch(coaNorm, existingCoas, sheetCfg.coaMatchField ?? "auto");
             const catExists = catRes.type === "strict";
             const coaExists = coaRes.type === "strict";
             const catId = catRes.match?.id ?? null;
@@ -674,12 +959,23 @@ export default function CategoryCoaMappingPage({
             verifiedPairs,
         });
 
+        setVerification({
+            total: verifiedPairs.length,
+            catFound,
+            coaFound,
+            mappingFound,
+            missingCat,
+            missingCoa,
+            missingMapping,
+            verifiedPairs,
+        });
+        setActiveVerifySheet(selectedSheets[0] ?? "");
+
         const result = {
+            sheets: selectedSheets,
             file: fileName,
-            sheet: selectedSheet,
-            calibration: effective,
-            sections,
-            combined: { totalPairs: allPairs.length, uniquePairs, uniqueCount: uniquePairs.length, duplicates, allPairs },
+            sheetsData: allSheetData,
+            combined: { totalPairs: combinedAllPairs.length, uniquePairs, uniqueCount: uniquePairs.length, duplicates, allPairs: combinedAllPairs },
             db: {
                 total: uniquePairs.length,
                 catFound,
@@ -692,12 +988,15 @@ export default function CategoryCoaMappingPage({
             },
         };
 
-        console.log(`[Category COA Mapping] Relationships — ${selectedSheet} (all sections, no verify)`, result);
-        console.log(`Procurement pairs: ${sections.procurement.count}`, sections.procurement.pairs);
-        if (sections.additional.pairs) console.log(`Additional pairs: ${sections.additional.count}`, sections.additional.pairs);
-        if (sections["non-procurement"].pairs) console.log(`Non-Procurement pairs: ${sections["non-procurement"].count}`, sections["non-procurement"].pairs);
+        console.log(`[Category COA Mapping] Relationships — ${selectedSheets.join(", ")} (all sheets, all sections)`, result);
+        for (const sd of allSheetData) {
+            console.log(`Sheet ${sd.sheet} — Procurement pairs: ${sd.sections.procurement.count}`, sd.sections.procurement.pairs);
+            if ((sd.sections.additional as any).pairs) console.log(`Sheet ${sd.sheet} — Additional pairs: ${sd.sections.additional.count}`, sd.sections.additional.pairs);
+            if ((sd.sections["non-procurement"] as any).pairs) console.log(`Sheet ${sd.sheet} — Non-Procurement pairs: ${sd.sections["non-procurement"].count}`, sd.sections["non-procurement"].pairs);
+        }
         console.table(
             uniquePairs.map((p) => ({
+                sheet: (p as any).sheet,
                 section: p.section,
                 category: p.category,
                 coa: p.coa,
@@ -706,14 +1005,14 @@ export default function CategoryCoaMappingPage({
                 items: p.items,
             })),
         );
-        console.log(`Combined unique Category ↔ COA relationships: ${uniquePairs.length} (from ${allPairs.length} raw, ${duplicates} dupes) — flat list counts per section above`);
+        console.log(`Combined unique Category ↔ COA relationships: ${uniquePairs.length} (from ${combinedAllPairs.length} raw, ${duplicates} dupes) — flat list counts per sheet/section above`);
         if (uniquePairs.some((p) => p.category.includes("Uncategorized"))) {
             console.log("Sentinel usage: pairs with Additional/Non-Procurement (Uncategorized) are COA-only rows mapped to sentinels 276/277");
         }
 
         // DB verification logs
         console.log(
-            `[Category COA Mapping] DB Verification — ${selectedSheet} (mode: ${effective.coaMatchField}) — ${verifiedPairs.length} unique pairs checked against DB`,
+            `[Category COA Mapping] DB Verification — ${selectedSheets.join(", ")} (multi-sheet) — ${verifiedPairs.length} unique pairs checked against DB`,
             {
                 summary: {
                     totalUnique: verifiedPairs.length,
@@ -734,6 +1033,7 @@ export default function CategoryCoaMappingPage({
         );
         console.table(
             verifiedPairs.map((v) => ({
+                sheet: (v as any).sheet,
                 section: v.section,
                 category: v.category,
                 catExists: v.catExists ? `✅ ${v.catId}` : v.catMatchType === "partial" ? `~ partial` : "❌ missing",
@@ -748,28 +1048,30 @@ export default function CategoryCoaMappingPage({
         if (missingCat > 0) {
             console.log(
                 `Missing categories (${missingCat}):`,
-                verifiedPairs.filter((v) => !v.catExists).map((v) => ({ category: v.category, matchType: v.catMatchType, topMatches: v.catTopMatches })),
+                verifiedPairs.filter((v) => !v.catExists).map((v) => ({ sheet: (v as any).sheet, category: v.category, matchType: v.catMatchType, topMatches: v.catTopMatches })),
             );
             console.table(
                 verifiedPairs
                     .filter((v) => !v.catExists)
                     .map((v) => ({
+                        sheet: (v as any).sheet,
                         category: v.category,
                         normalized: v.catNorm,
                         matchType: v.catMatchType,
-                        topSuggestions: v.catTopMatches.map((m: { category: ExistingCategory; score: number }) => `${m.category.name} (lev ${m.score})`).join(" | ") || "—",
+                        topSuggestions: v.catTopMatches.map((m) => `${m.category.name} (lev ${m.score})`).join(" | ") || "—",
                     })),
             );
         }
         if (missingCoa > 0) {
             console.log(
-                `Missing COAs (${missingCoa}) — mode ${effective.coaMatchField}:`,
-                verifiedPairs.filter((v) => !v.coaExists).map((v) => ({ coa: v.coa, matchType: v.coaMatchType, topMatches: v.coaTopMatches })),
+                `Missing COAs (${missingCoa}):`,
+                verifiedPairs.filter((v) => !v.coaExists).map((v) => ({ sheet: (v as any).sheet, coa: v.coa, matchType: v.coaMatchType, topMatches: v.coaTopMatches })),
             );
             console.table(
                 verifiedPairs
                     .filter((v) => !v.coaExists)
                     .map((v) => ({
+                        sheet: (v as any).sheet,
                         coa: v.coa,
                         normalized: v.coaNorm,
                         matchType: v.coaMatchType,
@@ -783,20 +1085,22 @@ export default function CategoryCoaMappingPage({
                 verifiedPairs
                     .filter((v) => v.catExists && v.coaExists && !v.mappingExists)
                     .map((v) => ({
+                        sheet: (v as any).sheet,
                         category: `${v.category} [${v.catId}]`,
                         coa: `${v.coa} [${v.coaId}] ${v.coaMatch?.path}`,
                         section: v.section,
                     })),
             );
         }
-        console.log(`DB Verify Summary: ${catFound}/${verifiedPairs.length} categories ✅, ${coaFound}/${verifiedPairs.length} COAs ✅ (mode ${effective.coaMatchField}), ${mappingFound}/${verifiedPairs.length} mappings ✅, ${missingMapping} mappings missing`);
+        console.log(`DB Verify Summary: ${catFound}/${verifiedPairs.length} categories ✅, ${coaFound}/${verifiedPairs.length} COAs ✅, ${mappingFound}/${verifiedPairs.length} mappings ✅, ${missingMapping} mappings missing`);
     }
 
     function handleLog() {
-        if (!workbook || !selectedSheet) return;
-        const ws = workbook.getWorksheet(selectedSheet);
-        const effective = config ?? getDefaultMappingConfig();
-        console.log(`[Category COA Mapping] Sheet: ${selectedSheet}`, ws);
+        if (!workbook || selectedSheets.length === 0) return;
+        const sheet = currentSheet || selectedSheets[0];
+        const ws = workbook.getWorksheet(sheet);
+        const effective = getEffectiveConfig(sheet);
+        console.log(`[Category COA Mapping] Sheet: ${sheet}`, ws);
         console.log(`Workbook sheets:`, sheets);
         console.log(`File:`, fileName);
         console.log(`Calibration (columnConfig):`, effective.columnConfig);
@@ -854,60 +1158,190 @@ export default function CategoryCoaMappingPage({
     }
 
     return (
-        <div className="flex flex-col gap-4 p-6">
+        <div className="flex flex-col gap-4 p-4">
             <h1 className="text-2xl font-bold">Category COA Mapping</h1>
 
-            <Field>
-                <FieldLabel htmlFor="file">Excel File</FieldLabel>
-                <Input
-                    id="file"
-                    type="file"
-                    accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                    onChange={handleFileChange}
-                    disabled={loading}
-                />
-                <FieldDescription>Select an .xlsx file.</FieldDescription>
-                {error && <p className="text-sm text-destructive">{error}</p>}
-            </Field>
-
-            {loading && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Spinner /> Parsing workbook...
+            {fileName && !loading && (
+                <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm backdrop-blur supports-[backdrop-filter]:bg-muted/30">
+                    <span className="max-w-[42ch] truncate font-medium" title={fileName}>
+                        {fileName}
+                    </span>
+                    <span className="hidden text-muted-foreground sm:inline">•</span>
+                    <span className="truncate text-muted-foreground">
+                        {selectedSheets.length > 0 ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}` : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"} found`}
+                    </span>
+                    {selectedSheets.length > 0 && selectedSheets.length !== sheets.length && (
+                        <span className="hidden text-xs text-muted-foreground sm:inline">({sheets.length} total)</span>
+                    )}
                 </div>
             )}
 
-            {!loading && sheets.length > 0 && (
-                <Field>
-                    <FieldLabel>Sheets — click to select</FieldLabel>
-                    <div className="flex flex-wrap gap-2 rounded-lg border p-3">
-                        {sheets.map((sheet) => {
-                            const isSelected = selectedSheet === sheet;
-                            return (
-                                <Badge
-                                    key={sheet}
-                                    variant={isSelected ? "default" : "secondary"}
-                                    className="cursor-pointer text-sm transition-colors hover:opacity-80"
-                                    onClick={() => handleSheetClick(sheet)}
-                                >
-                                    {sheet} {isSelected && "✓"}
-                                </Badge>
-                            );
-                        })}
-                    </div>
-                    <FieldDescription>
-                        {selectedSheet ? (
-                            <>
-                                Selected: <span className="font-medium text-foreground">{selectedSheet}</span>
-                            </>
-                        ) : (
-                            "Click a sheet to select it"
-                        )}
-                    </FieldDescription>
-                </Field>
-            )}
+            <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
+                <TabsList variant="line" className="w-full">
+                    <TabsTrigger value="upload" className="flex-1">
+                        1. Upload & Sheet {selectedSheets.length > 0 && <span className="ml-1 text-xs text-muted-foreground">{selectedSheets.length}✓</span>}
+                    </TabsTrigger>
+                    <TabsTrigger value="calibrate" disabled={!canCalibrate} className="flex-1">
+                        2. Calibrate {sharedConfig ? <span className="ml-1 text-xs text-muted-foreground">H{sharedConfig.rowConfig.headerRow} {calibrationMode === "shared" ? "shared" : "per-sheet"}</span> : null}
+                    </TabsTrigger>
+                    <TabsTrigger value="verifyFormat" disabled={!canVerifyFormat} className="flex-1">
+                        3. Verify Format {hasFormatResult ? <span className={`ml-1 text-xs ${formatValid ? "text-green-600" : "text-amber-600"}`}>{formatValid ? `✓ ${selectedSheets.length}` : `❌ ${Object.values(formatResults).filter((r) => !r.valid).length}/${selectedSheets.length}`}</span> : null}
+                    </TabsTrigger>
+                    <TabsTrigger value="verifyMap" disabled={!canVerifyMap} className="flex-1">
+                        4. Verify & Map {verification ? <span className="ml-1 text-xs text-muted-foreground">{verification.missingMapping} missing</span> : null}
+                    </TabsTrigger>
+                    <TabsTrigger value="review" disabled={!canReview} className="flex-1">
+                        5. Review & Save {effectiveVerification ? <span className="ml-1 text-xs text-muted-foreground">{effectiveVerification.effMissingMapping} to create</span> : null}
+                    </TabsTrigger>
+                </TabsList>
 
-            {selectedSheet && config && (
-                <div className="rounded-lg border p-4">
+                <TabsContent value="upload" className="mt-4 flex flex-col gap-4">
+                    <Field>
+                        <FieldLabel htmlFor="file">Excel File</FieldLabel>
+                        <Input
+                            id="file"
+                            type="file"
+                            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            onChange={handleFileChange}
+                            disabled={loading}
+                        />
+                        <FieldDescription>Select an .xlsx file.</FieldDescription>
+                        {error && <p className="text-sm text-destructive">{error}</p>}
+                    </Field>
+
+                    {loading && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Spinner /> Parsing workbook...
+                        </div>
+                    )}
+
+                    {!loading && sheets.length > 0 && (
+                        <Field>
+                            <FieldLabel>Sheets — click to select one or more (multi-sheet)</FieldLabel>
+                            <div className="flex flex-wrap gap-2 rounded-lg border p-3">
+                                {sheets.map((sheet) => {
+                                    const isSelected = selectedSheets.includes(sheet);
+                                    return (
+                                        <Badge
+                                            key={sheet}
+                                            variant={isSelected ? "default" : "secondary"}
+                                            className="cursor-pointer text-sm transition-colors hover:opacity-80"
+                                            onClick={() => handleSheetToggle(sheet)}
+                                        >
+                                            {sheet} {isSelected && "✓"}
+                                        </Badge>
+                                    );
+                                })}
+                            </div>
+                            <FieldDescription>
+                                Selected: <span className="font-medium text-foreground">{selectedSheets.length > 0 ? selectedSheets.join(", ") : "none"}</span> — {selectedSheets.length}/{sheets.length} sheets
+                            </FieldDescription>
+                            {selectedSheets.length > 1 && (
+                                <p className="text-xs text-muted-foreground">Shared calibration will apply to all {selectedSheets.length} sheets; per-sheet mode lets you adjust individually.</p>
+                            )}
+                        </Field>
+                    )}
+
+                    <div className="flex justify-end">
+                        <Button
+                            disabled={selectedSheets.length === 0}
+                            onClick={() => {
+                                ensureCalibrationsInitialized();
+                                setStep("calibrate");
+                            }}
+                        >
+                            Next: Calibrate {selectedSheets.length > 0 ? `(${selectedSheets.length} sheets)` : ""}
+                        </Button>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="calibrate" className="mt-4 flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-3">
+                        <span className="text-sm font-medium">Scope:</span>
+                        <div className="flex gap-2">
+                            <Button
+                                variant={calibrationMode === "shared" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                    if (calibrationMode === "per-sheet" && calibrations[currentSheet]) {
+                                        setSharedConfig({ ...calibrations[currentSheet] });
+                                    } else if (!sharedConfig) ensureCalibrationsInitialized();
+                                    setCalibrationMode("shared");
+                                }}
+                            >
+                                Shared — all {selectedSheets.length} sheets
+                            </Button>
+                            <Button
+                                variant={calibrationMode === "per-sheet" ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                    if (sharedConfig) {
+                                        const next: Record<string, CategoryCoaSheetConfig> = {};
+                                        for (const s of selectedSheets) next[s] = { ...sharedConfig, ...(calibrations[s] ?? {}) };
+                                        setCalibrations(next);
+                                        if (!currentSheet && selectedSheets[0]) setCurrentSheet(selectedSheets[0]);
+                                    }
+                                    setCalibrationMode("per-sheet");
+                                }}
+                            >
+                                Per-sheet
+                            </Button>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                            {calibrationMode === "shared"
+                                ? `Shared — header ${sharedConfig?.rowConfig.headerRow ?? 7} applies to all ${selectedSheets.length} sheets.`
+                                : `Per-sheet — editing ${currentSheet || "—"} only.`}
+                        </span>
+                        {calibrationMode === "shared" ? (
+                            <Button variant="outline" size="sm" onClick={handleApplySharedToAll} disabled={!sharedConfig}>
+                                Apply shared to all ({selectedSheets.length})
+                            </Button>
+                        ) : (
+                            <Button variant="outline" size="sm" onClick={handleCopyCurrentToAll} disabled={!currentSheet}>
+                                Copy “{currentSheet}” to all
+                            </Button>
+                        )}
+                    </div>
+
+                    {calibrationMode === "per-sheet" && selectedSheets.length > 1 && (
+                        <Field>
+                            <FieldLabel>Editing sheet</FieldLabel>
+                            <Select value={currentSheet} onValueChange={(v) => setCurrentSheet(v ?? "")}>
+                                <SelectTrigger className="w-[260px]">
+                                    <SelectValue placeholder="Select sheet to edit" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectGroup>
+                                        {selectedSheets.map((s) => (
+                                            <SelectItem key={s} value={s}>
+                                                {s} {formatResults[s]?.valid ? "✓" : formatResults[s] ? "❌" : ""}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                </SelectContent>
+                            </Select>
+                            <FieldDescription>Per-sheet calibration — changes affect only the selected sheet.</FieldDescription>
+                        </Field>
+                    )}
+
+                    {(() => {
+                        const cfg = calibrationMode === "shared" ? (sharedConfig ?? getDefaultMappingConfig()) : (calibrations[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig());
+                        const onColumnChange = (patch: Partial<CategoryCoaColumnConfig>) => {
+                            if (calibrationMode === "shared") updateSharedColumnConfig(patch);
+                            else handleColumnConfigChange(patch);
+                            // handleColumnConfigChange already handles mode, but we need to ensure it uses correct mode
+                        };
+                        // Use existing handlers which already handle mode, so just use them
+                        return null;
+                    })()}
+
+                    {(() => {
+                        const cfg = calibrationMode === "shared" ? (sharedConfig ?? getDefaultMappingConfig()) : (calibrations[currentSheet] ?? sharedConfig ?? getDefaultMappingConfig());
+                        return (
+                            <div className="rounded-lg border p-4">
+                                <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                    Calibration {calibrationMode === "shared" ? `(Shared – ${selectedSheets.length} sheets)` : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
+                                </p>
                     <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                         Calibration — Category ↔ COA mapping reference
                     </p>
@@ -920,42 +1354,68 @@ export default function CategoryCoaMappingPage({
                     </p>
 
                     <div className="grid grid-cols-2 gap-6">
-                        <div className="rounded-md border bg-muted/20 p-3">
+                        <div className="rounded-md border bg-card p-3">
                             <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 Column Config
                             </p>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-4 gap-4">
                                 <Field>
                                     <FieldLabel htmlFor="coa-column">COA Column</FieldLabel>
                                     <Input
                                         id="coa-column"
-                                        value={config.columnConfig.coa}
+                                        value={cfg.columnConfig.coa}
                                         onChange={(e) =>
                                             handleColumnConfigChange({ coa: e.target.value.toUpperCase() })
                                         }
                                         className="w-16"
                                         placeholder="D"
                                     />
-                                    <FieldDescription>COA — col {config.columnConfig.coa || "D"}</FieldDescription>
+                                    <FieldDescription>COA — col {cfg.columnConfig.coa || "D"}</FieldDescription>
                                 </Field>
                                 <Field>
                                     <FieldLabel htmlFor="category-column">Category Column</FieldLabel>
                                     <Input
                                         id="category-column"
-                                        value={config.columnConfig.category}
+                                        value={cfg.columnConfig.category}
                                         onChange={(e) =>
                                             handleColumnConfigChange({ category: e.target.value.toUpperCase() })
                                         }
                                         className="w-16"
                                         placeholder="F"
                                     />
-                                    <FieldDescription>Category — col {config.columnConfig.category || "F"}</FieldDescription>
+                                    <FieldDescription>Category — col {cfg.columnConfig.category || "F"}</FieldDescription>
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="unit-column">Unit Column</FieldLabel>
+                                    <Input
+                                        id="unit-column"
+                                        value={cfg.columnConfig.unit}
+                                        onChange={(e) =>
+                                            handleColumnConfigChange({ unit: e.target.value.toUpperCase() })
+                                        }
+                                        className="w-16"
+                                        placeholder="G"
+                                    />
+                                    <FieldDescription>Unit — col {cfg.columnConfig.unit || "G"}</FieldDescription>
+                                </Field>
+                                <Field>
+                                    <FieldLabel htmlFor="price-column">Price Column</FieldLabel>
+                                    <Input
+                                        id="price-column"
+                                        value={cfg.columnConfig.price}
+                                        onChange={(e) =>
+                                            handleColumnConfigChange({ price: e.target.value.toUpperCase() })
+                                        }
+                                        className="w-16"
+                                        placeholder="H"
+                                    />
+                                    <FieldDescription>Price — col {cfg.columnConfig.price || "H"}</FieldDescription>
                                 </Field>
                             </div>
                             <Field className="mt-3">
                                 <FieldLabel>COA Match Field</FieldLabel>
                                 <Select
-                                    value={config.coaMatchField}
+                                    value={cfg.coaMatchField}
                                     onValueChange={(v) => handleMatchFieldChange(v as CategoryCoaSheetConfig["coaMatchField"])}
                                 >
                                     <SelectTrigger className="w-[200px]">
@@ -973,7 +1433,7 @@ export default function CategoryCoaMappingPage({
                             </Field>
                         </div>
 
-                        <div className="rounded-md border bg-muted/20 p-3">
+                        <div className="rounded-md border bg-card p-3">
                             <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
                                 Row Config
                             </p>
@@ -983,12 +1443,12 @@ export default function CategoryCoaMappingPage({
                                     <Input
                                         id="header-row"
                                         type="number"
-                                        value={config.rowConfig.headerRow}
+                                        value={cfg.rowConfig.headerRow}
                                         onChange={(e) => handleRowConfigChange({ headerRow: Number(e.target.value) || 0 })}
                                         className="w-20"
                                     />
                                     <FieldDescription>
-                                        Header {config.rowConfig.headerRow}; data starts {config.rowConfig.headerRow + 1}
+                                        Header {cfg.rowConfig.headerRow}; data starts {cfg.rowConfig.headerRow + 1}
                                     </FieldDescription>
                                 </Field>
                                 <Field>
@@ -996,12 +1456,10 @@ export default function CategoryCoaMappingPage({
                                     <Input
                                         id="additional-header-row"
                                         type="number"
-                                        value={config.rowConfig.additionalItemsHeaderRow ?? ""}
+                                        value={cfg.rowConfig.additionalItemsHeaderRow ?? ""}
                                         onChange={(e) =>
                                             handleRowConfigChange({
-                                                additionalItemsHeaderRow: e.target.value
-                                                    ? Number(e.target.value)
-                                                    : null,
+                                                additionalItemsHeaderRow: e.target.value ? Number(e.target.value) : null,
                                             })
                                         }
                                         placeholder="blank = ignore"
@@ -1016,12 +1474,10 @@ export default function CategoryCoaMappingPage({
                                     <Input
                                         id="non-proc-header-row"
                                         type="number"
-                                        value={config.rowConfig.nonProcurementHeaderRow ?? ""}
+                                        value={cfg.rowConfig.nonProcurementHeaderRow ?? ""}
                                         onChange={(e) =>
                                             handleRowConfigChange({
-                                                nonProcurementHeaderRow: e.target.value
-                                                    ? Number(e.target.value)
-                                                    : null,
+                                                nonProcurementHeaderRow: e.target.value ? Number(e.target.value) : null,
                                             })
                                         }
                                         placeholder="blank = ignore"
@@ -1040,7 +1496,7 @@ export default function CategoryCoaMappingPage({
                         <ToggleGroup
                             variant="outline"
                             spacing={2}
-                            value={[config.coaLabelMode]}
+                            value={[cfg.coaLabelMode]}
                             onValueChange={(value) => {
                                 if (value.length > 0) {
                                     handleCoaLabelModeChange(value[0] as CategoryCoaSheetConfig["coaLabelMode"]);
@@ -1081,29 +1537,135 @@ export default function CategoryCoaMappingPage({
                             Reset to defaults
                         </Button>
                         <span className="self-center text-xs text-muted-foreground">
-                            Column: D=COA, F=category → Row: header 7 → Mode: {config.coaLabelMode}
+                            Column: D=COA, F=category → Row: header 7 → Mode: {cfg.coaLabelMode}
                         </span>
                     </div>
                 </div>
-            )}
+                        );
+                    })()}
 
-            {selectedSheet && (
-                <div className="flex gap-2">
-                    <Button onClick={handleLog}>Log {selectedSheet} + calibration</Button>
-                    <Button variant="secondary" onClick={handleLogRelationships}>
-                        Log Unique Relationships
-                    </Button>
-                </div>
-            )}
+                    <div className="flex justify-between">
+                        <Button variant="outline" onClick={() => setStep("upload")}>
+                            Back
+                        </Button>
+                        <Button onClick={() => setStep("verifyFormat")} disabled={!canVerifyFormat}>
+                            Next: Verify Format
+                        </Button>
+                    </div>
+                </TabsContent>
 
-            {effectiveVerification && (
-                <div className="rounded-lg border">
-                    <div className="border-b p-3">
-                        <h3 className="text-sm font-semibold">
-                            DB Verification — {effectiveVerification.total} unique pairs
-                        </h3>
+                <TabsContent value="verifyFormat" className="mt-4 flex flex-col gap-4">
+                    <div className="rounded-lg border p-4">
+                        <p className="mb-2 text-sm font-medium">Verify Sheet Format — check calibration and structure (all 3 sections)</p>
+                        <p className="mb-3 text-xs text-muted-foreground">
+                            Checks {selectedSheets.length} sheet{selectedSheets.length === 1 ? "" : "s"} with current calibration ({calibrationMode === "shared" ? `shared header ${sharedConfig?.rowConfig.headerRow ?? 7}` : `per-sheet`}). Validates cat → coa(s) → items → cat - TOTAL per section.
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <Button size="sm" onClick={handleVerifyFormat} disabled={!canVerifyFormat}>
+                                Verify Format {selectedSheets.length > 1 ? `(${selectedSheets.length} sheets)` : ""}
+                            </Button>
+                            {hasFormatResult && (
+                                <span className={`text-xs ${formatValid ? "text-green-600" : "text-amber-600"}`}>
+                                    {formatValid ? `✅ All ${selectedSheets.length} valid` : `❌ ${Object.values(formatResults).filter((r) => !r.valid).length}/${selectedSheets.length} issues`}
+                                </span>
+                            )}
+                        </div>
+                        {hasFormatResult && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                                {selectedSheets.map((s) => {
+                                    const r = formatResults[s];
+                                    if (!r) return <Badge key={s} variant="secondary">{s}: —</Badge>;
+                                    return <Badge key={s} variant={r.valid ? "default" : "secondary"} className={r.valid ? "bg-primary" : "bg-secondary"}>{s}: {r.valid ? "✅" : "❌"} {r.errors.length} issues</Badge>;
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {hasFormatResult && selectedSheets.length > 1 && (
+                        <Tabs value={activeFormatSheet} onValueChange={setActiveFormatSheet}>
+                            <TabsList variant="line" className="w-full">
+                                {selectedSheets.map((s) => {
+                                    const r = formatResults[s];
+                                    return (
+                                        <TabsTrigger key={s} value={s} className="flex-1">
+                                            {s} {r?.valid ? <span className="ml-1 text-xs text-green-600">✓</span> : r ? <span className="ml-1 text-xs text-amber-600">❌ {r.errors.length}</span> : null}
+                                        </TabsTrigger>
+                                    );
+                                })}
+                            </TabsList>
+                            {selectedSheets.map((s) => {
+                                const r = formatResults[s];
+                                if (!r) return <TabsContent key={s} value={s}><div className="p-4 text-sm text-muted-foreground">Not verified yet.</div></TabsContent>;
+                                return (
+                                    <TabsContent key={s} value={s}>
+                                        <div className={`rounded-lg border p-4 ${r.valid ? "border bg-card" : "border bg-card"}`}>
+                                            <div className="flex flex-wrap gap-2 text-xs">
+                                                <Badge variant={r.groups.procurement ? "default" : "secondary"}>Procurement: {r.groups.procurement} cells</Badge>
+                                                <Badge variant={r.groups.additional ? "default" : "secondary"}>Additional: {r.groups.additional} cells</Badge>
+                                                <Badge variant={r.groups.nonProcurement ? "default" : "secondary"}>Non-Proc: {r.groups.nonProcurement} cells</Badge>
+                                            </div>
+                                            {r.details.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">{r.details.map((d, i) => <li key={i}>{d}</li>)}</ul>}
+                                            {r.errors.length > 0 && <div className="mt-3"><div className="text-xs font-semibold">Issues ({r.errors.length}) in {s}:</div><ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">{r.errors.map((e, i) => <li key={i}><span className="font-mono">Row {e.row}:</span> {e.message}</li>)}</ul></div>}
+                                            {!r.valid && <p className="mt-2 text-xs text-amber-800">Fix calibration or sheet format — Next is blocked until valid.</p>}
+                                        </div>
+                                    </TabsContent>
+                                );
+                            })}
+                        </Tabs>
+                    )}
+
+                    {hasFormatResult && selectedSheets.length === 1 && (() => {
+                        const s = selectedSheets[0];
+                        const r = formatResults[s];
+                        if (!r) return null;
+                        return (
+                            <div className={`rounded-lg border p-4 ${r.valid ? "border bg-card" : "border bg-card"}`}>
+                                <div className="flex flex-wrap gap-2 text-xs">
+                                    <Badge variant={r.groups.procurement ? "default" : "secondary"}>Procurement: {r.groups.procurement} cells</Badge>
+                                    <Badge variant={r.groups.additional ? "default" : "secondary"}>Additional: {r.groups.additional} cells</Badge>
+                                    <Badge variant={r.groups.nonProcurement ? "default" : "secondary"}>Non-Proc: {r.groups.nonProcurement} cells</Badge>
+                                </div>
+                                {r.details.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">{r.details.map((d, i) => <li key={i}>{d}</li>)}</ul>}
+                                {r.errors.length > 0 && <div className="mt-3"><div className="text-xs font-semibold">Issues ({r.errors.length}):</div><ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">{r.errors.map((e, i) => <li key={i}><span className="font-mono">Row {e.row}:</span> {e.message}</li>)}</ul></div>}
+                                {!r.valid && <p className="mt-2 text-xs text-amber-800">Fix calibration or sheet format — Next is blocked until valid.</p>}
+                            </div>
+                        );
+                    })()}
+
+                    {!hasFormatResult && <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">Click Verify Format to check sheet structure.</div>}
+
+                    <div className="flex justify-between">
+                        <Button variant="outline" onClick={() => setStep("calibrate")}>
+                            Back
+                        </Button>
+                        <Button onClick={() => setStep("verifyMap")} disabled={!canVerifyMap}>
+                            Next: Verify & Map {hasFormatResult && !formatValid ? "(blocked)" : ""}
+                        </Button>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="verifyMap" className="mt-4 flex flex-col gap-4">
+                    <div className="rounded-lg border p-4">
+                        <p className="mb-2 text-sm font-medium">Verify & Map — extract relationships and check DB</p>
+                        <p className="mb-3 text-xs text-muted-foreground">Click Log Unique Relationships to extract from {selectedSheets.length} sheet{selectedSheets.length === 1 ? "" : "s"} and verify against DB. Use dropdowns for ~ partial / ❌ missing COAs.</p>
+                        <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={handleLog}>
+                                Log {(currentSheet || selectedSheets[0]) ?? "sheet"} + calibration
+                            </Button>
+                            <Button size="sm" onClick={handleLogRelationships}>
+                                Log Unique Relationships {selectedSheets.length > 1 ? `(${selectedSheets.length} sheets)` : ""}
+                            </Button>
+                        </div>
+                    </div>
+
+                    {effectiveVerification ? (
+                        <div className="rounded-lg border">
+                            <div className="border-b p-3">
+                                <h3 className="text-sm font-semibold">
+                                    DB Verification — {effectiveVerification.total} unique pairs
+                                </h3>
                         <p className="text-xs text-muted-foreground">
-                            Checked against {existingCategories.length} categories, {existingCoas.length} COAs ({config?.coaMatchField ?? "auto"}), {existingMappings.length} existing mappings
+                            Checked against {existingCategories.length} categories, {existingCoas.length} COAs ({(currentSheet ? getEffectiveConfig(currentSheet).coaMatchField : sharedConfig?.coaMatchField) ?? "auto"}), {existingMappings.length} existing mappings
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs">
                             <Badge variant={effectiveVerification.catFound === effectiveVerification.total ? "default" : "secondary"}>
@@ -1124,8 +1686,9 @@ export default function CategoryCoaMappingPage({
                     </div>
                     <div className="max-h-[480px] overflow-auto">
                         <table className="w-full text-xs">
-                            <thead className="sticky top-0 bg-muted/50 text-muted-foreground">
+                            <thead className="sticky top-0 bg-card text-muted-foreground">
                                 <tr className="border-b">
+                                    <th className="p-2 text-left">Sheet</th>
                                     <th className="p-2 text-left">Section</th>
                                     <th className="p-2 text-left">Category</th>
                                     <th className="p-2 text-center">Cat DB</th>
@@ -1148,14 +1711,15 @@ export default function CategoryCoaMappingPage({
                                             ? [...suggestedCoas.map((c) => `coa:${c.id}:${c.path} — ${c.account_title}`), ...remainingCoas.map((c) => `coa:${c.id}:${c.path} — ${c.account_title}`)]
                                             : existingCoas.map((c) => `coa:${c.id}:${c.path} — ${c.account_title}`);
                                     return (
-                                        <tr key={v.key} className="border-b hover:bg-muted/20">
+                                        <tr key={v.key} className="border-b hover:bg-accent">
+                                            <td className="p-2 text-muted-foreground">{v.sheet}</td>
                                             <td className="p-2 text-muted-foreground">{v.section}</td>
                                             <td className="p-2 max-w-[16ch] truncate" title={v.category}>
                                                 {v.category}
                                             </td>
                                             <td className="p-2 text-center">
                                                 {v.catExists ? (
-                                                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                                    <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
                                                         ✅ {v.catId}
                                                     </Badge>
                                                 ) : v.catMatchType === "partial" ? (
@@ -1163,7 +1727,7 @@ export default function CategoryCoaMappingPage({
                                                         ~ partial
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                                                    <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
                                                         ❌ missing
                                                     </Badge>
                                                 )}
@@ -1182,7 +1746,7 @@ export default function CategoryCoaMappingPage({
                                                                     {(item: string) => {
                                                                         const isSuggested = v.coaTopMatches.some((m) => item.includes(`coa:${m.coa.id}:`));
                                                                         return (
-                                                                            <ComboboxItem key={item} value={item} className={isSuggested ? "bg-amber-50 font-medium" : ""}>
+                                                                            <ComboboxItem key={item} value={item} className={isSuggested ? "bg-card font-medium" : ""}>
                                                                                 {isSuggested ? "★ " : ""}
                                                                                 {item.replace(/^coa:\d+:/, "")}
                                                                             </ComboboxItem>
@@ -1199,7 +1763,7 @@ export default function CategoryCoaMappingPage({
                                                     </div>
                                                 ) : (
                                                     <div className="flex items-center gap-1">
-                                                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                                        <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
                                                             ✅ {v.coaId}
                                                         </Badge>
                                                         <span className="truncate text-muted-foreground" title={v.effectiveCoa?.path}>
@@ -1233,7 +1797,7 @@ export default function CategoryCoaMappingPage({
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
                         <span className="text-xs text-muted-foreground">
-                            Detailed logs in console (F12) — with top suggestions. Mode: {config?.coaMatchField ?? "auto"} — overrides are row-unique ({Object.keys(coaOverrides).length} active).
+                            Detailed logs in console (F12) — with top suggestions. Mode: {(currentSheet ? getEffectiveConfig(currentSheet).coaMatchField : sharedConfig?.coaMatchField) ?? "auto"} — overrides are row-unique ({Object.keys(coaOverrides).length} active).
                         </span>
                         <div className="flex gap-2">
                             {Object.keys(coaOverrides).length > 0 && (
@@ -1241,23 +1805,100 @@ export default function CategoryCoaMappingPage({
                                     Clear overrides
                                 </Button>
                             )}
-                            <Button
-                                size="sm"
-                                disabled={isSaving || (effectiveVerification.effMissingMapping === 0)}
-                                onClick={handleBulkCreateMappings}
-                            >
-                                {isSaving ? (
-                                    <>
-                                        <Spinner className="mr-1 h-3 w-3" /> Saving...
-                                    </>
-                                ) : (
-                                    `Create ${effectiveVerification.effMissingMapping} Mapping${effectiveVerification.effMissingMapping === 1 ? "" : "s"}`
-                                )}
-                            </Button>
                         </div>
                     </div>
                 </div>
-            )}
+                    ) : (
+                        <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">No verification yet — click Log Unique Relationships.</div>
+                    )}
+
+                    <div className="flex justify-between">
+                        <Button variant="outline" onClick={() => setStep("verifyFormat")}>
+                            Back
+                        </Button>
+                        <Button onClick={() => setStep("review")} disabled={!canReview}>
+                            Next: Review & Save {effectiveVerification ? `(${effectiveVerification.effMissingMapping} to create)` : ""}
+                        </Button>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="review" className="mt-4 flex flex-col gap-4">
+                    {effectiveVerification ? (
+                        <div className="rounded-lg border">
+                            <div className="border-b p-3">
+                                <h3 className="text-sm font-semibold">Review — {effectiveVerification.total} unique pairs</h3>
+                                <p className="text-xs text-muted-foreground">Checked against {existingCategories.length} categories, {existingCoas.length} COAs, {existingMappings.length} mappings — {effectiveVerification.effMissingMapping} will be created.</p>
+                                <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                    <Badge variant={effectiveVerification.catFound === effectiveVerification.total ? "default" : "secondary"}>Categories: {effectiveVerification.catFound}/{effectiveVerification.total}</Badge>
+                                    <Badge variant={effectiveVerification.effCoaFound === effectiveVerification.total ? "default" : "secondary"}>COAs: {effectiveVerification.effCoaFound}/{effectiveVerification.total}</Badge>
+                                    <Badge variant={effectiveVerification.effMappingFound === effectiveVerification.total ? "default" : "secondary"}>Mappings: {effectiveVerification.effMappingFound}/{effectiveVerification.total}</Badge>
+                                </div>
+                            </div>
+                            <div className="max-h-96 overflow-auto">
+                                <table className="w-full text-xs">
+                                    <thead className="sticky top-0 bg-card text-muted-foreground">
+                                        <tr className="border-b">
+                                            <th className="p-2 text-left">Sheet</th>
+                                            <th className="p-2 text-left">Category</th>
+                                            <th className="p-2 text-left">COA (Excel → DB)</th>
+                                            <th className="p-2 text-center">Mapping</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {effectiveVerification.effectivePairs
+                                            .filter((p) => p.catExists && p.effectiveCoaExists && !p.effectiveMappingExists)
+                                            .map((p) => (
+                                                <tr key={p.key} className="border-b">
+                                                    <td className="p-2 text-muted-foreground">{p.sheet}</td>
+                                                    <td className="p-2">
+                                                        {p.category} <span className="text-muted-foreground">[{p.catId}]</span>
+                                                    </td>
+                                                    <td className="p-2">
+                                                        {p.coa} <span className="text-muted-foreground">→</span> {p.effectiveCoa?.path} — {p.effectiveCoa?.account_title}
+                                                    </td>
+                                                    <td className="p-2 text-center text-amber-600">❌ not mapped</td>
+                                                </tr>
+                                            ))}
+                                        {effectiveVerification.effMissingMapping === 0 && (
+                                            <tr>
+                                                <td colSpan={4} className="p-4 text-center text-muted-foreground">All mappings already exist — nothing to create.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
+                                <span className="text-xs text-muted-foreground">{effectiveVerification.effMissingMapping} mapping(s) will be created. COAs are not created, only linked.</span>
+                                <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setCoaOverrides({})}>
+                                        Clear overrides
+                                    </Button>
+                                    <Button size="sm" disabled={isSaving || effectiveVerification.effMissingMapping === 0} onClick={handleBulkCreateMappings}>
+                                        {isSaving ? (
+                                            <>
+                                                <Spinner className="mr-1 h-3 w-3" /> Saving...
+                                            </>
+                                        ) : (
+                                            `Create ${effectiveVerification.effMissingMapping} Mapping${effectiveVerification.effMissingMapping === 1 ? "" : "s"}`
+                                        )}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">Verify first to review mappings.</div>
+                    )}
+
+                    <div className="flex justify-between">
+                        <Button variant="outline" onClick={() => setStep("verifyMap")}>
+                            Back
+                        </Button>
+                        <Button variant="outline" onClick={() => setStep("calibrate")}>
+                            Recalibrate
+                        </Button>
+                    </div>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }
