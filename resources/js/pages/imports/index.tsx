@@ -1,8 +1,6 @@
 import { Head, Link } from "@inertiajs/react";
-import { ArrowRight, FileSpreadsheet, Tags, Upload } from "lucide-react";
+import { ArrowRight, FileSpreadsheet, Receipt, Tags, Upload } from "lucide-react";
 import { Badge } from "@/components/base-ui-components/ui/badge";
-import { index as categoryCoaMappingIndex } from "@/routes/category-coa-mapping";
-import { index as categoryImportIndex } from "@/routes/category-import";
 import {
     Card,
     CardContent,
@@ -11,6 +9,9 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/base-ui-components/ui/card";
+import { index as categoryCoaMappingIndex } from "@/routes/category-coa-mapping";
+import { index as categoryImportIndex } from "@/routes/category-import";
+import { index as priceListImportIndex } from "@/routes/price-list-import";
 
 type ImportItem = {
     title: string;
@@ -38,6 +39,14 @@ const IMPORTS: ImportItem[] = [
         icon: Tags,
         badge: "Mappings",
     },
+    {
+        title: "Price List Import",
+        description:
+            "Import price list items (price-list only). Requires official Category + Mapping to exist first.",
+        href: priceListImportIndex().url,
+        icon: Receipt,
+        badge: "Price Lists",
+    },
 ];
 
 export default function ImportsHub() {
@@ -51,7 +60,8 @@ export default function ImportsHub() {
                         Imports
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Central hub for all import workflows. New importers will be added here as they become available.
+                        Central hub for all import workflows. New importers will be added here as
+                        they become available.
                     </p>
                 </div>
 
@@ -87,14 +97,18 @@ export default function ImportsHub() {
                             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
                                 <Upload className="h-5 w-5 text-muted-foreground" />
                             </div>
-                            <CardTitle className="pt-3 text-muted-foreground">More imports coming soon</CardTitle>
+                            <CardTitle className="pt-3 text-muted-foreground">
+                                More imports coming soon
+                            </CardTitle>
                             <CardDescription>
-                                Price List, AIP Summary, and other bulk importers will appear here.
+                                AIP Summary and other bulk importers will appear here.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1" />
                         <CardFooter>
-                            <span className="text-xs text-muted-foreground">Registry pattern — add entry to IMPORTS array to extend.</span>
+                            <span className="text-xs text-muted-foreground">
+                                Registry pattern — add entry to IMPORTS array to extend.
+                            </span>
                         </CardFooter>
                     </Card>
                 </div>
@@ -104,7 +118,5 @@ export default function ImportsHub() {
 }
 
 ImportsHub.layout = {
-    breadcrumbs: [
-        { title: "Imports", href: "/imports" },
-    ],
+    breadcrumbs: [{ title: "Imports", href: "/imports" }],
 };

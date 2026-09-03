@@ -214,7 +214,7 @@ type ExtractResult = {
 type CatSheetConfig = {
     dataColumn: string;
     coaColumn: string;
-    headerRow: number;
+    headerRow: number | "";
     additionalItemsHeaderRow?: number;
     nonProcurementHeaderRow?: number;
     coaLabelMode: "with-label" | "without-label";
@@ -403,6 +403,15 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             };
         }
         const { dataColumn, coaColumn, headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow, coaLabelMode } = cfg;
+        if (headerRow === "" || headerRow == null) {
+            return {
+                valid: false,
+                message: "Header Row is required",
+                errors: [{ row: 0, message: "Header Row is required — check calibration" }],
+                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
+                details: [],
+            };
+        }
         const lastRow = ws.actualRowCount;
         const procurementStart = headerRow + 1;
         const procurementEnd = additionalItemsHeaderRow
@@ -632,6 +641,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         for (const sheet of selectedSheets) {
             const cfg = getEffectiveConfig(sheet);
             const { dataColumn, coaColumn, headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow, coaLabelMode } = cfg;
+            if (headerRow === "" || headerRow == null) continue;
             const ws = workbook!.getWorksheet(sheet);
             if (!ws) continue;
             const startRow = headerRow + 1;
@@ -925,7 +935,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                             </div>
                             <span className="text-xs text-muted-foreground">
                                 {calibrationMode === "shared"
-                                    ? `Start row ${sharedConfig?.headerRow ?? 7} applies to every sheet — change once. Snapshot: use “Apply to all” to overwrite per-sheet.`
+                                    ? `Start row ${sharedConfig?.headerRow === "" || sharedConfig?.headerRow == null ? 7 : sharedConfig.headerRow} applies to every sheet — change once. Snapshot: use “Apply to all” to overwrite per-sheet.`
                                     : `Each sheet can differ. Editing ${currentSheet || "—"} only affects that sheet.`}
                             </span>
                             {calibrationMode === "shared" ? (
@@ -986,8 +996,8 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                                         </Field>
                                         <Field>
                                             <FieldLabel htmlFor="header-row">Header Row</FieldLabel>
-                                            <Input id="header-row" type="number" value={cfg.headerRow} onChange={(e) => onChange({ headerRow: Number(e.target.value) || 0 })} className="w-20" placeholder="7" />
-                                            <FieldDescription>Header {cfg.headerRow}; data starts {cfg.headerRow + 1}</FieldDescription>
+                                            <Input id="header-row" type="number" value={cfg.headerRow ?? ""} onChange={(e) => onChange({ headerRow: e.target.value === "" ? "" : Number(e.target.value) })} className="w-20" placeholder="7" />
+                                            <FieldDescription>Header {cfg.headerRow === "" || cfg.headerRow == null ? "—" : cfg.headerRow}; data starts {cfg.headerRow === "" || cfg.headerRow == null ? "—" : cfg.headerRow + 1}</FieldDescription>
                                         </Field>
                                     </div>
                                     <Field className="mt-4">
@@ -1055,7 +1065,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                                         </Field>
                                     </div>
                                     <div className="mt-3 text-xs text-muted-foreground">
-                                        Groups: procurement [{cfg.headerRow + 1}..
+                                        Groups: procurement [{cfg.headerRow === "" || cfg.headerRow == null ? "—" : cfg.headerRow + 1}..
                                         {cfg.additionalItemsHeaderRow
                                             ? cfg.additionalItemsHeaderRow - 1
                                             : cfg.nonProcurementHeaderRow

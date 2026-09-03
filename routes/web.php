@@ -454,11 +454,6 @@ Route::post('price-list-import', [PriceListImportController::class, 'store'])->n
     'price-list-import.store',
 );
 
-Route::post('price-list-import/quantities', [
-    PriceListImportController::class,
-    'importQuantities',
-])->name('price-list-import.quantities');
-
 Route::get('category-import', [CategoryImportController::class, 'index'])->name(
     'category-import.index',
 );

@@ -1,5 +1,5 @@
 export type SheetRowConfig = {
-    headerRow: number;
+    headerRow: number | "";
     additionalItemsHeaderRow?: number | null;
     nonProcurementHeaderRow?: number | null;
 };
@@ -31,7 +31,7 @@ export function getDefaultSharedConfig(): SharedSheetConfig {
 export type CatSheetConfig = {
     dataColumn: string;
     coaColumn: string;
-    headerRow: number;
+    headerRow: number | "";
     additionalItemsHeaderRow?: number;
     nonProcurementHeaderRow?: number;
     coaLabelMode: "with-label" | "without-label";

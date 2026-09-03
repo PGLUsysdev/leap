@@ -1,17 +1,10 @@
-import { router } from "@inertiajs/react";
+import { Head, Link, router } from "@inertiajs/react";
 import ExcelJS from "exceljs";
+import { FileSpreadsheet } from "lucide-react";
 import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/base-ui-components/ui/badge";
 import { Button } from "@/components/base-ui-components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/base-ui-components/ui/card";
 import {
     Combobox,
     ComboboxContent,
@@ -20,21 +13,7 @@ import {
     ComboboxItem,
     ComboboxList,
 } from "@/components/base-ui-components/ui/combobox";
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/base-ui-components/ui/dialog";
 import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
-import {
-    HoverCard,
-    HoverCardContent,
-    HoverCardTrigger,
-} from "@/components/base-ui-components/ui/hover-card";
 import { Input } from "@/components/base-ui-components/ui/input";
 import {
     Select,
@@ -45,7 +24,6 @@ import {
     SelectValue,
 } from "@/components/base-ui-components/ui/select";
 import { Spinner } from "@/components/base-ui-components/ui/spinner";
-import { Switch } from "@/components/base-ui-components/ui/switch";
 import {
     Table,
     TableBody,
@@ -54,653 +32,289 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/base-ui-components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base-ui-components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileSpreadsheet } from "lucide-react";
-import type { ChartOfAccount, ChartOfAccountPpmpCategory, PpmpCategory } from "@/types";
-import { CalibrationPanel } from "./calibration-panel";
-import type { SheetConfig } from "./calibration-panel";
-import { extractData, extractQuantities, parseExcludeRows } from "./extract";
-import type { ExtractResult, QuantityRow } from "./extract";
-import { normalize, sanitizeCategory, sanitizeCoa } from "./normalize";
+import { cellText } from "@/lib/excel/cell-helpers";
+import { normalize, isTotalRow, getCategoryMatch, getCoaMatch } from "@/lib/ppmp/normalize";
+import type { ExistingCategory, ExistingCoa } from "@/lib/ppmp/normalize";
+import { getDefaultSharedConfig } from "@/lib/ppmp/sheet-config";
+
+import type { SharedSheetConfig } from "@/lib/ppmp/sheet-config";
+
+// Prices are in cols G (unit) H (price) + description/category in F, COA in D
+// Reuse SharedSheetConfig which already has {category, coa, unit, price}
+type PriceListSheetConfig = SharedSheetConfig;
+
+function getDefaultPriceListConfig(): PriceListSheetConfig {
+    return getDefaultSharedConfig();
+}
+
+type VerifyResult = {
+    valid: boolean;
+    message: string;
+    errors: Array<{ row: number; message: string }>;
+    details: string[];
+};
+
+type RawItem = {
+    sheet: string;
+    row: number;
+    category: string;
+    coa: string;
+    description: string;
+    unit: string;
+    price: number | null;
+    priceRaw: string | null;
+};
+
+type UniqueItem = {
+    key: string;
+    category: string;
+    coa: string;
+    description: string;
+    unit: string;
+    price: number | null;
+    sheets: string[];
+    rows: number[];
+    count: number;
+};
+
+type VerifiedItem = UniqueItem & {
+    catNorm: string;
+    coaNorm: string;
+    categoryId: number | null;
+    coaId: number | null;
+    mappingId: number | null;
+    catExists: boolean;
+    coaExists: boolean;
+    mappingExists: boolean;
+    priceListExists: boolean;
+    junctionId: number | null;
+    catMatchType: "strict" | "partial" | "none";
+    coaMatchType: "strict" | "partial" | "none";
+    catTopMatches: Array<{ category: ExistingCategory; score: number }>;
+    coaTopMatches: Array<{ coa: ExistingCoa; score: number }>;
+    catMatch: ExistingCategory | null;
+    coaMatch: ExistingCoa | null;
+    // effective after override (per row granular)
+    effectiveCoa: ExistingCoa | null;
+    effectiveCoaId: number | null;
+    effectiveCoaExists: boolean;
+    effectiveCoaMatchType: "strict" | "partial" | "none";
+    effectiveJunctionId: number | null;
+    effectiveMappingExists: boolean;
+    effectivePriceListExists: boolean;
+    overrideId: number | null;
+    priceValid: boolean;
+    unitValid: boolean;
+    status: "ready" | "update" | "error";
+    message: string;
+};
 
 interface PriceListImportProps {
-    chartOfAccounts: ChartOfAccount[];
-    ppmpCategories: PpmpCategory[];
-    dbPairs: ChartOfAccountPpmpCategory[];
-    priceListItems: Array<{
+    existingCategories: ExistingCategory[];
+    existingCoas: ExistingCoa[];
+    existingMappings: Array<{ id: number; chart_of_account_id: number; ppmp_category_id: number }>;
+    existingPriceLists: Array<{
         id: number;
         description: string;
         unit_of_measurement: string;
         price: string;
-        chart_of_account_ppmp_category_id?: number;
+        chart_of_account_ppmp_category_id: number;
     }>;
-    fiscalYears: Array<{ id: number; year: number }>;
-    ppas: Array<{
-        id: number;
-        name: string;
-        fiscal_year_id: number | null;
-    }>;
-    fundingSources: Array<{ id: number; code: string; title: string }>;
 }
 
 export default function PriceListImport({
-    chartOfAccounts,
-    ppmpCategories,
-    dbPairs,
-    priceListItems,
-    fiscalYears,
-    ppas,
-    fundingSources,
+    existingCategories,
+    existingCoas,
+    existingMappings,
+    existingPriceLists,
 }: PriceListImportProps) {
-    const [mode, setMode] = useState<"price-list" | "quantities" | null>(null);
     const [sheets, setSheets] = useState<string[]>([]);
-    const [_workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
-    const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+    const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
+    const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    // --- state for price-list import flow ---
-    const [extracted, setExtracted] = useState<{
-        chartOfAccounts: Array<{ name: string; sheets: string[] }>;
-        categories: Array<{ name: string; sheets: string[] }>;
-        pairs: Array<{
-            category: string;
-            chartOfAccount: string;
-            sheets: string[];
-        }>;
-    } | null>(null);
-    const [mappedPairs, setMappedPairs] = useState<Array<{
-        category: string;
-        chartOfAccount: string;
-        categoryId: number | null;
-        coaId: number | null;
-        resolvedCategory: string | null;
-        resolvedCoa: string | null;
-    }> | null>(null);
-    const [pairOverrides, setPairOverrides] = useState<Record<string, { coaId: number | null }>>(
-        {},
-    );
-    const [uniqueItems, setUniqueItems] = useState<Array<{
-        description: string;
-        category: string;
-        chartOfAccount: string;
-        unit_of_measurement: string;
-        price: number | null;
-        sheets: string[];
-    }> | null>(null);
-    const [itemMatches, setItemMatches] = useState<Record<string, number>>({});
-    const [hideExisting, setHideExisting] = useState(false);
-    const [importDialogOpen, setImportDialogOpen] = useState(false);
-    const [importing, setImporting] = useState(false);
-
-    // --- state for quantities flow ---
-    const [quantityRows, setQuantityRows] = useState<QuantityRow[] | null>(null);
-    const [quantityMatches, setQuantityMatches] = useState<
-        Record<number, { itemId: number | null }>
-    >({});
-    const [quantityChecked, setQuantityChecked] = useState(false);
-    const [quantityImportDialogOpen, setQuantityImportDialogOpen] = useState(false);
-    const [quantityImporting, setQuantityImporting] = useState(false);
-    const [targetFiscalYearId, setTargetFiscalYearId] = useState<number | null>(null);
-    const [targetPpaId, setTargetPpaId] = useState<number | null>(null);
-    const [targetFundingSourceId, setTargetFundingSourceId] = useState<number | null>(null);
-
-    // --- core calibration state: per-sheet configs ---
-    const [calibrations, setCalibrations] = useState<Record<string, SheetConfig>>({});
+    const [calibrationMode, setCalibrationMode] = useState<"shared" | "per-sheet">("shared");
+    const [sharedConfig, setSharedConfig] = useState<PriceListSheetConfig | null>(null);
+    const [calibrations, setCalibrations] = useState<Record<string, PriceListSheetConfig>>({});
     const [currentSheet, setCurrentSheet] = useState<string>("");
 
-    // --- common UI state ---
-    const [loading, setLoading] = useState(false);
-    const [refetching, setRefetching] = useState(false);
-    const [confirmed, setConfirmed] = useState(false);
+    const [verifyResults, setVerifyResults] = useState<Record<string, VerifyResult>>({});
+    const [activeVerifySheet, setActiveVerifySheet] = useState<string>("");
+    const [rawItems, setRawItems] = useState<RawItem[]>([]);
+    const [uniqueItems, setUniqueItems] = useState<UniqueItem[]>([]);
+    const [step, setStep] = useState<"upload" | "calibrate" | "verify" | "review">("upload");
+    const [importing, setImporting] = useState(false);
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>({});
 
-    // Manual mappings for names that didn't auto-match
-    const [manualCoa, setManualCoa] = useState<Record<string, number>>({});
-    const [manualCat, setManualCat] = useState<Record<string, number>>({});
+    function getEffectiveConfig(sheet: string): PriceListSheetConfig {
+        if (calibrationMode === "shared" && sharedConfig) return sharedConfig;
 
-    // --- preview / report state (Spec §6, §8) ---
-    const [previewRows, setPreviewRows] = useState<Array<{
-        row: number;
-        description: string;
-        category: string;
-        chartOfAccount: string;
-        unit: string;
-        price: number | null;
-        coaLayer: "strict" | "sanitized" | null;
-        catLayer: "strict" | "sanitized" | null;
-        status: "success" | "warning" | "error";
-        message: string;
-    }> | null>(null);
-    const [importReport, setImportReport] = useState<{
-        total: number;
-        inserted: number;
-        updated: number;
-        warnings: number;
-        errors: number;
-        warningDetails?: any[];
-        errorDetails?: any[];
-        status: string;
-    } | null>(null);
-    const [headerPreview, setHeaderPreview] = useState<
-        Array<{ col: string; header: string | null; sample: string | null }>
-    >([]);
-
-    // Stepper helper — which wizard step are we on (Spec friendly)
-    const wizardStep = useMemo(() => {
-        if (importReport) return 4;
-
-        if (uniqueItems && mappedPairs) return 3;
-
-        if (extracted) return 2;
-
-        if (confirmed) return 1;
-
-        return 0;
-    }, [confirmed, extracted, mappedPairs, uniqueItems, importReport]);
-
-    // Calibration mode — shared (default) applies one config to all 15 sheets, per-sheet keeps old behavior
-    const [calibrationMode, setCalibrationMode] = useState<"shared" | "per-sheet">("shared");
-    const [sharedConfig, setSharedConfig] = useState<SheetConfig | null>(null);
-
-    // Helper: get default config for a given mode (startRow 9 = PPMPS header fix)
-    function getDefaultConfig(mode: "price-list" | "quantities"): SheetConfig {
-        const commonColumns = {
-            chartOfAccount: "D",
-            category: "F",
-            description: "F",
-            unit: "G",
-            price: "H",
-            janQty: "K",
-            febQty: "M",
-            marQty: "O",
-            aprQty: "Q",
-            mayQty: "S",
-            junQty: "U",
-            julQty: "W",
-            augQty: "Y",
-            sepQty: "AA",
-            octQty: "AC",
-            novQty: "AE",
-            decQty: "AG",
-        };
-        const defaultStart = 9;
-        const defaultEnd = 1280;
-        const defaultNonProc = 1258;
-
-        const columnMap =
-            mode === "price-list"
-                ? ({ ...commonColumns, itemNumber: "E" } as const)
-                : ({ ...commonColumns, total: "J" } as const);
-
-        return {
-            useCustom: false,
-            startRow: defaultStart,
-            endRow: defaultEnd,
-            nonProcurementStartRow: defaultNonProc,
-            columnMap,
-            excludeRows: "",
-        };
+        return calibrations[sheet] ?? sharedConfig ?? getDefaultPriceListConfig();
     }
 
-    function resolveCoa(raw: string): { id: number | null; layer: "strict" | "sanitized" | null } {
-        const n = normalize(raw);
-
-        if (coaLookup.has(n)) return { id: coaLookup.get(n)!, layer: "strict" };
-
-        const s = sanitizeCoa(raw);
-
-        if (coaSanitizedLookup.has(s)) {
-            return { id: coaSanitizedLookup.get(s)!, layer: "sanitized" };
-        }
-
-        if (manualCoa[raw] != null) return { id: manualCoa[raw], layer: "strict" };
-
-        return { id: null, layer: null };
-    }
-
-    function resolveCat(raw: string): { id: number | null; layer: "strict" | "sanitized" | null } {
-        const n = normalize(raw);
-
-        if (catLookup.has(n)) return { id: catLookup.get(n)!, layer: "strict" };
-
-        const s = sanitizeCategory(raw);
-
-        if (catSanitizedLookup.has(s)) {
-            return { id: catSanitizedLookup.get(s)!, layer: "sanitized" };
-        }
-
-        if (manualCat[raw] != null) return { id: manualCat[raw], layer: "strict" };
-
-        return { id: null, layer: null };
-    }
-
-    // Listen for backend importReport flash (Spec §8)
-    useEffect(() => {
-        const off = router.on("flash", (event: any) => {
-            const flash = event.detail?.flash;
-
-            if (flash?.importReport) {
-                setImportReport(flash.importReport);
-            }
-        });
-
-        return () => {
-            try {
-                (off as any)?.();
-            } catch {}
-        };
-    }, []);
-
-    // Header preview refresh when sheet/calibration changes (Spec §6) — supports shared mode
-    useEffect(() => {
-        const hasConfig = calibrationMode === "shared" ? !!sharedConfig : !!calibrations[currentSheet];
-        if (confirmed && _workbook && currentSheet && hasConfig) {
-            refreshHeaderPreview();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentSheet, calibrations, sharedConfig, calibrationMode, confirmed, _workbook]);
-
-    // --- Auto-lookup maps (stable across renders) — 2-Layer (strict + sanitized) ---
-    const coaLookup = useMemo(() => {
-        const m = new Map<string, number>();
-
-        for (const coa of chartOfAccounts) {
-            m.set(normalize(coa.account_title), coa.id);
-            m.set(normalize(coa.account_number), coa.id);
-        }
-
-        return m;
-    }, [chartOfAccounts]);
-
-    const coaSanitizedLookup = useMemo(() => {
-        const m = new Map<string, number>();
-
-        for (const coa of chartOfAccounts) {
-            m.set(sanitizeCoa(coa.account_title), coa.id);
-            m.set(sanitizeCoa(coa.account_number), coa.id);
-        }
-
-        return m;
-    }, [chartOfAccounts]);
-
-    const catLookup = useMemo(() => {
-        const m = new Map<string, number>();
-
-        for (const cat of ppmpCategories) {
-            m.set(normalize(cat.name), cat.id);
-        }
-
-        return m;
-    }, [ppmpCategories]);
-
-    const catSanitizedLookup = useMemo(() => {
-        const m = new Map<string, number>();
-
-        for (const cat of ppmpCategories) {
-            m.set(sanitizeCategory(cat.name), cat.id);
-        }
-
-        return m;
-    }, [ppmpCategories]);
-
-    const coaNameToId = useMemo(() => {
-        const m = new Map<string, number>();
-
-        for (const coa of chartOfAccounts) {
-            m.set(coa.account_title, coa.id);
-        }
-
-        return m;
-    }, [chartOfAccounts]);
-
-    const idToCoaTitle = useMemo(() => {
-        const m = new Map<number, string>();
-
-        for (const coa of chartOfAccounts) {
-            m.set(coa.id, coa.account_title);
-        }
-
-        return m;
-    }, [chartOfAccounts]);
-
-    const catNameToId = useMemo(() => {
-        const m = new Map<string, number>();
-
-        for (const cat of ppmpCategories) {
-            m.set(cat.name, cat.id);
-        }
-
-        return m;
-    }, [ppmpCategories]);
-
-    const idToCatName = useMemo(() => {
-        const m = new Map<number, string>();
-
-        for (const cat of ppmpCategories) {
-            m.set(cat.id, cat.name);
-        }
-
-        return m;
-    }, [ppmpCategories]);
-
-    const dbPairsSet = useMemo(() => {
-        const set = new Set<string>();
-
-        for (const pair of dbPairs) {
-            set.add(`${pair.chart_of_account_id}|${pair.ppmp_category_id}`);
-        }
-
-        return set;
-    }, [dbPairs]);
+    const canCalibrate = selectedSheets.length > 0;
+    const canVerify = canCalibrate && !!workbook && !!sharedConfig;
+    const allVerifyValid =
+        selectedSheets.length > 0 && selectedSheets.every((s) => verifyResults[s]?.valid);
+    const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
+    const canReview = canVerify && hasAnyVerify && allVerifyValid;
 
     const junctionByPair = useMemo(() => {
         const m = new Map<string, number>();
 
-        for (const pair of dbPairs) {
-            // @ts-ignore - id may be present now
-            if ((pair as any).id) {
-                m.set(`${pair.chart_of_account_id}|${pair.ppmp_category_id}`, (pair as any).id);
-            }
+        for (const mm of existingMappings) {
+            m.set(`${mm.chart_of_account_id}|${mm.ppmp_category_id}`, mm.id);
         }
 
         return m;
-    }, [dbPairs]);
+    }, [existingMappings]);
 
-    const dbDescriptionSet = useMemo(() => {
-        const set = new Set<string>();
+    function handleCoaOverrideChange(rowKey: string, selectedValue: string | null) {
+        if (!selectedValue) {
+            setCoaOverrides((prev) => {
+                const next = { ...prev };
+                delete next[rowKey];
 
-        for (const item of priceListItems) {
-            set.add(normalize(item.description));
-        }
-
-        return set;
-    }, [priceListItems]);
-
-    const pliById = useMemo(() => {
-        const m = new Map<number, (typeof priceListItems)[number]>();
-
-        for (const item of priceListItems) {
-            m.set(item.id, item);
-        }
-
-        return m;
-    }, [priceListItems]);
-
-    const pliComboboxItems = useMemo(
-        () => priceListItems.map((item) => `pli:${item.description}`),
-        [priceListItems],
-    );
-    const coaComboboxItems = useMemo(
-        () => chartOfAccounts.map((coa) => `coa:${coa.account_title}`),
-        [chartOfAccounts],
-    );
-    const catComboboxItems = useMemo(
-        () => ppmpCategories.map((cat) => `cat:${cat.name}`),
-        [ppmpCategories],
-    );
-    const ppaComboboxItems = useMemo(
-        () =>
-            ppas.filter((p) => p.fiscal_year_id === targetFiscalYearId).map((p) => `ppa:${p.name}`),
-        [ppas, targetFiscalYearId],
-    );
-
-    // --- Import plans (memoized) — Spec §5 Upsert + §4 2-Layer + §9 validation ---
-    const importPlan = useMemo(() => {
-        if (!uniqueItems) return null;
-
-        const items: Array<{
-            chart_of_account_id: number;
-            ppmp_category_id: number;
-            description: string;
-            unit_of_measurement: string;
-            price: number;
-            chart_of_account_raw: string;
-            ppmp_category_raw: string;
-        }> = [];
-        let skippedNoMatch = 0;
-        let skippedNoPrice = 0;
-        let skippedMissingUnit = 0;
-        let warnings = 0;
-        let toUpdate = 0;
-        let toInsert = 0;
-
-        for (const item of uniqueItems) {
-            const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
-
-            if (itemMatches[itemKey]) continue;
-
-            const catRes =
-                manualCat[item.category] != null
-                    ? { id: manualCat[item.category], layer: "strict" as const }
-                    : (() => {
-                          const n = normalize(item.category);
-
-                          if (catLookup.has(n)) {
-                              return { id: catLookup.get(n)!, layer: "strict" as const };
-                          }
-
-                          const s = sanitizeCategory(item.category);
-
-                          if (catSanitizedLookup.has(s)) {
-                              return {
-                                  id: catSanitizedLookup.get(s)!,
-                                  layer: "sanitized" as const,
-                              };
-                          }
-
-                          return { id: null, layer: null as any };
-                      })();
-            const coaRes =
-                pairOverrides[`${item.category}|${item.chartOfAccount}`]?.coaId != null
-                    ? {
-                          id: pairOverrides[`${item.category}|${item.chartOfAccount}`]!.coaId!,
-                          layer: "strict" as const,
-                      }
-                    : (() => {
-                          const fromManual = manualCoa[item.chartOfAccount];
-
-                          if (fromManual != null) {
-                              return { id: fromManual, layer: "strict" as const };
-                          }
-
-                          const n = normalize(item.chartOfAccount);
-
-                          if (coaLookup.has(n)) {
-                              return { id: coaLookup.get(n)!, layer: "strict" as const };
-                          }
-
-                          const s = sanitizeCoa(item.chartOfAccount);
-
-                          if (coaSanitizedLookup.has(s)) {
-                              return {
-                                  id: coaSanitizedLookup.get(s)!,
-                                  layer: "sanitized" as const,
-                              };
-                          }
-
-                          return { id: null, layer: null as any };
-                      })();
-            const catId = catRes.id;
-            const coaId = coaRes.id;
-
-            if (catId == null || coaId == null || !dbPairsSet.has(`${coaId}|${catId}`)) {
-                skippedNoMatch++;
-                continue;
-            }
-
-            if (catRes.layer === "sanitized" || coaRes.layer === "sanitized") warnings++;
-
-            if (item.price == null || item.price <= 0) {
-                skippedNoPrice++;
-                continue;
-            }
-
-            if (!item.unit_of_measurement.trim()) {
-                skippedMissingUnit++;
-                continue;
-            }
-
-            // Upsert preview: junction + desc+UOM (Spec §5)
-            const junctionId = junctionByPair.get(`${coaId}|${catId}`) ?? null;
-            const exists = priceListItems.some((p) => {
-                const descMatch = normalize(p.description) === normalize(item.description);
-                const uomMatch =
-                    normalize(p.unit_of_measurement) === normalize(item.unit_of_measurement);
-
-                if (!descMatch || !uomMatch) return false;
-
-                if (junctionId != null && p.chart_of_account_ppmp_category_id != null) {
-                    return p.chart_of_account_ppmp_category_id === junctionId;
-                }
-
-                return true; // fallback when junction not available
+                return next;
             });
 
-            if (exists) toUpdate++;
-            else toInsert++;
-
-            items.push({
-                chart_of_account_id: coaId,
-                ppmp_category_id: catId,
-                description: item.description.trim(),
-                unit_of_measurement: item.unit_of_measurement.trim(),
-                price: item.price,
-                chart_of_account_raw: item.chartOfAccount,
-                ppmp_category_raw: item.category,
-            });
+            return;
         }
 
-        return {
-            items,
-            skippedNoMatch,
-            skippedNoPrice,
-            skippedMissingUnit,
-            warnings,
-            toInsert,
-            toUpdate,
-            total: uniqueItems.length,
-        };
-    }, [
-        uniqueItems,
-        itemMatches,
-        manualCat,
-        catLookup,
-        catSanitizedLookup,
-        manualCoa,
-        coaLookup,
-        coaSanitizedLookup,
-        pairOverrides,
-        dbPairsSet,
-        priceListItems,
-        junctionByPair,
-    ]);
+        const idMatch = selectedValue.match(/^coa:(\d+)/);
 
-    const quantityImportPlan = useMemo(() => {
-        if (!quantityRows) return null;
+        if (idMatch) {
+            const id = Number(idMatch[1]);
+            setCoaOverrides((prev) => ({ ...prev, [rowKey]: id }));
+        } else {
+            const found = existingCoas.find((c) => `${c.path} — ${c.account_title}` === selectedValue);
 
-        const monthKeys = [
-            "janQty",
-            "febQty",
-            "marQty",
-            "aprQty",
-            "mayQty",
-            "junQty",
-            "julQty",
-            "augQty",
-            "sepQty",
-            "octQty",
-            "novQty",
-            "decQty",
-        ] as const;
-
-        const rows: Array<{
-            ppmp_price_list_id: number;
-            jan_qty: number;
-            feb_qty: number;
-            mar_qty: number;
-            apr_qty: number;
-            may_qty: number;
-            jun_qty: number;
-            jul_qty: number;
-            aug_qty: number;
-            sep_qty: number;
-            oct_qty: number;
-            nov_qty: number;
-            dec_qty: number;
-        }> = [];
-        let skippedNoQty = 0;
-        let unmatched = 0;
-
-        for (const row of quantityRows) {
-            const itemId = quantityMatches[row.tempId]?.itemId ?? null;
-
-            if (!itemId) {
-                unmatched++;
-                continue;
-            }
-
-            const qtys = monthKeys.map((key) => row[key]);
-
-            if (qtys.every((q) => q == null || q === 0)) {
-                skippedNoQty++;
-                continue;
-            }
-
-            const monthQty = (key: (typeof monthKeys)[number]) => row[key] ?? 0;
-            rows.push({
-                ppmp_price_list_id: itemId,
-                jan_qty: monthQty("janQty"),
-                feb_qty: monthQty("febQty"),
-                mar_qty: monthQty("marQty"),
-                apr_qty: monthQty("aprQty"),
-                may_qty: monthQty("mayQty"),
-                jun_qty: monthQty("junQty"),
-                jul_qty: monthQty("julQty"),
-                aug_qty: monthQty("augQty"),
-                sep_qty: monthQty("sepQty"),
-                oct_qty: monthQty("octQty"),
-                nov_qty: monthQty("novQty"),
-                dec_qty: monthQty("decQty"),
-            });
+            if (found) setCoaOverrides((prev) => ({ ...prev, [rowKey]: found.id }));
         }
-
-        return { rows, skippedNoQty, unmatched };
-    }, [quantityRows, quantityMatches]);
-
-    // --- Reset functions ---
-    function resetAllStates() {
-        setExtracted(null);
-        setMappedPairs(null);
-        setPairOverrides({});
-        setUniqueItems(null);
-        setItemMatches({});
-        setHideExisting(false);
-        setImportDialogOpen(false);
-        setImporting(false);
-        setManualCoa({});
-        setManualCat({});
-        setCalibrations({});
-        setSharedConfig(null);
-        // keep calibrationMode as shared (user preference) — don't reset
-        setCurrentSheet("");
-        setConfirmed(false);
-        setPreviewRows(null);
-        setImportReport(null);
-        setHeaderPreview([]);
-        resetQuantityCycle();
     }
 
-    function resetQuantityCycle() {
-        setQuantityRows(null);
-        setQuantityMatches({});
-        setQuantityChecked(false);
-        setQuantityImportDialogOpen(false);
-        setTargetFiscalYearId(null);
-        setTargetPpaId(null);
-        setTargetFundingSourceId(null);
+    function handleClearOverride(rowKey: string) {
+        setCoaOverrides((prev) => {
+            const next = { ...prev };
+            delete next[rowKey];
+
+            return next;
+        });
     }
 
-    // --- Event handlers ---
+    function handleClearAllOverrides() {
+        setCoaOverrides({});
+    }
+
+    const verifiedItems: VerifiedItem[] = useMemo(() => {
+        if (uniqueItems.length === 0) return [];
+
+        return uniqueItems.map((u) => {
+            const catNorm = normalize(u.category);
+            const coaNorm = normalize(u.coa);
+            const catRes = getCategoryMatch(catNorm, existingCategories);
+            const coaRes = getCoaMatch(coaNorm, existingCoas, "auto");
+            const catExists = catRes.type === "strict";
+            const coaExists = coaRes.type === "strict";
+            const catId = catRes.match?.id ?? null;
+            const coaId = coaRes.match?.id ?? null;
+
+            // effective COA after per-row override
+            const overrideId = coaOverrides[u.key] ?? null;
+            const effectiveCoa = overrideId
+                ? (existingCoas.find((c) => c.id === overrideId) ?? null)
+                : (coaRes.match ?? null);
+            const effectiveCoaExists = overrideId !== null ? true : coaExists;
+            const effectiveCoaId = overrideId ?? coaId;
+            const effectiveCoaMatchType: VerifiedItem["effectiveCoaMatchType"] =
+                overrideId !== null ? "strict" : coaRes.type;
+            const effectiveJunctionId =
+                catId && effectiveCoaId ? (junctionByPair.get(`${effectiveCoaId}|${catId}`) ?? null) : null;
+            const effectiveMappingExists = effectiveJunctionId !== null;
+
+            const unitValid = u.unit.trim() !== "" && u.unit.trim().length <= 20;
+            const priceValid = u.price !== null && u.price > 0;
+            // check price list exists (junction + normalized desc + uom) using effective junction
+            let effectivePriceListExists = false;
+
+            if (effectiveMappingExists && effectiveJunctionId) {
+                effectivePriceListExists = existingPriceLists.some(
+                    (p) =>
+                        p.chart_of_account_ppmp_category_id === effectiveJunctionId &&
+                        normalize(p.description) === normalize(u.description) &&
+                        normalize(p.unit_of_measurement) === normalize(u.unit),
+                );
+            }
+
+            let status: VerifiedItem["status"] = "ready";
+            let message = "Ready to import";
+
+            if (!catExists) {
+                status = "error";
+                message = "Category not found — create via Category Import";
+            } else if (!effectiveCoaExists) {
+                status = "error";
+                message = "COA not found";
+            } else if (!effectiveMappingExists) {
+                status = "error";
+                message = "Mapping not found — create via Category–COA Mappings";
+            } else if (!unitValid) {
+                status = "error";
+                message = u.unit.trim() === "" ? "Unit required" : "Unit >20 chars";
+            } else if (!priceValid) {
+                status = "error";
+                message = "Price must be >0";
+            } else if (effectivePriceListExists) {
+                status = "update";
+                message = "Exists — will update price";
+            }
+
+            return {
+                ...u,
+                catNorm,
+                coaNorm,
+                categoryId: catId,
+                coaId,
+                mappingId: effectiveJunctionId,
+                junctionId: effectiveJunctionId,
+                catExists,
+                coaExists,
+                mappingExists: effectiveMappingExists,
+                priceListExists: effectivePriceListExists,
+                catMatchType: catRes.type,
+                coaMatchType: coaRes.type,
+                catTopMatches: catRes.topMatches ?? [],
+                coaTopMatches: coaRes.topMatches ?? [],
+                catMatch: catRes.match ?? null,
+                coaMatch: coaRes.match ?? null,
+                effectiveCoa,
+                effectiveCoaId,
+                effectiveCoaExists,
+                effectiveCoaMatchType,
+                effectiveJunctionId,
+                effectiveMappingExists,
+                effectivePriceListExists,
+                overrideId,
+                unitValid,
+                priceValid,
+                status,
+                message,
+            };
+        });
+    }, [uniqueItems, existingCategories, existingCoas, junctionByPair, existingPriceLists, coaOverrides]);
+
+    const importable = verifiedItems.filter((v) => v.status === "ready" || v.status === "update");
+    const importableSelected = importable.filter((v) => selected.has(v.key));
+    const readyCount = importable.length;
+    const errorCount = verifiedItems.filter((v) => v.status === "error").length;
+    const updateCount = verifiedItems.filter((v) => v.status === "update").length;
+    const insertCount = verifiedItems.filter((v) => v.status === "ready").length;
+
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
 
@@ -709,31 +323,44 @@ export default function PriceListImport({
         const isXlsx =
             file.name.toLowerCase().endsWith(".xlsx") ||
             file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
         if (!isXlsx) {
-            toast.error("Only .xlsx files are allowed.");
+            setError("Only .xlsx files are allowed.");
             setSheets([]);
             setWorkbook(null);
             setSelectedSheets([]);
+            setCurrentSheet("");
+            setSharedConfig(null);
+            setCalibrations({});
             setFileName(null);
             e.target.value = "";
+
             return;
         }
 
+        setError(null);
         setLoading(true);
         setFileName(file.name);
-        // reset wizard but keep fileName (resetAllStates does not clear fileName)
-        resetAllStates();
+        setSelectedSheets([]);
+        setCurrentSheet("");
+        setSharedConfig(null);
+        setCalibrations({});
+        setVerifyResults({});
+        setActiveVerifySheet("");
+        setRawItems([]);
+        setUniqueItems([]);
+        setSelected(new Set());
+        setCoaOverrides({});
+        setStep("upload");
+
         try {
             const wb = new ExcelJS.Workbook();
-            const arrayBuffer = await file.arrayBuffer();
-            await wb.xlsx.load(arrayBuffer);
-
+            const buf = await file.arrayBuffer();
+            await wb.xlsx.load(buf);
             setWorkbook(wb);
             setSheets(wb.worksheets.map((ws) => ws.name));
-            setMode(null);
-            setSelectedSheets([]);
         } catch {
-            toast.error("Failed to parse .xlsx file. Please ensure it is a valid Excel file.");
+            setError("Failed to parse .xlsx file.");
             setSheets([]);
             setWorkbook(null);
             setSelectedSheets([]);
@@ -743,2154 +370,1608 @@ export default function PriceListImport({
         }
     }
 
-    function handleSheetsChange(sheets: string[]) {
-        setSelectedSheets(sheets);
-        resetAllStates();
+    function handleSheetToggle(sheet: string) {
+        setSelectedSheets((prev) => {
+            const next = prev.includes(sheet) ? prev.filter((s) => s !== sheet) : [...prev, sheet];
+            setVerifyResults({});
+            setActiveVerifySheet(next[0] ?? "");
+            setRawItems([]);
+            setUniqueItems([]);
+            setSelected(new Set());
+            setCoaOverrides({});
+
+            if (next.length > 0 && !next.includes(currentSheet)) setCurrentSheet(next[0]);
+
+            if (next.length === 0) setCurrentSheet("");
+
+            return next;
+        });
     }
 
-    function handleModeChange(nextMode: "price-list" | "quantities") {
-        resetAllStates();
-        setSelectedSheets([]);
-        setMode(nextMode);
-    }
+    function ensureCalibrationsInitialized() {
+        if (sharedConfig) return;
 
-    function handleConfirm() {
-        const modeType = mode!;
-        const base = getDefaultConfig(modeType);
-        // Shared mode: one config for all sheets; per-sheet still clones for backward compat
-        setSharedConfig({ ...base });
-        const configs: Record<string, SheetConfig> = {};
-        for (const sheet of selectedSheets) {
-            configs[sheet] = { ...base, columnMap: { ...base.columnMap } };
+        const def = getDefaultPriceListConfig();
+        setSharedConfig(def);
+        const clones: Record<string, PriceListSheetConfig> = {};
+
+        for (const s of selectedSheets) {
+            clones[s] = {
+                ...def,
+                columnConfig: { ...def.columnConfig },
+                rowConfig: { ...def.rowConfig },
+            };
         }
-        setCalibrations(configs);
-        setCurrentSheet(selectedSheets[0] ?? "");
-        setConfirmed(true);
-        resetQuantityCycle();
+
+        setCalibrations(clones);
+
+        if (!currentSheet && selectedSheets[0]) setCurrentSheet(selectedSheets[0]);
     }
 
     function handleApplySharedToAll() {
         if (!sharedConfig) return;
-        const next: Record<string, SheetConfig> = {};
-        for (const sheet of selectedSheets) {
-            next[sheet] = { ...sharedConfig, columnMap: { ...sharedConfig.columnMap } };
+
+        const next: Record<string, PriceListSheetConfig> = {};
+
+        for (const s of selectedSheets) {
+            next[s] = {
+                ...sharedConfig,
+                columnConfig: { ...sharedConfig.columnConfig },
+                rowConfig: { ...sharedConfig.rowConfig },
+            };
         }
+
         setCalibrations(next);
-        toast.success(`Applied shared calibration (start row ${sharedConfig.startRow}) to all ${selectedSheets.length} sheets`);
     }
 
     function handleCopyCurrentToAll() {
-        const src = calibrations[currentSheet];
+        const src = calibrations[currentSheet] ?? sharedConfig;
+
         if (!src) return;
-        const next: Record<string, SheetConfig> = {};
-        for (const sheet of selectedSheets) {
-            next[sheet] = { ...src, columnMap: { ...src.columnMap } };
+
+        const next: Record<string, PriceListSheetConfig> = {};
+
+        for (const s of selectedSheets) {
+            next[s] = {
+                ...src,
+                columnConfig: { ...src.columnConfig },
+                rowConfig: { ...src.rowConfig },
+            };
         }
+
         setCalibrations(next);
-        if (sharedConfig) setSharedConfig({ ...src, columnMap: { ...src.columnMap } });
-        toast.success(`Copied "${currentSheet}" calibration to all ${selectedSheets.length} sheets`);
     }
 
-    // --- Extraction functions (shared vs per-sheet) ---
-    function getEffectiveConfig(sheet: string, mode: "price-list" | "quantities"): SheetConfig {
-        if (calibrationMode === "shared" && sharedConfig) {
-            return sharedConfig.useCustom ? sharedConfig : getDefaultConfig(mode);
+    function updateSharedConfig(patch: Partial<PriceListSheetConfig>) {
+        setSharedConfig((prev) => ({ ...(prev ?? getDefaultPriceListConfig()), ...patch }));
+    }
+
+    function updateCurrentCalibration(patch: Partial<PriceListSheetConfig>) {
+        if (!currentSheet) return;
+
+        setCalibrations((prev) => ({
+            ...prev,
+            [currentSheet]: {
+                ...(prev[currentSheet] ?? sharedConfig ?? getDefaultPriceListConfig()),
+                ...patch,
+            },
+        }));
+    }
+
+    function verifySheet(sheet: string, cfg: PriceListSheetConfig): VerifyResult {
+        if (!workbook) {
+            return {
+                valid: false,
+                message: "Workbook not loaded",
+                errors: [{ row: 0, message: "Workbook not loaded" }],
+                details: [],
+            };
         }
-        const cfg = calibrations[sheet];
-        return cfg?.useCustom ? cfg : getDefaultConfig(mode);
-    }
 
-    function handleExtractCoaAndCategory() {
-        if (!_workbook) return;
+        const ws = workbook.getWorksheet(sheet);
 
-        if (calibrationMode === "shared") {
-            if (!sharedConfig) {
-                toast.error(`Missing shared calibration. Please confirm selection again.`);
+        if (!ws) {
+            return {
+                valid: false,
+                message: `Worksheet "${sheet}" not found`,
+                errors: [{ row: 0, message: `Worksheet "${sheet}" not found` }],
+                details: [],
+            };
+        }
+
+        const { category, coa, unit, price } = cfg.columnConfig;
+        const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg.rowConfig;
+        const { coaLabelMode } = cfg;
+        const lastRow = ws.actualRowCount;
+        if (headerRow === "" || headerRow == null) {
+            return {
+                valid: false,
+                message: "Header Row is required",
+                errors: [{ row: 0, message: "Header Row is required — check calibration" }],
+                details: [],
+            };
+        }
+        const procurementStart = headerRow + 1;
+        const procurementEnd = additionalItemsHeaderRow
+            ? additionalItemsHeaderRow - 1
+            : nonProcurementHeaderRow
+              ? nonProcurementHeaderRow - 1
+              : lastRow;
+        const additionalStart = additionalItemsHeaderRow ? additionalItemsHeaderRow + 1 : -1;
+        const additionalEnd = nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow;
+        const nonProcStart = nonProcurementHeaderRow ? nonProcurementHeaderRow + 1 : -1;
+        const nonProcEnd = lastRow;
+
+        const errors: Array<{ row: number; message: string }> = [];
+        const details: string[] = [];
+        details.push(`COA label mode: ${coaLabelMode}`);
+        details.push(
+            `Ranges: procurement [${procurementStart}..${procurementEnd}] additional [${additionalStart}..${additionalEnd}] non-proc [${nonProcStart}..${nonProcEnd}]`,
+        );
+
+        const countData = (s: number, e: number) => {
+            if (s < 0 || e < 0 || s > e) return 0;
+
+            let c = 0;
+
+            for (let r = s; r <= e && r <= lastRow; r++) {
+                if (cellText(ws.getRow(r).getCell(category))) c++;
+            }
+
+            return c;
+        };
+        const groups = {
+            procurement: countData(procurementStart, procurementEnd),
+            additional: additionalItemsHeaderRow ? countData(additionalStart, additionalEnd) : 0,
+            nonProcurement: nonProcurementHeaderRow ? countData(nonProcStart, nonProcEnd) : 0,
+        };
+
+        if (!additionalItemsHeaderRow) {
+            details.push("Additional Items header not calibrated — skipping additional check");
+        }
+
+        if (!nonProcurementHeaderRow) {
+            details.push("Non-Procurement header not calibrated — skipping non-proc check");
+        }
+
+        if (procurementStart > procurementEnd) {
+            errors.push({
+                row: procurementStart,
+                message: `Procurement range invalid [${procurementStart}..${procurementEnd}]`,
+            });
+        } else if (groups.procurement === 0) {
+            errors.push({ row: procurementStart, message: "No data found in procurement group" });
+        }
+
+        const verifySection = (
+            sectionName: "procurement" | "additional" | "non-procurement",
+            startRow: number,
+            endRow: number,
+        ) => {
+            if (startRow < 0 || endRow < 0 || startRow > endRow) return;
+
+            if (sectionName === "additional" || sectionName === "non-procurement") {
+                let itemCount = 0;
+
+                for (let r = startRow; r <= endRow && r <= lastRow; r++) {
+                    const row = ws.getRow(r);
+                    const coaRaw = cellText(row.getCell(coa));
+                    const dataRaw = cellText(row.getCell(category));
+                    const unitRaw = cellText(row.getCell(unit));
+                    const priceRaw = cellText(row.getCell(price));
+
+                    if (!dataRaw && !coaRaw && !unitRaw && !priceRaw) continue;
+
+                    const dataNorm = dataRaw ? normalize(dataRaw) : null;
+
+                    if (!dataNorm) continue;
+
+                    if (dataNorm === "description") continue;
+
+                    if (
+                        [
+                            "additional items for procurement",
+                            "additional items",
+                            "non-procurement requirements",
+                            "non - procurement requirements",
+                            "additional items for procurement - total",
+                            "non-procurement requirements - total",
+                            "non-procurement - total",
+                        ].includes(dataNorm) ||
+                        isTotalRow(dataNorm)
+                    ) {
+                        continue;
+                    }
+
+                    const coaNorm = coaRaw ? normalize(coaRaw) : null;
+                    const isFalsy = (v: string | null) =>
+                        !v ||
+                        normalize(v) === "0" ||
+                        normalize(v) === "-" ||
+                        normalize(v) === "0.00";
+                    const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, "")) : NaN;
+                    const isFalsyPrice =
+                        !priceRaw || Number.isNaN(priceNum) || priceNum === 0 || isFalsy(priceRaw);
+                    const isFalsyUnit = isFalsy(unitRaw);
+                    const isFalsyCoa = !coaNorm;
+
+                    if (isFalsyCoa && isFalsyUnit && isFalsyPrice) continue;
+
+                    if (coaNorm && dataRaw) {
+                        itemCount++;
+                        continue;
+                    }
+
+                    if (dataRaw && !coaNorm) {
+                        errors.push({
+                            row: r,
+                            message: `${sectionName} item at row ${r} ("${dataRaw}") missing COA (D)`,
+                        });
+                    }
+                }
+
+                details.push(`${sectionName} items: ${itemCount} rows checked`);
+
                 return;
             }
-        } else {
-            for (const sheet of selectedSheets) {
-                if (!calibrations[sheet]) {
-                    toast.error(`Missing calibration for sheet "${sheet}". Please confirm selection again.`);
-                    return;
+
+            // procurement strict cat -> coa -> items -> total
+            type CatGroup = {
+                cat: string;
+                catRow: number;
+                coas: Array<{ coa: string; coaRow: number; items: number }>;
+                totalRow?: number;
+            };
+            const catGroups: CatGroup[] = [];
+            let currentCat: CatGroup | null = null;
+            let currentCoa: { coa: string; coaRow: number; items: number } | null = null;
+            const flushCat = (totalRow?: number) => {
+                if (currentCat) {
+                    if (currentCoa) {
+                        currentCat.coas.push(currentCoa);
+                        currentCoa = null;
+                    }
+
+                    if (totalRow) currentCat.totalRow = totalRow;
+
+                    catGroups.push(currentCat);
+                    currentCat = null;
                 }
-            }
-        }
+            };
 
-        const coaSheets = new Map<string, Set<string>>();
-        const catSheets = new Map<string, Set<string>>();
-        const pairSheets = new Map<
-            string,
-            {
-                category: string;
-                chartOfAccount: string;
-                sheets: Set<string>;
-            }
-        >();
+            for (let r = startRow; r <= endRow && r <= lastRow; r++) {
+                const row = ws.getRow(r);
+                const coaRaw = cellText(row.getCell(coa));
+                const dataRaw = cellText(row.getCell(category));
 
-        for (const sheet of selectedSheets) {
-            const ws = _workbook.getWorksheet(sheet);
-            if (!ws) continue;
-            const effective = getEffectiveConfig(sheet, "price-list");
-            const result = extractData({
-                worksheet: ws,
-                startRow: effective.startRow,
-                endRow: effective.endRow,
-                nonProcurementStartRow: effective.nonProcurementStartRow!,
-                columnMap: effective.columnMap as any,
-                excludeRows: parseExcludeRows(effective.excludeRows),
-            });
+                if (!dataRaw && !coaRaw) continue;
 
-            for (const coa of result.uniqueChartOfAccounts) {
-                if (!coaSheets.has(coa)) coaSheets.set(coa, new Set());
-                coaSheets.get(coa)!.add(sheet);
+                const coaNorm = coaRaw ? normalize(coaRaw) : null;
+                const dataNorm = dataRaw ? normalize(dataRaw) : null;
+
+                if (dataNorm === "description") continue;
+
+                if (coaNorm && dataRaw) {
+                    if (!currentCat) {
+                        errors.push({
+                            row: r,
+                            message: `Item at row ${r} ("${dataRaw}") without active category`,
+                        });
+                        continue;
+                    }
+
+                    if (coaLabelMode === "without-label") {
+                        if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
+                            if (currentCoa) {
+                                if (currentCoa.items === 0) {
+                                    errors.push({
+                                        row: currentCoa.coaRow,
+                                        message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} has no items before next COA`,
+                                    });
+                                }
+
+                                currentCat.coas.push(currentCoa);
+                            }
+
+                            currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
+                        } else {
+                            currentCoa.items += 1;
+                        }
+
+                        continue;
+                    } else {
+                        if (!currentCoa) {
+                            errors.push({
+                                row: r,
+                                message: `Item at row ${r} ("${dataRaw}") without active COA in cat "${currentCat.cat}"`,
+                            });
+                            continue;
+                        }
+
+                        if (coaNorm !== normalize(currentCoa.coa)) {
+                            errors.push({
+                                row: r,
+                                message: `Item COA mismatch at row ${r}: D="${coaRaw}" != current COA "${currentCoa.coa}"`,
+                            });
+                        }
+
+                        currentCoa.items += 1;
+                        continue;
+                    }
+                }
+
+                if (!dataRaw || !dataNorm) continue;
+
+                if (isTotalRow(dataNorm)) {
+                    const expected = currentCat ? normalize(`${currentCat.cat} - total`) : null;
+
+                    if (!currentCat) {
+                        errors.push({
+                            row: r,
+                            message: `Total "${dataRaw}" at row ${r} without active category`,
+                        });
+                    } else if (expected && dataNorm !== expected) {
+                        errors.push({
+                            row: r,
+                            message: `Total mismatch at row ${r}: got "${dataRaw}" expected "${currentCat.cat} - TOTAL"`,
+                        });
+                    }
+
+                    if (currentCat) {
+                        if (currentCoa) {
+                            currentCat.coas.push(currentCoa);
+                            currentCoa = null;
+                        }
+
+                        if (currentCat.coas.length === 0) {
+                            errors.push({
+                                row: r,
+                                message: `Category "${currentCat.cat}" has no COA groups before total`,
+                            });
+                        } else {
+                            for (const c of currentCat.coas) {
+                                if (c.items === 0) {
+                                    errors.push({
+                                        row: c.coaRow,
+                                        message: `COA "${c.coa}" has no items`,
+                                    });
+                                }
+                            }
+                        }
+
+                        flushCat(r);
+                    }
+
+                    continue;
+                }
+
+                if (coaLabelMode === "with-label") {
+                    let isCoaLabel = false;
+                    let nextCoaRaw: string | null = null;
+                    let nextCoaNorm: string | null = null;
+
+                    if (r + 1 <= lastRow) {
+                        nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coa));
+                        nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+
+                        if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
+                    }
+
+                    if (isCoaLabel) {
+                        if (!currentCat) {
+                            errors.push({
+                                row: r,
+                                message: `COA "${dataRaw}" at row ${r} without active category`,
+                            });
+                            continue;
+                        }
+
+                        if (currentCoa) {
+                            if (currentCoa.items === 0) {
+                                errors.push({
+                                    row: currentCoa.coaRow,
+                                    message: `COA "${currentCoa.coa}" has no items before next COA`,
+                                });
+                            }
+
+                            currentCat.coas.push(currentCoa);
+                        }
+
+                        currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
+                        continue;
+                    }
+                }
+
+                if (currentCat) {
+                    errors.push({
+                        row: r,
+                        message: `Category "${dataRaw}" at row ${r} started before previous cat "${currentCat.cat}" closed with " - TOTAL"`,
+                    });
+
+                    if (currentCoa) {
+                        if (currentCoa.items === 0) {
+                            errors.push({
+                                row: currentCoa.coaRow,
+                                message: `COA "${currentCoa.coa}" has no items`,
+                            });
+                        }
+
+                        currentCat.coas.push(currentCoa);
+                        currentCoa = null;
+                    }
+
+                    catGroups.push(currentCat);
+                }
+
+                currentCat = { cat: dataRaw, catRow: r, coas: [] };
+                currentCoa = null;
             }
-            for (const cat of result.uniqueCategories) {
-                if (!catSheets.has(cat)) catSheets.set(cat, new Set());
-                catSheets.get(cat)!.add(sheet);
-            }
-            for (const pair of result.uniquePairs) {
-                const key = `${pair.category}|${pair.chartOfAccount}`;
-                if (!pairSheets.has(key)) {
-                    pairSheets.set(key, {
-                        category: pair.category,
-                        chartOfAccount: pair.chartOfAccount,
-                        sheets: new Set(),
+
+            if (currentCat) {
+                if (currentCoa) {
+                    if (currentCoa.items === 0) {
+                        errors.push({
+                            row: currentCoa.coaRow,
+                            message: `COA "${currentCoa.coa}" has no items at end`,
+                        });
+                    }
+
+                    currentCat.coas.push(currentCoa);
+                }
+
+                if (!currentCat.totalRow) {
+                    errors.push({
+                        row: currentCat.catRow,
+                        message: `Category "${currentCat.cat}" missing closing "${currentCat.cat} - TOTAL"`,
+                    });
+                } else if (currentCat.coas.length === 0) {
+                    errors.push({
+                        row: currentCat.catRow,
+                        message: `Category "${currentCat.cat}" has no COAs`,
                     });
                 }
 
-                pairSheets.get(key)!.sheets.add(sheet);
+                catGroups.push(currentCat);
             }
-        }
 
-        setExtracted({
-            chartOfAccounts: [...coaSheets.entries()]
-                .map(([name, sheets]) => ({ name, sheets: [...sheets] }))
-                .sort((a, b) => a.name.localeCompare(b.name)),
-            categories: [...catSheets.entries()]
-                .map(([name, sheets]) => ({ name, sheets: [...sheets] }))
-                .sort((a, b) => a.name.localeCompare(b.name)),
-            pairs: [...pairSheets.entries()]
-                .map(([, pair]) => ({
-                    category: pair.category,
-                    chartOfAccount: pair.chartOfAccount,
-                    sheets: [...pair.sheets],
-                }))
-                .sort(
-                    (a, b) =>
-                        a.category.localeCompare(b.category) ||
-                        a.chartOfAccount.localeCompare(b.chartOfAccount),
-                ),
-        });
+            if (catGroups.length) {
+                details.push(`${sectionName} groups: ${catGroups.length} cat(s) verified`);
+
+                for (const g of catGroups) {
+                    details.push(
+                        `  Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : " MISSING total"}`,
+                    );
+                }
+            }
+        };
+        verifySection("procurement", procurementStart, procurementEnd);
+
+        if (additionalItemsHeaderRow) verifySection("additional", additionalStart, additionalEnd);
+
+        if (nonProcurementHeaderRow) verifySection("non-procurement", nonProcStart, nonProcEnd);
+
+        const valid = errors.length === 0;
+        const message = valid ? `✅ Format OK` : `❌ Found ${errors.length} issue(s)`;
+
+        return { valid, message, errors, details };
     }
 
-    function handleExtractUniqueItems() {
-        if (!_workbook) return;
-        if (calibrationMode === "shared") {
-            if (!sharedConfig) { toast.error(`Missing shared calibration.`); return; }
-        } else {
-            for (const sheet of selectedSheets) {
-                if (!calibrations[sheet]) { toast.error(`Missing calibration for sheet "${sheet}".`); return; }
-            }
-        }
+    function handleVerify() {
+        if (!workbook || selectedSheets.length === 0) return;
 
-        const itemMap = new Map<
-            string,
-            {
-                description: string;
-                category: string;
-                chartOfAccount: string;
-                unit_of_measurement: string;
-                price: number | null;
-                sheets: Set<string>;
-            }
-        >();
+        if (!sharedConfig) ensureCalibrationsInitialized();
+
+        const next: Record<string, VerifyResult> = {};
 
         for (const sheet of selectedSheets) {
-            const ws = _workbook.getWorksheet(sheet);
-            if (!ws) continue;
-            const effective = getEffectiveConfig(sheet, "price-list");
-            const result = extractData({
-                worksheet: ws,
-                startRow: effective.startRow,
-                endRow: effective.endRow,
-                nonProcurementStartRow: effective.nonProcurementStartRow!,
-                columnMap: effective.columnMap as any,
-                excludeRows: parseExcludeRows(effective.excludeRows),
-            });
+            const cfg = getEffectiveConfig(sheet);
+            const r = verifySheet(sheet, cfg);
+            next[sheet] = r;
+        }
 
-            for (const item of result.items) {
-                const key = `${normalize(item.description)}|${normalize(item.category)}|${normalize(item.chartOfAccount)}`;
+        setVerifyResults(next);
+        const firstInvalid = selectedSheets.find((s) => !next[s]?.valid);
+        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? "");
+        setRawItems([]);
+        setUniqueItems([]);
+        setSelected(new Set());
+        setCoaOverrides({});
+    }
 
-                if (!itemMap.has(key)) {
-                    itemMap.set(key, {
-                        description: item.description,
-                        category: item.category,
-                        chartOfAccount: item.chartOfAccount,
-                        unit_of_measurement: item.unitOfMeasurement,
-                        price: item.price,
-                        sheets: new Set(),
-                    });
+    function extractItemsForSection(
+        ws: ExcelJS.Worksheet,
+        cfg: PriceListSheetConfig,
+        sectionName: "procurement" | "additional" | "non-procurement",
+        startRow: number,
+        endRow: number,
+    ): RawItem[] {
+        const out: RawItem[] = [];
+        const dataColumn = cfg.columnConfig.category;
+        const coaColumn = cfg.columnConfig.coa;
+        const unitColumn = cfg.columnConfig.unit;
+        const priceColumn = cfg.columnConfig.price;
+        const coaLabelMode = cfg.coaLabelMode;
+        type CatGroup = { cat: string; catRow: number };
+        let currentCat: CatGroup | null = null;
+        let currentCoa: { coa: string; coaRow: number } | null = null;
+        const lastRow = ws.actualRowCount;
+        const sheetName = ws.name;
+
+        for (let r = startRow; r <= endRow && r <= lastRow; r++) {
+            const row = ws.getRow(r);
+            const coaRaw = cellText(row.getCell(coaColumn));
+            const dataRaw = cellText(row.getCell(dataColumn));
+
+            if (!dataRaw && !coaRaw) continue;
+
+            const coaNorm = coaRaw ? normalize(coaRaw) : null;
+            const dataNorm = dataRaw ? normalize(dataRaw) : null;
+
+            if (dataNorm === "description") continue;
+
+            const unitRaw = cellText(row.getCell(unitColumn)) ?? "";
+            const priceRaw = cellText(row.getCell(priceColumn));
+            const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, "")) : null;
+            const isFalsy = (v: string | null) =>
+                !v || normalize(v) === "0" || normalize(v) === "-" || normalize(v) === "0.00";
+            const isFalsyPrice =
+                !priceRaw ||
+                priceNum === 0 ||
+                Number.isNaN(priceNum as number) ||
+                isFalsy(priceRaw);
+            const isFalsyUnit = isFalsy(unitRaw);
+            const isFalsyCoa = !coaNorm;
+
+            if (isFalsyCoa && isFalsyUnit && isFalsyPrice && dataRaw) {
+                if (sectionName === "additional" || sectionName === "non-procurement") continue;
+            }
+
+            if (coaNorm && dataRaw) {
+                if (!currentCat) {
+                    if (sectionName === "additional") {
+                        currentCat = { cat: "Additional Items (Uncategorized)", catRow: r };
+                    } else if (sectionName === "non-procurement") {
+                        currentCat = { cat: "Non-Procurement (Uncategorized)", catRow: r };
+                    } else continue;
                 }
 
-                itemMap.get(key)!.sheets.add(sheet);
+                if (coaLabelMode === "without-label") {
+                    if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
+                        currentCoa = { coa: coaRaw!, coaRow: r };
+                    }
+                } else {
+                    if (!currentCoa) {
+                        currentCoa = { coa: coaRaw!, coaRow: r };
+                    } else if (coaNorm !== normalize(currentCoa.coa)) {
+                        currentCoa = { coa: coaRaw!, coaRow: r };
+                    }
+                }
+
+                // For without-label, item COA is coaRaw itself; for with-label, also coaRaw (since D has COA)
+                // But we prefer currentCoa.coa
+                const effectiveCoa = currentCoa?.coa ?? coaRaw!;
+                const effectiveCat = currentCat.cat;
+                // skip if description is same as COA label? Already handled
+                out.push({
+                    sheet: sheetName,
+                    row: r,
+                    category: effectiveCat,
+                    coa: effectiveCoa,
+                    description: dataRaw,
+                    unit: unitRaw,
+                    price: priceNum !== null && !Number.isNaN(priceNum) ? priceNum : null,
+                    priceRaw,
+                });
+                continue;
+            }
+
+            if (!dataRaw || !dataNorm) continue;
+
+            if (isTotalRow(dataNorm)) {
+                if (currentCat) {
+                    // flush – but for price list extraction we just keep cat until next
+                    // total indicates end of currentCat
+                    if (currentCoa) currentCoa = null;
+
+                    // keep currentCat until next cat overwrites? Instead null to avoid stray items
+                    // For simplicity, keep cat until overwritten; but total means next rows are new cat or end
+                    // We'll set a flag: after total, next item without cat should not be captured until new cat
+                    // So clear currentCat only if next cat will be set; for now keep but will be overwritten
+                    // To align with grouping, clear after total
+                    currentCat = null;
+                    currentCoa = null;
+                }
+
+                continue;
+            }
+
+            if (coaLabelMode === "with-label") {
+                let isCoaLabel = false;
+                let nextCoaRaw: string | null = null;
+                let nextCoaNorm: string | null = null;
+
+                if (r + 1 <= lastRow) {
+                    nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
+                    nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+
+                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
+                }
+
+                if (isCoaLabel) {
+                    if (!currentCat) {
+                        if (sectionName === "additional") {
+                            currentCat = { cat: "Additional Items (Uncategorized)", catRow: r };
+                        } else if (sectionName === "non-procurement") {
+                            currentCat = { cat: "Non-Procurement (Uncategorized)", catRow: r };
+                        } else continue;
+                    }
+
+                    currentCoa = { coa: dataRaw, coaRow: r };
+                    continue;
+                }
+            }
+
+            // category header
+            if (currentCat) {
+                /* push previous cat done */
+            }
+
+            currentCat = { cat: dataRaw, catRow: r };
+            currentCoa = null;
+        }
+
+        return out;
+    }
+
+    function handleExtract() {
+        if (!workbook || selectedSheets.length === 0) return;
+
+        const all: RawItem[] = [];
+
+        for (const sheet of selectedSheets) {
+            const ws = workbook.getWorksheet(sheet);
+
+            if (!ws) continue;
+
+            const cfg = getEffectiveConfig(sheet);
+            if (cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null) continue;
+            const lastRow = ws.actualRowCount;
+            const procurementStart = cfg.rowConfig.headerRow + 1;
+            const procurementEnd = cfg.rowConfig.additionalItemsHeaderRow
+                ? cfg.rowConfig.additionalItemsHeaderRow - 1
+                : cfg.rowConfig.nonProcurementHeaderRow
+                  ? cfg.rowConfig.nonProcurementHeaderRow - 1
+                  : lastRow;
+            const additionalStart = cfg.rowConfig.additionalItemsHeaderRow
+                ? cfg.rowConfig.additionalItemsHeaderRow + 1
+                : -1;
+            const additionalEnd = cfg.rowConfig.nonProcurementHeaderRow
+                ? cfg.rowConfig.nonProcurementHeaderRow - 1
+                : lastRow;
+            const nonProcStart = cfg.rowConfig.nonProcurementHeaderRow
+                ? cfg.rowConfig.nonProcurementHeaderRow + 1
+                : -1;
+            const nonProcEnd = lastRow;
+            all.push(
+                ...extractItemsForSection(ws, cfg, "procurement", procurementStart, procurementEnd),
+            );
+
+            if (cfg.rowConfig.additionalItemsHeaderRow) {
+                all.push(
+                    ...extractItemsForSection(
+                        ws,
+                        cfg,
+                        "additional",
+                        additionalStart,
+                        additionalEnd,
+                    ),
+                );
+            }
+
+            if (cfg.rowConfig.nonProcurementHeaderRow) {
+                all.push(
+                    ...extractItemsForSection(ws, cfg, "non-procurement", nonProcStart, nonProcEnd),
+                );
             }
         }
 
-        const sorted = [...itemMap.values()]
-            .map((item) => ({
-                description: item.description,
-                category: item.category,
-                chartOfAccount: item.chartOfAccount,
-                unit_of_measurement: item.unit_of_measurement,
-                price: item.price,
-                sheets: [...item.sheets],
-            }))
-            .sort(
-                (a, b) =>
-                    a.description.localeCompare(b.description) ||
-                    a.category.localeCompare(b.category) ||
-                    a.chartOfAccount.localeCompare(b.chartOfAccount),
-            );
-        setUniqueItems(sorted);
+        setRawItems(all);
+        // dedupe by normalize(category|coa|description+unit)
+        const seen = new Map<string, UniqueItem>();
 
-        // auto-preview if mapping already done (Spec §6)
-        if (mappedPairs) {
-            // defer to next tick to capture updated uniqueItems
-            setTimeout(() => buildPreview(sorted), 0);
-        }
-    }
+        for (const it of all) {
+            const key = `${normalize(it.category)}|${normalize(it.coa)}|${normalize(it.description)}|${normalize(it.unit)}`;
+            const existing = seen.get(key);
 
-    function handleExtractQuantities() {
-        if (!_workbook || selectedSheets.length === 0) {
-            return;
-        }
+            if (!existing) {
+                seen.set(key, {
+                    key,
+                    category: it.category,
+                    coa: it.coa,
+                    description: it.description,
+                    unit: it.unit,
+                    price: it.price,
+                    sheets: [it.sheet],
+                    rows: [it.row],
+                    count: 1,
+                });
+            } else {
+                existing.count += 1;
 
-        const sheet = selectedSheets[0];
-        // shared vs per-sheet for quantities (same config type)
-        const effective = calibrationMode === "shared" && sharedConfig
-            ? (sharedConfig.useCustom ? sharedConfig : getDefaultConfig("quantities"))
-            : (() => {
-                if (!calibrations[sheet]) { toast.error(`Missing calibration for sheet "${sheet}".`); return null as any; }
-                const c = calibrations[sheet];
-                return c.useCustom ? c : getDefaultConfig("quantities");
-            })();
-        if (!effective) return;
-        const ws = _workbook.getWorksheet(sheet);
-        if (!ws) return;
-        const rows = extractQuantities({
-            worksheet: ws,
-            startRow: effective.startRow,
-            endRow: effective.endRow,
-            nonProcurementStartRow: effective.nonProcurementStartRow!,
-            columnMap: effective.columnMap as any,
-            excludeRows: parseExcludeRows(effective.excludeRows),
-        });
+                if (!existing.sheets.includes(it.sheet)) existing.sheets.push(it.sheet);
 
-        setQuantityRows(rows);
-    }
+                existing.rows.push(it.row);
 
-    function handleCheckDbMatches() {
-        if (!quantityRows) return;
-
-        const matches: Record<number, { itemId: number | null }> = {};
-
-        for (const row of quantityRows) {
-            const item = priceListItems.find(
-                (p) => normalize(p.description) === normalize(row.description),
-            );
-            matches[row.tempId] = { itemId: item?.id ?? null };
+                // keep first price, but if existing price null and new has price, update
+                if (existing.price === null && it.price !== null) existing.price = it.price;
+            }
         }
 
-        setQuantityMatches(matches);
-        setQuantityChecked(true);
+        const unique = [...seen.values()].sort((a, b) =>
+            a.description.localeCompare(b.description),
+        );
+        setUniqueItems(unique);
+        setSelected(new Set(unique.map((u) => u.key)));
+        setCoaOverrides({});
+        console.log("Extract price-list", { raw: all.length, uniqueCount: unique.length, all, unique });
     }
 
-    function handleConfirmImport() {
-        if (!importPlan || importPlan.items.length === 0 || importing) return;
+    function handleImport() {
+        const toImport = verifiedItems.filter(
+            (v) => selected.has(v.key) && (v.status === "ready" || v.status === "update"),
+        );
+
+        if (toImport.length === 0) return;
 
         setImporting(true);
-        router.post("/price-list-import" as const, { items: importPlan.items } as never, {
-            onSuccess: () => setImportDialogOpen(false),
-            onFinish: () => setImporting(false),
-        });
-    }
-
-    function handleConfirmImportQuantities() {
-        if (!quantityImportPlan || quantityImportPlan.rows.length === 0 || quantityImporting) {
-            return;
-        }
-
-        setQuantityImporting(true);
         router.post(
-            "/price-list-import/quantities" as const,
+            "/price-list-import" as const,
             {
-                fiscal_year_id: targetFiscalYearId,
-                ppa_id: targetPpaId,
-                funding_source_id: targetFundingSourceId,
-                rows: quantityImportPlan.rows,
+                items: toImport.map((v) => ({
+                    chart_of_account_id: v.effectiveCoaId!,
+                    ppmp_category_id: v.categoryId!,
+                    description: v.description,
+                    unit_of_measurement: v.unit,
+                    price: v.price!,
+                })),
             } as never,
             {
-                onSuccess: () => setQuantityImportDialogOpen(false),
-                onFinish: () => setQuantityImporting(false),
+                onFinish: () => setImporting(false),
             },
         );
     }
 
-    function handleMapResolved() {
-        if (!extracted) return;
-
-        const mapped = extracted.pairs.map((pair) => {
-            const catRes = resolveCat(pair.category);
-            const coaRes = resolveCoa(pair.chartOfAccount);
-            const catId = catRes.id;
-            const coaId = coaRes.id;
-
-            return {
-                category: pair.category,
-                chartOfAccount: pair.chartOfAccount,
-                categoryId: catId ?? null,
-                coaId: coaId ?? null,
-                resolvedCategory: catId ? (idToCatName.get(catId) ?? null) : null,
-                resolvedCoa: coaId ? (idToCoaTitle.get(coaId) ?? null) : null,
-                catLayer: catRes.layer,
-                coaLayer: coaRes.layer,
-            } as any;
-        });
-        setMappedPairs(mapped);
-
-        // Build preview for first 5 + last 5 unique items (Spec §6 preview)
-        if (uniqueItems) {
-            buildPreview(uniqueItems);
-        }
-    }
-
-    function buildPreview(items: typeof uniqueItems) {
-        if (!items || items.length === 0) return;
-
-        const head = items.slice(0, 5);
-        const tail = items.length > 10 ? items.slice(-5) : items.slice(5);
-        const combined = [...head, ...tail];
-        const rows = combined.map((it, idx) => {
-            const catRes = resolveCat(it.category);
-            const coaRes = resolveCoa(it.chartOfAccount);
-            const catId = catRes.id;
-            const coaId = coaRes.id;
-            const hasPrice = it.price != null && it.price > 0;
-            const hasUom = (it.unit_of_measurement ?? "").trim() !== "";
-            const pairExists =
-                catId != null && coaId != null && dbPairsSet.has(`${coaId}|${catId}`);
-            let status: "success" | "warning" | "error" = "success";
-            let msg = "Ready";
-
-            if (!hasPrice) {
-                status = "error";
-                msg = "Price >0 required";
-            } else if (!hasUom) {
-                status = "error";
-                msg = "UOM required";
-            } else if (catId == null || coaId == null) {
-                status = "error";
-                msg = catId == null ? "Category not found" : "COA not found";
-            } else if (!pairExists) {
-                status = "error";
-                msg = "COA/Category pair not found";
-            } else if (catRes.layer === "sanitized" || coaRes.layer === "sanitized") {
-                status = "warning";
-                msg = `Auto-corrected${coaRes.layer === "sanitized" ? " COA" : ""}${catRes.layer === "sanitized" ? " Category" : ""}`;
-            }
-
-            // upsert preview: junction + desc+UOM (Spec §5)
-            const jId =
-                coaId != null && catId != null
-                    ? (junctionByPair.get(`${coaId}|${catId}`) ?? null)
-                    : null;
-            const exists = priceListItems.some((p) => {
-                if (
-                    normalize(p.description) !== normalize(it.description) ||
-                    normalize(p.unit_of_measurement) !== normalize(it.unit_of_measurement)
-                ) {
-                    return false;
-                }
-
-                if (jId != null && p.chart_of_account_ppmp_category_id != null) {
-                    return p.chart_of_account_ppmp_category_id === jId;
-                }
-
-                return !!p.price;
-            });
-
-            if (status === "success" && exists) msg = "Will update existing";
-            else if (status === "warning" && exists) msg += " — will update";
-
-            return {
-                row: idx + 1,
-                description: it.description,
-                category: it.category,
-                chartOfAccount: it.chartOfAccount,
-                unit: it.unit_of_measurement,
-                price: it.price,
-                coaLayer: coaRes.layer,
-                catLayer: catRes.layer,
-                status,
-                message: msg,
-            };
-        });
-        setPreviewRows(rows);
-    }
-
-    function refreshHeaderPreview() {
-        if (!_workbook || !currentSheet) return;
-        const ws = _workbook.getWorksheet(currentSheet);
-        if (!ws) return;
-        const config = calibrationMode === "shared" ? sharedConfig : calibrations[currentSheet];
-        if (!config) return;
-        const effective = config.useCustom ? config : getDefaultConfig("price-list");
-        const colMap: any = effective.columnMap;
-        const headerRow = ws.getRow(1);
-        const cols: Array<{ col: string; header: string | null; sample: string | null }> = [];
-        const fields: Array<[string, string]> = [
-            ["COA", colMap.chartOfAccount],
-            ["Category", colMap.category],
-            ["Description", colMap.description],
-            ["Unit", colMap.unit],
-            ["Price", colMap.price],
-            ["Item#", colMap.itemNumber ?? "E"],
-        ];
-
-        for (const [label, colLetter] of fields) {
-            try {
-                const headerCell = ws.getCell(`${colLetter}1`);
-                let hv: any = headerCell.value;
-
-                if (hv && typeof hv === "object" && "result" in hv) hv = (hv as any).result;
-
-                const header = hv != null ? String(hv).trim() : null;
-                const sampleRow = ws.getRow(effective.startRow);
-                const sampleCell = sampleRow.getCell(colLetter);
-                let sv: any = sampleCell.value;
-
-                if (sv && typeof sv === "object" && "result" in sv) sv = (sv as any).result;
-
-                const sample = sv != null ? String(sv).trim().substring(0, 40) : null;
-                cols.push({ col: `${label} (${colLetter})`, header, sample });
-            } catch {
-                cols.push({ col: `${label} (${colLetter})`, header: null, sample: null });
-            }
-        }
-
-        setHeaderPreview(cols);
-    }
-
-    function handleRefetch() {
-        if (refetching) return;
-
-        setRefetching(true);
-        router.reload({ onFinish: () => setRefetching(false) });
-    }
-
-    // --- Render ---
     return (
-        <div className="flex flex-col gap-4 p-4">
-            <Field>
-                <FieldLabel htmlFor="file">Excel File</FieldLabel>
-                <Input
-                    id="file"
-                    type="file"
-                    accept=".xlsx"
-                    onChange={handleFileChange}
-                    disabled={loading}
-                />
-                {loading ? (
-                    <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                        <Spinner /> Parsing workbook...
-                    </div>
-                ) : (
-                    <FieldDescription>Select an Excel file.</FieldDescription>
-                )}
-            </Field>
-
-            {fileName && !loading && (
-                <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-muted/30">
-                    <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="font-medium truncate max-w-[42ch]" title={fileName}>
-                        {fileName}
-                    </span>
-                    <span className="hidden text-muted-foreground sm:inline">•</span>
-                    <span className="truncate text-muted-foreground">
-                        {selectedSheets.length > 0
-                            ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}`
-                            : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"} found`}
-                        {mode ? ` • ${mode === "price-list" ? "Price List" : "Quantities"}` : ""}
-                        {confirmed ? " • confirmed" : ""}
-                    </span>
-                </div>
-            )}
-
-            {sheets.length > 0 && (
-                <Field>
-                    <FieldLabel>Import Route</FieldLabel>
-                    <div className="flex gap-2">
-                        <Button
-                            variant={mode === "price-list" ? "default" : "outline"}
-                            onClick={() => handleModeChange("price-list")}
-                        >
-                            Price List Import
-                        </Button>
-                        <Button
-                            variant={mode === "quantities" ? "default" : "outline"}
-                            onClick={() => handleModeChange("quantities")}
-                        >
-                            Monthly Quantities
-                        </Button>
-                    </div>
-                </Field>
-            )}
-
-            {mode === "quantities" && !confirmed && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                    Monthly Quantities import will import monthly quantities into the PPMP table for
-                    a specific PPA, funding source, and fiscal year.
+        <>
+            <Head title="Price List Import" />
+            <div className="flex flex-col gap-4 p-4">
+                <h1 className="text-2xl font-semibold">Price List Import</h1>
+                <p className="text-sm text-muted-foreground">
+                    Imports <strong>price list only</strong> (no quantities). Requires official{" "}
+                    <Link href="/category-import" className="underline">
+                        Category Import
+                    </Link>{" "}
+                    and{" "}
+                    <Link href="/category-coa-mapping" className="underline">
+                        Category–COA Mappings
+                    </Link>{" "}
+                    to exist first.
                 </p>
-            )}
 
-            {mode && sheets.length > 0 && (
-                <Field>
-                    <FieldLabel>Sheets</FieldLabel>
-                    {mode === "quantities" && (
-                        <FieldDescription>Select one sheet.</FieldDescription>
-                    )}
-                    <ToggleGroup
-                        multiple={mode !== "quantities"}
-                        value={selectedSheets}
-                        onValueChange={handleSheetsChange}
-                        orientation="horizontal"
-                        className="flex-wrap"
-                    >
-                        {sheets.map((sheet) => (
-                            <ToggleGroupItem key={sheet} value={sheet} className="border">
-                                {sheet}
-                            </ToggleGroupItem>
-                        ))}
-                    </ToggleGroup>
-                </Field>
-            )}
-
-            {selectedSheets.length > 0 && !confirmed && (
-                <div className="mt-2">
-                    <Button onClick={handleConfirm}>Confirm Selection</Button>
-                </div>
-            )}
-
-            {mode === "quantities" && confirmed && selectedSheets.length > 0 && (
-                <div className="mt-4 space-y-4">
-                    <p className="text-sm">
-                        Confirmed sheet: <span className="font-medium">{selectedSheets[0]}</span>
-                    </p>
-                    <Button variant="ghost" size="sm" onClick={() => setConfirmed(false)}>
-                        ← Change sheet selection
-                    </Button>
-
-                    <div className="rounded-lg border p-4">
-                        <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Target</h3>
-                        <div className="grid grid-cols-5 gap-4">
-                            <Field>
-                                <FieldLabel>Fiscal Year</FieldLabel>
-                                <Select
-                                    value={targetFiscalYearId ? String(targetFiscalYearId) : ""}
-                                    onValueChange={(v) => {
-                                        setTargetFiscalYearId(v ? Number(v) : null);
-                                        setTargetPpaId(null);
-                                    }}
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select fiscal year" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {fiscalYears.map((fy) => (
-                                                <SelectItem key={fy.id} value={String(fy.id)}>
-                                                    {fy.year}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                            <Field className="col-span-2">
-                                <FieldLabel>PPA</FieldLabel>
-                                <Combobox
-                                    items={ppaComboboxItems}
-                                    value={
-                                        targetPpaId
-                                            ? `ppa:${ppas.find((p) => p.id === targetPpaId)?.name ?? ""}`
-                                            : ""
-                                    }
-                                    onValueChange={(v) => {
-                                        if (!v) {
-                                            setTargetPpaId(null);
-
-                                            return;
-                                        }
-
-                                        const name = v.replace(/^[^:]+:/, "");
-                                        const ppa = ppas.find(
-                                            (p) =>
-                                                p.fiscal_year_id === targetFiscalYearId &&
-                                                p.name === name,
-                                        );
-
-                                        if (ppa) {
-                                            setTargetPpaId(ppa.id);
-                                        }
-                                    }}
-                                >
-                                    <ComboboxInput
-                                        placeholder="Select PPA..."
-                                        showClear
-                                        disabled={!targetFiscalYearId}
-                                        className="w-1000"
-                                    />
-                                    <ComboboxContent>
-                                        <ComboboxEmpty>
-                                            {targetFiscalYearId
-                                                ? "No PPA found."
-                                                : "Select a fiscal year first."}
-                                        </ComboboxEmpty>
-                                        <ComboboxList>
-                                            {(item) => (
-                                                <ComboboxItem key={item} value={item}>
-                                                    {item.replace(/^[^:]+:/, "")}
-                                                </ComboboxItem>
-                                            )}
-                                        </ComboboxList>
-                                    </ComboboxContent>
-                                </Combobox>
-                            </Field>
-                            <Field className="col-span-2">
-                                <FieldLabel>Funding Source</FieldLabel>
-                                <Select
-                                    value={
-                                        targetFundingSourceId ? String(targetFundingSourceId) : ""
-                                    }
-                                    onValueChange={(v) =>
-                                        setTargetFundingSourceId(v ? Number(v) : null)
-                                    }
-                                >
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Select funding source" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {fundingSources.map((fs) => (
-                                                <SelectItem key={fs.id} value={String(fs.id)}>
-                                                    [{fs.code}] {fs.title}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                        </div>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                            Resolved target:{" "}
-                            {targetFiscalYearId && targetPpaId && targetFundingSourceId
-                                ? `${fiscalYears.find((fy) => fy.id === targetFiscalYearId)?.year ?? "—"} — ${
-                                      ppas.find((p) => p.id === targetPpaId)?.name ?? "—"
-                                  } — [${
-                                      fundingSources.find((fs) => fs.id === targetFundingSourceId)
-                                          ?.code ?? "—"
-                                  }]`
-                                : "—"}
-                        </p>
+                {fileName && !loading && (
+                    <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm backdrop-blur">
+                        <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="max-w-[42ch] truncate font-medium" title={fileName}>
+                            {fileName}
+                        </span>
+                        <span className="hidden text-muted-foreground sm:inline">•</span>
+                        <span className="truncate text-muted-foreground">
+                            {selectedSheets.length > 0
+                                ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}`
+                                : `${sheets.length} sheets found`}
+                        </span>
                     </div>
+                )}
 
-                    {calibrationMode === "shared" && sharedConfig ? (
-                        <CalibrationPanel
-                            mode="quantities"
-                            selectedSheets={selectedSheets}
-                            calibrations={{ [currentSheet]: sharedConfig } as any}
-                            currentSheet={currentSheet}
-                            onCurrentSheetChange={setCurrentSheet}
-                            onUpdateSheet={(_, updates) => {
-                                setSharedConfig((prev) => {
-                                    if (!prev) return prev;
-                                    const merged = {
-                                        ...prev,
-                                        ...updates,
-                                        columnMap: updates.columnMap ? { ...prev.columnMap, ...(updates.columnMap as any) } : prev.columnMap,
-                                    } as SheetConfig;
-                                    setCalibrations((prevCal) => {
-                                        const next: Record<string, SheetConfig> = {};
-                                        for (const s of selectedSheets) {
-                                            const base = prevCal[s] ?? prev;
-                                            next[s] = {
-                                                ...base,
-                                                ...updates,
-                                                columnMap: updates.columnMap ? { ...base.columnMap, ...(updates.columnMap as any) } : base.columnMap,
-                                            } as SheetConfig;
-                                        }
-                                        return next;
-                                    });
-                                    return merged;
-                                });
-                            }}
-                            onExtract={handleExtractQuantities}
-                            extractLabel="Extract Quantities"
-                            disabled={!selectedSheets.length}
-                        />
-                    ) : (
-                        <CalibrationPanel
-                            mode="quantities"
-                            selectedSheets={selectedSheets}
-                            calibrations={calibrations}
-                            currentSheet={currentSheet}
-                            onCurrentSheetChange={setCurrentSheet}
-                            onUpdateSheet={(sheet, updates) => {
-                                setCalibrations((prev) => ({
-                                    ...prev,
-                                    [sheet]: { ...prev[sheet], ...updates },
-                                }));
-                            }}
-                            onExtract={handleExtractQuantities}
-                            extractLabel="Extract Quantities"
-                            disabled={!selectedSheets.length}
-                        />
-                    )}
+                <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
+                    <TabsList variant="line" className="w-full">
+                        <TabsTrigger value="upload" className="flex-1">
+                            1. Upload & Sheets{" "}
+                            {selectedSheets.length > 0 && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    {selectedSheets.length}✓
+                                </span>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="calibrate" disabled={!canCalibrate} className="flex-1">
+                            2. Calibrate{" "}
+                            {sharedConfig && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    {calibrationMode}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="verify" disabled={!canVerify} className="flex-1">
+                            3. Verify Format{" "}
+                            {allVerifyValid && (
+                                <span className="ml-1 text-xs text-green-600">
+                                    ✓{selectedSheets.length}
+                                </span>
+                            )}
+                            {!allVerifyValid && hasAnyVerify && (
+                                <span className="ml-1 text-xs text-amber-600">
+                                    {Object.values(verifyResults).filter((r) => r.valid).length}/
+                                    {selectedSheets.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                        <TabsTrigger value="review" disabled={!canReview} className="flex-1">
+                            4. Review & Import{" "}
+                            {uniqueItems.length > 0 && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    {uniqueItems.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
+                    </TabsList>
 
-                    {quantityRows && (
-                        // ... (same table and import dialog as before)
-                        <div className="mt-6">
-                            <div className="mb-2 flex items-center justify-between">
-                                <h3 className="text-sm font-semibold text-muted-foreground">
-                                    Extracted Items ({quantityRows.length})
-                                </h3>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleCheckDbMatches}
-                                    >
-                                        Check DB Matches
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setQuantityImportDialogOpen(true)}
-                                        disabled={
-                                            !quantityImportPlan ||
-                                            quantityImportPlan.rows.length === 0 ||
-                                            quantityImportPlan.unmatched > 0 ||
-                                            !targetFiscalYearId ||
-                                            !targetPpaId ||
-                                            !targetFundingSourceId ||
-                                            quantityImporting
-                                        }
-                                    >
-                                        {quantityImporting && <Spinner />}
-                                        Import {quantityImportPlan?.rows.length ?? 0} Quantities
-                                    </Button>
+                    <TabsContent value="upload" className="mt-4 flex flex-col gap-4">
+                        <Field>
+                            <FieldLabel htmlFor="price-list-file">
+                                Excel File (.xlsx only)
+                            </FieldLabel>
+                            <Input
+                                id="price-list-file"
+                                type="file"
+                                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                onChange={handleFileChange}
+                                disabled={loading}
+                            />
+                            <FieldDescription>
+                                Select an .xlsx price list export (PPMP template).
+                            </FieldDescription>
+                            {error && <p className="text-sm text-destructive">{error}</p>}
+                        </Field>
+                        {loading && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Spinner /> Parsing workbook...
+                            </div>
+                        )}
+                        {!loading && sheets.length > 0 && (
+                            <Field>
+                                <FieldLabel>Sheets — click to select one or more</FieldLabel>
+                                <div className="flex flex-wrap gap-2 rounded-lg border p-3">
+                                    {sheets.map((sheet) => {
+                                        const isSelected = selectedSheets.includes(sheet);
+
+                                        return (
+                                            <Badge
+                                                key={sheet}
+                                                variant={isSelected ? "default" : "secondary"}
+                                                className="cursor-pointer text-sm hover:opacity-80"
+                                                onClick={() => handleSheetToggle(sheet)}
+                                            >
+                                                {sheet} {isSelected && "✓"}
+                                            </Badge>
+                                        );
+                                    })}
                                 </div>
-                            </div>
-                            {quantityImportPlan && quantityImportPlan.unmatched > 0 && (
-                                <p className="mb-2 text-sm text-destructive">
-                                    {quantityImportPlan.unmatched} item(s) without a DB match —
-                                    resolve them before importing.
-                                </p>
-                            )}
-                            {quantityImportPlan && quantityImportPlan.skippedNoQty > 0 && (
-                                <p className="mb-2 text-sm text-muted-foreground">
-                                    {quantityImportPlan.skippedNoQty} row(s) with no quantities will
-                                    be skipped.
-                                </p>
-                            )}
-                            <div className="max-h-96 overflow-auto rounded-md border">
-                                <Table>
-                                    <TableHeader className="sticky top-0 z-10 bg-background">
-                                        <TableRow>
-                                            <TableHead>Description</TableHead>
-                                            <TableHead>Category</TableHead>
-                                            <TableHead>Chart of Account</TableHead>
-                                            <TableHead>Unit</TableHead>
-                                            <TableHead className="text-right">Price</TableHead>
-                                            <TableHead className="text-right">Total</TableHead>
-                                            <TableHead>In DB</TableHead>
-                                            <TableHead>Match</TableHead>
-                                            <TableHead>Jan</TableHead>
-                                            <TableHead>Feb</TableHead>
-                                            <TableHead>Mar</TableHead>
-                                            <TableHead>Apr</TableHead>
-                                            <TableHead>May</TableHead>
-                                            <TableHead>Jun</TableHead>
-                                            <TableHead>Jul</TableHead>
-                                            <TableHead>Aug</TableHead>
-                                            <TableHead>Sep</TableHead>
-                                            <TableHead>Oct</TableHead>
-                                            <TableHead>Nov</TableHead>
-                                            <TableHead>Dec</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {quantityRows.map((row) => {
-                                            const match = quantityMatches[row.tempId];
-                                            const matchedItem = match?.itemId
-                                                ? priceListItems.find((p) => p.id === match.itemId)
-                                                : null;
-
-                                            return (
-                                                <TableRow key={row.tempId}>
-                                                    <TableCell className="max-w-64 truncate">
-                                                        {row.description}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-40 truncate">
-                                                        {row.category}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-48 truncate">
-                                                        {row.chartOfAccount}
-                                                    </TableCell>
-                                                    <TableCell>{row.unitOfMeasurement}</TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.price ?? "—"}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.total ?? "—"}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {!quantityChecked ? (
-                                                            <span className="text-muted-foreground">
-                                                                —
-                                                            </span>
-                                                        ) : match?.itemId ? (
-                                                            <HoverCard>
-                                                                <HoverCardTrigger
-                                                                    render={
-                                                                        <span className="cursor-pointer text-emerald-600">
-                                                                            ✓ exists
-                                                                        </span>
-                                                                    }
-                                                                />
-                                                                <HoverCardContent>
-                                                                    {matchedItem
-                                                                        ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
-                                                                        : ""}
-                                                                </HoverCardContent>
-                                                            </HoverCard>
-                                                        ) : (
-                                                            <span className="text-amber-600">
-                                                                ✗ new
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Combobox
-                                                            items={pliComboboxItems}
-                                                            value={
-                                                                matchedItem
-                                                                    ? `pli:${matchedItem.description}`
-                                                                    : ""
-                                                            }
-                                                            onValueChange={(v) => {
-                                                                setQuantityMatches((prev) => {
-                                                                    const next = {
-                                                                        ...prev,
-                                                                    };
-
-                                                                    if (!v) {
-                                                                        next[row.tempId] = {
-                                                                            itemId: null,
-                                                                        };
-
-                                                                        return next;
-                                                                    }
-
-                                                                    const name = v.replace(
-                                                                        /^[^:]+:/,
-                                                                        "",
-                                                                    );
-                                                                    const dbItem =
-                                                                        priceListItems.find(
-                                                                            (p) =>
-                                                                                p.description ===
-                                                                                name,
-                                                                        );
-
-                                                                    if (dbItem) {
-                                                                        next[row.tempId] = {
-                                                                            itemId: dbItem.id,
-                                                                        };
-                                                                    }
-
-                                                                    return next;
-                                                                });
-                                                            }}
-                                                        >
-                                                            <ComboboxInput
-                                                                placeholder="Search price list item..."
-                                                                showClear
-                                                            />
-                                                            <ComboboxContent>
-                                                                <ComboboxEmpty>
-                                                                    No items found.
-                                                                </ComboboxEmpty>
-                                                                <ComboboxList>
-                                                                    {(item) => (
-                                                                        <ComboboxItem
-                                                                            key={item}
-                                                                            value={item}
-                                                                        >
-                                                                            {item.replace(
-                                                                                /^[^:]+:/,
-                                                                                "",
-                                                                            )}
-                                                                        </ComboboxItem>
-                                                                    )}
-                                                                </ComboboxList>
-                                                            </ComboboxContent>
-                                                        </Combobox>
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.janQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.febQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.marQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.aprQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.mayQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.junQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.julQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.augQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.sepQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.octQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.novQty ?? ""}
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {row.decQty ?? ""}
-                                                    </TableCell>
-                                                </TableRow>
-                                            );
-                                        })}
-                                    </TableBody>
-                                </Table>
-                            </div>
+                                <FieldDescription>
+                                    Selected:{" "}
+                                    <span className="font-medium text-foreground">
+                                        {selectedSheets.length > 0
+                                            ? selectedSheets.join(", ")
+                                            : "none"}
+                                    </span>{" "}
+                                    — {selectedSheets.length}/{sheets.length} sheets
+                                </FieldDescription>
+                            </Field>
+                        )}
+                        <div className="flex justify-end">
+                            <Button
+                                disabled={selectedSheets.length === 0}
+                                onClick={() => {
+                                    ensureCalibrationsInitialized();
+                                    setStep("calibrate");
+                                }}
+                            >
+                                Next: Calibrate{" "}
+                                {selectedSheets.length > 0 && `(${selectedSheets.length} sheets)`}
+                            </Button>
                         </div>
-                    )}
+                    </TabsContent>
 
-                    <Dialog
-                        open={quantityImportDialogOpen}
-                        onOpenChange={setQuantityImportDialogOpen}
-                    >
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Confirm Quantity Import</DialogTitle>
-                                <DialogDescription>
-                                    You're about to import {quantityImportPlan?.rows.length ?? 0}{" "}
-                                    monthly quantity row(s) for{" "}
-                                    {targetFiscalYearId && targetPpaId && targetFundingSourceId
-                                        ? `${fiscalYears.find((fy) => fy.id === targetFiscalYearId)?.year ?? "—"} — ${
-                                              ppas.find((p) => p.id === targetPpaId)?.name ?? "—"
-                                          } — [${
-                                              fundingSources.find(
-                                                  (fs) => fs.id === targetFundingSourceId,
-                                              )?.code ?? "—"
-                                          }]`
-                                        : "the selected target"}
-                                    . Existing monthly quantities for matched items will be
-                                    overwritten.
-                                </DialogDescription>
-                            </DialogHeader>
-                            {quantityImportPlan && quantityImportPlan.skippedNoQty > 0 && (
-                                <div className="space-y-1 text-sm text-muted-foreground">
-                                    Skipped:
-                                    <p>{quantityImportPlan.skippedNoQty} — no monthly quantities</p>
-                                </div>
-                            )}
-                            <DialogFooter>
-                                <DialogClose render={<Button variant="outline">Cancel</Button>} />
+                    <TabsContent value="calibrate" className="mt-4 flex flex-col gap-4">
+                        <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/20 p-3">
+                            <span className="text-sm font-medium">Scope:</span>
+                            <div className="flex gap-2">
                                 <Button
-                                    onClick={handleConfirmImportQuantities}
-                                    disabled={
-                                        !quantityImportPlan ||
-                                        quantityImportPlan.rows.length === 0 ||
-                                        quantityImporting
-                                    }
-                                >
-                                    {quantityImporting ? "Importing..." : "Confirm"}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            )}
+                                    variant={calibrationMode === "shared" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                        if (
+                                            calibrationMode === "per-sheet" &&
+                                            calibrations[currentSheet]
+                                        ) {
+                                            setSharedConfig({ ...calibrations[currentSheet] });
+                                        } else if (!sharedConfig) ensureCalibrationsInitialized();
 
-            {mode === "price-list" && confirmed && selectedSheets.length > 0 && (
-                <>
-                    {/* Stepper — user-friendly progress */}
-                    <Card>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Import price list — 4 steps</CardTitle>
-                            <CardDescription>
-                                Follow the steps. We explain what each table means so you know what
-                                to do next.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex flex-wrap gap-2">
-                                {[
-                                    { n: 1, label: "Calibrate", desc: "Tell us where data lives" },
-                                    { n: 2, label: "Findings", desc: "What we found in Excel" },
-                                    { n: 3, label: "Map & Preview", desc: "Fix names & preview" },
-                                    { n: 4, label: "Import", desc: "Confirm & see results" },
-                                ].map((s) => {
-                                    const active = wizardStep === s.n;
-                                    const done = wizardStep > s.n;
+                                        setCalibrationMode("shared");
+                                    }}
+                                >
+                                    Shared — all {selectedSheets.length} sheets
+                                </Button>
+                                <Button
+                                    variant={
+                                        calibrationMode === "per-sheet" ? "default" : "outline"
+                                    }
+                                    size="sm"
+                                    onClick={() => {
+                                        if (sharedConfig) {
+                                            const next: Record<string, PriceListSheetConfig> = {};
+
+                                            for (const s of selectedSheets) {
+                                                next[s] = {
+                                                    ...sharedConfig,
+                                                    columnConfig: { ...sharedConfig.columnConfig },
+                                                    rowConfig: { ...sharedConfig.rowConfig },
+                                                };
+                                            }
+
+                                            setCalibrations(next);
+
+                                            if (!currentSheet && selectedSheets[0]) {
+                                                setCurrentSheet(selectedSheets[0]);
+                                            }
+                                        }
+
+                                        setCalibrationMode("per-sheet");
+                                    }}
+                                >
+                                    Per-sheet
+                                </Button>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                                {calibrationMode === "shared"
+                                    ? `Header row ${sharedConfig?.rowConfig.headerRow === "" || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to every sheet`
+                                    : `Editing ${currentSheet || "—"} only affects that sheet`}
+                            </span>
+                            {calibrationMode === "shared" ? (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleApplySharedToAll}
+                                    disabled={!sharedConfig}
+                                >
+                                    Apply shared to all ({selectedSheets.length})
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCopyCurrentToAll}
+                                    disabled={!currentSheet}
+                                >
+                                    Copy “{currentSheet}” to all
+                                </Button>
+                            )}
+                        </div>
+
+                        {calibrationMode === "per-sheet" && selectedSheets.length > 1 && (
+                            <Field>
+                                <FieldLabel>Editing sheet</FieldLabel>
+                                <Select value={currentSheet} onValueChange={(v) => setCurrentSheet(v ?? "")}>
+                                    <SelectTrigger className="w-[260px]">
+                                        <SelectValue placeholder="Select sheet to edit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {selectedSheets.map((s) => (
+                                                <SelectItem key={s} value={s}>
+                                                    {s}{" "}
+                                                    {verifyResults[s]?.valid
+                                                        ? "✓"
+                                                        : verifyResults[s]
+                                                          ? "❌"
+                                                          : ""}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        )}
+
+                        {(() => {
+                            const cfg =
+                                calibrationMode === "shared"
+                                    ? (sharedConfig ?? getDefaultPriceListConfig())
+                                    : (calibrations[currentSheet] ??
+                                      sharedConfig ??
+                                      getDefaultPriceListConfig());
+                            const onChange = (patch: Partial<PriceListSheetConfig>) => {
+                                if (calibrationMode === "shared") updateSharedConfig(patch);
+                                else updateCurrentCalibration(patch);
+
+                                setVerifyResults({});
+                                setRawItems([]);
+                                setUniqueItems([]);
+                                setSelected(new Set());
+                                setCoaOverrides({});
+                            };
+                            const onColumn = (
+                                patch: Partial<SharedSheetConfig["columnConfig"]>,
+                            ) => {
+                                const next = { ...cfg.columnConfig, ...patch };
+                                onChange({ columnConfig: next } as Partial<PriceListSheetConfig>);
+                            };
+                            const onRow = (patch: Partial<SharedSheetConfig["rowConfig"]>) => {
+                                const next = { ...cfg.rowConfig, ...patch };
+                                onChange({
+                                    rowConfig: next,
+                                } as unknown as Partial<PriceListSheetConfig>);
+                            };
+
+                            return (
+                                <div className="rounded-lg border p-4">
+                                    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                        Calibration{" "}
+                                        {calibrationMode === "shared"
+                                            ? `(Shared – ${selectedSheets.length} sheets)`
+                                            : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
+                                    </p>
+                                    <div className="grid grid-cols-4 gap-4">
+                                        <Field>
+                                            <FieldLabel>COA Column</FieldLabel>
+                                            <Input
+                                                value={cfg.columnConfig.coa}
+                                                onChange={(e) =>
+                                                    onColumn({ coa: e.target.value.toUpperCase() })
+                                                }
+                                                className="w-16"
+                                                placeholder="D"
+                                            />
+                                            <FieldDescription>
+                                                D — empty means category
+                                            </FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>Category / Description Column</FieldLabel>
+                                            <Input
+                                                value={cfg.columnConfig.category}
+                                                onChange={(e) =>
+                                                    onColumn({
+                                                        category: e.target.value.toUpperCase(),
+                                                    })
+                                                }
+                                                className="w-16"
+                                                placeholder="F"
+                                            />
+                                            <FieldDescription>F — shared</FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>Unit Column</FieldLabel>
+                                            <Input
+                                                value={cfg.columnConfig.unit}
+                                                onChange={(e) =>
+                                                    onColumn({ unit: e.target.value.toUpperCase() })
+                                                }
+                                                className="w-16"
+                                                placeholder="G"
+                                            />
+                                            <FieldDescription>G</FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>Price Column</FieldLabel>
+                                            <Input
+                                                value={cfg.columnConfig.price}
+                                                onChange={(e) =>
+                                                    onColumn({
+                                                        price: e.target.value.toUpperCase(),
+                                                    })
+                                                }
+                                                className="w-16"
+                                                placeholder="H"
+                                            />
+                                            <FieldDescription>H</FieldDescription>
+                                        </Field>
+                                    </div>
+                                    <div className="mt-4 grid grid-cols-3 gap-4">
+                                        <Field>
+                                            <FieldLabel>Header Row</FieldLabel>
+                                            <Input
+                                                type="number"
+                                                value={cfg.rowConfig.headerRow ?? ""}
+                                                onChange={(e) =>
+                                                    onRow({
+                                                        headerRow: e.target.value === "" ? "" : Number(e.target.value),
+                                                    })
+                                                }
+                                                className="w-20"
+                                                placeholder="7"
+                                            />
+                                            <FieldDescription>
+                                                Header {cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null ? "—" : cfg.rowConfig.headerRow}; data starts{" "}
+                                                {cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null ? "—" : cfg.rowConfig.headerRow + 1}
+                                            </FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>
+                                                Additional Items Header Row (optional)
+                                            </FieldLabel>
+                                            <Input
+                                                type="number"
+                                                value={cfg.rowConfig.additionalItemsHeaderRow ?? ""}
+                                                onChange={(e) =>
+                                                    onRow({
+                                                        additionalItemsHeaderRow: e.target.value
+                                                            ? Number(e.target.value)
+                                                            : null,
+                                                    })
+                                                }
+                                                className="w-20"
+                                                placeholder="—"
+                                            />
+                                            <FieldDescription>
+                                                Blank = no additional section
+                                            </FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>
+                                                Non-Procurement Header Row (optional)
+                                            </FieldLabel>
+                                            <Input
+                                                type="number"
+                                                value={cfg.rowConfig.nonProcurementHeaderRow ?? ""}
+                                                onChange={(e) =>
+                                                    onRow({
+                                                        nonProcurementHeaderRow: e.target.value
+                                                            ? Number(e.target.value)
+                                                            : null,
+                                                    })
+                                                }
+                                                className="w-20"
+                                                placeholder="—"
+                                            />
+                                            <FieldDescription>
+                                                Blank = no non-proc section
+                                            </FieldDescription>
+                                        </Field>
+                                    </div>
+                                    <Field className="mt-4">
+                                        <FieldLabel>COA items format *</FieldLabel>
+                                        <ToggleGroup
+                                            variant="outline"
+                                            spacing={2}
+                                            value={[cfg.coaLabelMode]}
+                                            onValueChange={(value) => {
+                                                if (value.length > 0) {
+                                                    onChange({
+                                                        coaLabelMode:
+                                                            value[0] as PriceListSheetConfig["coaLabelMode"],
+                                                    });
+                                                }
+                                            }}
+                                            className="w-full"
+                                        >
+                                            <ToggleGroupItem
+                                                value="with-label"
+                                                className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
+                                            >
+                                                <span className="font-medium">
+                                                    With COA label rows
+                                                </span>
+                                                <span className="text-xs font-normal text-muted-foreground">
+                                                    Category → COA label in F (next D same) → Items
+                                                    with D=COA
+                                                </span>
+                                                <span className="font-mono text-xs text-muted-foreground/70">
+                                                    Cat → coa → items → Cat - Total
+                                                </span>
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem
+                                                value="without-label"
+                                                className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
+                                            >
+                                                <span className="font-medium">
+                                                    Without COA label rows
+                                                </span>
+                                                <span className="text-xs font-normal text-muted-foreground">
+                                                    Items already have D=COA directly, no label rows
+                                                </span>
+                                                <span className="font-mono text-xs text-muted-foreground/70">
+                                                    Cat → items (D=coa) → Cat - Total
+                                                </span>
+                                            </ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </Field>
+                                </div>
+                            );
+                        })()}
+                        <div className="flex justify-between">
+                            <Button variant="outline" onClick={() => setStep("upload")}>
+                                Back
+                            </Button>
+                            <Button onClick={() => setStep("verify")} disabled={!sharedConfig}>
+                                Next: Verify Format
+                            </Button>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="verify" className="mt-4 flex flex-col gap-4">
+                        <div className="flex gap-2">
+                            <Button onClick={handleVerify}>
+                                Run Verify ({selectedSheets.length} sheets)
+                            </Button>
+                            {hasAnyVerify && allVerifyValid && (
+                                <Badge variant="default" className="self-center">
+                                    All valid ✓
+                                </Badge>
+                            )}
+                            {hasAnyVerify && !allVerifyValid && (
+                                <Badge variant="destructive" className="self-center">
+                                    {Object.values(verifyResults).filter((r) => r.valid).length}/
+                                    {selectedSheets.length} valid
+                                </Badge>
+                            )}
+                        </div>
+                        {hasAnyVerify && (
+                            <>
+                                {selectedSheets.length > 1 && (
+                                    <div className="flex gap-2">
+                                        {selectedSheets.map((s) => (
+                                            <Badge
+                                                key={s}
+                                                variant={
+                                                    verifyResults[s]?.valid
+                                                        ? "default"
+                                                        : "secondary"
+                                                }
+                                                className="cursor-pointer"
+                                                onClick={() => setActiveVerifySheet(s)}
+                                            >
+                                                {s} {verifyResults[s]?.valid ? "✓" : "❌"}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+                                {(() => {
+                                    const active = activeVerifySheet || selectedSheets[0];
+                                    const r = verifyResults[active];
+
+                                    if (!r) return null;
 
                                     return (
-                                        <div
-                                            key={s.n}
-                                            className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs ${active ? "border-primary bg-primary text-primary-foreground" : done ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "bg-muted text-muted-foreground"}`}
-                                        >
-                                            <span
-                                                className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${active ? "bg-white text-primary" : done ? "bg-emerald-600 text-white" : "border bg-background"}`}
+                                        <div className="rounded-lg border p-4">
+                                            <p
+                                                className={`text-sm font-medium ${r.valid ? "text-green-600" : "text-destructive"}`}
                                             >
-                                                {done ? "✓" : s.n}
-                                            </span>
-                                            <span className="font-medium">{s.label}</span>
-                                            <span className="hidden opacity-70 sm:inline">
-                                                — {s.desc}
-                                            </span>
+                                                {r.message} — {active}
+                                            </p>
+                                            {r.errors.length > 0 && (
+                                                <div className="mt-2 max-h-48 overflow-auto rounded border bg-muted/20 p-2 text-xs">
+                                                    {r.errors.map((e, i) => (
+                                                        <div key={i}>
+                                                            Row {e.row}: {e.message}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {r.details.length > 0 && (
+                                                <div className="mt-2 text-xs text-muted-foreground">
+                                                    {r.details.map((d, i) => (
+                                                        <div key={i}>{d}</div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     );
-                                })}
-                            </div>
-                        </CardContent>
-                    </Card>
+                                })()}
+                            </>
+                        )}
+                        <div className="flex justify-between">
+                            <Button variant="outline" onClick={() => setStep("calibrate")}>
+                                Back
+                            </Button>
+                            <Button
+                                disabled={!allVerifyValid}
+                                onClick={() => {
+                                    handleExtract();
+                                    setStep("review");
+                                }}
+                            >
+                                Next: Extract {allVerifyValid ? "✓" : "(fix errors first)"}
+                            </Button>
+                        </div>
+                    </TabsContent>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base">
-                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                                    1
-                                </span>{" "}
-                                Calibrate — Where is the data?
-                            </CardTitle>
-                            <CardDescription>
-                                Check row numbers and column letters. Defaults now <span className="font-medium">Start Row 9</span> (was 8) for PPMPS. In <strong>Shared</strong> mode one change updates all {selectedSheets.length} sheets at once.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/20 p-3">
-                                <span className="text-sm font-medium">Scope:</span>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant={calibrationMode === "shared" ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => {
-                                            // sync current shared to all when switching to shared
-                                            if (calibrationMode === "per-sheet" && calibrations[currentSheet]) {
-                                                const src = calibrations[currentSheet];
-                                                setSharedConfig({ ...src, columnMap: { ...src.columnMap } });
-                                            }
-                                            setCalibrationMode("shared");
-                                        }}
-                                    >
-                                        Shared — all {selectedSheets.length} sheets
-                                    </Button>
-                                    <Button
-                                        variant={calibrationMode === "per-sheet" ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => {
-                                            if (sharedConfig) {
-                                                const next: Record<string, SheetConfig> = {};
-                                                for (const s of selectedSheets) next[s] = { ...sharedConfig, columnMap: { ...sharedConfig.columnMap } };
-                                                setCalibrations(next);
-                                            }
-                                            setCalibrationMode("per-sheet");
-                                        }}
-                                    >
-                                        Per-sheet
-                                    </Button>
-                                </div>
-                                <span className="text-xs text-muted-foreground">
-                                    {calibrationMode === "shared"
-                                        ? `Start row ${sharedConfig?.startRow ?? 9} applies to every sheet — change once.`
-                                        : `Each sheet can differ. Copy to sync.`}
-                                </span>
-                                {calibrationMode === "shared" ? (
-                                    <Button variant="outline" size="sm" onClick={handleApplySharedToAll} disabled={!sharedConfig}>
-                                        Apply to all ({selectedSheets.length})
-                                    </Button>
-                                ) : (
-                                    <Button variant="outline" size="sm" onClick={handleCopyCurrentToAll} disabled={!calibrations[currentSheet]}>
-                                        Copy “{currentSheet}” to all
-                                    </Button>
-                                )}
-                            </div>
-
-                            {calibrationMode === "shared" && sharedConfig ? (
-                                <CalibrationPanel
-                                    mode="price-list"
-                                    selectedSheets={selectedSheets}
-                                    calibrations={{ [currentSheet]: sharedConfig } as any}
-                                    currentSheet={currentSheet}
-                                    onCurrentSheetChange={setCurrentSheet}
-                                    onUpdateSheet={(_, updates) => {
-                                        setSharedConfig((prev) => {
-                                            if (!prev) return prev;
-                                            const merged = {
-                                                ...prev,
-                                                ...updates,
-                                                columnMap: updates.columnMap ? { ...prev.columnMap, ...(updates.columnMap as any) } : prev.columnMap,
-                                            } as SheetConfig;
-                                            // keep per-sheet clones synced
-                                            setCalibrations((prevCal) => {
-                                                const next: Record<string, SheetConfig> = {};
-                                                for (const s of selectedSheets) {
-                                                    const base = prevCal[s] ?? prev;
-                                                    next[s] = {
-                                                        ...base,
-                                                        ...updates,
-                                                        columnMap: updates.columnMap ? { ...base.columnMap, ...(updates.columnMap as any) } : base.columnMap,
-                                                    } as SheetConfig;
-                                                }
-                                                return next;
-                                            });
-                                            return merged;
-                                        });
-                                    }}
-                                    onExtract={handleExtractCoaAndCategory}
-                                    extractLabel="Extract COA & Category"
-                                    disabled={!currentSheet}
-                                />
-                            ) : (
-                                <CalibrationPanel
-                                    mode="price-list"
-                                    selectedSheets={selectedSheets}
-                                    calibrations={calibrations}
-                                    currentSheet={currentSheet}
-                                    onCurrentSheetChange={setCurrentSheet}
-                                    onUpdateSheet={(sheet, updates) => {
-                                        setCalibrations((prev) => ({
-                                            ...prev,
-                                            [sheet]: { ...prev[sheet], ...updates },
-                                        }));
-                                    }}
-                                    onExtract={handleExtractCoaAndCategory}
-                                    extractLabel="Extract COA & Category"
-                                    disabled={!currentSheet}
-                                />
+                    <TabsContent value="review" className="mt-4 flex flex-col gap-4">
+                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <Badge variant="secondary">Raw items: {rawItems.length}</Badge>
+                            <Badge variant="secondary">Unique: {uniqueItems.length}</Badge>
+                            <Badge variant="default">
+                                Ready: {insertCount} + Updates: {updateCount} = {readyCount}
+                            </Badge>
+                            {errorCount > 0 && (
+                                <Badge variant="destructive">
+                                    {errorCount} errors (missing official mapping)
+                                </Badge>
                             )}
-                        </CardContent>
-                    </Card>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                        <Button
-                            variant={extracted ? "secondary" : "default"}
-                            onClick={handleMapResolved}
-                            disabled={!extracted}
-                        >
-                            {mappedPairs ? "✓ Mapped" : "2 — Map names to system"}
-                        </Button>
-                        <Button
-                            variant={uniqueItems ? "secondary" : "outline"}
-                            onClick={handleExtractUniqueItems}
-                            disabled={!mappedPairs}
-                        >
-                            {uniqueItems
-                                ? `✓ ${uniqueItems.length} items`
-                                : "3 — Show items to import"}
-                        </Button>
-                        <Button variant="outline" onClick={handleRefetch} disabled={refetching}>
-                            {refetching && <Spinner />}
-                            Refetch DB Data
-                        </Button>
-                    </div>
-
-                    {headerPreview.length > 0 && (
-                        <Card className="mt-4">
-                            <CardHeader>
-                                <CardTitle className="text-sm">
-                                    Header preview — Sheet: {currentSheet}
-                                </CardTitle>
-                                <CardDescription>
-                                    We read the first row to show what’s in each calibrated column.
-                                    If a header looks wrong, adjust the column letters above then
-                                    re-extract.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-3 gap-2 text-xs">
-                                    {headerPreview.map((h) => (
-                                        <div key={h.col} className="rounded border bg-muted/20 p-2">
-                                            <div className="font-medium">{h.col}</div>
-                                            <div className="text-muted-foreground">
-                                                Header: {h.header ?? "— empty —"}
-                                            </div>
-                                            <div className="truncate">
-                                                Sample: {h.sample ?? "—"}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="mt-2 text-xs text-muted-foreground">
-                                    Tip: Description &amp; Category sharing column F is expected for
-                                    this template.
-                                </p>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {extracted && (
-                        <>
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2 text-base">
-                                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                                            2
-                                        </span>{" "}
-                                        Step 2 — What we found in your file
-                                    </CardTitle>
-                                    <CardDescription>
-                                        We read{" "}
-                                        <Badge variant="secondary">
-                                            {selectedSheets.length} sheet(s)
-                                        </Badge>{" "}
-                                        and found{" "}
-                                        <Badge variant="outline">
-                                            {extracted.categories.length} categories
-                                        </Badge>{" "}
-                                        <Badge variant="outline">
-                                            {extracted.chartOfAccounts.length} COAs
-                                        </Badge>{" "}
-                                        <Badge variant="outline">
-                                            {extracted.pairs.length} pairs
-                                        </Badge>
-                                        . The tables below show names from Excel and how they map to
-                                        the system.{" "}
-                                        <span className="font-medium">⚠️ = auto-corrected</span> via
-                                        sanitization (Category: <code>-</code>→space, COA: remove{" "}
-                                        <code>-./</code>).
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <Tabs defaultValue="categories">
-                                        <TabsList>
-                                            <TabsTrigger value="categories">
-                                                Categories ({extracted.categories.length})
-                                            </TabsTrigger>
-                                            <TabsTrigger value="coas">
-                                                COAs ({extracted.chartOfAccounts.length})
-                                            </TabsTrigger>
-                                            <TabsTrigger value="pairs">
-                                                Raw pairs ({extracted.pairs.length}) — debug
-                                            </TabsTrigger>
-                                        </TabsList>
-                                        <TabsContent value="categories" className="mt-4">
-                                            <p className="mb-2 text-xs text-muted-foreground">
-                                                Each row is a category name seen in column F (or
-                                                synthetic from COA). If “Map to DB” is empty, fix it
-                                                — otherwise the rows using it will be skipped.
-                                            </p>
-                                            <div className="max-h-80 overflow-y-auto rounded-md border">
-                                                <Table>
-                                                    <TableHeader className="sticky top-0 z-10 bg-background">
-                                                        <TableRow>
-                                                            <TableHead>
-                                                                Category — from Excel
-                                                            </TableHead>
-                                                            <TableHead className="text-right">
-                                                                Sheets
-                                                            </TableHead>
-                                                            <TableHead>
-                                                                Map to DB — click to fix
-                                                            </TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {extracted.categories.map((cat) => {
-                                                            const strictId = catLookup.get(
-                                                                normalize(cat.name),
-                                                            );
-                                                            const sanitizedId =
-                                                                strictId ??
-                                                                catSanitizedLookup.get(
-                                                                    sanitizeCategory(cat.name),
-                                                                );
-                                                            const isSanitized =
-                                                                strictId == null &&
-                                                                sanitizedId != null;
-                                                            const autoId = strictId ?? sanitizedId;
-                                                            const currentId =
-                                                                manualCat[cat.name] ?? autoId;
-                                                            const currentName = currentId
-                                                                ? idToCatName.get(currentId)
-                                                                : undefined;
-                                                            const comboboxValue = currentName
-                                                                ? `cat:${currentName}`
-                                                                : "";
-
-                                                            return (
-                                                                <TableRow key={cat.name}>
-                                                                    <TableCell className="max-w-64 truncate">
-                                                                        {cat.name}{" "}
-                                                                        {isSanitized &&
-                                                                            manualCat[cat.name] ==
-                                                                                null && (
-                                                                                <span
-                                                                                    className="ml-1 text-amber-600"
-                                                                                    title="Auto-corrected (hyphen → space)"
-                                                                                >
-                                                                                    ⚠️
-                                                                                </span>
-                                                                            )}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right">
-                                                                        <HoverCard>
-                                                                            <HoverCardTrigger
-                                                                                render={
-                                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                        {
-                                                                                            cat
-                                                                                                .sheets
-                                                                                                .length
-                                                                                        }
-                                                                                        /
-                                                                                        {
-                                                                                            selectedSheets.length
-                                                                                        }
-                                                                                    </span>
-                                                                                }
-                                                                            />
-                                                                            <HoverCardContent>
-                                                                                {cat.sheets
-                                                                                    .length ===
-                                                                                selectedSheets.length
-                                                                                    ? `Appears in ${cat.sheets.length} — all sheets`
-                                                                                    : `Appears in: ${cat.sheets.join(", ")}`}
-                                                                            </HoverCardContent>
-                                                                        </HoverCard>
-                                                                    </TableCell>
-                                                                    <TableCell>
-                                                                        <Combobox
-                                                                            items={catComboboxItems}
-                                                                            value={comboboxValue}
-                                                                            onValueChange={(v) => {
-                                                                                if (!v) return;
-
-                                                                                const name =
-                                                                                    v.replace(
-                                                                                        /^[^:]+:/,
-                                                                                        "",
-                                                                                    );
-                                                                                const id =
-                                                                                    catNameToId.get(
-                                                                                        name,
-                                                                                    );
-
-                                                                                if (id) {
-                                                                                    setManualCat(
-                                                                                        (prev) => ({
-                                                                                            ...prev,
-                                                                                            [cat.name]:
-                                                                                                id,
-                                                                                        }),
-                                                                                    );
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <ComboboxInput placeholder="Search category..." />
-                                                                            <ComboboxContent>
-                                                                                <ComboboxEmpty>
-                                                                                    No items found.
-                                                                                </ComboboxEmpty>
-                                                                                <ComboboxList>
-                                                                                    {(item) => (
-                                                                                        <ComboboxItem
-                                                                                            key={
-                                                                                                item
-                                                                                            }
-                                                                                            value={
-                                                                                                item
-                                                                                            }
-                                                                                        >
-                                                                                            {item.replace(
-                                                                                                /^[^:]+:/,
-                                                                                                "",
-                                                                                            )}
-                                                                                        </ComboboxItem>
-                                                                                    )}
-                                                                                </ComboboxList>
-                                                                            </ComboboxContent>
-                                                                        </Combobox>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        })}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                        </TabsContent>
-                                        <TabsContent value="coas" className="mt-4">
-                                            <p className="mb-2 text-xs text-muted-foreground">
-                                                COA is the account number/title from column D (e.g.
-                                                5-02-03-010). Shown names are raw from Excel. Empty
-                                                “Map to DB” means no strict or sanitized match — fix
-                                                it or rows using it will be skipped. ⚠️ =
-                                                auto-corrected by removing <code>-./</code>.
-                                            </p>
-                                            <div className="max-h-80 overflow-y-auto rounded-md border">
-                                                <Table>
-                                                    <TableHeader className="sticky top-0 z-10 bg-background">
-                                                        <TableRow>
-                                                            <TableHead>
-                                                                Chart of Account — from Excel
-                                                            </TableHead>
-                                                            <TableHead className="text-right">
-                                                                Sheets
-                                                            </TableHead>
-                                                            <TableHead>Map to DB</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {extracted.chartOfAccounts.map((coa) => {
-                                                            const strictId = coaLookup.get(
-                                                                normalize(coa.name),
-                                                            );
-                                                            const sanitizedId =
-                                                                strictId ??
-                                                                coaSanitizedLookup.get(
-                                                                    sanitizeCoa(coa.name),
-                                                                );
-                                                            const isSanitized =
-                                                                strictId == null &&
-                                                                sanitizedId != null;
-                                                            const autoId = strictId ?? sanitizedId;
-                                                            const currentId =
-                                                                manualCoa[coa.name] ?? autoId;
-                                                            const currentTitle = currentId
-                                                                ? idToCoaTitle.get(currentId)
-                                                                : undefined;
-                                                            const comboboxValue = currentTitle
-                                                                ? `coa:${currentTitle}`
-                                                                : "";
-
-                                                            return (
-                                                                <TableRow key={coa.name}>
-                                                                    <TableCell className="max-w-64 truncate">
-                                                                        {coa.name}{" "}
-                                                                        {isSanitized &&
-                                                                            manualCoa[coa.name] ==
-                                                                                null && (
-                                                                                <span
-                                                                                    className="ml-1 text-amber-600"
-                                                                                    title="Auto-corrected (removed -./)"
-                                                                                >
-                                                                                    ⚠️
-                                                                                </span>
-                                                                            )}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right">
-                                                                        <HoverCard>
-                                                                            <HoverCardTrigger
-                                                                                render={
-                                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                        {
-                                                                                            coa
-                                                                                                .sheets
-                                                                                                .length
-                                                                                        }
-                                                                                        /
-                                                                                        {
-                                                                                            selectedSheets.length
-                                                                                        }
-                                                                                    </span>
-                                                                                }
-                                                                            />
-                                                                            <HoverCardContent>
-                                                                                {coa.sheets
-                                                                                    .length ===
-                                                                                selectedSheets.length
-                                                                                    ? `Appears in ${coa.sheets.length} — all sheets`
-                                                                                    : `Appears in: ${coa.sheets.join(", ")}`}
-                                                                            </HoverCardContent>
-                                                                        </HoverCard>
-                                                                    </TableCell>
-                                                                    <TableCell>
-                                                                        <Combobox
-                                                                            items={coaComboboxItems}
-                                                                            value={comboboxValue}
-                                                                            onValueChange={(v) => {
-                                                                                if (!v) return;
-
-                                                                                const name =
-                                                                                    v.replace(
-                                                                                        /^[^:]+:/,
-                                                                                        "",
-                                                                                    );
-                                                                                const id =
-                                                                                    coaNameToId.get(
-                                                                                        name,
-                                                                                    );
-
-                                                                                if (id) {
-                                                                                    setManualCoa(
-                                                                                        (prev) => ({
-                                                                                            ...prev,
-                                                                                            [coa.name]:
-                                                                                                id,
-                                                                                        }),
-                                                                                    );
-                                                                                }
-                                                                            }}
-                                                                        >
-                                                                            <ComboboxInput placeholder="Search chart of account..." />
-                                                                            <ComboboxContent>
-                                                                                <ComboboxEmpty>
-                                                                                    No items found.
-                                                                                </ComboboxEmpty>
-                                                                                <ComboboxList>
-                                                                                    {(item) => (
-                                                                                        <ComboboxItem
-                                                                                            key={
-                                                                                                item
-                                                                                            }
-                                                                                            value={
-                                                                                                item
-                                                                                            }
-                                                                                        >
-                                                                                            {item.replace(
-                                                                                                /^[^:]+:/,
-                                                                                                "",
-                                                                                            )}
-                                                                                        </ComboboxItem>
-                                                                                    )}
-                                                                                </ComboboxList>
-                                                                            </ComboboxContent>
-                                                                        </Combobox>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        })}
-                                                    </TableBody>
-                                                </Table>
-                                            </div>
-                                        </TabsContent>
-                                        <TabsContent value="pairs" className="mt-4">
-                                            <p className="mb-2 text-xs text-muted-foreground">
-                                                Debug view — every distinct Category·COA combination
-                                                we saw ({extracted.pairs.length}). Useful if counts
-                                                look off (e.g., many “Non-Procurement Items — …”
-                                                inflated by the extraction heuristic in{" "}
-                                                <code>extract.ts:207</code>). You don’t need to act
-                                                on this table; fix names in the two tabs above.
-                                            </p>
-                                            <details className="rounded-md border p-3">
-                                                <summary className="cursor-pointer text-sm font-medium">
-                                                    Show raw pairs ({extracted.pairs.length}) —
-                                                    collapsed by default
-                                                </summary>
-                                                <div className="mt-3 max-h-80 overflow-y-auto rounded-md border">
-                                                    <Table>
-                                                        <TableHeader className="sticky top-0 z-10 bg-background">
-                                                            <TableRow>
-                                                                <TableHead>Category</TableHead>
-                                                                <TableHead>
-                                                                    Chart of Account
-                                                                </TableHead>
-                                                                <TableHead className="text-right">
-                                                                    Sheets
-                                                                </TableHead>
-                                                            </TableRow>
-                                                        </TableHeader>
-                                                        <TableBody>
-                                                            {extracted.pairs.map((pair) => (
-                                                                <TableRow
-                                                                    key={`${pair.category}|${pair.chartOfAccount}`}
-                                                                >
-                                                                    <TableCell className="max-w-40 truncate">
-                                                                        {pair.category}
-                                                                    </TableCell>
-                                                                    <TableCell className="max-w-48 truncate">
-                                                                        {pair.chartOfAccount}
-                                                                    </TableCell>
-                                                                    <TableCell className="text-right">
-                                                                        <HoverCard>
-                                                                            <HoverCardTrigger
-                                                                                render={
-                                                                                    <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                        {
-                                                                                            pair
-                                                                                                .sheets
-                                                                                                .length
-                                                                                        }
-                                                                                        /
-                                                                                        {
-                                                                                            selectedSheets.length
-                                                                                        }
-                                                                                    </span>
-                                                                                }
-                                                                            />
-                                                                            <HoverCardContent>
-                                                                                {pair.sheets
-                                                                                    .length ===
-                                                                                selectedSheets.length
-                                                                                    ? `Appears in ${pair.sheets.length} — all sheets`
-                                                                                    : `Appears in: ${pair.sheets.join(", ")}`}
-                                                                            </HoverCardContent>
-                                                                        </HoverCard>
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            ))}
-                                                        </TableBody>
-                                                    </Table>
-                                                </div>
-                                            </details>
-                                        </TabsContent>
-                                    </Tabs>
-                                </CardContent>
-                            </Card>
-                        </>
-                    )}
-
-                    {previewRows && previewRows.length > 0 && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                                        3
-                                    </span>{" "}
-                                    Preview — First 5 + Last 5 rows
-                                </CardTitle>
-                                <CardDescription>
-                                    We took the first 5 and last 5 items after your mapping.{" "}
-                                    <span className="font-medium text-emerald-700">✅ Success</span>{" "}
-                                    = will insert or update,{" "}
-                                    <span className="font-medium text-amber-600">⚠️ Warning</span> =
-                                    auto-corrected but will still import,{" "}
-                                    <span className="font-medium text-destructive">❌ Error</span> =
-                                    will be skipped. Fix errors in Excel or mapping, then
-                                    re-extract.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="max-h-64 overflow-auto rounded-md border">
+                            {Object.keys(coaOverrides).length > 0 && (
+                                <Badge variant="outline" className="border-amber-500 text-amber-600">
+                                    {Object.keys(coaOverrides).length} COA override(s)
+                                </Badge>
+                            )}
+                            {Object.keys(coaOverrides).length > 0 && (
+                                <Button variant="outline" size="sm" onClick={handleClearAllOverrides} className="h-6 text-xs">
+                                    Clear overrides
+                                </Button>
+                            )}
+                        </div>
+                        {Object.keys(coaOverrides).length > 0 && (
+                            <p className="text-xs text-amber-600">
+                                Overrides are per unique price-list row (`category|coa|description|unit`). Counts reflect overridden COAs.
+                            </p>
+                        )}
+                        {verifiedItems.length > 0 ? (
+                            <>
+                                <div className="rounded-lg border">
                                     <Table>
-                                        <TableHeader className="sticky top-0 bg-background">
+                                        <TableHeader>
                                             <TableRow>
-                                                <TableHead>#</TableHead>
+                                                <TableHead className="w-8">
+                                                    <Input
+                                                        type="checkbox"
+                                                        checked={
+                                                            selected.size ===
+                                                                verifiedItems.length &&
+                                                            verifiedItems.length > 0
+                                                        }
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelected(
+                                                                    new Set(
+                                                                        verifiedItems.map(
+                                                                            (v) => v.key,
+                                                                        ),
+                                                                    ),
+                                                                );
+                                                            } else setSelected(new Set());
+                                                        }}
+                                                    />
+                                                </TableHead>
                                                 <TableHead>Description</TableHead>
                                                 <TableHead>Category</TableHead>
-                                                <TableHead>COA</TableHead>
+                                                <TableHead className="min-w-[320px]">COA (Excel → DB)</TableHead>
+                                                <TableHead>Unit</TableHead>
                                                 <TableHead>Price</TableHead>
                                                 <TableHead>Status</TableHead>
-                                                <TableHead>Message</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {previewRows.map((r) => (
-                                                <TableRow key={`${r.row}-${r.description}`}>
-                                                    <TableCell>{r.row}</TableCell>
-                                                    <TableCell className="max-w-40 truncate">
-                                                        {r.description}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {r.category}
-                                                        {r.catLayer === "sanitized" ? " ⚠️" : ""}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {r.chartOfAccount}
-                                                        {r.coaLayer === "sanitized" ? " ⚠️" : ""}
-                                                    </TableCell>
-                                                    <TableCell>{r.price ?? "—"}</TableCell>
-                                                    <TableCell>
-                                                        {r.status === "success" ? (
-                                                            <span className="text-emerald-600">
-                                                                ✅ {r.status}
-                                                            </span>
-                                                        ) : r.status === "warning" ? (
-                                                            <span className="text-amber-600">
-                                                                ⚠️ {r.status}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-destructive">
-                                                                ❌ {r.status}
-                                                            </span>
-                                                        )}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs">
-                                                        {r.message}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {uniqueItems && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                                        3
-                                    </span>{" "}
-                                    Items to import — Unique list{" "}
-                                    <Badge variant="outline">{uniqueItems.length} total</Badge>{" "}
-                                    <Badge variant="secondary">
-                                        {importPlan?.toInsert ?? 0} new
-                                    </Badge>{" "}
-                                    <Badge variant="secondary">
-                                        {importPlan?.toUpdate ?? 0} update
-                                    </Badge>
-                                </CardTitle>
-                                <CardDescription>
-                                    Each row is one distinct item (description + category + COA)
-                                    across all selected sheets. We will{" "}
-                                    <span className="font-medium">insert</span> if new, or{" "}
-                                    <span className="font-medium">update price</span> if the same
-                                    description + unit already exists (upsert). Use “Map to DB” to
-                                    fix names, or “Hide exists” to hide items that would just
-                                    update.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="mb-3 flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-muted-foreground">
-                                        Unique Items — showing (
-                                        {hideExisting
-                                            ? uniqueItems.filter((item) => {
-                                                  const k = `${item.description}|${item.category}|${item.chartOfAccount}`;
-
-                                                  if (itemMatches[k]) return false;
-
-                                                  return !priceListItems.some(
-                                                      (p) =>
-                                                          normalize(p.description) ===
-                                                              normalize(item.description) &&
-                                                          normalize(p.unit_of_measurement) ===
-                                                              normalize(item.unit_of_measurement),
-                                                  );
-                                              }).length
-                                            : uniqueItems.length}
-                                        )
-                                    </h3>
-                                    <div className="flex items-center gap-4">
-                                        <label className="flex cursor-pointer items-center gap-2 text-sm">
-                                            Hide exists
-                                            <Switch
-                                                checked={hideExisting}
-                                                onCheckedChange={setHideExisting}
-                                                size="sm"
-                                            />
-                                        </label>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setImportDialogOpen(true)}
-                                            disabled={
-                                                !importPlan ||
-                                                importPlan.items.length === 0 ||
-                                                importing
-                                            }
-                                        >
-                                            {importing && <Spinner />}
-                                            Upsert {importPlan?.items.length ?? 0} (
-                                            {importPlan?.toInsert ?? 0} new,{" "}
-                                            {importPlan?.toUpdate ?? 0} upd)
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div className="max-h-80 overflow-y-auto rounded-md border">
-                                    <Table>
-                                        <TableHeader className="sticky top-0 z-10 bg-background">
-                                            <TableRow>
-                                                <TableHead>Description</TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead>Chart of Account</TableHead>
-                                                <TableHead className="text-right">Sheets</TableHead>
-                                                <TableHead>In DB</TableHead>
-                                                <TableHead>Match</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {uniqueItems
-                                                .filter((item) => {
-                                                    if (!hideExisting) return true;
-
-                                                    const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
-                                                    const existsExact = priceListItems.some(
-                                                        (p) =>
-                                                            normalize(p.description) ===
-                                                                normalize(item.description) &&
-                                                            normalize(p.unit_of_measurement) ===
-                                                                normalize(item.unit_of_measurement),
-                                                    );
-
-                                                    return !itemMatches[itemKey] && !existsExact;
-                                                })
-                                                .map((item) => {
-                                                    const itemKey = `${item.description}|${item.category}|${item.chartOfAccount}`;
-                                                    const matchedId = itemMatches[itemKey];
-                                                    const matchedItem = matchedId
-                                                        ? pliById.get(matchedId)
-                                                        : null;
-                                                    const exactInDb = priceListItems.some(
-                                                        (p) =>
-                                                            normalize(p.description) ===
-                                                                normalize(item.description) &&
-                                                            normalize(p.unit_of_measurement) ===
-                                                                normalize(item.unit_of_measurement),
-                                                    );
-                                                    const inDb = matchedId ? true : exactInDb;
-                                                    const comboboxValue = matchedItem
-                                                        ? `pli:${matchedItem.description}`
-                                                        : exactInDb
-                                                          ? `pli:${item.description}`
-                                                          : "";
-
-                                                    return (
-                                                        <TableRow key={itemKey}>
-                                                            <TableCell className="max-w-64 truncate">
-                                                                {item.description}
-                                                            </TableCell>
-                                                            <TableCell className="max-w-40 truncate">
-                                                                {item.category}
-                                                            </TableCell>
-                                                            <TableCell className="max-w-48 truncate">
-                                                                {item.chartOfAccount}
-                                                            </TableCell>
-                                                            <TableCell className="text-right">
-                                                                <HoverCard>
-                                                                    <HoverCardTrigger
-                                                                        render={
-                                                                            <span className="cursor-pointer text-xs text-muted-foreground">
-                                                                                {item.sheets.length}
-                                                                                /
-                                                                                {
-                                                                                    selectedSheets.length
-                                                                                }
-                                                                            </span>
-                                                                        }
-                                                                    />
-                                                                    <HoverCardContent>
-                                                                        {item.sheets.length ===
-                                                                        selectedSheets.length
-                                                                            ? `Appears in ${item.sheets.length} — all sheets`
-                                                                            : `Appears in: ${item.sheets.join(", ")}`}
-                                                                    </HoverCardContent>
-                                                                </HoverCard>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {matchedId ? (
-                                                                    <HoverCard>
-                                                                        <HoverCardTrigger
-                                                                            render={
-                                                                                <span className="cursor-pointer text-blue-600">
-                                                                                    ✓ matched
-                                                                                </span>
-                                                                            }
-                                                                        />
-                                                                        <HoverCardContent>
-                                                                            {matchedItem
-                                                                                ? `${matchedItem.description}\n${matchedItem.unit_of_measurement} — ${matchedItem.price}`
-                                                                                : ""}
-                                                                        </HoverCardContent>
-                                                                    </HoverCard>
-                                                                ) : exactInDb ? (
-                                                                    <span className="text-emerald-600">
-                                                                        ✓ exists
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-amber-600">
-                                                                        ✗ new
-                                                                    </span>
-                                                                )}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                <Combobox
-                                                                    items={pliComboboxItems}
-                                                                    value={comboboxValue}
-                                                                    onValueChange={(v) => {
-                                                                        setItemMatches((prev) => {
-                                                                            const next = {
-                                                                                ...prev,
-                                                                            };
-
-                                                                            if (!v) {
-                                                                                delete next[
-                                                                                    itemKey
-                                                                                ];
-
-                                                                                return next;
-                                                                            }
-
-                                                                            const name = v.replace(
-                                                                                /^[^:]+:/,
-                                                                                "",
-                                                                            );
-                                                                            const dbItem =
-                                                                                priceListItems.find(
-                                                                                    (p) =>
-                                                                                        p.description ===
-                                                                                        name,
-                                                                                );
-
-                                                                            if (dbItem) {
-                                                                                next[itemKey] =
-                                                                                    dbItem.id;
-                                                                            }
-
-                                                                            return next;
-                                                                        });
-                                                                    }}
-                                                                >
-                                                                    <ComboboxInput
-                                                                        placeholder="Search price list item..."
-                                                                        showClear
-                                                                    />
-                                                                    <ComboboxContent>
-                                                                        <ComboboxEmpty>
-                                                                            No items found.
-                                                                        </ComboboxEmpty>
-                                                                        <ComboboxList>
-                                                                            {(item) => (
-                                                                                <ComboboxItem
-                                                                                    key={item}
-                                                                                    value={item}
-                                                                                >
-                                                                                    {item.replace(
-                                                                                        /^[^:]+:/,
-                                                                                        "",
-                                                                                    )}
-                                                                                </ComboboxItem>
-                                                                            )}
-                                                                        </ComboboxList>
-                                                                    </ComboboxContent>
-                                                                </Combobox>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Confirm Import</DialogTitle>
-                                <DialogDescription>
-                                    You're about to upsert {importPlan?.items.length ?? 0} item(s):{" "}
-                                    {importPlan?.toInsert ?? 0} new, {importPlan?.toUpdate ?? 0}{" "}
-                                    updates.
-                                    {importPlan?.warnings
-                                        ? ` ⚠️ ${importPlan.warnings} auto-corrected.`
-                                        : ""}
-                                </DialogDescription>
-                            </DialogHeader>
-                            {importPlan &&
-                                (importPlan.skippedNoMatch > 0 ||
-                                    importPlan.skippedNoPrice > 0 ||
-                                    importPlan.skippedMissingUnit > 0) && (
-                                    <div className="space-y-1 text-sm text-muted-foreground">
-                                        Skipped:
-                                        {importPlan.skippedNoMatch > 0 && (
-                                            <p>
-                                                {importPlan.skippedNoMatch} — category/COA pair not
-                                                in database
-                                            </p>
-                                        )}
-                                        {importPlan.skippedNoPrice > 0 && (
-                                            <p>{importPlan.skippedNoPrice} — no price / price ≤0</p>
-                                        )}
-                                        {importPlan.skippedMissingUnit > 0 && (
-                                            <p>
-                                                {importPlan.skippedMissingUnit} — no unit of
-                                                measurement
-                                            </p>
-                                        )}
-                                        {importPlan.warnings > 0 && (
-                                            <p className="text-amber-700">
-                                                {importPlan.warnings} — auto-corrected (sanitized
-                                                matches, will still import with warning)
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-                            <DialogFooter>
-                                <DialogClose render={<Button variant="outline">Cancel</Button>} />
-                                <Button
-                                    onClick={handleConfirmImport}
-                                    disabled={
-                                        !importPlan || importPlan.items.length === 0 || importing
-                                    }
-                                >
-                                    {importing ? "Importing..." : "Confirm"}
-                                </Button>
-                            </DialogFooter>
-                        </DialogContent>
-                    </Dialog>
-
-                    {mappedPairs && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">
-                                    Resolved pairs — what will be written{" "}
-                                    <Badge variant="outline">{mappedPairs.length} pairs</Badge>
-                                </CardTitle>
-                                <CardDescription>
-                                    This is the <span className="font-medium">actionable</span> pair
-                                    table. Each row shows the Excel Category + COA and how we
-                                    resolved them to the system (strict first, then sanitized ⚠️).
-                                    “Pair in DB” must be ✅ or rows using that pair will be skipped.
-                                    Change the COA via the combobox if the auto-match is wrong — it
-                                    overrides the category·COA mapping for all items using it.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="max-h-80 overflow-y-auto rounded-md border">
-                                    <Table>
-                                        <TableHeader className="sticky top-0 z-10 bg-background">
-                                            <TableRow>
-                                                <TableHead>Category — Excel</TableHead>
-                                                <TableHead>→ Resolved</TableHead>
-                                                <TableHead>COA — Excel</TableHead>
-                                                <TableHead>→ Resolved (editable)</TableHead>
-                                                <TableHead>Pair in DB</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {mappedPairs.map((pair) => {
-                                                const overrideKey = `${pair.category}|${pair.chartOfAccount}`;
-                                                const override = pairOverrides[overrideKey];
-                                                const effCoaId = override?.coaId ?? pair.coaId;
-                                                const effCatId = pair.categoryId;
-                                                const effCoaTitle = effCoaId
-                                                    ? (idToCoaTitle.get(effCoaId) ?? null)
-                                                    : null;
-                                                const comboboxValue = effCoaTitle
-                                                    ? `coa:${effCoaTitle}`
+                                            {verifiedItems.map((it) => {
+                                                const isOverridden = it.overrideId !== null;
+                                                const selectedDisplay = it.effectiveCoa
+                                                    ? `coa:${it.effectiveCoa.id}:${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`
                                                     : "";
-                                                const pairExists =
-                                                    effCoaId !== null &&
-                                                    effCatId !== null &&
-                                                    dbPairsSet.has(`${effCoaId}|${effCatId}`);
-                                                const pairResolvable =
-                                                    effCoaId !== null && effCatId !== null;
+                                                const suggestedIds = new Set(
+                                                    it.coaTopMatches.map((m) => m.coa.id),
+                                                );
+                                                const suggestedCoas = it.coaTopMatches.map(
+                                                    (m) => m.coa,
+                                                );
+                                                const remainingCoas = existingCoas.filter(
+                                                    (c) => !suggestedIds.has(c.id),
+                                                );
+                                                const itemsForRow =
+                                                    it.coaMatchType === "partial" &&
+                                                    suggestedCoas.length > 0
+                                                        ? [
+                                                              ...suggestedCoas.map(
+                                                                  (c) =>
+                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
+                                                              ),
+                                                              ...remainingCoas.map(
+                                                                  (c) =>
+                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
+                                                              ),
+                                                          ]
+                                                        : existingCoas.map(
+                                                              (c) =>
+                                                                  `coa:${c.id}:${c.path} — ${c.account_title}`,
+                                                          );
 
                                                 return (
-                                                    <TableRow key={overrideKey}>
-                                                        <TableCell className="max-w-40 truncate">
-                                                            {pair.category}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-40 truncate">
-                                                            {pair.resolvedCategory ?? "—"}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-48 truncate">
-                                                            {pair.chartOfAccount}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-48 truncate">
-                                                            <Combobox
-                                                                items={coaComboboxItems}
-                                                                value={comboboxValue}
-                                                                onValueChange={(v) => {
-                                                                    setPairOverrides((prev) => {
-                                                                        const next = {
-                                                                            ...prev,
-                                                                        };
-
-                                                                        if (!v) {
-                                                                            delete next[
-                                                                                overrideKey
-                                                                            ];
-
-                                                                            return next;
-                                                                        }
-
-                                                                        const name = v.replace(
-                                                                            /^[^:]+:/,
-                                                                            "",
-                                                                        );
-                                                                        const id =
-                                                                            coaNameToId.get(name);
-
-                                                                        if (id) {
-                                                                            next[overrideKey] = {
-                                                                                coaId: id,
-                                                                            };
-                                                                        }
-
-                                                                        return next;
-                                                                    });
-                                                                }}
-                                                            >
-                                                                <ComboboxInput
-                                                                    placeholder="Search chart of account..."
-                                                                    showClear
-                                                                />
-                                                                <ComboboxContent>
-                                                                    <ComboboxEmpty>
-                                                                        No items found.
-                                                                    </ComboboxEmpty>
-                                                                    <ComboboxList>
-                                                                        {(item) => (
-                                                                            <ComboboxItem
-                                                                                key={item}
-                                                                                value={item}
-                                                                            >
-                                                                                {item.replace(
-                                                                                    /^[^:]+:/,
-                                                                                    "",
-                                                                                )}
-                                                                            </ComboboxItem>
-                                                                        )}
-                                                                    </ComboboxList>
-                                                                </ComboboxContent>
-                                                            </Combobox>
-                                                            {override && (
-                                                                <span className="ml-2 text-xs text-blue-600">
-                                                                    custom
-                                                                </span>
-                                                            )}
-                                                        </TableCell>
+                                                    <TableRow
+                                                        key={it.key}
+                                                        className={
+                                                            it.status === "error"
+                                                                ? "bg-destructive/5"
+                                                                : ""
+                                                        }
+                                                    >
                                                         <TableCell>
-                                                            {pairResolvable ? (
-                                                                pairExists ? (
-                                                                    <span className="text-emerald-600">
-                                                                        ✓ exists
-                                                                    </span>
+                                                            <Input
+                                                                type="checkbox"
+                                                                checked={selected.has(it.key)}
+                                                                onChange={(e) => {
+                                                                    const n = new Set(selected);
+
+                                                                    if (e.target.checked) n.add(it.key);
+                                                                    else n.delete(it.key);
+
+                                                                    setSelected(n);
+                                                                }}
+                                                                disabled={it.status === "error"}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell
+                                                            className="max-w-[28ch] truncate"
+                                                            title={it.description}
+                                                        >
+                                                            {it.description}
+                                                        </TableCell>
+
+                                                        <TableCell className="text-xs">
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="truncate" title={it.category}>
+                                                                    {it.category}
+                                                                </span>
+                                                                {it.catExists ? (
+                                                                    <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                                                                        ✓
+                                                                    </Badge>
+                                                                ) : it.catMatchType === "partial" ? (
+                                                                    <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                                                                        ~
+                                                                    </Badge>
                                                                 ) : (
-                                                                    <span className="text-amber-600">
-                                                                        ✗ not found
-                                                                    </span>
-                                                                )
-                                                            ) : (
+                                                                    <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                                                                        ❌
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-xs">
+                                                            <div className="flex flex-col gap-1">
+                                                                <span
+                                                                    className="truncate text-[10px] text-muted-foreground"
+                                                                    title={`Excel: ${it.coa}`}
+                                                                >
+                                                                    Excel: {it.coa}{" "}
+                                                                    {it.coaExists ? "✓" : it.coaMatchType === "partial" ? "~ partial" : "❌"}
+                                                                </span>
+                                                                <div className="flex items-center gap-1">
+                                                                    <Combobox
+                                                                        items={itemsForRow}
+                                                                        value={selectedDisplay}
+                                                                        onValueChange={(val) =>
+                                                                            handleCoaOverrideChange(
+                                                                                it.key,
+                                                                                val as string | null,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <ComboboxInput
+                                                                            placeholder={
+                                                                                it.coaMatchType === "partial"
+                                                                                    ? "★ Suggested at top — search..."
+                                                                                    : "Search COA..."
+                                                                            }
+                                                                            className="h-7 text-xs"
+                                                                        />
+                                                                        <ComboboxContent>
+                                                                            <ComboboxEmpty>
+                                                                                No COA found.
+                                                                            </ComboboxEmpty>
+                                                                            <ComboboxList>
+                                                                                {(item: string) => {
+                                                                                    const isSuggested =
+                                                                                        it.coaTopMatches.some(
+                                                                                            (m) =>
+                                                                                                item.includes(
+                                                                                                    `coa:${m.coa.id}:`,
+                                                                                                ),
+                                                                                        );
+
+                                                                                    return (
+                                                                                        <ComboboxItem
+                                                                                            key={item}
+                                                                                            value={item}
+                                                                                            className={
+                                                                                                isSuggested
+                                                                                                    ? "bg-card font-medium"
+                                                                                                    : ""
+                                                                                            }
+                                                                                        >
+                                                                                            {isSuggested ? "★ " : ""}
+                                                                                            {item.replace(/^coa:\d+:/, "")}
+                                                                                        </ComboboxItem>
+                                                                                    );
+                                                                                }}
+                                                                            </ComboboxList>
+                                                                        </ComboboxContent>
+                                                                    </Combobox>
+                                                                    {isOverridden && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-7 px-1 text-xs"
+                                                                            onClick={() =>
+                                                                                handleClearOverride(it.key)
+                                                                            }
+                                                                        >
+                                                                            ✕
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                                {it.effectiveCoa ? (
+                                                                    <div
+                                                                        className="truncate text-xs text-green-600"
+                                                                        title={`${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`}
+                                                                    >
+                                                                        → {it.effectiveCoa.path} — {it.effectiveCoa.account_title}
+                                                                    </div>
+                                                                ) : it.coaTopMatches.length > 0 ? (
+                                                                    <div
+                                                                        className="truncate text-xs text-muted-foreground"
+                                                                        title={it.coaTopMatches
+                                                                            .map(
+                                                                                (m) =>
+                                                                                    `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
+                                                                            )
+                                                                            .join(" | ")}
+                                                                    >
+                                                                        Suggest: {it.coaTopMatches[0].coa.path} —{" "}
+                                                                        {it.coaTopMatches[0].coa.account_title}
+                                                                    </div>
+                                                                ) : null}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>{it.unit}</TableCell>
+                                                        <TableCell>
+                                                            {it.price !== null
+                                                                ? `₱${it.price.toLocaleString()}`
+                                                                : "—"}
+                                                        </TableCell>
+                                                        <TableCell className="text-xs">
+                                                            {it.status === "error" ? (
                                                                 <span className="text-destructive">
-                                                                    ⚠ unresolvable
+                                                                    {it.message}{" "}
+                                                                    {!it.catExists && (
+                                                                        <Link
+                                                                            href="/category-import"
+                                                                            className="underline"
+                                                                        >
+                                                                            Category Import
+                                                                        </Link>
+                                                                    )}{" "}
+                                                                    {!it.effectiveCoaExists && " "}{" "}
+                                                                    {!it.effectiveMappingExists &&
+                                                                        it.catExists &&
+                                                                        it.effectiveCoaExists && (
+                                                                            <Link
+                                                                                href="/category-coa-mapping"
+                                                                                className="underline"
+                                                                            >
+                                                                                → Map
+                                                                            </Link>
+                                                                        )}
+                                                                </span>
+                                                            ) : it.status === "update" ? (
+                                                                <span className="text-amber-600">
+                                                                    {it.message}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-green-600">
+                                                                    {it.message}
                                                                 </span>
                                                             )}
+                                                            <div className="text-[10px] text-muted-foreground">
+                                                                {it.sheets.join(", ")} row{" "}
+                                                                {it.rows.join(", ")}{" "}
+                                                                {it.count > 1 && `×${it.count}`}
+                                                            </div>
                                                         </TableCell>
                                                     </TableRow>
                                                 );
@@ -2898,104 +1979,44 @@ export default function PriceListImport({
                                         </TableBody>
                                     </Table>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {importReport && (
-                        <Card className="border-emerald-200 bg-emerald-50/20">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-600 text-xs text-white">
-                                        4
-                                    </span>{" "}
-                                    Step 4 — Results: what happened
-                                </CardTitle>
-                                <CardDescription>
-                                    Total rows processed, how many inserted vs updated, warnings
-                                    (auto-corrected) and errors (skipped). Successful rows are
-                                    already saved — fix errors in Excel and re-upload only those
-                                    rows (or the whole file — upsert will skip existing).
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-5 gap-2 text-sm">
-                                    <div>
-                                        Total:{" "}
-                                        <span className="font-bold">{importReport.total}</span>
-                                    </div>
-                                    <div className="text-emerald-700">
-                                        Inserted: {importReport.inserted}
-                                    </div>
-                                    <div className="text-blue-700">
-                                        Updated: {importReport.updated}
-                                    </div>
-                                    <div className="text-amber-700">
-                                        Warnings: {importReport.warnings}
-                                    </div>
-                                    <div className="text-destructive">
-                                        Errors: {importReport.errors}
-                                    </div>
+                                <div className="flex justify-between">
+                                    <Button variant="outline" onClick={() => setStep("verify")}>
+                                        Back
+                                    </Button>
+                                    <Button
+                                        disabled={importableSelected.length === 0 || importing}
+                                        onClick={handleImport}
+                                    >
+                                        {importing
+                                            ? "Importing..."
+                                            : `Import ${importableSelected.length} price lists (${insertCount} new + ${updateCount} updates)`}
+                                    </Button>
                                 </div>
-                                <div className="mt-1 text-xs">
-                                    Status:{" "}
-                                    <span className="rounded bg-muted px-1.5 py-0.5 font-mono">
-                                        {importReport.status}
-                                    </span>
-                                </div>
-                                {importReport.errorDetails &&
-                                    importReport.errorDetails.length > 0 && (
-                                        <div className="mt-3 max-h-40 overflow-auto rounded border bg-background p-3 text-xs">
-                                            <div className="mb-1 font-medium text-destructive">
-                                                Errors — rows skipped (fix and re-upload):
-                                            </div>
-                                            {importReport.errorDetails
-                                                .slice(0, 15)
-                                                .map((e: any, i: number) => (
-                                                    <div key={i} className="py-0.5">
-                                                        Row {e.row}: {e.message}
-                                                    </div>
-                                                ))}
-                                            {importReport.errorDetails.length > 15 && (
-                                                <div className="text-muted-foreground">
-                                                    …and {importReport.errorDetails.length - 15}{" "}
-                                                    more
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                {importReport.warningDetails &&
-                                    importReport.warningDetails.length > 0 && (
-                                        <div className="mt-3 max-h-40 overflow-auto rounded border bg-background p-3 text-xs">
-                                            <div className="mb-1 font-medium text-amber-700">
-                                                Warnings — auto-corrected and imported:
-                                            </div>
-                                            {importReport.warningDetails
-                                                .slice(0, 15)
-                                                .map((w: any, i: number) => (
-                                                    <div key={i} className="py-0.5">
-                                                        Row {w.row} {w.field}: {w.message} — raw:{" "}
-                                                        <code>
-                                                            {String(w.raw).substring(0, 50)}
-                                                        </code>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    )}
-                            </CardContent>
-                        </Card>
-                    )}
-                </>
-            )}
-        </div>
+                            </>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">
+                                Run Verify, then Extract to see items. Items require existing
+                                Category (via{" "}
+                                <Link href="/category-import" className="underline">
+                                    Category Import
+                                </Link>
+                                ) and Mapping (via{" "}
+                                <Link href="/category-coa-mapping" className="underline">
+                                    Category–COA Mappings
+                                </Link>
+                                ).
+                            </p>
+                        )}
+                    </TabsContent>
+                </Tabs>
+            </div>
+        </>
     );
 }
 
 PriceListImport.layout = {
     breadcrumbs: [
-        {
-            title: "Price List Importer",
-            href: "#",
-        },
+        { title: "Imports", href: "/imports" },
+        { title: "Price List Import", href: "/price-list-import" },
     ],
 };
