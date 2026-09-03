@@ -2,7 +2,7 @@ import { Head, Link, router } from "@inertiajs/react";
 import ExcelJS from "exceljs";
 import { FileSpreadsheet } from "lucide-react";
 import type { ChangeEvent } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/base-ui-components/ui/badge";
 import { Button } from "@/components/base-ui-components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/base-ui-components/ui/combobox";
 import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
 import { Input } from "@/components/base-ui-components/ui/input";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import {
     Select,
     SelectContent,
@@ -38,7 +39,6 @@ import { cellText } from "@/lib/excel/cell-helpers";
 import { normalize, isTotalRow, getCategoryMatch, getCoaMatch } from "@/lib/ppmp/normalize";
 import type { ExistingCategory, ExistingCoa } from "@/lib/ppmp/normalize";
 import { getDefaultSharedConfig } from "@/lib/ppmp/sheet-config";
-
 import type { SharedSheetConfig } from "@/lib/ppmp/sheet-config";
 
 // Prices are in cols G (unit) H (price) + description/category in F, COA in D
@@ -107,6 +107,7 @@ type VerifiedItem = UniqueItem & {
     overrideId: number | null;
     priceValid: boolean;
     unitValid: boolean;
+    descriptionValid: boolean;
     status: "ready" | "update" | "error";
     message: string;
 };
@@ -150,6 +151,15 @@ export default function PriceListImport({
     const [importing, setImporting] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>({});
+    const [showOnlyErrors, setShowOnlyErrors] = useState(false);
+    const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
+    const [showDuplicateDetails, setShowDuplicateDetails] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setIsMounted(true);
+    }, []);
 
     function getEffectiveConfig(sheet: string): PriceListSheetConfig {
         if (calibrationMode === "shared" && sharedConfig) return sharedConfig;
@@ -158,7 +168,12 @@ export default function PriceListImport({
     }
 
     const canCalibrate = selectedSheets.length > 0;
-    const canVerify = canCalibrate && !!workbook && !!sharedConfig;
+    const canVerify =
+        canCalibrate &&
+        !!workbook &&
+        !!sharedConfig &&
+        sharedConfig.rowConfig.headerRow !== "" &&
+        sharedConfig.rowConfig.headerRow != null;
     const allVerifyValid =
         selectedSheets.length > 0 && selectedSheets.every((s) => verifyResults[s]?.valid);
     const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
@@ -192,7 +207,9 @@ export default function PriceListImport({
             const id = Number(idMatch[1]);
             setCoaOverrides((prev) => ({ ...prev, [rowKey]: id }));
         } else {
-            const found = existingCoas.find((c) => `${c.path} — ${c.account_title}` === selectedValue);
+            const found = existingCoas.find(
+                (c) => `${c.path} — ${c.account_title}` === selectedValue,
+            );
 
             if (found) setCoaOverrides((prev) => ({ ...prev, [rowKey]: found.id }));
         }
@@ -209,6 +226,30 @@ export default function PriceListImport({
 
     function handleClearAllOverrides() {
         setCoaOverrides({});
+    }
+
+    function handleTruncateDescription(rowKey: string) {
+        setUniqueItems((prev) =>
+            prev.map((u) => {
+                if (u.key !== rowKey) return u;
+
+                const truncated = u.description.trim().slice(0, 1000);
+
+                return { ...u, description: truncated };
+            }),
+        );
+    }
+
+    function handleTruncateAllLongDescriptions() {
+        setUniqueItems((prev) =>
+            prev.map((u) => {
+                if (u.description.trim().length <= 1000) return u;
+
+                const truncated = u.description.trim().slice(0, 1000);
+
+                return { ...u, description: truncated };
+            }),
+        );
     }
 
     const verifiedItems: VerifiedItem[] = useMemo(() => {
@@ -229,16 +270,20 @@ export default function PriceListImport({
             const effectiveCoa = overrideId
                 ? (existingCoas.find((c) => c.id === overrideId) ?? null)
                 : (coaRes.match ?? null);
-            const effectiveCoaExists = overrideId !== null ? true : coaExists;
-            const effectiveCoaId = overrideId ?? coaId;
-            const effectiveCoaMatchType: VerifiedItem["effectiveCoaMatchType"] =
-                overrideId !== null ? "strict" : coaRes.type;
+            const effectiveCoaExists = !!effectiveCoa;
+            const effectiveCoaId = effectiveCoa?.id ?? null;
+            const effectiveCoaMatchType: VerifiedItem["effectiveCoaMatchType"] = effectiveCoa
+                ? "strict"
+                : coaRes.type;
             const effectiveJunctionId =
-                catId && effectiveCoaId ? (junctionByPair.get(`${effectiveCoaId}|${catId}`) ?? null) : null;
+                catId && effectiveCoaId
+                    ? (junctionByPair.get(`${effectiveCoaId}|${catId}`) ?? null)
+                    : null;
             const effectiveMappingExists = effectiveJunctionId !== null;
 
             const unitValid = u.unit.trim() !== "" && u.unit.trim().length <= 20;
             const priceValid = u.price !== null && u.price > 0;
+            const descriptionValid = u.description.trim().length > 0 && u.description.trim().length <= 1000;
             // check price list exists (junction + normalized desc + uom) using effective junction
             let effectivePriceListExists = false;
 
@@ -263,6 +308,12 @@ export default function PriceListImport({
             } else if (!effectiveMappingExists) {
                 status = "error";
                 message = "Mapping not found — create via Category–COA Mappings";
+            } else if (!descriptionValid) {
+                status = "error";
+                message =
+                    u.description.trim().length === 0
+                        ? "Description required"
+                        : `Description >1000 chars (${u.description.trim().length}) — will be truncated or shorten`;
             } else if (!unitValid) {
                 status = "error";
                 message = u.unit.trim() === "" ? "Unit required" : "Unit >20 chars";
@@ -302,11 +353,19 @@ export default function PriceListImport({
                 overrideId,
                 unitValid,
                 priceValid,
+                descriptionValid,
                 status,
                 message,
             };
         });
-    }, [uniqueItems, existingCategories, existingCoas, junctionByPair, existingPriceLists, coaOverrides]);
+    }, [
+        uniqueItems,
+        existingCategories,
+        existingCoas,
+        junctionByPair,
+        existingPriceLists,
+        coaOverrides,
+    ]);
 
     const importable = verifiedItems.filter((v) => v.status === "ready" || v.status === "update");
     const importableSelected = importable.filter((v) => selected.has(v.key));
@@ -314,6 +373,21 @@ export default function PriceListImport({
     const errorCount = verifiedItems.filter((v) => v.status === "error").length;
     const updateCount = verifiedItems.filter((v) => v.status === "update").length;
     const insertCount = verifiedItems.filter((v) => v.status === "ready").length;
+    const missingMappingCount = verifiedItems.filter(
+        (v) => !v.effectiveMappingExists && v.catExists && v.effectiveCoaExists,
+    ).length;
+
+    const duplicateCount = rawItems.length - uniqueItems.length;
+    const duplicateItems = useMemo(() => verifiedItems.filter((v) => v.count > 1), [verifiedItems]);
+    const longDescriptionCount = verifiedItems.filter((v) => !v.descriptionValid).length;
+
+    const filteredItems = useMemo(() => {
+        if (showOnlyDuplicates) return verifiedItems.filter((v) => v.count > 1);
+
+        if (!showOnlyErrors) return verifiedItems;
+
+        return verifiedItems.filter((v) => v.status === "error");
+    }, [verifiedItems, showOnlyErrors, showOnlyDuplicates]);
 
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -351,6 +425,9 @@ export default function PriceListImport({
         setUniqueItems([]);
         setSelected(new Set());
         setCoaOverrides({});
+        setShowOnlyErrors(false);
+        setShowOnlyDuplicates(false);
+        setShowDuplicateDetails(false);
         setStep("upload");
 
         try {
@@ -379,6 +456,9 @@ export default function PriceListImport({
             setUniqueItems([]);
             setSelected(new Set());
             setCoaOverrides({});
+            setShowOnlyErrors(false);
+            setShowOnlyDuplicates(false);
+            setShowDuplicateDetails(false);
 
             if (next.length > 0 && !next.includes(currentSheet)) setCurrentSheet(next[0]);
 
@@ -483,6 +563,7 @@ export default function PriceListImport({
         const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg.rowConfig;
         const { coaLabelMode } = cfg;
         const lastRow = ws.actualRowCount;
+
         if (headerRow === "" || headerRow == null) {
             return {
                 valid: false,
@@ -491,6 +572,7 @@ export default function PriceListImport({
                 details: [],
             };
         }
+
         const procurementStart = headerRow + 1;
         const procurementEnd = additionalItemsHeaderRow
             ? additionalItemsHeaderRow - 1
@@ -876,6 +958,9 @@ export default function PriceListImport({
         setUniqueItems([]);
         setSelected(new Set());
         setCoaOverrides({});
+        setShowOnlyErrors(false);
+        setShowOnlyDuplicates(false);
+        setShowDuplicateDetails(false);
     }
 
     function extractItemsForSection(
@@ -1034,7 +1119,9 @@ export default function PriceListImport({
             if (!ws) continue;
 
             const cfg = getEffectiveConfig(sheet);
+
             if (cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null) continue;
+
             const lastRow = ws.actualRowCount;
             const procurementStart = cfg.rowConfig.headerRow + 1;
             const procurementEnd = cfg.rowConfig.additionalItemsHeaderRow
@@ -1113,7 +1200,15 @@ export default function PriceListImport({
         setUniqueItems(unique);
         setSelected(new Set(unique.map((u) => u.key)));
         setCoaOverrides({});
-        console.log("Extract price-list", { raw: all.length, uniqueCount: unique.length, all, unique });
+        setShowOnlyErrors(false);
+        setShowOnlyDuplicates(false);
+        setShowDuplicateDetails(false);
+        console.log("Extract price-list", {
+            raw: all.length,
+            uniqueCount: unique.length,
+            all,
+            unique,
+        });
     }
 
     function handleImport() {
@@ -1121,7 +1216,18 @@ export default function PriceListImport({
             (v) => selected.has(v.key) && (v.status === "ready" || v.status === "update"),
         );
 
-        if (toImport.length === 0) return;
+        if (toImport.length === 0) {
+            console.warn(
+                "PriceListImport: nothing to import — selected",
+                [...selected],
+                "verified",
+                verifiedItems.length,
+            );
+
+            return;
+        }
+
+        console.log("PriceListImport: posting", toImport.length, toImport.slice(0, 3));
 
         setImporting(true);
         router.post(
@@ -1137,14 +1243,24 @@ export default function PriceListImport({
             } as never,
             {
                 onFinish: () => setImporting(false),
+                onError: (errors) => {
+                    console.error("PriceListImport: validation 422", errors);
+                    setImporting(false);
+                },
+                onSuccess: (page) => {
+                    console.log(
+                        "PriceListImport: success",
+                        (page.props as unknown as Record<string, unknown>)?.flash,
+                    );
+                },
             },
         );
     }
 
     return (
-        <>
+        <ScrollArea className="h-[calc(100vh-3rem)]" suppressHydrationWarning>
             <Head title="Price List Import" />
-            <div className="flex flex-col gap-4 p-4">
+            <div className="flex flex-col gap-4 p-4" suppressHydrationWarning>
                 <h1 className="text-2xl font-semibold">Price List Import</h1>
                 <p className="text-sm text-muted-foreground">
                     Imports <strong>price list only</strong> (no quantities). Requires official{" "}
@@ -1173,8 +1289,8 @@ export default function PriceListImport({
                     </div>
                 )}
 
-                <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
-                    <TabsList variant="line" className="w-full">
+                <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)} suppressHydrationWarning>
+                    <TabsList variant="line" className="w-full" suppressHydrationWarning>
                         <TabsTrigger value="upload" className="flex-1">
                             1. Upload & Sheets{" "}
                             {selectedSheets.length > 0 && (
@@ -1269,7 +1385,8 @@ export default function PriceListImport({
                         )}
                         <div className="flex justify-end">
                             <Button
-                                disabled={selectedSheets.length === 0}
+                                suppressHydrationWarning
+                                disabled={isMounted ? selectedSheets.length === 0 : false}
                                 onClick={() => {
                                     ensureCalibrationsInitialized();
                                     setStep("calibrate");
@@ -1313,7 +1430,9 @@ export default function PriceListImport({
                                             for (const s of selectedSheets) {
                                                 next[s] = {
                                                     ...sharedConfig,
-                                                    columnConfig: { ...sharedConfig.columnConfig },
+                                                    columnConfig: {
+                                                        ...sharedConfig.columnConfig,
+                                                    },
                                                     rowConfig: { ...sharedConfig.rowConfig },
                                                 };
                                             }
@@ -1360,7 +1479,10 @@ export default function PriceListImport({
                         {calibrationMode === "per-sheet" && selectedSheets.length > 1 && (
                             <Field>
                                 <FieldLabel>Editing sheet</FieldLabel>
-                                <Select value={currentSheet} onValueChange={(v) => setCurrentSheet(v ?? "")}>
+                                <Select
+                                    value={currentSheet}
+                                    onValueChange={(v) => setCurrentSheet(v ?? "")}
+                                >
                                     <SelectTrigger className="w-[260px]">
                                         <SelectValue placeholder="Select sheet to edit" />
                                     </SelectTrigger>
@@ -1398,12 +1520,17 @@ export default function PriceListImport({
                                 setUniqueItems([]);
                                 setSelected(new Set());
                                 setCoaOverrides({});
+                                setShowOnlyErrors(false);
+                                setShowOnlyDuplicates(false);
+                                setShowDuplicateDetails(false);
                             };
                             const onColumn = (
                                 patch: Partial<SharedSheetConfig["columnConfig"]>,
                             ) => {
                                 const next = { ...cfg.columnConfig, ...patch };
-                                onChange({ columnConfig: next } as Partial<PriceListSheetConfig>);
+                                onChange({
+                                    columnConfig: next,
+                                } as Partial<PriceListSheetConfig>);
                             };
                             const onRow = (patch: Partial<SharedSheetConfig["rowConfig"]>) => {
                                 const next = { ...cfg.rowConfig, ...patch };
@@ -1426,7 +1553,9 @@ export default function PriceListImport({
                                             <Input
                                                 value={cfg.columnConfig.coa}
                                                 onChange={(e) =>
-                                                    onColumn({ coa: e.target.value.toUpperCase() })
+                                                    onColumn({
+                                                        coa: e.target.value.toUpperCase(),
+                                                    })
                                                 }
                                                 className="w-16"
                                                 placeholder="D"
@@ -1454,7 +1583,9 @@ export default function PriceListImport({
                                             <Input
                                                 value={cfg.columnConfig.unit}
                                                 onChange={(e) =>
-                                                    onColumn({ unit: e.target.value.toUpperCase() })
+                                                    onColumn({
+                                                        unit: e.target.value.toUpperCase(),
+                                                    })
                                                 }
                                                 className="w-16"
                                                 placeholder="G"
@@ -1484,15 +1615,26 @@ export default function PriceListImport({
                                                 value={cfg.rowConfig.headerRow ?? ""}
                                                 onChange={(e) =>
                                                     onRow({
-                                                        headerRow: e.target.value === "" ? "" : Number(e.target.value),
+                                                        headerRow:
+                                                            e.target.value === ""
+                                                                ? ""
+                                                                : Number(e.target.value),
                                                     })
                                                 }
                                                 className="w-20"
                                                 placeholder="7"
                                             />
                                             <FieldDescription>
-                                                Header {cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null ? "—" : cfg.rowConfig.headerRow}; data starts{" "}
-                                                {cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null ? "—" : cfg.rowConfig.headerRow + 1}
+                                                Header{" "}
+                                                {cfg.rowConfig.headerRow === "" ||
+                                                cfg.rowConfig.headerRow == null
+                                                    ? "—"
+                                                    : cfg.rowConfig.headerRow}
+                                                ; data starts{" "}
+                                                {cfg.rowConfig.headerRow === "" ||
+                                                cfg.rowConfig.headerRow == null
+                                                    ? "—"
+                                                    : cfg.rowConfig.headerRow + 1}
                                             </FieldDescription>
                                         </Field>
                                         <Field>
@@ -1592,7 +1734,11 @@ export default function PriceListImport({
                             <Button variant="outline" onClick={() => setStep("upload")}>
                                 Back
                             </Button>
-                            <Button onClick={() => setStep("verify")} disabled={!sharedConfig}>
+                            <Button
+                                suppressHydrationWarning
+                                onClick={() => setStep("verify")}
+                                disabled={isMounted ? !sharedConfig : false}
+                            >
                                 Next: Verify Format
                             </Button>
                         </div>
@@ -1674,7 +1820,8 @@ export default function PriceListImport({
                                 Back
                             </Button>
                             <Button
-                                disabled={!allVerifyValid}
+                                suppressHydrationWarning
+                                disabled={isMounted ? !allVerifyValid : false}
                                 onClick={() => {
                                     handleExtract();
                                     setStep("review");
@@ -1697,21 +1844,210 @@ export default function PriceListImport({
                                     {errorCount} errors (missing official mapping)
                                 </Badge>
                             )}
+                            {missingMappingCount > 0 && (
+                                <Badge
+                                    variant="outline"
+                                    className="border-amber-500 text-amber-600"
+                                >
+                                    {missingMappingCount} missing mapping
+                                </Badge>
+                            )}
+                            {(errorCount > 0 || showOnlyErrors) && (
+                                <Button
+                                    variant={showOnlyErrors ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                        setShowOnlyErrors((v) => !v);
+
+                                        if (!showOnlyErrors) {
+                                            setShowOnlyDuplicates(false);
+                                            setShowDuplicateDetails(false);
+                                        }
+                                    }}
+                                    className="h-6 text-xs"
+                                    title={
+                                        showOnlyErrors
+                                            ? "Return to full list"
+                                            : "Filter to rows with errors (COA not found, mapping missing, etc.) — e.g., row 468"
+                                    }
+                                    disabled={errorCount === 0 && !showOnlyErrors}
+                                >
+                                    {showOnlyErrors
+                                        ? `Show all (${verifiedItems.length})`
+                                        : `Show only errors (${errorCount})`}
+                                </Button>
+                            )}
+                            {longDescriptionCount > 0 && (
+                                <Badge variant="destructive" className="bg-amber-600">
+                                    {longDescriptionCount} description &gt;1000
+                                </Badge>
+                            )}
+                            {longDescriptionCount > 0 && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleTruncateAllLongDescriptions}
+                                    className="h-6 text-xs border-amber-600 text-amber-700"
+                                    title="Truncate all long descriptions to 1000 characters"
+                                >
+                                    Truncate all to 1000
+                                </Button>
+                            )}
+                            {duplicateCount > 0 && (
+                                <Badge
+                                    variant="outline"
+                                    className="border-amber-500 text-amber-600"
+                                >
+                                    {duplicateCount} duplicate{duplicateCount > 1 ? "s" : ""} (
+                                    {duplicateItems.length} unique)
+                                </Badge>
+                            )}
+                            {duplicateCount > 0 && (
+                                <Button
+                                    variant={showOnlyDuplicates ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                        setShowOnlyDuplicates((v) => !v);
+
+                                        if (!showOnlyDuplicates) {
+                                            setShowOnlyErrors(false);
+                                            setShowDuplicateDetails(false);
+                                        }
+                                    }}
+                                    className="h-6 text-xs"
+                                    title="Filter table to only duplicate rows (same category|coa|description|unit)"
+                                >
+                                    {showOnlyDuplicates
+                                        ? `Show all (${verifiedItems.length})`
+                                        : `Show only duplicates (${duplicateItems.length})`}
+                                </Button>
+                            )}
+                            {duplicateCount > 0 && !showOnlyDuplicates && (
+                                <Button
+                                    variant={showDuplicateDetails ? "default" : "ghost"}
+                                    size="sm"
+                                    onClick={() => setShowDuplicateDetails((v) => !v)}
+                                    className="h-6 text-xs"
+                                >
+                                    {showDuplicateDetails
+                                        ? "Hide duplicate details"
+                                        : "Show duplicate details"}
+                                </Button>
+                            )}
                             {Object.keys(coaOverrides).length > 0 && (
-                                <Badge variant="outline" className="border-amber-500 text-amber-600">
+                                <Badge
+                                    variant="outline"
+                                    className="border-amber-500 text-amber-600"
+                                >
                                     {Object.keys(coaOverrides).length} COA override(s)
                                 </Badge>
                             )}
                             {Object.keys(coaOverrides).length > 0 && (
-                                <Button variant="outline" size="sm" onClick={handleClearAllOverrides} className="h-6 text-xs">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleClearAllOverrides}
+                                    className="h-6 text-xs"
+                                >
                                     Clear overrides
                                 </Button>
                             )}
                         </div>
                         {Object.keys(coaOverrides).length > 0 && (
                             <p className="text-xs text-amber-600">
-                                Overrides are per unique price-list row (`category|coa|description|unit`). Counts reflect overridden COAs.
+                                Overrides are per unique price-list row
+                                (`category|coa|description|unit`). Counts reflect overridden COAs.
                             </p>
+                        )}
+                        {showOnlyErrors && (
+                            <p className="text-xs text-muted-foreground">
+                                Showing {filteredItems.length} of {verifiedItems.length} — only rows
+                                with errors (COA not found, category not found, mapping missing,
+                                etc.). Toggle off to see all. COA dropdowns let you fix partial
+                                matches per row (e.g., row 468).
+                            </p>
+                        )}
+                        {showOnlyDuplicates && (
+                            <p className="text-xs text-amber-600">
+                                Showing {filteredItems.length} duplicate unique row
+                                {filteredItems.length === 1 ? "" : "s"} ({duplicateCount} extra raw
+                                row{duplicateCount === 1 ? "" : "s"}) — same
+                                category|coa|description|unit appears multiple times.
+                            </p>
+                        )}
+                        {showDuplicateDetails && duplicateItems.length > 0 && (
+                            <div className="rounded-lg border bg-amber-50/30 p-3">
+                                <p className="mb-2 text-xs font-semibold">
+                                    Duplicate details — {duplicateItems.length} unique duplicate(s),{" "}
+                                    {duplicateCount} extra raw row
+                                    {duplicateCount === 1 ? "" : "s"} (Raw {rawItems.length} →
+                                    Unique {uniqueItems.length})
+                                </p>
+                                <div className="max-h-64 overflow-auto rounded border bg-card">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Description</TableHead>
+                                                <TableHead>Category</TableHead>
+                                                <TableHead>COA</TableHead>
+                                                <TableHead>Unit</TableHead>
+                                                <TableHead>Price</TableHead>
+                                                <TableHead>Count</TableHead>
+                                                <TableHead>Sheets / Rows</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {duplicateItems.map((it) => (
+                                                <TableRow key={it.key} className="bg-amber-50/50">
+                                                    <TableCell
+                                                        className="max-w-[24ch] truncate text-xs"
+                                                        title={it.description}
+                                                    >
+                                                        {it.description}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="max-w-[16ch] truncate text-xs"
+                                                        title={it.category}
+                                                    >
+                                                        {it.category}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        className="max-w-[16ch] truncate text-xs"
+                                                        title={it.coa}
+                                                    >
+                                                        {it.coa}
+                                                    </TableCell>
+                                                    <TableCell className="text-xs">
+                                                        {it.unit}
+                                                    </TableCell>
+                                                    <TableCell className="text-xs">
+                                                        {it.price !== null
+                                                            ? `₱${it.price.toLocaleString()}`
+                                                            : "—"}
+                                                    </TableCell>
+                                                    <TableCell className="text-xs">
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="border-amber-500 text-amber-600"
+                                                        >
+                                                            ×{it.count}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-[10px] text-muted-foreground">
+                                                        {it.sheets.join(", ")} row{" "}
+                                                        {it.rows.join(", ")}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                <p className="mt-2 text-[10px] text-muted-foreground">
+                                    Duplicates are deduped by normalized
+                                    category|coa|description|unit. Raw rows with same key are
+                                    merged; count shows how many raw rows collapsed.
+                                </p>
+                            </div>
                         )}
                         {verifiedItems.length > 0 ? (
                             <>
@@ -1723,259 +2059,392 @@ export default function PriceListImport({
                                                     <Input
                                                         type="checkbox"
                                                         checked={
-                                                            selected.size ===
-                                                                verifiedItems.length &&
-                                                            verifiedItems.length > 0
+                                                            filteredItems.length > 0 &&
+                                                            filteredItems.every(
+                                                                (v) =>
+                                                                    selected.has(v.key) ||
+                                                                    v.status === "error",
+                                                            )
                                                         }
                                                         onChange={(e) => {
                                                             if (e.target.checked) {
+                                                                const toAdd = filteredItems
+                                                                    .filter(
+                                                                        (v) => v.status !== "error",
+                                                                    )
+                                                                    .map((v) => v.key);
                                                                 setSelected(
-                                                                    new Set(
-                                                                        verifiedItems.map(
-                                                                            (v) => v.key,
-                                                                        ),
-                                                                    ),
+                                                                    (prev) =>
+                                                                        new Set([
+                                                                            ...prev,
+                                                                            ...toAdd,
+                                                                        ]),
                                                                 );
-                                                            } else setSelected(new Set());
+                                                            } else {
+                                                                const filteredKeys = new Set(
+                                                                    filteredItems.map((v) => v.key),
+                                                                );
+                                                                setSelected(
+                                                                    (prev) =>
+                                                                        new Set(
+                                                                            [...prev].filter(
+                                                                                (k) =>
+                                                                                    !filteredKeys.has(
+                                                                                        k,
+                                                                                    ),
+                                                                            ),
+                                                                        ),
+                                                                );
+                                                            }
                                                         }}
                                                     />
                                                 </TableHead>
                                                 <TableHead>Description</TableHead>
                                                 <TableHead>Category</TableHead>
-                                                <TableHead className="min-w-[320px]">COA (Excel → DB)</TableHead>
+                                                <TableHead className="min-w-[320px]">
+                                                    COA (Excel → DB)
+                                                </TableHead>
                                                 <TableHead>Unit</TableHead>
                                                 <TableHead>Price</TableHead>
                                                 <TableHead>Status</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {verifiedItems.map((it) => {
-                                                const isOverridden = it.overrideId !== null;
-                                                const selectedDisplay = it.effectiveCoa
-                                                    ? `coa:${it.effectiveCoa.id}:${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`
-                                                    : "";
-                                                const suggestedIds = new Set(
-                                                    it.coaTopMatches.map((m) => m.coa.id),
-                                                );
-                                                const suggestedCoas = it.coaTopMatches.map(
-                                                    (m) => m.coa,
-                                                );
-                                                const remainingCoas = existingCoas.filter(
-                                                    (c) => !suggestedIds.has(c.id),
-                                                );
-                                                const itemsForRow =
-                                                    it.coaMatchType === "partial" &&
-                                                    suggestedCoas.length > 0
-                                                        ? [
-                                                              ...suggestedCoas.map(
-                                                                  (c) =>
-                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                              ),
-                                                              ...remainingCoas.map(
-                                                                  (c) =>
-                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                              ),
-                                                          ]
-                                                        : existingCoas.map(
-                                                              (c) =>
-                                                                  `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                          );
-
-                                                return (
-                                                    <TableRow
-                                                        key={it.key}
-                                                        className={
-                                                            it.status === "error"
-                                                                ? "bg-destructive/5"
-                                                                : ""
-                                                        }
+                                            {filteredItems.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell
+                                                        colSpan={7}
+                                                        className="p-8 text-center text-sm text-muted-foreground"
                                                     >
-                                                        <TableCell>
-                                                            <Input
-                                                                type="checkbox"
-                                                                checked={selected.has(it.key)}
-                                                                onChange={(e) => {
-                                                                    const n = new Set(selected);
+                                                        {showOnlyDuplicates
+                                                            ? "No duplicates — all rows are unique. Toggle off to see all items."
+                                                            : showOnlyErrors
+                                                              ? "No errors — all rows are ready or updates. Toggle off to see all items."
+                                                              : "No items match filter."}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                filteredItems.map((it) => {
+                                                    const isOverridden = it.overrideId !== null;
+                                                    const selectedDisplay = it.effectiveCoa
+                                                        ? `coa:${it.effectiveCoa.id}:${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`
+                                                        : "";
+                                                    const suggestedIds = new Set(
+                                                        it.coaTopMatches.map((m) => m.coa.id),
+                                                    );
+                                                    const suggestedCoas = it.coaTopMatches.map(
+                                                        (m) => m.coa,
+                                                    );
+                                                    const remainingCoas = existingCoas.filter(
+                                                        (c) => !suggestedIds.has(c.id),
+                                                    );
+                                                    const itemsForRow =
+                                                        it.coaMatchType === "partial" &&
+                                                        suggestedCoas.length > 0
+                                                            ? [
+                                                                  ...suggestedCoas.map(
+                                                                      (c) =>
+                                                                          `coa:${c.id}:${c.path} — ${c.account_title}`,
+                                                                  ),
+                                                                  ...remainingCoas.map(
+                                                                      (c) =>
+                                                                          `coa:${c.id}:${c.path} — ${c.account_title}`,
+                                                                  ),
+                                                              ]
+                                                            : existingCoas.map(
+                                                                  (c) =>
+                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
+                                                              );
 
-                                                                    if (e.target.checked) n.add(it.key);
-                                                                    else n.delete(it.key);
-
-                                                                    setSelected(n);
-                                                                }}
-                                                                disabled={it.status === "error"}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell
-                                                            className="max-w-[28ch] truncate"
-                                                            title={it.description}
+                                                    return (
+                                                        <TableRow
+                                                            key={it.key}
+                                                            className={
+                                                                it.status === "error"
+                                                                    ? "bg-destructive/5"
+                                                                    : it.count > 1
+                                                                      ? "bg-amber-50/60"
+                                                                      : ""
+                                                            }
                                                         >
-                                                            {it.description}
-                                                        </TableCell>
+                                                            <TableCell>
+                                                                <Input
+                                                                    type="checkbox"
+                                                                    checked={selected.has(it.key)}
+                                                                    onChange={(e) => {
+                                                                        const n = new Set(selected);
 
-                                                        <TableCell className="text-xs">
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="truncate" title={it.category}>
-                                                                    {it.category}
-                                                                </span>
-                                                                {it.catExists ? (
-                                                                    <Badge variant="secondary" className="h-4 px-1 text-[10px]">
-                                                                        ✓
-                                                                    </Badge>
-                                                                ) : it.catMatchType === "partial" ? (
-                                                                    <Badge variant="outline" className="h-4 px-1 text-[10px]">
-                                                                        ~
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <Badge variant="secondary" className="h-4 px-1 text-[10px]">
-                                                                        ❌
-                                                                    </Badge>
-                                                                )}
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell className="text-xs">
-                                                            <div className="flex flex-col gap-1">
-                                                                <span
-                                                                    className="truncate text-[10px] text-muted-foreground"
-                                                                    title={`Excel: ${it.coa}`}
-                                                                >
-                                                                    Excel: {it.coa}{" "}
-                                                                    {it.coaExists ? "✓" : it.coaMatchType === "partial" ? "~ partial" : "❌"}
-                                                                </span>
-                                                                <div className="flex items-center gap-1">
-                                                                    <Combobox
-                                                                        items={itemsForRow}
-                                                                        value={selectedDisplay}
-                                                                        onValueChange={(val) =>
-                                                                            handleCoaOverrideChange(
-                                                                                it.key,
-                                                                                val as string | null,
-                                                                            )
+                                                                        if (e.target.checked) {
+                                                                            n.add(it.key);
+                                                                        } else {
+                                                                            n.delete(it.key);
                                                                         }
-                                                                    >
-                                                                        <ComboboxInput
-                                                                            placeholder={
-                                                                                it.coaMatchType === "partial"
-                                                                                    ? "★ Suggested at top — search..."
-                                                                                    : "Search COA..."
-                                                                            }
-                                                                            className="h-7 text-xs"
-                                                                        />
-                                                                        <ComboboxContent>
-                                                                            <ComboboxEmpty>
-                                                                                No COA found.
-                                                                            </ComboboxEmpty>
-                                                                            <ComboboxList>
-                                                                                {(item: string) => {
-                                                                                    const isSuggested =
-                                                                                        it.coaTopMatches.some(
-                                                                                            (m) =>
-                                                                                                item.includes(
-                                                                                                    `coa:${m.coa.id}:`,
-                                                                                                ),
-                                                                                        );
 
-                                                                                    return (
-                                                                                        <ComboboxItem
-                                                                                            key={item}
-                                                                                            value={item}
-                                                                                            className={
-                                                                                                isSuggested
-                                                                                                    ? "bg-card font-medium"
-                                                                                                    : ""
-                                                                                            }
-                                                                                        >
-                                                                                            {isSuggested ? "★ " : ""}
-                                                                                            {item.replace(/^coa:\d+:/, "")}
-                                                                                        </ComboboxItem>
-                                                                                    );
-                                                                                }}
-                                                                            </ComboboxList>
-                                                                        </ComboboxContent>
-                                                                    </Combobox>
-                                                                    {isOverridden && (
+                                                                        setSelected(n);
+                                                                    }}
+                                                                    disabled={it.status === "error"}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell
+                                                                className="max-w-[28ch] truncate"
+                                                                title={it.description}
+                                                            >
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="truncate">
+                                                                        {it.description}
+                                                                    </span>
+                                                                    {it.count > 1 && (
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className="h-4 border-amber-500 px-1 text-[10px] text-amber-600"
+                                                                        >
+                                                                            ×{it.count}
+                                                                        </Badge>
+                                                                    )}
+                                                                    {!it.descriptionValid && (
+                                                                        <Badge
+                                                                            variant="destructive"
+                                                                            className="h-4 px-1 text-[10px]"
+                                                                            title={`Length ${it.description.trim().length} > 1000`}
+                                                                        >
+                                                                            {it.description.trim().length}/1000
+                                                                        </Badge>
+                                                                    )}
+                                                                </span>
+                                                                {!it.descriptionValid && (
+                                                                    <div className="mt-1 flex gap-1">
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
-                                                                            className="h-7 px-1 text-xs"
-                                                                            onClick={() =>
-                                                                                handleClearOverride(it.key)
-                                                                            }
+                                                                            onClick={() => handleTruncateDescription(it.key)}
+                                                                            className="h-5 px-1 text-[10px] text-amber-600 hover:text-amber-700"
                                                                         >
-                                                                            ✕
+                                                                            Truncate to 1000
                                                                         </Button>
+                                                                        <span className="text-[10px] text-muted-foreground self-center">
+                                                                            will cut to &quot;{it.description.trim().slice(0, 1000).slice(-20)}&quot;
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                            </TableCell>
+
+                                                            <TableCell className="text-xs">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span
+                                                                        className="truncate"
+                                                                        title={it.category}
+                                                                    >
+                                                                        {it.category}
+                                                                    </span>
+                                                                    {it.catExists ? (
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="h-4 px-1 text-[10px]"
+                                                                        >
+                                                                            ✓
+                                                                        </Badge>
+                                                                    ) : it.catMatchType ===
+                                                                      "partial" ? (
+                                                                        <Badge
+                                                                            variant="outline"
+                                                                            className="h-4 px-1 text-[10px]"
+                                                                        >
+                                                                            ~
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="h-4 px-1 text-[10px]"
+                                                                        >
+                                                                            ❌
+                                                                        </Badge>
                                                                     )}
                                                                 </div>
-                                                                {it.effectiveCoa ? (
-                                                                    <div
-                                                                        className="truncate text-xs text-green-600"
-                                                                        title={`${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`}
+                                                            </TableCell>
+                                                            <TableCell className="text-xs">
+                                                                <div className="flex flex-col gap-1">
+                                                                    <span
+                                                                        className="truncate text-[10px] text-muted-foreground"
+                                                                        title={`Excel: ${it.coa}`}
                                                                     >
-                                                                        → {it.effectiveCoa.path} — {it.effectiveCoa.account_title}
-                                                                    </div>
-                                                                ) : it.coaTopMatches.length > 0 ? (
-                                                                    <div
-                                                                        className="truncate text-xs text-muted-foreground"
-                                                                        title={it.coaTopMatches
-                                                                            .map(
-                                                                                (m) =>
-                                                                                    `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
-                                                                            )
-                                                                            .join(" | ")}
-                                                                    >
-                                                                        Suggest: {it.coaTopMatches[0].coa.path} —{" "}
-                                                                        {it.coaTopMatches[0].coa.account_title}
-                                                                    </div>
-                                                                ) : null}
-                                                            </div>
-                                                        </TableCell>
-                                                        <TableCell>{it.unit}</TableCell>
-                                                        <TableCell>
-                                                            {it.price !== null
-                                                                ? `₱${it.price.toLocaleString()}`
-                                                                : "—"}
-                                                        </TableCell>
-                                                        <TableCell className="text-xs">
-                                                            {it.status === "error" ? (
-                                                                <span className="text-destructive">
-                                                                    {it.message}{" "}
-                                                                    {!it.catExists && (
-                                                                        <Link
-                                                                            href="/category-import"
-                                                                            className="underline"
+                                                                        Excel: {it.coa}{" "}
+                                                                        {it.coaExists
+                                                                            ? "✓"
+                                                                            : it.coaMatchType ===
+                                                                                "partial"
+                                                                              ? "~ partial"
+                                                                              : "❌"}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-1">
+                                                                        <Combobox
+                                                                            items={itemsForRow}
+                                                                            value={selectedDisplay}
+                                                                            onValueChange={(val) =>
+                                                                                handleCoaOverrideChange(
+                                                                                    it.key,
+                                                                                    val as
+                                                                                        | string
+                                                                                        | null,
+                                                                                )
+                                                                            }
                                                                         >
-                                                                            Category Import
-                                                                        </Link>
-                                                                    )}{" "}
-                                                                    {!it.effectiveCoaExists && " "}{" "}
-                                                                    {!it.effectiveMappingExists &&
-                                                                        it.catExists &&
-                                                                        it.effectiveCoaExists && (
+                                                                            <ComboboxInput
+                                                                                placeholder={
+                                                                                    it.coaMatchType ===
+                                                                                    "partial"
+                                                                                        ? "★ Suggested at top — search..."
+                                                                                        : "Search COA..."
+                                                                                }
+                                                                                className="h-7 text-xs"
+                                                                            />
+                                                                            <ComboboxContent>
+                                                                                <ComboboxEmpty>
+                                                                                    No COA found.
+                                                                                </ComboboxEmpty>
+                                                                                <ComboboxList>
+                                                                                    {(
+                                                                                        item: string,
+                                                                                    ) => {
+                                                                                        const isSuggested =
+                                                                                            it.coaTopMatches.some(
+                                                                                                (
+                                                                                                    m,
+                                                                                                ) =>
+                                                                                                    item.includes(
+                                                                                                        `coa:${m.coa.id}:`,
+                                                                                                    ),
+                                                                                            );
+
+                                                                                        return (
+                                                                                            <ComboboxItem
+                                                                                                key={
+                                                                                                    item
+                                                                                                }
+                                                                                                value={
+                                                                                                    item
+                                                                                                }
+                                                                                                className={
+                                                                                                    isSuggested
+                                                                                                        ? "bg-card font-medium"
+                                                                                                        : ""
+                                                                                                }
+                                                                                            >
+                                                                                                {isSuggested
+                                                                                                    ? "★ "
+                                                                                                    : ""}
+                                                                                                {item.replace(
+                                                                                                    /^coa:\d+:/,
+                                                                                                    "",
+                                                                                                )}
+                                                                                            </ComboboxItem>
+                                                                                        );
+                                                                                    }}
+                                                                                </ComboboxList>
+                                                                            </ComboboxContent>
+                                                                        </Combobox>
+                                                                        {isOverridden && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="h-7 px-1 text-xs"
+                                                                                onClick={() =>
+                                                                                    handleClearOverride(
+                                                                                        it.key,
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                ✕
+                                                                            </Button>
+                                                                        )}
+                                                                    </div>
+                                                                    {it.effectiveCoa ? (
+                                                                        <div
+                                                                            className="truncate text-xs text-green-600"
+                                                                            title={`${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`}
+                                                                        >
+                                                                            → {it.effectiveCoa.path}{" "}
+                                                                            —{" "}
+                                                                            {
+                                                                                it.effectiveCoa
+                                                                                    .account_title
+                                                                            }
+                                                                        </div>
+                                                                    ) : it.coaTopMatches.length >
+                                                                      0 ? (
+                                                                        <div
+                                                                            className="truncate text-xs text-muted-foreground"
+                                                                            title={it.coaTopMatches
+                                                                                .map(
+                                                                                    (m) =>
+                                                                                        `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
+                                                                                )
+                                                                                .join(" | ")}
+                                                                        >
+                                                                            Suggest:{" "}
+                                                                            {
+                                                                                it.coaTopMatches[0]
+                                                                                    .coa.path
+                                                                            }{" "}
+                                                                            —{" "}
+                                                                            {
+                                                                                it.coaTopMatches[0]
+                                                                                    .coa
+                                                                                    .account_title
+                                                                            }
+                                                                        </div>
+                                                                    ) : null}
+                                                                </div>
+                                                            </TableCell>
+                                                            <TableCell>{it.unit}</TableCell>
+                                                            <TableCell>
+                                                                {it.price !== null
+                                                                    ? `₱${it.price.toLocaleString()}`
+                                                                    : "—"}
+                                                            </TableCell>
+                                                            <TableCell className="text-xs">
+                                                                {it.status === "error" ? (
+                                                                    <span className="text-destructive">
+                                                                        {it.message}{" "}
+                                                                        {!it.catExists && (
                                                                             <Link
-                                                                                href="/category-coa-mapping"
+                                                                                href="/category-import"
                                                                                 className="underline"
                                                                             >
-                                                                                → Map
+                                                                                Category Import
                                                                             </Link>
-                                                                        )}
-                                                                </span>
-                                                            ) : it.status === "update" ? (
-                                                                <span className="text-amber-600">
-                                                                    {it.message}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-green-600">
-                                                                    {it.message}
-                                                                </span>
-                                                            )}
-                                                            <div className="text-[10px] text-muted-foreground">
-                                                                {it.sheets.join(", ")} row{" "}
-                                                                {it.rows.join(", ")}{" "}
-                                                                {it.count > 1 && `×${it.count}`}
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
+                                                                        )}{" "}
+                                                                        {!it.effectiveCoaExists &&
+                                                                            " "}{" "}
+                                                                        {!it.effectiveMappingExists &&
+                                                                            it.catExists &&
+                                                                            it.effectiveCoaExists && (
+                                                                                <Link
+                                                                                    href="/category-coa-mapping"
+                                                                                    className="underline"
+                                                                                >
+                                                                                    → Map
+                                                                                </Link>
+                                                                            )}
+                                                                    </span>
+                                                                ) : it.status === "update" ? (
+                                                                    <span className="text-amber-600">
+                                                                        {it.message}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-green-600">
+                                                                        {it.message}
+                                                                    </span>
+                                                                )}
+                                                                <div className="text-[10px] text-muted-foreground">
+                                                                    {it.sheets.join(", ")} row{" "}
+                                                                    {it.rows.join(", ")}{" "}
+                                                                    {it.count > 1 && `×${it.count}`}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </div>
@@ -1984,7 +2453,8 @@ export default function PriceListImport({
                                         Back
                                     </Button>
                                     <Button
-                                        disabled={importableSelected.length === 0 || importing}
+                                        suppressHydrationWarning
+                                        disabled={isMounted ? importableSelected.length === 0 || importing : false}
                                         onClick={handleImport}
                                     >
                                         {importing
@@ -1992,6 +2462,23 @@ export default function PriceListImport({
                                             : `Import ${importableSelected.length} price lists (${insertCount} new + ${updateCount} updates)`}
                                     </Button>
                                 </div>
+                                {importableSelected.length === 0 &&
+                                    !importing &&
+                                    verifiedItems.length > 0 && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {importable.length === 0
+                                                ? `No importable rows — all ${errorCount} rows are errors. Fix Category/COA via dropdowns or create mappings in Category–COA Mappings.`
+                                                : `No rows selected — ${importable.length} importable available. Check a row or click header checkbox. Selected: ${selected.size}/${verifiedItems.length}`}
+                                        </p>
+                                    )}
+                                {selected.size > 0 &&
+                                    importableSelected.length === 0 &&
+                                    importable.length > 0 && (
+                                        <p className="text-xs text-amber-600">
+                                            Selected rows are all errors and cannot be imported.
+                                            Select only Ready/Update rows (green/amber).
+                                        </p>
+                                    )}
                             </>
                         ) : (
                             <p className="text-sm text-muted-foreground">
@@ -2010,7 +2497,9 @@ export default function PriceListImport({
                     </TabsContent>
                 </Tabs>
             </div>
-        </>
+
+            <ScrollBar orientation="vertical" />
+        </ScrollArea>
     );
 }
 

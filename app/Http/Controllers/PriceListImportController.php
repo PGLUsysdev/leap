@@ -50,7 +50,7 @@ class PriceListImportController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.chart_of_account_id' => ['required', 'integer', 'exists:chart_of_accounts,id'],
             'items.*.ppmp_category_id' => ['required', 'integer', 'exists:ppmp_categories,id'],
-            'items.*.description' => ['required', 'string', 'max:255'],
+            'items.*.description' => ['required', 'string', 'max:1000'],
             'items.*.unit_of_measurement' => ['required', 'string', 'max:20'],
             'items.*.price' => ['required', 'numeric', 'min:0.01'],
         ]);

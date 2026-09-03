@@ -26,17 +26,7 @@ import { Spinner } from "@/components/base-ui-components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base-ui-components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
 import { cellText } from "@/lib/excel/cell-helpers";
-import {
-    normalize,
-    isTotalRow,
-    SHORT_PROCUREMENT_ROOTS,
-    levenshtein,
-    getCategoryMatch,
-    getCoaMatch,
-    columnToNumber,
-    numberToColumn,
-    leftColumn,
-} from "@/lib/ppmp/normalize";
+import { normalize, isTotalRow, getCategoryMatch, getCoaMatch } from "@/lib/ppmp/normalize";
 import type { ExistingCategory, ExistingCoa } from "@/lib/ppmp/normalize";
 import { getDefaultMappingConfig } from "@/lib/ppmp/sheet-config";
 import type {
@@ -44,7 +34,7 @@ import type {
     CategoryCoaColumnConfig,
     CategoryCoaRowConfig,
 } from "@/lib/ppmp/sheet-config";
-import { groupSheet } from "@/lib/ppmp/sheet-grouping";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 
 type VerifyFormatResult = {
     valid: boolean;
@@ -360,6 +350,7 @@ export default function CategoryCoaMappingPage({
         }
 
         const effective = getEffectiveConfig(sheet);
+
         if (effective.rowConfig.headerRow === "" || effective.rowConfig.headerRow == null) {
             return {
                 valid: false,
@@ -369,6 +360,7 @@ export default function CategoryCoaMappingPage({
                 details: [],
             };
         }
+
         const { coaLabelMode } = effective;
         const dataColumn = effective.columnConfig.category;
         const coaColumn = effective.columnConfig.coa;
@@ -1265,7 +1257,11 @@ export default function CategoryCoaMappingPage({
             if (!ws) continue;
 
             const effective = getEffectiveConfig(sheet);
-            if (effective.rowConfig.headerRow === "" || effective.rowConfig.headerRow == null) continue;
+
+            if (effective.rowConfig.headerRow === "" || effective.rowConfig.headerRow == null) {
+                continue;
+            }
+
             const lastRow = ws.actualRowCount;
             const procurementStart = effective.rowConfig.headerRow + 1;
             const procurementEnd = effective.rowConfig.additionalItemsHeaderRow
@@ -1652,7 +1648,11 @@ export default function CategoryCoaMappingPage({
             console.log(
                 `Preview with calibration — headerRow ${effective.rowConfig.headerRow === "" || effective.rowConfig.headerRow == null ? "—" : effective.rowConfig.headerRow} → data starts ${effective.rowConfig.headerRow === "" || effective.rowConfig.headerRow == null ? "—" : effective.rowConfig.headerRow + 1}, category ${effective.columnConfig.category}, coa ${effective.columnConfig.coa}, coaMatchField ${effective.coaMatchField}, coaLabelMode ${effective.coaLabelMode}, additional ${effective.rowConfig.additionalItemsHeaderRow ?? "—"}, nonProc ${effective.rowConfig.nonProcurementHeaderRow ?? "—"}`,
             );
-            if (effective.rowConfig.headerRow === "" || effective.rowConfig.headerRow == null) return;
+
+            if (effective.rowConfig.headerRow === "" || effective.rowConfig.headerRow == null) {
+                return;
+            }
+
             const startRow = effective.rowConfig.headerRow + 1;
             const endRow = Math.min(startRow + 9, ws.rowCount);
             const rows: Array<{
@@ -1732,1171 +1732,1370 @@ export default function CategoryCoaMappingPage({
     }
 
     return (
-        <div className="flex flex-col gap-4 p-4">
-            <h1 className="text-2xl font-bold">Category COA Mapping</h1>
+        <ScrollArea className="h-[calc(100vh-3rem)] border">
+            <div className="flex flex-col gap-4 p-4">
+                <h1 className="text-2xl font-bold">Category COA Mapping</h1>
 
-            {fileName && !loading && (
-                <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm backdrop-blur supports-[backdrop-filter]:bg-muted/30">
-                    <span className="max-w-[42ch] truncate font-medium" title={fileName}>
-                        {fileName}
-                    </span>
-                    <span className="hidden text-muted-foreground sm:inline">•</span>
-                    <span className="truncate text-muted-foreground">
-                        {selectedSheets.length > 0
-                            ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}`
-                            : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"} found`}
-                    </span>
-                    {selectedSheets.length > 0 && selectedSheets.length !== sheets.length && (
-                        <span className="hidden text-xs text-muted-foreground sm:inline">
-                            ({sheets.length} total)
+                {fileName && !loading && (
+                    <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm backdrop-blur supports-[backdrop-filter]:bg-muted/30">
+                        <span className="max-w-[42ch] truncate font-medium" title={fileName}>
+                            {fileName}
                         </span>
-                    )}
-                </div>
-            )}
-
-            <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
-                <TabsList variant="line" className="w-full">
-                    <TabsTrigger value="upload" className="flex-1">
-                        1. Upload & Sheet{" "}
-                        {selectedSheets.length > 0 && (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                                {selectedSheets.length}✓
+                        <span className="hidden text-muted-foreground sm:inline">•</span>
+                        <span className="truncate text-muted-foreground">
+                            {selectedSheets.length > 0
+                                ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}`
+                                : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"} found`}
+                        </span>
+                        {selectedSheets.length > 0 && selectedSheets.length !== sheets.length && (
+                            <span className="hidden text-xs text-muted-foreground sm:inline">
+                                ({sheets.length} total)
                             </span>
                         )}
-                    </TabsTrigger>
-                    <TabsTrigger value="calibrate" disabled={!canCalibrate} className="flex-1">
-                        2. Calibrate{" "}
-                        {sharedConfig ? (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                                H{sharedConfig.rowConfig.headerRow === "" || sharedConfig.rowConfig.headerRow == null ? "—" : sharedConfig.rowConfig.headerRow}{" "}
-                                {calibrationMode === "shared" ? "shared" : "per-sheet"}
-                            </span>
-                        ) : null}
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="verifyFormat"
-                        disabled={!canVerifyFormat}
-                        className="flex-1"
-                    >
-                        3. Verify Format{" "}
-                        {hasFormatResult ? (
-                            <span
-                                className={`ml-1 text-xs ${formatValid ? "text-green-600" : "text-amber-600"}`}
-                            >
-                                {formatValid
-                                    ? `✓ ${selectedSheets.length}`
-                                    : `❌ ${Object.values(formatResults).filter((r) => !r.valid).length}/${selectedSheets.length}`}
-                            </span>
-                        ) : null}
-                    </TabsTrigger>
-                    <TabsTrigger value="verifyMap" disabled={!canVerifyMap} className="flex-1">
-                        4. Verify & Map{" "}
-                        {verification ? (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                                {verification.missingMapping} missing
-                            </span>
-                        ) : null}
-                    </TabsTrigger>
-                    <TabsTrigger value="review" disabled={!canReview} className="flex-1">
-                        5. Review & Save{" "}
-                        {effectiveVerification ? (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                                {effectiveVerification.effMissingMapping} to create
-                            </span>
-                        ) : null}
-                    </TabsTrigger>
-                </TabsList>
+                    </div>
+                )}
 
-                <TabsContent value="upload" className="mt-4 flex flex-col gap-4">
-                    <Field>
-                        <FieldLabel htmlFor="file">Excel File</FieldLabel>
-                        <Input
-                            id="file"
-                            type="file"
-                            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                            onChange={handleFileChange}
-                            disabled={loading}
-                        />
-                        <FieldDescription>Select an .xlsx file.</FieldDescription>
-                        {error && <p className="text-sm text-destructive">{error}</p>}
-                    </Field>
-
-                    {loading && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Spinner /> Parsing workbook...
-                        </div>
-                    )}
-
-                    {!loading && sheets.length > 0 && (
-                        <Field>
-                            <FieldLabel>
-                                Sheets — click to select one or more (multi-sheet)
-                            </FieldLabel>
-                            <div className="flex flex-wrap gap-2 rounded-lg border p-3">
-                                {sheets.map((sheet) => {
-                                    const isSelected = selectedSheets.includes(sheet);
-
-                                    return (
-                                        <Badge
-                                            key={sheet}
-                                            variant={isSelected ? "default" : "secondary"}
-                                            className="cursor-pointer text-sm transition-colors hover:opacity-80"
-                                            onClick={() => handleSheetToggle(sheet)}
-                                        >
-                                            {sheet} {isSelected && "✓"}
-                                        </Badge>
-                                    );
-                                })}
-                            </div>
-                            <FieldDescription>
-                                Selected:{" "}
-                                <span className="font-medium text-foreground">
-                                    {selectedSheets.length > 0 ? selectedSheets.join(", ") : "none"}
-                                </span>{" "}
-                                — {selectedSheets.length}/{sheets.length} sheets
-                            </FieldDescription>
-                            {selectedSheets.length > 1 && (
-                                <p className="text-xs text-muted-foreground">
-                                    Shared calibration will apply to all {selectedSheets.length}{" "}
-                                    sheets; per-sheet mode lets you adjust individually.
-                                </p>
+                <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
+                    <TabsList variant="line" className="w-full">
+                        <TabsTrigger value="upload" className="flex-1">
+                            1. Upload & Sheet{" "}
+                            {selectedSheets.length > 0 && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    {selectedSheets.length}✓
+                                </span>
                             )}
-                        </Field>
-                    )}
-
-                    <div className="flex justify-end">
-                        <Button
-                            disabled={selectedSheets.length === 0}
-                            onClick={() => {
-                                ensureCalibrationsInitialized();
-                                setStep("calibrate");
-                            }}
+                        </TabsTrigger>
+                        <TabsTrigger value="calibrate" disabled={!canCalibrate} className="flex-1">
+                            2. Calibrate{" "}
+                            {sharedConfig ? (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    H
+                                    {sharedConfig.rowConfig.headerRow === "" ||
+                                    sharedConfig.rowConfig.headerRow == null
+                                        ? "—"
+                                        : sharedConfig.rowConfig.headerRow}{" "}
+                                    {calibrationMode === "shared" ? "shared" : "per-sheet"}
+                                </span>
+                            ) : null}
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="verifyFormat"
+                            disabled={!canVerifyFormat}
+                            className="flex-1"
                         >
-                            Next: Calibrate{" "}
-                            {selectedSheets.length > 0 ? `(${selectedSheets.length} sheets)` : ""}
-                        </Button>
-                    </div>
-                </TabsContent>
+                            3. Verify Format{" "}
+                            {hasFormatResult ? (
+                                <span
+                                    className={`ml-1 text-xs ${formatValid ? "text-green-600" : "text-amber-600"}`}
+                                >
+                                    {formatValid
+                                        ? `✓ ${selectedSheets.length}`
+                                        : `❌ ${Object.values(formatResults).filter((r) => !r.valid).length}/${selectedSheets.length}`}
+                                </span>
+                            ) : null}
+                        </TabsTrigger>
+                        <TabsTrigger value="verifyMap" disabled={!canVerifyMap} className="flex-1">
+                            4. Verify & Map{" "}
+                            {verification ? (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    {verification.missingMapping} missing
+                                </span>
+                            ) : null}
+                        </TabsTrigger>
+                        <TabsTrigger value="review" disabled={!canReview} className="flex-1">
+                            5. Review & Save{" "}
+                            {effectiveVerification ? (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                    {effectiveVerification.effMissingMapping} to create
+                                </span>
+                            ) : null}
+                        </TabsTrigger>
+                    </TabsList>
 
-                <TabsContent value="calibrate" className="mt-4 flex flex-col gap-4">
-                    <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-3">
-                        <span className="text-sm font-medium">Scope:</span>
-                        <div className="flex gap-2">
-                            <Button
-                                variant={calibrationMode === "shared" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                    if (
-                                        calibrationMode === "per-sheet" &&
-                                        calibrations[currentSheet]
-                                    ) {
-                                        setSharedConfig({ ...calibrations[currentSheet] });
-                                    } else if (!sharedConfig) ensureCalibrationsInitialized();
-
-                                    setCalibrationMode("shared");
-                                }}
-                            >
-                                Shared — all {selectedSheets.length} sheets
-                            </Button>
-                            <Button
-                                variant={calibrationMode === "per-sheet" ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                    if (sharedConfig) {
-                                        const next: Record<string, CategoryCoaSheetConfig> = {};
-
-                                        for (const s of selectedSheets) {
-                                            next[s] = {
-                                                ...sharedConfig,
-                                                ...(calibrations[s] ?? {}),
-                                            };
-                                        }
-
-                                        setCalibrations(next);
-
-                                        if (!currentSheet && selectedSheets[0]) {
-                                            setCurrentSheet(selectedSheets[0]);
-                                        }
-                                    }
-
-                                    setCalibrationMode("per-sheet");
-                                }}
-                            >
-                                Per-sheet
-                            </Button>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                            {calibrationMode === "shared"
-                                ? `Shared — header ${sharedConfig?.rowConfig.headerRow === "" || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to all ${selectedSheets.length} sheets.`
-                                : `Per-sheet — editing ${currentSheet || "—"} only.`}
-                        </span>
-                        {calibrationMode === "shared" ? (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleApplySharedToAll}
-                                disabled={!sharedConfig}
-                            >
-                                Apply shared to all ({selectedSheets.length})
-                            </Button>
-                        ) : (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleCopyCurrentToAll}
-                                disabled={!currentSheet}
-                            >
-                                Copy “{currentSheet}” to all
-                            </Button>
-                        )}
-                    </div>
-
-                    {calibrationMode === "per-sheet" && selectedSheets.length > 1 && (
+                    <TabsContent value="upload" className="mt-4 flex flex-col gap-4">
                         <Field>
-                            <FieldLabel>Editing sheet</FieldLabel>
-                            <Select
-                                value={currentSheet}
-                                onValueChange={(v) => setCurrentSheet(v ?? "")}
-                            >
-                                <SelectTrigger className="w-[260px]">
-                                    <SelectValue placeholder="Select sheet to edit" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectGroup>
-                                        {selectedSheets.map((s) => (
-                                            <SelectItem key={s} value={s}>
-                                                {s}{" "}
-                                                {formatResults[s]?.valid
-                                                    ? "✓"
-                                                    : formatResults[s]
-                                                      ? "❌"
-                                                      : ""}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                            </Select>
-                            <FieldDescription>
-                                Per-sheet calibration — changes affect only the selected sheet.
-                            </FieldDescription>
+                            <FieldLabel htmlFor="file">Excel File</FieldLabel>
+                            <Input
+                                id="file"
+                                type="file"
+                                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                                onChange={handleFileChange}
+                                disabled={loading}
+                            />
+                            <FieldDescription>Select an .xlsx file.</FieldDescription>
+                            {error && <p className="text-sm text-destructive">{error}</p>}
                         </Field>
-                    )}
 
-                    {(() => {
-                        const cfg =
-                            calibrationMode === "shared"
-                                ? (sharedConfig ?? getDefaultMappingConfig())
-                                : (calibrations[currentSheet] ??
-                                  sharedConfig ??
-                                  getDefaultMappingConfig());
-                        const onColumnChange = (patch: Partial<CategoryCoaColumnConfig>) => {
-                            if (calibrationMode === "shared") updateSharedColumnConfig(patch);
-                            else handleColumnConfigChange(patch);
-                            // handleColumnConfigChange already handles mode, but we need to ensure it uses correct mode
-                        };
-
-                        // Use existing handlers which already handle mode, so just use them
-                        return null;
-                    })()}
-
-                    {(() => {
-                        const cfg =
-                            calibrationMode === "shared"
-                                ? (sharedConfig ?? getDefaultMappingConfig())
-                                : (calibrations[currentSheet] ??
-                                  sharedConfig ??
-                                  getDefaultMappingConfig());
-
-                        return (
-                            <div className="rounded-lg border p-4">
-                                <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                    Calibration{" "}
-                                    {calibrationMode === "shared"
-                                        ? `(Shared – ${selectedSheets.length} sheets)`
-                                        : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
-                                </p>
-                                <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                    Calibration — Category ↔ COA mapping reference
-                                </p>
-                                <p className="mb-3 text-xs text-muted-foreground">
-                                    Tell us where Category and COA live in the sheet. Data is read
-                                    from <span className="font-medium">headerRow + 1 → end</span>.
-                                    Sentinel categories for COA-only rows:{" "}
-                                    <span className="font-medium">
-                                        Additional Items (Uncategorized)
-                                    </span>{" "}
-                                    (id 276) and{" "}
-                                    <span className="font-medium">
-                                        Non-Procurement (Uncategorized)
-                                    </span>{" "}
-                                    (id 277) handle COA without category.
-                                </p>
-
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div className="rounded-md border bg-card p-3">
-                                        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                            Column Config
-                                        </p>
-                                        <div className="grid grid-cols-4 gap-4">
-                                            <Field>
-                                                <FieldLabel htmlFor="coa-column">
-                                                    COA Column
-                                                </FieldLabel>
-                                                <Input
-                                                    id="coa-column"
-                                                    value={cfg.columnConfig.coa}
-                                                    onChange={(e) =>
-                                                        handleColumnConfigChange({
-                                                            coa: e.target.value.toUpperCase(),
-                                                        })
-                                                    }
-                                                    className="w-16"
-                                                    placeholder="D"
-                                                />
-                                                <FieldDescription>
-                                                    COA — col {cfg.columnConfig.coa || "D"}
-                                                </FieldDescription>
-                                            </Field>
-                                            <Field>
-                                                <FieldLabel htmlFor="category-column">
-                                                    Category Column
-                                                </FieldLabel>
-                                                <Input
-                                                    id="category-column"
-                                                    value={cfg.columnConfig.category}
-                                                    onChange={(e) =>
-                                                        handleColumnConfigChange({
-                                                            category: e.target.value.toUpperCase(),
-                                                        })
-                                                    }
-                                                    className="w-16"
-                                                    placeholder="F"
-                                                />
-                                                <FieldDescription>
-                                                    Category — col{" "}
-                                                    {cfg.columnConfig.category || "F"}
-                                                </FieldDescription>
-                                            </Field>
-                                            <Field>
-                                                <FieldLabel htmlFor="unit-column">
-                                                    Unit Column
-                                                </FieldLabel>
-                                                <Input
-                                                    id="unit-column"
-                                                    value={cfg.columnConfig.unit}
-                                                    onChange={(e) =>
-                                                        handleColumnConfigChange({
-                                                            unit: e.target.value.toUpperCase(),
-                                                        })
-                                                    }
-                                                    className="w-16"
-                                                    placeholder="G"
-                                                />
-                                                <FieldDescription>
-                                                    Unit — col {cfg.columnConfig.unit || "G"}
-                                                </FieldDescription>
-                                            </Field>
-                                            <Field>
-                                                <FieldLabel htmlFor="price-column">
-                                                    Price Column
-                                                </FieldLabel>
-                                                <Input
-                                                    id="price-column"
-                                                    value={cfg.columnConfig.price}
-                                                    onChange={(e) =>
-                                                        handleColumnConfigChange({
-                                                            price: e.target.value.toUpperCase(),
-                                                        })
-                                                    }
-                                                    className="w-16"
-                                                    placeholder="H"
-                                                />
-                                                <FieldDescription>
-                                                    Price — col {cfg.columnConfig.price || "H"}
-                                                </FieldDescription>
-                                            </Field>
-                                        </div>
-                                        <Field className="mt-3">
-                                            <FieldLabel>COA Match Field</FieldLabel>
-                                            <Select
-                                                value={cfg.coaMatchField}
-                                                onValueChange={(v) =>
-                                                    handleMatchFieldChange(
-                                                        v as CategoryCoaSheetConfig["coaMatchField"],
-                                                    )
-                                                }
-                                            >
-                                                <SelectTrigger className="w-[200px]">
-                                                    <SelectValue placeholder="Select match field" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectGroup>
-                                                        <SelectItem value="auto">
-                                                            Auto (title or number)
-                                                        </SelectItem>
-                                                        <SelectItem value="account_title">
-                                                            Account Title
-                                                        </SelectItem>
-                                                        <SelectItem value="account_number">
-                                                            Account Number
-                                                        </SelectItem>
-                                                    </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                            <FieldDescription>
-                                                How to match COA to DB (column-level matching)
-                                            </FieldDescription>
-                                        </Field>
-                                    </div>
-
-                                    <div className="rounded-md border bg-card p-3">
-                                        <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                            Row Config
-                                        </p>
-                                        <div className="flex flex-col gap-3">
-                                            <Field>
-                                                <FieldLabel htmlFor="header-row">
-                                                    Header Row
-                                                </FieldLabel>
-                                                <Input
-                                                    id="header-row"
-                                                    type="number"
-                                                    value={cfg.rowConfig.headerRow ?? ""}
-                                                    onChange={(e) =>
-                                                        handleRowConfigChange({
-                                                            headerRow: e.target.value === "" ? "" : Number(e.target.value),
-                                                        })
-                                                    }
-                                                    className="w-20"
-                                                    placeholder="7"
-                                                />
-                                                <FieldDescription>
-                                                    Header {cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null ? "—" : cfg.rowConfig.headerRow}; data starts{" "}
-                                                    {cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null ? "—" : cfg.rowConfig.headerRow + 1}
-                                                </FieldDescription>
-                                            </Field>
-                                            <Field>
-                                                <FieldLabel htmlFor="additional-header-row">
-                                                    Additional Items Header Row
-                                                </FieldLabel>
-                                                <Input
-                                                    id="additional-header-row"
-                                                    type="number"
-                                                    value={
-                                                        cfg.rowConfig.additionalItemsHeaderRow ?? ""
-                                                    }
-                                                    onChange={(e) =>
-                                                        handleRowConfigChange({
-                                                            additionalItemsHeaderRow: e.target.value
-                                                                ? Number(e.target.value)
-                                                                : null,
-                                                        })
-                                                    }
-                                                    placeholder="blank = ignore"
-                                                    className="w-20"
-                                                />
-                                                <FieldDescription>
-                                                    Sentinel: Additional Items (Uncategorized) •
-                                                    COA-only rows above this map to sentinel
-                                                </FieldDescription>
-                                            </Field>
-                                            <Field>
-                                                <FieldLabel htmlFor="non-proc-header-row">
-                                                    Non-Procurement Header Row
-                                                </FieldLabel>
-                                                <Input
-                                                    id="non-proc-header-row"
-                                                    type="number"
-                                                    value={
-                                                        cfg.rowConfig.nonProcurementHeaderRow ?? ""
-                                                    }
-                                                    onChange={(e) =>
-                                                        handleRowConfigChange({
-                                                            nonProcurementHeaderRow: e.target.value
-                                                                ? Number(e.target.value)
-                                                                : null,
-                                                        })
-                                                    }
-                                                    placeholder="blank = ignore"
-                                                    className="w-20"
-                                                />
-                                                <FieldDescription>
-                                                    Sentinel: Non-Procurement (Uncategorized) •
-                                                    COA-only rows below map to sentinel
-                                                </FieldDescription>
-                                            </Field>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <Field className="mt-4">
-                                    <FieldLabel>COA items format *</FieldLabel>
-                                    <ToggleGroup
-                                        variant="outline"
-                                        spacing={2}
-                                        value={[cfg.coaLabelMode]}
-                                        onValueChange={(value) => {
-                                            if (value.length > 0) {
-                                                handleCoaLabelModeChange(
-                                                    value[0] as CategoryCoaSheetConfig["coaLabelMode"],
-                                                );
-                                            }
-                                        }}
-                                        className="w-full"
-                                    >
-                                        <ToggleGroupItem
-                                            value="with-label"
-                                            className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
-                                        >
-                                            <span className="font-medium">With COA label rows</span>
-                                            <span className="text-xs font-normal whitespace-normal text-muted-foreground">
-                                                Category → COA label in F (next D same) → Items with
-                                                D=COA
-                                            </span>
-                                            <span className="font-mono text-xs text-muted-foreground/70">
-                                                Cat 1 → coa 1 → items / coa 2 → items → Cat 1 -
-                                                Total
-                                            </span>
-                                        </ToggleGroupItem>
-                                        <ToggleGroupItem
-                                            value="without-label"
-                                            className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
-                                        >
-                                            <span className="font-medium">
-                                                Without label (COA on item rows)
-                                            </span>
-                                            <span className="text-xs font-normal whitespace-normal text-muted-foreground">
-                                                COA directly on item row — grouped by COA value
-                                            </span>
-                                            <span className="font-mono text-xs text-muted-foreground/70">
-                                                Cat 1 → items (D=coa1) / items (D=coa2) → Cat 1 -
-                                                Total
-                                            </span>
-                                        </ToggleGroupItem>
-                                    </ToggleGroup>
-                                    <FieldDescription>
-                                        What format is your sheet in? This affects how we detect COA
-                                        groups.
-                                    </FieldDescription>
-                                </Field>
-
-                                <div className="mt-4 flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={handleResetCalibration}
-                                    >
-                                        Reset to defaults
-                                    </Button>
-                                    <span className="self-center text-xs text-muted-foreground">
-                                        Column: D=COA, F=category → Row: header 7 → Mode:{" "}
-                                        {cfg.coaLabelMode}
-                                    </span>
-                                </div>
+                        {loading && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Spinner /> Parsing workbook...
                             </div>
-                        );
-                    })()}
+                        )}
 
-                    <div className="flex justify-between">
-                        <Button variant="outline" onClick={() => setStep("upload")}>
-                            Back
-                        </Button>
-                        <Button onClick={() => setStep("verifyFormat")} disabled={!canVerifyFormat}>
-                            Next: Verify Format
-                        </Button>
-                    </div>
-                </TabsContent>
+                        {!loading && sheets.length > 0 && (
+                            <Field>
+                                <FieldLabel>
+                                    Sheets — click to select one or more (multi-sheet)
+                                </FieldLabel>
+                                <div className="flex flex-wrap gap-2 rounded-lg border p-3">
+                                    {sheets.map((sheet) => {
+                                        const isSelected = selectedSheets.includes(sheet);
 
-                <TabsContent value="verifyFormat" className="mt-4 flex flex-col gap-4">
-                    <div className="rounded-lg border p-4">
-                        <p className="mb-2 text-sm font-medium">
-                            Verify Sheet Format — check calibration and structure (all 3 sections)
-                        </p>
-                        <p className="mb-3 text-xs text-muted-foreground">
-                            Checks {selectedSheets.length} sheet
-                            {selectedSheets.length === 1 ? "" : "s"} with current calibration (
-                            {calibrationMode === "shared"
-                                ? `shared header ${sharedConfig?.rowConfig.headerRow === "" || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow}`
-                                : `per-sheet`}
-                            ). Validates cat → coa(s) → items → cat - TOTAL per section.
-                        </p>
-                        <div className="flex items-center gap-2">
+                                        return (
+                                            <Badge
+                                                key={sheet}
+                                                variant={isSelected ? "default" : "secondary"}
+                                                className="cursor-pointer text-sm transition-colors hover:opacity-80"
+                                                onClick={() => handleSheetToggle(sheet)}
+                                            >
+                                                {sheet} {isSelected && "✓"}
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+                                <FieldDescription>
+                                    Selected:{" "}
+                                    <span className="font-medium text-foreground">
+                                        {selectedSheets.length > 0
+                                            ? selectedSheets.join(", ")
+                                            : "none"}
+                                    </span>{" "}
+                                    — {selectedSheets.length}/{sheets.length} sheets
+                                </FieldDescription>
+                                {selectedSheets.length > 1 && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Shared calibration will apply to all {selectedSheets.length}{" "}
+                                        sheets; per-sheet mode lets you adjust individually.
+                                    </p>
+                                )}
+                            </Field>
+                        )}
+
+                        <div className="flex justify-end">
                             <Button
-                                size="sm"
-                                onClick={handleVerifyFormat}
-                                disabled={!canVerifyFormat}
+                                disabled={selectedSheets.length === 0}
+                                onClick={() => {
+                                    ensureCalibrationsInitialized();
+                                    setStep("calibrate");
+                                }}
                             >
-                                Verify Format{" "}
-                                {selectedSheets.length > 1
+                                Next: Calibrate{" "}
+                                {selectedSheets.length > 0
                                     ? `(${selectedSheets.length} sheets)`
                                     : ""}
                             </Button>
-                            {hasFormatResult && (
-                                <span
-                                    className={`text-xs ${formatValid ? "text-green-600" : "text-amber-600"}`}
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="calibrate" className="mt-4 flex flex-col gap-4">
+                        <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-3">
+                            <span className="text-sm font-medium">Scope:</span>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant={calibrationMode === "shared" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                        if (
+                                            calibrationMode === "per-sheet" &&
+                                            calibrations[currentSheet]
+                                        ) {
+                                            setSharedConfig({ ...calibrations[currentSheet] });
+                                        } else if (!sharedConfig) ensureCalibrationsInitialized();
+
+                                        setCalibrationMode("shared");
+                                    }}
                                 >
-                                    {formatValid
-                                        ? `✅ All ${selectedSheets.length} valid`
-                                        : `❌ ${Object.values(formatResults).filter((r) => !r.valid).length}/${selectedSheets.length} issues`}
-                                </span>
+                                    Shared — all {selectedSheets.length} sheets
+                                </Button>
+                                <Button
+                                    variant={
+                                        calibrationMode === "per-sheet" ? "default" : "outline"
+                                    }
+                                    size="sm"
+                                    onClick={() => {
+                                        if (sharedConfig) {
+                                            const next: Record<string, CategoryCoaSheetConfig> = {};
+
+                                            for (const s of selectedSheets) {
+                                                next[s] = {
+                                                    ...sharedConfig,
+                                                    ...(calibrations[s] ?? {}),
+                                                };
+                                            }
+
+                                            setCalibrations(next);
+
+                                            if (!currentSheet && selectedSheets[0]) {
+                                                setCurrentSheet(selectedSheets[0]);
+                                            }
+                                        }
+
+                                        setCalibrationMode("per-sheet");
+                                    }}
+                                >
+                                    Per-sheet
+                                </Button>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                                {calibrationMode === "shared"
+                                    ? `Shared — header ${sharedConfig?.rowConfig.headerRow === "" || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to all ${selectedSheets.length} sheets.`
+                                    : `Per-sheet — editing ${currentSheet || "—"} only.`}
+                            </span>
+                            {calibrationMode === "shared" ? (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleApplySharedToAll}
+                                    disabled={!sharedConfig}
+                                >
+                                    Apply shared to all ({selectedSheets.length})
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCopyCurrentToAll}
+                                    disabled={!currentSheet}
+                                >
+                                    Copy “{currentSheet}” to all
+                                </Button>
                             )}
                         </div>
-                        {hasFormatResult && (
-                            <div className="mt-3 flex flex-wrap gap-2">
+
+                        {calibrationMode === "per-sheet" && selectedSheets.length > 1 && (
+                            <Field>
+                                <FieldLabel>Editing sheet</FieldLabel>
+                                <Select
+                                    value={currentSheet}
+                                    onValueChange={(v) => setCurrentSheet(v ?? "")}
+                                >
+                                    <SelectTrigger className="w-[260px]">
+                                        <SelectValue placeholder="Select sheet to edit" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
+                                            {selectedSheets.map((s) => (
+                                                <SelectItem key={s} value={s}>
+                                                    {s}{" "}
+                                                    {formatResults[s]?.valid
+                                                        ? "✓"
+                                                        : formatResults[s]
+                                                          ? "❌"
+                                                          : ""}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Per-sheet calibration — changes affect only the selected sheet.
+                                </FieldDescription>
+                            </Field>
+                        )}
+
+                        {(() => {
+                            const cfg =
+                                calibrationMode === "shared"
+                                    ? (sharedConfig ?? getDefaultMappingConfig())
+                                    : (calibrations[currentSheet] ??
+                                      sharedConfig ??
+                                      getDefaultMappingConfig());
+                            const onColumnChange = (patch: Partial<CategoryCoaColumnConfig>) => {
+                                if (calibrationMode === "shared") updateSharedColumnConfig(patch);
+                                else handleColumnConfigChange(patch);
+                                // handleColumnConfigChange already handles mode, but we need to ensure it uses correct mode
+                            };
+
+                            // Use existing handlers which already handle mode, so just use them
+                            return null;
+                        })()}
+
+                        {(() => {
+                            const cfg =
+                                calibrationMode === "shared"
+                                    ? (sharedConfig ?? getDefaultMappingConfig())
+                                    : (calibrations[currentSheet] ??
+                                      sharedConfig ??
+                                      getDefaultMappingConfig());
+
+                            return (
+                                <div className="rounded-lg border p-4">
+                                    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                        Calibration{" "}
+                                        {calibrationMode === "shared"
+                                            ? `(Shared – ${selectedSheets.length} sheets)`
+                                            : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
+                                    </p>
+                                    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                        Calibration — Category ↔ COA mapping reference
+                                    </p>
+                                    <p className="mb-3 text-xs text-muted-foreground">
+                                        Tell us where Category and COA live in the sheet. Data is
+                                        read from{" "}
+                                        <span className="font-medium">headerRow + 1 → end</span>.
+                                        Sentinel categories for COA-only rows:{" "}
+                                        <span className="font-medium">
+                                            Additional Items (Uncategorized)
+                                        </span>{" "}
+                                        (id 276) and{" "}
+                                        <span className="font-medium">
+                                            Non-Procurement (Uncategorized)
+                                        </span>{" "}
+                                        (id 277) handle COA without category.
+                                    </p>
+
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="rounded-md border bg-card p-3">
+                                            <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                                Column Config
+                                            </p>
+                                            <div className="grid grid-cols-4 gap-4">
+                                                <Field>
+                                                    <FieldLabel htmlFor="coa-column">
+                                                        COA Column
+                                                    </FieldLabel>
+                                                    <Input
+                                                        id="coa-column"
+                                                        value={cfg.columnConfig.coa}
+                                                        onChange={(e) =>
+                                                            handleColumnConfigChange({
+                                                                coa: e.target.value.toUpperCase(),
+                                                            })
+                                                        }
+                                                        className="w-16"
+                                                        placeholder="D"
+                                                    />
+                                                    <FieldDescription>
+                                                        COA — col {cfg.columnConfig.coa || "D"}
+                                                    </FieldDescription>
+                                                </Field>
+                                                <Field>
+                                                    <FieldLabel htmlFor="category-column">
+                                                        Category Column
+                                                    </FieldLabel>
+                                                    <Input
+                                                        id="category-column"
+                                                        value={cfg.columnConfig.category}
+                                                        onChange={(e) =>
+                                                            handleColumnConfigChange({
+                                                                category:
+                                                                    e.target.value.toUpperCase(),
+                                                            })
+                                                        }
+                                                        className="w-16"
+                                                        placeholder="F"
+                                                    />
+                                                    <FieldDescription>
+                                                        Category — col{" "}
+                                                        {cfg.columnConfig.category || "F"}
+                                                    </FieldDescription>
+                                                </Field>
+                                                <Field>
+                                                    <FieldLabel htmlFor="unit-column">
+                                                        Unit Column
+                                                    </FieldLabel>
+                                                    <Input
+                                                        id="unit-column"
+                                                        value={cfg.columnConfig.unit}
+                                                        onChange={(e) =>
+                                                            handleColumnConfigChange({
+                                                                unit: e.target.value.toUpperCase(),
+                                                            })
+                                                        }
+                                                        className="w-16"
+                                                        placeholder="G"
+                                                    />
+                                                    <FieldDescription>
+                                                        Unit — col {cfg.columnConfig.unit || "G"}
+                                                    </FieldDescription>
+                                                </Field>
+                                                <Field>
+                                                    <FieldLabel htmlFor="price-column">
+                                                        Price Column
+                                                    </FieldLabel>
+                                                    <Input
+                                                        id="price-column"
+                                                        value={cfg.columnConfig.price}
+                                                        onChange={(e) =>
+                                                            handleColumnConfigChange({
+                                                                price: e.target.value.toUpperCase(),
+                                                            })
+                                                        }
+                                                        className="w-16"
+                                                        placeholder="H"
+                                                    />
+                                                    <FieldDescription>
+                                                        Price — col {cfg.columnConfig.price || "H"}
+                                                    </FieldDescription>
+                                                </Field>
+                                            </div>
+                                            <Field className="mt-3">
+                                                <FieldLabel>COA Match Field</FieldLabel>
+                                                <Select
+                                                    value={cfg.coaMatchField}
+                                                    onValueChange={(v) =>
+                                                        handleMatchFieldChange(
+                                                            v as CategoryCoaSheetConfig["coaMatchField"],
+                                                        )
+                                                    }
+                                                >
+                                                    <SelectTrigger className="w-[200px]">
+                                                        <SelectValue placeholder="Select match field" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectGroup>
+                                                            <SelectItem value="auto">
+                                                                Auto (title or number)
+                                                            </SelectItem>
+                                                            <SelectItem value="account_title">
+                                                                Account Title
+                                                            </SelectItem>
+                                                            <SelectItem value="account_number">
+                                                                Account Number
+                                                            </SelectItem>
+                                                        </SelectGroup>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FieldDescription>
+                                                    How to match COA to DB (column-level matching)
+                                                </FieldDescription>
+                                            </Field>
+                                        </div>
+
+                                        <div className="rounded-md border bg-card p-3">
+                                            <p className="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                                Row Config
+                                            </p>
+                                            <div className="flex flex-col gap-3">
+                                                <Field>
+                                                    <FieldLabel htmlFor="header-row">
+                                                        Header Row
+                                                    </FieldLabel>
+                                                    <Input
+                                                        id="header-row"
+                                                        type="number"
+                                                        value={cfg.rowConfig.headerRow ?? ""}
+                                                        onChange={(e) =>
+                                                            handleRowConfigChange({
+                                                                headerRow:
+                                                                    e.target.value === ""
+                                                                        ? ""
+                                                                        : Number(e.target.value),
+                                                            })
+                                                        }
+                                                        className="w-20"
+                                                        placeholder="7"
+                                                    />
+                                                    <FieldDescription>
+                                                        Header{" "}
+                                                        {cfg.rowConfig.headerRow === "" ||
+                                                        cfg.rowConfig.headerRow == null
+                                                            ? "—"
+                                                            : cfg.rowConfig.headerRow}
+                                                        ; data starts{" "}
+                                                        {cfg.rowConfig.headerRow === "" ||
+                                                        cfg.rowConfig.headerRow == null
+                                                            ? "—"
+                                                            : cfg.rowConfig.headerRow + 1}
+                                                    </FieldDescription>
+                                                </Field>
+                                                <Field>
+                                                    <FieldLabel htmlFor="additional-header-row">
+                                                        Additional Items Header Row
+                                                    </FieldLabel>
+                                                    <Input
+                                                        id="additional-header-row"
+                                                        type="number"
+                                                        value={
+                                                            cfg.rowConfig
+                                                                .additionalItemsHeaderRow ?? ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleRowConfigChange({
+                                                                additionalItemsHeaderRow: e.target
+                                                                    .value
+                                                                    ? Number(e.target.value)
+                                                                    : null,
+                                                            })
+                                                        }
+                                                        placeholder="blank = ignore"
+                                                        className="w-20"
+                                                    />
+                                                    <FieldDescription>
+                                                        Sentinel: Additional Items (Uncategorized) •
+                                                        COA-only rows above this map to sentinel
+                                                    </FieldDescription>
+                                                </Field>
+                                                <Field>
+                                                    <FieldLabel htmlFor="non-proc-header-row">
+                                                        Non-Procurement Header Row
+                                                    </FieldLabel>
+                                                    <Input
+                                                        id="non-proc-header-row"
+                                                        type="number"
+                                                        value={
+                                                            cfg.rowConfig.nonProcurementHeaderRow ??
+                                                            ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            handleRowConfigChange({
+                                                                nonProcurementHeaderRow: e.target
+                                                                    .value
+                                                                    ? Number(e.target.value)
+                                                                    : null,
+                                                            })
+                                                        }
+                                                        placeholder="blank = ignore"
+                                                        className="w-20"
+                                                    />
+                                                    <FieldDescription>
+                                                        Sentinel: Non-Procurement (Uncategorized) •
+                                                        COA-only rows below map to sentinel
+                                                    </FieldDescription>
+                                                </Field>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <Field className="mt-4">
+                                        <FieldLabel>COA items format *</FieldLabel>
+                                        <ToggleGroup
+                                            variant="outline"
+                                            spacing={2}
+                                            value={[cfg.coaLabelMode]}
+                                            onValueChange={(value) => {
+                                                if (value.length > 0) {
+                                                    handleCoaLabelModeChange(
+                                                        value[0] as CategoryCoaSheetConfig["coaLabelMode"],
+                                                    );
+                                                }
+                                            }}
+                                            className="w-full"
+                                        >
+                                            <ToggleGroupItem
+                                                value="with-label"
+                                                className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
+                                            >
+                                                <span className="font-medium">
+                                                    With COA label rows
+                                                </span>
+                                                <span className="text-xs font-normal whitespace-normal text-muted-foreground">
+                                                    Category → COA label in F (next D same) → Items
+                                                    with D=COA
+                                                </span>
+                                                <span className="font-mono text-xs text-muted-foreground/70">
+                                                    Cat 1 → coa 1 → items / coa 2 → items → Cat 1 -
+                                                    Total
+                                                </span>
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem
+                                                value="without-label"
+                                                className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
+                                            >
+                                                <span className="font-medium">
+                                                    Without label (COA on item rows)
+                                                </span>
+                                                <span className="text-xs font-normal whitespace-normal text-muted-foreground">
+                                                    COA directly on item row — grouped by COA value
+                                                </span>
+                                                <span className="font-mono text-xs text-muted-foreground/70">
+                                                    Cat 1 → items (D=coa1) / items (D=coa2) → Cat 1
+                                                    - Total
+                                                </span>
+                                            </ToggleGroupItem>
+                                        </ToggleGroup>
+                                        <FieldDescription>
+                                            What format is your sheet in? This affects how we detect
+                                            COA groups.
+                                        </FieldDescription>
+                                    </Field>
+
+                                    <div className="mt-4 flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleResetCalibration}
+                                        >
+                                            Reset to defaults
+                                        </Button>
+                                        <span className="self-center text-xs text-muted-foreground">
+                                            Column: D=COA, F=category → Row: header 7 → Mode:{" "}
+                                            {cfg.coaLabelMode}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        <div className="flex justify-between">
+                            <Button variant="outline" onClick={() => setStep("upload")}>
+                                Back
+                            </Button>
+                            <Button
+                                onClick={() => setStep("verifyFormat")}
+                                disabled={!canVerifyFormat}
+                            >
+                                Next: Verify Format
+                            </Button>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="verifyFormat" className="mt-4 flex flex-col gap-4">
+                        <div className="rounded-lg border p-4">
+                            <p className="mb-2 text-sm font-medium">
+                                Verify Sheet Format — check calibration and structure (all 3
+                                sections)
+                            </p>
+                            <p className="mb-3 text-xs text-muted-foreground">
+                                Checks {selectedSheets.length} sheet
+                                {selectedSheets.length === 1 ? "" : "s"} with current calibration (
+                                {calibrationMode === "shared"
+                                    ? `shared header ${sharedConfig?.rowConfig.headerRow === "" || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow}`
+                                    : `per-sheet`}
+                                ). Validates cat → coa(s) → items → cat - TOTAL per section.
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    size="sm"
+                                    onClick={handleVerifyFormat}
+                                    disabled={!canVerifyFormat}
+                                >
+                                    Verify Format{" "}
+                                    {selectedSheets.length > 1
+                                        ? `(${selectedSheets.length} sheets)`
+                                        : ""}
+                                </Button>
+                                {hasFormatResult && (
+                                    <span
+                                        className={`text-xs ${formatValid ? "text-green-600" : "text-amber-600"}`}
+                                    >
+                                        {formatValid
+                                            ? `✅ All ${selectedSheets.length} valid`
+                                            : `❌ ${Object.values(formatResults).filter((r) => !r.valid).length}/${selectedSheets.length} issues`}
+                                    </span>
+                                )}
+                            </div>
+                            {hasFormatResult && (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {selectedSheets.map((s) => {
+                                        const r = formatResults[s];
+
+                                        if (!r) {
+                                            return (
+                                                <Badge key={s} variant="secondary">
+                                                    {s}: —
+                                                </Badge>
+                                            );
+                                        }
+
+                                        return (
+                                            <Badge
+                                                key={s}
+                                                variant={r.valid ? "default" : "secondary"}
+                                                className={r.valid ? "bg-primary" : "bg-secondary"}
+                                            >
+                                                {s}: {r.valid ? "✅" : "❌"} {r.errors.length}{" "}
+                                                issues
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+
+                        {hasFormatResult && selectedSheets.length > 1 && (
+                            <Tabs value={activeFormatSheet} onValueChange={setActiveFormatSheet}>
+                                <TabsList variant="line" className="w-full">
+                                    {selectedSheets.map((s) => {
+                                        const r = formatResults[s];
+
+                                        return (
+                                            <TabsTrigger key={s} value={s} className="flex-1">
+                                                {s}{" "}
+                                                {r?.valid ? (
+                                                    <span className="ml-1 text-xs text-green-600">
+                                                        ✓
+                                                    </span>
+                                                ) : r ? (
+                                                    <span className="ml-1 text-xs text-amber-600">
+                                                        ❌ {r.errors.length}
+                                                    </span>
+                                                ) : null}
+                                            </TabsTrigger>
+                                        );
+                                    })}
+                                </TabsList>
                                 {selectedSheets.map((s) => {
                                     const r = formatResults[s];
 
                                     if (!r) {
                                         return (
-                                            <Badge key={s} variant="secondary">
-                                                {s}: —
-                                            </Badge>
+                                            <TabsContent key={s} value={s}>
+                                                <div className="p-4 text-sm text-muted-foreground">
+                                                    Not verified yet.
+                                                </div>
+                                            </TabsContent>
                                         );
                                     }
 
                                     return (
-                                        <Badge
-                                            key={s}
-                                            variant={r.valid ? "default" : "secondary"}
-                                            className={r.valid ? "bg-primary" : "bg-secondary"}
-                                        >
-                                            {s}: {r.valid ? "✅" : "❌"} {r.errors.length} issues
-                                        </Badge>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
-                    {hasFormatResult && selectedSheets.length > 1 && (
-                        <Tabs value={activeFormatSheet} onValueChange={setActiveFormatSheet}>
-                            <TabsList variant="line" className="w-full">
-                                {selectedSheets.map((s) => {
-                                    const r = formatResults[s];
-
-                                    return (
-                                        <TabsTrigger key={s} value={s} className="flex-1">
-                                            {s}{" "}
-                                            {r?.valid ? (
-                                                <span className="ml-1 text-xs text-green-600">
-                                                    ✓
-                                                </span>
-                                            ) : r ? (
-                                                <span className="ml-1 text-xs text-amber-600">
-                                                    ❌ {r.errors.length}
-                                                </span>
-                                            ) : null}
-                                        </TabsTrigger>
-                                    );
-                                })}
-                            </TabsList>
-                            {selectedSheets.map((s) => {
-                                const r = formatResults[s];
-
-                                if (!r) {
-                                    return (
                                         <TabsContent key={s} value={s}>
-                                            <div className="p-4 text-sm text-muted-foreground">
-                                                Not verified yet.
+                                            <div
+                                                className={`rounded-lg border p-4 ${r.valid ? "border bg-card" : "border bg-card"}`}
+                                            >
+                                                <div className="flex flex-wrap gap-2 text-xs">
+                                                    <Badge
+                                                        variant={
+                                                            r.groups.procurement
+                                                                ? "default"
+                                                                : "secondary"
+                                                        }
+                                                    >
+                                                        Procurement: {r.groups.procurement} cells
+                                                    </Badge>
+                                                    <Badge
+                                                        variant={
+                                                            r.groups.additional
+                                                                ? "default"
+                                                                : "secondary"
+                                                        }
+                                                    >
+                                                        Additional: {r.groups.additional} cells
+                                                    </Badge>
+                                                    <Badge
+                                                        variant={
+                                                            r.groups.nonProcurement
+                                                                ? "default"
+                                                                : "secondary"
+                                                        }
+                                                    >
+                                                        Non-Proc: {r.groups.nonProcurement} cells
+                                                    </Badge>
+                                                </div>
+                                                {r.details.length > 0 && (
+                                                    <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
+                                                        {r.details.map((d, i) => (
+                                                            <li key={i}>{d}</li>
+                                                        ))}
+                                                    </ul>
+                                                )}
+                                                {r.errors.length > 0 && (
+                                                    <div className="mt-3">
+                                                        <div className="text-xs font-semibold">
+                                                            Issues ({r.errors.length}) in {s}:
+                                                        </div>
+                                                        <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">
+                                                            {r.errors.map((e, i) => (
+                                                                <li key={i}>
+                                                                    <span className="font-mono">
+                                                                        Row {e.row}:
+                                                                    </span>{" "}
+                                                                    {e.message}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {!r.valid && (
+                                                    <p className="mt-2 text-xs text-amber-800">
+                                                        Fix calibration or sheet format — Next is
+                                                        blocked until valid.
+                                                    </p>
+                                                )}
                                             </div>
                                         </TabsContent>
                                     );
-                                }
+                                })}
+                            </Tabs>
+                        )}
+
+                        {hasFormatResult &&
+                            selectedSheets.length === 1 &&
+                            (() => {
+                                const s = selectedSheets[0];
+                                const r = formatResults[s];
+
+                                if (!r) return null;
 
                                 return (
-                                    <TabsContent key={s} value={s}>
-                                        <div
-                                            className={`rounded-lg border p-4 ${r.valid ? "border bg-card" : "border bg-card"}`}
-                                        >
-                                            <div className="flex flex-wrap gap-2 text-xs">
-                                                <Badge
-                                                    variant={
-                                                        r.groups.procurement
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                >
-                                                    Procurement: {r.groups.procurement} cells
-                                                </Badge>
-                                                <Badge
-                                                    variant={
-                                                        r.groups.additional
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                >
-                                                    Additional: {r.groups.additional} cells
-                                                </Badge>
-                                                <Badge
-                                                    variant={
-                                                        r.groups.nonProcurement
-                                                            ? "default"
-                                                            : "secondary"
-                                                    }
-                                                >
-                                                    Non-Proc: {r.groups.nonProcurement} cells
-                                                </Badge>
-                                            </div>
-                                            {r.details.length > 0 && (
-                                                <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
-                                                    {r.details.map((d, i) => (
-                                                        <li key={i}>{d}</li>
+                                    <div
+                                        className={`rounded-lg border p-4 ${r.valid ? "border bg-card" : "border bg-card"}`}
+                                    >
+                                        <div className="flex flex-wrap gap-2 text-xs">
+                                            <Badge
+                                                variant={
+                                                    r.groups.procurement ? "default" : "secondary"
+                                                }
+                                            >
+                                                Procurement: {r.groups.procurement} cells
+                                            </Badge>
+                                            <Badge
+                                                variant={
+                                                    r.groups.additional ? "default" : "secondary"
+                                                }
+                                            >
+                                                Additional: {r.groups.additional} cells
+                                            </Badge>
+                                            <Badge
+                                                variant={
+                                                    r.groups.nonProcurement
+                                                        ? "default"
+                                                        : "secondary"
+                                                }
+                                            >
+                                                Non-Proc: {r.groups.nonProcurement} cells
+                                            </Badge>
+                                        </div>
+                                        {r.details.length > 0 && (
+                                            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
+                                                {r.details.map((d, i) => (
+                                                    <li key={i}>{d}</li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                        {r.errors.length > 0 && (
+                                            <div className="mt-3">
+                                                <div className="text-xs font-semibold">
+                                                    Issues ({r.errors.length}):
+                                                </div>
+                                                <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">
+                                                    {r.errors.map((e, i) => (
+                                                        <li key={i}>
+                                                            <span className="font-mono">
+                                                                Row {e.row}:
+                                                            </span>{" "}
+                                                            {e.message}
+                                                        </li>
                                                     ))}
                                                 </ul>
-                                            )}
-                                            {r.errors.length > 0 && (
-                                                <div className="mt-3">
-                                                    <div className="text-xs font-semibold">
-                                                        Issues ({r.errors.length}) in {s}:
-                                                    </div>
-                                                    <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">
-                                                        {r.errors.map((e, i) => (
-                                                            <li key={i}>
-                                                                <span className="font-mono">
-                                                                    Row {e.row}:
-                                                                </span>{" "}
-                                                                {e.message}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                            {!r.valid && (
-                                                <p className="mt-2 text-xs text-amber-800">
-                                                    Fix calibration or sheet format — Next is
-                                                    blocked until valid.
-                                                </p>
-                                            )}
-                                        </div>
-                                    </TabsContent>
+                                            </div>
+                                        )}
+                                        {!r.valid && (
+                                            <p className="mt-2 text-xs text-amber-800">
+                                                Fix calibration or sheet format — Next is blocked
+                                                until valid.
+                                            </p>
+                                        )}
+                                    </div>
                                 );
-                            })}
-                        </Tabs>
-                    )}
+                            })()}
 
-                    {hasFormatResult &&
-                        selectedSheets.length === 1 &&
-                        (() => {
-                            const s = selectedSheets[0];
-                            const r = formatResults[s];
+                        {!hasFormatResult && (
+                            <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
+                                Click Verify Format to check sheet structure.
+                            </div>
+                        )}
 
-                            if (!r) return null;
+                        <div className="flex justify-between">
+                            <Button variant="outline" onClick={() => setStep("calibrate")}>
+                                Back
+                            </Button>
+                            <Button onClick={() => setStep("verifyMap")} disabled={!canVerifyMap}>
+                                Next: Verify & Map{" "}
+                                {hasFormatResult && !formatValid ? "(blocked)" : ""}
+                            </Button>
+                        </div>
+                    </TabsContent>
 
-                            return (
-                                <div
-                                    className={`rounded-lg border p-4 ${r.valid ? "border bg-card" : "border bg-card"}`}
-                                >
-                                    <div className="flex flex-wrap gap-2 text-xs">
+                    <TabsContent value="verifyMap" className="mt-4 flex flex-col gap-4">
+                        <div className="rounded-lg border p-4">
+                            <p className="mb-2 text-sm font-medium">
+                                Verify & Map — extract relationships and check DB
+                            </p>
+                            <p className="mb-3 text-xs text-muted-foreground">
+                                Click Log Unique Relationships to extract from{" "}
+                                {selectedSheets.length} sheet
+                                {selectedSheets.length === 1 ? "" : "s"} and verify against DB. Use
+                                dropdowns for ~ partial / ❌ missing COAs.
+                            </p>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={handleLog}>
+                                    Log {(currentSheet || selectedSheets[0]) ?? "sheet"} +
+                                    calibration
+                                </Button>
+                                <Button size="sm" onClick={handleLogRelationships}>
+                                    Log Unique Relationships{" "}
+                                    {selectedSheets.length > 1
+                                        ? `(${selectedSheets.length} sheets)`
+                                        : ""}
+                                </Button>
+                            </div>
+                        </div>
+
+                        {effectiveVerification ? (
+                            <div className="rounded-lg border">
+                                <div className="border-b p-3">
+                                    <h3 className="text-sm font-semibold">
+                                        DB Verification — {effectiveVerification.total} unique pairs
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground">
+                                        Checked against {existingCategories.length} categories,{" "}
+                                        {existingCoas.length} COAs (
+                                        {(currentSheet
+                                            ? getEffectiveConfig(currentSheet).coaMatchField
+                                            : sharedConfig?.coaMatchField) ?? "auto"}
+                                        ), {existingMappings.length} existing mappings
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
                                         <Badge
-                                            variant={r.groups.procurement ? "default" : "secondary"}
+                                            variant={
+                                                effectiveVerification.catFound ===
+                                                effectiveVerification.total
+                                                    ? "default"
+                                                    : "secondary"
+                                            }
                                         >
-                                            Procurement: {r.groups.procurement} cells
-                                        </Badge>
-                                        <Badge
-                                            variant={r.groups.additional ? "default" : "secondary"}
-                                        >
-                                            Additional: {r.groups.additional} cells
+                                            Categories: {effectiveVerification.catFound}/
+                                            {effectiveVerification.total}{" "}
+                                            {effectiveVerification.catFound ===
+                                            effectiveVerification.total
+                                                ? "✅"
+                                                : `❌ ${effectiveVerification.missingCat} missing`}
                                         </Badge>
                                         <Badge
                                             variant={
-                                                r.groups.nonProcurement ? "default" : "secondary"
+                                                effectiveVerification.effCoaFound ===
+                                                effectiveVerification.total
+                                                    ? "default"
+                                                    : "secondary"
                                             }
                                         >
-                                            Non-Proc: {r.groups.nonProcurement} cells
+                                            COAs: {effectiveVerification.effCoaFound}/
+                                            {effectiveVerification.total}{" "}
+                                            {effectiveVerification.effCoaFound ===
+                                            effectiveVerification.total
+                                                ? "✅"
+                                                : `❌ ${effectiveVerification.effMissingCoa} missing`}
+                                        </Badge>
+                                        <Badge
+                                            variant={
+                                                effectiveVerification.effMappingFound ===
+                                                effectiveVerification.total
+                                                    ? "default"
+                                                    : effectiveVerification.effMappingFound > 0
+                                                      ? "secondary"
+                                                      : "outline"
+                                            }
+                                        >
+                                            Mappings: {effectiveVerification.effMappingFound}/
+                                            {effectiveVerification.total}{" "}
+                                            {effectiveVerification.effMappingFound ===
+                                            effectiveVerification.total
+                                                ? "✅ all mapped"
+                                                : effectiveVerification.effMissingMapping > 0
+                                                  ? `${effectiveVerification.effMissingMapping} missing`
+                                                  : "—"}
                                         </Badge>
                                     </div>
-                                    {r.details.length > 0 && (
-                                        <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
-                                            {r.details.map((d, i) => (
-                                                <li key={i}>{d}</li>
-                                            ))}
-                                        </ul>
-                                    )}
-                                    {r.errors.length > 0 && (
-                                        <div className="mt-3">
-                                            <div className="text-xs font-semibold">
-                                                Issues ({r.errors.length}):
-                                            </div>
-                                            <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">
-                                                {r.errors.map((e, i) => (
-                                                    <li key={i}>
-                                                        <span className="font-mono">
-                                                            Row {e.row}:
-                                                        </span>{" "}
-                                                        {e.message}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
-                                    {!r.valid && (
-                                        <p className="mt-2 text-xs text-amber-800">
-                                            Fix calibration or sheet format — Next is blocked until
-                                            valid.
+                                    {Object.keys(coaOverrides).length > 0 && (
+                                        <p className="mt-2 text-xs text-amber-600">
+                                            {Object.keys(coaOverrides).length} COA override(s)
+                                            selected — mapping counts reflect overrides.
                                         </p>
                                     )}
                                 </div>
-                            );
-                        })()}
-
-                    {!hasFormatResult && (
-                        <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
-                            Click Verify Format to check sheet structure.
-                        </div>
-                    )}
-
-                    <div className="flex justify-between">
-                        <Button variant="outline" onClick={() => setStep("calibrate")}>
-                            Back
-                        </Button>
-                        <Button onClick={() => setStep("verifyMap")} disabled={!canVerifyMap}>
-                            Next: Verify & Map {hasFormatResult && !formatValid ? "(blocked)" : ""}
-                        </Button>
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="verifyMap" className="mt-4 flex flex-col gap-4">
-                    <div className="rounded-lg border p-4">
-                        <p className="mb-2 text-sm font-medium">
-                            Verify & Map — extract relationships and check DB
-                        </p>
-                        <p className="mb-3 text-xs text-muted-foreground">
-                            Click Log Unique Relationships to extract from {selectedSheets.length}{" "}
-                            sheet{selectedSheets.length === 1 ? "" : "s"} and verify against DB. Use
-                            dropdowns for ~ partial / ❌ missing COAs.
-                        </p>
-                        <div className="flex gap-2">
-                            <Button variant="outline" size="sm" onClick={handleLog}>
-                                Log {(currentSheet || selectedSheets[0]) ?? "sheet"} + calibration
-                            </Button>
-                            <Button size="sm" onClick={handleLogRelationships}>
-                                Log Unique Relationships{" "}
-                                {selectedSheets.length > 1
-                                    ? `(${selectedSheets.length} sheets)`
-                                    : ""}
-                            </Button>
-                        </div>
-                    </div>
-
-                    {effectiveVerification ? (
-                        <div className="rounded-lg border">
-                            <div className="border-b p-3">
-                                <h3 className="text-sm font-semibold">
-                                    DB Verification — {effectiveVerification.total} unique pairs
-                                </h3>
-                                <p className="text-xs text-muted-foreground">
-                                    Checked against {existingCategories.length} categories,{" "}
-                                    {existingCoas.length} COAs (
-                                    {(currentSheet
-                                        ? getEffectiveConfig(currentSheet).coaMatchField
-                                        : sharedConfig?.coaMatchField) ?? "auto"}
-                                    ), {existingMappings.length} existing mappings
-                                </p>
-                                <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                    <Badge
-                                        variant={
-                                            effectiveVerification.catFound ===
-                                            effectiveVerification.total
-                                                ? "default"
-                                                : "secondary"
-                                        }
-                                    >
-                                        Categories: {effectiveVerification.catFound}/
-                                        {effectiveVerification.total}{" "}
-                                        {effectiveVerification.catFound ===
-                                        effectiveVerification.total
-                                            ? "✅"
-                                            : `❌ ${effectiveVerification.missingCat} missing`}
-                                    </Badge>
-                                    <Badge
-                                        variant={
-                                            effectiveVerification.effCoaFound ===
-                                            effectiveVerification.total
-                                                ? "default"
-                                                : "secondary"
-                                        }
-                                    >
-                                        COAs: {effectiveVerification.effCoaFound}/
-                                        {effectiveVerification.total}{" "}
-                                        {effectiveVerification.effCoaFound ===
-                                        effectiveVerification.total
-                                            ? "✅"
-                                            : `❌ ${effectiveVerification.effMissingCoa} missing`}
-                                    </Badge>
-                                    <Badge
-                                        variant={
-                                            effectiveVerification.effMappingFound ===
-                                            effectiveVerification.total
-                                                ? "default"
-                                                : effectiveVerification.effMappingFound > 0
-                                                  ? "secondary"
-                                                  : "outline"
-                                        }
-                                    >
-                                        Mappings: {effectiveVerification.effMappingFound}/
-                                        {effectiveVerification.total}{" "}
-                                        {effectiveVerification.effMappingFound ===
-                                        effectiveVerification.total
-                                            ? "✅ all mapped"
-                                            : effectiveVerification.effMissingMapping > 0
-                                              ? `${effectiveVerification.effMissingMapping} missing`
-                                              : "—"}
-                                    </Badge>
-                                </div>
-                                {Object.keys(coaOverrides).length > 0 && (
-                                    <p className="mt-2 text-xs text-amber-600">
-                                        {Object.keys(coaOverrides).length} COA override(s) selected
-                                        — mapping counts reflect overrides.
-                                    </p>
-                                )}
-                            </div>
-                            <div className="max-h-[480px] overflow-auto">
-                                <table className="w-full text-xs">
-                                    <thead className="sticky top-0 bg-card text-muted-foreground">
-                                        <tr className="border-b">
-                                            <th className="p-2 text-left">Sheet</th>
-                                            <th className="p-2 text-left">Section</th>
-                                            <th className="p-2 text-left">Category</th>
-                                            <th className="p-2 text-center">Cat DB</th>
-                                            <th className="p-2 text-left">COA (Excel)</th>
-                                            <th className="min-w-[280px] p-2 text-left">COA DB</th>
-                                            <th className="p-2 text-center">Mapping</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {effectiveVerification.effectivePairs.map((v) => {
-                                            const needsDropdown = !v.coaExists;
-                                            const isOverridden = v.overrideId !== null;
-                                            const selectedDisplay = v.effectiveCoa
-                                                ? `coa:${v.effectiveCoa.id}:${v.effectiveCoa.path} — ${v.effectiveCoa.account_title}`
-                                                : "";
-                                            // Build items per row: suggested + remaining
-                                            const suggestedIds = new Set(
-                                                v.coaTopMatches.map((m) => m.coa.id),
-                                            );
-                                            const suggestedCoas = v.coaTopMatches.map((m) => m.coa);
-                                            const remainingCoas = existingCoas.filter(
-                                                (c) => !suggestedIds.has(c.id),
-                                            );
-                                            const itemsForRow =
-                                                v.coaMatchType === "partial" &&
-                                                suggestedCoas.length > 0
-                                                    ? [
-                                                          ...suggestedCoas.map(
+                                <div className="max-h-[480px] overflow-auto">
+                                    <table className="w-full text-xs">
+                                        <thead className="sticky top-0 bg-card text-muted-foreground">
+                                            <tr className="border-b">
+                                                <th className="p-2 text-left">Sheet</th>
+                                                <th className="p-2 text-left">Section</th>
+                                                <th className="p-2 text-left">Category</th>
+                                                <th className="p-2 text-center">Cat DB</th>
+                                                <th className="p-2 text-left">COA (Excel)</th>
+                                                <th className="min-w-[280px] p-2 text-left">
+                                                    COA DB
+                                                </th>
+                                                <th className="p-2 text-center">Mapping</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {effectiveVerification.effectivePairs.map((v) => {
+                                                const needsDropdown = !v.coaExists;
+                                                const isOverridden = v.overrideId !== null;
+                                                const selectedDisplay = v.effectiveCoa
+                                                    ? `coa:${v.effectiveCoa.id}:${v.effectiveCoa.path} — ${v.effectiveCoa.account_title}`
+                                                    : "";
+                                                // Build items per row: suggested + remaining
+                                                const suggestedIds = new Set(
+                                                    v.coaTopMatches.map((m) => m.coa.id),
+                                                );
+                                                const suggestedCoas = v.coaTopMatches.map(
+                                                    (m) => m.coa,
+                                                );
+                                                const remainingCoas = existingCoas.filter(
+                                                    (c) => !suggestedIds.has(c.id),
+                                                );
+                                                const itemsForRow =
+                                                    v.coaMatchType === "partial" &&
+                                                    suggestedCoas.length > 0
+                                                        ? [
+                                                              ...suggestedCoas.map(
+                                                                  (c) =>
+                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
+                                                              ),
+                                                              ...remainingCoas.map(
+                                                                  (c) =>
+                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
+                                                              ),
+                                                          ]
+                                                        : existingCoas.map(
                                                               (c) =>
                                                                   `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                          ),
-                                                          ...remainingCoas.map(
-                                                              (c) =>
-                                                                  `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                          ),
-                                                      ]
-                                                    : existingCoas.map(
-                                                          (c) =>
-                                                              `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                      );
+                                                          );
 
-                                            return (
-                                                <tr
-                                                    key={v.key}
-                                                    className="border-b hover:bg-accent"
-                                                >
-                                                    <td className="p-2 text-muted-foreground">
-                                                        {v.sheet}
-                                                    </td>
-                                                    <td className="p-2 text-muted-foreground">
-                                                        {v.section}
-                                                    </td>
-                                                    <td
-                                                        className="max-w-[16ch] truncate p-2"
-                                                        title={v.category}
+                                                return (
+                                                    <tr
+                                                        key={v.key}
+                                                        className="border-b hover:bg-accent"
                                                     >
-                                                        {v.category}
-                                                    </td>
-                                                    <td className="p-2 text-center">
-                                                        {v.catExists ? (
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className="bg-secondary text-secondary-foreground"
-                                                            >
-                                                                ✅ {v.catId}
-                                                            </Badge>
-                                                        ) : v.catMatchType === "partial" ? (
-                                                            <Badge
-                                                                variant="outline"
-                                                                title={v.catTopMatches
-                                                                    .map(
-                                                                        (m) =>
-                                                                            `${m.category.name} (lev ${m.score})`,
-                                                                    )
-                                                                    .join(", ")}
-                                                            >
-                                                                ~ partial
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge
-                                                                variant="secondary"
-                                                                className="bg-secondary text-secondary-foreground"
-                                                            >
-                                                                ❌ missing
-                                                            </Badge>
-                                                        )}
-                                                    </td>
-                                                    <td
-                                                        className="max-w-[18ch] truncate p-2"
-                                                        title={v.coa}
-                                                    >
-                                                        {v.coa}
-                                                    </td>
-                                                    <td className="p-2">
-                                                        {needsDropdown ? (
-                                                            <div className="flex items-center gap-1">
-                                                                <Combobox
-                                                                    items={itemsForRow}
-                                                                    value={selectedDisplay}
-                                                                    onValueChange={(val) =>
-                                                                        handleCoaOverrideChange(
-                                                                            v.key,
-                                                                            val as string | null,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <ComboboxInput
-                                                                        placeholder={
-                                                                            v.coaMatchType ===
-                                                                            "partial"
-                                                                                ? "★ Suggested at top — search..."
-                                                                                : "Search COA..."
-                                                                        }
-                                                                        className="h-7 text-xs"
-                                                                    />
-                                                                    <ComboboxContent>
-                                                                        <ComboboxEmpty>
-                                                                            No COA found.
-                                                                        </ComboboxEmpty>
-                                                                        <ComboboxList>
-                                                                            {(item: string) => {
-                                                                                const isSuggested =
-                                                                                    v.coaTopMatches.some(
-                                                                                        (m) =>
-                                                                                            item.includes(
-                                                                                                `coa:${m.coa.id}:`,
-                                                                                            ),
-                                                                                    );
-
-                                                                                return (
-                                                                                    <ComboboxItem
-                                                                                        key={item}
-                                                                                        value={item}
-                                                                                        className={
-                                                                                            isSuggested
-                                                                                                ? "bg-card font-medium"
-                                                                                                : ""
-                                                                                        }
-                                                                                    >
-                                                                                        {isSuggested
-                                                                                            ? "★ "
-                                                                                            : ""}
-                                                                                        {item.replace(
-                                                                                            /^coa:\d+:/,
-                                                                                            "",
-                                                                                        )}
-                                                                                    </ComboboxItem>
-                                                                                );
-                                                                            }}
-                                                                        </ComboboxList>
-                                                                    </ComboboxContent>
-                                                                </Combobox>
-                                                                {isOverridden && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        className="h-7 px-1 text-xs"
-                                                                        onClick={() =>
-                                                                            handleClearOverride(
-                                                                                v.key,
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        ✕
-                                                                    </Button>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-1">
+                                                        <td className="p-2 text-muted-foreground">
+                                                            {v.sheet}
+                                                        </td>
+                                                        <td className="p-2 text-muted-foreground">
+                                                            {v.section}
+                                                        </td>
+                                                        <td
+                                                            className="max-w-[16ch] truncate p-2"
+                                                            title={v.category}
+                                                        >
+                                                            {v.category}
+                                                        </td>
+                                                        <td className="p-2 text-center">
+                                                            {v.catExists ? (
                                                                 <Badge
                                                                     variant="secondary"
                                                                     className="bg-secondary text-secondary-foreground"
                                                                 >
-                                                                    ✅ {v.coaId}
+                                                                    ✅ {v.catId}
                                                                 </Badge>
-                                                                <span
-                                                                    className="truncate text-muted-foreground"
-                                                                    title={v.effectiveCoa?.path}
-                                                                >
-                                                                    {v.effectiveCoa?.path}
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {needsDropdown && v.effectiveCoa && (
-                                                            <div className="mt-1 text-xs text-green-600">
-                                                                → {v.effectiveCoa.path} —{" "}
-                                                                {v.effectiveCoa.account_title}
-                                                            </div>
-                                                        )}
-                                                        {needsDropdown &&
-                                                            !v.effectiveCoa &&
-                                                            v.coaTopMatches.length > 0 && (
-                                                                <div
-                                                                    className="mt-1 truncate text-xs text-muted-foreground"
-                                                                    title={v.coaTopMatches
+                                                            ) : v.catMatchType === "partial" ? (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    title={v.catTopMatches
                                                                         .map(
                                                                             (m) =>
-                                                                                `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
+                                                                                `${m.category.name} (lev ${m.score})`,
                                                                         )
-                                                                        .join(" | ")}
+                                                                        .join(", ")}
                                                                 >
-                                                                    Suggest:{" "}
-                                                                    {v.coaTopMatches[0].coa.path} —{" "}
-                                                                    {
-                                                                        v.coaTopMatches[0].coa
-                                                                            .account_title
-                                                                    }
+                                                                    ~ partial
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge
+                                                                    variant="secondary"
+                                                                    className="bg-secondary text-secondary-foreground"
+                                                                >
+                                                                    ❌ missing
+                                                                </Badge>
+                                                            )}
+                                                        </td>
+                                                        <td
+                                                            className="max-w-[18ch] truncate p-2"
+                                                            title={v.coa}
+                                                        >
+                                                            {v.coa}
+                                                        </td>
+                                                        <td className="p-2">
+                                                            {needsDropdown ? (
+                                                                <div className="flex items-center gap-1">
+                                                                    <Combobox
+                                                                        items={itemsForRow}
+                                                                        value={selectedDisplay}
+                                                                        onValueChange={(val) =>
+                                                                            handleCoaOverrideChange(
+                                                                                v.key,
+                                                                                val as
+                                                                                    string | null,
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <ComboboxInput
+                                                                            placeholder={
+                                                                                v.coaMatchType ===
+                                                                                "partial"
+                                                                                    ? "★ Suggested at top — search..."
+                                                                                    : "Search COA..."
+                                                                            }
+                                                                            className="h-7 text-xs"
+                                                                        />
+                                                                        <ComboboxContent>
+                                                                            <ComboboxEmpty>
+                                                                                No COA found.
+                                                                            </ComboboxEmpty>
+                                                                            <ComboboxList>
+                                                                                {(item: string) => {
+                                                                                    const isSuggested =
+                                                                                        v.coaTopMatches.some(
+                                                                                            (m) =>
+                                                                                                item.includes(
+                                                                                                    `coa:${m.coa.id}:`,
+                                                                                                ),
+                                                                                        );
+
+                                                                                    return (
+                                                                                        <ComboboxItem
+                                                                                            key={
+                                                                                                item
+                                                                                            }
+                                                                                            value={
+                                                                                                item
+                                                                                            }
+                                                                                            className={
+                                                                                                isSuggested
+                                                                                                    ? "bg-card font-medium"
+                                                                                                    : ""
+                                                                                            }
+                                                                                        >
+                                                                                            {isSuggested
+                                                                                                ? "★ "
+                                                                                                : ""}
+                                                                                            {item.replace(
+                                                                                                /^coa:\d+:/,
+                                                                                                "",
+                                                                                            )}
+                                                                                        </ComboboxItem>
+                                                                                    );
+                                                                                }}
+                                                                            </ComboboxList>
+                                                                        </ComboboxContent>
+                                                                    </Combobox>
+                                                                    {isOverridden && (
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-7 px-1 text-xs"
+                                                                            onClick={() =>
+                                                                                handleClearOverride(
+                                                                                    v.key,
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            ✕
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex items-center gap-1">
+                                                                    <Badge
+                                                                        variant="secondary"
+                                                                        className="bg-secondary text-secondary-foreground"
+                                                                    >
+                                                                        ✅ {v.coaId}
+                                                                    </Badge>
+                                                                    <span
+                                                                        className="truncate text-muted-foreground"
+                                                                        title={v.effectiveCoa?.path}
+                                                                    >
+                                                                        {v.effectiveCoa?.path}
+                                                                    </span>
                                                                 </div>
                                                             )}
-                                                    </td>
-                                                    <td className="p-2 text-center">
-                                                        {v.effectiveMappingExists ? (
-                                                            <span className="text-green-600">
-                                                                ✅ exists
-                                                            </span>
-                                                        ) : v.catExists && v.effectiveCoaExists ? (
-                                                            <span className="text-amber-600">
-                                                                ❌ not mapped
-                                                            </span>
-                                                        ) : (
+                                                            {needsDropdown && v.effectiveCoa && (
+                                                                <div className="mt-1 text-xs text-green-600">
+                                                                    → {v.effectiveCoa.path} —{" "}
+                                                                    {v.effectiveCoa.account_title}
+                                                                </div>
+                                                            )}
+                                                            {needsDropdown &&
+                                                                !v.effectiveCoa &&
+                                                                v.coaTopMatches.length > 0 && (
+                                                                    <div
+                                                                        className="mt-1 truncate text-xs text-muted-foreground"
+                                                                        title={v.coaTopMatches
+                                                                            .map(
+                                                                                (m) =>
+                                                                                    `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
+                                                                            )
+                                                                            .join(" | ")}
+                                                                    >
+                                                                        Suggest:{" "}
+                                                                        {
+                                                                            v.coaTopMatches[0].coa
+                                                                                .path
+                                                                        }{" "}
+                                                                        —{" "}
+                                                                        {
+                                                                            v.coaTopMatches[0].coa
+                                                                                .account_title
+                                                                        }
+                                                                    </div>
+                                                                )}
+                                                        </td>
+                                                        <td className="p-2 text-center">
+                                                            {v.effectiveMappingExists ? (
+                                                                <span className="text-green-600">
+                                                                    ✅ exists
+                                                                </span>
+                                                            ) : v.catExists &&
+                                                              v.effectiveCoaExists ? (
+                                                                <span className="text-amber-600">
+                                                                    ❌ not mapped
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-muted-foreground">
+                                                                    —
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
+                                    <span className="text-xs text-muted-foreground">
+                                        Detailed logs in console (F12) — with top suggestions. Mode:{" "}
+                                        {(currentSheet
+                                            ? getEffectiveConfig(currentSheet).coaMatchField
+                                            : sharedConfig?.coaMatchField) ?? "auto"}{" "}
+                                        — overrides are row-unique (
+                                        {Object.keys(coaOverrides).length} active).
+                                    </span>
+                                    <div className="flex gap-2">
+                                        {Object.keys(coaOverrides).length > 0 && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setCoaOverrides({})}
+                                            >
+                                                Clear overrides
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
+                                No verification yet — click Log Unique Relationships.
+                            </div>
+                        )}
+
+                        <div className="flex justify-between">
+                            <Button variant="outline" onClick={() => setStep("verifyFormat")}>
+                                Back
+                            </Button>
+                            <Button onClick={() => setStep("review")} disabled={!canReview}>
+                                Next: Review & Save{" "}
+                                {effectiveVerification
+                                    ? `(${effectiveVerification.effMissingMapping} to create)`
+                                    : ""}
+                            </Button>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="review" className="mt-4 flex flex-col gap-4">
+                        {effectiveVerification ? (
+                            <div className="rounded-lg border">
+                                <div className="border-b p-3">
+                                    <h3 className="text-sm font-semibold">
+                                        Review — {effectiveVerification.total} unique pairs
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground">
+                                        Checked against {existingCategories.length} categories,{" "}
+                                        {existingCoas.length} COAs, {existingMappings.length}{" "}
+                                        mappings — {effectiveVerification.effMissingMapping} will be
+                                        created.
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                        <Badge
+                                            variant={
+                                                effectiveVerification.catFound ===
+                                                effectiveVerification.total
+                                                    ? "default"
+                                                    : "secondary"
+                                            }
+                                        >
+                                            Categories: {effectiveVerification.catFound}/
+                                            {effectiveVerification.total}
+                                        </Badge>
+                                        <Badge
+                                            variant={
+                                                effectiveVerification.effCoaFound ===
+                                                effectiveVerification.total
+                                                    ? "default"
+                                                    : "secondary"
+                                            }
+                                        >
+                                            COAs: {effectiveVerification.effCoaFound}/
+                                            {effectiveVerification.total}
+                                        </Badge>
+                                        <Badge
+                                            variant={
+                                                effectiveVerification.effMappingFound ===
+                                                effectiveVerification.total
+                                                    ? "default"
+                                                    : "secondary"
+                                            }
+                                        >
+                                            Mappings: {effectiveVerification.effMappingFound}/
+                                            {effectiveVerification.total}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div className="max-h-96 overflow-auto">
+                                    <table className="w-full text-xs">
+                                        <thead className="sticky top-0 bg-card text-muted-foreground">
+                                            <tr className="border-b">
+                                                <th className="p-2 text-left">Sheet</th>
+                                                <th className="p-2 text-left">Category</th>
+                                                <th className="p-2 text-left">COA (Excel → DB)</th>
+                                                <th className="p-2 text-center">Mapping</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {effectiveVerification.effectivePairs
+                                                .filter(
+                                                    (p) =>
+                                                        p.catExists &&
+                                                        p.effectiveCoaExists &&
+                                                        !p.effectiveMappingExists,
+                                                )
+                                                .map((p) => (
+                                                    <tr key={p.key} className="border-b">
+                                                        <td className="p-2 text-muted-foreground">
+                                                            {p.sheet}
+                                                        </td>
+                                                        <td className="p-2">
+                                                            {p.category}{" "}
                                                             <span className="text-muted-foreground">
-                                                                —
+                                                                [{p.catId}]
                                                             </span>
-                                                        )}
+                                                        </td>
+                                                        <td className="p-2">
+                                                            {p.coa}{" "}
+                                                            <span className="text-muted-foreground">
+                                                                →
+                                                            </span>{" "}
+                                                            {p.effectiveCoa?.path} —{" "}
+                                                            {p.effectiveCoa?.account_title}
+                                                        </td>
+                                                        <td className="p-2 text-center text-amber-600">
+                                                            ❌ not mapped
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            {effectiveVerification.effMissingMapping === 0 && (
+                                                <tr>
+                                                    <td
+                                                        colSpan={4}
+                                                        className="p-4 text-center text-muted-foreground"
+                                                    >
+                                                        All mappings already exist — nothing to
+                                                        create.
                                                     </td>
                                                 </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
-                                <span className="text-xs text-muted-foreground">
-                                    Detailed logs in console (F12) — with top suggestions. Mode:{" "}
-                                    {(currentSheet
-                                        ? getEffectiveConfig(currentSheet).coaMatchField
-                                        : sharedConfig?.coaMatchField) ?? "auto"}{" "}
-                                    — overrides are row-unique ({Object.keys(coaOverrides).length}{" "}
-                                    active).
-                                </span>
-                                <div className="flex gap-2">
-                                    {Object.keys(coaOverrides).length > 0 && (
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
+                                    <span className="text-xs text-muted-foreground">
+                                        {effectiveVerification.effMissingMapping} mapping(s) will be
+                                        created. COAs are not created, only linked.
+                                    </span>
+                                    <div className="flex gap-2">
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -2904,181 +3103,45 @@ export default function CategoryCoaMappingPage({
                                         >
                                             Clear overrides
                                         </Button>
-                                    )}
+                                        <Button
+                                            size="sm"
+                                            disabled={
+                                                isSaving ||
+                                                effectiveVerification.effMissingMapping === 0
+                                            }
+                                            onClick={handleBulkCreateMappings}
+                                        >
+                                            {isSaving ? (
+                                                <>
+                                                    <Spinner className="mr-1 h-3 w-3" /> Saving...
+                                                </>
+                                            ) : (
+                                                `Create ${effectiveVerification.effMissingMapping} Mapping${effectiveVerification.effMissingMapping === 1 ? "" : "s"}`
+                                            )}
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
-                            No verification yet — click Log Unique Relationships.
-                        </div>
-                    )}
-
-                    <div className="flex justify-between">
-                        <Button variant="outline" onClick={() => setStep("verifyFormat")}>
-                            Back
-                        </Button>
-                        <Button onClick={() => setStep("review")} disabled={!canReview}>
-                            Next: Review & Save{" "}
-                            {effectiveVerification
-                                ? `(${effectiveVerification.effMissingMapping} to create)`
-                                : ""}
-                        </Button>
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="review" className="mt-4 flex flex-col gap-4">
-                    {effectiveVerification ? (
-                        <div className="rounded-lg border">
-                            <div className="border-b p-3">
-                                <h3 className="text-sm font-semibold">
-                                    Review — {effectiveVerification.total} unique pairs
-                                </h3>
-                                <p className="text-xs text-muted-foreground">
-                                    Checked against {existingCategories.length} categories,{" "}
-                                    {existingCoas.length} COAs, {existingMappings.length} mappings —{" "}
-                                    {effectiveVerification.effMissingMapping} will be created.
-                                </p>
-                                <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                    <Badge
-                                        variant={
-                                            effectiveVerification.catFound ===
-                                            effectiveVerification.total
-                                                ? "default"
-                                                : "secondary"
-                                        }
-                                    >
-                                        Categories: {effectiveVerification.catFound}/
-                                        {effectiveVerification.total}
-                                    </Badge>
-                                    <Badge
-                                        variant={
-                                            effectiveVerification.effCoaFound ===
-                                            effectiveVerification.total
-                                                ? "default"
-                                                : "secondary"
-                                        }
-                                    >
-                                        COAs: {effectiveVerification.effCoaFound}/
-                                        {effectiveVerification.total}
-                                    </Badge>
-                                    <Badge
-                                        variant={
-                                            effectiveVerification.effMappingFound ===
-                                            effectiveVerification.total
-                                                ? "default"
-                                                : "secondary"
-                                        }
-                                    >
-                                        Mappings: {effectiveVerification.effMappingFound}/
-                                        {effectiveVerification.total}
-                                    </Badge>
-                                </div>
+                        ) : (
+                            <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
+                                Verify first to review mappings.
                             </div>
-                            <div className="max-h-96 overflow-auto">
-                                <table className="w-full text-xs">
-                                    <thead className="sticky top-0 bg-card text-muted-foreground">
-                                        <tr className="border-b">
-                                            <th className="p-2 text-left">Sheet</th>
-                                            <th className="p-2 text-left">Category</th>
-                                            <th className="p-2 text-left">COA (Excel → DB)</th>
-                                            <th className="p-2 text-center">Mapping</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {effectiveVerification.effectivePairs
-                                            .filter(
-                                                (p) =>
-                                                    p.catExists &&
-                                                    p.effectiveCoaExists &&
-                                                    !p.effectiveMappingExists,
-                                            )
-                                            .map((p) => (
-                                                <tr key={p.key} className="border-b">
-                                                    <td className="p-2 text-muted-foreground">
-                                                        {p.sheet}
-                                                    </td>
-                                                    <td className="p-2">
-                                                        {p.category}{" "}
-                                                        <span className="text-muted-foreground">
-                                                            [{p.catId}]
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-2">
-                                                        {p.coa}{" "}
-                                                        <span className="text-muted-foreground">
-                                                            →
-                                                        </span>{" "}
-                                                        {p.effectiveCoa?.path} —{" "}
-                                                        {p.effectiveCoa?.account_title}
-                                                    </td>
-                                                    <td className="p-2 text-center text-amber-600">
-                                                        ❌ not mapped
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        {effectiveVerification.effMissingMapping === 0 && (
-                                            <tr>
-                                                <td
-                                                    colSpan={4}
-                                                    className="p-4 text-center text-muted-foreground"
-                                                >
-                                                    All mappings already exist — nothing to create.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
-                                <span className="text-xs text-muted-foreground">
-                                    {effectiveVerification.effMissingMapping} mapping(s) will be
-                                    created. COAs are not created, only linked.
-                                </span>
-                                <div className="flex gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setCoaOverrides({})}
-                                    >
-                                        Clear overrides
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        disabled={
-                                            isSaving ||
-                                            effectiveVerification.effMissingMapping === 0
-                                        }
-                                        onClick={handleBulkCreateMappings}
-                                    >
-                                        {isSaving ? (
-                                            <>
-                                                <Spinner className="mr-1 h-3 w-3" /> Saving...
-                                            </>
-                                        ) : (
-                                            `Create ${effectiveVerification.effMissingMapping} Mapping${effectiveVerification.effMissingMapping === 1 ? "" : "s"}`
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
-                            Verify first to review mappings.
-                        </div>
-                    )}
+                        )}
 
-                    <div className="flex justify-between">
-                        <Button variant="outline" onClick={() => setStep("verifyMap")}>
-                            Back
-                        </Button>
-                        <Button variant="outline" onClick={() => setStep("calibrate")}>
-                            Recalibrate
-                        </Button>
-                    </div>
-                </TabsContent>
-            </Tabs>
-        </div>
+                        <div className="flex justify-between">
+                            <Button variant="outline" onClick={() => setStep("verifyMap")}>
+                                Back
+                            </Button>
+                            <Button variant="outline" onClick={() => setStep("calibrate")}>
+                                Recalibrate
+                            </Button>
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
+
+            <ScrollBar orientation="vertical" />
+        </ScrollArea>
     );
 }
 
