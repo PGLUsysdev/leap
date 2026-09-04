@@ -27,10 +27,6 @@ columns they consume:
 | Category–COA Mappings | placeholder detection | category | COA | standard field, not consumed | standard field, not consumed |
 | Price List Import | placeholder detection | description (category from enclosing group) | COA | unit | price |
 
-> Exception: the AIP Summary importer (`/aip-summary-import`) uses its own
-> column map (PPA, dates, expected output, funding source, PS/MOOE/FE/CO
-> amounts) and is not covered by this section.
-
 ### Standard calibration
 
 Identical in all three importers (`SharedSheetConfig` — one type, one
