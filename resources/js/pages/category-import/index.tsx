@@ -28,170 +28,13 @@ import {
 } from "@/components/base-ui-components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base-ui-components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
+import { cellText } from "@/lib/excel/cell-helpers";
+import { getCategoryMatch, isTotalRow, normalize } from "@/lib/ppmp/normalize";
+import type { ExistingCategory } from "@/lib/ppmp/normalize";
+import { getDefaultSharedConfig } from "@/lib/ppmp/sheet-config";
+import type { SharedSheetConfig } from "@/lib/ppmp/sheet-config";
 import { index as categoryImportIndex } from "@/routes/category-import";
 import { index as importsIndex } from "@/routes/imports";
-
-function cellText(cell: ExcelJS.Cell): string | null {
-    let value: unknown = cell.value as unknown;
-
-    if (value && typeof value === "object") {
-        if ("result" in (value as Record<string, unknown>)) {
-            value = (value as { result: unknown }).result;
-        } else if ("richText" in (value as Record<string, unknown>)) {
-            const rt = (value as { richText: Array<{ text: string }> }).richText;
-
-            if (Array.isArray(rt)) {
-                const txt = rt
-                    .map((r) => r.text)
-                    .join("")
-                    .trim();
-
-                return txt || null;
-            }
-
-            return null;
-        } else if ("text" in (value as Record<string, unknown>)) {
-            const maybe = value as { text?: string; hyperlink?: string };
-            const txt = (maybe.text ?? maybe.hyperlink ?? "") as string;
-
-            return String(txt).trim() || null;
-        } else {
-            return null;
-        }
-    }
-
-    if (value == null) return null;
-
-    const s = String(value).trim();
-
-    return s || null;
-}
-
-function columnToNumber(col: string): number {
-    let n = 0;
-
-    for (const ch of col.toUpperCase()) {
-        if (ch < "A" || ch > "Z") continue;
-
-        n = n * 26 + (ch.charCodeAt(0) - 64);
-    }
-
-    return n;
-}
-
-function numberToColumn(n: number): string {
-    let s = "";
-
-    while (n > 0) {
-        const m = (n - 1) % 26;
-        s = String.fromCharCode(65 + m) + s;
-        n = Math.floor((n - 1) / 26);
-    }
-
-    return s;
-}
-
-function leftColumn(col: string): string {
-    const n = columnToNumber(col);
-
-    if (n <= 1) return col;
-
-    return numberToColumn(n - 1);
-}
-
-function normalize(str: string): string {
-    return str.trim().replace(/\s+/g, " ").toLowerCase();
-}
-
-function isTotalRow(normalized: string): boolean {
-    return /\s*-\s*total$/.test(normalized) || /^total\b/.test(normalized);
-}
-
-const SHORT_PROCUREMENT_ROOTS = new Set(["oil", "gas", "ink", "lab", "cop", "car", "med", "law"]);
-
-function levenshtein(a: string, b: string): number {
-    if (a === b) return 0;
-
-    const al = a.length;
-    const bl = b.length;
-
-    if (al === 0) return bl;
-
-    if (bl === 0) return al;
-
-    let prev = Array(bl + 1)
-        .fill(0)
-        .map((_, i) => i);
-    let cur = Array(bl + 1).fill(0);
-
-    for (let i = 1; i <= al; i++) {
-        cur[0] = i;
-
-        for (let j = 1; j <= bl; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
-        }
-
-        [prev, cur] = [cur, prev];
-    }
-
-    return prev[bl];
-}
-
-type ExistingCategory = {
-    id: number;
-    name: string;
-    is_non_procurement: boolean;
-    is_additional: boolean;
-};
-
-function getCategoryMatch(
-    candidateNorm: string,
-    existingCategories: ExistingCategory[],
-): {
-    type: "strict" | "partial" | "none";
-    match?: ExistingCategory;
-    topMatches?: Array<{ category: ExistingCategory; score: number }>;
-} {
-    // 1. Strict
-    for (const dbCat of existingCategories) {
-        const dbNorm = normalize(dbCat.name);
-
-        if (candidateNorm === dbNorm) return { type: "strict", match: dbCat };
-    }
-
-    const partials: Array<{ category: ExistingCategory; score: number }> = [];
-    const candidateLen = candidateNorm.length;
-
-    for (const dbCat of existingCategories) {
-        const dbNorm = normalize(dbCat.name);
-        const dbLen = dbNorm.length;
-        const levThreshold = dbLen <= 5 ? 1 : dbLen <= 12 ? 2 : 3;
-        const dist = levenshtein(candidateNorm, dbNorm);
-
-        if (dist <= levThreshold) {
-            partials.push({ category: dbCat, score: dist });
-            continue;
-        }
-
-        const isEligibleLength = candidateLen >= 4 || SHORT_PROCUREMENT_ROOTS.has(candidateNorm);
-
-        if (
-            isEligibleLength &&
-            (dbNorm.includes(candidateNorm) || candidateNorm.includes(dbNorm))
-        ) {
-            partials.push({ category: dbCat, score: 99 });
-        }
-    }
-
-    if (partials.length > 0) {
-        partials.sort((a, b) => a.score - b.score);
-
-        return { type: "partial", topMatches: partials.slice(0, 3) };
-    }
-
-    return { type: "none" };
-}
 
 type VerifyResult = {
     valid: boolean;
@@ -255,19 +98,6 @@ type ExtractResult = {
     }>;
 };
 
-type CatSheetConfig = {
-    dataColumn: string;
-    coaColumn: string;
-    headerRow: number | "";
-    additionalItemsHeaderRow?: number;
-    nonProcurementHeaderRow?: number;
-    coaLabelMode: "with-label" | "without-label";
-};
-
-function getDefaultCatConfig(): CatSheetConfig {
-    return { dataColumn: "F", coaColumn: "D", headerRow: 7, coaLabelMode: "with-label" };
-}
-
 interface CategoryImportProps {
     existingCategories?: ExistingCategory[];
 }
@@ -282,8 +112,8 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
 
     // Calibrations – shared + per-sheet (snapshot mode: shared does not auto-overwrite per-sheet until Apply)
     const [calibrationMode, setCalibrationMode] = useState<"shared" | "per-sheet">("shared");
-    const [sharedConfig, setSharedConfig] = useState<CatSheetConfig | null>(null);
-    const [calibrations, setCalibrations] = useState<Record<string, CatSheetConfig>>({});
+    const [sharedConfig, setSharedConfig] = useState<SharedSheetConfig | null>(null);
+    const [calibrations, setCalibrations] = useState<Record<string, SharedSheetConfig>>({});
     const [currentSheet, setCurrentSheet] = useState<string>("");
 
     const [verifyResults, setVerifyResults] = useState<Record<string, VerifyResult>>({});
@@ -295,10 +125,10 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [isAdditionalDraft, setIsAdditionalDraft] = useState<Record<string, boolean>>({});
 
-    function getEffectiveConfig(sheet: string): CatSheetConfig {
+    function getEffectiveConfig(sheet: string): SharedSheetConfig {
         if (calibrationMode === "shared" && sharedConfig) return sharedConfig;
 
-        return calibrations[sheet] ?? sharedConfig ?? getDefaultCatConfig();
+        return calibrations[sheet] ?? sharedConfig ?? getDefaultSharedConfig();
     }
 
     const canCalibrate = selectedSheets.length > 0;
@@ -396,9 +226,9 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
     function ensureCalibrationsInitialized() {
         if (sharedConfig) return;
 
-        const def = getDefaultCatConfig();
+        const def = getDefaultSharedConfig();
         setSharedConfig(def);
-        const clones: Record<string, CatSheetConfig> = {};
+        const clones: Record<string, SharedSheetConfig> = {};
 
         for (const s of selectedSheets) clones[s] = { ...def };
 
@@ -410,7 +240,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
     function handleApplySharedToAll() {
         if (!sharedConfig) return;
 
-        const next: Record<string, CatSheetConfig> = {};
+        const next: Record<string, SharedSheetConfig> = {};
 
         for (const s of selectedSheets) next[s] = { ...sharedConfig };
 
@@ -422,7 +252,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
 
         if (!src) return;
 
-        const next: Record<string, CatSheetConfig> = {};
+        const next: Record<string, SharedSheetConfig> = {};
 
         for (const s of selectedSheets) next[s] = { ...src };
 
@@ -430,23 +260,23 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         // snapshot – do not overwrite sharedConfig
     }
 
-    function updateSharedConfig(patch: Partial<CatSheetConfig>) {
-        setSharedConfig((prev) => ({ ...(prev ?? getDefaultCatConfig()), ...patch }));
+    function updateSharedConfig(patch: Partial<SharedSheetConfig>) {
+        setSharedConfig((prev) => ({ ...(prev ?? getDefaultSharedConfig()), ...patch }));
     }
 
-    function updateCurrentCalibration(patch: Partial<CatSheetConfig>) {
+    function updateCurrentCalibration(patch: Partial<SharedSheetConfig>) {
         if (!currentSheet) return;
 
         setCalibrations((prev) => ({
             ...prev,
             [currentSheet]: {
-                ...(prev[currentSheet] ?? sharedConfig ?? getDefaultCatConfig()),
+                ...(prev[currentSheet] ?? sharedConfig ?? getDefaultSharedConfig()),
                 ...patch,
             },
         }));
     }
 
-    function verifySheet(sheet: string, cfg: CatSheetConfig): VerifyResult {
+    function verifySheet(sheet: string, cfg: SharedSheetConfig): VerifyResult {
         if (!workbook) {
             return {
                 valid: false,
@@ -469,14 +299,11 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             };
         }
 
-        const {
-            dataColumn,
-            coaColumn,
-            headerRow,
-            additionalItemsHeaderRow,
-            nonProcurementHeaderRow,
-            coaLabelMode,
-        } = cfg;
+        const dataColumn = cfg.columnConfig.category;
+        const coaColumn = cfg.columnConfig.coa;
+        const itemColumn = cfg.columnConfig.itemNumber;
+        const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg.rowConfig;
+        const { coaLabelMode } = cfg;
 
         if (headerRow === "" || headerRow == null) {
             return {
@@ -593,6 +420,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             const row = ws.getRow(r);
             const coaRaw = cellText(row.getCell(coaColumn));
             const dataRaw = cellText(row.getCell(dataColumn));
+            const itemRaw = cellText(row.getCell(itemColumn));
 
             if (!dataRaw && !coaRaw) continue;
 
@@ -652,6 +480,14 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             }
 
             if (!dataRaw || !dataNorm) continue;
+
+            if (itemRaw && dataRaw && !coaNorm) {
+                errors.push({
+                    row: r,
+                    message: `Item at row ${r} ("${dataRaw}") has an item number but no COA (D)`,
+                });
+                continue;
+            }
 
             if (isTotalRow(dataNorm)) {
                 const expected = currentCat ? normalize(`${currentCat.cat} - total`) : null;
@@ -893,14 +729,12 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
 
         for (const sheet of selectedSheets) {
             const cfg = getEffectiveConfig(sheet);
-            const {
-                dataColumn,
-                coaColumn,
-                headerRow,
-                additionalItemsHeaderRow,
-                nonProcurementHeaderRow,
-                coaLabelMode,
-            } = cfg;
+            const dataColumn = cfg.columnConfig.category;
+            const coaColumn = cfg.columnConfig.coa;
+            const itemColumn = cfg.columnConfig.itemNumber;
+            const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } =
+                cfg.rowConfig;
+            const { coaLabelMode } = cfg;
 
             if (headerRow === "" || headerRow == null) continue;
 
@@ -918,6 +752,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                 const row = ws.getRow(r);
                 const coaRaw = cellText(row.getCell(coaColumn));
                 const dataRaw = cellText(row.getCell(dataColumn));
+                const itemRaw = cellText(row.getCell(itemColumn));
 
                 if (!dataRaw) continue;
 
@@ -984,6 +819,11 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                     continue;
                 }
 
+                if (itemRaw && !coaNorm) {
+                    // Item-numbered row without COA — flagged in verify, never a category
+                    continue;
+                }
+
                 if (isTotalRow(dataNorm)) {
                     excludedTotal.push({ row: r, raw: dataRaw, normalized: dataNorm, sheet });
                     continue;
@@ -1028,7 +868,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             const loc: CatLocation = {
                 sheet: c.sheet,
                 row: c.row,
-                col: getEffectiveConfig(c.sheet).dataColumn,
+                col: getEffectiveConfig(c.sheet).columnConfig.category,
                 address: c.address,
             };
 
@@ -1308,7 +1148,7 @@ ensureCalibrationsInitialized();
                                         size="sm"
                                         onClick={() => {
                                             if (sharedConfig) {
-                                                const next: Record<string, CatSheetConfig> = {};
+                                                const next: Record<string, SharedSheetConfig> = {};
 
                                                 for (const s of selectedSheets) {
                                                     next[s] = {
@@ -1333,7 +1173,7 @@ ensureCalibrationsInitialized();
                                 </div>
                                 <span className="text-xs text-muted-foreground">
                                     {calibrationMode === "shared"
-                                        ? `Start row ${sharedConfig?.headerRow === "" || sharedConfig?.headerRow == null ? 7 : sharedConfig.headerRow} applies to every sheet — change once. Snapshot: use “Apply to all” to overwrite per-sheet.`
+                                        ? `Start row ${sharedConfig?.rowConfig.headerRow === "" || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to every sheet — change once. Snapshot: use “Apply to all” to overwrite per-sheet.`
                                         : `Each sheet can differ. Editing ${currentSheet || "—"} only affects that sheet.`}
                                 </span>
                                 {calibrationMode === "shared" ? (
@@ -1389,11 +1229,11 @@ ensureCalibrationsInitialized();
                             {(() => {
                                 const cfg =
                                     calibrationMode === "shared"
-                                        ? (sharedConfig ?? getDefaultCatConfig())
+                                        ? (sharedConfig ?? getDefaultSharedConfig())
                                         : (calibrations[currentSheet] ??
                                           sharedConfig ??
-                                          getDefaultCatConfig());
-                                const onChange = (patch: Partial<CatSheetConfig>) => {
+                                          getDefaultSharedConfig());
+                                const onChange = (patch: Partial<SharedSheetConfig>) => {
                                     if (calibrationMode === "shared") updateSharedConfig(patch);
                                     else updateCurrentCalibration(patch);
 
@@ -1416,11 +1256,14 @@ ensureCalibrationsInitialized();
                                                 </FieldLabel>
                                                 <Input
                                                     id="data-column"
-                                                    value={cfg.dataColumn}
+                                                    value={cfg.columnConfig.category}
                                                     onChange={(e) =>
                                                         onChange({
-                                                            dataColumn:
-                                                                e.target.value.toUpperCase(),
+                                                            columnConfig: {
+                                                                ...cfg.columnConfig,
+                                                                category:
+                                                                    e.target.value.toUpperCase(),
+                                                            },
                                                         })
                                                     }
                                                     className="w-16"
@@ -1436,10 +1279,13 @@ ensureCalibrationsInitialized();
                                                 </FieldLabel>
                                                 <Input
                                                     id="coa-column"
-                                                    value={cfg.coaColumn}
+                                                    value={cfg.columnConfig.coa}
                                                     onChange={(e) =>
                                                         onChange({
-                                                            coaColumn: e.target.value.toUpperCase(),
+                                                            columnConfig: {
+                                                                ...cfg.columnConfig,
+                                                                coa: e.target.value.toUpperCase(),
+                                                            },
                                                         })
                                                     }
                                                     className="w-16"
@@ -1450,19 +1296,89 @@ ensureCalibrationsInitialized();
                                                 </FieldDescription>
                                             </Field>
                                             <Field>
+                                                <FieldLabel htmlFor="unit-column">
+                                                    Unit Column
+                                                </FieldLabel>
+                                                <Input
+                                                    id="unit-column"
+                                                    value={cfg.columnConfig.unit}
+                                                    onChange={(e) =>
+                                                        onChange({
+                                                            columnConfig: {
+                                                                ...cfg.columnConfig,
+                                                                unit: e.target.value.toUpperCase(),
+                                                            },
+                                                        })
+                                                    }
+                                                    className="w-16"
+                                                    placeholder="G"
+                                                />
+                                                <FieldDescription>
+                                                    Not consumed by this importer — standard field
+                                                </FieldDescription>
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel htmlFor="price-column">
+                                                    Price Column
+                                                </FieldLabel>
+                                                <Input
+                                                    id="price-column"
+                                                    value={cfg.columnConfig.price}
+                                                    onChange={(e) =>
+                                                        onChange({
+                                                            columnConfig: {
+                                                                ...cfg.columnConfig,
+                                                                price: e.target.value.toUpperCase(),
+                                                            },
+                                                        })
+                                                    }
+                                                    className="w-16"
+                                                    placeholder="H"
+                                                />
+                                                <FieldDescription>
+                                                    Not consumed by this importer — standard field
+                                                </FieldDescription>
+                                            </Field>
+                                            <Field>
+                                                <FieldLabel htmlFor="item-number-column">
+                                                    Item No. Column
+                                                </FieldLabel>
+                                                <Input
+                                                    id="item-number-column"
+                                                    value={cfg.columnConfig.itemNumber}
+                                                    onChange={(e) =>
+                                                        onChange({
+                                                            columnConfig: {
+                                                                ...cfg.columnConfig,
+                                                                itemNumber:
+                                                                    e.target.value.toUpperCase(),
+                                                            },
+                                                        })
+                                                    }
+                                                    className="w-16"
+                                                    placeholder="E"
+                                                />
+                                                <FieldDescription>
+                                                    Item number — placeholder detection. Default E
+                                                </FieldDescription>
+                                            </Field>
+                                            <Field>
                                                 <FieldLabel htmlFor="header-row">
                                                     Header Row
                                                 </FieldLabel>
                                                 <Input
                                                     id="header-row"
                                                     type="number"
-                                                    value={cfg.headerRow ?? ""}
+                                                    value={cfg.rowConfig.headerRow ?? ""}
                                                     onChange={(e) =>
                                                         onChange({
-                                                            headerRow:
-                                                                e.target.value === ""
-                                                                    ? ""
-                                                                    : Number(e.target.value),
+                                                            rowConfig: {
+                                                                ...cfg.rowConfig,
+                                                                headerRow:
+                                                                    e.target.value === ""
+                                                                        ? ""
+                                                                        : Number(e.target.value),
+                                                            },
                                                         })
                                                     }
                                                     className="w-20"
@@ -1470,13 +1386,15 @@ ensureCalibrationsInitialized();
                                                 />
                                                 <FieldDescription>
                                                     Header{" "}
-                                                    {cfg.headerRow === "" || cfg.headerRow == null
+                                                    {cfg.rowConfig.headerRow === "" ||
+                                                    cfg.rowConfig.headerRow == null
                                                         ? "—"
-                                                        : cfg.headerRow}
+                                                        : cfg.rowConfig.headerRow}
                                                     ; data starts{" "}
-                                                    {cfg.headerRow === "" || cfg.headerRow == null
+                                                    {cfg.rowConfig.headerRow === "" ||
+                                                    cfg.rowConfig.headerRow == null
                                                         ? "—"
-                                                        : cfg.headerRow + 1}
+                                                        : cfg.rowConfig.headerRow + 1}
                                                 </FieldDescription>
                                             </Field>
                                         </div>
@@ -1490,7 +1408,7 @@ ensureCalibrationsInitialized();
                                                     if (value.length > 0) {
                                                         onChange({
                                                             coaLabelMode:
-                                                                value[0] as CatSheetConfig["coaLabelMode"],
+                                                                value[0] as SharedSheetConfig["coaLabelMode"],
                                                         });
                                                     }
                                                 }}
@@ -1542,19 +1460,24 @@ ensureCalibrationsInitialized();
                                                 <Input
                                                     id="additional-header-row"
                                                     type="number"
-                                                    value={cfg.additionalItemsHeaderRow ?? ""}
+                                                    value={cfg.rowConfig.additionalItemsHeaderRow ?? ""}
                                                     onChange={(e) => {
                                                         const v = e.target.value
                                                             ? Number(e.target.value)
-                                                            : undefined;
-                                                        onChange({ additionalItemsHeaderRow: v });
+                                                            : null;
+                                                        onChange({
+                                                            rowConfig: {
+                                                                ...cfg.rowConfig,
+                                                                additionalItemsHeaderRow: v,
+                                                            },
+                                                        });
                                                     }}
                                                     className="w-24"
                                                     placeholder="e.g. 85"
                                                 />
                                                 <FieldDescription>
-                                                    {cfg.additionalItemsHeaderRow
-                                                        ? `Resumes at ${cfg.additionalItemsHeaderRow + 1}`
+                                                    {cfg.rowConfig.additionalItemsHeaderRow
+                                                        ? `Resumes at ${cfg.rowConfig.additionalItemsHeaderRow + 1}`
                                                         : "Leave empty if none"}
                                                 </FieldDescription>
                                             </Field>
@@ -1565,45 +1488,51 @@ ensureCalibrationsInitialized();
                                                 <Input
                                                     id="nonproc-header-row"
                                                     type="number"
-                                                    value={cfg.nonProcurementHeaderRow ?? ""}
+                                                    value={cfg.rowConfig.nonProcurementHeaderRow ?? ""}
                                                     onChange={(e) => {
                                                         const v = e.target.value
                                                             ? Number(e.target.value)
-                                                            : undefined;
-                                                        onChange({ nonProcurementHeaderRow: v });
+                                                            : null;
+                                                        onChange({
+                                                            rowConfig: {
+                                                                ...cfg.rowConfig,
+                                                                nonProcurementHeaderRow: v,
+                                                            },
+                                                        });
                                                     }}
                                                     className="w-24"
                                                     placeholder="e.g. 1258"
                                                 />
                                                 <FieldDescription>
-                                                    {cfg.nonProcurementHeaderRow
-                                                        ? `Starts at ${cfg.nonProcurementHeaderRow + 1}`
+                                                    {cfg.rowConfig.nonProcurementHeaderRow
+                                                        ? `Starts at ${cfg.rowConfig.nonProcurementHeaderRow + 1}`
                                                         : "Leave empty if none"}
                                                 </FieldDescription>
                                             </Field>
                                         </div>
                                         <div className="mt-3 text-xs text-muted-foreground">
                                             Groups: procurement [
-                                            {cfg.headerRow === "" || cfg.headerRow == null
+                                            {cfg.rowConfig.headerRow === "" ||
+                                            cfg.rowConfig.headerRow == null
                                                 ? "—"
-                                                : cfg.headerRow + 1}
+                                                : cfg.rowConfig.headerRow + 1}
                                             ..
-                                            {cfg.additionalItemsHeaderRow
-                                                ? cfg.additionalItemsHeaderRow - 1
-                                                : cfg.nonProcurementHeaderRow
-                                                  ? cfg.nonProcurementHeaderRow - 1
+                                            {cfg.rowConfig.additionalItemsHeaderRow
+                                                ? cfg.rowConfig.additionalItemsHeaderRow - 1
+                                                : cfg.rowConfig.nonProcurementHeaderRow
+                                                  ? cfg.rowConfig.nonProcurementHeaderRow - 1
                                                   : "last"}
                                             ] → additional [
-                                            {cfg.additionalItemsHeaderRow
-                                                ? cfg.additionalItemsHeaderRow + 1
+                                            {cfg.rowConfig.additionalItemsHeaderRow
+                                                ? cfg.rowConfig.additionalItemsHeaderRow + 1
                                                 : "—"}
                                             ..
-                                            {cfg.nonProcurementHeaderRow
-                                                ? cfg.nonProcurementHeaderRow - 1
+                                            {cfg.rowConfig.nonProcurementHeaderRow
+                                                ? cfg.rowConfig.nonProcurementHeaderRow - 1
                                                 : "last"}
                                             ] → non-proc [
-                                            {cfg.nonProcurementHeaderRow
-                                                ? cfg.nonProcurementHeaderRow + 1
+                                            {cfg.rowConfig.nonProcurementHeaderRow
+                                                ? cfg.rowConfig.nonProcurementHeaderRow + 1
                                                 : "—"}
                                             ..last]
                                         </div>
@@ -1618,9 +1547,11 @@ ensureCalibrationsInitialized();
                                                     const same =
                                                         c &&
                                                         cfg &&
-                                                        c.headerRow === cfg.headerRow &&
-                                                        c.dataColumn === cfg.dataColumn &&
-                                                        c.coaColumn === cfg.coaColumn &&
+                                                        c.rowConfig.headerRow ===
+                                                            cfg.rowConfig.headerRow &&
+                                                        c.columnConfig.category ===
+                                                            cfg.columnConfig.category &&
+                                                        c.columnConfig.coa === cfg.columnConfig.coa &&
                                                         c.coaLabelMode === cfg.coaLabelMode;
 
                                                     return (
@@ -1631,7 +1562,7 @@ ensureCalibrationsInitialized();
                                                         >
                                                             {s}:{" "}
                                                             {c
-                                                                ? `${c.dataColumn}/${c.coaColumn} H${c.headerRow} ${c.coaLabelMode === "without-label" ? "no-label" : "label"}`
+                                                                ? `${c.columnConfig.category}/${c.columnConfig.coa} H${c.rowConfig.headerRow} ${c.coaLabelMode === "without-label" ? "no-label" : "label"}`
                                                                 : "default"}
                                                         </Badge>
                                                     );

@@ -455,7 +455,7 @@ export default function CategoryCoaMappingPage({
 
             if (sectionName === "additional" || sectionName === "non-procurement") {
                 // Item-only: header → items (F+D+G+H) → optional section total, no categories
-                // If D/G/H all falsy, it's not a true pricelist (e.g., placeholder "Miscellaneous Goods..." with G/H 0) — skip
+                // If E/D/G/H all falsy, it's not a true pricelist (e.g., placeholder "Miscellaneous Goods..." with G/H 0) — skip
                 let itemCount = 0;
 
                 for (let r = startRow; r <= endRow && r <= lastRow; r++) {
@@ -464,6 +464,7 @@ export default function CategoryCoaMappingPage({
                     const dataRaw = cellText(row.getCell(dataColumn));
                     const unitRaw = cellText(row.getCell(effective.columnConfig.unit));
                     const priceRaw = cellText(row.getCell(effective.columnConfig.price));
+                    const itemRaw = cellText(row.getCell(effective.columnConfig.itemNumber));
 
                     if (!dataRaw && !coaRaw && !unitRaw && !priceRaw) continue;
 
@@ -498,9 +499,10 @@ export default function CategoryCoaMappingPage({
                         !priceRaw || priceNum === 0 || Number.isNaN(priceNum) || isFalsy(priceRaw);
                     const isFalsyUnit = isFalsy(unitRaw);
                     const isFalsyCoa = !coaNorm;
+                    const isFalsyItem = !itemRaw;
 
-                    // If D/G/H all falsy, it's not a true pricelist (placeholder like Miscellaneous... with G/H 0) — skip, not an error
-                    if (isFalsyCoa && isFalsyUnit && isFalsyPrice) continue;
+                    // If E/D/G/H all falsy, it's not a true pricelist (placeholder like Miscellaneous... with G/H 0) — skip, not an error
+                    if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice) continue;
 
                     if (coaNorm && dataRaw) {
                         itemCount++;
@@ -1062,6 +1064,7 @@ export default function CategoryCoaMappingPage({
 
             const unitRaw = cellText(row.getCell(cfg.columnConfig.unit));
             const priceRaw = cellText(row.getCell(cfg.columnConfig.price));
+            const itemRaw = cellText(row.getCell(cfg.columnConfig.itemNumber));
             const isFalsy = (v: string | null) =>
                 !v || normalize(v) === "0" || normalize(v) === "-" || normalize(v) === "0.00";
             const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, "")) : NaN;
@@ -1069,9 +1072,10 @@ export default function CategoryCoaMappingPage({
                 !priceRaw || priceNum === 0 || Number.isNaN(priceNum) || isFalsy(priceRaw);
             const isFalsyUnit = isFalsy(unitRaw);
             const isFalsyCoa = !coaNorm;
+            const isFalsyItem = !itemRaw;
 
-            if (isFalsyCoa && isFalsyUnit && isFalsyPrice && dataRaw) {
-                // Placeholder like Miscellaneous... with G/H 0 and no COA — not a true pricelist, skip for additional/non-proc
+            if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice && dataRaw) {
+                // Placeholder like Miscellaneous... with G/H 0 and no COA/item-no — not a true pricelist, skip for additional/non-proc
                 if (sectionName === "additional" || sectionName === "non-procurement") continue;
             }
 
@@ -1373,7 +1377,7 @@ export default function CategoryCoaMappingPage({
             const coaNorm = normalize(p.coa);
             const sheetCfg = getEffectiveConfig((p as any).sheet);
             const catRes = getCategoryMatch(catNorm, existingCategories);
-            const coaRes = getCoaMatch(coaNorm, existingCoas, sheetCfg.coaMatchField ?? "auto");
+            const coaRes = getCoaMatch(coaNorm, existingCoas, sheetCfg.coaMatchField ?? "account_title");
             const catExists = catRes.type === "strict";
             const coaExists = coaRes.type === "strict";
             const catId = catRes.match?.id ?? null;
@@ -2130,6 +2134,28 @@ export default function CategoryCoaMappingPage({
                                                         Price — col {cfg.columnConfig.price || "H"}
                                                     </FieldDescription>
                                                 </Field>
+                                                <Field>
+                                                    <FieldLabel htmlFor="item-number-column">
+                                                        Item No. Column
+                                                    </FieldLabel>
+                                                    <Input
+                                                        id="item-number-column"
+                                                        value={cfg.columnConfig.itemNumber}
+                                                        onChange={(e) =>
+                                                            handleColumnConfigChange({
+                                                                itemNumber:
+                                                                    e.target.value.toUpperCase(),
+                                                            })
+                                                        }
+                                                        className="w-16"
+                                                        placeholder="E"
+                                                    />
+                                                    <FieldDescription>
+                                                        Item no. — col{" "}
+                                                        {cfg.columnConfig.itemNumber || "E"} —
+                                                        placeholder detection
+                                                    </FieldDescription>
+                                                </Field>
                                             </div>
                                             <Field className="mt-3">
                                                 <FieldLabel>COA Match Field</FieldLabel>
@@ -2635,7 +2661,7 @@ export default function CategoryCoaMappingPage({
                                         {existingCoas.length} COAs (
                                         {(currentSheet
                                             ? getEffectiveConfig(currentSheet).coaMatchField
-                                            : sharedConfig?.coaMatchField) ?? "auto"}
+                                            : sharedConfig?.coaMatchField) ?? "account_title"}
                                         ), {existingMappings.length} existing mappings
                                     </p>
                                     <div className="mt-2 flex flex-wrap gap-2 text-xs">
@@ -2951,7 +2977,7 @@ export default function CategoryCoaMappingPage({
                                         Detailed logs in console (F12) — with top suggestions. Mode:{" "}
                                         {(currentSheet
                                             ? getEffectiveConfig(currentSheet).coaMatchField
-                                            : sharedConfig?.coaMatchField) ?? "auto"}{" "}
+                                            : sharedConfig?.coaMatchField) ?? "account_title"}{" "}
                                         — overrides are row-unique (
                                         {Object.keys(coaOverrides).length} active).
                                     </span>

@@ -21,28 +21,32 @@ Category Import, Category–COA Mappings, and Price List Import all read the
 **same sheet structure** — one format to learn. They differ only in which
 columns they consume:
 
-| Importer | F (data) | D (COA) | G (unit) | H (price) |
-| -------- | -------- | ------- | -------- | --------- |
-| Category Import | category / description | COA hint | ignored | ignored |
-| Category–COA Mappings | category | COA | ignored | ignored |
-| Price List Import | description (category from enclosing group) | COA | unit | price |
+| Importer | E (item no.) | F (data) | D (COA) | G (unit) | H (price) |
+| -------- | ------------ | -------- | ------- | -------- | --------- |
+| Category Import | item-row intent + placeholder detection | category / description | COA hint | standard field, not consumed | standard field, not consumed |
+| Category–COA Mappings | placeholder detection | category | COA | standard field, not consumed | standard field, not consumed |
+| Price List Import | placeholder detection | description (category from enclosing group) | COA | unit | price |
 
 > Exception: the AIP Summary importer (`/aip-summary-import`) uses its own
 > column map (PPA, dates, expected output, funding source, PS/MOOE/FE/CO
 > amounts) and is not covered by this section.
 
-### Default calibration
+### Standard calibration
 
-Applies per sheet; can be shared across sheets or set per sheet in step 2.
+Identical in all three importers (`SharedSheetConfig` — one type, one
+defaults function, same Calibrate screen). Applies per sheet; can be shared
+across sheets or set per sheet in step 2.
 
 | Setting        | Default | Meaning                                        |
 | -------------- | ------- | ---------------------------------------------- |
 | Category column| `F`     | Category headers, COA labels, descriptions, `TOTAL` rows |
 | COA column     | `D`     | Per-item COA value (item rows have both D + F) |
-| Unit column    | `G`     | Unit of measurement (price-list only)          |
-| Price column   | `H`     | Unit price, commas allowed (price-list only)   |
+| Unit column    | `G`     | Unit of measurement (consumed by price-list)   |
+| Price column   | `H`     | Unit price, commas allowed (consumed by price-list) |
+| Item no. column| `E`     | Item number — placeholder detection (see below) |
 | Header row     | `7`     | 1-indexed data header row; rows above are ignored |
 | COA label mode | `with-label` | COA names appear as label rows (see below) |
+| COA match field| `account_title` | Match extracted COA against account titles (D always holds titles). Mappings exposes a dropdown to switch per sheet; the other two lock this default |
 
 Additional-sections calibration (optional): **Additional Items header row** and
 **Non-Procurement header row** mark where those sections start.
@@ -56,7 +60,7 @@ for the full file contract.
 | Col | Field | Used by importers |
 | --- | ----- | ----------------- |
 | `D` | COA | Yes — per-item COA value |
-| `E` | Item no. | No |
+| `E` | Item no. | Placeholder detection (E+D+G+H all falsy → placeholder; E present marks an item row) |
 | `F` | Description (also category headers, COA labels, `TOTAL` rows) | Yes — data column |
 | `G` | Unit of measurement | Yes — price-list only |
 | `H` | Price list (unit price, commas allowed) | Yes — price-list only |
@@ -151,7 +155,9 @@ with no values at all are ignored.
 Some rows are layout placeholders, not data. A row is a placeholder — and is
 skipped, never imported — when **all** of these are falsy: `E` (item no.),
 `D` (COA), `G` (unit of measurement), `H` (pricelist). Empty, `0`, `-`, and
-`0.00` all count as falsy.
+`0.00` all count as falsy. Conversely, an item number in `E` marks the row as
+an item row: in category-import, `E` + description without `D` is a Verify
+error (item missing its COA) instead of becoming a category.
 
 Rules enforced at Verify time:
 
@@ -168,7 +174,9 @@ Rules enforced at Verify time:
 ## Matching (Review step)
 
 Extracted names are matched against existing records by **normalized** comparison
-(trimmed, single-spaced, lowercased):
+(trimmed, single-spaced, lowercased). COA matching uses the `account_title`
+standard (column D always holds titles); only the mappings importer lets you
+switch this per sheet:
 
 - **Strict** (exact normalized equality) → auto-matched, importable.
 - **Partial** (typo within a length-based threshold, or substring length ≥ 4) →

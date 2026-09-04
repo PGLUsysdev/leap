@@ -9,6 +9,8 @@ export type SheetColumnConfig = {
     coa: string;
     unit: string;
     price: string;
+    /** Item number column — reserved for placeholder-vs-item detection. */
+    itemNumber: string;
 };
 
 export type SharedSheetConfig = {
@@ -20,43 +22,10 @@ export type SharedSheetConfig = {
 
 export function getDefaultSharedConfig(): SharedSheetConfig {
     return {
-        columnConfig: { category: "F", coa: "D", unit: "G", price: "H" },
+        columnConfig: { category: "F", coa: "D", unit: "G", price: "H", itemNumber: "E" },
         rowConfig: { headerRow: 7, additionalItemsHeaderRow: null, nonProcurementHeaderRow: null },
         coaLabelMode: "with-label",
-        coaMatchField: "auto",
-    };
-}
-
-// Adapter for category-import flat shape
-export type CatSheetConfig = {
-    dataColumn: string;
-    coaColumn: string;
-    headerRow: number | "";
-    additionalItemsHeaderRow?: number;
-    nonProcurementHeaderRow?: number;
-    coaLabelMode: "with-label" | "without-label";
-};
-
-export function toCatSheetConfig(shared: SharedSheetConfig): CatSheetConfig {
-    return {
-        dataColumn: shared.columnConfig.category,
-        coaColumn: shared.columnConfig.coa,
-        headerRow: shared.rowConfig.headerRow,
-        additionalItemsHeaderRow: shared.rowConfig.additionalItemsHeaderRow ?? undefined,
-        nonProcurementHeaderRow: shared.rowConfig.nonProcurementHeaderRow ?? undefined,
-        coaLabelMode: shared.coaLabelMode,
-    };
-}
-
-export function fromCatSheetConfig(cat: CatSheetConfig): SharedSheetConfig {
-    return {
-        columnConfig: { category: cat.dataColumn, coa: cat.coaColumn, unit: "G", price: "H" },
-        rowConfig: {
-            headerRow: cat.headerRow,
-            additionalItemsHeaderRow: cat.additionalItemsHeaderRow ?? null,
-            nonProcurementHeaderRow: cat.nonProcurementHeaderRow ?? null,
-        },
-        coaLabelMode: cat.coaLabelMode,
+        coaMatchField: "account_title",
     };
 }
 

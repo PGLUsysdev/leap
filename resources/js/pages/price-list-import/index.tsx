@@ -287,7 +287,7 @@ export default function PriceListImport({
             const catNorm = normalize(u.category);
             const coaNorm = normalize(u.coa);
             const catRes = getCategoryMatch(catNorm, existingCategories);
-            const coaRes = getCoaMatch(coaNorm, existingCoas, "auto");
+            const coaRes = getCoaMatch(coaNorm, existingCoas, "account_title");
             const catExists = catRes.type === "strict";
             const coaExists = coaRes.type === "strict";
             const catId = catRes.match?.id ?? null;
@@ -594,7 +594,7 @@ export default function PriceListImport({
             };
         }
 
-        const { category, coa, unit, price } = cfg.columnConfig;
+        const { category, coa, unit, price, itemNumber } = cfg.columnConfig;
         const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg.rowConfig;
         const { coaLabelMode } = cfg;
         const lastRow = ws.actualRowCount;
@@ -676,6 +676,7 @@ export default function PriceListImport({
                     const dataRaw = cellText(row.getCell(category));
                     const unitRaw = cellText(row.getCell(unit));
                     const priceRaw = cellText(row.getCell(price));
+                    const itemRaw = cellText(row.getCell(itemNumber));
 
                     if (!dataRaw && !coaRaw && !unitRaw && !priceRaw) continue;
 
@@ -711,8 +712,9 @@ export default function PriceListImport({
                         !priceRaw || Number.isNaN(priceNum) || priceNum === 0 || isFalsy(priceRaw);
                     const isFalsyUnit = isFalsy(unitRaw);
                     const isFalsyCoa = !coaNorm;
+                    const isFalsyItem = !itemRaw;
 
-                    if (isFalsyCoa && isFalsyUnit && isFalsyPrice) continue;
+                    if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice) continue;
 
                     if (coaNorm && dataRaw) {
                         itemCount++;
@@ -1007,8 +1009,9 @@ export default function PriceListImport({
         const out: RawItem[] = [];
         const dataColumn = cfg.columnConfig.category;
         const coaColumn = cfg.columnConfig.coa;
-        const unitColumn = cfg.columnConfig.unit;
-        const priceColumn = cfg.columnConfig.price;
+            const unitColumn = cfg.columnConfig.unit;
+            const priceColumn = cfg.columnConfig.price;
+            const itemColumn = cfg.columnConfig.itemNumber;
         const coaLabelMode = cfg.coaLabelMode;
         type CatGroup = { cat: string; catRow: number };
         let currentCat: CatGroup | null = null;
@@ -1030,6 +1033,7 @@ export default function PriceListImport({
 
             const unitRaw = cellText(row.getCell(unitColumn)) ?? "";
             const priceRaw = cellText(row.getCell(priceColumn));
+            const itemRaw = cellText(row.getCell(itemColumn));
             const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, "")) : null;
             const isFalsy = (v: string | null) =>
                 !v || normalize(v) === "0" || normalize(v) === "-" || normalize(v) === "0.00";
@@ -1040,8 +1044,9 @@ export default function PriceListImport({
                 isFalsy(priceRaw);
             const isFalsyUnit = isFalsy(unitRaw);
             const isFalsyCoa = !coaNorm;
+            const isFalsyItem = !itemRaw;
 
-            if (isFalsyCoa && isFalsyUnit && isFalsyPrice && dataRaw) {
+            if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice && dataRaw) {
                 if (sectionName === "additional" || sectionName === "non-procurement") continue;
             }
 
@@ -1641,6 +1646,22 @@ export default function PriceListImport({
                                                 placeholder="H"
                                             />
                                             <FieldDescription>H</FieldDescription>
+                                        </Field>
+                                        <Field>
+                                            <FieldLabel>Item No. Column</FieldLabel>
+                                            <Input
+                                                value={cfg.columnConfig.itemNumber}
+                                                onChange={(e) =>
+                                                    onColumn({
+                                                        itemNumber: e.target.value.toUpperCase(),
+                                                    })
+                                                }
+                                                className="w-16"
+                                                placeholder="E"
+                                            />
+                                            <FieldDescription>
+                                                E — placeholder detection
+                                            </FieldDescription>
                                         </Field>
                                     </div>
                                     <div className="mt-4 grid grid-cols-3 gap-4">
