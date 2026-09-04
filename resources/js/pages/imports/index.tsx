@@ -9,6 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/base-ui-components/ui/card";
+import { index as aipSummaryImportIndex } from "@/routes/aip-summary-import";
 import { index as categoryCoaMappingIndex } from "@/routes/category-coa-mapping";
 import { index as categoryImportIndex } from "@/routes/category-import";
 import { index as priceListImportIndex } from "@/routes/price-list-import";
@@ -46,6 +47,13 @@ const IMPORTS: ImportItem[] = [
         href: priceListImportIndex().url,
         icon: Receipt,
         badge: "Price Lists",
+    },
+    {
+        title: "AIP Summary Import",
+        description: "Import AIP Summary from XLSX.",
+        href: aipSummaryImportIndex().url,
+        icon: FileSpreadsheet,
+        badge: "AIP Summary",
     },
 ];
 

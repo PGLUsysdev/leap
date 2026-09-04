@@ -32,6 +32,7 @@ use App\Http\Controllers\CategoryCoaMappingController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
 use App\Http\Controllers\PriceListImportController;
+use App\Http\Controllers\AipSummaryImportController;
 // use App\Http\Controllers\PsBreakdownController;
 use App\Http\Controllers\RoleController;
 // Disabled for now — PS logic refactor in progress (kept for later).
@@ -270,9 +271,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('category-coa-mapping', [CategoryCoaMappingController::class, 'index'])->name(
         'category-coa-mapping.index',
     );
-    Route::post('category-coa-mappings/bulk', [CategoryCoaMappingController::class, 'bulkStore'])->name(
-        'category-coa-mappings.bulkStore',
-    );
+    Route::post('category-coa-mappings/bulk', [
+        CategoryCoaMappingController::class,
+        'bulkStore',
+    ])->name('category-coa-mappings.bulkStore');
 
     // PPMP Category ↔ COA Mappings
     Route::get('ppmp-category-mappings', [
@@ -451,6 +453,10 @@ Route::get('category-import', [CategoryImportController::class, 'index'])->name(
 
 Route::post('category-import', [CategoryImportController::class, 'store'])->name(
     'category-import.store',
+);
+
+Route::get('aip-summary-import', [AipSummaryImportController::class, 'index'])->name(
+    'aip-summary-import.index',
 );
 
 require __DIR__ . '/settings.php';
