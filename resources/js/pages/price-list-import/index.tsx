@@ -151,8 +151,9 @@ export default function PriceListImport({
     const [importing, setImporting] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>({});
-    const [showOnlyErrors, setShowOnlyErrors] = useState(false);
-    const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
+    const [reviewFilter, setReviewFilter] = useState<"all" | "errors" | "duplicates" | "longDesc">(
+        "all",
+    );
     const [showDuplicateDetails, setShowDuplicateDetails] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 
@@ -283,7 +284,8 @@ export default function PriceListImport({
 
             const unitValid = u.unit.trim() !== "" && u.unit.trim().length <= 20;
             const priceValid = u.price !== null && u.price > 0;
-            const descriptionValid = u.description.trim().length > 0 && u.description.trim().length <= 1000;
+            const descriptionValid =
+                u.description.trim().length > 0 && u.description.trim().length <= 1000;
             // check price list exists (junction + normalized desc + uom) using effective junction
             let effectivePriceListExists = false;
 
@@ -382,12 +384,14 @@ export default function PriceListImport({
     const longDescriptionCount = verifiedItems.filter((v) => !v.descriptionValid).length;
 
     const filteredItems = useMemo(() => {
-        if (showOnlyDuplicates) return verifiedItems.filter((v) => v.count > 1);
+        if (reviewFilter === "duplicates") return verifiedItems.filter((v) => v.count > 1);
 
-        if (!showOnlyErrors) return verifiedItems;
+        if (reviewFilter === "errors") return verifiedItems.filter((v) => v.status === "error");
 
-        return verifiedItems.filter((v) => v.status === "error");
-    }, [verifiedItems, showOnlyErrors, showOnlyDuplicates]);
+        if (reviewFilter === "longDesc") return verifiedItems.filter((v) => !v.descriptionValid);
+
+        return verifiedItems;
+    }, [verifiedItems, reviewFilter]);
 
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -425,8 +429,7 @@ export default function PriceListImport({
         setUniqueItems([]);
         setSelected(new Set());
         setCoaOverrides({});
-        setShowOnlyErrors(false);
-        setShowOnlyDuplicates(false);
+        setReviewFilter("all");
         setShowDuplicateDetails(false);
         setStep("upload");
 
@@ -456,8 +459,7 @@ export default function PriceListImport({
             setUniqueItems([]);
             setSelected(new Set());
             setCoaOverrides({});
-            setShowOnlyErrors(false);
-            setShowOnlyDuplicates(false);
+            setReviewFilter("all");
             setShowDuplicateDetails(false);
 
             if (next.length > 0 && !next.includes(currentSheet)) setCurrentSheet(next[0]);
@@ -958,8 +960,7 @@ export default function PriceListImport({
         setUniqueItems([]);
         setSelected(new Set());
         setCoaOverrides({});
-        setShowOnlyErrors(false);
-        setShowOnlyDuplicates(false);
+        setReviewFilter("all");
         setShowDuplicateDetails(false);
     }
 
@@ -1200,8 +1201,7 @@ export default function PriceListImport({
         setUniqueItems(unique);
         setSelected(new Set(unique.map((u) => u.key)));
         setCoaOverrides({});
-        setShowOnlyErrors(false);
-        setShowOnlyDuplicates(false);
+        setReviewFilter("all");
         setShowDuplicateDetails(false);
         console.log("Extract price-list", {
             raw: all.length,
@@ -1275,7 +1275,7 @@ export default function PriceListImport({
                 </p>
 
                 {fileName && !loading && (
-                    <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm backdrop-blur">
+                    <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
                         <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <span className="max-w-[42ch] truncate font-medium" title={fileName}>
                             {fileName}
@@ -1289,7 +1289,11 @@ export default function PriceListImport({
                     </div>
                 )}
 
-                <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)} suppressHydrationWarning>
+                <Tabs
+                    value={step}
+                    onValueChange={(v) => setStep(v as typeof step)}
+                    suppressHydrationWarning
+                >
                     <TabsList variant="line" className="w-full" suppressHydrationWarning>
                         <TabsTrigger value="upload" className="flex-1">
                             1. Upload & Sheets{" "}
@@ -1399,7 +1403,7 @@ export default function PriceListImport({
                     </TabsContent>
 
                     <TabsContent value="calibrate" className="mt-4 flex flex-col gap-4">
-                        <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/20 p-3">
+                        <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
                             <span className="text-sm font-medium">Scope:</span>
                             <div className="flex gap-2">
                                 <Button
@@ -1520,8 +1524,7 @@ export default function PriceListImport({
                                 setUniqueItems([]);
                                 setSelected(new Set());
                                 setCoaOverrides({});
-                                setShowOnlyErrors(false);
-                                setShowOnlyDuplicates(false);
+                                setReviewFilter("all");
                                 setShowDuplicateDetails(false);
                             };
                             const onColumn = (
@@ -1795,7 +1798,7 @@ export default function PriceListImport({
                                                 {r.message} — {active}
                                             </p>
                                             {r.errors.length > 0 && (
-                                                <div className="mt-2 max-h-48 overflow-auto rounded border bg-muted/20 p-2 text-xs">
+                                                <div className="mt-2 max-h-48 overflow-auto rounded border p-2 text-xs">
                                                     {r.errors.map((e, i) => (
                                                         <div key={i}>
                                                             Row {e.row}: {e.message}
@@ -1852,33 +1855,8 @@ export default function PriceListImport({
                                     {missingMappingCount} missing mapping
                                 </Badge>
                             )}
-                            {(errorCount > 0 || showOnlyErrors) && (
-                                <Button
-                                    variant={showOnlyErrors ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => {
-                                        setShowOnlyErrors((v) => !v);
-
-                                        if (!showOnlyErrors) {
-                                            setShowOnlyDuplicates(false);
-                                            setShowDuplicateDetails(false);
-                                        }
-                                    }}
-                                    className="h-6 text-xs"
-                                    title={
-                                        showOnlyErrors
-                                            ? "Return to full list"
-                                            : "Filter to rows with errors (COA not found, mapping missing, etc.) — e.g., row 468"
-                                    }
-                                    disabled={errorCount === 0 && !showOnlyErrors}
-                                >
-                                    {showOnlyErrors
-                                        ? `Show all (${verifiedItems.length})`
-                                        : `Show only errors (${errorCount})`}
-                                </Button>
-                            )}
                             {longDescriptionCount > 0 && (
-                                <Badge variant="destructive" className="bg-amber-600">
+                                <Badge variant="destructive">
                                     {longDescriptionCount} description &gt;1000
                                 </Badge>
                             )}
@@ -1887,7 +1865,7 @@ export default function PriceListImport({
                                     variant="outline"
                                     size="sm"
                                     onClick={handleTruncateAllLongDescriptions}
-                                    className="h-6 text-xs border-amber-600 text-amber-700"
+                                    className="h-6 border-amber-600 text-xs text-amber-700"
                                     title="Truncate all long descriptions to 1000 characters"
                                 >
                                     Truncate all to 1000
@@ -1902,27 +1880,51 @@ export default function PriceListImport({
                                     {duplicateItems.length} unique)
                                 </Badge>
                             )}
-                            {duplicateCount > 0 && (
-                                <Button
-                                    variant={showOnlyDuplicates ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => {
-                                        setShowOnlyDuplicates((v) => !v);
+                            {(errorCount > 0 || duplicateCount > 0 || longDescriptionCount > 0) && (
+                                <ToggleGroup
+                                    value={[reviewFilter]}
+                                    onValueChange={(v) => {
+                                        const next = (v as unknown as string[])[0] as
+                                            typeof reviewFilter | undefined;
 
-                                        if (!showOnlyDuplicates) {
-                                            setShowOnlyErrors(false);
+                                        if (next) {
+                                            setReviewFilter(next);
                                             setShowDuplicateDetails(false);
+                                        } else {
+                                            setReviewFilter("all");
                                         }
                                     }}
-                                    className="h-6 text-xs"
-                                    title="Filter table to only duplicate rows (same category|coa|description|unit)"
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1"
                                 >
-                                    {showOnlyDuplicates
-                                        ? `Show all (${verifiedItems.length})`
-                                        : `Show only duplicates (${duplicateItems.length})`}
-                                </Button>
+                                    <ToggleGroupItem value="all" aria-label="Show all">
+                                        All ({verifiedItems.length})
+                                    </ToggleGroupItem>
+                                    <ToggleGroupItem
+                                        value="errors"
+                                        aria-label="Show only errors"
+                                        disabled={errorCount === 0}
+                                    >
+                                        Errors ({errorCount})
+                                    </ToggleGroupItem>
+                                    <ToggleGroupItem
+                                        value="duplicates"
+                                        aria-label="Show only duplicates"
+                                        disabled={duplicateCount === 0}
+                                    >
+                                        Duplicates ({duplicateItems.length})
+                                    </ToggleGroupItem>
+                                    <ToggleGroupItem
+                                        value="longDesc"
+                                        aria-label="Show only long descriptions"
+                                        disabled={longDescriptionCount === 0}
+                                    >
+                                        Long desc ({longDescriptionCount})
+                                    </ToggleGroupItem>
+                                </ToggleGroup>
                             )}
-                            {duplicateCount > 0 && !showOnlyDuplicates && (
+                            {duplicateCount > 0 && reviewFilter !== "duplicates" && (
                                 <Button
                                     variant={showDuplicateDetails ? "default" : "ghost"}
                                     size="sm"
@@ -1959,31 +1961,39 @@ export default function PriceListImport({
                                 (`category|coa|description|unit`). Counts reflect overridden COAs.
                             </p>
                         )}
-                        {showOnlyErrors && (
+                        {reviewFilter === "errors" && (
                             <p className="text-xs text-muted-foreground">
                                 Showing {filteredItems.length} of {verifiedItems.length} — only rows
                                 with errors (COA not found, category not found, mapping missing,
-                                etc.). Toggle off to see all. COA dropdowns let you fix partial
-                                matches per row (e.g., row 468).
+                                description &gt;1000, etc.). Select “All” to see all. COA dropdowns
+                                let you fix partial matches per row (e.g., row 468).
                             </p>
                         )}
-                        {showOnlyDuplicates && (
+                        {reviewFilter === "duplicates" && (
                             <p className="text-xs text-amber-600">
                                 Showing {filteredItems.length} duplicate unique row
                                 {filteredItems.length === 1 ? "" : "s"} ({duplicateCount} extra raw
                                 row{duplicateCount === 1 ? "" : "s"}) — same
-                                category|coa|description|unit appears multiple times.
+                                category|coa|description|unit appears multiple times. Select “All”
+                                to see all.
+                            </p>
+                        )}
+                        {reviewFilter === "longDesc" && (
+                            <p className="text-xs text-amber-600">
+                                Showing {filteredItems.length} of {verifiedItems.length} — only rows
+                                with description &gt;1000 chars. Use “Truncate” per row or “Truncate
+                                all to 1000” above. Select “All” to see all.
                             </p>
                         )}
                         {showDuplicateDetails && duplicateItems.length > 0 && (
-                            <div className="rounded-lg border bg-amber-50/30 p-3">
+                            <div className="rounded-lg border p-3">
                                 <p className="mb-2 text-xs font-semibold">
                                     Duplicate details — {duplicateItems.length} unique duplicate(s),{" "}
                                     {duplicateCount} extra raw row
                                     {duplicateCount === 1 ? "" : "s"} (Raw {rawItems.length} →
                                     Unique {uniqueItems.length})
                                 </p>
-                                <div className="max-h-64 overflow-auto rounded border bg-card">
+                                <div className="max-h-64 overflow-auto rounded border">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -1998,7 +2008,7 @@ export default function PriceListImport({
                                         </TableHeader>
                                         <TableBody>
                                             {duplicateItems.map((it) => (
-                                                <TableRow key={it.key} className="bg-amber-50/50">
+                                                <TableRow key={it.key}>
                                                     <TableCell
                                                         className="max-w-[24ch] truncate text-xs"
                                                         title={it.description}
@@ -2116,11 +2126,13 @@ export default function PriceListImport({
                                                         colSpan={7}
                                                         className="p-8 text-center text-sm text-muted-foreground"
                                                     >
-                                                        {showOnlyDuplicates
-                                                            ? "No duplicates — all rows are unique. Toggle off to see all items."
-                                                            : showOnlyErrors
-                                                              ? "No errors — all rows are ready or updates. Toggle off to see all items."
-                                                              : "No items match filter."}
+                                                        {reviewFilter === "duplicates"
+                                                            ? "No duplicates — all rows are unique. Select “All” to see all items."
+                                                            : reviewFilter === "errors"
+                                                              ? "No errors — all rows are ready or updates. Select “All” to see all items."
+                                                              : reviewFilter === "longDesc"
+                                                                ? "No long descriptions — all descriptions ≤1000 chars. Select “All” to see all items."
+                                                                : "No items match filter."}
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
@@ -2157,16 +2169,7 @@ export default function PriceListImport({
                                                               );
 
                                                     return (
-                                                        <TableRow
-                                                            key={it.key}
-                                                            className={
-                                                                it.status === "error"
-                                                                    ? "bg-destructive/5"
-                                                                    : it.count > 1
-                                                                      ? "bg-amber-50/60"
-                                                                      : ""
-                                                            }
-                                                        >
+                                                        <TableRow key={it.key}>
                                                             <TableCell>
                                                                 <Input
                                                                     type="checkbox"
@@ -2207,7 +2210,11 @@ export default function PriceListImport({
                                                                             className="h-4 px-1 text-[10px]"
                                                                             title={`Length ${it.description.trim().length} > 1000`}
                                                                         >
-                                                                            {it.description.trim().length}/1000
+                                                                            {
+                                                                                it.description.trim()
+                                                                                    .length
+                                                                            }
+                                                                            /1000
                                                                         </Badge>
                                                                     )}
                                                                 </span>
@@ -2216,13 +2223,22 @@ export default function PriceListImport({
                                                                         <Button
                                                                             variant="ghost"
                                                                             size="sm"
-                                                                            onClick={() => handleTruncateDescription(it.key)}
+                                                                            onClick={() =>
+                                                                                handleTruncateDescription(
+                                                                                    it.key,
+                                                                                )
+                                                                            }
                                                                             className="h-5 px-1 text-[10px] text-amber-600 hover:text-amber-700"
                                                                         >
                                                                             Truncate to 1000
                                                                         </Button>
-                                                                        <span className="text-[10px] text-muted-foreground self-center">
-                                                                            will cut to &quot;{it.description.trim().slice(0, 1000).slice(-20)}&quot;
+                                                                        <span className="self-center text-[10px] text-muted-foreground">
+                                                                            will cut to &quot;
+                                                                            {it.description
+                                                                                .trim()
+                                                                                .slice(0, 1000)
+                                                                                .slice(-20)}
+                                                                            &quot;
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -2325,7 +2341,7 @@ export default function PriceListImport({
                                                                                                 }
                                                                                                 className={
                                                                                                     isSuggested
-                                                                                                        ? "bg-card font-medium"
+                                                                                                        ? "font-medium"
                                                                                                         : ""
                                                                                                 }
                                                                                             >
@@ -2454,7 +2470,11 @@ export default function PriceListImport({
                                     </Button>
                                     <Button
                                         suppressHydrationWarning
-                                        disabled={isMounted ? importableSelected.length === 0 || importing : false}
+                                        disabled={
+                                            isMounted
+                                                ? importableSelected.length === 0 || importing
+                                                : false
+                                        }
                                         onClick={handleImport}
                                     >
                                         {importing
