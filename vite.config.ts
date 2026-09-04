@@ -4,8 +4,9 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 // import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
+import path from 'node:path';
 // import { bunny } from 'laravel-vite-plugin/fonts';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 // import babel from '@rolldown/plugin-babel'
 // import { readFileSync } from 'fs';
@@ -53,4 +54,13 @@ export default defineConfig({
     // resolve: {
     //     tsconfigPaths: true,
     // },
+    resolve: {
+        alias: {
+            '@': path.resolve(process.cwd(), 'resources/js'),
+        },
+    },
+    test: {
+        environment: 'node',
+        include: ['resources/js/**/*.test.ts'],
+    },
 });

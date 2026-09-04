@@ -143,8 +143,8 @@ export function groupSheet(
         }
 
         if (coaLabelMode === "with-label") {
-            const { isCoaLabel, nextCoaRaw, nextCoaNorm } = isCoaLabel(ws, r, dataNorm, dataColumn, coaColumn);
-            if (isCoaLabel) {
+            const { isCoaLabel: isLabel, nextCoaRaw, nextCoaNorm } = isCoaLabel(ws, r, dataNorm, dataColumn, coaColumn);
+            if (isLabel) {
                 if (!currentCat) {
                     if (createSentinelIfMissing && (sectionName === "additional" || sectionName === "non-procurement")) {
                         const sentinelName = sectionName === "additional" ? "Additional Items (Uncategorized)" : "Non-Procurement (Uncategorized)";

@@ -34,6 +34,8 @@ import type {
     CategoryCoaColumnConfig,
     CategoryCoaRowConfig,
 } from "@/lib/ppmp/sheet-config";
+import { index as categoryCoaMappingIndex } from "@/routes/category-coa-mapping";
+import { index as importsIndex } from "@/routes/imports";
 import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 
 type VerifyFormatResult = {
@@ -3146,5 +3148,8 @@ export default function CategoryCoaMappingPage({
 }
 
 CategoryCoaMappingPage.layout = {
-    breadcrumbs: [{ title: "Category COA Mapping", href: "#" }],
+    breadcrumbs: [
+        { title: "Imports", href: importsIndex().url },
+        { title: "Category COA Mapping", href: categoryCoaMappingIndex().url },
+    ],
 };

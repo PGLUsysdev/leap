@@ -28,6 +28,8 @@ import {
 } from "@/components/base-ui-components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base-ui-components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
+import { index as categoryImportIndex } from "@/routes/category-import";
+import { index as importsIndex } from "@/routes/imports";
 
 function cellText(cell: ExcelJS.Cell): string | null {
     let value: unknown = cell.value as unknown;
@@ -2483,5 +2485,8 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
 }
 
 CategoryImport.layout = {
-    breadcrumbs: [{ title: "Category Import", href: "#" }],
+    breadcrumbs: [
+        { title: "Imports", href: importsIndex().url },
+        { title: "Category Import", href: categoryImportIndex().url },
+    ],
 };
