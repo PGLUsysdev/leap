@@ -36,6 +36,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base-ui-components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
 import { cellText } from "@/lib/excel/cell-helpers";
+import {
+    formatCoaOption,
+    groupUnmatchedByExtractedCoa,
+    parseCoaOptionId,
+} from "@/lib/ppmp/batch-match";
+import type { ExtractedCoaGroup } from "@/lib/ppmp/batch-match";
 import { normalize, isTotalRow, getCategoryMatch, getCoaMatch } from "@/lib/ppmp/normalize";
 import type { ExistingCategory, ExistingCoa } from "@/lib/ppmp/normalize";
 import { getDefaultSharedConfig } from "@/lib/ppmp/sheet-config";
@@ -151,6 +157,9 @@ export default function PriceListImport({
     const [importing, setImporting] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>({});
+    // Per extracted-COA-group picker choice for batch matching (keyed by coaNorm).
+    // Shown visibly in the group picker; only applied via explicit Apply.
+    const [batchSelections, setBatchSelections] = useState<Record<string, string>>({});
     const [reviewFilter, setReviewFilter] = useState<"all" | "errors" | "duplicates" | "longDesc">(
         "all",
     );
@@ -227,6 +236,24 @@ export default function PriceListImport({
 
     function handleClearAllOverrides() {
         setCoaOverrides({});
+        setBatchSelections({});
+    }
+
+    function handleBatchApplyGroup(group: ExtractedCoaGroup) {
+        const picked =
+            batchSelections[group.coaNorm] ??
+            (group.topSuggestion ? formatCoaOption(group.topSuggestion) : "");
+        const id = parseCoaOptionId(picked) ?? group.topSuggestion?.id ?? null;
+
+        if (id === null) return;
+
+        setCoaOverrides((prev) => {
+            const next = { ...prev };
+
+            for (const k of group.rowKeys) next[k] = id;
+
+            return next;
+        });
     }
 
     function handleTruncateDescription(rowKey: string) {
@@ -368,6 +395,12 @@ export default function PriceListImport({
         existingPriceLists,
         coaOverrides,
     ]);
+
+    // Rows still needing a human COA pick, grouped by normalized extracted label.
+    const batchGroups = useMemo(
+        () => groupUnmatchedByExtractedCoa(verifiedItems),
+        [verifiedItems],
+    );
 
     const importable = verifiedItems.filter((v) => v.status === "ready" || v.status === "update");
     const importableSelected = importable.filter((v) => selected.has(v.key));
@@ -1960,6 +1993,108 @@ export default function PriceListImport({
                                 Overrides are per unique price-list row
                                 (`category|coa|description|unit`). Counts reflect overridden COAs.
                             </p>
+                        )}
+                        {batchGroups.length > 0 && (
+                            <div className="rounded-lg border p-3">
+                                <p className="mb-2 text-xs font-semibold">
+                                    Batch match by extracted COA — {batchGroups.length} group
+                                    {batchGroups.length === 1 ? "" : "s"} still need{batchGroups.length === 1 ? "s" : ""} a
+                                    human pick. One choice applies to every row in the group.
+                                </p>
+                                <div className="flex max-h-64 flex-col gap-2 overflow-auto">
+                                    {batchGroups.map((group) => {
+                                        const suggestedIds = new Set(
+                                            group.topMatches.map((m) => m.coa.id),
+                                        );
+                                        const groupItems = [
+                                            ...group.topMatches.map((m) => m.coa),
+                                            ...existingCoas.filter((c) => !suggestedIds.has(c.id)),
+                                        ].map(formatCoaOption);
+                                        const groupValue =
+                                            batchSelections[group.coaNorm] ??
+                                            (group.topSuggestion
+                                                ? formatCoaOption(group.topSuggestion)
+                                                : "");
+
+                                        return (
+                                            <div
+                                                key={group.coaNorm}
+                                                className="flex flex-wrap items-center gap-2 rounded border px-2 py-1.5"
+                                            >
+                                                <span
+                                                    className="flex min-w-0 flex-1 items-center gap-1 truncate text-xs font-medium"
+                                                    title={`Excel: ${group.label}`}
+                                                >
+                                                    <span className="truncate">{group.label}</span>
+                                                    <Badge
+                                                        variant="outline"
+                                                        className="h-4 border-amber-500 px-1 text-[10px] text-amber-600"
+                                                    >
+                                                        ×{group.count}
+                                                    </Badge>
+                                                </span>
+                                                <Combobox
+                                                    items={groupItems}
+                                                    value={groupValue}
+                                                    onValueChange={(val) =>
+                                                        setBatchSelections((prev) => ({
+                                                            ...prev,
+                                                            [group.coaNorm]:
+                                                                (val as string | null) ?? "",
+                                                        }))
+                                                    }
+                                                >
+                                                    <ComboboxInput
+                                                        placeholder={
+                                                            group.topSuggestion
+                                                                ? "★ Suggested at top — search..."
+                                                                : "Search COA..."
+                                                        }
+                                                        className="h-7 text-xs"
+                                                    />
+                                                    <ComboboxContent>
+                                                        <ComboboxEmpty>
+                                                            No COA found.
+                                                        </ComboboxEmpty>
+                                                        <ComboboxList>
+                                                            {(item: string) => {
+                                                                const isSuggested =
+                                                                    group.topMatches.some((m) =>
+                                                                        item.includes(
+                                                                            `coa:${m.coa.id}:`,
+                                                                        ),
+                                                                    );
+
+                                                                return (
+                                                                    <ComboboxItem
+                                                                        key={item}
+                                                                        value={item}
+                                                                        className={
+                                                                            isSuggested
+                                                                                ? "font-medium"
+                                                                                : ""
+                                                                        }
+                                                                    >
+                                                                        {isSuggested ? "★ " : ""}
+                                                                        {item.replace(/^coa:\d+:/, "")}
+                                                                    </ComboboxItem>
+                                                                );
+                                                            }}
+                                                        </ComboboxList>
+                                                    </ComboboxContent>
+                                                </Combobox>
+                                                <Button
+                                                    size="sm"
+                                                    className="h-7 text-xs"
+                                                    onClick={() => handleBatchApplyGroup(group)}
+                                                >
+                                                    Apply to all {group.count}
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         )}
                         {reviewFilter === "errors" && (
                             <p className="text-xs text-muted-foreground">

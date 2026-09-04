@@ -1292,8 +1292,9 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                                                 calibrations[currentSheet]
                                             ) {
                                                 setSharedConfig({ ...calibrations[currentSheet] });
-                                            } else if (!sharedConfig)
-                                                ensureCalibrationsInitialized();
+                                            } else if (!sharedConfig) {
+ensureCalibrationsInitialized();
+}
 
                                             setCalibrationMode("shared");
                                         }}

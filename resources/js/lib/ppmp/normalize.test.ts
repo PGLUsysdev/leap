@@ -210,4 +210,31 @@ describe("getCoaMatch", () => {
         const result = getCoaMatch(normalize("zzz unrelated qqq"), coas, "auto");
         expect(result.type).toBe("none");
     });
+
+    it("should_RankPath502First_When_MultiplePartials", () => {
+        // Arrange: same title shape under different paths, candidate is a typo (partial for all)
+        const candidates: ExistingCoa[] = [
+            { id: 10, account_number: "60101010", path: "6-01-01-010", account_title: "Office Supplies Expenses" },
+            { id: 11, account_number: "50101010", path: "5-01-01-010", account_title: "Office Supplies Expenses" },
+            { id: 12, account_number: "50203010", path: "5-02-03-010", account_title: "Office Supplies Expenses" },
+        ];
+        // Act
+        const result = getCoaMatch(normalize("Office Suplies Expenses"), candidates, "auto");
+        // Assert
+        expect(result.type).toBe("partial");
+        expect(result.topMatches?.map((m) => m.coa.id)).toEqual([12, 11, 10]);
+    });
+
+    it("should_RankPath5BeforeOthers_When_No502Candidate", () => {
+        // Arrange
+        const candidates: ExistingCoa[] = [
+            { id: 20, account_number: "60101010", path: "6-01-01-010", account_title: "Traveling Expenses" },
+            { id: 21, account_number: "50101010", path: "5-01-01-010", account_title: "Traveling Expenses" },
+        ];
+        // Act
+        const result = getCoaMatch(normalize("Traveling Expenss"), candidates, "auto");
+        // Assert
+        expect(result.type).toBe("partial");
+        expect(result.topMatches?.[0].coa.id).toBe(21);
+    });
 });

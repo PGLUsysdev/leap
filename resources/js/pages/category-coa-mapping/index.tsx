@@ -14,6 +14,7 @@ import {
 } from "@/components/base-ui-components/ui/combobox";
 import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
 import { Input } from "@/components/base-ui-components/ui/input";
+import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 import {
     Select,
     SelectContent,
@@ -36,7 +37,6 @@ import type {
 } from "@/lib/ppmp/sheet-config";
 import { index as categoryCoaMappingIndex } from "@/routes/category-coa-mapping";
 import { index as importsIndex } from "@/routes/imports";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
 
 type VerifyFormatResult = {
     valid: boolean;

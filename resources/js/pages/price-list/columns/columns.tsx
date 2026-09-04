@@ -53,6 +53,13 @@ const columns = [
         size: 200,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
+    columnHelper.accessor("chart_of_account_ppmp_category.chart_of_account.path", {
+        header: () => <div className="px-1">COA Code</div>,
+        size: 150,
+        cell: (info) => (
+            <div className="px-1 text-wrap slashed-zero tabular-nums">{info.getValue()}</div>
+        ),
+    }),
     columnHelper.accessor("chart_of_account_ppmp_category.chart_of_account.account_title", {
         header: () => <div className="px-1">Chart of Account</div>,
         size: 200,
