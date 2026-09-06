@@ -8,7 +8,6 @@ use App\Models\PpmpCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class CategoryCoaMappingController extends Controller
@@ -47,6 +46,7 @@ class CategoryCoaMappingController extends Controller
                     ->exists();
                 if ($exists) {
                     $skipped++;
+
                     continue;
                 }
                 ChartOfAccountPpmpCategory::create([

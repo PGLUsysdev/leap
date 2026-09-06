@@ -5,7 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
@@ -18,7 +19,7 @@ return new class extends Migration {
             // Drop the plain index created in 2026_08_28_011143_add_path_to_chart_of_accounts.php
             try {
                 $table->dropIndex(['path']);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Index may already be gone or named differently; ignore
             }
         });
@@ -28,13 +29,13 @@ return new class extends Migration {
         try {
             // MySQL / MariaDB
             DB::statement('ALTER TABLE `chart_of_accounts` MODIFY `path` VARCHAR(255) NOT NULL');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Fallback to Laravel change() if raw fails (e.g., SQLite)
             try {
                 Schema::table('chart_of_accounts', function (Blueprint $table) {
                     $table->string('path', 255)->nullable(false)->change();
                 });
-            } catch (\Throwable $e2) {
+            } catch (Throwable $e2) {
                 // If both fail, rethrow original
                 throw $e;
             }
@@ -56,12 +57,12 @@ return new class extends Migration {
 
         try {
             DB::statement('ALTER TABLE `chart_of_accounts` MODIFY `path` VARCHAR(255) NULL');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             try {
                 Schema::table('chart_of_accounts', function (Blueprint $table) {
                     $table->string('path', 255)->nullable()->change();
                 });
-            } catch (\Throwable $e2) {
+            } catch (Throwable $e2) {
                 throw $e;
             }
         }

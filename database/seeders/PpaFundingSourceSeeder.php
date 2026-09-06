@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\PpaFundingSource;
 use App\Models\FundingSource;
+use App\Models\PpaFundingSource;
 use Illuminate\Database\Seeder;
 
 class PpaFundingSourceSeeder extends Seeder
@@ -1590,11 +1590,11 @@ class PpaFundingSourceSeeder extends Seeder
             ->unique()
             ->values();
 
-        $unmapped = $usedCodes->reject(fn($code) => isset($codeMap[$code]));
+        $unmapped = $usedCodes->reject(fn ($code) => isset($codeMap[$code]));
 
         if ($unmapped->isNotEmpty()) {
             $this->command->error(
-                'Missing code map entries for: ' . $unmapped->implode(', '),
+                'Missing code map entries for: '.$unmapped->implode(', '),
             );
 
             return;
@@ -1602,12 +1602,12 @@ class PpaFundingSourceSeeder extends Seeder
 
         // Validate all mapped codes exist in the database
         $missingCodes = collect($codeMap)
-            ->reject(fn($dbCode) => isset($fundingSources[$dbCode]))
+            ->reject(fn ($dbCode) => isset($fundingSources[$dbCode]))
             ->values();
 
         if ($missingCodes->isNotEmpty()) {
             $this->command->error(
-                'Funding source codes not found in database: ' .
+                'Funding source codes not found in database: '.
                     $missingCodes->implode(', '),
             );
 

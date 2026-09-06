@@ -5,38 +5,39 @@ use App\Http\Controllers\AipCostingController;
 use App\Http\Controllers\AipEntryController;
 use App\Http\Controllers\AipOutputController;
 use App\Http\Controllers\AipRefCodeController;
+use App\Http\Controllers\AipSummaryImportController;
+use App\Http\Controllers\CategoryCoaMappingController;
+use App\Http\Controllers\CategoryImportController;
 use App\Http\Controllers\CcStrategicPriorityController;
 use App\Http\Controllers\CcSubSectorController;
 use App\Http\Controllers\CcTypologyController;
 use App\Http\Controllers\ChartOfAccountController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\FiscalYearController;
-use App\Http\Controllers\FundingSourceController;
 // Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\IosController;
-use App\Http\Controllers\LguLevelController;
-use App\Http\Controllers\OfficeController;
-use App\Http\Controllers\OfficeTypeController;
+use App\Http\Controllers\ChartOfAccountPpmpCategoryController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FiscalYearController;
 // Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\PlantillaPositionController;
 // Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\PositionController;
+use App\Http\Controllers\FundingSourceController;
+use App\Http\Controllers\ImportsController;
+use App\Http\Controllers\LguLevelController;
+use App\Http\Controllers\OfficeController;
+use App\Http\Controllers\OfficeTypeController;
 use App\Http\Controllers\PpaController;
 use App\Http\Controllers\PpaFundingSourceController;
 use App\Http\Controllers\PpaListController;
-use App\Http\Controllers\ImportsController;
 use App\Http\Controllers\PpmpCategoryController;
 use App\Http\Controllers\PpmpController;
-use App\Http\Controllers\CategoryImportController;
-use App\Http\Controllers\CategoryCoaMappingController;
 use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
-use App\Http\Controllers\PriceListImportController;
-use App\Http\Controllers\AipSummaryImportController;
 // use App\Http\Controllers\PsBreakdownController;
-use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PriceListImportController;
 // Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\SalaryStandardController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SectorController;
 use App\Http\Controllers\SupplementalAipController;
 use App\Http\Controllers\UserController;
@@ -53,9 +54,9 @@ Route::redirect('/', '/login');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::get('home', fn() => Inertia::render('home'));
+    Route::get('home', fn () => Inertia::render('home'));
 
-    Route::get('test-combobox', fn() => Inertia::render('test-combobox'));
+    Route::get('test-combobox', fn () => Inertia::render('test-combobox'));
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -278,15 +279,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // PPMP Category ↔ COA Mappings
     Route::get('ppmp-category-mappings', [
-        \App\Http\Controllers\ChartOfAccountPpmpCategoryController::class,
+        ChartOfAccountPpmpCategoryController::class,
         'index',
     ])->name('ppmp-category-mappings.index');
     Route::post('ppmp-category-mappings', [
-        \App\Http\Controllers\ChartOfAccountPpmpCategoryController::class,
+        ChartOfAccountPpmpCategoryController::class,
         'store',
     ])->name('ppmp-category-mappings.store');
     Route::delete('ppmp-category-mappings/{chartOfAccountPpmpCategory}', [
-        \App\Http\Controllers\ChartOfAccountPpmpCategoryController::class,
+        ChartOfAccountPpmpCategoryController::class,
         'destroy',
     ])->name('ppmp-category-mappings.destroy');
 

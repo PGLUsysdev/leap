@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\FiscalYear;
 use App\Models\Office;
 use App\Models\Ppa;
-use App\Models\FiscalYear;
 use Illuminate\Database\Seeder;
 
 class PpaSeeder extends Seeder
@@ -17,13 +17,15 @@ class PpaSeeder extends Seeder
         $office = Office::where('acronym', 'PICTO')->first();
         $fiscalYear = FiscalYear::where('year', 2027)->first();
 
-        if (!$office) {
+        if (! $office) {
             $this->command->error('No Office found with acronym PICTO.');
+
             return;
         }
 
-        if (!$fiscalYear) {
+        if (! $fiscalYear) {
             $this->command->error('No Fiscal Year found for 2027.');
+
             return;
         }
 
@@ -62,8 +64,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 6,
                 'parent_id' => 5,
-                'name' =>
-                    'Development and deployment of PGLU Information Systems',
+                'name' => 'Development and deployment of PGLU Information Systems',
                 'type' => 'Sub-Activity',
             ],
             [
@@ -99,8 +100,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 12,
                 'parent_id' => 11,
-                'name' =>
-                    'Subscription of Secure Sockets Layer (SSL) Technology',
+                'name' => 'Subscription of Secure Sockets Layer (SSL) Technology',
                 'type' => 'Sub-Activity',
             ],
             [
@@ -118,15 +118,13 @@ class PpaSeeder extends Seeder
             [
                 'id' => 15,
                 'parent_id' => 11,
-                'name' =>
-                    'Subscription of Information Systems Cloud-based platform',
+                'name' => 'Subscription of Information Systems Cloud-based platform',
                 'type' => 'Sub-Activity',
             ],
             [
                 'id' => 16,
                 'parent_id' => 11,
-                'name' =>
-                    'Subscription of Productivity and Collaboration Tools',
+                'name' => 'Subscription of Productivity and Collaboration Tools',
                 'type' => 'Sub-Activity',
             ],
             [
@@ -180,8 +178,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 25,
                 'parent_id' => 21,
-                'name' =>
-                    'Pillar 4: Implement Privacy & Data Protection Measures',
+                'name' => 'Pillar 4: Implement Privacy & Data Protection Measures',
                 'type' => 'Sub-Activity',
             ],
             [
@@ -193,8 +190,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 27,
                 'parent_id' => 21,
-                'name' =>
-                    'Capacity Training for PGLU Heads and Administrative Officers for Awareness on Data Access and Privacy Training (ADAPT)',
+                'name' => 'Capacity Training for PGLU Heads and Administrative Officers for Awareness on Data Access and Privacy Training (ADAPT)',
                 'type' => 'Sub-Activity',
             ],
             [
@@ -255,8 +251,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 37,
                 'parent_id' => 30,
-                'name' =>
-                    'La Union Peace and Order System (Maintenance for La Union Wireless Province-Wide Mesh High Speed Local Network Backbone) - Radios/Relays and CCTVs',
+                'name' => 'La Union Peace and Order System (Maintenance for La Union Wireless Province-Wide Mesh High Speed Local Network Backbone) - Radios/Relays and CCTVs',
                 'type' => 'Activity',
             ],
             [
@@ -274,8 +269,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 40,
                 'parent_id' => 2,
-                'name' =>
-                    'Gender-Responsive Digital Literacy and ICT Hub Program',
+                'name' => 'Gender-Responsive Digital Literacy and ICT Hub Program',
                 'type' => 'Project',
             ],
             [
@@ -318,22 +312,19 @@ class PpaSeeder extends Seeder
             [
                 'id' => 47,
                 'parent_id' => 46,
-                'name' =>
-                    'ICT Governance - La Union ICT Council (LUICTC) Operations and Roadmap',
+                'name' => 'ICT Governance - La Union ICT Council (LUICTC) Operations and Roadmap',
                 'type' => 'Project',
             ],
             [
                 'id' => 48,
                 'parent_id' => 47,
-                'name' =>
-                    'LUICTC Secretariat Services and Institutionalization',
+                'name' => 'LUICTC Secretariat Services and Institutionalization',
                 'type' => 'Activity',
             ],
             [
                 'id' => 49,
                 'parent_id' => 47,
-                'name' =>
-                    'La Union ICT Roadmap - Formulation, Implementation and Monitoring',
+                'name' => 'La Union ICT Roadmap - Formulation, Implementation and Monitoring',
                 'type' => 'Activity',
             ],
             [
@@ -345,8 +336,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 51,
                 'parent_id' => 50,
-                'name' =>
-                    'PGLU ISSP — SC/TWG Formation, Writeshop, Approval & Monitoring',
+                'name' => 'PGLU ISSP — SC/TWG Formation, Writeshop, Approval & Monitoring',
                 'type' => 'Activity',
             ],
             [
@@ -425,8 +415,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 64,
                 'parent_id' => 63,
-                'name' =>
-                    'Provision of Internet connectivity and ICT resources to GIDA Schools',
+                'name' => 'Provision of Internet connectivity and ICT resources to GIDA Schools',
                 'type' => 'Sub-Activity',
             ],
             [
@@ -444,8 +433,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 67,
                 'parent_id' => 61,
-                'name' =>
-                    'Membership to National and International Organizations',
+                'name' => 'Membership to National and International Organizations',
                 'type' => 'Activity',
             ],
             [
@@ -463,15 +451,13 @@ class PpaSeeder extends Seeder
             [
                 'id' => 70,
                 'parent_id' => 69,
-                'name' =>
-                    'Attendance, Participation and Completion to IT-Related trainings',
+                'name' => 'Attendance, Participation and Completion to IT-Related trainings',
                 'type' => 'Activity',
             ],
             [
                 'id' => 71,
                 'parent_id' => 69,
-                'name' =>
-                    'Attendance to ICT Summits, Conferences and Awarding Ceremonies',
+                'name' => 'Attendance to ICT Summits, Conferences and Awarding Ceremonies',
                 'type' => 'Activity',
             ],
             [
@@ -490,8 +476,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 74,
                 'parent_id' => 72,
-                'name' =>
-                    'Capacity Training for PGLU employees for Online Applications (Cybersecurity Aptitude  and Compile Hazards for End users-CACHE)',
+                'name' => 'Capacity Training for PGLU employees for Online Applications (Cybersecurity Aptitude  and Compile Hazards for End users-CACHE)',
                 'type' => 'Activity',
             ],
             [
@@ -521,15 +506,13 @@ class PpaSeeder extends Seeder
             [
                 'id' => 79,
                 'parent_id' => 76,
-                'name' =>
-                    'PATCH - Provincial Application and Tool for Citizens Hackathon',
+                'name' => 'PATCH - Provincial Application and Tool for Citizens Hackathon',
                 'type' => 'Sub-Activity',
             ],
             [
                 'id' => 80,
                 'parent_id' => 76,
-                'name' =>
-                    'QUERY - Quizbee for Universal End-users and Robust Youth',
+                'name' => 'QUERY - Quizbee for Universal End-users and Robust Youth',
                 'type' => 'Sub-Activity',
             ],
             [
@@ -613,8 +596,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 94,
                 'parent_id' => 93,
-                'name' =>
-                    'Preparation and Assessment of Work Program and Budget and other Office Reports/Plans',
+                'name' => 'Preparation and Assessment of Work Program and Budget and other Office Reports/Plans',
                 'type' => 'Activity',
             ],
             [
@@ -652,8 +634,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 100,
                 'parent_id' => 93,
-                'name' =>
-                    'Conduct of Monthly Accomplishment and Assessment cum Staff Development Session',
+                'name' => 'Conduct of Monthly Accomplishment and Assessment cum Staff Development Session',
                 'type' => 'Activity',
             ],
             [
@@ -743,8 +724,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 114,
                 'parent_id' => 106,
-                'name' =>
-                    'Preparation/Updating of Individual Development Plan (IDP)',
+                'name' => 'Preparation/Updating of Individual Development Plan (IDP)',
                 'type' => 'Activity',
             ],
             [
@@ -756,8 +736,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 116,
                 'parent_id' => 106,
-                'name' =>
-                    'Preparation of Statement of Assets, Liabilities and Net Worth (SALN)',
+                'name' => 'Preparation of Statement of Assets, Liabilities and Net Worth (SALN)',
                 'type' => 'Activity',
             ],
             [
@@ -781,8 +760,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 120,
                 'parent_id' => 118,
-                'name' =>
-                    'Management of all Incoming and Outgoing Communications',
+                'name' => 'Management of all Incoming and Outgoing Communications',
                 'type' => 'Activity',
             ],
             [
@@ -818,8 +796,7 @@ class PpaSeeder extends Seeder
             [
                 'id' => 126,
                 'parent_id' => 121,
-                'name' =>
-                    'Preparation of Supplies and ICT Equipment Inventory Report',
+                'name' => 'Preparation of Supplies and ICT Equipment Inventory Report',
                 'type' => 'Activity',
             ],
             [
@@ -837,15 +814,13 @@ class PpaSeeder extends Seeder
             [
                 'id' => 129,
                 'parent_id' => 128,
-                'name' =>
-                    'LBP Loan Ammortizations (Establishment of the Province-wide Mesh High Speed Local Network Backbone) @6.00% p.a.',
+                'name' => 'LBP Loan Ammortizations (Establishment of the Province-wide Mesh High Speed Local Network Backbone) @6.00% p.a.',
                 'type' => 'Activity',
             ],
             [
                 'id' => 130,
                 'parent_id' => 128,
-                'name' =>
-                    'LBP Loan Amortizations (Implementation of the La Union Peace, Order and Public Safety System-Phase II) @ 6.25% p.a.',
+                'name' => 'LBP Loan Amortizations (Implementation of the La Union Peace, Order and Public Safety System-Phase II) @ 6.25% p.a.',
                 'type' => 'Activity',
             ],
         ];
@@ -858,10 +833,9 @@ class PpaSeeder extends Seeder
                 'parent_id' => $item['parent_id'],
                 'name' => $item['name'],
                 'type' => $item['type'],
-                'code_suffix' =>
-                    Ppa::where('parent_id', $item['parent_id'])
-                        ->where('type', $item['type'])
-                        ->count() + 1,
+                'code_suffix' => Ppa::where('parent_id', $item['parent_id'])
+                    ->where('type', $item['type'])
+                    ->count() + 1,
                 'is_active' => true,
                 'is_ps_pool' => $item['is_ps_pool'] ?? false,
             ]);

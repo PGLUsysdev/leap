@@ -39,10 +39,10 @@ class ChartOfAccountController extends Controller
                     ->can('create', ChartOfAccount::class),
                 'edit' => request()
                     ->user()
-                    ->can('update', new ChartOfAccount()),
+                    ->can('update', new ChartOfAccount),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new ChartOfAccount()),
+                    ->can('delete', new ChartOfAccount),
             ],
         ]);
     }

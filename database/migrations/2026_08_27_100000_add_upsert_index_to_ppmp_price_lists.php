@@ -2,10 +2,11 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         // Spec §5: Upsert uniqueness is (junction_id + normalized description + normalized UOM)
@@ -22,7 +23,7 @@ return new class extends Migration {
                 DB::statement(
                     'CREATE INDEX ppmp_price_lists_upsert_lookup_idx ON ppmp_price_lists (chart_of_account_ppmp_category_id, unit_of_measurement, description(191))',
                 );
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // index may already exist — ignore
             }
         });
@@ -37,7 +38,7 @@ return new class extends Migration {
                 SQL
                 ,
             );
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // ignore if not supported
         }
         // Note: UNIQUE constraint on (junction, description_norm_hash, LOWER(unit)) could be added
@@ -48,7 +49,7 @@ return new class extends Migration {
     {
         try {
             DB::statement('DROP INDEX ppmp_price_lists_upsert_lookup_idx ON ppmp_price_lists');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
         }
         try {
             Schema::table('ppmp_price_lists', function (Blueprint $table) {
@@ -56,7 +57,7 @@ return new class extends Migration {
                     $table->dropColumn('description_norm_hash');
                 }
             });
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
         }
     }
 };

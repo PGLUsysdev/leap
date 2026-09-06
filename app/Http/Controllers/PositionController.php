@@ -30,8 +30,8 @@ class PositionController extends Controller
         if ($request->filled('search')) {
             $searchTerm = $request->query('search');
             $iosQuery->where(function ($q) use ($searchTerm) {
-                $q->where('class_id', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('class', 'like', '%' . $searchTerm . '%');
+                $q->where('class_id', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('class', 'like', '%'.$searchTerm.'%');
             });
         }
 

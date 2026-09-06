@@ -5,7 +5,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     public function up()
     {
         // 1. Disable foreign key checks for safety
@@ -23,7 +24,7 @@ return new class extends Migration {
             Schema::table('ppas', function (Blueprint $table) {
                 $table->dropUnique('ppa_unique_index');
             });
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Index might already be gone – swallow the exception
         }
 

@@ -32,7 +32,7 @@ class Ppa extends Model
 
     public function getPaddingLength(): int
     {
-        return config('ppa.type_padding.' . $this->type, 0);
+        return config('ppa.type_padding.'.$this->type, 0);
     }
 
     protected function fullCode(): Attribute
@@ -50,13 +50,15 @@ class Ppa extends Model
                 if ($this->parent_id) {
                     $parent = $this->parent;
                     if ($parent) {
-                        return $parent->full_code . '-' . $paddedSuffix;
+                        return $parent->full_code.'-'.$paddedSuffix;
                     }
-                    return 'ORPHAN-' . $paddedSuffix;
+
+                    return 'ORPHAN-'.$paddedSuffix;
                 }
 
                 $officePrefix = $this->office?->full_code ?? '0000-0-00-000';
-                return $officePrefix . '-' . $paddedSuffix;
+
+                return $officePrefix.'-'.$paddedSuffix;
             },
         );
     }

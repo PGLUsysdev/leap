@@ -77,8 +77,7 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '1 02 02 010', 'account_title' => 'Financial Assets Held for Trading'],
             [
                 'full_code' => '1 02 02 020',
-                'account_title' =>
-                    'Financial Assets Designated at Fair Value Through Surplus or Deficit',
+                'account_title' => 'Financial Assets Designated at Fair Value Through Surplus or Deficit',
             ],
             ['full_code' => '1 02 03', 'account_title' => 'Financial Assets - Held to Maturity'],
             [
@@ -87,8 +86,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 02 03 011',
-                'account_title' =>
-                    'Allowance for Impairment - Investments in Treasury Bills - Local',
+                'account_title' => 'Allowance for Impairment - Investments in Treasury Bills - Local',
             ],
             ['full_code' => '1 02 03 020', 'account_title' => 'Investments in Bonds-Local'],
             [
@@ -147,13 +145,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 03 01 050',
-                'account_title' =>
-                    'Loans Receivable - Government-Owned and/or Controlled Corporations',
+                'account_title' => 'Loans Receivable - Government-Owned and/or Controlled Corporations',
             ],
             [
                 'full_code' => '1 03 01 051',
-                'account_title' =>
-                    'Allowance for Impairment - Loans Receivable - Government-Owned and/or Controlled Corporations',
+                'account_title' => 'Allowance for Impairment - Loans Receivable - Government-Owned and/or Controlled Corporations',
             ],
             [
                 'full_code' => '1 03 01 060',
@@ -161,8 +157,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 03 01 061',
-                'account_title' =>
-                    'Allowance for Impairment - Loans Receivable - Local Government Units',
+                'account_title' => 'Allowance for Impairment - Loans Receivable - Local Government Units',
             ],
             ['full_code' => '1 03 01 070', 'account_title' => 'Interests Receivable'],
             [
@@ -197,8 +192,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 03 03 011',
-                'account_title' =>
-                    'Allowance for Impairment - Due from National Government Agencies',
+                'account_title' => 'Allowance for Impairment - Due from National Government Agencies',
             ],
             [
                 'full_code' => '1 03 03 020',
@@ -250,8 +244,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 03 06 031',
-                'account_title' =>
-                    'Allowance for Impairment - Due from Non-Government Organizations/People\'s Organizations',
+                'account_title' => 'Allowance for Impairment - Due from Non-Government Organizations/People\'s Organizations',
             ],
             ['full_code' => '1 03 06 990', 'account_title' => 'Other Receivables'],
             [
@@ -385,13 +378,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 02 011',
-                'account_title' =>
-                    'Accumulated Depreciation - Land Improvements, Aquaculture Structures',
+                'account_title' => 'Accumulated Depreciation - Land Improvements, Aquaculture Structures',
             ],
             [
                 'full_code' => '1 07 02 012',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Land Improvements, Aquaculture Structures',
+                'account_title' => 'Accumulated Impairment Losses - Land Improvements, Aquaculture Structures',
             ],
             ['full_code' => '1 07 02 990', 'account_title' => 'Other Land Improvements'],
             [
@@ -579,13 +570,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 05 031',
-                'account_title' =>
-                    'Accumulated Depreciation - Information and Communication Technology Equipment',
+                'account_title' => 'Accumulated Depreciation - Information and Communication Technology Equipment',
             ],
             [
                 'full_code' => '1 07 05 032',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Information and Communication Technology Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Information and Communication Technology Equipment',
             ],
             [
                 'full_code' => '1 07 05 040',
@@ -597,8 +586,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 05 042',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Agricultural and Forestry Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Agricultural and Forestry Equipment',
             ],
             ['full_code' => '1 07 05 050', 'account_title' => 'Marine and Fishery Equipment'],
             [
@@ -634,8 +622,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 05 082',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Construction and Heavy Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Construction and Heavy Equipment',
             ],
             [
                 'full_code' => '1 07 05 090',
@@ -643,13 +630,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 05 091',
-                'account_title' =>
-                    'Accumulated Depreciation - Disaster Response and Rescue Equipment',
+                'account_title' => 'Accumulated Depreciation - Disaster Response and Rescue Equipment',
             ],
             [
                 'full_code' => '1 07 05 092',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Disaster Response and Rescue Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Disaster Response and Rescue Equipment',
             ],
             [
                 'full_code' => '1 07 05 100',
@@ -657,13 +642,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 05 101',
-                'account_title' =>
-                    'Accumulated Depreciation - Military, Police and Security Equipment',
+                'account_title' => 'Accumulated Depreciation - Military, Police and Security Equipment',
             ],
             [
                 'full_code' => '1 07 05 102',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Military, Police and Security Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Military, Police and Security Equipment',
             ],
             ['full_code' => '1 07 05 110', 'account_title' => 'Medical Equipment'],
             [
@@ -699,8 +682,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 05 142',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Technical and Scientific Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Technical and Scientific Equipment',
             ],
             ['full_code' => '1 07 05 990', 'account_title' => 'Other Machinery and Equipment'],
             [
@@ -733,13 +715,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 06 031',
-                'account_title' =>
-                    'Accumulated Depreciation - Aircrafts and Aircrafts Ground Equipment',
+                'account_title' => 'Accumulated Depreciation - Aircrafts and Aircrafts Ground Equipment',
             ],
             [
                 'full_code' => '1 07 06 032',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Aircrafts and Aircrafts Ground Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Aircrafts and Aircrafts Ground Equipment',
             ],
             ['full_code' => '1 07 06 040', 'account_title' => 'Watercrafts'],
             [
@@ -787,13 +767,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 08 021',
-                'account_title' =>
-                    'Accumulated Depreciation - Leased Assets, Buildings and Other Structures',
+                'account_title' => 'Accumulated Depreciation - Leased Assets, Buildings and Other Structures',
             ],
             [
                 'full_code' => '1 07 08 022',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Leased Assets, Buildings and Other Structures',
+                'account_title' => 'Accumulated Impairment Losses - Leased Assets, Buildings and Other Structures',
             ],
             [
                 'full_code' => '1 07 08 030',
@@ -801,13 +779,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 08 031',
-                'account_title' =>
-                    'Accumulated Depreciation - Leased Assets, Machinery and Equipment',
+                'account_title' => 'Accumulated Depreciation - Leased Assets, Machinery and Equipment',
             ],
             [
                 'full_code' => '1 07 08 032',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Leased Assets, Machinery and Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Leased Assets, Machinery and Equipment',
             ],
             [
                 'full_code' => '1 07 08 040',
@@ -815,13 +791,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 08 041',
-                'account_title' =>
-                    'Accumulated Depreciation - Leased Assets, Transportation Equipment',
+                'account_title' => 'Accumulated Depreciation - Leased Assets, Transportation Equipment',
             ],
             [
                 'full_code' => '1 07 08 042',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Leased Assets, Transportation Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Leased Assets, Transportation Equipment',
             ],
             ['full_code' => '1 07 08 990', 'account_title' => 'Other Leased Assets'],
             [
@@ -840,8 +814,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 09 012',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Leased Assets Improvements, Land',
+                'account_title' => 'Accumulated Impairment Losses - Leased Assets Improvements, Land',
             ],
             [
                 'full_code' => '1 07 09 020',
@@ -849,13 +822,11 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 09 021',
-                'account_title' =>
-                    'Accumulated Depreciation - Leased Assets Improvements, Buildings',
+                'account_title' => 'Accumulated Depreciation - Leased Assets Improvements, Buildings',
             ],
             [
                 'full_code' => '1 07 09 022',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Leased Assets Improvements, Buildings',
+                'account_title' => 'Accumulated Impairment Losses - Leased Assets Improvements, Buildings',
             ],
             ['full_code' => '1 07 09 990', 'account_title' => 'Other Leased Assets Improvements'],
             [
@@ -864,8 +835,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 09 992',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Other Leased Assets Improvements',
+                'account_title' => 'Accumulated Impairment Losses - Other Leased Assets Improvements',
             ],
             ['full_code' => '1 07 10', 'account_title' => 'Construction in Progress'],
             [
@@ -918,8 +888,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '1 07 99 992',
-                'account_title' =>
-                    'Accumulated Impairment Losses - Other Property, Plant and Equipment',
+                'account_title' => 'Accumulated Impairment Losses - Other Property, Plant and Equipment',
             ],
 
             ['full_code' => '1 08', 'account_title' => 'Biological Assets'],
@@ -1020,8 +989,7 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '2 04 01 010', 'account_title' => 'Trust Liabilities'],
             [
                 'full_code' => '2 04 01 020',
-                'account_title' =>
-                    'Trust Liabilities - Disaster Risk Reduction and Management Fund',
+                'account_title' => 'Trust Liabilities - Disaster Risk Reduction and Management Fund',
             ],
             ['full_code' => '2 04 01 030', 'account_title' => 'Bail Bonds Payable'],
             ['full_code' => '2 04 01 040', 'account_title' => 'Guaranty/Security Deposits Payable'],
@@ -1078,8 +1046,7 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '3 04 01', 'account_title' => 'Unrealized Gain/(Loss)'],
             [
                 'full_code' => '3 04 01 010',
-                'account_title' =>
-                    'Unrealized Gain/(Loss) from Changes in the Fair Value of Financial Assets',
+                'account_title' => 'Unrealized Gain/(Loss) from Changes in the Fair Value of Financial Assets',
             ],
 
             ['full_code' => '3 05', 'account_title' => 'Budgetary Accounts'],
@@ -1134,8 +1101,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '3 05 04 030',
-                'account_title' =>
-                    'Reversion of Unutilized Continuing Appropriations and Allotments',
+                'account_title' => 'Reversion of Unutilized Continuing Appropriations and Allotments',
             ],
 
             // ==================== INCOME ====================
@@ -1176,8 +1142,7 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '4 01 05', 'account_title' => 'Tax Revenue - Fines and Penalties'],
             [
                 'full_code' => '4 01 05 010',
-                'account_title' =>
-                    'Tax Revenue - Fines and Penalties - Taxes on Individual and Corporation',
+                'account_title' => 'Tax Revenue - Fines and Penalties - Taxes on Individual and Corporation',
             ],
             [
                 'full_code' => '4 01 05 020',
@@ -1185,8 +1150,7 @@ class ChartOfAccountSeeder extends Seeder
             ],
             [
                 'full_code' => '4 01 05 030',
-                'account_title' =>
-                    'Tax Revenue - Fines and Penalties - Taxes on Goods and Services',
+                'account_title' => 'Tax Revenue - Fines and Penalties - Taxes on Goods and Services',
             ],
             [
                 'full_code' => '4 01 05 040',
@@ -1252,8 +1216,7 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '4 02 02 120', 'account_title' => 'Parking Fees'],
             [
                 'full_code' => '4 02 02 130',
-                'account_title' =>
-                    'Receipts from Operation of Hostels/Dormitories and Other Like Facilities',
+                'account_title' => 'Receipts from Operation of Hostels/Dormitories and Other Like Facilities',
             ],
             ['full_code' => '4 02 02 140', 'account_title' => 'Receipts from Market Operations'],
             [
@@ -1355,13 +1318,11 @@ class ChartOfAccountSeeder extends Seeder
             ['full_code' => '4 05 01 070', 'account_title' => 'Gain on Sale of Biological Assets'],
             [
                 'full_code' => '4 05 01 080',
-                'account_title' =>
-                    'Gain from Changes in Fair Value Less Cost to Sell of Biological Assets Due to Physical Change',
+                'account_title' => 'Gain from Changes in Fair Value Less Cost to Sell of Biological Assets Due to Physical Change',
             ],
             [
                 'full_code' => '4 05 01 090',
-                'account_title' =>
-                    'Gain from Changes in Fair Value Less Cost to Sell of Biological Assets Due to Price Change',
+                'account_title' => 'Gain from Changes in Fair Value Less Cost to Sell of Biological Assets Due to Price Change',
             ],
             [
                 'full_code' => '4 05 01 100',
@@ -1764,12 +1725,13 @@ class ChartOfAccountSeeder extends Seeder
                     $parentFullCode = implode(' ', $parentSegments);
 
                     // Skip item if its parent hasn't been created/found yet
-                    if (!isset($codeToIdMap[$parentFullCode])) {
+                    if (! isset($codeToIdMap[$parentFullCode])) {
                         $skippedAccounts[] = [
                             'full_code' => $fullCode,
                             'account_title' => $coa['account_title'],
                             'reason' => "Missing parent record: {$parentFullCode}",
                         ];
+
                         continue;
                     }
 
@@ -1794,7 +1756,7 @@ class ChartOfAccountSeeder extends Seeder
         });
 
         // Log skipped items to storage/logs/laravel.log
-        if (!empty($skippedAccounts)) {
+        if (! empty($skippedAccounts)) {
             Log::warning('ChartOfAccount Seeder: Skipped records due to missing parents.', [
                 'count' => count($skippedAccounts),
                 'records' => $skippedAccounts,

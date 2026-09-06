@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreIosRequest;
 use App\Http\Requests\UpdateIosRequest;
-use App\Models\FiscalYear;
 use App\Models\Ios;
 use App\Models\SalaryStandard;
 use Illuminate\Http\Request;
@@ -44,15 +43,15 @@ class IosController extends Controller
                 $q->where(
                     'occupational_service_code',
                     'like',
-                    '%' . $searchTerm . '%',
+                    '%'.$searchTerm.'%',
                 )
                     ->orWhere(
                         'occupational_group_code',
                         'like',
-                        '%' . $searchTerm . '%',
+                        '%'.$searchTerm.'%',
                     )
-                    ->orWhere('class_id', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('class', 'like', '%' . $searchTerm . '%');
+                    ->orWhere('class_id', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('class', 'like', '%'.$searchTerm.'%');
             });
         }
 
@@ -61,8 +60,8 @@ class IosController extends Controller
             'salaryGrades' => $salaryGrades,
             'can' => [
                 'add' => request()->user()->can('create', Ios::class),
-                'edit' => request()->user()->can('update', new Ios()),
-                'delete' => request()->user()->can('delete', new Ios()),
+                'edit' => request()->user()->can('update', new Ios),
+                'delete' => request()->user()->can('delete', new Ios),
             ],
         ]);
     }

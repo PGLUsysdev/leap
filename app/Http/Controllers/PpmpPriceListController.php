@@ -39,18 +39,18 @@ class PpmpPriceListController extends Controller
                 $q->where(
                     'unit_of_measurement',
                     'like',
-                    '%' . $searchTerm . '%',
+                    '%'.$searchTerm.'%',
                 )
-                    ->orWhere('description', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('item_number', 'like', '%' . $searchTerm . '%')
-                    ->orWhere('price', 'like', '%' . $searchTerm . '%')
+                    ->orWhere('description', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('item_number', 'like', '%'.$searchTerm.'%')
+                    ->orWhere('price', 'like', '%'.$searchTerm.'%')
                     ->orWhereHas(
                         'chartOfAccountPpmpCategory.ppmpCategory',
                         function ($subQuery) use ($searchTerm) {
                             $subQuery->where(
                                 'name',
                                 'like',
-                                '%' . $searchTerm . '%',
+                                '%'.$searchTerm.'%',
                             );
                         },
                     )
@@ -61,7 +61,7 @@ class PpmpPriceListController extends Controller
                             $subQuery->where(
                                 'account_title',
                                 'like',
-                                '%' . $searchTerm . '%',
+                                '%'.$searchTerm.'%',
                             );
                         },
                     );
@@ -99,10 +99,10 @@ class PpmpPriceListController extends Controller
             'coaCategoryPairs' => $coaCategoryPairs,
             'can' => [
                 'add' => request()->user()->can('create', PpmpPriceList::class),
-                'edit' => request()->user()->can('update', new PpmpPriceList()),
+                'edit' => request()->user()->can('update', new PpmpPriceList),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new PpmpPriceList()),
+                    ->can('delete', new PpmpPriceList),
                 'move' => request()->user()->can('move', PpmpPriceList::class),
             ],
             'filters' => $request->only([
@@ -131,26 +131,26 @@ class PpmpPriceListController extends Controller
                         ->where(
                             'unit_of_measurement',
                             'like',
-                            '%' . $searchTerm . '%',
+                            '%'.$searchTerm.'%',
                         )
                         ->orWhere(
                             'description',
                             'like',
-                            '%' . $searchTerm . '%',
+                            '%'.$searchTerm.'%',
                         )
                         ->orWhere(
                             'item_number',
                             'like',
-                            '%' . $searchTerm . '%',
+                            '%'.$searchTerm.'%',
                         )
-                        ->orWhere('price', 'like', '%' . $searchTerm . '%')
+                        ->orWhere('price', 'like', '%'.$searchTerm.'%')
                         ->orWhereHas(
                             'chartOfAccountPpmpCategory.ppmpCategory',
                             function ($subQuery) use ($searchTerm) {
                                 $subQuery->where(
                                     'name',
                                     'like',
-                                    '%' . $searchTerm . '%',
+                                    '%'.$searchTerm.'%',
                                 );
                             },
                         )
@@ -160,7 +160,7 @@ class PpmpPriceListController extends Controller
                                 $subQuery->where(
                                     'account_title',
                                     'like',
-                                    '%' . $searchTerm . '%',
+                                    '%'.$searchTerm.'%',
                                 );
                             },
                         );

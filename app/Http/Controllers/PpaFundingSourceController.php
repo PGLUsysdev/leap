@@ -21,8 +21,8 @@ class PpaFundingSourceController extends Controller
             ->where('funding_source_id', $validated['funding_source_id'])
             ->when(
                 $saipId,
-                fn($query) => $query->where('supplemental_aip_id', $saipId),
-                fn($query) => $query->whereNull('supplemental_aip_id'),
+                fn ($query) => $query->where('supplemental_aip_id', $saipId),
+                fn ($query) => $query->whereNull('supplemental_aip_id'),
             )
             ->exists();
 
@@ -30,8 +30,7 @@ class PpaFundingSourceController extends Controller
             return redirect()
                 ->back()
                 ->withErrors([
-                    'funding_source_id' =>
-                        'This funding source is already assigned to this output.',
+                    'funding_source_id' => 'This funding source is already assigned to this output.',
                 ]);
         }
 
@@ -48,7 +47,7 @@ class PpaFundingSourceController extends Controller
 
         $user = auth()->user();
 
-        if (!$user->can('editFundingSources', $aipOutput->aipEntry)) {
+        if (! $user->can('editFundingSources', $aipOutput->aipEntry)) {
             abort(403, 'You do not have permission to edit funding sources.');
         }
 

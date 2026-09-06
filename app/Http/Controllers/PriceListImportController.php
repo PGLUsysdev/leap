@@ -17,6 +17,7 @@ class PriceListImportController extends Controller
     {
         $trimmed = trim($value);
         $collapsed = preg_replace('/\s+/', ' ', $trimmed);
+
         return strtolower($collapsed ?? $trimmed);
     }
 
@@ -74,18 +75,21 @@ class PriceListImportController extends Controller
                     $msg = "Row {$rowNum}: Description is empty";
                     $errors[] = $msg;
                     $errorDetails[] = ['row' => $rowNum, 'field' => 'description', 'message' => $msg];
+
                     continue;
                 }
                 if ($uomRaw === '' || mb_strlen($uomRaw) > 20) {
                     $msg = "Row {$rowNum}: Unit of measurement empty or >20 chars";
                     $errors[] = $msg;
                     $errorDetails[] = ['row' => $rowNum, 'field' => 'unit_of_measurement', 'message' => $msg];
+
                     continue;
                 }
                 if ($price <= 0) {
                     $msg = "Row {$rowNum}: Unit price must be >0 (got {$price})";
                     $errors[] = $msg;
                     $errorDetails[] = ['row' => $rowNum, 'field' => 'price', 'message' => $msg];
+
                     continue;
                 }
 
@@ -99,6 +103,7 @@ class PriceListImportController extends Controller
                     $msg = "Row {$rowNum}: Category/COA pair not found – create mapping via Category–COA Mappings first (chart_of_account_id={$data['chart_of_account_id']}, ppmp_category_id={$data['ppmp_category_id']})";
                     $errors[] = $msg;
                     $errorDetails[] = ['row' => $rowNum, 'field' => 'junction', 'message' => $msg, 'raw' => $data];
+
                     continue;
                 }
 
@@ -134,7 +139,7 @@ class PriceListImportController extends Controller
             } catch (\Exception $e) {
                 $msg = 'Row '.($i + 1).': '.$e->getMessage();
                 $errors[] = $msg;
-                $errorDetails[] = ['row' => $i+1, 'message' => $msg, 'exception' => $e->getMessage()];
+                $errorDetails[] = ['row' => $i + 1, 'message' => $msg, 'exception' => $e->getMessage()];
             }
         }
 
@@ -158,11 +163,13 @@ class PriceListImportController extends Controller
         if ($hasErrors) {
             $msg = "Import completed: {$inserted} inserted, {$updated} updated, {$errorsCount} errors.";
             Inertia::flash('toast', ['type' => 'error', 'message' => $msg]);
+
             return redirect()->back();
         }
 
         $msg = "Imported {$inserted} new, updated {$updated} existing item(s).";
         Inertia::flash('toast', ['type' => 'success', 'message' => $msg]);
+
         return redirect()->back();
     }
 }

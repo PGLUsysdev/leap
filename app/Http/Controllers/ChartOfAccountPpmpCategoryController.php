@@ -43,7 +43,7 @@ class ChartOfAccountPpmpCategoryController extends Controller
                 ->get(),
             'can' => [
                 'add' => request()->user()->can('create', PpmpCategory::class),
-                'delete' => request()->user()->can('delete', new PpmpCategory()),
+                'delete' => request()->user()->can('delete', new PpmpCategory),
             ],
         ]);
     }
@@ -69,7 +69,7 @@ class ChartOfAccountPpmpCategoryController extends Controller
 
         $hasDependents = $chartOfAccountPpmpCategory->ppmpPriceLists()->exists();
 
-        if ($hasDependents && !request('force')) {
+        if ($hasDependents && ! request('force')) {
             return back()->withErrors([
                 'force_delete' => 'This mapping has dependent PPMP price list items. Continuing will delete all price list items associated with this mapping.',
             ]);

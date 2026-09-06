@@ -44,11 +44,13 @@ class CategoryImportController extends Controller
             if ($norm === '') {
                 $skipped++;
                 $details[] = ['row' => $i + 1, 'raw' => $raw, 'status' => 'skipped: empty after normalize'];
+
                 continue;
             }
             if (isset($existing[$norm])) {
                 $skipped++;
                 $details[] = ['row' => $i + 1, 'raw' => $raw, 'status' => 'skipped: exists', 'existing' => $existing[$norm]];
+
                 continue;
             }
             $isAdditional = $cat['is_additional'] ?? false;
@@ -71,7 +73,7 @@ class CategoryImportController extends Controller
         } elseif ($inserted > 0) {
             Inertia::flash('toast', ['type' => 'success', 'message' => "Imported {$inserted} categories."]);
         } else {
-            Inertia::flash('toast', ['type' => 'error', 'message' => "No categories imported — all duplicates or invalid."]);
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'No categories imported — all duplicates or invalid.']);
         }
 
         return redirect()->back();

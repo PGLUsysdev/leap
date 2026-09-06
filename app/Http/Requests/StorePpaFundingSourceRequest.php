@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\AipOutput;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePpaFundingSourceRequest extends FormRequest
@@ -10,7 +11,7 @@ class StorePpaFundingSourceRequest extends FormRequest
     {
         $aipOutput = $this->route('aipOutput');
 
-        if (! $aipOutput instanceof \App\Models\AipOutput) {
+        if (! $aipOutput instanceof AipOutput) {
             return false;
         }
 

@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Log;
 
 class PpaController extends Controller
 {
@@ -23,12 +22,13 @@ class PpaController extends Controller
      */
     private function getOfficeHierarchyIds($officeId): array
     {
-        if (!$officeId) {
+        if (! $officeId) {
             return [];
         }
 
         $officeIds = [(int) $officeId];
         $children = $this->getChildOfficeIds((int) $officeId);
+
         return array_merge($officeIds, $children);
     }
 
@@ -42,6 +42,7 @@ class PpaController extends Controller
         foreach ($children as $childId) {
             $descendants = array_merge($descendants, $this->getChildOfficeIds($childId));
         }
+
         return $descendants;
     }
 
@@ -77,6 +78,7 @@ class PpaController extends Controller
                         'delete' => $user->can('delete', $ppa),
                         'move' => $user->can('move', $ppa),
                     ];
+
                     return $ppa;
                 }),
 
@@ -116,16 +118,18 @@ class PpaController extends Controller
                             'delete' => $user->can('delete', $ppa),
                             'move' => $user->can('move', $ppa),
                         ];
+
                         return $ppa;
                     });
             }),
 
             'dialogCurrent' => Inertia::optional(function () use ($request) {
                 $id = $request->query('dialog_id');
-                if (!$id) {
+                if (! $id) {
                     return [];
                 }
                 $ppa = Ppa::with('parent.parent')->find($id);
+
                 return $ppa ? $this->flattenAncestors($ppa) : [];
             }),
 
@@ -146,8 +150,8 @@ class PpaController extends Controller
 
         return Ppa::when(
             $officeIds,
-            fn($q) => $q->whereIn('office_id', $officeIds),
-            fn($q) => $q, // no office filter if null (show all)
+            fn ($q) => $q->whereIn('office_id', $officeIds),
+            fn ($q) => $q, // no office filter if null (show all)
         )
             ->where('fiscal_year_id', $fiscalYearId)
             ->when(
@@ -191,7 +195,7 @@ class PpaController extends Controller
         $id = $request->query('dialog_id');
         $search = $request->query('dialog_search');
 
-        return Ppa::when($officeIds, fn($q) => $q->whereIn('office_id', $officeIds), fn($q) => $q)
+        return Ppa::when($officeIds, fn ($q) => $q->whereIn('office_id', $officeIds), fn ($q) => $q)
             ->where('fiscal_year_id', $prevYearId)
             ->when(
                 $id,
@@ -260,7 +264,7 @@ class PpaController extends Controller
 
         if ($parentId) {
             $parent = Ppa::findOrFail($parentId);
-            abort_if(!$showAll && $parent->office_id !== $user->office_id, 403);
+            abort_if(! $showAll && $parent->office_id !== $user->office_id, 403);
             $officeId = $parent->office_id;
         } else {
             $officeId = $showAll ? $validated['office_id'] : $user->office_id;
@@ -325,7 +329,7 @@ class PpaController extends Controller
             // 1. Move with temporary suffix
             $ppa->update([
                 'parent_id' => $newParentId,
-                'code_suffix' => 'MOVING_' . $ppa->id,
+                'code_suffix' => 'MOVING_'.$ppa->id,
                 'sort_order' => $isSibling
                     ? ($direction === 'top'
                         ? $target->sort_order - 0.5
@@ -366,7 +370,7 @@ class PpaController extends Controller
         $siblings = $query->get();
 
         foreach ($siblings as $sibling) {
-            $sibling->update(['code_suffix' => 'TEMP_' . $sibling->id]);
+            $sibling->update(['code_suffix' => 'TEMP_'.$sibling->id]);
         }
 
         foreach ($siblings as $index => $sibling) {
@@ -392,8 +396,7 @@ class PpaController extends Controller
             return redirect()
                 ->back()
                 ->withErrors([
-                    'error' =>
-                        'Cannot delete: This PPA or its sub‑items are linked to existing AIP entries.',
+                    'error' => 'Cannot delete: This PPA or its sub‑items are linked to existing AIP entries.',
                 ]);
         }
 
@@ -419,6 +422,7 @@ class PpaController extends Controller
         foreach ($ppa->children as $child) {
             $this->getAllDescendantIds($child, $ids);
         }
+
         return $ids;
     }
 
@@ -444,21 +448,21 @@ class PpaController extends Controller
 
         $currentFiscalYearId = session('active_fiscal_year_id');
 
-        if (!$currentFiscalYearId) {
+        if (! $currentFiscalYearId) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'No active fiscal year set']);
         }
 
         $currentFiscalYear = FiscalYear::find($currentFiscalYearId);
-        if (!$currentFiscalYear) {
+        if (! $currentFiscalYear) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Current fiscal year not found']);
         }
 
         $previousFiscalYear = FiscalYear::where('year', $currentFiscalYear->year - 1)->first();
-        if (!$previousFiscalYear) {
+        if (! $previousFiscalYear) {
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Previous fiscal year not found']);
@@ -516,10 +520,11 @@ class PpaController extends Controller
                 ->with('success', "Successfully imported {$importedCount} PPAs.");
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()
                 ->back()
                 ->withErrors([
-                    'error' => 'Error importing PPAs: ' . $e->getMessage(),
+                    'error' => 'Error importing PPAs: '.$e->getMessage(),
                 ]);
         }
     }
@@ -548,8 +553,8 @@ class PpaController extends Controller
 
             if ($transferred > 0) {
                 $message .=
-                    ' ' .
-                    number_format($transferred, 2) .
+                    ' '.
+                    number_format($transferred, 2).
                     ' in PS was transferred from the previous pool.';
             }
 

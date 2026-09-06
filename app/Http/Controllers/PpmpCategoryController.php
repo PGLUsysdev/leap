@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePpmpCategoryRequest;
 use App\Http\Requests\UpdatePpmpCategoryRequest;
-use App\Models\ChartOfAccountPpmpCategory;
 use App\Models\PpmpCategory;
 use App\Models\PpmpPriceList;
 use Illuminate\Support\Facades\Gate;
@@ -29,10 +28,10 @@ class PpmpCategoryController extends Controller
 
             'can' => [
                 'add' => request()->user()->can('create', PpmpCategory::class),
-                'edit' => request()->user()->can('update', new PpmpCategory()),
+                'edit' => request()->user()->can('update', new PpmpCategory),
                 'delete' => request()
                     ->user()
-                    ->can('delete', new PpmpCategory()),
+                    ->can('delete', new PpmpCategory),
             ],
         ]);
     }
@@ -107,10 +106,9 @@ class PpmpCategoryController extends Controller
             ->whereHas('ppmpPriceLists')
             ->exists();
 
-        if ($hasDependents && !request('force')) {
+        if ($hasDependents && ! request('force')) {
             return back()->withErrors([
-                'force_delete' =>
-                    'This category has dependent PPMP price list items.',
+                'force_delete' => 'This category has dependent PPMP price list items.',
             ]);
         }
 
