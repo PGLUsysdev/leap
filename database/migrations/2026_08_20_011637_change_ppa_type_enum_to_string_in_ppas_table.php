@@ -10,7 +10,7 @@ return new class extends Migration
     public function up()
     {
         // 1. Disable foreign key checks for safety
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        Schema::disableForeignKeyConstraints();
 
         // 2. Drop the temporary column if it exists
         if (Schema::hasColumn('ppas', 'type_new')) {
@@ -55,7 +55,7 @@ return new class extends Migration
         });
 
         // 9. Re‑enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        Schema::enableForeignKeyConstraints();
     }
 
     public function down()

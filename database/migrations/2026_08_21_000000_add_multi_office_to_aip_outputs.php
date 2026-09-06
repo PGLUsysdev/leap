@@ -28,9 +28,10 @@ return new class extends Migration
         });
 
         // 2. Migrate existing data: one pivot row per output with its current office_id
+        // CURRENT_TIMESTAMP works on both MariaDB/MySQL and SQLite (NOW() is MySQL-only)
         DB::statement(
             'INSERT INTO aip_output_office (aip_output_id, office_id, created_at, updated_at)
-             SELECT id, office_id, NOW(), NOW() FROM aip_outputs',
+             SELECT id, office_id, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP FROM aip_outputs',
         );
 
         // 3. Drop the old foreign key and column
