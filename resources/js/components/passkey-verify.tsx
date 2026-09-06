@@ -42,8 +42,7 @@ export default function PasskeyVerify({ routes, label, loadingLabel, separator }
                     variant="outline"
                     className="w-full"
                     onClick={verify}
-                    // disabled={isLoading}
-                    disabled={true}
+                    disabled={isLoading}
                 >
                     {isLoading ? <Spinner /> : <KeyRound className="h-4 w-4" />}
                     {isLoading
