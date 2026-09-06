@@ -1,14 +1,14 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
 @custom-variant dark (&:is(.dark *));
 
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/outfit";
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/outfit';
 
 @theme {
     --color-background: var(--background);
@@ -104,9 +104,9 @@
     --sidebar-border: oklch(0.8576 0 0);
     --sidebar-ring: oklch(0.4891 0 0);
 
-    --font-sans: "Outfit Variable", sans-serif;
-    --font-serif: "Playfair Display", serif;
-    --font-mono: "JetBrains Mono", monospace;
+    --font-sans: 'Outfit Variable', sans-serif;
+    --font-serif: 'Playfair Display', serif;
+    --font-mono: 'JetBrains Mono', monospace;
     --radius: 0.5rem;
     --shadow-x: 0px;
     --shadow-y: 4px;
@@ -116,11 +116,17 @@
     --shadow-color: #000000;
     --shadow-2xs: 0px 4px 10px 0px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0px 4px 10px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-sm:
+        0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow:
+        0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md:
+        0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg:
+        0px 4px 10px 0px hsl(0 0% 0% / 0.1), 0px 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl:
+        0px 4px 10px 0px hsl(0 0% 0% / 0.1),
+        0px 8px 10px -1px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0px 4px 10px 0px hsl(0 0% 0% / 0.25);
     --tracking-normal: 0.01em;
     --spacing: 0.25rem;
@@ -160,9 +166,9 @@
     --sidebar-border: oklch(0.329 0 0);
     --sidebar-ring: oklch(0.7058 0.17 255);
 
-    --font-sans: "Outfit Variable", sans-serif;
-    --font-serif: "Playfair Display", serif;
-    --font-mono: "JetBrains Mono", monospace;
+    --font-sans: 'Outfit Variable', sans-serif;
+    --font-serif: 'Playfair Display', serif;
+    --font-mono: 'JetBrains Mono', monospace;
     --radius: 0.5rem;
     --shadow-x: 0px;
     --shadow-y: 6px;
@@ -172,11 +178,17 @@
     --shadow-color: #000000;
     --shadow-2xs: 0px 6px 15px 0px hsl(0 0% 0% / 0.15);
     --shadow-xs: 0px 6px 15px 0px hsl(0 0% 0% / 0.15);
-    --shadow-sm: 0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
-    --shadow: 0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
-    --shadow-md: 0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 2px 4px -1px hsl(0 0% 0% / 0.3);
-    --shadow-lg: 0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 4px 6px -1px hsl(0 0% 0% / 0.3);
-    --shadow-xl: 0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 8px 10px -1px hsl(0 0% 0% / 0.3);
+    --shadow-sm:
+        0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
+    --shadow:
+        0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 1px 2px -1px hsl(0 0% 0% / 0.3);
+    --shadow-md:
+        0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 2px 4px -1px hsl(0 0% 0% / 0.3);
+    --shadow-lg:
+        0px 6px 15px 0px hsl(0 0% 0% / 0.3), 0px 4px 6px -1px hsl(0 0% 0% / 0.3);
+    --shadow-xl:
+        0px 6px 15px 0px hsl(0 0% 0% / 0.3),
+        0px 8px 10px -1px hsl(0 0% 0% / 0.3);
     --shadow-2xl: 0px 6px 15px 0px hsl(0 0% 0% / 0.75);
 }
 

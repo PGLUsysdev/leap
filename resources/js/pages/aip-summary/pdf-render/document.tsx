@@ -1,65 +1,72 @@
-import { Document, Page, View, Text, StyleSheet, Font } from "@react-pdf/renderer";
-import React from "react";
-import { formatCurrency } from "@/lib/utils";
-import { PpmpPdfTable } from "@/pages/ppmp/pdf-render/table";
-import type { ColumnDef, TableRow } from "@/pages/ppmp/pdf-render/types";
-import type { AipEntry, FiscalYear } from "@/types";
-import { getAipSummaryColumnDefs } from "./cols";
-import { prepareAipSummaryRows } from "./prepare-rows";
-import TableHeader from "./table-header";
+import {
+    Document,
+    Page,
+    View,
+    Text,
+    StyleSheet,
+    Font,
+} from '@react-pdf/renderer';
+import React from 'react';
+import { formatCurrency } from '@/lib/utils';
+import { PpmpPdfTable } from '@/pages/ppmp/pdf-render/table';
+import type { ColumnDef, TableRow } from '@/pages/ppmp/pdf-render/types';
+import type { AipEntry, FiscalYear } from '@/types';
+import { getAipSummaryColumnDefs } from './cols';
+import { prepareAipSummaryRows } from './prepare-rows';
+import TableHeader from './table-header';
 
 Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
     page: {
         padding: 12,
-        fontFamily: "Helvetica",
+        fontFamily: 'Helvetica',
     },
     headerContainer: {
         marginBottom: 1,
     },
     title: {
         fontSize: 9,
-        fontWeight: "bold",
-        textTransform: "uppercase",
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
         marginTop: 2,
-        color: "#0F172A",
-        textAlign: "center",
+        color: '#0F172A',
+        textAlign: 'center',
     },
     subtitle: {
         fontSize: 8,
-        fontWeight: "bold",
+        fontWeight: 'bold',
         marginTop: 1,
-        textAlign: "center",
+        textAlign: 'center',
     },
     headerSpacer: {
         height: 14,
     },
     officeLabel: {
         fontSize: 8,
-        fontWeight: "bold",
-        textAlign: "left",
+        fontWeight: 'bold',
+        textAlign: 'left',
     },
     signatureSection: {
         marginTop: 15,
-        flexDirection: "row",
-        justifyContent: "space-between",
+        flexDirection: 'row',
+        justifyContent: 'space-between',
     },
     signatureBox: {
-        width: "23%",
-        textAlign: "left",
+        width: '23%',
+        textAlign: 'left',
     },
     signatureLabel: {
         fontSize: 6,
         marginBottom: 20,
-        textAlign: "left",
-        fontWeight: "bold",
+        textAlign: 'left',
+        fontWeight: 'bold',
     },
     signatureName: {
         fontSize: 7,
-        fontWeight: "bold",
-        textAlign: "left",
-        textDecoration: "underline",
+        fontWeight: 'bold',
+        textAlign: 'left',
+        textDecoration: 'underline',
         marginBottom: 2,
     },
     signatureNameLine: {
@@ -70,17 +77,17 @@ const styles = StyleSheet.create({
     },
     signatureTitle: {
         fontSize: 5,
-        textAlign: "left",
+        textAlign: 'left',
     },
     footer: {
-        position: "absolute",
+        position: 'absolute',
         bottom: 8,
         left: 12,
         right: 12,
-        flexDirection: "row",
-        justifyContent: "space-between",
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         fontSize: 5.5,
-        color: "#94A3B8",
+        color: '#94A3B8',
     },
 });
 
@@ -103,82 +110,82 @@ interface AipSummaryDocumentProps {
 
 // Row style resolver for AIP Summary
 const aipRowStyleResolver = (row: any) => {
-    if (row.type === "banner") {
-        if (row.id.startsWith("ppa-")) {
+    if (row.type === 'banner') {
+        if (row.id.startsWith('ppa-')) {
             return {
                 rowStyle: {
-                    flexDirection: "row",
+                    flexDirection: 'row',
                     borderBottomWidth: 0.5,
-                    borderBottomColor: "#000000",
+                    borderBottomColor: '#000000',
                     minHeight: 12,
-                    alignItems: "stretch",
+                    alignItems: 'stretch',
                 },
                 textStyle: {
                     fontSize: 5,
-                    fontWeight: "bold",
-                    color: "#000000",
+                    fontWeight: 'bold',
+                    color: '#000000',
                 },
             };
         }
 
-        if (row.id.startsWith("output-")) {
+        if (row.id.startsWith('output-')) {
             return {
                 rowStyle: {
-                    flexDirection: "row",
-                    backgroundColor: "#DEEAF6",
+                    flexDirection: 'row',
+                    backgroundColor: '#DEEAF6',
                     borderBottomWidth: 0.5,
-                    borderBottomColor: "#000000",
+                    borderBottomColor: '#000000',
                     minHeight: 11,
-                    alignItems: "stretch",
+                    alignItems: 'stretch',
                 },
                 textStyle: {
                     fontSize: 5,
-                    fontWeight: "bold",
-                    color: "#000000",
+                    fontWeight: 'bold',
+                    color: '#000000',
                 },
             };
         }
     }
 
-    if (row.type === "subtotal") {
-        if (row.id.startsWith("subtotal-output-")) {
+    if (row.type === 'subtotal') {
+        if (row.id.startsWith('subtotal-output-')) {
             return {
                 rowStyle: {
-                    flexDirection: "row",
-                    backgroundColor: "#FEF2CB",
+                    flexDirection: 'row',
+                    backgroundColor: '#FEF2CB',
                     borderBottomWidth: 0.5,
-                    borderBottomColor: "#000000",
+                    borderBottomColor: '#000000',
                     minHeight: 11,
-                    alignItems: "stretch",
+                    alignItems: 'stretch',
                 },
                 textStyle: {
                     fontSize: 5,
-                    fontWeight: "bold",
-                    color: "#000000",
+                    fontWeight: 'bold',
+                    color: '#000000',
                 },
             };
         }
 
-        if (row.id.startsWith("subtotal-ppa-")) {
+        if (row.id.startsWith('subtotal-ppa-')) {
             return {
                 rowStyle: {
-                    flexDirection: "row",
-                    backgroundColor: "#FFFF00",
+                    flexDirection: 'row',
+                    backgroundColor: '#FFFF00',
                     borderBottomWidth: 0.5,
-                    borderBottomColor: "#000000",
+                    borderBottomColor: '#000000',
                     minHeight: 12,
-                    alignItems: "stretch",
+                    alignItems: 'stretch',
                 },
                 textStyle: {
                     fontSize: 5,
-                    fontWeight: "bold",
-                    color: "#000000",
+                    fontWeight: 'bold',
+                    color: '#000000',
                 },
             };
         }
     }
 
-    if (row.type === "item" && !row.isLastInPpaGroup) {
+    if (row.type === 'item' && !row.isLastInPpaGroup) {
         return {
             rowStyle: {
                 borderBottomWidth: 0,
@@ -205,11 +212,11 @@ const renderAipGrandTotal = (row: TableRow, columns: ColumnDef<any>[]) => {
             key={row.id}
             wrap={false}
             style={{
-                flexDirection: "row",
+                flexDirection: 'row',
                 borderBottomWidth: 0.5,
-                borderBottomColor: "#000000",
+                borderBottomColor: '#000000',
                 minHeight: 13,
-                alignItems: "stretch",
+                alignItems: 'stretch',
             }}
         >
             {/* Label spanning the first seven columns */}
@@ -217,15 +224,23 @@ const renderAipGrandTotal = (row: TableRow, columns: ColumnDef<any>[]) => {
                 style={{
                     width: `${labelWidth}%`,
                     borderLeftWidth: 0.5,
-                    borderLeftColor: "#000000",
+                    borderLeftColor: '#000000',
                     borderRightWidth: 0.5,
-                    borderRightColor: "#000000",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    borderRightColor: '#000000',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                     paddingHorizontal: 2,
                 }}
             >
-                <Text style={{ fontSize: 5, fontWeight: "bold", color: "#000000" }}>TOTAL</Text>
+                <Text
+                    style={{
+                        fontSize: 5,
+                        fontWeight: 'bold',
+                        color: '#000000',
+                    }}
+                >
+                    TOTAL
+                </Text>
             </View>
 
             {/* Amount + CC typology columns */}
@@ -235,21 +250,22 @@ const renderAipGrandTotal = (row: TableRow, columns: ColumnDef<any>[]) => {
                     style={{
                         width: col.width,
                         borderRightWidth: 0.5,
-                        borderRightColor: "#000000",
-                        justifyContent: "center",
+                        borderRightColor: '#000000',
+                        justifyContent: 'center',
                         paddingHorizontal: 1,
                     }}
                 >
                     <Text
                         style={{
                             fontSize: 5,
-                            fontWeight: "bold",
-                            color: "#000000",
-                            textAlign: col.id === "cc_typology" ? "center" : "right",
+                            fontWeight: 'bold',
+                            color: '#000000',
+                            textAlign:
+                                col.id === 'cc_typology' ? 'center' : 'right',
                         }}
                     >
-                        {col.id === "cc_typology"
-                            ? ""
+                        {col.id === 'cc_typology'
+                            ? ''
                             : formatCurrency(String(totals[col.id] || 0))}
                     </Text>
                 </View>
@@ -269,9 +285,9 @@ export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
     const rows = prepareAipSummaryRows(aipEntries);
 
     const scopeLabel =
-        currentScope?.scope === "supplemental"
+        currentScope?.scope === 'supplemental'
             ? `Supplemental Annual Investment Program (SAIP)`
-            : "Annual Investment Program (AIP)";
+            : 'Annual Investment Program (AIP)';
 
     return (
         <Document>
@@ -284,15 +300,17 @@ export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
                     </Text>
 
                     {/* Row 2 */}
-                    <Text style={styles.subtitle}>By Program / Project / Activity - by Sector</Text>
+                    <Text style={styles.subtitle}>
+                        By Program / Project / Activity - by Sector
+                    </Text>
 
                     {/* Row 3 – blank spacer */}
                     <View style={styles.headerSpacer} />
 
                     {/* Row 4 – office name, left-aligned */}
                     <Text style={styles.officeLabel}>
-                        OFFICE:{" "}
-                        <Text style={{ textDecoration: "underline" }}>
+                        OFFICE:{' '}
+                        <Text style={{ textDecoration: 'underline' }}>
                             {officeName.toUpperCase()}
                         </Text>
                     </Text>
@@ -341,7 +359,8 @@ export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
                             </View>
                         )}
                         <Text style={styles.signatureTitle}>
-                            {signatories.reviewedPosition.trim() || "OIC-Provincial Budget Officer"}
+                            {signatories.reviewedPosition.trim() ||
+                                'OIC-Provincial Budget Officer'}
                         </Text>
                     </View>
                     <View style={styles.signatureBox}>
@@ -356,7 +375,8 @@ export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
                             </View>
                         )}
                         <Text style={styles.signatureTitle}>
-                            {signatories.approvedPosition.trim() || "Provincial Governor"}
+                            {signatories.approvedPosition.trim() ||
+                                'Provincial Governor'}
                         </Text>
                     </View>
                     <View style={styles.signatureBox}>
@@ -371,7 +391,7 @@ export const AipSummaryDocument: React.FC<AipSummaryDocumentProps> = ({
                             </View>
                         )}
                         <Text style={styles.signatureTitle}>
-                            {signatories.conformePosition.trim() || "-"}
+                            {signatories.conformePosition.trim() || '-'}
                         </Text>
                     </View>
                 </View>

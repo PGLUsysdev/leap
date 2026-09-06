@@ -1,10 +1,15 @@
 // resources\js\pages\aip-summary\pdf-render\amounts-by-fs\pdf-preview-dialog.tsx
 
-import { useMemo } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { PdfPreviewPane } from "@/lib/pdf/pdf-preview-pane";
-import { usePdfPreview } from "@/lib/pdf/use-pdf-preview";
-import type { AipEntry, FiscalYear } from "@/types";
+import { useMemo } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { PdfPreviewPane } from '@/lib/pdf/pdf-preview-pane';
+import { usePdfPreview } from '@/lib/pdf/use-pdf-preview';
+import type { AipEntry, FiscalYear } from '@/types';
 
 interface Props {
     open: boolean;
@@ -40,13 +45,21 @@ export default function ExportSummaryToPdfDialog({
                               ? undefined
                               : {
                                     scope: scopeKey,
-                                    supplemental_aip_id: scopeSupplementalId ?? null,
+                                    supplemental_aip_id:
+                                        scopeSupplementalId ?? null,
                                 },
                   }
                 : null,
-        [open, aipEntries, fiscalYear, officeName, scopeKey, scopeSupplementalId],
+        [
+            open,
+            aipEntries,
+            fiscalYear,
+            officeName,
+            scopeKey,
+            scopeSupplementalId,
+        ],
     );
-    const { url, status } = usePdfPreview("fs-summary", payload);
+    const { url, status } = usePdfPreview('fs-summary', payload);
 
     if (!open) {
         return null;
@@ -56,7 +69,9 @@ export default function ExportSummaryToPdfDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="m-0 flex h-full flex-col gap-0 rounded-none bg-[#3c3c3c] p-0 text-white sm:max-w-full">
                 <div className="p-4 pb-0">
-                    <DialogTitle>Summary by Funding Source – PDF Preview</DialogTitle>
+                    <DialogTitle>
+                        Summary by Funding Source – PDF Preview
+                    </DialogTitle>
 
                     <DialogDescription className="sr-only">
                         AIP Summary by Funding Source
@@ -67,7 +82,7 @@ export default function ExportSummaryToPdfDialog({
                     <PdfPreviewPane
                         url={url}
                         status={status}
-                        busy={status === "generating"}
+                        busy={status === 'generating'}
                         title="Summary by Funding Source"
                     />
                 </div>

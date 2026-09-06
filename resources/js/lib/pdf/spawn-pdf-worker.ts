@@ -1,6 +1,6 @@
 // resources\js\lib\pdf\spawn-pdf-worker.ts
 
-import PdfWorker from "./pdf-render.worker?worker";
+import PdfWorker from './pdf-render.worker?worker';
 
 /**
  * Spawns the shared PDF renderer worker.
@@ -24,18 +24,18 @@ export function spawnPdfWorker(): {
         return { instance: new PdfWorker(), bootstrapUrl: null };
     } catch {
         const workerModule = new URL(
-            "./pdf-render.worker.ts?worker_file&type=module",
+            './pdf-render.worker.ts?worker_file&type=module',
             import.meta.url,
         ).href;
 
         const bootstrapUrl = URL.createObjectURL(
             new Blob([`import ${JSON.stringify(workerModule)};`], {
-                type: "text/javascript",
+                type: 'text/javascript',
             }),
         );
 
         return {
-            instance: new Worker(bootstrapUrl, { type: "module" }),
+            instance: new Worker(bootstrapUrl, { type: 'module' }),
             bootstrapUrl,
         };
     }

@@ -1,12 +1,15 @@
-import { router } from "@inertiajs/react";
-import { useState, useCallback } from "react";
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { DeleteDialog } from "@/components/delete-dialog";
-import type { CcTypology, CcStrategicPriority, CcSubSector } from "@/types";
-import columns from "./columns/cc-typology-cols";
-import FormDialog from "./form-dialog-base";
+import { router } from '@inertiajs/react';
+import { useState, useCallback } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import type { CcTypology, CcStrategicPriority, CcSubSector } from '@/types';
+import columns from './columns/cc-typology-cols';
+import FormDialog from './form-dialog-base';
 
 interface CcTypologyPageProps {
     ccTypologies: CcTypology[];
@@ -26,9 +29,13 @@ export default function CcTypologyPage({
     can,
 }: CcTypologyPageProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingTypology, setEditingTypology] = useState<CcTypology | null>(null);
+    const [editingTypology, setEditingTypology] = useState<CcTypology | null>(
+        null,
+    );
 
-    const [deletingTypology, setDeletingTypology] = useState<CcTypology | null>(null);
+    const [deletingTypology, setDeletingTypology] = useState<CcTypology | null>(
+        null,
+    );
     const [isDeleting, setIsDeleting] = useState(false);
 
     const handleCreate = useCallback(() => {
@@ -81,7 +88,11 @@ export default function CcTypologyPage({
                         onDelete: handleDelete,
                     }}
                 >
-                    {can?.add && <Button onClick={handleCreate}>Create CC Typology</Button>}
+                    {can?.add && (
+                        <Button onClick={handleCreate}>
+                            Create CC Typology
+                        </Button>
+                    )}
                 </DataTable>
 
                 <ScrollBar orientation="vertical" />
@@ -102,8 +113,9 @@ export default function CcTypologyPage({
                 description={
                     deletingTypology ? (
                         <>
-                            Are you sure you want to delete <strong>{deletingTypology.code}</strong>
-                            ? This action cannot be undone.
+                            Are you sure you want to delete{' '}
+                            <strong>{deletingTypology.code}</strong>? This
+                            action cannot be undone.
                         </>
                     ) : null
                 }
@@ -116,5 +128,5 @@ export default function CcTypologyPage({
 }
 
 CcTypologyPage.layout = {
-    breadcrumbs: [{ title: "CC Typology", href: "#" }],
+    breadcrumbs: [{ title: 'CC Typology', href: '#' }],
 };

@@ -1,4 +1,4 @@
-import type { ExistingCoa } from "@/lib/ppmp/normalize";
+import type { ExistingCoa } from '@/lib/ppmp/normalize';
 
 /** Minimal row shape needed for batch matching (subset of VerifiedItem). */
 export type BatchMatchableRow = {
@@ -27,7 +27,9 @@ export type ExtractedCoaGroup = {
  * Rows already strict-matched or manually overridden are excluded.
  * Groups sort by row count desc so the biggest batches come first.
  */
-export function groupUnmatchedByExtractedCoa<T extends BatchMatchableRow>(rows: T[]): ExtractedCoaGroup[] {
+export function groupUnmatchedByExtractedCoa<T extends BatchMatchableRow>(
+    rows: T[],
+): ExtractedCoaGroup[] {
     const map = new Map<string, ExtractedCoaGroup>();
 
     for (const row of rows) {
@@ -51,7 +53,9 @@ export function groupUnmatchedByExtractedCoa<T extends BatchMatchableRow>(rows: 
         group.count += 1;
     }
 
-    return [...map.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    return [...map.values()].sort(
+        (a, b) => b.count - a.count || a.label.localeCompare(b.label),
+    );
 }
 
 /** Format a COA as a Combobox item value, shared with per-row pickers. */

@@ -1,4 +1,4 @@
-import { router, usePage } from "@inertiajs/react";
+import { router, usePage } from '@inertiajs/react';
 import {
     useReactTable,
     getCoreRowModel,
@@ -11,19 +11,33 @@ import {
     // getPaginationRowModel,
     // getSortedRowModel,
     flexRender,
-} from "@tanstack/react-table";
-import type { Column, ColumnDef, Table, TableMeta } from "@tanstack/react-table";
-import { ChevronRight, ChevronLeft, ChevronsRight, ChevronsLeft, SearchIcon } from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
-import type { CSSProperties, ReactNode } from "react";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { Input } from "@/components/base-ui-components/ui/input";
+} from '@tanstack/react-table';
+import type {
+    Column,
+    ColumnDef,
+    Table,
+    TableMeta,
+} from '@tanstack/react-table';
+import {
+    ChevronRight,
+    ChevronLeft,
+    ChevronsRight,
+    ChevronsLeft,
+    SearchIcon,
+} from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { Button } from '@/components/base-ui-components/ui/button';
+import { Input } from '@/components/base-ui-components/ui/input';
 import {
     InputGroup,
     InputGroupAddon,
     InputGroupInput,
-} from "@/components/base-ui-components/ui/input-group";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+} from '@/components/base-ui-components/ui/input-group';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     Table as DataTable,
     TableHeader,
@@ -32,8 +46,8 @@ import {
     TableRow,
     TableHead,
     TableCell,
-} from "@/components/base-ui-components/ui/table";
-import { cn } from "@/lib/utils";
+} from '@/components/base-ui-components/ui/table';
+import { cn } from '@/lib/utils';
 import type {
     // PriceList,
     // ChartOfAccount,
@@ -41,16 +55,16 @@ import type {
     PaginatedResponse,
     // Filter,
     // ChartOfAccountPpmpCategory,
-} from "@/types";
+} from '@/types';
 
 interface TableProps<TData> {
     data: TData[];
-    paginationData?: Omit<PaginatedResponse<TData>, "data">;
+    paginationData?: Omit<PaginatedResponse<TData>, 'data'>;
     columns: ColumnDef<TData, any>[];
     // meta?: Partial<TableMeta<TData>>;
     meta?: TableMeta<TData>;
     children?: ReactNode;
-    variant?: "table" | "select";
+    variant?: 'table' | 'select';
     onRowClick?: (row: TData) => void;
     selectedKey?: keyof TData;
     selectedValue?: string;
@@ -74,8 +88,10 @@ const getCommonPinningStyles = <TData,>(
     table: Table<TData>,
 ): CSSProperties => {
     const isPinned = column.getIsPinned();
-    const isLastLeftPinnedColumn = isPinned === "left" && column.getIsLastColumn("left");
-    const isFirstRightPinnedColumn = isPinned === "right" && column.getIsFirstColumn("right");
+    const isLastLeftPinnedColumn =
+        isPinned === 'left' && column.getIsLastColumn('left');
+    const isFirstRightPinnedColumn =
+        isPinned === 'right' && column.getIsFirstColumn('right');
 
     const size = column.getSize();
     const centerTotal = table.getCenterTotalSize();
@@ -83,14 +99,15 @@ const getCommonPinningStyles = <TData,>(
 
     return {
         boxShadow: isLastLeftPinnedColumn
-            ? "inset -1px 0 0 0 var(--border)"
+            ? 'inset -1px 0 0 0 var(--border)'
             : isFirstRightPinnedColumn
-              ? " inset 1px 0 0 0 var(--border)"
+              ? ' inset 1px 0 0 0 var(--border)'
               : undefined,
-        left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
-        right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
+        left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
+        right:
+            isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
         opacity: isPinned ? 0.95 : 1,
-        position: isPinned ? "sticky" : "relative",
+        position: isPinned ? 'sticky' : 'relative',
         zIndex: isPinned ? 1 : 0,
 
         width: isPinned ? `${size}px` : `${percentage}%`,
@@ -105,16 +122,16 @@ export default function Table<TData>({
     columns,
     meta,
     children,
-    variant = "table",
+    variant = 'table',
     onRowClick,
     selectedKey,
     selectedValue,
     className,
     disabledKey,
     disabledValue,
-    pageParamName = "page",
+    pageParamName = 'page',
     // perPageParamName = 'per_page',
-    searchParamName = "search",
+    searchParamName = 'search',
     only,
     getSubRows,
     showFooter = false,
@@ -126,18 +143,20 @@ export default function Table<TData>({
 
     const { url } = usePage();
 
-    const params = Object.fromEntries(new URLSearchParams(window.location.search));
+    const params = Object.fromEntries(
+        new URLSearchParams(window.location.search),
+    );
 
     const [globalFilter, setGlobalFilter] = useState<string>(() => {
         const params = new URLSearchParams(window.location.search);
 
-        return params.get(searchParamName) || "";
+        return params.get(searchParamName) || '';
     });
     // const [globalFilter, setGlobalFilter] = useState<string>('');
 
     // pagination
     const [pageInput, setPageInput] = useState<string>(() => {
-        return paginationData ? String(paginationData.current_page) : "";
+        return paginationData ? String(paginationData.current_page) : '';
     });
 
     useEffect(() => {
@@ -207,7 +226,7 @@ export default function Table<TData>({
             return;
         }
 
-        if (pageInput === "") {
+        if (pageInput === '') {
             return;
         }
 
@@ -246,7 +265,7 @@ export default function Table<TData>({
 
         initialState: {
             columnPinning: {
-                right: ["actions"],
+                right: ['actions'],
             },
         },
         state: {
@@ -294,18 +313,21 @@ export default function Table<TData>({
 
         table.getAllLeafColumns().forEach((column) => {
             const columnMeta = column.columnDef.meta as
-                { rowSpan?: boolean; spanKey?: string } | undefined;
+                | { rowSpan?: boolean; spanKey?: string }
+                | undefined;
 
             if (!columnMeta?.rowSpan) {
                 return;
             }
 
-            const spanKey = columnMeta.spanKey ?? "id";
+            const spanKey = columnMeta.spanKey ?? 'id';
             const firstVisibleIdx: Record<string, number> = {};
             const visibleCounts: Record<string, number> = {};
 
             rows.forEach((row, index) => {
-                const rawKey = (row.original as Record<string, unknown>)?.[spanKey];
+                const rawKey = (row.original as Record<string, unknown>)?.[
+                    spanKey
+                ];
 
                 if (rawKey === undefined || rawKey === null) {
                     return;
@@ -330,17 +352,19 @@ export default function Table<TData>({
     }, [rows, table, withRowSpan]);
 
     return (
-        <div className={cn("flex h-full min-h-0 flex-col", className)}>
+        <div className={cn('flex h-full min-h-0 flex-col', className)}>
             <div
                 className={cn(
-                    "flex flex-none justify-between gap-2 p-4",
-                    variant === "select" && "pt-0",
+                    'flex flex-none justify-between gap-2 p-4',
+                    variant === 'select' && 'pt-0',
                 )}
             >
                 <InputGroup className="w-100 min-w-30">
                     <InputGroupInput
-                        value={globalFilter ?? ""}
-                        onChange={(e) => table.setGlobalFilter(String(e.target.value))}
+                        value={globalFilter ?? ''}
+                        onChange={(e) =>
+                            table.setGlobalFilter(String(e.target.value))
+                        }
                         placeholder="Search..."
                     />
                     <InputGroupAddon>
@@ -355,9 +379,9 @@ export default function Table<TData>({
                 <div>
                     <DataTable
                         style={{
-                            tableLayout: "fixed",
+                            tableLayout: 'fixed',
                             // tableLayout: 'auto',
-                            width: "100%",
+                            width: '100%',
                             minWidth: `${table.getCenterTotalSize()}px`,
                             // minWidth: `${table.getTotalSize()}px`,
                         }}
@@ -390,7 +414,7 @@ export default function Table<TData>({
                                                 <TableHead
                                                     key={header.id}
                                                     colSpan={header.colSpan}
-                                                    className="border-x bg-background/95 p-1 px-2 first:border-l-0 last:border-r-0"
+                                                    className="bg-background/95 border-x p-1 px-2 first:border-l-0 last:border-r-0"
                                                     style={{
                                                         width: `${header.getSize()}px`,
                                                         ...getCommonPinningStyles(
@@ -402,7 +426,9 @@ export default function Table<TData>({
                                                     {header.isPlaceholder
                                                         ? null
                                                         : flexRender(
-                                                              header.column.columnDef.header,
+                                                              header.column
+                                                                  .columnDef
+                                                                  .header,
                                                               header.getContext(),
                                                           )}
                                                 </TableHead>
@@ -417,62 +443,90 @@ export default function Table<TData>({
                                 const isSelected =
                                     selectedKey &&
                                     selectedValue &&
-                                    String(row.original[selectedKey]) === selectedValue;
+                                    String(row.original[selectedKey]) ===
+                                        selectedValue;
                                 const isDisabled =
                                     disabledKey &&
                                     disabledValue &&
-                                    String(row.original[disabledKey]) === disabledValue;
+                                    String(row.original[disabledKey]) ===
+                                        disabledValue;
 
                                 return (
                                     <TableRow
                                         key={row.id}
                                         className={cn(
-                                            variant === "select" &&
-                                                "cursor-pointer hover:bg-accent",
-                                            isSelected && "bg-primary",
-                                            isDisabled && "cursor-not-allowed opacity-50",
+                                            variant === 'select' &&
+                                                'hover:bg-accent cursor-pointer',
+                                            isSelected && 'bg-primary',
+                                            isDisabled &&
+                                                'cursor-not-allowed opacity-50',
                                         )}
                                         onClick={() => {
-                                            if (variant === "select" && !isDisabled) {
+                                            if (
+                                                variant === 'select' &&
+                                                !isDisabled
+                                            ) {
                                                 onRowClick?.(row.original);
                                             }
                                         }}
                                     >
                                         {row.getVisibleCells().map((cell) => {
-                                            const columnMeta = cell.column.columnDef.meta as any;
+                                            const columnMeta = cell.column
+                                                .columnDef.meta as any;
 
                                             const isSpannedColumn =
-                                                withRowSpan && columnMeta?.rowSpan;
+                                                withRowSpan &&
+                                                columnMeta?.rowSpan;
 
                                             const rowData = row.original as any;
 
                                             let isFirstVisible = true;
-                                            let spanSize: number | undefined = 1;
+                                            let spanSize: number | undefined =
+                                                1;
 
                                             if (isSpannedColumn) {
-                                                const spanKey: string = columnMeta?.spanKey ?? "id";
-                                                const spanData = visibleSpans[cell.column.id];
-                                                const rawKey = rowData?.[spanKey];
+                                                const spanKey: string =
+                                                    columnMeta?.spanKey ?? 'id';
+                                                const spanData =
+                                                    visibleSpans[
+                                                        cell.column.id
+                                                    ];
+                                                const rawKey =
+                                                    rowData?.[spanKey];
                                                 const key =
-                                                    rawKey === undefined || rawKey === null
+                                                    rawKey === undefined ||
+                                                    rawKey === null
                                                         ? null
                                                         : String(rawKey);
 
                                                 if (key !== null && spanData) {
                                                     isFirstVisible =
-                                                        spanData.firstVisibleIdx[key] === rowIndex;
-                                                    spanSize = spanData.visibleCounts[key] ?? 1;
+                                                        spanData
+                                                            .firstVisibleIdx[
+                                                            key
+                                                        ] === rowIndex;
+                                                    spanSize =
+                                                        spanData.visibleCounts[
+                                                            key
+                                                        ] ?? 1;
                                                 }
                                             }
 
-                                            if (isSpannedColumn && !isFirstVisible) {
+                                            if (
+                                                isSpannedColumn &&
+                                                !isFirstVisible
+                                            ) {
                                                 return null;
                                             }
 
                                             return (
                                                 <TableCell
                                                     key={cell.id}
-                                                    rowSpan={isSpannedColumn ? spanSize : 1}
+                                                    rowSpan={
+                                                        isSpannedColumn
+                                                            ? spanSize
+                                                            : 1
+                                                    }
                                                     style={{
                                                         width: `${cell.column.getSize()}px`,
                                                         ...getCommonPinningStyles(
@@ -481,13 +535,14 @@ export default function Table<TData>({
                                                         ),
                                                     }}
                                                     className={cn(
-                                                        "border p-1 px-2 first:border-l-0 last:border-r-0",
+                                                        'border p-1 px-2 first:border-l-0 last:border-r-0',
                                                         cell.column.getIsPinned() &&
-                                                            "bg-background/95",
+                                                            'bg-background/95',
                                                     )}
                                                 >
                                                     {flexRender(
-                                                        cell.column.columnDef.cell,
+                                                        cell.column.columnDef
+                                                            .cell,
                                                         cell.getContext(),
                                                     )}
                                                 </TableCell>
@@ -514,29 +569,33 @@ export default function Table<TData>({
                                                 key={footerGroup.id}
                                                 className="shadow-[0_-1px_0_0_var(--border)]"
                                             >
-                                                {footerGroup.headers.map((header) => {
-                                                    return (
-                                                        <TableCell
-                                                            key={header.id}
-                                                            className="border-x bg-background/95 p-1 px-2 first:border-l-0 last:border-r-0"
-                                                            style={{
-                                                                width: `${header.getSize()}px`,
-                                                                ...getCommonPinningStyles(
-                                                                    header.column,
-                                                                    table,
-                                                                ),
-                                                            }}
-                                                        >
-                                                            {header.isPlaceholder
-                                                                ? null
-                                                                : flexRender(
-                                                                      header.column.columnDef
-                                                                          .footer,
-                                                                      header.getContext(),
-                                                                  )}
-                                                        </TableCell>
-                                                    );
-                                                })}
+                                                {footerGroup.headers.map(
+                                                    (header) => {
+                                                        return (
+                                                            <TableCell
+                                                                key={header.id}
+                                                                className="bg-background/95 border-x p-1 px-2 first:border-l-0 last:border-r-0"
+                                                                style={{
+                                                                    width: `${header.getSize()}px`,
+                                                                    ...getCommonPinningStyles(
+                                                                        header.column,
+                                                                        table,
+                                                                    ),
+                                                                }}
+                                                            >
+                                                                {header.isPlaceholder
+                                                                    ? null
+                                                                    : flexRender(
+                                                                          header
+                                                                              .column
+                                                                              .columnDef
+                                                                              .footer,
+                                                                          header.getContext(),
+                                                                      )}
+                                                            </TableCell>
+                                                        );
+                                                    },
+                                                )}
                                             </TableRow>
                                         );
                                     })}
@@ -550,7 +609,7 @@ export default function Table<TData>({
             </ScrollArea>
 
             {paginationData && (
-                <div className="flex w-full justify-center bg-background">
+                <div className="bg-background flex w-full justify-center">
                     <div className="flex gap-1 px-4 py-2">
                         <Button
                             variant="ghost"
@@ -563,7 +622,9 @@ export default function Table<TData>({
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => goToPage(paginationData.current_page - 1)}
+                            onClick={() =>
+                                goToPage(paginationData.current_page - 1)
+                            }
                             disabled={paginationData.current_page === 1}
                         >
                             <ChevronLeft />
@@ -575,8 +636,8 @@ export default function Table<TData>({
                                 onChange={(e) => {
                                     const value = e.currentTarget.value;
 
-                                    if (value === "") {
-                                        setPageInput("");
+                                    if (value === '') {
+                                        setPageInput('');
 
                                         return;
                                     }
@@ -588,15 +649,20 @@ export default function Table<TData>({
                                     setPageInput(value);
                                 }}
                                 onBlur={() => {
-                                    if (pageInput === "") {
-                                        setPageInput(String(paginationData.current_page));
+                                    if (pageInput === '') {
+                                        setPageInput(
+                                            String(paginationData.current_page),
+                                        );
 
                                         return;
                                     }
 
                                     const page = Math.max(
                                         1,
-                                        Math.min(Number(pageInput), paginationData.last_page),
+                                        Math.min(
+                                            Number(pageInput),
+                                            paginationData.last_page,
+                                        ),
                                     );
 
                                     setPageInput(String(page));
@@ -612,8 +678,13 @@ export default function Table<TData>({
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => goToPage(paginationData.current_page + 1)}
-                            disabled={paginationData.current_page === paginationData.last_page}
+                            onClick={() =>
+                                goToPage(paginationData.current_page + 1)
+                            }
+                            disabled={
+                                paginationData.current_page ===
+                                paginationData.last_page
+                            }
                         >
                             <ChevronRight />
                         </Button>
@@ -621,7 +692,10 @@ export default function Table<TData>({
                             variant="ghost"
                             size="icon"
                             onClick={() => goToPage(paginationData.last_page)}
-                            disabled={paginationData.current_page === paginationData.last_page}
+                            disabled={
+                                paginationData.current_page ===
+                                paginationData.last_page
+                            }
                         >
                             <ChevronsRight />
                         </Button>

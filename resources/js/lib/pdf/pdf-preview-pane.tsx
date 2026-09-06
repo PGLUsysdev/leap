@@ -1,7 +1,7 @@
 // resources\js\lib\pdf\pdf-preview-pane.tsx
 
-import { Spinner } from "@/components/ui/spinner";
-import type { PdfPreviewStatus } from "./use-pdf-preview";
+import { Spinner } from '@/components/ui/spinner';
+import type { PdfPreviewStatus } from './use-pdf-preview';
 
 interface PdfPreviewPaneProps {
     url: string | null;
@@ -20,12 +20,16 @@ export function PdfPreviewPane({
     url,
     status,
     busy = false,
-    title = "PDF Preview",
+    title = 'PDF Preview',
 }: PdfPreviewPaneProps) {
     if (url) {
         return (
             <>
-                <iframe src={url} title={title} className="h-full w-full border-none" />
+                <iframe
+                    src={url}
+                    title={title}
+                    className="h-full w-full border-none"
+                />
 
                 {busy && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-[1px]">
@@ -36,7 +40,7 @@ export function PdfPreviewPane({
         );
     }
 
-    if (status === "error") {
+    if (status === 'error') {
         return (
             <div className="flex h-full items-center justify-center">
                 <span className="text-sm">

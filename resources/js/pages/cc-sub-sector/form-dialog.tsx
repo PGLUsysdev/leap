@@ -1,20 +1,26 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@inertiajs/react";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import * as z from "zod";
-import { FormDialogShell } from "@/components/form-dialog-shell";
-import { Field, FieldError, FieldGroup, FieldLabel, FieldContent } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { FormDialogShell } from '@/components/form-dialog-shell';
+import {
+    Field,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+    FieldContent,
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import type { CcStrategicPriority, CcSubSector } from "@/types";
+} from '@/components/ui/select';
+import type { CcStrategicPriority, CcSubSector } from '@/types';
 
 interface FormDialogProps {
     open: boolean;
@@ -24,15 +30,15 @@ interface FormDialogProps {
 }
 
 const formSchema = z.object({
-    strategic_priority_id: z.string().min(1, "Strategic priority is required"),
+    strategic_priority_id: z.string().min(1, 'Strategic priority is required'),
     code: z
         .string()
-        .min(1, "Code is required")
-        .regex(/^\d$/, "Must be exactly 1 digit")
-        .refine((val) => val !== "0", {
-            message: "Code cannot be 0",
+        .min(1, 'Code is required')
+        .regex(/^\d$/, 'Must be exactly 1 digit')
+        .refine((val) => val !== '0', {
+            message: 'Code cannot be 0',
         }),
-    name: z.string().min(1, "Name is required"),
+    name: z.string().min(1, 'Name is required'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,9 +55,9 @@ export default function FormDialog({
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            strategic_priority_id: "",
-            code: "",
-            name: "",
+            strategic_priority_id: '',
+            code: '',
+            name: '',
         },
     });
 
@@ -59,15 +65,17 @@ export default function FormDialog({
         if (open) {
             if (initialData) {
                 form.reset({
-                    strategic_priority_id: String(initialData.strategic_priority_id),
+                    strategic_priority_id: String(
+                        initialData.strategic_priority_id,
+                    ),
                     code: String(initialData.code),
                     name: initialData.name,
                 });
             } else {
                 form.reset({
-                    strategic_priority_id: "",
-                    code: "",
-                    name: "",
+                    strategic_priority_id: '',
+                    code: '',
+                    name: '',
                 });
             }
         }
@@ -89,7 +97,7 @@ export default function FormDialog({
                 onError: (errors) => {
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: "server",
+                            type: 'server',
                             message: errors[key],
                         });
                     });
@@ -97,7 +105,7 @@ export default function FormDialog({
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post("/cc-sub-sector", payload, {
+            router.post('/cc-sub-sector', payload, {
                 preserveState: true,
                 preserveScroll: true,
                 onStart: () => setIsLoading(true),
@@ -105,7 +113,7 @@ export default function FormDialog({
                 onError: (errors) => {
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: "server",
+                            type: 'server',
                             message: errors[key],
                         });
                     });
@@ -119,22 +127,25 @@ export default function FormDialog({
         <FormDialogShell
             open={open}
             onOpenChange={setOpen}
-            title={isEditing ? "Edit CC Sub Sector" : "Create CC Sub Sector"}
+            title={isEditing ? 'Edit CC Sub Sector' : 'Create CC Sub Sector'}
             description={
                 isEditing
-                    ? "Modify the details of the existing sub sector below."
-                    : "Fill in the information to create a new sub sector."
+                    ? 'Modify the details of the existing sub sector below.'
+                    : 'Fill in the information to create a new sub sector.'
             }
             isLoading={isLoading}
             formId="cc-sub-sector-form"
             onCancel={() => setOpen(false)}
-            submitLabel={isEditing ? "Save Changes" : "Create"}
-            submittingLabel={isEditing ? "Saving..." : "Creating..."}
+            submitLabel={isEditing ? 'Save Changes' : 'Create'}
+            submittingLabel={isEditing ? 'Saving...' : 'Creating...'}
             className="sm:max-w-md"
         >
             <div className="flex min-h-0">
                 <ScrollArea className="w-full">
-                    <form id="cc-sub-sector-form" onSubmit={form.handleSubmit(onSubmit)}>
+                    <form
+                        id="cc-sub-sector-form"
+                        onSubmit={form.handleSubmit(onSubmit)}
+                    >
                         <FieldGroup>
                             <Controller
                                 name="strategic_priority_id"
@@ -142,7 +153,10 @@ export default function FormDialog({
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel htmlFor={field.name} className="gap-1">
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
                                                 Strategic Priority
                                             </FieldLabel>
 
@@ -153,25 +167,34 @@ export default function FormDialog({
                                             >
                                                 <SelectTrigger
                                                     id={field.name}
-                                                    aria-invalid={fieldState.invalid}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
                                                     className="w-full"
                                                 >
                                                     <SelectValue placeholder="Select priority" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {strategicPriorities.map((sp) => (
-                                                        <SelectItem
-                                                            key={sp.id}
-                                                            value={String(sp.id)}
-                                                        >
-                                                            {sp.code} - {sp.name}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {strategicPriorities.map(
+                                                        (sp) => (
+                                                            <SelectItem
+                                                                key={sp.id}
+                                                                value={String(
+                                                                    sp.id,
+                                                                )}
+                                                            >
+                                                                {sp.code} -{' '}
+                                                                {sp.name}
+                                                            </SelectItem>
+                                                        ),
+                                                    )}
                                                 </SelectContent>
                                             </Select>
 
                                             {fieldState.invalid && (
-                                                <FieldError errors={[fieldState.error]} />
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -184,26 +207,34 @@ export default function FormDialog({
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel htmlFor={field.name} className="gap-1">
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
                                                 Code
                                             </FieldLabel>
 
                                             <Input
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={fieldState.invalid}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
                                                 placeholder="1"
                                                 autoComplete="off"
                                                 onChange={(e) => {
-                                                    const digits = e.target.value
-                                                        .replace(/\D/g, "")
-                                                        .slice(0, 1);
+                                                    const digits =
+                                                        e.target.value
+                                                            .replace(/\D/g, '')
+                                                            .slice(0, 1);
                                                     field.onChange(digits);
                                                 }}
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError errors={[fieldState.error]} />
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -216,20 +247,27 @@ export default function FormDialog({
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel htmlFor={field.name} className="gap-1">
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
                                                 Name
                                             </FieldLabel>
 
                                             <Input
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={fieldState.invalid}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
                                                 placeholder="Enter name"
                                                 autoComplete="off"
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError errors={[fieldState.error]} />
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
                                             )}
                                         </FieldContent>
                                     </Field>

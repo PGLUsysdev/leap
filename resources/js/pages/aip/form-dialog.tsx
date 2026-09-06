@@ -1,9 +1,9 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@inertiajs/react";
-import { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/base-ui-components/ui/button";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -11,17 +11,24 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/base-ui-components/ui/dialog";
-import { Field, FieldError, FieldLabel } from "@/components/base-ui-components/ui/field";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+} from '@/components/base-ui-components/ui/dialog';
+import {
+    Field,
+    FieldError,
+    FieldLabel,
+} from '@/components/base-ui-components/ui/field';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/base-ui-components/ui/select";
-import { generateYearRange } from "@/pages/aip/utils/generate-year-range";
+} from '@/components/base-ui-components/ui/select';
+import { generateYearRange } from '@/pages/aip/utils/generate-year-range';
 
 interface FormDialogProps {
     open: boolean;
@@ -29,7 +36,7 @@ interface FormDialogProps {
 }
 
 const formSchema = z.object({
-    year: z.string().min(1, "Fiscal year is required"),
+    year: z.string().min(1, 'Fiscal year is required'),
 });
 
 const yearNow = new Date().getFullYear();
@@ -55,7 +62,7 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
 
     function onSubmit(data: z.infer<typeof formSchema>) {
         router.post(
-            "/aip",
+            '/aip',
             { year: Number(data.year) },
             {
                 preserveScroll: true,
@@ -63,8 +70,8 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
                 onStart: () => setIsLoading(true),
                 onError: (errors) => {
                     if (errors.year) {
-                        form.setError("year", {
-                            type: "year",
+                        form.setError('year', {
+                            type: 'year',
                             message: errors.year,
                         });
                     }
@@ -82,7 +89,9 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
         <Dialog open={open} onOpenChange={handleDialogOpenChange}>
             <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-sm">
                 <DialogHeader className="flex-none">
-                    <DialogTitle>Initialize Annual Investment Program</DialogTitle>
+                    <DialogTitle>
+                        Initialize Annual Investment Program
+                    </DialogTitle>
                     <DialogDescription>
                         Select a fiscal year to initialize the AIP with.
                     </DialogDescription>
@@ -100,7 +109,9 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
-                                        <FieldLabel htmlFor="aip-form-year">Fiscal Year</FieldLabel>
+                                        <FieldLabel htmlFor="aip-form-year">
+                                            Fiscal Year
+                                        </FieldLabel>
 
                                         <Select
                                             name={field.name}
@@ -109,14 +120,19 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
                                         >
                                             <SelectTrigger
                                                 id="aip-form-year"
-                                                aria-invalid={fieldState.invalid}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
                                             >
                                                 <SelectValue placeholder="Select year" />
                                             </SelectTrigger>
 
                                             <SelectContent>
                                                 {years.map((year) => (
-                                                    <SelectItem key={year} value={String(year)}>
+                                                    <SelectItem
+                                                        key={year}
+                                                        value={String(year)}
+                                                    >
                                                         {year}
                                                     </SelectItem>
                                                 ))}
@@ -124,7 +140,9 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
                                         </Select>
 
                                         {fieldState.invalid && (
-                                            <FieldError errors={[fieldState.error]} />
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
                                         )}
                                     </Field>
                                 )}
@@ -145,7 +163,7 @@ export default function FormDialog({ open, onOpenChange }: FormDialogProps) {
                     </Button>
 
                     <Button type="submit" form="aip-form" disabled={isLoading}>
-                        {isLoading ? "Initializing..." : "Initialize"}
+                        {isLoading ? 'Initializing...' : 'Initialize'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -1,9 +1,9 @@
 // resources\js\pages\aip-summary\index.tsx
 
-import { router, usePage } from "@inertiajs/react";
-import { FileUp, Library, Sheet, ShieldCheck } from "lucide-react";
-import { useState, useCallback, useMemo } from "react";
-import DataTable from "@/components/base-ui-components/data-table";
+import { router, usePage } from '@inertiajs/react';
+import { FileUp, Library, Sheet, ShieldCheck } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,8 +13,8 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/base-ui-components/ui/alert-dialog";
-import { Button } from "@/components/base-ui-components/ui/button";
+} from '@/components/base-ui-components/ui/alert-dialog';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,11 +23,14 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/base-ui-components/ui/dropdown-menu";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { DeleteDialog } from "@/components/delete-dialog";
-import FormDialog from "@/pages/aip-summary/form-dialog";
-import PpaSelectorDialog from "@/pages/aip-summary/ppa-selector-dialog";
+} from '@/components/base-ui-components/ui/dropdown-menu';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import FormDialog from '@/pages/aip-summary/form-dialog';
+import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
 import type {
     FiscalYear,
     Ppa,
@@ -42,10 +45,10 @@ import type {
     AipEntry,
     AipOutput,
     PpaFundingSource,
-} from "@/types";
-import newColumns from "./columns/new-columns";
-import ExportToPdfDialog from "./export-to-pdf-dialog";
-import ExportSummaryToPdfDialog from "./pdf-render/amounts-by-fs/pdf-preview-dialog";
+} from '@/types';
+import newColumns from './columns/new-columns';
+import ExportToPdfDialog from './export-to-pdf-dialog';
+import ExportSummaryToPdfDialog from './pdf-render/amounts-by-fs/pdf-preview-dialog';
 
 interface AipSummaryProps {
     fiscalYear: FiscalYear;
@@ -117,7 +120,7 @@ interface AipSummaryProps {
 type NumberedAipEntry = AipEntry & { number: string };
 
 function toLetters(n: number): string {
-    let s = "";
+    let s = '';
 
     while (n > 0) {
         n--;
@@ -149,11 +152,15 @@ function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
     }
 
     const sortSiblings = (list: AipEntry[]) =>
-        list.sort((a, b) => (a.ppa?.sort_order ?? 0) - (b.ppa?.sort_order ?? 0));
+        list.sort(
+            (a, b) => (a.ppa?.sort_order ?? 0) - (b.ppa?.sort_order ?? 0),
+        );
 
     const counters: number[] = [];
     const result: NumberedAipEntry[] = [];
-    const stack: { entry: AipEntry; depth: number }[] = [...sortSiblings(byParent.get(null) ?? [])]
+    const stack: { entry: AipEntry; depth: number }[] = [
+        ...sortSiblings(byParent.get(null) ?? []),
+    ]
         .reverse()
         .map((entry) => ({ entry, depth: 0 }));
 
@@ -164,7 +171,9 @@ function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
         counters.length = depth + 1;
 
         const number =
-            (depth === 0 ? toLetters(counters[0]) : counters.slice(1, depth + 1).join(".")) + ".";
+            (depth === 0
+                ? toLetters(counters[0])
+                : counters.slice(1, depth + 1).join('.')) + '.';
 
         result.push({ ...entry, number });
 
@@ -186,7 +195,9 @@ type FundingSourceRow = NumberedAipEntry & {
     outputId: number | null;
 };
 
-function expandByFundingSource(entries: NumberedAipEntry[]): FundingSourceRow[] {
+function expandByFundingSource(
+    entries: NumberedAipEntry[],
+): FundingSourceRow[] {
     return entries.flatMap((entry): FundingSourceRow[] => {
         const outputs = entry.outputs ?? [];
 
@@ -274,7 +285,7 @@ export default function AipSummary({
     offices,
     fundingSources,
     ppaTypes,
-    currentScope = { scope: "original", supplemental_aip_id: null },
+    currentScope = { scope: 'original', supplemental_aip_id: null },
     ccTypologies,
 }: AipSummaryProps) {
     console.log({
@@ -309,7 +320,7 @@ export default function AipSummary({
             {
                 preserveState: true,
                 preserveScroll: true,
-                only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
                     setIsSelectorOpen(true);
                 },
@@ -330,7 +341,7 @@ export default function AipSummary({
                 {
                     preserveState: true,
                     preserveScroll: true,
-                    only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                    only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                     onSuccess: () => {
                         setIsSelectorOpen(true);
                     },
@@ -350,7 +361,9 @@ export default function AipSummary({
 
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [deleteEntry, setDeleteEntry] = useState<NumberedAipEntry | null>(null);
+    const [deleteEntry, setDeleteEntry] = useState<NumberedAipEntry | null>(
+        null,
+    );
     const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
     const [isSummaryExportOpen, setIsSummaryExportOpen] = useState(false);
 
@@ -398,7 +411,7 @@ export default function AipSummary({
                 setDeleteEntry(null);
             },
             onFinish: () => setIsLoading(false),
-            onError: (error) => console.error("error", error),
+            onError: (error) => console.error('error', error),
         });
     }
 
@@ -619,7 +632,9 @@ export default function AipSummary({
     // };
 
     const [isSetPsPoolDialogOpen, setIsSetPsPoolDialogOpen] = useState(false);
-    const [psPoolTarget, setPsPoolTarget] = useState<NumberedAipEntry | null>(null);
+    const [psPoolTarget, setPsPoolTarget] = useState<NumberedAipEntry | null>(
+        null,
+    );
 
     const handleSetAsPsPool = useCallback((entry: NumberedAipEntry) => {
         setPsPoolTarget(entry);
@@ -933,7 +948,9 @@ export default function AipSummary({
 
                 <DataTable
                     columns={newColumns}
-                    data={expandByFundingSource(sortFlatLikeTree(newAipEntries))}
+                    data={expandByFundingSource(
+                        sortFlatLikeTree(newAipEntries),
+                    )}
                     meta={{
                         onEdit: handleEdit,
                         onAdd: handleAddEntry,
@@ -1009,16 +1026,30 @@ export default function AipSummary({
                         )}*/}
                     <div className="flex gap-2">
                         <DropdownMenu>
-                            <DropdownMenuTrigger render={<Button variant="outline" size="icon" />}>
+                            <DropdownMenuTrigger
+                                render={
+                                    <Button variant="outline" size="icon" />
+                                }
+                            >
                                 <FileUp />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-55" align="end">
                                 <DropdownMenuGroup>
-                                    <DropdownMenuLabel>Export</DropdownMenuLabel>
-                                    <DropdownMenuItem onClick={() => setIsExportDialogOpen(true)}>
+                                    <DropdownMenuLabel>
+                                        Export
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            setIsExportDialogOpen(true)
+                                        }
+                                    >
                                         <Sheet /> AIP Summary Form
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setIsSummaryExportOpen(true)}>
+                                    <DropdownMenuItem
+                                        onClick={() =>
+                                            setIsSummaryExportOpen(true)
+                                        }
+                                    >
                                         <Sheet /> Amounts by Funding Source
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
@@ -1027,7 +1058,8 @@ export default function AipSummary({
 
                         {can.import && (
                             <Button onClick={handleImportLibrary}>
-                                <Library className="mr-2 h-4 w-4" /> Import from Library
+                                <Library className="mr-2 h-4 w-4" /> Import from
+                                Library
                             </Button>
                         )}
                     </div>
@@ -1106,14 +1138,14 @@ export default function AipSummary({
                 title="Remove from AIP Summary?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">
+                        Are you sure you want to remove{' '}
+                        <span className="text-foreground font-bold">
                             "{deleteEntry?.ppa?.name}"
                         </span>
                         ?
-                        <span className="mt-2 block font-semibold text-destructive italic">
-                            This will also remove all nested sub-PPAs and activities including all
-                            their PPMPs.
+                        <span className="text-destructive mt-2 block font-semibold italic">
+                            This will also remove all nested sub-PPAs and
+                            activities including all their PPMPs.
                         </span>
                     </>
                 }
@@ -1142,45 +1174,53 @@ export default function AipSummary({
                             Set PS Pool?
                         </AlertDialogTitle>
                         <AlertDialogDescription>
-                            Designate{" "}
-                            <span className="font-semibold text-foreground">
+                            Designate{' '}
+                            <span className="text-foreground font-semibold">
                                 "{psPoolTarget?.ppa?.name}"
-                            </span>{" "}
-                            as the PS Pool for this fiscal year. This will change the Personal
-                            Services (PS) allocations as follows:
+                            </span>{' '}
+                            as the PS Pool for this fiscal year. This will
+                            change the Personal Services (PS) allocations as
+                            follows:
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
-                    <ul className="-mt-1 space-y-2 text-sm text-muted-foreground">
+                    <ul className="text-muted-foreground -mt-1 space-y-2 text-sm">
                         <li className="flex gap-2">
                             <span className="text-emerald-600">•</span>
                             <span>
-                                <span className="font-medium text-foreground">
+                                <span className="text-foreground font-medium">
                                     PS handover.
-                                </span>{" "}
-                                The previous PS Pool&apos;s PS amount is transferred to this
-                                Program, all of its funding sources are removed, and it loses its
-                                PS Pool designation.
+                                </span>{' '}
+                                The previous PS Pool&apos;s PS amount is
+                                transferred to this Program, all of its funding
+                                sources are removed, and it loses its PS Pool
+                                designation.
                             </span>
                         </li>
                         <li className="flex gap-2">
                             <span className="text-emerald-600">•</span>
                             <span>
-                                <span className="font-medium text-foreground">
+                                <span className="text-foreground font-medium">
                                     Single PS-only funding source.
-                                </span>{" "}
-                                All funding sources currently assigned to this Program will be
-                                permanently removed and replaced with exactly one{" "}
-                                <span className="font-semibold">General Fund (GF Proper)</span>{" "}
+                                </span>{' '}
+                                All funding sources currently assigned to this
+                                Program will be permanently removed and replaced
+                                with exactly one{' '}
+                                <span className="font-semibold">
+                                    General Fund (GF Proper)
+                                </span>{' '}
                                 funding source holding only the transferred PS.
                             </span>
                         </li>
                         <li className="flex gap-2">
                             <span className="text-amber-600">•</span>
                             <span>
-                                <span className="font-medium text-foreground">PS-only rule.</span>{" "}
-                                A PS Pool can only contain a PS amount — MOOE, FE, CO, and CCET
-                                amounts cannot be entered on it.
+                                <span className="text-foreground font-medium">
+                                    PS-only rule.
+                                </span>{' '}
+                                A PS Pool can only contain a PS amount — MOOE,
+                                FE, CO, and CCET amounts cannot be entered on
+                                it.
                             </span>
                         </li>
                     </ul>
@@ -1197,7 +1237,7 @@ export default function AipSummary({
                             onClick={handleSetAsPsPoolConfirm}
                             disabled={isLoading}
                         >
-                            {isLoading ? "Setting..." : "Set PS Pool"}
+                            {isLoading ? 'Setting...' : 'Set PS Pool'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1208,7 +1248,7 @@ export default function AipSummary({
                 onOpenChange={setIsExportDialogOpen}
                 aipEntries={newAipEntries}
                 fiscalYear={fiscalYear}
-                officeName={auth.user.office?.name || ""}
+                officeName={auth.user.office?.name || ''}
                 currentScope={currentScope}
             />
 
@@ -1217,7 +1257,7 @@ export default function AipSummary({
                 onOpenChange={setIsSummaryExportOpen}
                 aipEntries={newAipEntries}
                 fiscalYear={fiscalYear}
-                officeName={auth.user.office?.name || ""}
+                officeName={auth.user.office?.name || ''}
                 currentScope={currentScope}
             />
 
@@ -1360,7 +1400,7 @@ export default function AipSummary({
 
 AipSummary.layout = {
     breadcrumbs: [
-        { title: "Annual Investment Programs", href: "/aip" },
-        { title: "AIP Summary", href: "#" },
+        { title: 'Annual Investment Programs', href: '/aip' },
+        { title: 'AIP Summary', href: '#' },
     ],
 };

@@ -1,15 +1,22 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { CheckCircle2, XCircle, Pencil, Trash, Move, FolderOpen } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
-import type { Ppa } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import {
+    CheckCircle2,
+    XCircle,
+    Pencil,
+    Trash,
+    Move,
+    FolderOpen,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
+import type { Ppa } from '@/types';
 
 const columnHelper = createColumnHelper<Ppa>();
 
 const columns = [
     columnHelper.display({
-        id: "drag-handle",
+        id: 'drag-handle',
         size: 48,
         cell: ({ row, table }) => (
             <div className="flex gap-1">
@@ -17,14 +24,16 @@ const columns = [
                     size="icon"
                     variant="ghost"
                     disabled={!row.original.can?.move}
-                    onClick={() => (table.options.meta as any)?.onMove?.(row.original)}
+                    onClick={() =>
+                        (table.options.meta as any)?.onMove?.(row.original)
+                    }
                 >
                     <Move />
                 </Button>
             </div>
         ),
     }),
-    columnHelper.accessor("full_code", {
+    columnHelper.accessor('full_code', {
         size: 200,
         header: () => <div className="px-1">AIP Reference Code</div>,
         cell: (value) => (
@@ -33,9 +42,11 @@ const columns = [
             </div>
         ),
     }),
-    columnHelper.accessor("name", {
+    columnHelper.accessor('name', {
         size: 400,
-        header: () => <div className="px-1">Program/Project/Activity Description</div>,
+        header: () => (
+            <div className="px-1">Program/Project/Activity Description</div>
+        ),
         cell: (info) => {
             const ppa = info.row.original;
 
@@ -45,17 +56,21 @@ const columns = [
                     className="flex items-center gap-2 px-1"
                 >
                     {info.row.depth > 0 && (
-                        <span className="text-muted-foreground opacity-50">↳</span>
+                        <span className="text-muted-foreground opacity-50">
+                            ↳
+                        </span>
                     )}
 
                     <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase">
+                        <span className="text-muted-foreground text-[10px] font-bold uppercase">
                             {ppa.type}
                         </span>
 
                         <span
                             className={`leading-tight break-words whitespace-normal ${
-                                info.row.depth === 0 ? "font-bold" : "font-medium"
+                                info.row.depth === 0
+                                    ? 'font-bold'
+                                    : 'font-medium'
                             }`}
                         >
                             {ppa.name}
@@ -65,7 +80,7 @@ const columns = [
             );
         },
     }),
-    columnHelper.accessor("is_active", {
+    columnHelper.accessor('is_active', {
         size: 150,
         header: () => <div className="px-1">Status</div>,
         cell: (value) => {
@@ -87,13 +102,15 @@ const columns = [
         },
     }),
     columnHelper.display({
-        id: "actions",
+        id: 'actions',
         size: 146,
         cell: ({ row, table }) => {
             const meta = table.options.meta as any;
             const ppaTypes = meta?.ppaTypes || [];
             const isLastLeaf =
-                ppaTypes.length > 0 ? row.original.type === ppaTypes[ppaTypes.length - 1] : false;
+                ppaTypes.length > 0
+                    ? row.original.type === ppaTypes[ppaTypes.length - 1]
+                    : false;
             const childrenCount = row.original.children_count;
             const canEdit = row.original.can?.edit;
             const canDelete = row.original.can?.delete;
@@ -123,7 +140,9 @@ const columns = [
                         size="icon"
                         variant="outline"
                         disabled={!canEdit}
-                        onClick={() => table.options.meta?.onEdit?.(row.original)}
+                        onClick={() =>
+                            table.options.meta?.onEdit?.(row.original)
+                        }
                         title="Edit PPA"
                     >
                         <Pencil />
@@ -133,7 +152,9 @@ const columns = [
                         size="icon"
                         variant="destructive"
                         disabled={!canDelete}
-                        onClick={() => table.options.meta?.onDelete?.(row.original)}
+                        onClick={() =>
+                            table.options.meta?.onDelete?.(row.original)
+                        }
                         title="Delete PPA"
                     >
                         <Trash />

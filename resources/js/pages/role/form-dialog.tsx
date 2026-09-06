@@ -1,17 +1,17 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@inertiajs/react";
-import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import * as z from "zod";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import * as z from 'zod';
 
-import { FormDialogShell } from "@/components/form-dialog-shell";
-import { Field, FieldLabel, FieldError } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Role } from "@/types";
+import { FormDialogShell } from '@/components/form-dialog-shell';
+import { Field, FieldLabel, FieldError } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import type { Role } from '@/types';
 
 const formSchema = z.object({
-    name: z.string().min(1, "Role name is required"),
+    name: z.string().min(1, 'Role name is required'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -22,11 +22,15 @@ interface FormDialogProps {
     data: Role | null;
 }
 
-export default function FormDialog({ open, onOpenChange, data }: FormDialogProps) {
+export default function FormDialog({
+    open,
+    onOpenChange,
+    data,
+}: FormDialogProps) {
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            name: "",
+            name: '',
         },
     });
 
@@ -34,7 +38,7 @@ export default function FormDialog({ open, onOpenChange, data }: FormDialogProps
         if (data) {
             form.reset({ name: data.name });
         } else {
-            form.reset({ name: "" });
+            form.reset({ name: '' });
         }
     }, [data, form, open]);
 
@@ -49,7 +53,7 @@ export default function FormDialog({ open, onOpenChange, data }: FormDialogProps
                 },
             });
         } else {
-            router.post("/roles", values, {
+            router.post('/roles', values, {
                 preserveState: true,
                 preserveScroll: true,
                 onSuccess: () => {
@@ -64,12 +68,14 @@ export default function FormDialog({ open, onOpenChange, data }: FormDialogProps
         <FormDialogShell
             open={open}
             onOpenChange={onOpenChange}
-            title={data ? "Edit Role" : "Add Role"}
+            title={data ? 'Edit Role' : 'Add Role'}
             description={
-                data ? `Update the name for role "${data.name}".` : "Enter a name for the new role."
+                data
+                    ? `Update the name for role "${data.name}".`
+                    : 'Enter a name for the new role.'
             }
             formId="role-form"
-            submitLabel={data ? "Save Changes" : "Create Role"}
+            submitLabel={data ? 'Save Changes' : 'Create Role'}
             submittingLabel="Saving..."
             isLoading={form.formState.isSubmitting}
             onCancel={() => onOpenChange(false)}
@@ -87,7 +93,9 @@ export default function FormDialog({ open, onOpenChange, data }: FormDialogProps
                             control={form.control}
                             render={({ field, fieldState }) => (
                                 <Field data-invalid={fieldState.invalid}>
-                                    <FieldLabel htmlFor={field.name}>Role Name</FieldLabel>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Role Name
+                                    </FieldLabel>
                                     <Input
                                         {...field}
                                         id={field.name}
@@ -96,7 +104,9 @@ export default function FormDialog({ open, onOpenChange, data }: FormDialogProps
                                         autoComplete="off"
                                     />
                                     {fieldState.invalid && (
-                                        <FieldError errors={[fieldState.error]} />
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
                                     )}
                                 </Field>
                             )}

@@ -1,4 +1,4 @@
-import { createColumnHelper } from "@tanstack/react-table";
+import { createColumnHelper } from '@tanstack/react-table';
 
 interface PriceListRow {
     id: number;
@@ -57,45 +57,62 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
     );
 
     return [
-        columnHelper.accessor("item_number", {
+        columnHelper.accessor('item_number', {
             size: 200,
             header: () => <div className="px-1">Item #</div>,
-            cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+            cell: (info) => (
+                <div className="px-1 text-wrap">{info.getValue()}</div>
+            ),
         }),
-        columnHelper.accessor("description", {
+        columnHelper.accessor('description', {
             size: 800,
             header: () => <div className="px-1">Description</div>,
-            cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+            cell: (info) => (
+                <div className="px-1 text-wrap">{info.getValue()}</div>
+            ),
         }),
-        columnHelper.accessor("unit_of_measurement", {
+        columnHelper.accessor('unit_of_measurement', {
             size: 200,
             header: () => <div className="px-1">Unit</div>,
-            cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
+            cell: (info) => (
+                <div className="px-1 text-wrap">{info.getValue()}</div>
+            ),
         }),
-        columnHelper.accessor("price", {
+        columnHelper.accessor('price', {
             size: 300,
             header: () => <div className="px-1 text-right">Price</div>,
-            cell: (info) => <div className="px-1 text-right text-wrap">{info.getValue()}</div>,
+            cell: (info) => (
+                <div className="px-1 text-right text-wrap">
+                    {info.getValue()}
+                </div>
+            ),
         }),
 
         columnHelper.group({
-            id: "grand_totals",
+            id: 'grand_totals',
             size: 500,
             columns: [
                 columnHelper.display({
-                    id: "total_qty",
+                    id: 'total_qty',
                     size: 100,
-                    header: () => <div className="px-1 text-right">Total QTY</div>,
+                    header: () => (
+                        <div className="px-1 text-right">Total QTY</div>
+                    ),
                     cell: ({ row }) => (
                         <div className="px-1 text-right text-wrap">
-                            {row.original.ppmps.reduce((sum, p) => sum + (p.total_qty || 0), 0)}
+                            {row.original.ppmps.reduce(
+                                (sum, p) => sum + (p.total_qty || 0),
+                                0,
+                            )}
                         </div>
                     ),
                 }),
                 columnHelper.display({
-                    id: "total_cost",
+                    id: 'total_cost',
                     size: 100,
-                    header: () => <div className="px-1 text-right">Total Cost</div>,
+                    header: () => (
+                        <div className="px-1 text-right">Total Cost</div>
+                    ),
                     cell: ({ row }) => {
                         const total = row.original.ppmps.reduce(
                             (sum, p) => sum + Number(p.total_amount || 0),
@@ -104,7 +121,7 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
 
                         return (
                             <div className="px-1 text-right text-wrap">
-                                {total.toLocaleString("en-US", {
+                                {total.toLocaleString('en-US', {
                                     minimumFractionDigits: 2,
                                 })}
                             </div>
@@ -115,7 +132,8 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                             (sum, row) =>
                                 sum +
                                 row.ppmps.reduce(
-                                    (rowSum, p) => rowSum + Number(p.total_amount || 0),
+                                    (rowSum, p) =>
+                                        rowSum + Number(p.total_amount || 0),
                                     0,
                                 ),
                             0,
@@ -123,7 +141,7 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
 
                         return (
                             <div className="px-1 text-right">
-                                {grandTotal.toLocaleString("en-US", {
+                                {grandTotal.toLocaleString('en-US', {
                                     minimumFractionDigits: 2,
                                 })}
                             </div>
@@ -138,27 +156,40 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
             columnHelper.group({
                 id: `group_ppa_${ppa.id}`,
                 size: 1600,
-                header: () => <div className="px-1 text-center">{ppa.name}</div>,
+                header: () => (
+                    <div className="px-1 text-center">{ppa.name}</div>
+                ),
                 columns: [1, 2, 3, 4].map((q) =>
                     columnHelper.group({
                         id: `ppa_${ppa.id}_q${q}_group`,
                         size: 100,
-                        header: () => <div className="px-1 text-center">Quarter {q}</div>,
+                        header: () => (
+                            <div className="px-1 text-center">Quarter {q}</div>
+                        ),
                         columns: [
                             columnHelper.display({
                                 id: `ppa_${ppa.id}_q${q}_qty`,
                                 size: 100,
-                                header: () => <div className="px-1 text-right">Qty</div>,
+                                header: () => (
+                                    <div className="px-1 text-right">Qty</div>
+                                ),
                                 cell: ({ row }) => {
                                     const entries = row.original.ppmps.filter(
-                                        (p) => p.ppa_funding_source.aip_entry.ppa.id === ppa.id,
+                                        (p) =>
+                                            p.ppa_funding_source.aip_entry.ppa
+                                                .id === ppa.id,
                                     );
 
                                     return (
                                         <div className="px-1 text-right text-wrap">
                                             {entries.reduce(
                                                 (sum, e) =>
-                                                    sum + Number((e as any)[`q${q}_qty`] || 0),
+                                                    sum +
+                                                    Number(
+                                                        (e as any)[
+                                                            `q${q}_qty`
+                                                        ] || 0,
+                                                    ),
                                                 0,
                                             )}
                                         </div>
@@ -168,46 +199,70 @@ export const getPriceListColumns = (data: PriceListRow[]) => {
                             columnHelper.display({
                                 id: `ppa_${ppa.id}_q${q}_cost`,
                                 size: 100,
-                                header: () => <div className="px-1 text-right">Cost</div>,
+                                header: () => (
+                                    <div className="px-1 text-right">Cost</div>
+                                ),
                                 cell: ({ row }) => {
                                     const entries = row.original.ppmps.filter(
-                                        (p) => p.ppa_funding_source.aip_entry.ppa.id === ppa.id,
+                                        (p) =>
+                                            p.ppa_funding_source.aip_entry.ppa
+                                                .id === ppa.id,
                                     );
                                     const amount = entries.reduce(
-                                        (sum, e) => sum + Number((e as any)[`q${q}_amount`] || 0),
+                                        (sum, e) =>
+                                            sum +
+                                            Number(
+                                                (e as any)[`q${q}_amount`] || 0,
+                                            ),
                                         0,
                                     );
 
                                     return (
                                         <div className="px-1 text-right text-wrap">
-                                            {Number(amount).toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                            })}
+                                            {Number(amount).toLocaleString(
+                                                undefined,
+                                                {
+                                                    minimumFractionDigits: 2,
+                                                },
+                                            )}
                                         </div>
                                     );
                                 },
                                 footer: () => {
-                                    const quarterTotal = data.reduce((sum, row) => {
-                                        const entries = row.ppmps.filter(
-                                            (p) => p.ppa_funding_source.aip_entry.ppa.id === ppa.id,
-                                        );
+                                    const quarterTotal = data.reduce(
+                                        (sum, row) => {
+                                            const entries = row.ppmps.filter(
+                                                (p) =>
+                                                    p.ppa_funding_source
+                                                        .aip_entry.ppa.id ===
+                                                    ppa.id,
+                                            );
 
-                                        return (
-                                            sum +
-                                            entries.reduce(
-                                                (rowSum, e) =>
-                                                    rowSum +
-                                                    Number((e as any)[`q${q}_amount`] || 0),
-                                                0,
-                                            )
-                                        );
-                                    }, 0);
+                                            return (
+                                                sum +
+                                                entries.reduce(
+                                                    (rowSum, e) =>
+                                                        rowSum +
+                                                        Number(
+                                                            (e as any)[
+                                                                `q${q}_amount`
+                                                            ] || 0,
+                                                        ),
+                                                    0,
+                                                )
+                                            );
+                                        },
+                                        0,
+                                    );
 
                                     return (
                                         <div className="px-1 text-right">
-                                            {quarterTotal.toLocaleString(undefined, {
-                                                minimumFractionDigits: 2,
-                                            })}
+                                            {quarterTotal.toLocaleString(
+                                                undefined,
+                                                {
+                                                    minimumFractionDigits: 2,
+                                                },
+                                            )}
                                         </div>
                                     );
                                 },

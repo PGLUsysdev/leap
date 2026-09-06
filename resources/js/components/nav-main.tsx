@@ -1,14 +1,17 @@
-import { Link } from "@inertiajs/react";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { Link } from '@inertiajs/react';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from "@/components/base-ui-components/ui/sidebar";
-import { useCurrentUrl } from "@/hooks/use-current-url";
-import type { NavItem } from "@/types";
+} from '@/components/base-ui-components/ui/sidebar';
+import { useCurrentUrl } from '@/hooks/use-current-url';
+import type { NavItem } from '@/types';
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const { isCurrentUrl } = useCurrentUrl();
@@ -23,16 +26,22 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                 {/* 3. ScrollArea must also have min-h-0 to allow shrinking */}
                 <ScrollArea className="min-h-0 flex-1">
                     {items.map((item, index) => {
-                        if (item.type === "separator") {
+                        if (item.type === 'separator') {
                             return (
-                                <span key={`sep-${index}`} className="px-4 text-muted-foreground">
+                                <span
+                                    key={`sep-${index}`}
+                                    className="text-muted-foreground px-4"
+                                >
                                     -
                                 </span>
                             );
                         }
 
                         return (
-                            <SidebarMenuItem key={item.title} className="mr-4 py-[0.1rem]">
+                            <SidebarMenuItem
+                                key={item.title}
+                                className="mr-4 py-[0.1rem]"
+                            >
                                 <SidebarMenuButton
                                     asChild
                                     isActive={isCurrentUrl(item.href)}

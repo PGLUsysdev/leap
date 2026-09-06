@@ -1,5 +1,5 @@
-import type { TableRow } from "@/pages/ppmp/pdf-render/types";
-import type { AipEntry } from "@/types";
+import type { TableRow } from '@/pages/ppmp/pdf-render/types';
+import type { AipEntry } from '@/types';
 
 // Collect all funding sources from a list of AipEntries
 // Skips sources without a valid funding_source_id or funding_source object
@@ -78,7 +78,7 @@ export function prepareFsSummaryRows(aipEntries: AipEntry[]): TableRow[] {
         const total = row.ps + row.mooe + row.fe + row.co;
         result.push({
             id: `fs-item-${index}`,
-            type: "item",
+            type: 'item',
             item: {
                 funding_source: row.funding_source,
                 ps: row.ps,
@@ -94,11 +94,12 @@ export function prepareFsSummaryRows(aipEntries: AipEntry[]): TableRow[] {
 
     // Add grand total row only if there are rows
     if (rows.length > 0) {
-        const grandTotalValue = grandTotal.ps + grandTotal.mooe + grandTotal.fe + grandTotal.co;
+        const grandTotalValue =
+            grandTotal.ps + grandTotal.mooe + grandTotal.fe + grandTotal.co;
         result.push({
-            id: "fs-grand-total",
-            type: "grand-total",
-            label: "GRAND TOTAL",
+            id: 'fs-grand-total',
+            type: 'grand-total',
+            label: 'GRAND TOTAL',
             totals: {
                 ps: grandTotal.ps,
                 mooe: grandTotal.mooe,

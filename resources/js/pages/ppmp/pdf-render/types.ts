@@ -7,7 +7,12 @@ export interface ColumnDef<T> {
     cell: (item: T) => React.ReactNode;
 }
 
-export type TableRowType = "banner" | "item" | "subtotal" | "grand-total" | "spacer";
+export type TableRowType =
+    | 'banner'
+    | 'item'
+    | 'subtotal'
+    | 'grand-total'
+    | 'spacer';
 
 export interface TableRow {
     id: string;

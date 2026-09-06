@@ -1,8 +1,11 @@
 // src/components/ui/command-select.tsx
-import { Check, ChevronsUpDown } from "lucide-react";
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ButtonGroup, ButtonGroupSeparator } from "@/components/ui/button-group";
+import { Check, ChevronsUpDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+} from '@/components/ui/button-group';
 import {
     Command,
     CommandDialog,
@@ -11,7 +14,7 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 
 export interface CommandSelectProps<T> {
     value: string | number | null;
@@ -43,18 +46,20 @@ export function CommandSelect<T>({
     getOptionSearchText,
     renderTrigger,
     renderOption,
-    placeholder = "Select an option",
-    searchPlaceholder = "Search...",
-    emptyText = "No results found.",
-    heading = "Options",
+    placeholder = 'Select an option',
+    searchPlaceholder = 'Search...',
+    emptyText = 'No results found.',
+    heading = 'Options',
     disabled = false,
     showClear = true,
     onClear,
-    dialogClassName = "sm:max-w-[600px]",
+    dialogClassName = 'sm:max-w-[600px]',
 }: CommandSelectProps<T>) {
     const [open, setOpen] = useState(false);
 
-    const selectedOption = options.find((option) => getOptionValue(option) === value);
+    const selectedOption = options.find(
+        (option) => getOptionValue(option) === value,
+    );
 
     return (
         <>
@@ -91,7 +96,11 @@ export function CommandSelect<T>({
                 )}
             </ButtonGroup>
 
-            <CommandDialog open={open} onOpenChange={setOpen} className={dialogClassName}>
+            <CommandDialog
+                open={open}
+                onOpenChange={setOpen}
+                className={dialogClassName}
+            >
                 <Command>
                     <CommandInput placeholder={searchPlaceholder} />
                     <CommandList className="max-h-[50vh] flex-1">

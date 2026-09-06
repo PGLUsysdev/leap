@@ -1,6 +1,8 @@
-import type { BreadcrumbItem as BreadcrumbItemType } from "@/types";
+import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
-export type CollapsedBreadcrumbs<T extends BreadcrumbItemType = BreadcrumbItemType> = {
+export type CollapsedBreadcrumbs<
+    T extends BreadcrumbItemType = BreadcrumbItemType,
+> = {
     visibleHead: T[];
     hidden: T[];
     tail: T[];
@@ -18,7 +20,12 @@ export function collapseBreadcrumbs<T extends BreadcrumbItemType>(
     maxVisible = 3,
 ): CollapsedBreadcrumbs<T> {
     if (items.length <= maxVisible) {
-        return { visibleHead: items, hidden: [], tail: [], showEllipsis: false };
+        return {
+            visibleHead: items,
+            hidden: [],
+            tail: [],
+            showEllipsis: false,
+        };
     }
 
     const headCount = 1;

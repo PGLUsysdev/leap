@@ -1,22 +1,22 @@
 // resources\js\pages\ppmp\pdf-render\ppmp\prepare-ppmp-rows.ts
 
-import type { TableRow } from "../types";
+import type { TableRow } from '../types';
 
 // Helper to calculate totals from an array of items
 function calculateTotals(items: any[]): Record<string, number> {
     const months = [
-        "jan",
-        "feb",
-        "mar",
-        "apr",
-        "may",
-        "jun",
-        "jul",
-        "aug",
-        "sep",
-        "oct",
-        "nov",
-        "dec",
+        'jan',
+        'feb',
+        'mar',
+        'apr',
+        'may',
+        'jun',
+        'jul',
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
     ];
     const totals: Record<string, number> = {
         total_qty: 0,
@@ -32,7 +32,10 @@ function calculateTotals(items: any[]): Record<string, number> {
             totals[`${m}_qty`] += Number(item[`${m}_qty`]) || 0;
             totals[`${m}_amount`] += Number(item[`${m}_amount`]) || 0;
         });
-        totals.total_qty += months.reduce((sum, m) => sum + (Number(item[`${m}_qty`]) || 0), 0);
+        totals.total_qty += months.reduce(
+            (sum, m) => sum + (Number(item[`${m}_qty`]) || 0),
+            0,
+        );
         totals.total_amount += months.reduce(
             (sum, m) => sum + (Number(item[`${m}_amount`]) || 0),
             0,
@@ -44,17 +47,25 @@ function calculateTotals(items: any[]): Record<string, number> {
 
 export function preparePpmpRows(rawItems: any[]): TableRow[] {
     const rows: TableRow[] = [];
-    const programMap = new Map<string, Map<string, Map<string, { title: string; items: any[] }>>>();
+    const programMap = new Map<
+        string,
+        Map<string, Map<string, { title: string; items: any[] }>>
+    >();
 
     rawItems.forEach((item) => {
-        const category = item.ppmp_price_list?.chart_of_account_ppmp_category?.ppmp_category;
-        const coa = item.ppmp_price_list?.chart_of_account_ppmp_category?.chart_of_account;
+        const category =
+            item.ppmp_price_list?.chart_of_account_ppmp_category?.ppmp_category;
+        const coa =
+            item.ppmp_price_list?.chart_of_account_ppmp_category
+                ?.chart_of_account;
 
         const isNonProc = category?.is_non_procurement ?? false;
-        const programKey = isNonProc ? "NON-PROCUREMENT ITEMS" : "PROCUREMENT ITEMS";
-        const categoryKey = category?.name || "GENERAL CATEGORY";
-        const coaKey = coa?.account_number || "UNCATEGORIZED";
-        const coaTitle = coa?.account_title || "General Expenses";
+        const programKey = isNonProc
+            ? 'NON-PROCUREMENT ITEMS'
+            : 'PROCUREMENT ITEMS';
+        const categoryKey = category?.name || 'GENERAL CATEGORY';
+        const coaKey = coa?.account_number || 'UNCATEGORIZED';
+        const coaTitle = coa?.account_title || 'General Expenses';
 
         if (!programMap.has(programKey)) {
             programMap.set(programKey, new Map());
@@ -79,7 +90,7 @@ export function preparePpmpRows(rawItems: any[]): TableRow[] {
         // Program Banner
         rows.push({
             id: `prog-${programTitle}`,
-            type: "banner",
+            type: 'banner',
             label: programTitle,
         });
 
@@ -87,7 +98,7 @@ export function preparePpmpRows(rawItems: any[]): TableRow[] {
             // Category Banner – include program
             rows.push({
                 id: `cat-${programTitle}-${categoryName}`,
-                type: "banner",
+                type: 'banner',
                 label: categoryName,
             });
 
@@ -96,7 +107,7 @@ export function preparePpmpRows(rawItems: any[]): TableRow[] {
                 // COA Banner – include program and category
                 rows.push({
                     id: `coa-${programTitle}-${categoryName}-${coaKey}`,
-                    type: "banner",
+                    type: 'banner',
                     label: coaTitle,
                 });
 
@@ -104,29 +115,32 @@ export function preparePpmpRows(rawItems: any[]): TableRow[] {
                 items.forEach((item, idx) => {
                     rows.push({
                         id: `item-${item.id || idx}`,
-                        type: "item",
+                        type: 'item',
                         item,
                     });
                 });
             }
 
             // Category Subtotal – include program
-            const categoryItems = Array.from(coaMap.values()).flatMap((coaData) => coaData.items);
+            const categoryItems = Array.from(coaMap.values()).flatMap(
+                (coaData) => coaData.items,
+            );
             rows.push({
                 id: `cat-total-${programTitle}-${categoryName}`,
-                type: "subtotal",
+                type: 'subtotal',
                 label: `${categoryName} - TOTAL`,
                 totals: calculateTotals(categoryItems),
             });
         }
 
         // Program Subtotal
-        const programItems = Array.from(categoryMap.values()).flatMap((coaMap) =>
-            Array.from(coaMap.values()).flatMap((coaData) => coaData.items),
+        const programItems = Array.from(categoryMap.values()).flatMap(
+            (coaMap) =>
+                Array.from(coaMap.values()).flatMap((coaData) => coaData.items),
         );
         rows.push({
             id: `prog-total-${programTitle}`,
-            type: "subtotal",
+            type: 'subtotal',
             label: `TOTAL FOR ${programTitle}`,
             totals: calculateTotals(programItems),
         });
@@ -134,9 +148,9 @@ export function preparePpmpRows(rawItems: any[]): TableRow[] {
 
     // Grand Total
     rows.push({
-        id: "grand-total",
-        type: "grand-total",
-        label: "GRAND TOTAL - FOR THE AIP/PPA",
+        id: 'grand-total',
+        type: 'grand-total',
+        label: 'GRAND TOTAL - FOR THE AIP/PPA',
         totals: calculateTotals(rawItems),
     });
 

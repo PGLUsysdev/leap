@@ -1,8 +1,11 @@
-import { router } from "@inertiajs/react";
-import { useState } from "react";
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -12,10 +15,10 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import type { Ios, PaginatedResponse, SalaryGradeOption } from "@/types";
-import columns from "./columns/columns";
-import FormDialog from "./form-dialog-base";
+} from '@/components/ui/alert-dialog';
+import type { Ios, PaginatedResponse, SalaryGradeOption } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog-base';
 
 interface IosPageProps {
     ios: PaginatedResponse<Ios>;
@@ -72,7 +75,7 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
                         onEdit: handleEdit,
                         onDelete: handleDelete,
                     }}
-                    only={["ios"]}
+                    only={['ios']}
                 >
                     {can?.add && (
                         <Button
@@ -107,13 +110,16 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete IOS</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this IOS record? This action cannot be
-                            undone.
+                            Are you sure you want to delete this IOS record?
+                            This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+                        <AlertDialogAction
+                            variant="destructive"
+                            onClick={confirmDelete}
+                        >
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -124,5 +130,5 @@ export default function IosPage({ ios, salaryGrades, can }: IosPageProps) {
 }
 
 IosPage.layout = {
-    breadcrumbs: [{ title: "Index of Occupational Services", href: "#" }],
+    breadcrumbs: [{ title: 'Index of Occupational Services', href: '#' }],
 };

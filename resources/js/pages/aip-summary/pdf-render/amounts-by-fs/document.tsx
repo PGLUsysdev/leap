@@ -1,52 +1,59 @@
-import { Document, Page, View, Text, StyleSheet, Font } from "@react-pdf/renderer";
-import React from "react";
-import { PpmpPdfTable } from "@/pages/ppmp/pdf-render/table";
-import type { AipEntry, FiscalYear } from "@/types";
-import { getFsSummaryColumnDefs } from "./cols";
-import { prepareFsSummaryRows } from "./prepare-row";
-import TableHeader from "./table-header";
+import {
+    Document,
+    Page,
+    View,
+    Text,
+    StyleSheet,
+    Font,
+} from '@react-pdf/renderer';
+import React from 'react';
+import { PpmpPdfTable } from '@/pages/ppmp/pdf-render/table';
+import type { AipEntry, FiscalYear } from '@/types';
+import { getFsSummaryColumnDefs } from './cols';
+import { prepareFsSummaryRows } from './prepare-row';
+import TableHeader from './table-header';
 
 Font.registerHyphenationCallback((word) => [word]);
 
 const styles = StyleSheet.create({
     page: {
         padding: 12,
-        fontFamily: "Helvetica",
+        fontFamily: 'Helvetica',
     },
     headerContainer: {
         marginBottom: 1,
     },
     title: {
         fontSize: 9,
-        fontWeight: "bold",
-        textTransform: "uppercase",
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
         marginTop: 2,
-        color: "#0F172A",
-        textAlign: "center",
+        color: '#0F172A',
+        textAlign: 'center',
     },
     subtitle: {
         fontSize: 8,
-        fontWeight: "bold",
+        fontWeight: 'bold',
         marginTop: 1,
-        textAlign: "center",
+        textAlign: 'center',
     },
     headerSpacer: {
         height: 14,
     },
     officeLabel: {
         fontSize: 8,
-        fontWeight: "bold",
-        textAlign: "left",
+        fontWeight: 'bold',
+        textAlign: 'left',
     },
     footer: {
-        position: "absolute",
+        position: 'absolute',
         bottom: 8,
         left: 12,
         right: 12,
-        flexDirection: "row",
-        justifyContent: "space-between",
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         fontSize: 5.5,
-        color: "#94A3B8",
+        color: '#94A3B8',
     },
 });
 
@@ -58,11 +65,11 @@ interface FsSummaryDocumentProps {
 }
 
 const formatCurrency = (value: string | number) => {
-    const num = typeof value === "string" ? parseFloat(value) : value;
+    const num = typeof value === 'string' ? parseFloat(value) : value;
 
-    if (isNaN(num)) return "0.00";
+    if (isNaN(num)) return '0.00';
 
-    return num.toLocaleString("en-US", {
+    return num.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     });
@@ -78,26 +85,34 @@ const renderGrandTotal = (row: any, columns: any[]) => {
             key={row.id}
             wrap={false}
             style={{
-                flexDirection: "row",
+                flexDirection: 'row',
                 borderBottomWidth: 0.5,
-                borderBottomColor: "#000000",
+                borderBottomColor: '#000000',
                 minHeight: 13,
-                alignItems: "stretch",
+                alignItems: 'stretch',
             }}
         >
             <View
                 style={{
                     width: labelWidth,
                     borderLeftWidth: 0.5,
-                    borderLeftColor: "#000000",
+                    borderLeftColor: '#000000',
                     borderRightWidth: 0.5,
-                    borderRightColor: "#000000",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    borderRightColor: '#000000',
+                    justifyContent: 'center',
+                    alignItems: 'center',
                     paddingHorizontal: 2,
                 }}
             >
-                <Text style={{ fontSize: 5, fontWeight: "bold", color: "#000000" }}>TOTAL</Text>
+                <Text
+                    style={{
+                        fontSize: 5,
+                        fontWeight: 'bold',
+                        color: '#000000',
+                    }}
+                >
+                    TOTAL
+                </Text>
             </View>
 
             {columns.slice(1).map((col) => (
@@ -106,17 +121,17 @@ const renderGrandTotal = (row: any, columns: any[]) => {
                     style={{
                         width: col.width,
                         borderRightWidth: 0.5,
-                        borderRightColor: "#000000",
-                        justifyContent: "center",
+                        borderRightColor: '#000000',
+                        justifyContent: 'center',
                         paddingHorizontal: 1,
                     }}
                 >
                     <Text
                         style={{
                             fontSize: 5,
-                            fontWeight: "bold",
-                            color: "#000000",
-                            textAlign: "right",
+                            fontWeight: 'bold',
+                            color: '#000000',
+                            textAlign: 'right',
                         }}
                     >
                         {formatCurrency(String(totals[col.id] || 0))}
@@ -139,9 +154,9 @@ export const FsSummaryDocument: React.FC<FsSummaryDocumentProps> = ({
     console.log(rows);
 
     const scopeLabel =
-        currentScope?.scope === "supplemental"
+        currentScope?.scope === 'supplemental'
             ? `Supplemental Annual Investment Program (SAIP)`
-            : "Annual Investment Program (AIP)";
+            : 'Annual Investment Program (AIP)';
 
     return (
         <Document>
@@ -151,11 +166,13 @@ export const FsSummaryDocument: React.FC<FsSummaryDocumentProps> = ({
                     <Text style={styles.title}>
                         CY {fiscalYear.year} {scopeLabel}
                     </Text>
-                    <Text style={styles.subtitle}>Summary of Amounts by Funding Source</Text>
+                    <Text style={styles.subtitle}>
+                        Summary of Amounts by Funding Source
+                    </Text>
                     <View style={styles.headerSpacer} />
                     <Text style={styles.officeLabel}>
-                        OFFICE:{" "}
-                        <Text style={{ textDecoration: "underline" }}>
+                        OFFICE:{' '}
+                        <Text style={{ textDecoration: 'underline' }}>
                             {officeName.toUpperCase()}
                         </Text>
                     </Text>

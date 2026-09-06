@@ -1,141 +1,141 @@
 // resources\js\pages\ppmp\pdf-render\table.tsx
 
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
-import React from "react";
-import { formatCurrency } from "@/lib/utils";
-import { formatQty } from "./ppmp/cols";
-import type { TableRow } from "./types";
-import type { ColumnDef } from "./types";
+import { View, Text, StyleSheet } from '@react-pdf/renderer';
+import React from 'react';
+import { formatCurrency } from '@/lib/utils';
+import { formatQty } from './ppmp/cols';
+import type { TableRow } from './types';
+import type { ColumnDef } from './types';
 
 const styles = StyleSheet.create({
-    table: { width: "100%", marginVertical: -0.5 },
-    cellText: { fontSize: 5, color: "#000000" },
+    table: { width: '100%', marginVertical: -0.5 },
+    cellText: { fontSize: 5, color: '#000000' },
     headerRow: {
-        flexDirection: "row",
-        backgroundColor: "#DEEAF6",
-        alignItems: "stretch",
+        flexDirection: 'row',
+        backgroundColor: '#DEEAF6',
+        alignItems: 'stretch',
         borderTopWidth: 0.5,
-        borderTopColor: "#000000",
+        borderTopColor: '#000000',
     },
     headerCell: {
         padding: 1.5,
         borderRightWidth: 0.5,
-        borderRightColor: "#000000",
+        borderRightColor: '#000000',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
-        justifyContent: "center",
-        alignItems: "center",
+        borderBottomColor: '#000000',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerText: {
         fontSize: 5,
-        fontWeight: "bold",
-        color: "#000000",
+        fontWeight: 'bold',
+        color: '#000000',
     },
     programBannerRow: {
-        flexDirection: "row",
+        flexDirection: 'row',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 12,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
     programBannerText: {
         fontSize: 5,
-        fontWeight: "bold",
-        textTransform: "uppercase",
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
     categoryRow: {
-        flexDirection: "row",
-        backgroundColor: "#D0CECE",
+        flexDirection: 'row',
+        backgroundColor: '#D0CECE',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 11,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
     categoryText: {
         fontSize: 5,
-        fontWeight: "bold",
-        color: "#000000",
-        textTransform: "uppercase",
+        fontWeight: 'bold',
+        color: '#000000',
+        textTransform: 'uppercase',
     },
     coaRow: {
-        flexDirection: "row",
-        backgroundColor: "#FBE4D5",
+        flexDirection: 'row',
+        backgroundColor: '#FBE4D5',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 11,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
-    coaText: { fontSize: 5, fontWeight: "normal", color: "#000000" },
+    coaText: { fontSize: 5, fontWeight: 'normal', color: '#000000' },
     row: {
-        flexDirection: "row",
+        flexDirection: 'row',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 11,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
     rowEven: {},
     cell: {
         padding: 1.5,
         borderRightWidth: 0.5,
-        borderRightColor: "#000000",
-        justifyContent: "center",
+        borderRightColor: '#000000',
+        justifyContent: 'center',
     },
     categoryTotalRow: {
-        flexDirection: "row",
-        backgroundColor: "#FEF2CB",
+        flexDirection: 'row',
+        backgroundColor: '#FEF2CB',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 11,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
     programTotalRow: {
-        flexDirection: "row",
-        backgroundColor: "#FFFF00",
+        flexDirection: 'row',
+        backgroundColor: '#FFFF00',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 12,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
     grandTotalRow: {
-        flexDirection: "row",
-        backgroundColor: "#00B050",
+        flexDirection: 'row',
+        backgroundColor: '#00B050',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 13,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
-    totalText: { fontSize: 5, fontWeight: "bold", color: "#000000" },
+    totalText: { fontSize: 5, fontWeight: 'bold', color: '#000000' },
     spacer: {
-        flexDirection: "row",
+        flexDirection: 'row',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 11,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
     summarySubtotalRow: {
-        flexDirection: "row",
+        flexDirection: 'row',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 11,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
     summaryGrandTotalRow: {
-        flexDirection: "row",
+        flexDirection: 'row',
         borderBottomWidth: 0.5,
-        borderBottomColor: "#000000",
+        borderBottomColor: '#000000',
         minHeight: 13,
-        alignItems: "stretch",
+        alignItems: 'stretch',
     },
     summaryTotalText: {
         fontSize: 5,
-        fontWeight: "bold",
-        color: "#000000",
+        fontWeight: 'bold',
+        color: '#000000',
     },
 });
 
 const leftBorderStyle = {
     borderLeftWidth: 0.5,
-    borderLeftColor: "#000000",
+    borderLeftColor: '#000000',
 };
 
 interface PpmpPdfTableProps<T> {
@@ -148,25 +148,28 @@ interface PpmpPdfTableProps<T> {
         rowStyle?: any;
         textStyle?: any;
     } | null;
-    cellVerticalAlign?: "flex-start" | "center" | "flex-end";
-    grandTotalComponent?: (row: TableRow, columns: ColumnDef<T>[]) => React.ReactNode;
+    cellVerticalAlign?: 'flex-start' | 'center' | 'flex-end';
+    grandTotalComponent?: (
+        row: TableRow,
+        columns: ColumnDef<T>[],
+    ) => React.ReactNode;
 }
 
 // Helper to determine total row text alignment based on column id.
-function getTotalTextAlign(columnId: string): "left" | "center" | "right" {
-    if (columnId === "description") return "left";
+function getTotalTextAlign(columnId: string): 'left' | 'center' | 'right' {
+    if (columnId === 'description') return 'left';
 
-    if (columnId === "total_qty" || columnId.endsWith("_qty")) return "center";
+    if (columnId === 'total_qty' || columnId.endsWith('_qty')) return 'center';
 
-    if (columnId === "total_amount" || columnId.endsWith("_amount")) {
-        return "right";
+    if (columnId === 'total_amount' || columnId.endsWith('_amount')) {
+        return 'right';
     }
 
-    if (columnId === "total" || /^q[1-4]$/.test(columnId)) return "right";
+    if (columnId === 'total' || /^q[1-4]$/.test(columnId)) return 'right';
 
     // For other columns (coa, item_no, uom, price), we default to left.
     // Price could be right, but since we don't display it in totals, it doesn't matter.
-    return "left";
+    return 'left';
 }
 
 export function PpmpPdfTable<T extends Record<string, any>>({
@@ -175,7 +178,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
     headerStyle,
     headerComponent,
     rowStyleResolver,
-    cellVerticalAlign = "center",
+    cellVerticalAlign = 'center',
     grandTotalComponent,
 }: PpmpPdfTableProps<T>) {
     // Helper to render content that might already be a <Text> element.
@@ -189,10 +192,14 @@ export function PpmpPdfTable<T extends Record<string, any>>({
     };
 
     // Helper to render a "Banner" row (Program, Category, COA)
-    const renderBannerRow = (row: TableRow, bannerStyle: any, textStyle: any) => (
+    const renderBannerRow = (
+        row: TableRow,
+        bannerStyle: any,
+        textStyle: any,
+    ) => (
         <View key={row.id} style={bannerStyle} wrap={false}>
             {columns.map((col, cIdx) => {
-                const isDescription = col.id === "description";
+                const isDescription = col.id === 'description';
 
                 return (
                     <View
@@ -202,12 +209,16 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                             {
                                 width: col.width,
                                 justifyContent: cellVerticalAlign,
-                                alignItems: isDescription ? "flex-start" : "center",
+                                alignItems: isDescription
+                                    ? 'flex-start'
+                                    : 'center',
                             },
                             cIdx === 0 ? leftBorderStyle : {},
                         ]}
                     >
-                        {isDescription ? <Text style={textStyle}>{row.label}</Text> : null}
+                        {isDescription ? (
+                            <Text style={textStyle}>{row.label}</Text>
+                        ) : null}
                     </View>
                 );
             })}
@@ -233,27 +244,34 @@ export function PpmpPdfTable<T extends Record<string, any>>({
     );
 
     // Helper to render "Total" row (Subtotal, Program Total, Grand Total)
-    const renderTotalRow = (row: TableRow, totalStyle: any, textStyleOverride?: any) => {
+    const renderTotalRow = (
+        row: TableRow,
+        totalStyle: any,
+        textStyleOverride?: any,
+    ) => {
         const totals = row.totals || {};
 
         return (
             <View key={row.id} style={totalStyle} wrap={false}>
                 {columns.map((col, cIdx) => {
-                    let content: React.ReactNode = "";
+                    let content: React.ReactNode = '';
 
-                    if (col.id === "description") {
+                    if (col.id === 'description') {
                         content = row.label;
-                    } else if (col.id === "total_qty" || col.id.endsWith("_qty")) {
+                    } else if (
+                        col.id === 'total_qty' ||
+                        col.id.endsWith('_qty')
+                    ) {
                         content = formatQty(totals[col.id]);
                     } else if (
-                        col.id === "total_amount" ||
-                        col.id.endsWith("_amount") ||
-                        col.id === "total" || // ← added
+                        col.id === 'total_amount' ||
+                        col.id.endsWith('_amount') ||
+                        col.id === 'total' || // ← added
                         /^q[1-4]$/.test(col.id) // ← added
                     ) {
                         content = formatCurrency(String(totals[col.id] || 0));
                     } else {
-                        content = "";
+                        content = '';
                     }
 
                     const align = getTotalTextAlign(col.id);
@@ -267,7 +285,10 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                             key={col.id}
                             style={[
                                 styles.cell,
-                                { width: col.width, justifyContent: cellVerticalAlign },
+                                {
+                                    width: col.width,
+                                    justifyContent: cellVerticalAlign,
+                                },
                                 cIdx === 0 ? leftBorderStyle : {},
                             ]}
                         >
@@ -288,7 +309,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                         {
                             width: col.width,
                             borderRightWidth: 0.5,
-                            borderRightColor: "#000000",
+                            borderRightColor: '#000000',
                         },
                         idx === 0 ? leftBorderStyle : {},
                     ]}
@@ -324,7 +345,7 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                 const custom = rowStyleResolver ? rowStyleResolver(row) : null;
 
                 switch (row.type) {
-                    case "banner":
+                    case 'banner':
                         if (custom?.rowStyle) {
                             return renderBannerRow(
                                 row,
@@ -333,54 +354,76 @@ export function PpmpPdfTable<T extends Record<string, any>>({
                             );
                         }
 
-                        if (row.id.startsWith("prog-")) {
+                        if (row.id.startsWith('prog-')) {
                             return renderBannerRow(
                                 row,
                                 styles.programBannerRow,
                                 styles.programBannerText,
                             );
-                        } else if (row.id.startsWith("cat-")) {
-                            return renderBannerRow(row, styles.categoryRow, styles.categoryText);
-                        } else if (row.id.startsWith("coa-")) {
-                            return renderBannerRow(row, styles.coaRow, styles.coaText);
+                        } else if (row.id.startsWith('cat-')) {
+                            return renderBannerRow(
+                                row,
+                                styles.categoryRow,
+                                styles.categoryText,
+                            );
+                        } else if (row.id.startsWith('coa-')) {
+                            return renderBannerRow(
+                                row,
+                                styles.coaRow,
+                                styles.coaText,
+                            );
                         }
 
                         return null;
 
-                    case "item":
+                    case 'item':
                         return renderItemRow(row, custom?.rowStyle);
 
-                    case "subtotal":
+                    case 'subtotal':
                         if (custom?.rowStyle) {
-                            return renderTotalRow(row, custom.rowStyle, custom.textStyle);
+                            return renderTotalRow(
+                                row,
+                                custom.rowStyle,
+                                custom.textStyle,
+                            );
                         }
 
-                        if (row.id.startsWith("summary-")) {
-                            return renderTotalRow(row, styles.summarySubtotalRow);
+                        if (row.id.startsWith('summary-')) {
+                            return renderTotalRow(
+                                row,
+                                styles.summarySubtotalRow,
+                            );
                         }
 
-                        if (row.id.startsWith("prog-total-")) {
+                        if (row.id.startsWith('prog-total-')) {
                             return renderTotalRow(row, styles.programTotalRow);
                         }
 
                         return renderTotalRow(row, styles.categoryTotalRow);
 
-                    case "grand-total":
+                    case 'grand-total':
                         if (grandTotalComponent) {
                             return grandTotalComponent(row, columns);
                         }
 
                         if (custom?.rowStyle) {
-                            return renderTotalRow(row, custom.rowStyle, custom.textStyle);
+                            return renderTotalRow(
+                                row,
+                                custom.rowStyle,
+                                custom.textStyle,
+                            );
                         }
 
-                        if (row.id.startsWith("summary-")) {
-                            return renderTotalRow(row, styles.summaryGrandTotalRow);
+                        if (row.id.startsWith('summary-')) {
+                            return renderTotalRow(
+                                row,
+                                styles.summaryGrandTotalRow,
+                            );
                         }
 
                         return renderTotalRow(row, styles.grandTotalRow);
 
-                    case "spacer":
+                    case 'spacer':
                         return renderSpacerRow(row);
 
                     default:

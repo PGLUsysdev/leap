@@ -21,11 +21,11 @@ Category Import, Category–COA Mappings, and Price List Import all read the
 **same sheet structure** — one format to learn. They differ only in which
 columns they consume:
 
-| Importer | E (item no.) | F (data) | D (COA) | G (unit) | H (price) |
-| -------- | ------------ | -------- | ------- | -------- | --------- |
-| Category Import | item-row intent + placeholder detection | category / description | COA hint | standard field, not consumed | standard field, not consumed |
-| Category–COA Mappings | placeholder detection | category | COA | standard field, not consumed | standard field, not consumed |
-| Price List Import | placeholder detection | description (category from enclosing group) | COA | unit | price |
+| Importer              | E (item no.)                            | F (data)                                    | D (COA)  | G (unit)                     | H (price)                    |
+| --------------------- | --------------------------------------- | ------------------------------------------- | -------- | ---------------------------- | ---------------------------- |
+| Category Import       | item-row intent + placeholder detection | category / description                      | COA hint | standard field, not consumed | standard field, not consumed |
+| Category–COA Mappings | placeholder detection                   | category                                    | COA      | standard field, not consumed | standard field, not consumed |
+| Price List Import     | placeholder detection                   | description (category from enclosing group) | COA      | unit                         | price                        |
 
 ### Standard calibration
 
@@ -33,16 +33,16 @@ Identical in all three importers (`SharedSheetConfig` — one type, one
 defaults function, same Calibrate screen). Applies per sheet; can be shared
 across sheets or set per sheet in step 2.
 
-| Setting        | Default | Meaning                                        |
-| -------------- | ------- | ---------------------------------------------- |
-| Category column| `F`     | Category headers, COA labels, descriptions, `TOTAL` rows |
-| COA column     | `D`     | Per-item COA value (item rows have both D + F) |
-| Unit column    | `G`     | Unit of measurement (consumed by price-list)   |
-| Price column   | `H`     | Unit price, commas allowed (consumed by price-list) |
-| Item no. column| `E`     | Item number — placeholder detection (see below) |
-| Header row     | `7`     | 1-indexed data header row; rows above are ignored |
-| COA label mode | `with-label` | COA names appear as label rows (see below) |
-| COA match field| `account_title` | Match extracted COA against account titles (D always holds titles). Mappings exposes a dropdown to switch per sheet; the other two lock this default |
+| Setting         | Default         | Meaning                                                                                                                                              |
+| --------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Category column | `F`             | Category headers, COA labels, descriptions, `TOTAL` rows                                                                                             |
+| COA column      | `D`             | Per-item COA value (item rows have both D + F)                                                                                                       |
+| Unit column     | `G`             | Unit of measurement (consumed by price-list)                                                                                                         |
+| Price column    | `H`             | Unit price, commas allowed (consumed by price-list)                                                                                                  |
+| Item no. column | `E`             | Item number — placeholder detection (see below)                                                                                                      |
+| Header row      | `7`             | 1-indexed data header row; rows above are ignored                                                                                                    |
+| COA label mode  | `with-label`    | COA names appear as label rows (see below)                                                                                                           |
+| COA match field | `account_title` | Match extracted COA against account titles (D always holds titles). Mappings exposes a dropdown to switch per sheet; the other two lock this default |
 
 Additional-sections calibration (optional): **Additional Items header row** and
 **Non-Procurement header row** mark where those sections start.
@@ -53,27 +53,27 @@ The complete PPMP sheet runs from COA at `D` to Dec amount at `AH`.
 The importers currently consume `D`/`F`/`G`/`H`; the rest is documented here
 for the full file contract.
 
-| Col | Field | Used by importers |
-| --- | ----- | ----------------- |
-| `D` | COA | Yes — per-item COA value |
-| `E` | Item no. | Placeholder detection (E+D+G+H all falsy → placeholder; E present marks an item row) |
-| `F` | Description (also category headers, COA labels, `TOTAL` rows) | Yes — data column |
-| `G` | Unit of measurement | Yes — price-list only |
-| `H` | Price list (unit price, commas allowed) | Yes — price-list only |
-| `I` | Total quantity (year) | No |
-| `J` | Total amount (year) | No |
-| `K`–`L` | Jan qty, Jan amount | No |
-| `M`–`N` | Feb qty, Feb amount | No |
-| `O`–`P` | Mar qty, Mar amount | No |
-| `Q`–`R` | Apr qty, Apr amount | No |
-| `S`–`T` | May qty, May amount | No |
-| `U`–`V` | Jun qty, Jun amount | No |
-| `W`–`X` | Jul qty, Jul amount | No |
-| `Y`–`Z` | Aug qty, Aug amount | No |
-| `AA`–`AB` | Sep qty, Sep amount | No |
-| `AC`–`AD` | Oct qty, Oct amount | No |
-| `AE`–`AF` | Nov qty, Nov amount | No |
-| `AG`–`AH` | Dec qty, Dec amount | No |
+| Col       | Field                                                         | Used by importers                                                                    |
+| --------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `D`       | COA                                                           | Yes — per-item COA value                                                             |
+| `E`       | Item no.                                                      | Placeholder detection (E+D+G+H all falsy → placeholder; E present marks an item row) |
+| `F`       | Description (also category headers, COA labels, `TOTAL` rows) | Yes — data column                                                                    |
+| `G`       | Unit of measurement                                           | Yes — price-list only                                                                |
+| `H`       | Price list (unit price, commas allowed)                       | Yes — price-list only                                                                |
+| `I`       | Total quantity (year)                                         | No                                                                                   |
+| `J`       | Total amount (year)                                           | No                                                                                   |
+| `K`–`L`   | Jan qty, Jan amount                                           | No                                                                                   |
+| `M`–`N`   | Feb qty, Feb amount                                           | No                                                                                   |
+| `O`–`P`   | Mar qty, Mar amount                                           | No                                                                                   |
+| `Q`–`R`   | Apr qty, Apr amount                                           | No                                                                                   |
+| `S`–`T`   | May qty, May amount                                           | No                                                                                   |
+| `U`–`V`   | Jun qty, Jun amount                                           | No                                                                                   |
+| `W`–`X`   | Jul qty, Jul amount                                           | No                                                                                   |
+| `Y`–`Z`   | Aug qty, Aug amount                                           | No                                                                                   |
+| `AA`–`AB` | Sep qty, Sep amount                                           | No                                                                                   |
+| `AC`–`AD` | Oct qty, Oct amount                                           | No                                                                                   |
+| `AE`–`AF` | Nov qty, Nov amount                                           | No                                                                                   |
+| `AG`–`AH` | Dec qty, Dec amount                                           | No                                                                                   |
 
 > Layout check: 12 monthly qty/amount pairs = 24 columns (`K`–`AH`), preceded
 > by the two year-total columns (`I` total quantity, `J` total amount).
@@ -86,13 +86,13 @@ only procurement, procurement + additional, or any combination. Leave a
 section's header row uncalibrated and that section is simply skipped (no rows
 expected there). Within a section rows are one of:
 
-| Row kind       | Col D (COA)   | Col F (data)              | Notes |
-| -------------- | ------------- | ------------------------- | ----- |
-| Header         | —             | `description`             | Skipped automatically (case-insensitive) |
-| Category       | empty         | `Office Supplies`         | Opens a group; must come before its items |
-| COA label      | empty         | `Printers`                | `with-label` mode: next row's D must repeat it |
-| Item           | `Printers`    | `Bond paper A4` (+G/H)    | The actual importable row |
-| Total          | empty         | `Office Supplies - TOTAL` | Closes the category; name must match `<Category> - TOTAL` |
+| Row kind  | Col D (COA) | Col F (data)              | Notes                                                     |
+| --------- | ----------- | ------------------------- | --------------------------------------------------------- |
+| Header    | —           | `description`             | Skipped automatically (case-insensitive)                  |
+| Category  | empty       | `Office Supplies`         | Opens a group; must come before its items                 |
+| COA label | empty       | `Printers`                | `with-label` mode: next row's D must repeat it            |
+| Item      | `Printers`  | `Bond paper A4` (+G/H)    | The actual importable row                                 |
+| Total     | empty       | `Office Supplies - TOTAL` | Closes the category; name must match `<Category> - TOTAL` |
 
 Example (`with-label`) — note the category holding **two** COA groups:
 
@@ -239,11 +239,11 @@ The full pipeline every imported value travels, in order:
 
 ## Backend behavior
 
-| Importer | Endpoint | Result |
-| -------- | -------- | ------ |
-| Category | `POST /category-import` | Creates missing categories (`is_non_procurement=false`); strict-normalized dupes skipped (`inserted`/`skipped` report) |
-| Mapping  | `POST /category-coa-mappings/bulk` | Creates missing pairs transactionally; existing pairs skipped |
-| Price list | `POST /price-list-import` | Validates rows; requires the mapping junction; upserts on junction + normalized description + unit (`inserted`/`updated`/`errors` report) |
+| Importer   | Endpoint                           | Result                                                                                                                                    |
+| ---------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Category   | `POST /category-import`            | Creates missing categories (`is_non_procurement=false`); strict-normalized dupes skipped (`inserted`/`skipped` report)                    |
+| Mapping    | `POST /category-coa-mappings/bulk` | Creates missing pairs transactionally; existing pairs skipped                                                                             |
+| Price list | `POST /price-list-import`          | Validates rows; requires the mapping junction; upserts on junction + normalized description + unit (`inserted`/`updated`/`errors` report) |
 
 All three validate IDs against the database (`exists` rules), authorize via
 policies (`create`), and reply with a toast (`success`/`error`, incl.

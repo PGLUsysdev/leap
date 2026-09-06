@@ -1,4 +1,4 @@
-import { AlertCircle } from "lucide-react";
+import { AlertCircle } from 'lucide-react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -7,7 +7,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 interface AlertErrorDialogProps {
     open: boolean;
@@ -15,14 +15,20 @@ interface AlertErrorDialogProps {
     error: string | null;
 }
 
-export function AlertErrorDialog({ open, onOpenChange, error }: AlertErrorDialogProps) {
+export function AlertErrorDialog({
+    open,
+    onOpenChange,
+    error,
+}: AlertErrorDialogProps) {
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent className="border-destructive">
                 <AlertDialogHeader>
-                    <div className="flex items-center gap-2 text-destructive">
+                    <div className="text-destructive flex items-center gap-2">
                         <AlertCircle className="h-6 w-6" />
-                        <AlertDialogTitle className="text-destructive">Error</AlertDialogTitle>
+                        <AlertDialogTitle className="text-destructive">
+                            Error
+                        </AlertDialogTitle>
                     </div>
                     <AlertDialogDescription>{error}</AlertDialogDescription>
                 </AlertDialogHeader>

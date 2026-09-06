@@ -1,9 +1,9 @@
 // resources\js\pages\aip-summary\pdf-render\render-aip-summary-pdf.ts
 
-import type { DocumentProps } from "@react-pdf/renderer";
-import { createElement } from "react";
-import type { ReactElement } from "react";
-import type { AipEntry, FiscalYear } from "@/types";
+import type { DocumentProps } from '@react-pdf/renderer';
+import { createElement } from 'react';
+import type { ReactElement } from 'react';
+import type { AipEntry, FiscalYear } from '@/types';
 
 export interface AipSummaryPdfPayload {
     aipEntries: AipEntry[];
@@ -29,10 +29,12 @@ export interface AipSummaryPdfPayload {
  * cheap on the main thread (fallback path) and lets the bundler keep
  * @react-pdf/renderer inside the worker chunk.
  */
-export const renderPdf = async (payload: AipSummaryPdfPayload): Promise<Blob> => {
+export const renderPdf = async (
+    payload: AipSummaryPdfPayload,
+): Promise<Blob> => {
     const [{ pdf }, { AipSummaryDocument }] = await Promise.all([
-        import("@react-pdf/renderer"),
-        import("./document"),
+        import('@react-pdf/renderer'),
+        import('./document'),
     ]);
 
     const element = createElement(

@@ -1,15 +1,18 @@
-import { router } from "@inertiajs/react";
-import { useState } from "react";
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
 // import { DataTable } from '@/components/data-table';
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { Label } from "@/components/base-ui-components/ui/label";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { Switch } from "@/components/base-ui-components/ui/switch";
-import DeleteDialog from "@/components/base-ui-components/delete-dialog";
-import FormDialog from "@/pages/chart-of-account/form-dialog-base";
-import type { ChartOfAccount } from "@/types";
-import columns from "./columns/columns";
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import { Label } from '@/components/base-ui-components/ui/label';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { Switch } from '@/components/base-ui-components/ui/switch';
+import DeleteDialog from '@/components/base-ui-components/delete-dialog';
+import FormDialog from '@/pages/chart-of-account/form-dialog-base';
+import type { ChartOfAccount } from '@/types';
+import columns from './columns/columns';
 
 interface ChartOfAccountPageProps {
     chartOfAccounts: ChartOfAccount[];
@@ -20,9 +23,13 @@ interface ChartOfAccountPageProps {
     };
 }
 
-export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAccountPageProps) {
+export default function ChartOfAccountPage({
+    chartOfAccounts,
+    can,
+}: ChartOfAccountPageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedAccount, setSelectedAccount] = useState<ChartOfAccount | null>(null);
+    const [selectedAccount, setSelectedAccount] =
+        useState<ChartOfAccount | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [hideNonPostable, setHideNonPostable] = useState(false);
@@ -103,12 +110,16 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
                             checked={hideNonPostable}
                             onCheckedChange={setHideNonPostable}
                         />
-                        <Label htmlFor="hide-non-postable">Hide non-postable</Label>
+                        <Label htmlFor="hide-non-postable">
+                            Hide non-postable
+                        </Label>
                     </div>
 
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add Chart of Account</Button>
+                            <Button onClick={handleAdd}>
+                                Add Chart of Account
+                            </Button>
                         </div>
                     )}
                 </DataTable>
@@ -133,8 +144,8 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
                 title="Delete Chart of Account?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">
+                        Are you sure you want to remove{' '}
+                        <span className="text-foreground font-bold">
                             "{selectedAccount?.account_title}"
                         </span>
                         ?
@@ -148,5 +159,5 @@ export default function ChartOfAccountPage({ chartOfAccounts, can }: ChartOfAcco
 }
 
 ChartOfAccountPage.layout = {
-    breadcrumbs: [{ title: "Chart of Accounts", href: "#" }],
+    breadcrumbs: [{ title: 'Chart of Accounts', href: '#' }],
 };

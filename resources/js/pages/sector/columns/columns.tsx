@@ -1,25 +1,29 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, Trash } from "lucide-react";
-import { Button } from "@/components/base-ui-components/ui/button";
-import type { Sector } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import { Pencil, Trash } from 'lucide-react';
+import { Button } from '@/components/base-ui-components/ui/button';
+import type { Sector } from '@/types';
 
 const columnHelper = createColumnHelper<Sector>();
 
 const columns = [
-    columnHelper.accessor("code", {
+    columnHelper.accessor('code', {
         header: () => <div className="px-1">Code</div>,
         size: 100,
         cell: (value) => (
-            <div className="px-1 text-wrap slashed-zero tabular-nums">{value.getValue()}</div>
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {value.getValue()}
+            </div>
         ),
     }),
-    columnHelper.accessor("name", {
+    columnHelper.accessor('name', {
         header: () => <div className="px-1">Name</div>,
         size: 100,
-        cell: (value) => <div className="px-1 text-wrap">{value.getValue()}</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue()}</div>
+        ),
     }),
     columnHelper.display({
-        id: "actions",
+        id: 'actions',
         size: 82,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">

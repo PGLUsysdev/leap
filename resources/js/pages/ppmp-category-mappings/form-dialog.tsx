@@ -1,10 +1,10 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@inertiajs/react";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import * as z from "zod";
-import { TableSelect } from "@/components/base-ui-components/table-select";
-import { Button } from "@/components/base-ui-components/ui/button";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { TableSelect } from '@/components/base-ui-components/table-select';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -12,11 +12,15 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/base-ui-components/ui/dialog";
-import { Field, FieldError, FieldLabel } from "@/components/base-ui-components/ui/field";
-import type { ChartOfAccount, PpmpCategory } from "@/types";
-import categoryCols from "./columns/category-cols";
-import coaCols from "../ppmp-category/columns/coa-cols";
+} from '@/components/base-ui-components/ui/dialog';
+import {
+    Field,
+    FieldError,
+    FieldLabel,
+} from '@/components/base-ui-components/ui/field';
+import type { ChartOfAccount, PpmpCategory } from '@/types';
+import categoryCols from './columns/category-cols';
+import coaCols from '../ppmp-category/columns/coa-cols';
 
 interface FormDialogProps {
     open: boolean;
@@ -26,11 +30,16 @@ interface FormDialogProps {
 }
 
 const formSchema = z.object({
-    ppmp_category_id: z.number({ message: "Category is required" }),
-    chart_of_account_id: z.number({ message: "Chart of Account is required" }),
+    ppmp_category_id: z.number({ message: 'Category is required' }),
+    chart_of_account_id: z.number({ message: 'Chart of Account is required' }),
 });
 
-export default function FormDialog({ open, onOpenChange, categories, chartOfAccounts }: FormDialogProps) {
+export default function FormDialog({
+    open,
+    onOpenChange,
+    categories,
+    chartOfAccounts,
+}: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [openCategorySelect, setOpenCategorySelect] = useState(false);
     const [openCoaSelect, setOpenCoaSelect] = useState(false);
@@ -53,7 +62,7 @@ export default function FormDialog({ open, onOpenChange, categories, chartOfAcco
     }, [open, form]);
 
     function onSubmit(data: z.infer<typeof formSchema>) {
-        router.post("/ppmp-category-mappings", data, {
+        router.post('/ppmp-category-mappings', data, {
             preserveScroll: true,
             preserveState: true,
             onStart: () => setIsLoading(true),
@@ -62,8 +71,12 @@ export default function FormDialog({ open, onOpenChange, categories, chartOfAcco
         });
     }
 
-    const selectedCategory = categories.find((c) => c.id === form.watch("ppmp_category_id"));
-    const selectedCoa = chartOfAccounts.find((c) => c.id === form.watch("chart_of_account_id"));
+    const selectedCategory = categories.find(
+        (c) => c.id === form.watch('ppmp_category_id'),
+    );
+    const selectedCoa = chartOfAccounts.find(
+        (c) => c.id === form.watch('chart_of_account_id'),
+    );
 
     return (
         <>
@@ -72,7 +85,8 @@ export default function FormDialog({ open, onOpenChange, categories, chartOfAcco
                     <DialogHeader className="flex-none">
                         <DialogTitle>Add Category–COA Mapping</DialogTitle>
                         <DialogDescription>
-                            Link a PPMP Category to a Chart of Account. Each pair must be unique.
+                            Link a PPMP Category to a Chart of Account. Each
+                            pair must be unique.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -90,16 +104,26 @@ export default function FormDialog({ open, onOpenChange, categories, chartOfAcco
                                     <Button
                                         type="button"
                                         variant="outline"
-                                        onClick={() => setOpenCategorySelect(true)}
+                                        onClick={() =>
+                                            setOpenCategorySelect(true)
+                                        }
                                         className="w-full justify-between"
                                         aria-invalid={fieldState.invalid}
                                     >
                                         <span className="truncate">
-                                            {selectedCategory ? selectedCategory.name : "Select category"}
+                                            {selectedCategory
+                                                ? selectedCategory.name
+                                                : 'Select category'}
                                         </span>
-                                        <span className="text-muted-foreground">↕</span>
+                                        <span className="text-muted-foreground">
+                                            ↕
+                                        </span>
                                     </Button>
-                                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
                                 </Field>
                             )}
                         />
@@ -120,22 +144,35 @@ export default function FormDialog({ open, onOpenChange, categories, chartOfAcco
                                         <span className="truncate">
                                             {selectedCoa
                                                 ? `${selectedCoa.path} — ${selectedCoa.account_title}`
-                                                : "Select chart of account"}
+                                                : 'Select chart of account'}
                                         </span>
-                                        <span className="text-muted-foreground">↕</span>
+                                        <span className="text-muted-foreground">
+                                            ↕
+                                        </span>
                                     </Button>
-                                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
                                 </Field>
                             )}
                         />
                     </form>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => onOpenChange(false)}>
+                        <Button
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
                             Cancel
                         </Button>
-                        <Button type="submit" form="mapping-form" disabled={isLoading}>
-                            {isLoading ? "Creating..." : "Create Mapping"}
+                        <Button
+                            type="submit"
+                            form="mapping-form"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Creating...' : 'Create Mapping'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -147,7 +184,10 @@ export default function FormDialog({ open, onOpenChange, categories, chartOfAcco
                 open={openCategorySelect}
                 onOpenChange={setOpenCategorySelect}
                 onRowSelect={(row) => {
-                    form.setValue("ppmp_category_id", row.id, { shouldValidate: true, shouldDirty: true });
+                    form.setValue('ppmp_category_id', row.id, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                    });
                     setOpenCategorySelect(false);
                 }}
                 title="Select Category"
@@ -161,7 +201,10 @@ export default function FormDialog({ open, onOpenChange, categories, chartOfAcco
                 open={openCoaSelect}
                 onOpenChange={setOpenCoaSelect}
                 onRowSelect={(row) => {
-                    form.setValue("chart_of_account_id", row.id, { shouldValidate: true, shouldDirty: true });
+                    form.setValue('chart_of_account_id', row.id, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                    });
                     setOpenCoaSelect(false);
                 }}
                 title="Select Chart of Account"

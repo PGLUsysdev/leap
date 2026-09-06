@@ -13,10 +13,10 @@
  * Docs: `docs/aip-summary-file-structure.md` (rules),
  * `docs/aip-summary-import.md` (pipeline).
  */
-import type ExcelJS from "exceljs";
-import { cellText } from "@/lib/excel/cell-helpers";
-import { hasAipRefCodePrefix } from "./ref-code";
-import type { AipSummarySheetConfig } from "./sheet-config";
+import type ExcelJS from 'exceljs';
+import { cellText } from '@/lib/excel/cell-helpers';
+import { hasAipRefCodePrefix } from './ref-code';
+import type { AipSummarySheetConfig } from './sheet-config';
 
 export type AipSummaryVerifyIssue = {
     row: number;
@@ -34,7 +34,7 @@ export type AipSummaryVerifyResult = {
 
 export type AipSummaryKeptRow = {
     row: number;
-    kind: "ppa" | "continuation";
+    kind: 'ppa' | 'continuation';
     values: Record<string, string | null>;
 };
 
@@ -48,11 +48,30 @@ export type AipSummaryExtracted = {
     skippedFooter: number;
 };
 
-const PPA_TYPES = ["Program", "Project", "Activity", "Subactivity", "Subsubactivity"] as const;
+const PPA_TYPES = [
+    'Program',
+    'Project',
+    'Activity',
+    'Subactivity',
+    'Subsubactivity',
+] as const;
 const PPA_WIDTHS = [3, 3, 2, 1, 1];
 const OFFICE_SEGMENT_PATTERNS = [/^\d{4}$/, /^\d$/, /^\d{2}$/, /^\d{3}$/];
-const COLUMN_LETTERS = "ABCDEFGHIJKLMNO";
-const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+const COLUMN_LETTERS = 'ABCDEFGHIJKLMNO';
+const MONTHS = [
+    'jan',
+    'feb',
+    'mar',
+    'apr',
+    'may',
+    'jun',
+    'jul',
+    'aug',
+    'sep',
+    'oct',
+    'nov',
+    'dec',
+];
 
 type ParsedRow = {
     row: number;
@@ -68,11 +87,14 @@ function parseRefCode(
     row: number,
     errors: AipSummaryVerifyIssue[],
 ): { segments: string[]; typeIndex: number } | null {
-    const segments = code.trim().split("-");
+    const segments = code.trim().split('-');
 
     for (let i = 0; i < OFFICE_SEGMENT_PATTERNS.length; i++) {
-        if (!OFFICE_SEGMENT_PATTERNS[i].test(segments[i] ?? "")) {
-            errors.push({ row, message: `Malformed office prefix in "${code}"` });
+        if (!OFFICE_SEGMENT_PATTERNS[i].test(segments[i] ?? '')) {
+            errors.push({
+                row,
+                message: `Malformed office prefix in "${code}"`,
+            });
 
             return null;
         }
@@ -90,7 +112,7 @@ function parseRefCode(
     const typeIndex = segments.length - 5;
 
     for (let i = 0; i <= typeIndex; i++) {
-        const suffix = segments[OFFICE_SEGMENT_PATTERNS.length + i] ?? "";
+        const suffix = segments[OFFICE_SEGMENT_PATTERNS.length + i] ?? '';
 
         if (!/^\d+$/.test(suffix) || suffix.length !== PPA_WIDTHS[i]) {
             errors.push({
@@ -122,7 +144,7 @@ function parseColBPrefix(
 
     if (!match) return null;
 
-    const numbers = match[1].split(".").map(Number);
+    const numbers = match[1].split('.').map(Number);
 
     return numbers.length === typeIndex ? { numbers, letter: null } : null;
 }
@@ -182,9 +204,9 @@ export function extractAipSummaryRows(
 
         if (hasAipRefCodePrefix(values.refCode)) {
             currentBlock = true;
-            kept.push({ row: r, kind: "ppa", values });
+            kept.push({ row: r, kind: 'ppa', values });
         } else if (values.refCode === null && currentBlock) {
-            kept.push({ row: r, kind: "continuation", values });
+            kept.push({ row: r, kind: 'continuation', values });
         } else {
             // Footer/signatory text in col A, or an orphan continuation
             // before any PPA block — never data.
@@ -192,7 +214,15 @@ export function extractAipSummaryRows(
         }
     }
 
-    return { kept, headerRow, numberRow, dataStartRow, lastRow, skippedBlank, skippedFooter };
+    return {
+        kept,
+        headerRow,
+        numberRow,
+        dataStartRow,
+        lastRow,
+        skippedBlank,
+        skippedFooter,
+    };
 }
 
 /** Verify one sheet against the effective config. Structural only — no DB. */
@@ -201,11 +231,16 @@ export function verifyAipSummarySheet(
     sheetName: string,
     config: AipSummarySheetConfig,
 ): AipSummaryVerifyResult {
-    if (config.headerRow === "" || config.headerRow == null) {
+    if (config.headerRow === '' || config.headerRow == null) {
         return {
             valid: false,
-            message: "Header Row is required — check calibration",
-            errors: [{ row: 0, message: "Header Row is required — check calibration" }],
+            message: 'Header Row is required — check calibration',
+            errors: [
+                {
+                    row: 0,
+                    message: 'Header Row is required — check calibration',
+                },
+            ],
             details: [],
             ppaBlocks: 0,
             rowsKept: 0,
@@ -238,10 +273,11 @@ export function verifyAipSummarySheet(
         }
     }
 
-    const { kept, numberRow, skippedBlank, skippedFooter } = extractAipSummaryRows(ws, {
-        ...config,
-        headerRow: config.headerRow,
-    });
+    const { kept, numberRow, skippedBlank, skippedFooter } =
+        extractAipSummaryRows(ws, {
+            ...config,
+            headerRow: config.headerRow,
+        });
 
     // Number row is always exactly one row below the header.
     const numberMismatches: string[] = [];
@@ -252,7 +288,7 @@ export function verifyAipSummarySheet(
 
         if (actual !== String(expected)) {
             numberMismatches.push(
-                `${letter}: got "${actual ?? "∅"}", expected "${expected}" (${field})`,
+                `${letter}: got "${actual ?? '∅'}", expected "${expected}" (${field})`,
             );
         }
     }
@@ -260,7 +296,7 @@ export function verifyAipSummarySheet(
     if (numberMismatches.length > 0) {
         errors.push({
             row: numberRow,
-            message: `Number row mismatch — ${numberMismatches.join("; ")}`,
+            message: `Number row mismatch — ${numberMismatches.join('; ')}`,
         });
     } else {
         details.push(`Number row ${numberRow} OK at calibrated columns`);
@@ -268,23 +304,26 @@ export function verifyAipSummarySheet(
 
     // ---- Pass 1: each row alone ----
     const parsed = new Map<string, ParsedRow>();
-    const ppaRows = kept.filter((k) => k.kind === "ppa");
+    const ppaRows = kept.filter((k) => k.kind === 'ppa');
 
     for (const keptRow of kept) {
         const { row, kind, values } = keptRow;
 
-        if (kind === "ppa") {
-            const ref = parseRefCode(values.refCode ?? "", row, errors);
+        if (kind === 'ppa') {
+            const ref = parseRefCode(values.refCode ?? '', row, errors);
 
             if (ref) {
-                const code = (values.refCode ?? "").trim();
+                const code = (values.refCode ?? '').trim();
                 const prefix =
                     values.description === null
                         ? null
                         : parseColBPrefix(values.description, ref.typeIndex);
 
                 if (values.description === null) {
-                    errors.push({ row, message: "Required cell empty: description" });
+                    errors.push({
+                        row,
+                        message: 'Required cell empty: description',
+                    });
                 } else if (!prefix) {
                     errors.push({
                         row,
@@ -312,7 +351,7 @@ export function verifyAipSummarySheet(
         // prefix). Office, expected output, funding source, and schedule are
         // optional everywhere — but a present schedule must still parse.
         // Continuation rows leave A–B blank by format, so they are exempt.
-        for (const field of ["startDate", "endDate"] as const) {
+        for (const field of ['startDate', 'endDate'] as const) {
             const value = values[field];
 
             if (value !== null && !isParsableSchedule(value)) {
@@ -328,23 +367,26 @@ export function verifyAipSummarySheet(
     const childrenByParent = new Map<string, string[]>();
 
     for (const ppaRow of ppaRows) {
-        const code = (ppaRow.values.refCode ?? "").trim();
+        const code = (ppaRow.values.refCode ?? '').trim();
         const info = parsed.get(code);
 
         if (!info) continue;
 
         if (info.typeIndex === 0) {
-            const group = childrenByParent.get("__root__") ?? [];
+            const group = childrenByParent.get('__root__') ?? [];
             group.push(code);
-            childrenByParent.set("__root__", group);
+            childrenByParent.set('__root__', group);
             continue;
         }
 
-        const parentCode = code.split("-").slice(0, -1).join("-");
+        const parentCode = code.split('-').slice(0, -1).join('-');
         const parent = parsed.get(parentCode);
 
         if (!parent) {
-            errors.push({ row: ppaRow.row, message: `Parent "${parentCode}" not found in sheet` });
+            errors.push({
+                row: ppaRow.row,
+                message: `Parent "${parentCode}" not found in sheet`,
+            });
             continue;
         }
 
@@ -369,7 +411,7 @@ export function verifyAipSummarySheet(
 
     // Sibling sequence per parent: programs A,B,C… from A; dotted 1,2,3… from 1.
     for (const [parentCode, codes] of childrenByParent) {
-        if (parentCode === "__root__") {
+        if (parentCode === '__root__') {
             codes.forEach((code, i) => {
                 const expected = String.fromCharCode(65 + i);
                 const actual = parsed.get(code)?.letter;
@@ -377,7 +419,7 @@ export function verifyAipSummarySheet(
                 if (actual !== expected) {
                     errors.push({
                         row: parsed.get(code)!.row,
-                        message: `Programs out of sequence: got "${actual ?? "?."}", expected "${expected}."`,
+                        message: `Programs out of sequence: got "${actual ?? '?.'}", expected "${expected}."`,
                     });
                 }
             });
@@ -388,7 +430,10 @@ export function verifyAipSummarySheet(
 
         // Non-program parent with no parsed numbers already failed Pass 1 —
         // skip sequencing to avoid cascading errors.
-        if (!parentInfo || (parentInfo.typeIndex > 0 && parentInfo.numbers === null)) {
+        if (
+            !parentInfo ||
+            (parentInfo.typeIndex > 0 && parentInfo.numbers === null)
+        ) {
             continue;
         }
 
@@ -407,12 +452,14 @@ export function verifyAipSummarySheet(
             if (!same) {
                 errors.push({
                     row: info.row,
-                    message: `Sibling numbering gap under "${parentCode}": got "${actual?.join(".") ?? "?."}", expected "${expected.join(".")}."`,
+                    message: `Sibling numbering gap under "${parentCode}": got "${actual?.join('.') ?? '?.'}", expected "${expected.join('.')}."`,
                 });
 
                 if (
                     actual !== null &&
-                    actual.slice(0, -1).every((n, i) => n === parentNumbers[i]) &&
+                    actual
+                        .slice(0, -1)
+                        .every((n, i) => n === parentNumbers[i]) &&
                     actual[actual.length - 1] >= next
                 ) {
                     next = actual[actual.length - 1] + 1;
@@ -426,13 +473,14 @@ export function verifyAipSummarySheet(
     }
 
     const typeCounts = PPA_TYPES.map(
-        (t, i) => `${t}s: ${[...parsed.values()].filter((p) => p.typeIndex === i).length}`,
-    ).filter((s) => !s.endsWith(": 0"));
+        (t, i) =>
+            `${t}s: ${[...parsed.values()].filter((p) => p.typeIndex === i).length}`,
+    ).filter((s) => !s.endsWith(': 0'));
 
-    if (typeCounts.length > 0) details.push(typeCounts.join(" · "));
+    if (typeCounts.length > 0) details.push(typeCounts.join(' · '));
 
     details.push(
-        `Skipped: ${skippedBlank} blank row${skippedBlank === 1 ? "" : "s"}, ${skippedFooter} signatory/footer row${skippedFooter === 1 ? "" : "s"} (info)`,
+        `Skipped: ${skippedBlank} blank row${skippedBlank === 1 ? '' : 's'}, ${skippedFooter} signatory/footer row${skippedFooter === 1 ? '' : 's'} (info)`,
     );
 
     const valid = errors.length === 0;
@@ -440,8 +488,8 @@ export function verifyAipSummarySheet(
     return {
         valid,
         message: valid
-            ? `Format OK — ${parsed.size} PPA block${parsed.size === 1 ? "" : "s"}, ${kept.length} rows kept`
-            : `Found ${errors.length} issue${errors.length === 1 ? "" : "s"}`,
+            ? `Format OK — ${parsed.size} PPA block${parsed.size === 1 ? '' : 's'}, ${kept.length} rows kept`
+            : `Found ${errors.length} issue${errors.length === 1 ? '' : 's'}`,
         errors,
         details,
         ppaBlocks: parsed.size,

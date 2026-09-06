@@ -1,5 +1,5 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import type { PpmpCategory } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import type { PpmpCategory } from '@/types';
 
 const columnHelper = createColumnHelper<PpmpCategory>();
 
@@ -11,9 +11,11 @@ const columns = [
     //         return <div>{info.getValue()}</div>;
     //     },
     // }),
-    columnHelper.accessor("name", {
+    columnHelper.accessor('name', {
         size: 100,
-        header: () => <div className="text-center text-wrap">Category Name</div>,
+        header: () => (
+            <div className="text-center text-wrap">Category Name</div>
+        ),
         cell: (info) => {
             return <div className="text-wrap">{info.getValue()}</div>;
         },

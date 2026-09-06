@@ -1,9 +1,17 @@
-import type { TableRow } from "@/pages/ppmp/pdf-render/types";
-import type { AipEntry } from "@/types";
+import type { TableRow } from '@/pages/ppmp/pdf-render/types';
+import type { AipEntry } from '@/types';
 
 // Helper to calculate totals from an array of items
 function calculateTotals(items: any[]): Record<string, number> {
-    const totals = { ps: 0, mooe: 0, fe: 0, co: 0, total: 0, ccet_adapt: 0, ccet_miti: 0 };
+    const totals = {
+        ps: 0,
+        mooe: 0,
+        fe: 0,
+        co: 0,
+        total: 0,
+        ccet_adapt: 0,
+        ccet_miti: 0,
+    };
     items.forEach((item) => {
         totals.ps += Number(item.ps || 0);
         totals.mooe += Number(item.mooe || 0);
@@ -18,7 +26,7 @@ function calculateTotals(items: any[]): Record<string, number> {
 }
 
 function toLetters(n: number): string {
-    let s = "";
+    let s = '';
 
     while (n > 0) {
         n--;
@@ -50,7 +58,11 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
     // We'll create a function that processes a single PPA entry and returns an array of rows
     // for that PPA and its descendants.
 
-    const processPpa = (entry: AipEntry, depth: number, number: string): TableRow[] => {
+    const processPpa = (
+        entry: AipEntry,
+        depth: number,
+        number: string,
+    ): TableRow[] => {
         const localRows: TableRow[] = [];
         const ppa = entry.ppa;
 
@@ -62,17 +74,17 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
         if (outputs.length === 0) {
             localRows.push({
                 id: `item-${rowIdCounter++}`,
-                type: "item",
+                type: 'item',
                 item: {
                     ppa,
                     ppaNumber: number,
                     ref_code: ppa.full_code,
-                    label: "",
-                    officeAcronyms: ppa.office?.acronym || "",
+                    label: '',
+                    officeAcronyms: ppa.office?.acronym || '',
                     start_date: null,
                     end_date: null,
-                    expected_output: "-",
-                    funding_source_code: "-",
+                    expected_output: '-',
+                    funding_source_code: '-',
                     ps: 0,
                     mooe: 0,
                     fe: 0,
@@ -80,7 +92,7 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
                     total: 0,
                     ccet_adapt: 0,
                     ccet_miti: 0,
-                    cc_typology_code: "-",
+                    cc_typology_code: '-',
                     depth: depth,
                     isBold: false,
                     outputId: null,
@@ -95,20 +107,22 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
                     // dummy row for output with no funding sources
                     localRows.push({
                         id: `item-${rowIdCounter++}`,
-                        type: "item",
+                        type: 'item',
                         item: {
                             ppa,
                             ppaNumber: number,
                             ref_code: ppa.full_code,
-                            label: "",
+                            label: '',
                             officeAcronyms:
-                                output.offices?.map((o) => o.acronym).join(" / ") ||
+                                output.offices
+                                    ?.map((o) => o.acronym)
+                                    .join(' / ') ||
                                 ppa.office?.acronym ||
-                                "",
+                                '',
                             start_date: output.start_date,
                             end_date: output.end_date,
                             expected_output: output.expected_output,
-                            funding_source_code: "-",
+                            funding_source_code: '-',
                             ps: 0,
                             mooe: 0,
                             fe: 0,
@@ -116,7 +130,7 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
                             total: 0,
                             ccet_adapt: 0,
                             ccet_miti: 0,
-                            cc_typology_code: "-",
+                            cc_typology_code: '-',
                             depth: depth,
                             isBold: false,
                             outputId: output.id,
@@ -131,20 +145,23 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
                             Number(fs.co_amount || 0);
                         localRows.push({
                             id: `item-${rowIdCounter++}`,
-                            type: "item",
+                            type: 'item',
                             item: {
                                 ppa,
                                 ppaNumber: number,
                                 ref_code: ppa.full_code,
-                                label: "",
+                                label: '',
                                 officeAcronyms:
-                                    output.offices?.map((o) => o.acronym).join(" / ") ||
+                                    output.offices
+                                        ?.map((o) => o.acronym)
+                                        .join(' / ') ||
                                     ppa.office?.acronym ||
-                                    "",
+                                    '',
                                 start_date: output.start_date,
                                 end_date: output.end_date,
                                 expected_output: output.expected_output,
-                                funding_source_code: fs.funding_source?.code || "-",
+                                funding_source_code:
+                                    fs.funding_source?.code || '-',
                                 ps: Number(fs.ps_amount || 0),
                                 mooe: Number(fs.mooe_amount || 0),
                                 fe: Number(fs.fe_amount || 0),
@@ -152,7 +169,7 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
                                 total: total,
                                 ccet_adapt: Number(fs.ccet_adaptation || 0),
                                 ccet_miti: Number(fs.ccet_mitigation || 0),
-                                cc_typology_code: fs.cc_typology?.code || "-",
+                                cc_typology_code: fs.cc_typology?.code || '-',
                                 depth: depth,
                                 isBold: false,
                                 outputId: output.id,
@@ -195,21 +212,32 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
     }
 
     // Now traverse
-    const traverse = (entries: AipEntry[], depth: number, numbering: string[]): TableRow[] => {
+    const traverse = (
+        entries: AipEntry[],
+        depth: number,
+        numbering: string[],
+    ): TableRow[] => {
         let result: TableRow[] = [];
         entries.forEach((entry, idx) => {
-            const currentNumbering = depth === 0 ? [] : [...numbering, (idx + 1).toString()];
+            const currentNumbering =
+                depth === 0 ? [] : [...numbering, (idx + 1).toString()];
             // Same numbering as sortFlatLikeTree: letters at top level, dotted
             // counters (excluding the letter) below
             const number =
-                depth === 0 ? `${toLetters(idx + 1)}.` : `${currentNumbering.join(".")}.`;
+                depth === 0
+                    ? `${toLetters(idx + 1)}.`
+                    : `${currentNumbering.join('.')}.`;
             const rows = processPpa(entry, depth, number);
             result = result.concat(rows);
             // Process children
             const children = childrenMap.get(entry.ppa_id) || [];
 
             if (children.length > 0) {
-                const childRows = traverse(children, depth + 1, currentNumbering);
+                const childRows = traverse(
+                    children,
+                    depth + 1,
+                    currentNumbering,
+                );
                 result = result.concat(childRows);
             }
         });
@@ -225,7 +253,7 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
     let lastOutputId: number | null = null;
 
     allRows.forEach((row) => {
-        if (row.type !== "item") return;
+        if (row.type !== 'item') return;
 
         const item = row.item;
         const ppaId = item.ppa?.id ?? null;
@@ -234,14 +262,14 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
         // ---------- PPA‑level suppression ----------
         if (ppaId !== lastPpaId) {
             // First row of a new PPA: show number, PPA name and ref code
-            item.label = `${item.ppaNumber} ${item.ppa?.name || ""}`;
-            item.ref_code = item.ppa?.full_code || "";
+            item.label = `${item.ppaNumber} ${item.ppa?.name || ''}`;
+            item.ref_code = item.ppa?.full_code || '';
             lastPpaId = ppaId;
             lastOutputId = null; // reset output grouping
         } else {
             // Same PPA: blank out PPA‑level columns
-            item.label = "";
-            item.ref_code = "";
+            item.label = '';
+            item.ref_code = '';
         }
 
         // ---------- Output‑level suppression ----------
@@ -252,10 +280,10 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
             lastOutputId = outputId;
         } else {
             // Same output: blank out output‑level columns
-            item.officeAcronyms = "";
+            item.officeAcronyms = '';
             item.start_date = null;
             item.end_date = null;
-            item.expected_output = "";
+            item.expected_output = '';
         }
     });
 
@@ -264,7 +292,7 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
     let lastPpaItemRow: TableRow | null = null;
 
     for (const row of allRows) {
-        if (row.type !== "item") continue;
+        if (row.type !== 'item') continue;
 
         const ppaId = row.item?.ppa?.id ?? null;
 
@@ -281,14 +309,14 @@ export function prepareAipSummaryRows(aipEntries: AipEntry[]): TableRow[] {
     }
 
     // Add grand total row
-    const allItems = allRows.filter((r) => r.type === "item");
+    const allItems = allRows.filter((r) => r.type === 'item');
 
     if (allItems.length > 0) {
         const grandTotals = calculateTotals(allItems.map((r) => r.item));
         allRows.push({
             id: `grand-total-${rowIdCounter++}`,
-            type: "grand-total",
-            label: "GRAND TOTAL",
+            type: 'grand-total',
+            label: 'GRAND TOTAL',
             totals: grandTotals,
         });
     }

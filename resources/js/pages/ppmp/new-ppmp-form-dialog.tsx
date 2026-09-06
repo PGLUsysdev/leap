@@ -1,117 +1,124 @@
-import { Page, Text, View, Document, PDFViewer, StyleSheet } from "@react-pdf/renderer";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+    Page,
+    Text,
+    View,
+    Document,
+    PDFViewer,
+    StyleSheet,
+} from '@react-pdf/renderer';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 const COL = {
-    description: "15%",
-    type: "10%",
-    qty: "8%",
-    mode: "9%",
-    preProc: "6%",
-    timeStart: "6%",
-    timeEnd: "6%",
-    timeDeliv: "8%",
-    fundSource: "9%",
-    fundBudget: "9%",
-    docs: "7%",
-    remarks: "7%",
+    description: '15%',
+    type: '10%',
+    qty: '8%',
+    mode: '9%',
+    preProc: '6%',
+    timeStart: '6%',
+    timeEnd: '6%',
+    timeDeliv: '8%',
+    fundSource: '9%',
+    fundBudget: '9%',
+    docs: '7%',
+    remarks: '7%',
 };
 
-const FOOTER_SPACER_WIDTH = "77%";
+const FOOTER_SPACER_WIDTH = '77%';
 
 const styles = StyleSheet.create({
     page: {
         padding: 20,
         fontSize: 7,
-        fontFamily: "Helvetica",
-        backgroundColor: "#ffffff",
+        fontFamily: 'Helvetica',
+        backgroundColor: '#ffffff',
     },
     headerSection: {
-        flexDirection: "column",
-        alignItems: "center",
+        flexDirection: 'column',
+        alignItems: 'center',
         marginBottom: 10,
     },
     ppmpTitle: {
-        fontFamily: "Helvetica-Bold",
+        fontFamily: 'Helvetica-Bold',
         fontSize: 10,
-        textAlign: "center",
+        textAlign: 'center',
         marginTop: 2,
     },
     indicativeFinalRow: {
-        flexDirection: "row",
-        justifyContent: "center",
+        flexDirection: 'row',
+        justifyContent: 'center',
         gap: 30,
         marginTop: 5,
         marginBottom: 5,
     },
     checkboxGroup: {
-        flexDirection: "row",
-        alignItems: "center",
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 5,
     },
     checkboxBox: {
         width: 10,
         height: 10,
         borderWidth: 1,
-        borderColor: "#000",
+        borderColor: '#000',
     },
     metaInfoRow: {
-        width: "100%",
+        width: '100%',
         marginTop: 5,
         gap: 2,
     },
-    metaLabel: { fontFamily: "Helvetica-Bold" },
+    metaLabel: { fontFamily: 'Helvetica-Bold' },
 
     table: {
-        display: "flex",
-        flexDirection: "column",
+        display: 'flex',
+        flexDirection: 'column',
         borderWidth: 1,
-        borderColor: "#000",
+        borderColor: '#000',
     },
     row: {
-        flexDirection: "row",
-        alignItems: "stretch",
+        flexDirection: 'row',
+        alignItems: 'stretch',
     },
     headerGroupContainer: {
-        flexDirection: "column",
+        flexDirection: 'column',
         borderRightWidth: 1,
-        borderRightColor: "#000",
+        borderRightColor: '#000',
     },
     headerTopLabel: {
         padding: 4,
         borderBottomWidth: 1,
-        borderBottomColor: "#000",
-        backgroundColor: "#f2f2f2",
-        justifyContent: "center",
-        alignItems: "center",
+        borderBottomColor: '#000',
+        backgroundColor: '#f2f2f2',
+        justifyContent: 'center',
+        alignItems: 'center',
         flexGrow: 1,
     },
     headerSubRow: {
-        flexDirection: "row",
-        alignItems: "stretch",
+        flexDirection: 'row',
+        alignItems: 'stretch',
     },
     headerMergedCell: {
         padding: 4,
         borderRightWidth: 1,
-        borderRightColor: "#000",
-        backgroundColor: "#f2f2f2",
-        justifyContent: "center",
-        alignItems: "center",
+        borderRightColor: '#000',
+        backgroundColor: '#f2f2f2',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     headerMergedCellLast: {
         padding: 4,
-        backgroundColor: "#f2f2f2",
-        justifyContent: "center",
-        alignItems: "center",
+        backgroundColor: '#f2f2f2',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     mainHeaderText: {
-        fontFamily: "Helvetica-Bold",
+        fontFamily: 'Helvetica-Bold',
         fontSize: 7,
-        textAlign: "center",
-        textTransform: "uppercase",
+        textAlign: 'center',
+        textTransform: 'uppercase',
     },
     subHeaderText: {
-        fontFamily: "Helvetica-Bold",
-        textAlign: "center",
+        fontFamily: 'Helvetica-Bold',
+        textAlign: 'center',
         fontSize: 5.5,
         padding: 2,
         lineHeight: 1.1,
@@ -120,25 +127,25 @@ const styles = StyleSheet.create({
     numberingCell: {
         padding: 2,
         borderRightWidth: 1,
-        borderRightColor: "#000",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#f9f9f9",
+        borderRightColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f9f9f9',
     },
     numberingCellLast: {
         padding: 2,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#f9f9f9",
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f9f9f9',
     },
     numberingText: {
         fontSize: 6,
-        fontFamily: "Helvetica-Bold",
+        fontFamily: 'Helvetica-Bold',
     },
     dataCell: {
         padding: 4,
         borderRightWidth: 1,
-        borderRightColor: "#000",
+        borderRightColor: '#000',
         height: 22,
     },
     dataCellLast: {
@@ -149,28 +156,28 @@ const styles = StyleSheet.create({
         width: FOOTER_SPACER_WIDTH,
         padding: 4,
         borderRightWidth: 1,
-        borderRightColor: "#000",
-        justifyContent: "center",
-        alignItems: "flex-end",
-        backgroundColor: "#f9f9f9",
+        borderRightColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        backgroundColor: '#f9f9f9',
     },
-    borderBottom: { borderBottomWidth: 1, borderBottomColor: "#000" },
+    borderBottom: { borderBottomWidth: 1, borderBottomColor: '#000' },
 
     signatorySection: {
         marginTop: 20,
-        flexDirection: "row",
-        justifyContent: "space-between",
+        flexDirection: 'row',
+        justifyContent: 'space-between',
     },
-    sigBlock: { width: "45%" },
+    sigBlock: { width: '45%' },
     sigNameLine: {
-        fontFamily: "Helvetica-Bold",
+        fontFamily: 'Helvetica-Bold',
         borderBottomWidth: 1,
-        borderBottomColor: "#000",
+        borderBottomColor: '#000',
         marginTop: 25,
-        textAlign: "center",
+        textAlign: 'center',
         paddingBottom: 2,
     },
-    sigSubText: { textAlign: "center", fontSize: 6, marginTop: 2 },
+    sigSubText: { textAlign: 'center', fontSize: 6, marginTop: 2 },
 });
 
 const ProcurementDocument = () => {
@@ -181,7 +188,9 @@ const ProcurementDocument = () => {
             <Page size="LEGAL" orientation="landscape" style={styles.page}>
                 {/* 1. HEADER SECTION */}
                 <View style={styles.headerSection}>
-                    <Text style={{ fontSize: 8 }}>[Agency Letterhead with Logo]</Text>
+                    <Text style={{ fontSize: 8 }}>
+                        [Agency Letterhead with Logo]
+                    </Text>
                     <Text style={styles.ppmpTitle}>
                         PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. ___
                     </Text>
@@ -199,10 +208,13 @@ const ProcurementDocument = () => {
 
                     <View style={styles.metaInfoRow}>
                         <Text>
-                            <Text style={styles.metaLabel}>Fiscal Year :</Text> _________________
+                            <Text style={styles.metaLabel}>Fiscal Year :</Text>{' '}
+                            _________________
                         </Text>
                         <Text>
-                            <Text style={styles.metaLabel}>End-User or Implementing Unit :</Text>{" "}
+                            <Text style={styles.metaLabel}>
+                                End-User or Implementing Unit :
+                            </Text>{' '}
                             __________________________________________________
                         </Text>
                     </View>
@@ -212,7 +224,12 @@ const ProcurementDocument = () => {
                 <View style={styles.table}>
                     {/* COMPLEX HEADER (LEVEL 1 & 2) */}
                     <View style={[styles.row, styles.borderBottom]}>
-                        <View style={[styles.headerGroupContainer, { width: "48%" }]}>
+                        <View
+                            style={[
+                                styles.headerGroupContainer,
+                                { width: '48%' },
+                            ]}
+                        >
                             <View style={styles.headerTopLabel}>
                                 <Text style={styles.mainHeaderText}>
                                     PROCUREMENT PROJECT DETAILS
@@ -223,13 +240,42 @@ const ProcurementDocument = () => {
                                     style={[
                                         {
                                             borderRightWidth: 1,
-                                            borderRightColor: "#000",
-                                            width: "31.25%",
+                                            borderRightColor: '#000',
+                                            width: '31.25%',
                                         },
                                     ]}
                                 >
                                     <Text style={styles.subHeaderText}>
-                                        General Description and Objective of the Project to be
+                                        General Description and Objective of the
+                                        Project to be Procured
+                                    </Text>
+                                </View>
+                                <View
+                                    style={[
+                                        {
+                                            borderRightWidth: 1,
+                                            borderRightColor: '#000',
+                                            width: '20.83%',
+                                        },
+                                    ]}
+                                >
+                                    <Text style={styles.subHeaderText}>
+                                        Type of the Project to be Procured
+                                        (whether Goods, Infrastructure and
+                                        Consulting Services)
+                                    </Text>
+                                </View>
+                                <View
+                                    style={[
+                                        {
+                                            borderRightWidth: 1,
+                                            borderRightColor: '#000',
+                                            width: '16.66%',
+                                        },
+                                    ]}
+                                >
+                                    <Text style={styles.subHeaderText}>
+                                        Quantity and Size of the Project to be
                                         Procured
                                     </Text>
                                 </View>
@@ -237,35 +283,8 @@ const ProcurementDocument = () => {
                                     style={[
                                         {
                                             borderRightWidth: 1,
-                                            borderRightColor: "#000",
-                                            width: "20.83%",
-                                        },
-                                    ]}
-                                >
-                                    <Text style={styles.subHeaderText}>
-                                        Type of the Project to be Procured (whether Goods,
-                                        Infrastructure and Consulting Services)
-                                    </Text>
-                                </View>
-                                <View
-                                    style={[
-                                        {
-                                            borderRightWidth: 1,
-                                            borderRightColor: "#000",
-                                            width: "16.66%",
-                                        },
-                                    ]}
-                                >
-                                    <Text style={styles.subHeaderText}>
-                                        Quantity and Size of the Project to be Procured
-                                    </Text>
-                                </View>
-                                <View
-                                    style={[
-                                        {
-                                            borderRightWidth: 1,
-                                            borderRightColor: "#000",
-                                            width: "18.75%",
+                                            borderRightColor: '#000',
+                                            width: '18.75%',
                                         },
                                     ]}
                                 >
@@ -273,15 +292,21 @@ const ProcurementDocument = () => {
                                         Recommended Mode of Procurement
                                     </Text>
                                 </View>
-                                <View style={{ width: "12.5%" }}>
+                                <View style={{ width: '12.5%' }}>
                                     <Text style={styles.subHeaderText}>
-                                        Pre-Procurement Conference, if applicable (Yes/No)
+                                        Pre-Procurement Conference, if
+                                        applicable (Yes/No)
                                     </Text>
                                 </View>
                             </View>
                         </View>
 
-                        <View style={[styles.headerGroupContainer, { width: "20%" }]}>
+                        <View
+                            style={[
+                                styles.headerGroupContainer,
+                                { width: '20%' },
+                            ]}
+                        >
                             <View style={styles.headerTopLabel}>
                                 <Text style={styles.mainHeaderText}>
                                     PROJECTED TIMELINE (MM/YYYY)
@@ -292,8 +317,8 @@ const ProcurementDocument = () => {
                                     style={[
                                         {
                                             borderRightWidth: 1,
-                                            borderRightColor: "#000",
-                                            width: "30%",
+                                            borderRightColor: '#000',
+                                            width: '30%',
                                         },
                                     ]}
                                 >
@@ -305,8 +330,8 @@ const ProcurementDocument = () => {
                                     style={[
                                         {
                                             borderRightWidth: 1,
-                                            borderRightColor: "#000",
-                                            width: "30%",
+                                            borderRightColor: '#000',
+                                            width: '30%',
                                         },
                                     ]}
                                 >
@@ -314,7 +339,7 @@ const ProcurementDocument = () => {
                                         End of Procurement Activity
                                     </Text>
                                 </View>
-                                <View style={{ width: "40%" }}>
+                                <View style={{ width: '40%' }}>
                                     <Text style={styles.subHeaderText}>
                                         Expected Delivery/ Implementation Period
                                     </Text>
@@ -322,74 +347,144 @@ const ProcurementDocument = () => {
                             </View>
                         </View>
 
-                        <View style={[styles.headerGroupContainer, { width: "18%" }]}>
+                        <View
+                            style={[
+                                styles.headerGroupContainer,
+                                { width: '18%' },
+                            ]}
+                        >
                             <View style={styles.headerTopLabel}>
-                                <Text style={styles.mainHeaderText}>FUNDING DETAILS</Text>
+                                <Text style={styles.mainHeaderText}>
+                                    FUNDING DETAILS
+                                </Text>
                             </View>
                             <View style={styles.headerSubRow}>
                                 <View
                                     style={[
                                         {
                                             borderRightWidth: 1,
-                                            borderRightColor: "#000",
-                                            width: "50%",
+                                            borderRightColor: '#000',
+                                            width: '50%',
                                         },
                                     ]}
                                 >
-                                    <Text style={styles.subHeaderText}>Source of Funds</Text>
-                                </View>
-                                <View style={{ width: "50%" }}>
                                     <Text style={styles.subHeaderText}>
-                                        Estimated Budget / Authorized Budgetary Allocation (PhP)
+                                        Source of Funds
+                                    </Text>
+                                </View>
+                                <View style={{ width: '50%' }}>
+                                    <Text style={styles.subHeaderText}>
+                                        Estimated Budget / Authorized Budgetary
+                                        Allocation (PhP)
                                     </Text>
                                 </View>
                             </View>
                         </View>
 
-                        <View style={[styles.headerMergedCell, { width: COL.docs }]}>
-                            <Text style={styles.mainHeaderText}>ATTACHED SUPPORTING DOCUMENTS</Text>
+                        <View
+                            style={[
+                                styles.headerMergedCell,
+                                { width: COL.docs },
+                            ]}
+                        >
+                            <Text style={styles.mainHeaderText}>
+                                ATTACHED SUPPORTING DOCUMENTS
+                            </Text>
                         </View>
-                        <View style={[styles.headerMergedCellLast, { width: COL.remarks }]}>
+                        <View
+                            style={[
+                                styles.headerMergedCellLast,
+                                { width: COL.remarks },
+                            ]}
+                        >
                             <Text style={styles.mainHeaderText}>REMARKS</Text>
                         </View>
                     </View>
 
                     {/* NEW NUMBERING ROW (1) - (12) */}
                     <View style={[styles.row, styles.borderBottom]}>
-                        <View style={[styles.numberingCell, { width: COL.description }]}>
+                        <View
+                            style={[
+                                styles.numberingCell,
+                                { width: COL.description },
+                            ]}
+                        >
                             <Text style={styles.numberingText}>Column 1</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.type }]}>
+                        <View
+                            style={[styles.numberingCell, { width: COL.type }]}
+                        >
                             <Text style={styles.numberingText}>Column 2</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.qty }]}>
+                        <View
+                            style={[styles.numberingCell, { width: COL.qty }]}
+                        >
                             <Text style={styles.numberingText}>Column 3</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.mode }]}>
+                        <View
+                            style={[styles.numberingCell, { width: COL.mode }]}
+                        >
                             <Text style={styles.numberingText}>Column 4</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.preProc }]}>
+                        <View
+                            style={[
+                                styles.numberingCell,
+                                { width: COL.preProc },
+                            ]}
+                        >
                             <Text style={styles.numberingText}>Column 5</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.timeStart }]}>
+                        <View
+                            style={[
+                                styles.numberingCell,
+                                { width: COL.timeStart },
+                            ]}
+                        >
                             <Text style={styles.numberingText}>Column 6</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.timeEnd }]}>
+                        <View
+                            style={[
+                                styles.numberingCell,
+                                { width: COL.timeEnd },
+                            ]}
+                        >
                             <Text style={styles.numberingText}>Column 7</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.timeDeliv }]}>
+                        <View
+                            style={[
+                                styles.numberingCell,
+                                { width: COL.timeDeliv },
+                            ]}
+                        >
                             <Text style={styles.numberingText}>Column 8</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.fundSource }]}>
+                        <View
+                            style={[
+                                styles.numberingCell,
+                                { width: COL.fundSource },
+                            ]}
+                        >
                             <Text style={styles.numberingText}>Column 9</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.fundBudget }]}>
+                        <View
+                            style={[
+                                styles.numberingCell,
+                                { width: COL.fundBudget },
+                            ]}
+                        >
                             <Text style={styles.numberingText}>Column 10</Text>
                         </View>
-                        <View style={[styles.numberingCell, { width: COL.docs }]}>
+                        <View
+                            style={[styles.numberingCell, { width: COL.docs }]}
+                        >
                             <Text style={styles.numberingText}>Column 11</Text>
                         </View>
-                        <View style={[styles.numberingCellLast, { width: COL.remarks }]}>
+                        <View
+                            style={[
+                                styles.numberingCellLast,
+                                { width: COL.remarks },
+                            ]}
+                        >
                             <Text style={styles.numberingText}>Column 12</Text>
                         </View>
                     </View>
@@ -397,29 +492,86 @@ const ProcurementDocument = () => {
                     {/* DATA ROWS */}
                     {emptyRows.map((_, i) => (
                         <View key={i} style={[styles.row, styles.borderBottom]}>
-                            <View style={[styles.dataCell, { width: COL.description }]} />
-                            <View style={[styles.dataCell, { width: COL.type }]} />
-                            <View style={[styles.dataCell, { width: COL.qty }]} />
-                            <View style={[styles.dataCell, { width: COL.mode }]} />
-                            <View style={[styles.dataCell, { width: COL.preProc }]} />
-                            <View style={[styles.dataCell, { width: COL.timeStart }]} />
-                            <View style={[styles.dataCell, { width: COL.timeEnd }]} />
-                            <View style={[styles.dataCell, { width: COL.timeDeliv }]} />
-                            <View style={[styles.dataCell, { width: COL.fundSource }]} />
-                            <View style={[styles.dataCell, { width: COL.fundBudget }]} />
-                            <View style={[styles.dataCell, { width: COL.docs }]} />
-                            <View style={[styles.dataCellLast, { width: COL.remarks }]} />
+                            <View
+                                style={[
+                                    styles.dataCell,
+                                    { width: COL.description },
+                                ]}
+                            />
+                            <View
+                                style={[styles.dataCell, { width: COL.type }]}
+                            />
+                            <View
+                                style={[styles.dataCell, { width: COL.qty }]}
+                            />
+                            <View
+                                style={[styles.dataCell, { width: COL.mode }]}
+                            />
+                            <View
+                                style={[
+                                    styles.dataCell,
+                                    { width: COL.preProc },
+                                ]}
+                            />
+                            <View
+                                style={[
+                                    styles.dataCell,
+                                    { width: COL.timeStart },
+                                ]}
+                            />
+                            <View
+                                style={[
+                                    styles.dataCell,
+                                    { width: COL.timeEnd },
+                                ]}
+                            />
+                            <View
+                                style={[
+                                    styles.dataCell,
+                                    { width: COL.timeDeliv },
+                                ]}
+                            />
+                            <View
+                                style={[
+                                    styles.dataCell,
+                                    { width: COL.fundSource },
+                                ]}
+                            />
+                            <View
+                                style={[
+                                    styles.dataCell,
+                                    { width: COL.fundBudget },
+                                ]}
+                            />
+                            <View
+                                style={[styles.dataCell, { width: COL.docs }]}
+                            />
+                            <View
+                                style={[
+                                    styles.dataCellLast,
+                                    { width: COL.remarks },
+                                ]}
+                            />
                         </View>
                     ))}
 
                     {/* TOTAL FOOTER */}
                     <View style={styles.row}>
                         <View style={styles.footerCellLabel}>
-                            <Text style={{ fontFamily: "Helvetica-Bold" }}>TOTAL BUDGET:</Text>
+                            <Text style={{ fontFamily: 'Helvetica-Bold' }}>
+                                TOTAL BUDGET:
+                            </Text>
                         </View>
-                        <View style={[styles.dataCell, { width: COL.fundBudget }]} />
+                        <View
+                            style={[styles.dataCell, { width: COL.fundBudget }]}
+                        />
                         <View style={[styles.dataCell, { width: COL.docs }]} />
-                        <View style={[styles.dataCellLast, { width: COL.remarks }]} />
+                        <View
+                            style={[
+                                styles.dataCellLast,
+                                { width: COL.remarks },
+                            ]}
+                        />
                     </View>
                 </View>
 
@@ -428,21 +580,35 @@ const ProcurementDocument = () => {
                     <View style={styles.sigBlock}>
                         <Text style={styles.metaLabel}>Prepared by:</Text>
                         <View style={styles.sigNameLine} />
-                        <Text style={styles.sigSubText}>Signature over Printed Name</Text>
-                        <Text style={styles.sigSubText}>Position/Designation</Text>
-                        <Text style={styles.sigSubText}>[End-User or Implementing Unit]</Text>
-                        <Text style={{ marginTop: 10 }}>Date : _________________</Text>
+                        <Text style={styles.sigSubText}>
+                            Signature over Printed Name
+                        </Text>
+                        <Text style={styles.sigSubText}>
+                            Position/Designation
+                        </Text>
+                        <Text style={styles.sigSubText}>
+                            [End-User or Implementing Unit]
+                        </Text>
+                        <Text style={{ marginTop: 10 }}>
+                            Date : _________________
+                        </Text>
                     </View>
 
                     <View style={styles.sigBlock}>
                         <Text style={styles.metaLabel}>Submitted by:</Text>
                         <View style={styles.sigNameLine} />
-                        <Text style={styles.sigSubText}>Signature over Printed Name</Text>
-                        <Text style={styles.sigSubText}>Position/Designation</Text>
+                        <Text style={styles.sigSubText}>
+                            Signature over Printed Name
+                        </Text>
+                        <Text style={styles.sigSubText}>
+                            Position/Designation
+                        </Text>
                         <Text style={styles.sigSubText}>
                             [Head of the End-User or Implementing Unit]
                         </Text>
-                        <Text style={{ marginTop: 10 }}>Date : _________________</Text>
+                        <Text style={{ marginTop: 10 }}>
+                            Date : _________________
+                        </Text>
                     </View>
                 </View>
             </Page>
@@ -454,7 +620,11 @@ export default function NewPpmpFormDialog({ open, onOpenChange }: any) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="`h-screen flex flex-col gap-0 rounded-none p-0 sm:max-w-[100vw]">
-                <PDFViewer width="100%" height="100%" style={{ border: "none" }}>
+                <PDFViewer
+                    width="100%"
+                    height="100%"
+                    style={{ border: 'none' }}
+                >
                     <ProcurementDocument />
                 </PDFViewer>
             </DialogContent>

@@ -1,11 +1,11 @@
-import type { UrlMethodPair } from "@inertiajs/core";
-import { router } from "@inertiajs/react";
-import { usePasskeyVerify } from "@laravel/passkeys/react";
-import { KeyRound } from "lucide-react";
-import InputError from "@/components/input-error";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Spinner } from "@/components/ui/spinner";
+import type { UrlMethodPair } from '@inertiajs/core';
+import { router } from '@inertiajs/react';
+import { usePasskeyVerify } from '@laravel/passkeys/react';
+import { KeyRound } from 'lucide-react';
+import InputError from '@/components/input-error';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
 
 type Props = {
     routes?: {
@@ -17,7 +17,12 @@ type Props = {
     separator?: string;
 };
 
-export default function PasskeyVerify({ routes, label, loadingLabel, separator }: Props = {}) {
+export default function PasskeyVerify({
+    routes,
+    label,
+    loadingLabel,
+    separator,
+}: Props = {}) {
     const { verify, isLoading, error, isSupported } = usePasskeyVerify({
         ...(routes && {
             routes: {
@@ -26,7 +31,7 @@ export default function PasskeyVerify({ routes, label, loadingLabel, separator }
             },
         }),
         onSuccess: (response) => {
-            router.visit(response.redirect ?? "/dashboard");
+            router.visit(response.redirect ?? '/dashboard');
         },
     });
 
@@ -46,10 +51,12 @@ export default function PasskeyVerify({ routes, label, loadingLabel, separator }
                 >
                     {isLoading ? <Spinner /> : <KeyRound className="h-4 w-4" />}
                     {isLoading
-                        ? (loadingLabel ?? "Authenticating...")
-                        : (label ?? "Sign in with a passkey")}
+                        ? (loadingLabel ?? 'Authenticating...')
+                        : (label ?? 'Sign in with a passkey')}
                 </Button>
-                {error && <InputError message={error} className="text-center" />}
+                {error && (
+                    <InputError message={error} className="text-center" />
+                )}
             </div>
 
             <div className="relative my-6">
@@ -57,8 +64,8 @@ export default function PasskeyVerify({ routes, label, loadingLabel, separator }
                     <Separator className="w-full" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                        {separator ?? "Or continue with email"}
+                    <span className="bg-background text-muted-foreground px-2">
+                        {separator ?? 'Or continue with email'}
                     </span>
                 </div>
             </div>

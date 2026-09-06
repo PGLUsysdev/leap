@@ -1,29 +1,38 @@
-import { Head } from "@inertiajs/react";
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
-import { Badge } from "@/components/base-ui-components/ui/badge";
+import { Head } from '@inertiajs/react';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    Pie,
+    PieChart,
+    XAxis,
+    YAxis,
+} from 'recharts';
+import { Badge } from '@/components/base-ui-components/ui/badge';
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from "@/components/base-ui-components/ui/card";
+} from '@/components/base-ui-components/ui/card';
 import {
     ChartContainer,
     ChartLegend,
     ChartLegendContent,
     ChartTooltip,
     ChartTooltipContent,
-} from "@/components/base-ui-components/ui/chart";
-import type { ChartConfig } from "@/components/base-ui-components/ui/chart";
-import { dashboard } from "@/routes";
+} from '@/components/base-ui-components/ui/chart';
+import type { ChartConfig } from '@/components/base-ui-components/ui/chart';
+import { dashboard } from '@/routes';
 
 const PALETTE = [
-    "var(--chart-1)",
-    "var(--chart-2)",
-    "var(--chart-3)",
-    "var(--chart-4)",
-    "var(--chart-5)",
+    'var(--chart-1)',
+    'var(--chart-2)',
+    'var(--chart-3)',
+    'var(--chart-4)',
+    'var(--chart-5)',
 ];
 
 type DashboardProps = {
@@ -36,7 +45,12 @@ type DashboardProps = {
         totalOffices: number;
         totalUsers: number;
     };
-    expenseClassBudget: { ps: number; mooe: number; fe: number; co: number } | null;
+    expenseClassBudget: {
+        ps: number;
+        mooe: number;
+        fe: number;
+        co: number;
+    } | null;
     fundingSourceBudget: { label: string; value: number }[];
     ppaTypeDistribution: { type: string; count: number }[];
     ccExpenditure: { adaptation: number; mitigation: number } | null;
@@ -66,7 +80,7 @@ function peso(value: number): string {
 }
 
 function pesoFull(value: number): string {
-    return `₱${value.toLocaleString("en-PH", {
+    return `₱${value.toLocaleString('en-PH', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     })}`;
@@ -77,7 +91,9 @@ function StatCard({ title, value }: { title: string; value: string }) {
         <Card>
             <CardHeader className="pb-1">
                 <CardDescription>{title}</CardDescription>
-                <CardTitle className="text-2xl font-semibold tabular-nums">{value}</CardTitle>
+                <CardTitle className="text-2xl font-semibold tabular-nums">
+                    {value}
+                </CardTitle>
             </CardHeader>
         </Card>
     );
@@ -97,12 +113,14 @@ function FundingSourceLegend({ payload }: { payload?: LegendPayloadItem[] }) {
     return (
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-3">
             {payload
-                .filter((item) => item.type !== "none")
+                .filter((item) => item.type !== 'none')
                 .map((item, index) => (
                     <div
                         key={index}
                         className="flex max-w-[220px] items-center gap-1.5"
-                        title={item.value != null ? String(item.value) : undefined}
+                        title={
+                            item.value != null ? String(item.value) : undefined
+                        }
                     >
                         <div
                             className="h-2 w-2 shrink-0 rounded-[2px]"
@@ -127,10 +145,10 @@ export default function Dashboard({
     const expenseData = expenseClassBudget
         ? (
               [
-                  ["ps", "PS"],
-                  ["mooe", "MOOE"],
-                  ["fe", "FE"],
-                  ["co", "CO"],
+                  ['ps', 'PS'],
+                  ['mooe', 'MOOE'],
+                  ['fe', 'FE'],
+                  ['co', 'CO'],
               ] as const
           )
               .map(([key], i) => ({
@@ -142,10 +160,10 @@ export default function Dashboard({
         : [];
 
     const expenseConfig = {
-        ps: { label: "PS", color: PALETTE[0] },
-        mooe: { label: "MOOE", color: PALETTE[1] },
-        fe: { label: "FE", color: PALETTE[2] },
-        co: { label: "CO", color: PALETTE[3] },
+        ps: { label: 'PS', color: PALETTE[0] },
+        mooe: { label: 'MOOE', color: PALETTE[1] },
+        fe: { label: 'FE', color: PALETTE[2] },
+        co: { label: 'CO', color: PALETTE[3] },
     } satisfies ChartConfig;
 
     const fundingData = fundingSourceBudget
@@ -159,7 +177,9 @@ export default function Dashboard({
         fundingData.map((item) => [item.label, { label: item.label }]),
     ) satisfies ChartConfig;
 
-    const coaTop = [...coaBudget].sort((a, b) => b.value - a.value).slice(0, 10);
+    const coaTop = [...coaBudget]
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 10);
     const classColor: Record<string, string> = {
         ps: PALETTE[0],
         mooe: PALETTE[1],
@@ -173,9 +193,9 @@ export default function Dashboard({
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {!draftYear ? (
                     <Card>
-                        <CardContent className="flex h-64 items-center justify-center text-muted-foreground">
-                            No draft fiscal year found. Set a fiscal year status to “draft” to see
-                            budget data.
+                        <CardContent className="text-muted-foreground flex h-64 items-center justify-center">
+                            No draft fiscal year found. Set a fiscal year status
+                            to “draft” to see budget data.
                         </CardContent>
                     </Card>
                 ) : (
@@ -191,8 +211,14 @@ export default function Dashboard({
 
                         {/* Stats */}
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                            <StatCard title="Total Budget" value={pesoFull(stats.totalBudget)} />
-                            <StatCard title="Total PPAs" value={String(stats.totalPpas)} />
+                            <StatCard
+                                title="Total Budget"
+                                value={pesoFull(stats.totalBudget)}
+                            />
+                            <StatCard
+                                title="Total PPAs"
+                                value={String(stats.totalPpas)}
+                            />
                             <StatCard
                                 title="Total Procurement"
                                 value={pesoFull(stats.totalProcurement)}
@@ -201,16 +227,26 @@ export default function Dashboard({
                                 title="Price List Items"
                                 value={String(stats.totalPriceListItems)}
                             />
-                            <StatCard title="Offices" value={String(stats.totalOffices)} />
-                            <StatCard title="Users" value={String(stats.totalUsers)} />
+                            <StatCard
+                                title="Offices"
+                                value={String(stats.totalOffices)}
+                            />
+                            <StatCard
+                                title="Users"
+                                value={String(stats.totalUsers)}
+                            />
                         </div>
 
                         {/* Expense classes + funding sources */}
                         <div className="grid gap-4 lg:grid-cols-2">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Budget by Expense Class</CardTitle>
-                                    <CardDescription>FY {draftYear.year}</CardDescription>
+                                    <CardTitle>
+                                        Budget by Expense Class
+                                    </CardTitle>
+                                    <CardDescription>
+                                        FY {draftYear.year}
+                                    </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <ChartContainer
@@ -223,13 +259,17 @@ export default function Dashboard({
                                                     <ChartTooltipContent
                                                         hideLabel
                                                         formatter={(value) =>
-                                                            pesoFull(Number(value))
+                                                            pesoFull(
+                                                                Number(value),
+                                                            )
                                                         }
                                                     />
                                                 }
                                             />
                                             <ChartLegend
-                                                content={<ChartLegendContent nameKey="key" />}
+                                                content={
+                                                    <ChartLegendContent nameKey="key" />
+                                                }
                                             />
                                             <Pie
                                                 data={expenseData}
@@ -241,7 +281,10 @@ export default function Dashboard({
                                                 strokeWidth={1}
                                             >
                                                 {expenseData.map((entry) => (
-                                                    <Cell key={entry.key} fill={entry.fill} />
+                                                    <Cell
+                                                        key={entry.key}
+                                                        fill={entry.fill}
+                                                    />
                                                 ))}
                                             </Pie>
                                         </PieChart>
@@ -252,8 +295,12 @@ export default function Dashboard({
                             {fundingData.length > 0 && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>Budget by Funding Source</CardTitle>
-                                        <CardDescription>FY {draftYear.year}</CardDescription>
+                                        <CardTitle>
+                                            Budget by Funding Source
+                                        </CardTitle>
+                                        <CardDescription>
+                                            FY {draftYear.year}
+                                        </CardDescription>
                                     </CardHeader>
                                     <CardContent>
                                         <ChartContainer
@@ -266,13 +313,23 @@ export default function Dashboard({
                                                         <ChartTooltipContent
                                                             hideLabel
                                                             nameKey="label"
-                                                            formatter={(value) =>
-                                                                pesoFull(Number(value))
+                                                            formatter={(
+                                                                value,
+                                                            ) =>
+                                                                pesoFull(
+                                                                    Number(
+                                                                        value,
+                                                                    ),
+                                                                )
                                                             }
                                                         />
                                                     }
                                                 />
-                                                <ChartLegend content={<FundingSourceLegend />} />
+                                                <ChartLegend
+                                                    content={
+                                                        <FundingSourceLegend />
+                                                    }
+                                                />
                                                 <Pie
                                                     data={fundingData}
                                                     dataKey="value"
@@ -282,9 +339,18 @@ export default function Dashboard({
                                                     stroke="var(--background)"
                                                     strokeWidth={1}
                                                 >
-                                                    {fundingData.map((entry) => (
-                                                        <Cell key={entry.label} fill={entry.fill} />
-                                                    ))}
+                                                    {fundingData.map(
+                                                        (entry) => (
+                                                            <Cell
+                                                                key={
+                                                                    entry.label
+                                                                }
+                                                                fill={
+                                                                    entry.fill
+                                                                }
+                                                            />
+                                                        ),
+                                                    )}
                                                 </Pie>
                                             </PieChart>
                                         </ChartContainer>
@@ -301,10 +367,13 @@ export default function Dashboard({
                                 </CardHeader>
                                 <CardContent>
                                     <ChartContainer
-                                        config={{ count: { label: "PPAs" } }}
+                                        config={{ count: { label: 'PPAs' } }}
                                         className="min-h-[240px] w-full"
                                     >
-                                        <BarChart accessibilityLayer data={ppaTypeDistribution}>
+                                        <BarChart
+                                            accessibilityLayer
+                                            data={ppaTypeDistribution}
+                                        >
                                             <CartesianGrid vertical={false} />
                                             <XAxis
                                                 dataKey="type"
@@ -313,9 +382,17 @@ export default function Dashboard({
                                                 tickMargin={8}
                                             />
                                             <ChartTooltip
-                                                content={<ChartTooltipContent hideLabel />}
+                                                content={
+                                                    <ChartTooltipContent
+                                                        hideLabel
+                                                    />
+                                                }
                                             />
-                                            <Bar dataKey="count" fill="var(--chart-2)" radius={4} />
+                                            <Bar
+                                                dataKey="count"
+                                                fill="var(--chart-2)"
+                                                radius={4}
+                                            />
                                         </BarChart>
                                     </ChartContainer>
                                 </CardContent>
@@ -340,14 +417,17 @@ export default function Dashboard({
                         {coaTop.length > 0 && (
                             <Card>
                                 <CardHeader>
-                                    <CardTitle>Budget by Account (Top 10)</CardTitle>
+                                    <CardTitle>
+                                        Budget by Account (Top 10)
+                                    </CardTitle>
                                     <CardDescription>
-                                        PS from funding sources; MOOE/FE/CO from procurement
+                                        PS from funding sources; MOOE/FE/CO from
+                                        procurement
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     <ChartContainer
-                                        config={{ value: { label: "Amount" } }}
+                                        config={{ value: { label: 'Amount' } }}
                                         className="min-h-[300px] w-full"
                                     >
                                         <BarChart
@@ -364,7 +444,9 @@ export default function Dashboard({
                                                 type="number"
                                                 tickLine={false}
                                                 axisLine={false}
-                                                tickFormatter={(v) => peso(Number(v))}
+                                                tickFormatter={(v) =>
+                                                    peso(Number(v))
+                                                }
                                             />
                                             <YAxis
                                                 type="category"
@@ -378,18 +460,25 @@ export default function Dashboard({
                                                     <ChartTooltipContent
                                                         hideLabel
                                                         formatter={(value) =>
-                                                            pesoFull(Number(value))
+                                                            pesoFull(
+                                                                Number(value),
+                                                            )
                                                         }
                                                     />
                                                 }
                                             />
-                                            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                                            <Bar
+                                                dataKey="value"
+                                                radius={[0, 4, 4, 0]}
+                                            >
                                                 {coaTop.map((entry) => (
                                                     <Cell
                                                         key={entry.id}
                                                         fill={
-                                                            classColor[entry.expense_class] ??
-                                                            PALETTE[4]
+                                                            classColor[
+                                                                entry
+                                                                    .expense_class
+                                                            ] ?? PALETTE[4]
                                                         }
                                                     />
                                                 ))}
@@ -409,7 +498,7 @@ export default function Dashboard({
 Dashboard.layout = {
     breadcrumbs: [
         {
-            title: "Dashboard",
+            title: 'Dashboard',
             href: dashboard(),
         },
     ],

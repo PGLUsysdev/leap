@@ -1,12 +1,15 @@
-import { router } from "@inertiajs/react";
-import { useState } from "react";
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { DeleteDialog } from "@/components/delete-dialog";
-import type { LguLevel, Office, OfficeType, Sector } from "@/types";
-import columns from "./columns/columns";
-import FormDialog from "./form-dialog";
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import type { LguLevel, Office, OfficeType, Sector } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
 
 interface OfficesPageProps {
     offices: Office[];
@@ -28,7 +31,8 @@ export default function OfficesPage({
 }: OfficesPageProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOffice, setSelectedOffice] = useState<Office | null>(null);
-    const [selectedParentOffice, setSelectedParentOffice] = useState<Office | null>(null);
+    const [selectedParentOffice, setSelectedParentOffice] =
+        useState<Office | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -90,7 +94,9 @@ export default function OfficesPage({
                     }}
                     getSubRows={(row) => row.children}
                 >
-                    {can?.addOffice && <Button onClick={handleCreate}>Add Office</Button>}
+                    {can?.addOffice && (
+                        <Button onClick={handleCreate}>Add Office</Button>
+                    )}
                 </DataTable>
 
                 <ScrollBar orientation="vertical" />
@@ -110,18 +116,30 @@ export default function OfficesPage({
             <DeleteDialog
                 isOpen={isDeleteDialogOpen}
                 onOpenChange={setIsDeleteDialogOpen}
-                title={selectedOffice?.parent_id ? "Delete Sub Unit?" : "Delete Office?"}
+                title={
+                    selectedOffice?.parent_id
+                        ? 'Delete Sub Unit?'
+                        : 'Delete Office?'
+                }
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">"{selectedOffice?.name}"</span>?
-                        {selectedOffice?.children && selectedOffice.children.length > 0 && (
-                            <>
-                                {" "}
-                                This will also delete all sub-units under this{" "}
-                                {selectedOffice?.parent_id ? "sub unit" : "office"}.
-                            </>
-                        )}
+                        Are you sure you want to remove{' '}
+                        <span className="text-foreground font-bold">
+                            "{selectedOffice?.name}"
+                        </span>
+                        ?
+                        {selectedOffice?.children &&
+                            selectedOffice.children.length > 0 && (
+                                <>
+                                    {' '}
+                                    This will also delete all sub-units under
+                                    this{' '}
+                                    {selectedOffice?.parent_id
+                                        ? 'sub unit'
+                                        : 'office'}
+                                    .
+                                </>
+                            )}
                     </>
                 }
                 onConfirm={handleDelete}
@@ -138,8 +156,8 @@ export default function OfficesPage({
 OfficesPage.layout = {
     breadcrumbs: [
         {
-            title: "Offices",
-            href: "#",
+            title: 'Offices',
+            href: '#',
         },
     ],
 };

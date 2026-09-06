@@ -1,18 +1,18 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, Shield, Trash } from "lucide-react";
-import { Button } from "@/components/base-ui-components/ui/button";
-import type { Role } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import { Pencil, Shield, Trash } from 'lucide-react';
+import { Button } from '@/components/base-ui-components/ui/button';
+import type { Role } from '@/types';
 
 const columnHelper = createColumnHelper<Role>();
 
 const columns = [
-    columnHelper.accessor("name", {
+    columnHelper.accessor('name', {
         size: 100,
         header: () => <div className="px-1">Role Name</div>,
         cell: (info) => <div className="px-1 text-wrap">{info.getValue()}</div>,
     }),
     columnHelper.display({
-        id: "actions",
+        id: 'actions',
         size: 118,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">
@@ -29,7 +29,9 @@ const columns = [
                     size="icon"
                     variant="outline"
                     disabled={!table.options.meta?.canEditPerms}
-                    onClick={() => table.options.meta?.onEditPerms?.(row.original)}
+                    onClick={() =>
+                        table.options.meta?.onEditPerms?.(row.original)
+                    }
                     title="Manage permissions"
                 >
                     <Shield />

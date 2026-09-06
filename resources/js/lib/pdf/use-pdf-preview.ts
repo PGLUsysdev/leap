@@ -1,14 +1,14 @@
 // resources\js\lib\pdf\use-pdf-preview.ts
 
-import { wrap } from "comlink";
-import type { Remote } from "comlink";
-import { useEffect, useRef, useState } from "react";
-import type { PdfWorkerApi } from "./pdf-render.worker";
-import type { PdfKind, PdfPayloadMap } from "./render-registry";
-import { renderPdf } from "./render-registry";
-import { spawnPdfWorker } from "./spawn-pdf-worker";
+import { wrap } from 'comlink';
+import type { Remote } from 'comlink';
+import { useEffect, useRef, useState } from 'react';
+import type { PdfWorkerApi } from './pdf-render.worker';
+import type { PdfKind, PdfPayloadMap } from './render-registry';
+import { renderPdf } from './render-registry';
+import { spawnPdfWorker } from './spawn-pdf-worker';
 
-export type PdfPreviewStatus = "idle" | "generating" | "ready" | "error";
+export type PdfPreviewStatus = 'idle' | 'generating' | 'ready' | 'error';
 
 interface PdfResult {
     kind: PdfKind;
@@ -58,12 +58,12 @@ export function usePdfPreview<K extends PdfKind>(
     // Derived status: every state update happens asynchronously, keeping the
     // render/effect flow free of cascading synchronous updates.
     const status: PdfPreviewStatus = !payload
-        ? "idle"
+        ? 'idle'
         : failed?.kind === kind && failed.payload === payload
-          ? "error"
+          ? 'error'
           : result?.kind === kind && result.payload === payload
-            ? "ready"
-            : "generating";
+            ? 'ready'
+            : 'generating';
 
     useEffect(() => {
         if (!payload) {
@@ -81,7 +81,7 @@ export function usePdfPreview<K extends PdfKind>(
                 }
 
                 if (!blob) {
-                    throw new Error("PDF rendering returned no blob.");
+                    throw new Error('PDF rendering returned no blob.');
                 }
 
                 const nextUrl = URL.createObjectURL(blob);
@@ -126,7 +126,10 @@ export function usePdfPreview<K extends PdfKind>(
     );
 
     return {
-        url: status === "ready" || status === "generating" ? (result?.url ?? null) : null,
+        url:
+            status === 'ready' || status === 'generating'
+                ? (result?.url ?? null)
+                : null,
         status,
     };
 }

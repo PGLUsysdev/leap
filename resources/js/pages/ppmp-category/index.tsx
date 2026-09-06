@@ -1,13 +1,16 @@
-import { router } from "@inertiajs/react";
-import { useState } from "react";
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
 // import { DataTable } from '@/components/data-table';
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { DeleteDialog } from "@/components/delete-dialog";
-import type { PpmpCategory } from "@/types";
-import columns from "./columns/columns";
-import FormDialog from "./form-dialog-base";
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import type { PpmpCategory } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog-base';
 
 interface PpmpCategoryPageProps {
     ppmpCategories: PpmpCategory[];
@@ -22,11 +25,12 @@ export default function PpmpCategoryPage({
     ppmpCategories,
     can,
 }: PpmpCategoryPageProps) {
-
     const [open, setOpen] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<PpmpCategory | null>(null);
+    const [selectedCategory, setSelectedCategory] =
+        useState<PpmpCategory | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [isForceDeleteDialogOpen, setIsForceDeleteDialogOpen] = useState(false);
+    const [isForceDeleteDialogOpen, setIsForceDeleteDialogOpen] =
+        useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     function handleAdd() {
@@ -101,7 +105,9 @@ export default function PpmpCategoryPage({
                 >
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add PPMP Category</Button>
+                            <Button onClick={handleAdd}>
+                                Add PPMP Category
+                            </Button>
                         </div>
                     )}
                 </DataTable>
@@ -121,8 +127,8 @@ export default function PpmpCategoryPage({
                 title="Delete PPMP Category?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">
+                        Are you sure you want to remove{' '}
+                        <span className="text-foreground font-bold">
                             "{selectedCategory?.name}"
                         </span>
                         ?
@@ -142,9 +148,9 @@ export default function PpmpCategoryPage({
                 title="Delete PPMP Category?"
                 description={
                     <>
-                        This category has dependent PPMP price list items. Continuing will delete
-                        all price list items associated with this category. This action cannot be
-                        undone.
+                        This category has dependent PPMP price list items.
+                        Continuing will delete all price list items associated
+                        with this category. This action cannot be undone.
                     </>
                 }
                 confirmText="Continue"
@@ -160,5 +166,5 @@ export default function PpmpCategoryPage({
 }
 
 PpmpCategoryPage.layout = {
-    breadcrumbs: [{ title: "PPMP Category", href: "#" }],
+    breadcrumbs: [{ title: 'PPMP Category', href: '#' }],
 };

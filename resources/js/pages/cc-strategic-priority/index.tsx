@@ -1,13 +1,16 @@
-import { router } from "@inertiajs/react";
-import { useState, useCallback } from "react";
-import { AlertErrorDialog } from "@/components/alert-error-dialog";
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { DeleteDialog } from "@/components/delete-dialog";
-import type { CcStrategicPriority } from "@/types";
-import columns from "./columns/cc-strategic-priority-cols";
-import FormDialog from "./form-dialog-base";
+import { router } from '@inertiajs/react';
+import { useState, useCallback } from 'react';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import type { CcStrategicPriority } from '@/types';
+import columns from './columns/cc-strategic-priority-cols';
+import FormDialog from './form-dialog-base';
 
 interface CcStrategicPriorityPageProps {
     strategicPriorities: CcStrategicPriority[];
@@ -23,9 +26,11 @@ export default function CcStrategicPriorityPage({
     can,
 }: CcStrategicPriorityPageProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingPriority, setEditingPriority] = useState<CcStrategicPriority | null>(null);
+    const [editingPriority, setEditingPriority] =
+        useState<CcStrategicPriority | null>(null);
 
-    const [deletingPriority, setDeletingPriority] = useState<CcStrategicPriority | null>(null);
+    const [deletingPriority, setDeletingPriority] =
+        useState<CcStrategicPriority | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -85,7 +90,9 @@ export default function CcStrategicPriorityPage({
                     }}
                 >
                     {can?.add && (
-                        <Button onClick={handleCreate}>Create CC Strategic Priority</Button>
+                        <Button onClick={handleCreate}>
+                            Create CC Strategic Priority
+                        </Button>
                     )}
                 </DataTable>
 
@@ -111,8 +118,9 @@ export default function CcStrategicPriorityPage({
                 description={
                     deletingPriority ? (
                         <>
-                            Are you sure you want to delete <strong>{deletingPriority.name}</strong>
-                            ? This action cannot be undone.
+                            Are you sure you want to delete{' '}
+                            <strong>{deletingPriority.name}</strong>? This
+                            action cannot be undone.
                         </>
                     ) : null
                 }
@@ -125,5 +133,5 @@ export default function CcStrategicPriorityPage({
 }
 
 CcStrategicPriorityPage.layout = {
-    breadcrumbs: [{ title: "CC Strategic Priorities", href: "#" }],
+    breadcrumbs: [{ title: 'CC Strategic Priorities', href: '#' }],
 };

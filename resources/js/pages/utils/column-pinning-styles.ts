@@ -1,5 +1,5 @@
-import type { Column, Table } from "@tanstack/react-table";
-import type { CSSProperties } from "react";
+import type { Column, Table } from '@tanstack/react-table';
+import type { CSSProperties } from 'react';
 
 export const getCommonPinningStyles = <TData>(
     column: Column<TData>,
@@ -8,8 +8,10 @@ export const getCommonPinningStyles = <TData>(
     isHeader = false,
 ): CSSProperties => {
     const isPinned = column.getIsPinned();
-    const isLastLeftPinnedColumn = isPinned === "left" && column.getIsLastColumn("left");
-    const isFirstRightPinnedColumn = isPinned === "right" && column.getIsFirstColumn("right");
+    const isLastLeftPinnedColumn =
+        isPinned === 'left' && column.getIsLastColumn('left');
+    const isFirstRightPinnedColumn =
+        isPinned === 'right' && column.getIsFirstColumn('right');
 
     const size = column.getSize();
 
@@ -34,18 +36,19 @@ export const getCommonPinningStyles = <TData>(
 
     return {
         boxShadow: isLastLeftPinnedColumn
-            ? `inset -4px 0 4px -4px var(--border)${isFooter ? "" : ", inset 0 -1px 0 0 var(--border)"}`
+            ? `inset -4px 0 4px -4px var(--border)${isFooter ? '' : ', inset 0 -1px 0 0 var(--border)'}`
             : isFirstRightPinnedColumn
               ? isFooter
                   ? undefined
-                  : "inset 0 -1px 0 0 var(--border)"
+                  : 'inset 0 -1px 0 0 var(--border)'
               : isFooter
                 ? undefined
-                : "inset 0 -1px 0 0 var(--border)",
+                : 'inset 0 -1px 0 0 var(--border)',
 
-        left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
-        right: isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
-        position: isPinned ? "sticky" : "relative",
+        left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
+        right:
+            isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
+        position: isPinned ? 'sticky' : 'relative',
 
         width: isPinned ? `${size}px` : `${percentage}%`,
         minWidth: `${size}px`,
@@ -55,14 +58,14 @@ export const getCommonPinningStyles = <TData>(
 
         backgroundColor: isFirstRightPinnedColumn
             ? isHeader
-                ? "var(--background)"
+                ? 'var(--background)'
                 : isFooter
-                  ? "color-mix(in oklch, var(--muted) 50%, var(--background))" // Solid opaque mask
-                  : "color-mix(in oklch, var(--background) 90%, transparent)"
+                  ? 'color-mix(in oklch, var(--muted) 50%, var(--background))' // Solid opaque mask
+                  : 'color-mix(in oklch, var(--background) 90%, transparent)'
             : isFooter
-              ? "color-mix(in oklch, var(--muted) 50%, var(--background))" // Solid mix prevents body bleeding up
+              ? 'color-mix(in oklch, var(--muted) 50%, var(--background))' // Solid mix prevents body bleeding up
               : isHeader && isPinned
-                ? "var(--background)"
+                ? 'var(--background)'
                 : undefined,
     };
 };

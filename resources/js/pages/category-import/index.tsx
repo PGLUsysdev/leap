@@ -1,13 +1,20 @@
-import { Head, router } from "@inertiajs/react";
-import ExcelJS from "exceljs";
-import { FileSpreadsheet } from "lucide-react";
-import type { ChangeEvent } from "react";
-import { useState, useMemo } from "react";
-import { Badge } from "@/components/base-ui-components/ui/badge";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
-import { Input } from "@/components/base-ui-components/ui/input";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+import { Head, router } from '@inertiajs/react';
+import ExcelJS from 'exceljs';
+import { FileSpreadsheet } from 'lucide-react';
+import type { ChangeEvent } from 'react';
+import { useState, useMemo } from 'react';
+import { Badge } from '@/components/base-ui-components/ui/badge';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    Field,
+    FieldDescription,
+    FieldLabel,
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -15,9 +22,9 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/base-ui-components/ui/select";
-import { Spinner } from "@/components/base-ui-components/ui/spinner";
-import { Switch } from "@/components/base-ui-components/ui/switch";
+} from '@/components/base-ui-components/ui/select';
+import { Spinner } from '@/components/base-ui-components/ui/spinner';
+import { Switch } from '@/components/base-ui-components/ui/switch';
 import {
     Table,
     TableBody,
@@ -25,16 +32,24 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/base-ui-components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base-ui-components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
-import { cellText } from "@/lib/excel/cell-helpers";
-import { getCategoryMatch, isTotalRow, normalize } from "@/lib/ppmp/normalize";
-import type { ExistingCategory } from "@/lib/ppmp/normalize";
-import { getDefaultSharedConfig } from "@/lib/ppmp/sheet-config";
-import type { SharedSheetConfig } from "@/lib/ppmp/sheet-config";
-import { index as categoryImportIndex } from "@/routes/category-import";
-import { index as importsIndex } from "@/routes/imports";
+} from '@/components/base-ui-components/ui/table';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/base-ui-components/ui/tabs';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+} from '@/components/base-ui-components/ui/toggle-group';
+import { cellText } from '@/lib/excel/cell-helpers';
+import { getCategoryMatch, isTotalRow, normalize } from '@/lib/ppmp/normalize';
+import type { ExistingCategory } from '@/lib/ppmp/normalize';
+import { getDefaultSharedConfig } from '@/lib/ppmp/sheet-config';
+import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
+import { index as categoryImportIndex } from '@/routes/category-import';
+import { index as importsIndex } from '@/routes/imports';
 
 type VerifyResult = {
     valid: boolean;
@@ -72,7 +87,12 @@ type ExtractResult = {
         duplicateAddress: string;
         duplicateRaw: string;
     }>;
-    excludedTotal: Array<{ row: number; raw: string; normalized: string; sheet: string }>;
+    excludedTotal: Array<{
+        row: number;
+        raw: string;
+        normalized: string;
+        sheet: string;
+    }>;
     excludedCoa: Array<{
         row: number;
         raw: string;
@@ -102,7 +122,9 @@ interface CategoryImportProps {
     existingCategories?: ExistingCategory[];
 }
 
-export default function CategoryImport({ existingCategories = [] }: CategoryImportProps) {
+export default function CategoryImport({
+    existingCategories = [],
+}: CategoryImportProps) {
     const [sheets, setSheets] = useState<string[]>([]);
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
@@ -111,32 +133,52 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
     const [error, setError] = useState<string | null>(null);
 
     // Calibrations – shared + per-sheet (snapshot mode: shared does not auto-overwrite per-sheet until Apply)
-    const [calibrationMode, setCalibrationMode] = useState<"shared" | "per-sheet">("shared");
-    const [sharedConfig, setSharedConfig] = useState<SharedSheetConfig | null>(null);
-    const [calibrations, setCalibrations] = useState<Record<string, SharedSheetConfig>>({});
-    const [currentSheet, setCurrentSheet] = useState<string>("");
+    const [calibrationMode, setCalibrationMode] = useState<
+        'shared' | 'per-sheet'
+    >('shared');
+    const [sharedConfig, setSharedConfig] = useState<SharedSheetConfig | null>(
+        null,
+    );
+    const [calibrations, setCalibrations] = useState<
+        Record<string, SharedSheetConfig>
+    >({});
+    const [currentSheet, setCurrentSheet] = useState<string>('');
 
-    const [verifyResults, setVerifyResults] = useState<Record<string, VerifyResult>>({});
-    const [activeVerifySheet, setActiveVerifySheet] = useState<string>("");
-    const [extractResult, setExtractResult] = useState<ExtractResult | null>(null);
-    const [step, setStep] = useState<"upload" | "calibrate" | "verify" | "extract">("upload");
+    const [verifyResults, setVerifyResults] = useState<
+        Record<string, VerifyResult>
+    >({});
+    const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
+    const [extractResult, setExtractResult] = useState<ExtractResult | null>(
+        null,
+    );
+    const [step, setStep] = useState<
+        'upload' | 'calibrate' | 'verify' | 'extract'
+    >('upload');
     const [importing, setImporting] = useState(false);
     const [skipProblematic, setSkipProblematic] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
-    const [isAdditionalDraft, setIsAdditionalDraft] = useState<Record<string, boolean>>({});
+    const [isAdditionalDraft, setIsAdditionalDraft] = useState<
+        Record<string, boolean>
+    >({});
 
     function getEffectiveConfig(sheet: string): SharedSheetConfig {
-        if (calibrationMode === "shared" && sharedConfig) return sharedConfig;
+        if (calibrationMode === 'shared' && sharedConfig) return sharedConfig;
 
         return calibrations[sheet] ?? sharedConfig ?? getDefaultSharedConfig();
     }
 
     const canCalibrate = selectedSheets.length > 0;
-    const canVerify = canCalibrate && !!workbook && selectedSheets.length > 0 && !!sharedConfig;
+    const canVerify =
+        canCalibrate &&
+        !!workbook &&
+        selectedSheets.length > 0 &&
+        !!sharedConfig;
     const allVerifyValid =
-        selectedSheets.length > 0 && selectedSheets.every((s) => verifyResults[s]?.valid);
+        selectedSheets.length > 0 &&
+        selectedSheets.every((s) => verifyResults[s]?.valid);
     const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
-    const canExtract = canVerify && hasAnyVerify && (allVerifyValid || skipProblematic);
+    const canExtract =
+        canVerify && hasAnyVerify && (allVerifyValid || skipProblematic);
 
     const extractionStats = useMemo(() => {
         if (!extractResult) return null;
@@ -154,19 +196,20 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         if (!file) return;
 
         const isXlsx =
-            file.name.toLowerCase().endsWith(".xlsx") ||
-            file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            file.name.toLowerCase().endsWith('.xlsx') ||
+            file.type ===
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
         if (!isXlsx) {
-            setError("Only .xlsx files are allowed.");
+            setError('Only .xlsx files are allowed.');
             setSheets([]);
             setWorkbook(null);
             setSelectedSheets([]);
-            setCurrentSheet("");
+            setCurrentSheet('');
             setSharedConfig(null);
             setCalibrations({});
             setFileName(null);
-            e.target.value = "";
+            e.target.value = '';
 
             return;
         }
@@ -175,13 +218,13 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         setLoading(true);
         setFileName(file.name);
         setSelectedSheets([]);
-        setCurrentSheet("");
+        setCurrentSheet('');
         setSharedConfig(null);
         setCalibrations({});
         setVerifyResults({});
-        setActiveVerifySheet("");
+        setActiveVerifySheet('');
         setExtractResult(null);
-        setStep("upload");
+        setStep('upload');
 
         try {
             const wb = new ExcelJS.Workbook();
@@ -190,11 +233,13 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             setWorkbook(wb);
             setSheets(wb.worksheets.map((ws) => ws.name));
         } catch {
-            setError("Failed to parse .xlsx file. Please ensure it is a valid Excel file.");
+            setError(
+                'Failed to parse .xlsx file. Please ensure it is a valid Excel file.',
+            );
             setSheets([]);
             setWorkbook(null);
             setSelectedSheets([]);
-            setCurrentSheet("");
+            setCurrentSheet('');
             setSharedConfig(null);
             setCalibrations({});
         } finally {
@@ -204,16 +249,19 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
 
     function handleSheetToggle(sheet: string) {
         setSelectedSheets((prev) => {
-            const next = prev.includes(sheet) ? prev.filter((s) => s !== sheet) : [...prev, sheet];
+            const next = prev.includes(sheet)
+                ? prev.filter((s) => s !== sheet)
+                : [...prev, sheet];
             // reset verification when selection changes
             setVerifyResults({});
-            setActiveVerifySheet(next[0] ?? "");
+            setActiveVerifySheet(next[0] ?? '');
             setExtractResult(null);
             setSkipProblematic(false);
 
-            if (next.length > 0 && !next.includes(currentSheet)) setCurrentSheet(next[0]);
+            if (next.length > 0 && !next.includes(currentSheet))
+                setCurrentSheet(next[0]);
 
-            if (next.length === 0) setCurrentSheet("");
+            if (next.length === 0) setCurrentSheet('');
 
             return next;
         });
@@ -234,7 +282,8 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
 
         setCalibrations(clones);
 
-        if (!currentSheet && selectedSheets[0]) setCurrentSheet(selectedSheets[0]);
+        if (!currentSheet && selectedSheets[0])
+            setCurrentSheet(selectedSheets[0]);
     }
 
     function handleApplySharedToAll() {
@@ -261,7 +310,10 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
     }
 
     function updateSharedConfig(patch: Partial<SharedSheetConfig>) {
-        setSharedConfig((prev) => ({ ...(prev ?? getDefaultSharedConfig()), ...patch }));
+        setSharedConfig((prev) => ({
+            ...(prev ?? getDefaultSharedConfig()),
+            ...patch,
+        }));
     }
 
     function updateCurrentCalibration(patch: Partial<SharedSheetConfig>) {
@@ -270,7 +322,9 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         setCalibrations((prev) => ({
             ...prev,
             [currentSheet]: {
-                ...(prev[currentSheet] ?? sharedConfig ?? getDefaultSharedConfig()),
+                ...(prev[currentSheet] ??
+                    sharedConfig ??
+                    getDefaultSharedConfig()),
                 ...patch,
             },
         }));
@@ -280,8 +334,8 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         if (!workbook) {
             return {
                 valid: false,
-                message: "Workbook not loaded",
-                errors: [{ row: 0, message: "Workbook not loaded" }],
+                message: 'Workbook not loaded',
+                errors: [{ row: 0, message: 'Workbook not loaded' }],
                 groups: { procurement: 0, additional: 0, nonProcurement: 0 },
                 details: [],
             };
@@ -302,14 +356,20 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         const dataColumn = cfg.columnConfig.category;
         const coaColumn = cfg.columnConfig.coa;
         const itemColumn = cfg.columnConfig.itemNumber;
-        const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg.rowConfig;
+        const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } =
+            cfg.rowConfig;
         const { coaLabelMode } = cfg;
 
-        if (headerRow === "" || headerRow == null) {
+        if (headerRow === '' || headerRow == null) {
             return {
                 valid: false,
-                message: "Header Row is required",
-                errors: [{ row: 0, message: "Header Row is required — check calibration" }],
+                message: 'Header Row is required',
+                errors: [
+                    {
+                        row: 0,
+                        message: 'Header Row is required — check calibration',
+                    },
+                ],
                 groups: { procurement: 0, additional: 0, nonProcurement: 0 },
                 details: [],
             };
@@ -322,15 +382,21 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             : nonProcurementHeaderRow
               ? nonProcurementHeaderRow - 1
               : lastRow;
-        const additionalStart = additionalItemsHeaderRow ? additionalItemsHeaderRow + 1 : -1;
-        const additionalEnd = nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow;
-        const nonProcStart = nonProcurementHeaderRow ? nonProcurementHeaderRow + 1 : -1;
+        const additionalStart = additionalItemsHeaderRow
+            ? additionalItemsHeaderRow + 1
+            : -1;
+        const additionalEnd = nonProcurementHeaderRow
+            ? nonProcurementHeaderRow - 1
+            : lastRow;
+        const nonProcStart = nonProcurementHeaderRow
+            ? nonProcurementHeaderRow + 1
+            : -1;
         const nonProcEnd = lastRow;
 
         const errors: Array<{ row: number; message: string }> = [];
         const details: string[] = [];
         details.push(
-            `COA label mode: ${coaLabelMode === "without-label" ? "Without label (COA on item rows)" : "With label (COA label rows)"}`,
+            `COA label mode: ${coaLabelMode === 'without-label' ? 'Without label (COA on item rows)' : 'With label (COA label rows)'}`,
         );
 
         const groups = { procurement: 0, additional: 0, nonProcurement: 0 };
@@ -351,22 +417,26 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             ? countData(procurementStart, procurementEnd)
             : countData(
                   procurementStart,
-                  nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow,
+                  nonProcurementHeaderRow
+                      ? nonProcurementHeaderRow - 1
+                      : lastRow,
               );
         groups.additional = additionalItemsHeaderRow
             ? countData(additionalStart, additionalEnd)
             : 0;
-        groups.nonProcurement = nonProcurementHeaderRow ? countData(nonProcStart, nonProcEnd) : 0;
+        groups.nonProcurement = nonProcurementHeaderRow
+            ? countData(nonProcStart, nonProcEnd)
+            : 0;
 
         if (!additionalItemsHeaderRow) {
             details.push(
-                "Additional Items header not calibrated — skipping additional group check",
+                'Additional Items header not calibrated — skipping additional group check',
             );
         }
 
         if (!nonProcurementHeaderRow) {
             details.push(
-                "Non-Procurement header not calibrated — skipping non-procurement group check",
+                'Non-Procurement header not calibrated — skipping non-procurement group check',
             );
         }
 
@@ -378,14 +448,15 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         } else if (groups.procurement === 0) {
             errors.push({
                 row: procurementStart,
-                message: "No data found in procurement group — check header calibration",
+                message:
+                    'No data found in procurement group — check header calibration',
             });
         }
 
         if (additionalItemsHeaderRow && groups.additional === 0) {
             errors.push({
                 row: additionalStart,
-                message: "No data found in additional items group",
+                message: 'No data found in additional items group',
             });
         }
 
@@ -400,7 +471,8 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
         };
         const catGroups: CatGroup[] = [];
         let currentCat: CatGroup | null = null;
-        let currentCoa: { coa: string; coaRow: number; items: number } | null = null;
+        let currentCoa: { coa: string; coaRow: number; items: number } | null =
+            null;
 
         const flushCat = (totalRow?: number) => {
             if (currentCat) {
@@ -427,7 +499,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             const coaNorm = coaRaw ? normalize(coaRaw) : null;
             const dataNorm = dataRaw ? normalize(dataRaw) : null;
 
-            if (dataNorm === "description") continue;
+            if (dataNorm === 'description') continue;
 
             if (coaNorm && dataRaw) {
                 if (!currentCat) {
@@ -438,7 +510,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                     continue;
                 }
 
-                if (coaLabelMode === "without-label") {
+                if (coaLabelMode === 'without-label') {
                     // COA directly on item row – group by COA value, no label rows expected
                     if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
                         if (currentCoa) {
@@ -490,7 +562,9 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             }
 
             if (isTotalRow(dataNorm)) {
-                const expected = currentCat ? normalize(`${currentCat.cat} - total`) : null;
+                const expected = currentCat
+                    ? normalize(`${currentCat.cat} - total`)
+                    : null;
 
                 if (!currentCat) {
                     errors.push({
@@ -532,7 +606,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                 continue;
             }
 
-            if (coaLabelMode === "with-label") {
+            if (coaLabelMode === 'with-label') {
                 let isCoaLabel = false;
                 let nextCoaRaw: string | null = null;
                 let nextCoaNorm: string | null = null;
@@ -541,7 +615,8 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                     nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
                     nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
 
-                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
+                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm)
+                        isCoaLabel = true;
                 }
 
                 if (isCoaLabel) {
@@ -636,20 +711,20 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
 
             for (const g of catGroups) {
                 details.push(
-                    `  Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : " MISSING total"}`,
+                    `  Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : ' MISSING total'}`,
                 );
             }
         }
 
         const procurementErrors = errors.filter(
-            (e) => e.row <= verifyEnd || e.message.includes("Procurement"),
+            (e) => e.row <= verifyEnd || e.message.includes('Procurement'),
         );
         const valid = procurementErrors.length === 0;
         const message = valid
             ? `✅ Format OK — ${catGroups.length} procurement cat group(s) verified` +
               (groups.additional || groups.nonProcurement
-                  ? ` | Additional: ${groups.additional ? "found" : "—"}, Non-Proc: ${groups.nonProcurement ? "found" : "—"}`
-                  : "")
+                  ? ` | Additional: ${groups.additional ? 'found' : '—'}, Non-Proc: ${groups.nonProcurement ? 'found' : '—'}`
+                  : '')
             : `❌ Found ${errors.length} issue(s) in procurement format`;
         console.log(`[${sheet}]`, message, errors, catGroups);
 
@@ -675,7 +750,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
 
         setVerifyResults(next);
         const firstInvalid = selectedSheets.find((s) => !next[s]?.valid);
-        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? "");
+        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? '');
 
         if (Object.keys(next).length) {
             console.table(
@@ -692,14 +767,17 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
     function handleExtract() {
         if (!workbook || selectedSheets.length === 0) return;
 
-        const filtered: ExtractResult["filtered"] = [];
-        const excludedTotal: ExtractResult["excludedTotal"] = [];
-        const excludedCoa: ExtractResult["excludedCoa"] = [];
-        const skippedCoaNotEmpty: ExtractResult["skippedCoaNotEmpty"] = [];
-        const skippedProblematic: ExtractResult["skippedProblematic"] = [];
+        const filtered: ExtractResult['filtered'] = [];
+        const excludedTotal: ExtractResult['excludedTotal'] = [];
+        const excludedCoa: ExtractResult['excludedCoa'] = [];
+        const skippedCoaNotEmpty: ExtractResult['skippedCoaNotEmpty'] = [];
+        const skippedProblematic: ExtractResult['skippedProblematic'] = [];
 
         // Build per-sheet problematic lookups when skipProblematic is on
-        const problematicBySheet = new Map<string, { rows: Set<number>; norms: Set<string> }>();
+        const problematicBySheet = new Map<
+            string,
+            { rows: Set<number>; norms: Set<string> }
+        >();
 
         if (skipProblematic) {
             for (const sheet of selectedSheets) {
@@ -732,11 +810,14 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             const dataColumn = cfg.columnConfig.category;
             const coaColumn = cfg.columnConfig.coa;
             const itemColumn = cfg.columnConfig.itemNumber;
-            const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } =
-                cfg.rowConfig;
+            const {
+                headerRow,
+                additionalItemsHeaderRow,
+                nonProcurementHeaderRow,
+            } = cfg.rowConfig;
             const { coaLabelMode } = cfg;
 
-            if (headerRow === "" || headerRow == null) continue;
+            if (headerRow === '' || headerRow == null) continue;
 
             const ws = workbook!.getWorksheet(sheet);
 
@@ -759,25 +840,33 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                 const coaNorm = coaRaw ? normalize(coaRaw) : null;
                 const dataNorm = normalize(dataRaw);
 
-                if (dataNorm === "description") continue;
+                if (dataNorm === 'description') continue;
 
-                if (additionalItemsHeaderRow && r === additionalItemsHeaderRow) continue;
+                if (additionalItemsHeaderRow && r === additionalItemsHeaderRow)
+                    continue;
 
-                if (nonProcurementHeaderRow && r === nonProcurementHeaderRow) continue;
+                if (nonProcurementHeaderRow && r === nonProcurementHeaderRow)
+                    continue;
 
                 if (
-                    dataNorm === "non-procurement requirements" ||
-                    dataNorm === "additional items" ||
-                    dataNorm === "procurement requirements"
+                    dataNorm === 'non-procurement requirements' ||
+                    dataNorm === 'additional items' ||
+                    dataNorm === 'procurement requirements'
                 ) {
                     continue;
                 }
 
-                if (additionalItemsHeaderRow && r > additionalItemsHeaderRow) continue;
+                if (additionalItemsHeaderRow && r > additionalItemsHeaderRow)
+                    continue;
 
-                if (nonProcurementHeaderRow && r > nonProcurementHeaderRow) continue;
+                if (nonProcurementHeaderRow && r > nonProcurementHeaderRow)
+                    continue;
 
-                if (skipProblematic && prob && (probRows.has(r) || probNorms.has(dataNorm))) {
+                if (
+                    skipProblematic &&
+                    prob &&
+                    (probRows.has(r) || probNorms.has(dataNorm))
+                ) {
                     const reason = probRows.has(r)
                         ? `row ${r} flagged in verify (${sheet})`
                         : `normalized "${dataNorm}" flagged (${sheet})`;
@@ -825,14 +914,21 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                 }
 
                 if (isTotalRow(dataNorm)) {
-                    excludedTotal.push({ row: r, raw: dataRaw, normalized: dataNorm, sheet });
+                    excludedTotal.push({
+                        row: r,
+                        raw: dataRaw,
+                        normalized: dataNorm,
+                        sheet,
+                    });
                     continue;
                 }
 
-                if (coaLabelMode === "with-label" && r + 1 <= lastRow) {
+                if (coaLabelMode === 'with-label' && r + 1 <= lastRow) {
                     const nextRow = ws.getRow(r + 1);
                     const nextCoaRaw = cellText(nextRow.getCell(coaColumn));
-                    const nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+                    const nextCoaNorm = nextCoaRaw
+                        ? normalize(nextCoaRaw)
+                        : null;
 
                     if (nextCoaNorm && nextCoaNorm === dataNorm) {
                         excludedCoa.push({
@@ -848,7 +944,13 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                 }
 
                 const address = `${sheet}!${dataColumn}${r}`;
-                filtered.push({ row: r, raw: dataRaw, normalized: dataNorm, sheet, address });
+                filtered.push({
+                    row: r,
+                    raw: dataRaw,
+                    normalized: dataNorm,
+                    sheet,
+                    address,
+                });
             }
         }
 
@@ -861,7 +963,7 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             locations: CatLocation[];
         };
         const seen = new Map<string, SeenVal>();
-        const duplicates: ExtractResult["duplicates"] = [];
+        const duplicates: ExtractResult['duplicates'] = [];
 
         for (const c of filtered) {
             const existing = seen.get(c.normalized);
@@ -883,7 +985,8 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             } else {
                 existing.rows.push(c.row);
 
-                if (!existing.sheets.includes(c.sheet)) existing.sheets.push(c.sheet);
+                if (!existing.sheets.includes(c.sheet))
+                    existing.sheets.push(c.sheet);
 
                 existing.locations.push(loc);
                 const kept = existing.locations[0];
@@ -910,9 +1013,11 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
             locations: v.locations,
         }));
         // sort by sheetCount desc then raw
-        unique.sort((a, b) => b.sheetCount - a.sheetCount || a.raw.localeCompare(b.raw));
+        unique.sort(
+            (a, b) => b.sheetCount - a.sheetCount || a.raw.localeCompare(b.raw),
+        );
 
-        console.log("Extract multi-sheet", {
+        console.log('Extract multi-sheet', {
             filtered,
             unique,
             duplicates,
@@ -948,13 +1053,15 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
     function handleImport() {
         if (!extractResult || extractResult.unique.length === 0) return;
 
-        const toImport = extractResult.unique.filter((u) => selected.has(u.normalized));
+        const toImport = extractResult.unique.filter((u) =>
+            selected.has(u.normalized),
+        );
 
         if (toImport.length === 0) return;
 
         setImporting(true);
         router.post(
-            "/category-import" as const,
+            '/category-import' as const,
             {
                 categories: toImport.map((u) => ({
                     name: u.raw,
@@ -976,41 +1083,54 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                     <h1 className="text-2xl font-semibold">Category Import</h1>
 
                     {fileName && !loading && (
-                        <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm backdrop-blur supports-[backdrop-filter]:bg-muted/30">
-                            <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span className="max-w-[42ch] truncate font-medium" title={fileName}>
+                        <div className="bg-muted/40 supports-[backdrop-filter]:bg-muted/30 sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
+                            <FileSpreadsheet className="text-muted-foreground h-4 w-4 shrink-0" />
+                            <span
+                                className="max-w-[42ch] truncate font-medium"
+                                title={fileName}
+                            >
                                 {fileName}
                             </span>
-                            <span className="hidden text-muted-foreground sm:inline">•</span>
-                            <span className="truncate text-muted-foreground">
+                            <span className="text-muted-foreground hidden sm:inline">
+                                •
+                            </span>
+                            <span className="text-muted-foreground truncate">
                                 {selectedSheets.length > 0
-                                    ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}`
-                                    : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"} found`}
+                                    ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(', ')}`
+                                    : `${sheets.length} sheet${sheets.length === 1 ? '' : 's'} found`}
                             </span>
                             {selectedSheets.length > 0 &&
                                 selectedSheets.length !== sheets.length && (
-                                    <span className="hidden text-xs text-muted-foreground sm:inline">
+                                    <span className="text-muted-foreground hidden text-xs sm:inline">
                                         ({sheets.length} total)
                                     </span>
                                 )}
                         </div>
                     )}
 
-                    <Tabs value={step} onValueChange={(v) => setStep(v as typeof step)}>
+                    <Tabs
+                        value={step}
+                        onValueChange={(v) => setStep(v as typeof step)}
+                    >
                         <TabsList variant="line" className="w-full">
                             <TabsTrigger value="upload" className="flex-1">
                                 1. Upload & Sheets
                                 {selectedSheets.length > 0 && (
-                                    <span className="ml-1 text-xs text-muted-foreground">
+                                    <span className="text-muted-foreground ml-1 text-xs">
                                         {selectedSheets.length}✓
                                     </span>
                                 )}
                             </TabsTrigger>
-                            <TabsTrigger value="calibrate" disabled={!canCalibrate}>
+                            <TabsTrigger
+                                value="calibrate"
+                                disabled={!canCalibrate}
+                            >
                                 2. Calibrate
                                 {sharedConfig && (
-                                    <span className="ml-1 text-xs text-muted-foreground">
-                                        {calibrationMode === "shared" ? "shared" : "per-sheet"}
+                                    <span className="text-muted-foreground ml-1 text-xs">
+                                        {calibrationMode === 'shared'
+                                            ? 'shared'
+                                            : 'per-sheet'}
                                     </span>
                                 )}
                             </TabsTrigger>
@@ -1023,7 +1143,11 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                                 )}
                                 {!allVerifyValid && hasAnyVerify && (
                                     <span className="ml-1 text-xs text-amber-600">
-                                        {Object.values(verifyResults).filter((r) => r.valid).length}
+                                        {
+                                            Object.values(verifyResults).filter(
+                                                (r) => r.valid,
+                                            ).length
+                                        }
                                         /{selectedSheets.length}
                                     </span>
                                 )}
@@ -1031,17 +1155,24 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                             <TabsTrigger value="extract" disabled={!canExtract}>
                                 4. Extract & Import
                                 {extractResult && (
-                                    <span className="ml-1 text-xs text-muted-foreground">
+                                    <span className="text-muted-foreground ml-1 text-xs">
                                         {extractResult.unique.length}
                                     </span>
                                 )}
-                                {!allVerifyValid && skipProblematic && hasAnyVerify && (
-                                    <span className="ml-1 text-xs text-amber-600">skip</span>
-                                )}
+                                {!allVerifyValid &&
+                                    skipProblematic &&
+                                    hasAnyVerify && (
+                                        <span className="ml-1 text-xs text-amber-600">
+                                            skip
+                                        </span>
+                                    )}
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="upload" className="mt-4 flex flex-col gap-4">
+                        <TabsContent
+                            value="upload"
+                            className="mt-4 flex flex-col gap-4"
+                        >
                             <Field>
                                 <FieldLabel htmlFor="category-import-file">
                                     Excel File (.xlsx only)
@@ -1054,50 +1185,65 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                                     disabled={loading}
                                 />
                                 <FieldDescription>
-                                    Select an .xlsx file. Only .xlsx is accepted (ExcelJS).
+                                    Select an .xlsx file. Only .xlsx is accepted
+                                    (ExcelJS).
                                 </FieldDescription>
-                                {error && <p className="text-sm text-destructive">{error}</p>}
+                                {error && (
+                                    <p className="text-destructive text-sm">
+                                        {error}
+                                    </p>
+                                )}
                             </Field>
                             {loading && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="text-muted-foreground flex items-center gap-2 text-sm">
                                     <Spinner /> Parsing workbook...
                                 </div>
                             )}
                             {!loading && sheets.length > 0 && (
                                 <Field>
                                     <FieldLabel>
-                                        Sheets — click to select one or more (multi-sheet)
+                                        Sheets — click to select one or more
+                                        (multi-sheet)
                                     </FieldLabel>
                                     <div className="flex flex-wrap gap-2 rounded-lg border p-3">
                                         {sheets.map((sheet) => {
-                                            const isSelected = selectedSheets.includes(sheet);
+                                            const isSelected =
+                                                selectedSheets.includes(sheet);
 
                                             return (
                                                 <Badge
                                                     key={sheet}
-                                                    variant={isSelected ? "default" : "secondary"}
+                                                    variant={
+                                                        isSelected
+                                                            ? 'default'
+                                                            : 'secondary'
+                                                    }
                                                     className="cursor-pointer text-sm transition-colors hover:opacity-80"
-                                                    onClick={() => handleSheetToggle(sheet)}
+                                                    onClick={() =>
+                                                        handleSheetToggle(sheet)
+                                                    }
                                                 >
-                                                    {sheet} {isSelected && "✓"}
+                                                    {sheet} {isSelected && '✓'}
                                                 </Badge>
                                             );
                                         })}
                                     </div>
                                     <FieldDescription>
-                                        Selected:{" "}
-                                        <span className="font-medium text-foreground">
+                                        Selected:{' '}
+                                        <span className="text-foreground font-medium">
                                             {selectedSheets.length > 0
-                                                ? selectedSheets.join(", ")
-                                                : "none"}
-                                        </span>{" "}
-                                        — {selectedSheets.length}/{sheets.length} sheets
+                                                ? selectedSheets.join(', ')
+                                                : 'none'}
+                                        </span>{' '}
+                                        — {selectedSheets.length}/
+                                        {sheets.length} sheets
                                     </FieldDescription>
                                     {selectedSheets.length > 1 && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Shared calibration will apply to all{" "}
-                                            {selectedSheets.length} sheets; per-sheet mode lets you
-                                            adjust individually.
+                                        <p className="text-muted-foreground text-xs">
+                                            Shared calibration will apply to all{' '}
+                                            {selectedSheets.length} sheets;
+                                            per-sheet mode lets you adjust
+                                            individually.
                                         </p>
                                     )}
                                 </Field>
@@ -1107,83 +1253,107 @@ export default function CategoryImport({ existingCategories = [] }: CategoryImpo
                                     disabled={selectedSheets.length === 0}
                                     onClick={() => {
                                         ensureCalibrationsInitialized();
-                                        setStep("calibrate");
+                                        setStep('calibrate');
                                     }}
                                 >
-                                    Next: Calibrate{" "}
+                                    Next: Calibrate{' '}
                                     {selectedSheets.length > 0 &&
                                         `(${selectedSheets.length} sheets)`}
                                 </Button>
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="calibrate" className="mt-4 flex flex-col gap-4">
-                            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/20 p-3">
-                                <span className="text-sm font-medium">Scope:</span>
+                        <TabsContent
+                            value="calibrate"
+                            className="mt-4 flex flex-col gap-4"
+                        >
+                            <div className="bg-muted/20 flex flex-wrap items-center gap-3 rounded-lg border p-3">
+                                <span className="text-sm font-medium">
+                                    Scope:
+                                </span>
                                 <div className="flex gap-2">
                                     <Button
                                         variant={
-                                            calibrationMode === "shared" ? "default" : "outline"
+                                            calibrationMode === 'shared'
+                                                ? 'default'
+                                                : 'outline'
                                         }
                                         size="sm"
                                         onClick={() => {
                                             if (
-                                                calibrationMode === "per-sheet" &&
+                                                calibrationMode ===
+                                                    'per-sheet' &&
                                                 calibrations[currentSheet]
                                             ) {
-                                                setSharedConfig({ ...calibrations[currentSheet] });
+                                                setSharedConfig({
+                                                    ...calibrations[
+                                                        currentSheet
+                                                    ],
+                                                });
                                             } else if (!sharedConfig) {
-ensureCalibrationsInitialized();
-}
+                                                ensureCalibrationsInitialized();
+                                            }
 
-                                            setCalibrationMode("shared");
+                                            setCalibrationMode('shared');
                                         }}
                                     >
-                                        Shared — all {selectedSheets.length} sheets
+                                        Shared — all {selectedSheets.length}{' '}
+                                        sheets
                                     </Button>
                                     <Button
                                         variant={
-                                            calibrationMode === "per-sheet" ? "default" : "outline"
+                                            calibrationMode === 'per-sheet'
+                                                ? 'default'
+                                                : 'outline'
                                         }
                                         size="sm"
                                         onClick={() => {
                                             if (sharedConfig) {
-                                                const next: Record<string, SharedSheetConfig> = {};
+                                                const next: Record<
+                                                    string,
+                                                    SharedSheetConfig
+                                                > = {};
 
                                                 for (const s of selectedSheets) {
                                                     next[s] = {
                                                         ...sharedConfig,
-                                                        ...(calibrations[s] ?? {}),
+                                                        ...calibrations[s],
                                                     };
                                                 }
 
                                                 // keep existing per-sheet overrides
                                                 setCalibrations(next);
 
-                                                if (!currentSheet && selectedSheets[0]) {
-                                                    setCurrentSheet(selectedSheets[0]);
+                                                if (
+                                                    !currentSheet &&
+                                                    selectedSheets[0]
+                                                ) {
+                                                    setCurrentSheet(
+                                                        selectedSheets[0],
+                                                    );
                                                 }
                                             }
 
-                                            setCalibrationMode("per-sheet");
+                                            setCalibrationMode('per-sheet');
                                         }}
                                     >
                                         Per-sheet
                                     </Button>
                                 </div>
-                                <span className="text-xs text-muted-foreground">
-                                    {calibrationMode === "shared"
-                                        ? `Start row ${sharedConfig?.rowConfig.headerRow === "" || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to every sheet — change once. Snapshot: use “Apply to all” to overwrite per-sheet.`
-                                        : `Each sheet can differ. Editing ${currentSheet || "—"} only affects that sheet.`}
+                                <span className="text-muted-foreground text-xs">
+                                    {calibrationMode === 'shared'
+                                        ? `Start row ${sharedConfig?.rowConfig.headerRow === '' || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to every sheet — change once. Snapshot: use “Apply to all” to overwrite per-sheet.`
+                                        : `Each sheet can differ. Editing ${currentSheet || '—'} only affects that sheet.`}
                                 </span>
-                                {calibrationMode === "shared" ? (
+                                {calibrationMode === 'shared' ? (
                                     <Button
                                         variant="outline"
                                         size="sm"
                                         onClick={handleApplySharedToAll}
                                         disabled={!sharedConfig}
                                     >
-                                        Apply shared to all ({selectedSheets.length})
+                                        Apply shared to all (
+                                        {selectedSheets.length})
                                     </Button>
                                 ) : (
                                     <Button
@@ -1197,44 +1367,58 @@ ensureCalibrationsInitialized();
                                 )}
                             </div>
 
-                            {calibrationMode === "per-sheet" && selectedSheets.length > 1 && (
-                                <Field>
-                                    <FieldLabel>Editing sheet</FieldLabel>
-                                    <Select value={currentSheet} onValueChange={setCurrentSheet}>
-                                        <SelectTrigger className="w-[260px]">
-                                            <SelectValue placeholder="Select sheet to edit" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {selectedSheets.map((s) => (
-                                                    <SelectItem key={s} value={s}>
-                                                        {s}{" "}
-                                                        {verifyResults[s]?.valid
-                                                            ? "✓"
-                                                            : verifyResults[s]
-                                                              ? "❌"
-                                                              : ""}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                    <FieldDescription>
-                                        Per-sheet calibration — changes affect only the selected
-                                        sheet.
-                                    </FieldDescription>
-                                </Field>
-                            )}
+                            {calibrationMode === 'per-sheet' &&
+                                selectedSheets.length > 1 && (
+                                    <Field>
+                                        <FieldLabel>Editing sheet</FieldLabel>
+                                        <Select
+                                            value={currentSheet}
+                                            onValueChange={setCurrentSheet}
+                                        >
+                                            <SelectTrigger className="w-[260px]">
+                                                <SelectValue placeholder="Select sheet to edit" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {selectedSheets.map((s) => (
+                                                        <SelectItem
+                                                            key={s}
+                                                            value={s}
+                                                        >
+                                                            {s}{' '}
+                                                            {verifyResults[s]
+                                                                ?.valid
+                                                                ? '✓'
+                                                                : verifyResults[
+                                                                        s
+                                                                    ]
+                                                                  ? '❌'
+                                                                  : ''}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                        <FieldDescription>
+                                            Per-sheet calibration — changes
+                                            affect only the selected sheet.
+                                        </FieldDescription>
+                                    </Field>
+                                )}
 
                             {(() => {
                                 const cfg =
-                                    calibrationMode === "shared"
-                                        ? (sharedConfig ?? getDefaultSharedConfig())
+                                    calibrationMode === 'shared'
+                                        ? (sharedConfig ??
+                                          getDefaultSharedConfig())
                                         : (calibrations[currentSheet] ??
                                           sharedConfig ??
                                           getDefaultSharedConfig());
-                                const onChange = (patch: Partial<SharedSheetConfig>) => {
-                                    if (calibrationMode === "shared") updateSharedConfig(patch);
+                                const onChange = (
+                                    patch: Partial<SharedSheetConfig>,
+                                ) => {
+                                    if (calibrationMode === 'shared')
+                                        updateSharedConfig(patch);
                                     else updateCurrentCalibration(patch);
 
                                     setVerifyResults({});
@@ -1243,9 +1427,9 @@ ensureCalibrationsInitialized();
 
                                 return (
                                     <div className="rounded-lg border p-4">
-                                        <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                            Calibration{" "}
-                                            {calibrationMode === "shared"
+                                        <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
+                                            Calibration{' '}
+                                            {calibrationMode === 'shared'
                                                 ? `(Shared – ${selectedSheets.length} sheets)`
                                                 : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
                                         </p>
@@ -1256,7 +1440,10 @@ ensureCalibrationsInitialized();
                                                 </FieldLabel>
                                                 <Input
                                                     id="data-column"
-                                                    value={cfg.columnConfig.category}
+                                                    value={
+                                                        cfg.columnConfig
+                                                            .category
+                                                    }
                                                     onChange={(e) =>
                                                         onChange({
                                                             columnConfig: {
@@ -1292,7 +1479,8 @@ ensureCalibrationsInitialized();
                                                     placeholder="D"
                                                 />
                                                 <FieldDescription>
-                                                    COA column — empty means category. Default D
+                                                    COA column — empty means
+                                                    category. Default D
                                                 </FieldDescription>
                                             </Field>
                                             <Field>
@@ -1301,7 +1489,9 @@ ensureCalibrationsInitialized();
                                                 </FieldLabel>
                                                 <Input
                                                     id="unit-column"
-                                                    value={cfg.columnConfig.unit}
+                                                    value={
+                                                        cfg.columnConfig.unit
+                                                    }
                                                     onChange={(e) =>
                                                         onChange({
                                                             columnConfig: {
@@ -1314,7 +1504,8 @@ ensureCalibrationsInitialized();
                                                     placeholder="G"
                                                 />
                                                 <FieldDescription>
-                                                    Not consumed by this importer — standard field
+                                                    Not consumed by this
+                                                    importer — standard field
                                                 </FieldDescription>
                                             </Field>
                                             <Field>
@@ -1323,7 +1514,9 @@ ensureCalibrationsInitialized();
                                                 </FieldLabel>
                                                 <Input
                                                     id="price-column"
-                                                    value={cfg.columnConfig.price}
+                                                    value={
+                                                        cfg.columnConfig.price
+                                                    }
                                                     onChange={(e) =>
                                                         onChange({
                                                             columnConfig: {
@@ -1336,7 +1529,8 @@ ensureCalibrationsInitialized();
                                                     placeholder="H"
                                                 />
                                                 <FieldDescription>
-                                                    Not consumed by this importer — standard field
+                                                    Not consumed by this
+                                                    importer — standard field
                                                 </FieldDescription>
                                             </Field>
                                             <Field>
@@ -1345,7 +1539,10 @@ ensureCalibrationsInitialized();
                                                 </FieldLabel>
                                                 <Input
                                                     id="item-number-column"
-                                                    value={cfg.columnConfig.itemNumber}
+                                                    value={
+                                                        cfg.columnConfig
+                                                            .itemNumber
+                                                    }
                                                     onChange={(e) =>
                                                         onChange({
                                                             columnConfig: {
@@ -1359,7 +1556,8 @@ ensureCalibrationsInitialized();
                                                     placeholder="E"
                                                 />
                                                 <FieldDescription>
-                                                    Item number — placeholder detection. Default E
+                                                    Item number — placeholder
+                                                    detection. Default E
                                                 </FieldDescription>
                                             </Field>
                                             <Field>
@@ -1369,15 +1567,24 @@ ensureCalibrationsInitialized();
                                                 <Input
                                                     id="header-row"
                                                     type="number"
-                                                    value={cfg.rowConfig.headerRow ?? ""}
+                                                    value={
+                                                        cfg.rowConfig
+                                                            .headerRow ?? ''
+                                                    }
                                                     onChange={(e) =>
                                                         onChange({
                                                             rowConfig: {
                                                                 ...cfg.rowConfig,
                                                                 headerRow:
-                                                                    e.target.value === ""
-                                                                        ? ""
-                                                                        : Number(e.target.value),
+                                                                    e.target
+                                                                        .value ===
+                                                                    ''
+                                                                        ? ''
+                                                                        : Number(
+                                                                              e
+                                                                                  .target
+                                                                                  .value,
+                                                                          ),
                                                             },
                                                         })
                                                     }
@@ -1385,21 +1592,29 @@ ensureCalibrationsInitialized();
                                                     placeholder="7"
                                                 />
                                                 <FieldDescription>
-                                                    Header{" "}
-                                                    {cfg.rowConfig.headerRow === "" ||
-                                                    cfg.rowConfig.headerRow == null
-                                                        ? "—"
-                                                        : cfg.rowConfig.headerRow}
-                                                    ; data starts{" "}
-                                                    {cfg.rowConfig.headerRow === "" ||
-                                                    cfg.rowConfig.headerRow == null
-                                                        ? "—"
-                                                        : cfg.rowConfig.headerRow + 1}
+                                                    Header{' '}
+                                                    {cfg.rowConfig.headerRow ===
+                                                        '' ||
+                                                    cfg.rowConfig.headerRow ==
+                                                        null
+                                                        ? '—'
+                                                        : cfg.rowConfig
+                                                              .headerRow}
+                                                    ; data starts{' '}
+                                                    {cfg.rowConfig.headerRow ===
+                                                        '' ||
+                                                    cfg.rowConfig.headerRow ==
+                                                        null
+                                                        ? '—'
+                                                        : cfg.rowConfig
+                                                              .headerRow + 1}
                                                 </FieldDescription>
                                             </Field>
                                         </div>
                                         <Field className="mt-4">
-                                            <FieldLabel>COA items format *</FieldLabel>
+                                            <FieldLabel>
+                                                COA items format *
+                                            </FieldLabel>
                                             <ToggleGroup
                                                 variant="outline"
                                                 spacing={2}
@@ -1408,7 +1623,7 @@ ensureCalibrationsInitialized();
                                                     if (value.length > 0) {
                                                         onChange({
                                                             coaLabelMode:
-                                                                value[0] as SharedSheetConfig["coaLabelMode"],
+                                                                value[0] as SharedSheetConfig['coaLabelMode'],
                                                         });
                                                     }
                                                 }}
@@ -1421,13 +1636,15 @@ ensureCalibrationsInitialized();
                                                     <span className="font-medium">
                                                         With COA label rows
                                                     </span>
-                                                    <span className="text-xs font-normal whitespace-normal text-muted-foreground">
-                                                        Category → COA label in F (next D same) →
-                                                        Items with D=COA
+                                                    <span className="text-muted-foreground text-xs font-normal whitespace-normal">
+                                                        Category → COA label in
+                                                        F (next D same) → Items
+                                                        with D=COA
                                                     </span>
-                                                    <span className="font-mono text-xs text-muted-foreground/70">
-                                                        Cat 1 → coa 1 → items / coa 2 → items → Cat
-                                                        1 - Total
+                                                    <span className="text-muted-foreground/70 font-mono text-xs">
+                                                        Cat 1 → coa 1 → items /
+                                                        coa 2 → items → Cat 1 -
+                                                        Total
                                                     </span>
                                                 </ToggleGroupItem>
                                                 <ToggleGroupItem
@@ -1437,19 +1654,22 @@ ensureCalibrationsInitialized();
                                                     <span className="font-medium">
                                                         Without label
                                                     </span>
-                                                    <span className="text-xs font-normal whitespace-normal text-muted-foreground">
-                                                        Category → Items directly with D=COA (no
+                                                    <span className="text-muted-foreground text-xs font-normal whitespace-normal">
+                                                        Category → Items
+                                                        directly with D=COA (no
                                                         extra label row)
                                                     </span>
-                                                    <span className="font-mono text-xs text-muted-foreground/70">
-                                                        Cat 1 → items (coa 1), items (coa 2) → Cat 1
-                                                        - Total
+                                                    <span className="text-muted-foreground/70 font-mono text-xs">
+                                                        Cat 1 → items (coa 1),
+                                                        items (coa 2) → Cat 1 -
+                                                        Total
                                                     </span>
                                                 </ToggleGroupItem>
                                             </ToggleGroup>
                                             <FieldDescription>
-                                                Choose the layout your sheets use. Both tables you
-                                                showed are supported.
+                                                Choose the layout your sheets
+                                                use. Both tables you showed are
+                                                supported.
                                             </FieldDescription>
                                         </Field>
                                         <div className="mt-4 grid grid-cols-2 gap-4">
@@ -1460,15 +1680,23 @@ ensureCalibrationsInitialized();
                                                 <Input
                                                     id="additional-header-row"
                                                     type="number"
-                                                    value={cfg.rowConfig.additionalItemsHeaderRow ?? ""}
+                                                    value={
+                                                        cfg.rowConfig
+                                                            .additionalItemsHeaderRow ??
+                                                        ''
+                                                    }
                                                     onChange={(e) => {
                                                         const v = e.target.value
-                                                            ? Number(e.target.value)
+                                                            ? Number(
+                                                                  e.target
+                                                                      .value,
+                                                              )
                                                             : null;
                                                         onChange({
                                                             rowConfig: {
                                                                 ...cfg.rowConfig,
-                                                                additionalItemsHeaderRow: v,
+                                                                additionalItemsHeaderRow:
+                                                                    v,
                                                             },
                                                         });
                                                     }}
@@ -1476,9 +1704,10 @@ ensureCalibrationsInitialized();
                                                     placeholder="e.g. 85"
                                                 />
                                                 <FieldDescription>
-                                                    {cfg.rowConfig.additionalItemsHeaderRow
+                                                    {cfg.rowConfig
+                                                        .additionalItemsHeaderRow
                                                         ? `Resumes at ${cfg.rowConfig.additionalItemsHeaderRow + 1}`
-                                                        : "Leave empty if none"}
+                                                        : 'Leave empty if none'}
                                                 </FieldDescription>
                                             </Field>
                                             <Field>
@@ -1488,15 +1717,23 @@ ensureCalibrationsInitialized();
                                                 <Input
                                                     id="nonproc-header-row"
                                                     type="number"
-                                                    value={cfg.rowConfig.nonProcurementHeaderRow ?? ""}
+                                                    value={
+                                                        cfg.rowConfig
+                                                            .nonProcurementHeaderRow ??
+                                                        ''
+                                                    }
                                                     onChange={(e) => {
                                                         const v = e.target.value
-                                                            ? Number(e.target.value)
+                                                            ? Number(
+                                                                  e.target
+                                                                      .value,
+                                                              )
                                                             : null;
                                                         onChange({
                                                             rowConfig: {
                                                                 ...cfg.rowConfig,
-                                                                nonProcurementHeaderRow: v,
+                                                                nonProcurementHeaderRow:
+                                                                    v,
                                                             },
                                                         });
                                                     }}
@@ -1504,66 +1741,96 @@ ensureCalibrationsInitialized();
                                                     placeholder="e.g. 1258"
                                                 />
                                                 <FieldDescription>
-                                                    {cfg.rowConfig.nonProcurementHeaderRow
+                                                    {cfg.rowConfig
+                                                        .nonProcurementHeaderRow
                                                         ? `Starts at ${cfg.rowConfig.nonProcurementHeaderRow + 1}`
-                                                        : "Leave empty if none"}
+                                                        : 'Leave empty if none'}
                                                 </FieldDescription>
                                             </Field>
                                         </div>
-                                        <div className="mt-3 text-xs text-muted-foreground">
+                                        <div className="text-muted-foreground mt-3 text-xs">
                                             Groups: procurement [
-                                            {cfg.rowConfig.headerRow === "" ||
+                                            {cfg.rowConfig.headerRow === '' ||
                                             cfg.rowConfig.headerRow == null
-                                                ? "—"
+                                                ? '—'
                                                 : cfg.rowConfig.headerRow + 1}
                                             ..
-                                            {cfg.rowConfig.additionalItemsHeaderRow
-                                                ? cfg.rowConfig.additionalItemsHeaderRow - 1
-                                                : cfg.rowConfig.nonProcurementHeaderRow
-                                                  ? cfg.rowConfig.nonProcurementHeaderRow - 1
-                                                  : "last"}
+                                            {cfg.rowConfig
+                                                .additionalItemsHeaderRow
+                                                ? cfg.rowConfig
+                                                      .additionalItemsHeaderRow -
+                                                  1
+                                                : cfg.rowConfig
+                                                        .nonProcurementHeaderRow
+                                                  ? cfg.rowConfig
+                                                        .nonProcurementHeaderRow -
+                                                    1
+                                                  : 'last'}
                                             ] → additional [
-                                            {cfg.rowConfig.additionalItemsHeaderRow
-                                                ? cfg.rowConfig.additionalItemsHeaderRow + 1
-                                                : "—"}
+                                            {cfg.rowConfig
+                                                .additionalItemsHeaderRow
+                                                ? cfg.rowConfig
+                                                      .additionalItemsHeaderRow +
+                                                  1
+                                                : '—'}
                                             ..
-                                            {cfg.rowConfig.nonProcurementHeaderRow
-                                                ? cfg.rowConfig.nonProcurementHeaderRow - 1
-                                                : "last"}
+                                            {cfg.rowConfig
+                                                .nonProcurementHeaderRow
+                                                ? cfg.rowConfig
+                                                      .nonProcurementHeaderRow -
+                                                  1
+                                                : 'last'}
                                             ] → non-proc [
-                                            {cfg.rowConfig.nonProcurementHeaderRow
-                                                ? cfg.rowConfig.nonProcurementHeaderRow + 1
-                                                : "—"}
+                                            {cfg.rowConfig
+                                                .nonProcurementHeaderRow
+                                                ? cfg.rowConfig
+                                                      .nonProcurementHeaderRow +
+                                                  1
+                                                : '—'}
                                             ..last]
                                         </div>
-                                        {calibrationMode === "per-sheet" && (
+                                        {calibrationMode === 'per-sheet' && (
                                             <div className="mt-3 text-xs">
                                                 <span className="text-muted-foreground">
-                                                    Effective for {selectedSheets.length}{" "}
-                                                    sheets:{" "}
+                                                    Effective for{' '}
+                                                    {selectedSheets.length}{' '}
+                                                    sheets:{' '}
                                                 </span>
                                                 {selectedSheets.map((s) => {
-                                                    const c = calibrations[s] ?? sharedConfig;
+                                                    const c =
+                                                        calibrations[s] ??
+                                                        sharedConfig;
                                                     const same =
                                                         c &&
                                                         cfg &&
-                                                        c.rowConfig.headerRow ===
-                                                            cfg.rowConfig.headerRow &&
-                                                        c.columnConfig.category ===
-                                                            cfg.columnConfig.category &&
-                                                        c.columnConfig.coa === cfg.columnConfig.coa &&
-                                                        c.coaLabelMode === cfg.coaLabelMode;
+                                                        c.rowConfig
+                                                            .headerRow ===
+                                                            cfg.rowConfig
+                                                                .headerRow &&
+                                                        c.columnConfig
+                                                            .category ===
+                                                            cfg.columnConfig
+                                                                .category &&
+                                                        c.columnConfig.coa ===
+                                                            cfg.columnConfig
+                                                                .coa &&
+                                                        c.coaLabelMode ===
+                                                            cfg.coaLabelMode;
 
                                                     return (
                                                         <Badge
                                                             key={s}
-                                                            variant={same ? "secondary" : "outline"}
+                                                            variant={
+                                                                same
+                                                                    ? 'secondary'
+                                                                    : 'outline'
+                                                            }
                                                             className="mr-1 text-xs"
                                                         >
-                                                            {s}:{" "}
+                                                            {s}:{' '}
                                                             {c
-                                                                ? `${c.columnConfig.category}/${c.columnConfig.coa} H${c.rowConfig.headerRow} ${c.coaLabelMode === "without-label" ? "no-label" : "label"}`
-                                                                : "default"}
+                                                                ? `${c.columnConfig.category}/${c.columnConfig.coa} H${c.rowConfig.headerRow} ${c.coaLabelMode === 'without-label' ? 'no-label' : 'label'}`
+                                                                : 'default'}
                                                         </Badge>
                                                     );
                                                 })}
@@ -1573,25 +1840,36 @@ ensureCalibrationsInitialized();
                                 );
                             })()}
                             <div className="flex justify-between">
-                                <Button variant="outline" onClick={() => setStep("upload")}>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setStep('upload')}
+                                >
                                     Back
                                 </Button>
-                                <Button onClick={() => setStep("verify")} disabled={!canVerify}>
+                                <Button
+                                    onClick={() => setStep('verify')}
+                                    disabled={!canVerify}
+                                >
                                     Next: Verify Format
                                 </Button>
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="verify" className="mt-4 flex flex-col gap-4">
+                        <TabsContent
+                            value="verify"
+                            className="mt-4 flex flex-col gap-4"
+                        >
                             <div className="rounded-lg border p-4">
                                 <p className="mb-2 text-sm font-medium">
-                                    Verify procurement format per sheet (categories not in
-                                    additional)
+                                    Verify procurement format per sheet
+                                    (categories not in additional)
                                 </p>
-                                <p className="mb-3 text-xs text-muted-foreground">
-                                    Checks each selected sheet ({selectedSheets.length}) with its
-                                    calibration ({calibrationMode}) — cat → coa(s) → items → cat -
-                                    total. Per-sheet results below.
+                                <p className="text-muted-foreground mb-3 text-xs">
+                                    Checks each selected sheet (
+                                    {selectedSheets.length}) with its
+                                    calibration ({calibrationMode}) — cat →
+                                    coa(s) → items → cat - total. Per-sheet
+                                    results below.
                                 </p>
                                 <div className="flex items-center gap-2">
                                     <Button
@@ -1600,16 +1878,17 @@ ensureCalibrationsInitialized();
                                         onClick={handleVerify}
                                     >
                                         Verify {selectedSheets.length} Sheet
-                                        {selectedSheets.length === 1 ? "" : "s"}
+                                        {selectedSheets.length === 1 ? '' : 's'}
                                     </Button>
                                     {hasAnyVerify && (
-                                        <span className="text-xs text-muted-foreground">
+                                        <span className="text-muted-foreground text-xs">
                                             {
-                                                Object.values(verifyResults).filter((r) => r.valid)
-                                                    .length
+                                                Object.values(
+                                                    verifyResults,
+                                                ).filter((r) => r.valid).length
                                             }
                                             /{selectedSheets.length} valid
-                                            {allVerifyValid && " — all ✅"}
+                                            {allVerifyValid && ' — all ✅'}
                                         </span>
                                     )}
                                 </div>
@@ -1620,7 +1899,10 @@ ensureCalibrationsInitialized();
 
                                             if (!r) {
                                                 return (
-                                                    <Badge key={sh} variant="secondary">
+                                                    <Badge
+                                                        key={sh}
+                                                        variant="secondary"
+                                                    >
                                                         {sh}: —
                                                     </Badge>
                                                 );
@@ -1629,13 +1911,20 @@ ensureCalibrationsInitialized();
                                             return (
                                                 <Badge
                                                     key={sh}
-                                                    variant={r.valid ? "default" : "secondary"}
+                                                    variant={
+                                                        r.valid
+                                                            ? 'default'
+                                                            : 'secondary'
+                                                    }
                                                     className={
-                                                        r.valid ? "bg-green-600" : "bg-amber-500"
+                                                        r.valid
+                                                            ? 'bg-green-600'
+                                                            : 'bg-amber-500'
                                                     }
                                                 >
-                                                    {sh}: {r.valid ? "✅" : "❌"} {r.errors.length}{" "}
-                                                    issues
+                                                    {sh}:{' '}
+                                                    {r.valid ? '✅' : '❌'}{' '}
+                                                    {r.errors.length} issues
                                                 </Badge>
                                             );
                                         })}
@@ -1647,7 +1936,10 @@ ensureCalibrationsInitialized();
                                         onValueChange={setActiveVerifySheet}
                                         className="mt-4"
                                     >
-                                        <TabsList variant="line" className="w-full">
+                                        <TabsList
+                                            variant="line"
+                                            className="w-full"
+                                        >
                                             {selectedSheets.map((sh) => {
                                                 const r = verifyResults[sh];
 
@@ -1657,14 +1949,18 @@ ensureCalibrationsInitialized();
                                                         value={sh}
                                                         className="flex-1"
                                                     >
-                                                        {sh}{" "}
+                                                        {sh}{' '}
                                                         {r?.valid ? (
                                                             <span className="ml-1 text-xs text-green-600">
                                                                 ✓
                                                             </span>
                                                         ) : r ? (
                                                             <span className="ml-1 text-xs text-amber-600">
-                                                                ❌ {r.errors.length}
+                                                                ❌{' '}
+                                                                {
+                                                                    r.errors
+                                                                        .length
+                                                                }
                                                             </span>
                                                         ) : null}
                                                     </TabsTrigger>
@@ -1672,12 +1968,16 @@ ensureCalibrationsInitialized();
                                             })}
                                         </TabsList>
                                         {selectedSheets.map((sh) => {
-                                            const verifyResult = verifyResults[sh];
+                                            const verifyResult =
+                                                verifyResults[sh];
 
                                             if (!verifyResult) {
                                                 return (
-                                                    <TabsContent key={sh} value={sh}>
-                                                        <div className="p-4 text-sm text-muted-foreground">
+                                                    <TabsContent
+                                                        key={sh}
+                                                        value={sh}
+                                                    >
+                                                        <div className="text-muted-foreground p-4 text-sm">
                                                             Not verified yet.
                                                         </div>
                                                     </TabsContent>
@@ -1685,12 +1985,17 @@ ensureCalibrationsInitialized();
                                             }
 
                                             return (
-                                                <TabsContent key={sh} value={sh}>
+                                                <TabsContent
+                                                    key={sh}
+                                                    value={sh}
+                                                >
                                                     <div
-                                                        className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? "border-green-200 bg-green-50 text-green-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}
+                                                        className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? 'border-green-200 bg-green-50 text-green-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
                                                     >
                                                         <div className="font-medium">
-                                                            {verifyResult.message}{" "}
+                                                            {
+                                                                verifyResult.message
+                                                            }{' '}
                                                             <span className="text-xs font-normal opacity-70">
                                                                 — {sh}
                                                             </span>
@@ -1698,63 +2003,105 @@ ensureCalibrationsInitialized();
                                                         <div className="mt-2 flex flex-wrap gap-2 text-xs">
                                                             <Badge
                                                                 variant={
-                                                                    verifyResult.groups.procurement
-                                                                        ? "default"
-                                                                        : "secondary"
+                                                                    verifyResult
+                                                                        .groups
+                                                                        .procurement
+                                                                        ? 'default'
+                                                                        : 'secondary'
                                                                 }
                                                             >
-                                                                Procurement:{" "}
-                                                                {verifyResult.groups.procurement}{" "}
+                                                                Procurement:{' '}
+                                                                {
+                                                                    verifyResult
+                                                                        .groups
+                                                                        .procurement
+                                                                }{' '}
                                                                 cells
                                                             </Badge>
                                                             <Badge
                                                                 variant={
-                                                                    verifyResult.groups.additional
-                                                                        ? "default"
-                                                                        : "secondary"
+                                                                    verifyResult
+                                                                        .groups
+                                                                        .additional
+                                                                        ? 'default'
+                                                                        : 'secondary'
                                                                 }
                                                             >
-                                                                Additional:{" "}
-                                                                {verifyResult.groups.additional}{" "}
+                                                                Additional:{' '}
+                                                                {
+                                                                    verifyResult
+                                                                        .groups
+                                                                        .additional
+                                                                }{' '}
                                                                 cells
                                                             </Badge>
                                                             <Badge
                                                                 variant={
-                                                                    verifyResult.groups
+                                                                    verifyResult
+                                                                        .groups
                                                                         .nonProcurement
-                                                                        ? "default"
-                                                                        : "secondary"
+                                                                        ? 'default'
+                                                                        : 'secondary'
                                                                 }
                                                             >
-                                                                Non-Proc:{" "}
-                                                                {verifyResult.groups.nonProcurement}{" "}
+                                                                Non-Proc:{' '}
+                                                                {
+                                                                    verifyResult
+                                                                        .groups
+                                                                        .nonProcurement
+                                                                }{' '}
                                                                 cells
                                                             </Badge>
                                                         </div>
-                                                        {verifyResult.details.length > 0 && (
+                                                        {verifyResult.details
+                                                            .length > 0 && (
                                                             <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
                                                                 {verifyResult.details.map(
                                                                     (d, i) => (
-                                                                        <li key={i}>{d}</li>
+                                                                        <li
+                                                                            key={
+                                                                                i
+                                                                            }
+                                                                        >
+                                                                            {d}
+                                                                        </li>
                                                                     ),
                                                                 )}
                                                             </ul>
                                                         )}
-                                                        {verifyResult.errors.length > 0 && (
+                                                        {verifyResult.errors
+                                                            .length > 0 && (
                                                             <div className="mt-3">
                                                                 <div className="text-xs font-semibold">
                                                                     Issues (
-                                                                    {verifyResult.errors.length}) in{" "}
-                                                                    {sh}:
+                                                                    {
+                                                                        verifyResult
+                                                                            .errors
+                                                                            .length
+                                                                    }
+                                                                    ) in {sh}:
                                                                 </div>
                                                                 <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5">
                                                                     {verifyResult.errors.map(
-                                                                        (e, i) => (
-                                                                            <li key={i}>
+                                                                        (
+                                                                            e,
+                                                                            i,
+                                                                        ) => (
+                                                                            <li
+                                                                                key={
+                                                                                    i
+                                                                                }
+                                                                            >
                                                                                 <span className="font-mono">
-                                                                                    Row {e.row}:
-                                                                                </span>{" "}
-                                                                                {e.message}
+                                                                                    Row{' '}
+                                                                                    {
+                                                                                        e.row
+                                                                                    }
+                                                                                    :
+                                                                                </span>{' '}
+                                                                                {
+                                                                                    e.message
+                                                                                }
                                                                             </li>
                                                                         ),
                                                                     )}
@@ -1777,7 +2124,7 @@ ensureCalibrationsInitialized();
 
                                         return (
                                             <div
-                                                className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? "border-green-200 bg-green-50 text-green-900" : "border-amber-200 bg-amber-50 text-amber-900"}`}
+                                                className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? 'border-green-200 bg-green-50 text-green-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
                                             >
                                                 <div className="font-medium">
                                                     {verifyResult.message}
@@ -1785,56 +2132,91 @@ ensureCalibrationsInitialized();
                                                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                                                     <Badge
                                                         variant={
-                                                            verifyResult.groups.procurement
-                                                                ? "default"
-                                                                : "secondary"
+                                                            verifyResult.groups
+                                                                .procurement
+                                                                ? 'default'
+                                                                : 'secondary'
                                                         }
                                                     >
-                                                        Procurement:{" "}
-                                                        {verifyResult.groups.procurement} cells
-                                                    </Badge>
-                                                    <Badge
-                                                        variant={
-                                                            verifyResult.groups.additional
-                                                                ? "default"
-                                                                : "secondary"
-                                                        }
-                                                    >
-                                                        Additional: {verifyResult.groups.additional}{" "}
+                                                        Procurement:{' '}
+                                                        {
+                                                            verifyResult.groups
+                                                                .procurement
+                                                        }{' '}
                                                         cells
                                                     </Badge>
                                                     <Badge
                                                         variant={
-                                                            verifyResult.groups.nonProcurement
-                                                                ? "default"
-                                                                : "secondary"
+                                                            verifyResult.groups
+                                                                .additional
+                                                                ? 'default'
+                                                                : 'secondary'
                                                         }
                                                     >
-                                                        Non-Proc:{" "}
-                                                        {verifyResult.groups.nonProcurement} cells
+                                                        Additional:{' '}
+                                                        {
+                                                            verifyResult.groups
+                                                                .additional
+                                                        }{' '}
+                                                        cells
+                                                    </Badge>
+                                                    <Badge
+                                                        variant={
+                                                            verifyResult.groups
+                                                                .nonProcurement
+                                                                ? 'default'
+                                                                : 'secondary'
+                                                        }
+                                                    >
+                                                        Non-Proc:{' '}
+                                                        {
+                                                            verifyResult.groups
+                                                                .nonProcurement
+                                                        }{' '}
+                                                        cells
                                                     </Badge>
                                                 </div>
-                                                {verifyResult.details.length > 0 && (
+                                                {verifyResult.details.length >
+                                                    0 && (
                                                     <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
-                                                        {verifyResult.details.map((d, i) => (
-                                                            <li key={i}>{d}</li>
-                                                        ))}
+                                                        {verifyResult.details.map(
+                                                            (d, i) => (
+                                                                <li key={i}>
+                                                                    {d}
+                                                                </li>
+                                                            ),
+                                                        )}
                                                     </ul>
                                                 )}
-                                                {verifyResult.errors.length > 0 && (
+                                                {verifyResult.errors.length >
+                                                    0 && (
                                                     <div className="mt-3">
                                                         <div className="text-xs font-semibold">
-                                                            Issues ({verifyResult.errors.length}):
+                                                            Issues (
+                                                            {
+                                                                verifyResult
+                                                                    .errors
+                                                                    .length
+                                                            }
+                                                            ):
                                                         </div>
                                                         <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5">
-                                                            {verifyResult.errors.map((e, i) => (
-                                                                <li key={i}>
-                                                                    <span className="font-mono">
-                                                                        Row {e.row}:
-                                                                    </span>{" "}
-                                                                    {e.message}
-                                                                </li>
-                                                            ))}
+                                                            {verifyResult.errors.map(
+                                                                (e, i) => (
+                                                                    <li key={i}>
+                                                                        <span className="font-mono">
+                                                                            Row{' '}
+                                                                            {
+                                                                                e.row
+                                                                            }
+                                                                            :
+                                                                        </span>{' '}
+                                                                        {
+                                                                            e.message
+                                                                        }
+                                                                    </li>
+                                                                ),
+                                                            )}
                                                         </ul>
                                                     </div>
                                                 )}
@@ -1849,64 +2231,86 @@ ensureCalibrationsInitialized();
                                             size="sm"
                                         />
                                         <span className="text-xs">
-                                            Skip{" "}
-                                            {Object.values(verifyResults).reduce(
-                                                (a, r) => a + (r.valid ? 0 : r.errors.length),
+                                            Skip{' '}
+                                            {Object.values(
+                                                verifyResults,
+                                            ).reduce(
+                                                (a, r) =>
+                                                    a +
+                                                    (r.valid
+                                                        ? 0
+                                                        : r.errors.length),
                                                 0,
-                                            )}{" "}
-                                            problematic row(s) across{" "}
+                                            )}{' '}
+                                            problematic row(s) across{' '}
                                             {
                                                 selectedSheets.filter(
-                                                    (s) => !verifyResults[s]?.valid,
+                                                    (s) =>
+                                                        !verifyResults[s]
+                                                            ?.valid,
                                                 ).length
-                                            }{" "}
-                                            sheet(s) and proceed to extraction (they will show as{" "}
+                                            }{' '}
+                                            sheet(s) and proceed to extraction
+                                            (they will show as{' '}
                                             <span className="font-medium">
                                                 skipped: problematic
-                                            </span>{" "}
+                                            </span>{' '}
                                             in Review)
                                         </span>
                                     </div>
                                 )}
                             </div>
                             <div className="flex justify-between">
-                                <Button variant="outline" onClick={() => setStep("calibrate")}>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setStep('calibrate')}
+                                >
                                     Back
                                 </Button>
-                                <Button onClick={() => setStep("extract")} disabled={!canExtract}>
+                                <Button
+                                    onClick={() => setStep('extract')}
+                                    disabled={!canExtract}
+                                >
                                     {allVerifyValid
                                         ? `Next: Extract (${selectedSheets.length} sheets)`
                                         : skipProblematic && hasAnyVerify
-                                          ? "Next: Extract (skipping problematic)"
-                                          : "Fix verification first"}
+                                          ? 'Next: Extract (skipping problematic)'
+                                          : 'Fix verification first'}
                                 </Button>
                             </div>
                         </TabsContent>
 
-                        <TabsContent value="extract" className="mt-4 flex flex-col gap-4">
+                        <TabsContent
+                            value="extract"
+                            className="mt-4 flex flex-col gap-4"
+                        >
                             {!canExtract ? (
-                                <div className="rounded-lg border p-8 text-center text-sm text-muted-foreground">
+                                <div className="text-muted-foreground rounded-lg border p-8 text-center text-sm">
                                     {hasAnyVerify ? (
                                         <>
-                                            Verification failed —{" "}
+                                            Verification failed —{' '}
                                             {
-                                                Object.values(verifyResults).filter((r) => !r.valid)
-                                                    .length
-                                            }{" "}
-                                            sheet(s) invalid — enable{" "}
+                                                Object.values(
+                                                    verifyResults,
+                                                ).filter((r) => !r.valid).length
+                                            }{' '}
+                                            sheet(s) invalid — enable{' '}
                                             <span className="font-medium">
                                                 Skip problematic rows
-                                            </span>{" "}
-                                            in Verify tab to proceed, or fix sheet format. (
-                                            {selectedSheets.length} sheets selected,{" "}
+                                            </span>{' '}
+                                            in Verify tab to proceed, or fix
+                                            sheet format. (
+                                            {selectedSheets.length} sheets
+                                            selected,{' '}
                                             {
-                                                Object.values(verifyResults).filter((r) => r.valid)
-                                                    .length
-                                            }{" "}
+                                                Object.values(
+                                                    verifyResults,
+                                                ).filter((r) => r.valid).length
+                                            }{' '}
                                             valid)
                                         </>
                                     ) : (
-                                        "Verify format first (must be valid or skipped) to enable extraction."
+                                        'Verify format first (must be valid or skipped) to enable extraction.'
                                     )}
                                 </div>
                             ) : (
@@ -1914,16 +2318,26 @@ ensureCalibrationsInitialized();
                                     <div className="flex items-center gap-2">
                                         <Button
                                             onClick={handleExtract}
-                                            disabled={selectedSheets.length === 0}
+                                            disabled={
+                                                selectedSheets.length === 0
+                                            }
                                         >
-                                            Extract Categories ({selectedSheets.length} sheets)
+                                            Extract Categories (
+                                            {selectedSheets.length} sheets)
                                         </Button>
                                         {extractResult && (
-                                            <span className="text-sm text-muted-foreground">
-                                                Raw {extractResult.filtered.length} → Unique{" "}
-                                                {extractResult.unique.length} (duplicates{" "}
-                                                {extractResult.duplicates.length}) across{" "}
-                                                {selectedSheets.length} sheets
+                                            <span className="text-muted-foreground text-sm">
+                                                Raw{' '}
+                                                {extractResult.filtered.length}{' '}
+                                                → Unique{' '}
+                                                {extractResult.unique.length}{' '}
+                                                (duplicates{' '}
+                                                {
+                                                    extractResult.duplicates
+                                                        .length
+                                                }
+                                                ) across {selectedSheets.length}{' '}
+                                                sheets
                                             </span>
                                         )}
                                     </div>
@@ -1935,11 +2349,15 @@ ensureCalibrationsInitialized();
                                                     <div className="text-lg font-semibold">
                                                         {extractionStats?.raw}
                                                     </div>
-                                                    <div className="text-muted-foreground">Raw</div>
+                                                    <div className="text-muted-foreground">
+                                                        Raw
+                                                    </div>
                                                 </div>
                                                 <div className="rounded-md border bg-green-50 p-2 text-center">
                                                     <div className="text-lg font-semibold text-green-700">
-                                                        {extractionStats?.unique}
+                                                        {
+                                                            extractionStats?.unique
+                                                        }
                                                     </div>
                                                     <div className="text-muted-foreground">
                                                         Unique
@@ -1947,7 +2365,11 @@ ensureCalibrationsInitialized();
                                                 </div>
                                                 <div className="rounded-md border p-2 text-center">
                                                     <div className="text-lg font-semibold">
-                                                        {extractResult.duplicates.length}
+                                                        {
+                                                            extractResult
+                                                                .duplicates
+                                                                .length
+                                                        }
                                                     </div>
                                                     <div className="text-muted-foreground">
                                                         Duplicates
@@ -1955,19 +2377,27 @@ ensureCalibrationsInitialized();
                                                 </div>
                                                 <div className="rounded-md border p-2 text-center">
                                                     <div className="text-lg font-semibold">
-                                                        {extractResult.excludedTotal.length}
+                                                        {
+                                                            extractResult
+                                                                .excludedTotal
+                                                                .length
+                                                        }
                                                     </div>
                                                     <div className="text-muted-foreground">
                                                         Totals excluded
                                                     </div>
                                                 </div>
                                                 <div
-                                                    className={`rounded-md border p-2 text-center ${extractResult.skippedProblematic.length > 0 ? "border-amber-200 bg-amber-50" : ""}`}
+                                                    className={`rounded-md border p-2 text-center ${extractResult.skippedProblematic.length > 0 ? 'border-amber-200 bg-amber-50' : ''}`}
                                                 >
                                                     <div
-                                                        className={`text-lg font-semibold ${extractResult.skippedProblematic.length > 0 ? "text-amber-700" : ""}`}
+                                                        className={`text-lg font-semibold ${extractResult.skippedProblematic.length > 0 ? 'text-amber-700' : ''}`}
                                                     >
-                                                        {extractResult.skippedProblematic.length}
+                                                        {
+                                                            extractResult
+                                                                .skippedProblematic
+                                                                .length
+                                                        }
                                                     </div>
                                                     <div className="text-muted-foreground">
                                                         Skipped: problematic
@@ -1979,18 +2409,36 @@ ensureCalibrationsInitialized();
                                                 <div className="flex items-start justify-between gap-3 p-3">
                                                     <div>
                                                         <h3 className="text-sm font-semibold">
-                                                            Review — Unique Categories (
-                                                            {extractResult.unique.length}) across{" "}
-                                                            {selectedSheets.length} sheets
+                                                            Review — Unique
+                                                            Categories (
+                                                            {
+                                                                extractResult
+                                                                    .unique
+                                                                    .length
+                                                            }
+                                                            ) across{' '}
+                                                            {
+                                                                selectedSheets.length
+                                                            }{' '}
+                                                            sheets
                                                         </h3>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Global dedupe by normalized across all{" "}
-                                                            {selectedSheets.length} sheets. Check to
-                                                            import. Strict = exact normalized match
-                                                            in DB. Partial = substring (≥4 or
+                                                        <p className="text-muted-foreground text-xs">
+                                                            Global dedupe by
+                                                            normalized across
+                                                            all{' '}
+                                                            {
+                                                                selectedSheets.length
+                                                            }{' '}
+                                                            sheets. Check to
+                                                            import. Strict =
+                                                            exact normalized
+                                                            match in DB. Partial
+                                                            = substring (≥4 or
                                                             whitelist
-                                                            oil/gas/ink/lab/cop/car/med/law) or
-                                                            Levenshtein ≤1/2/3. No auto-merge.
+                                                            oil/gas/ink/lab/cop/car/med/law)
+                                                            or Levenshtein
+                                                            ≤1/2/3. No
+                                                            auto-merge.
                                                         </p>
                                                     </div>
                                                     <div className="flex shrink-0 gap-1">
@@ -2001,7 +2449,10 @@ ensureCalibrationsInitialized();
                                                                 setSelected(
                                                                     new Set(
                                                                         extractResult.unique.map(
-                                                                            (u) => u.normalized,
+                                                                            (
+                                                                                u,
+                                                                            ) =>
+                                                                                u.normalized,
                                                                         ),
                                                                     ),
                                                                 )
@@ -2012,7 +2463,11 @@ ensureCalibrationsInitialized();
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            onClick={() => setSelected(new Set())}
+                                                            onClick={() =>
+                                                                setSelected(
+                                                                    new Set(),
+                                                                )
+                                                            }
                                                         >
                                                             Select none
                                                         </Button>
@@ -2020,27 +2475,46 @@ ensureCalibrationsInitialized();
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => {
-                                                                const onlyNew = extractResult.unique
-                                                                    .filter(
-                                                                        (u) =>
-                                                                            getCategoryMatch(
+                                                                const onlyNew =
+                                                                    extractResult.unique
+                                                                        .filter(
+                                                                            (
+                                                                                u,
+                                                                            ) =>
+                                                                                getCategoryMatch(
+                                                                                    u.normalized,
+                                                                                    existingCategories,
+                                                                                )
+                                                                                    .type ===
+                                                                                'none',
+                                                                        )
+                                                                        .map(
+                                                                            (
+                                                                                u,
+                                                                            ) =>
                                                                                 u.normalized,
-                                                                                existingCategories,
-                                                                            ).type === "none",
-                                                                    )
-                                                                    .map((u) => u.normalized);
-                                                                setSelected(new Set(onlyNew));
+                                                                        );
+                                                                setSelected(
+                                                                    new Set(
+                                                                        onlyNew,
+                                                                    ),
+                                                                );
                                                             }}
                                                         >
                                                             Only new
                                                         </Button>
                                                     </div>
                                                 </div>
-                                                <div className="px-3 pb-2 text-xs text-muted-foreground">
+                                                <div className="text-muted-foreground px-3 pb-2 text-xs">
                                                     Selected {selected.size}/
-                                                    {extractResult.unique.length} will be imported.
-                                                    Unchecked stays in sheet only. Default
-                                                    is_additional = false (toggle per row if
+                                                    {
+                                                        extractResult.unique
+                                                            .length
+                                                    }{' '}
+                                                    will be imported. Unchecked
+                                                    stays in sheet only. Default
+                                                    is_additional = false
+                                                    (toggle per row if
                                                     Additional).
                                                 </div>
                                                 <div className="max-h-96 overflow-auto">
@@ -2050,10 +2524,18 @@ ensureCalibrationsInitialized();
                                                                 <TableHead className="w-10 text-center">
                                                                     Import
                                                                 </TableHead>
-                                                                <TableHead>Raw</TableHead>
-                                                                <TableHead>DB Match</TableHead>
-                                                                <TableHead>Sheets</TableHead>
-                                                                <TableHead>Locations</TableHead>
+                                                                <TableHead>
+                                                                    Raw
+                                                                </TableHead>
+                                                                <TableHead>
+                                                                    DB Match
+                                                                </TableHead>
+                                                                <TableHead>
+                                                                    Sheets
+                                                                </TableHead>
+                                                                <TableHead>
+                                                                    Locations
+                                                                </TableHead>
                                                                 <TableHead className="text-center">
                                                                     Count
                                                                 </TableHead>
@@ -2066,24 +2548,30 @@ ensureCalibrationsInitialized();
                                                             {extractResult.unique
                                                                 .slice(0, 80)
                                                                 .map((u) => {
-                                                                    const match = getCategoryMatch(
-                                                                        u.normalized,
-                                                                        existingCategories,
-                                                                    );
-                                                                    const isSelected = selected.has(
-                                                                        u.normalized,
-                                                                    );
+                                                                    const match =
+                                                                        getCategoryMatch(
+                                                                            u.normalized,
+                                                                            existingCategories,
+                                                                        );
+                                                                    const isSelected =
+                                                                        selected.has(
+                                                                            u.normalized,
+                                                                        );
                                                                     const isStrict =
-                                                                        match.type === "strict";
+                                                                        match.type ===
+                                                                        'strict';
                                                                     const partials =
-                                                                        match.type === "partial"
+                                                                        match.type ===
+                                                                        'partial'
                                                                             ? (match.topMatches ??
                                                                               [])
                                                                             : [];
 
                                                                     return (
                                                                         <TableRow
-                                                                            key={u.normalized}
+                                                                            key={
+                                                                                u.normalized
+                                                                            }
                                                                         >
                                                                             <TableCell className="text-center">
                                                                                 <input
@@ -2100,7 +2588,8 @@ ensureCalibrationsInitialized();
                                                                                             );
 
                                                                                         if (
-                                                                                            e.target
+                                                                                            e
+                                                                                                .target
                                                                                                 .checked
                                                                                         ) {
                                                                                             next.add(
@@ -2121,9 +2610,13 @@ ensureCalibrationsInitialized();
                                                                             </TableCell>
                                                                             <TableCell
                                                                                 className="max-w-[18ch] truncate text-xs"
-                                                                                title={u.raw}
+                                                                                title={
+                                                                                    u.raw
+                                                                                }
                                                                             >
-                                                                                {u.raw}
+                                                                                {
+                                                                                    u.raw
+                                                                                }
                                                                             </TableCell>
                                                                             <TableCell className="max-w-[28ch] text-xs">
                                                                                 {isStrict ? (
@@ -2133,15 +2626,17 @@ ensureCalibrationsInitialized();
                                                                                         title={
                                                                                             (
                                                                                                 match as any
-                                                                                            ).match
+                                                                                            )
+                                                                                                .match
                                                                                                 ?.name
                                                                                         }
                                                                                     >
-                                                                                        Exists:{" "}
+                                                                                        Exists:{' '}
                                                                                         {
                                                                                             (
                                                                                                 match as any
-                                                                                            ).match
+                                                                                            )
+                                                                                                .match
                                                                                                 ?.name
                                                                                         }
                                                                                     </Badge>
@@ -2165,10 +2660,10 @@ ensureCalibrationsInitialized();
                                                                                                         p
                                                                                                             .category
                                                                                                             .name
-                                                                                                    }{" "}
+                                                                                                    }{' '}
                                                                                                     {p.score ===
                                                                                                     99
-                                                                                                        ? "(substr)"
+                                                                                                        ? '(substr)'
                                                                                                         : `(lev ${p.score})`}
                                                                                                 </Badge>
                                                                                             ),
@@ -2176,16 +2671,19 @@ ensureCalibrationsInitialized();
                                                                                     </div>
                                                                                 ) : (
                                                                                     <span className="text-muted-foreground">
-                                                                                        — new
+                                                                                        —
+                                                                                        new
                                                                                     </span>
                                                                                 )}
                                                                                 <div
-                                                                                    className="truncate text-xs text-muted-foreground"
+                                                                                    className="text-muted-foreground truncate text-xs"
                                                                                     title={
                                                                                         u.normalized
                                                                                     }
                                                                                 >
-                                                                                    {u.normalized}
+                                                                                    {
+                                                                                        u.normalized
+                                                                                    }
                                                                                 </div>
                                                                             </TableCell>
                                                                             <TableCell className="text-center">
@@ -2193,18 +2691,21 @@ ensureCalibrationsInitialized();
                                                                                     variant={
                                                                                         u.sheetCount ===
                                                                                         selectedSheets.length
-                                                                                            ? "default"
+                                                                                            ? 'default'
                                                                                             : u.sheetCount >
                                                                                                 1
-                                                                                              ? "secondary"
-                                                                                              : "outline"
+                                                                                              ? 'secondary'
+                                                                                              : 'outline'
                                                                                     }
                                                                                     className="font-mono text-xs"
                                                                                     title={u.sheets.join(
-                                                                                        ", ",
+                                                                                        ', ',
                                                                                     )}
                                                                                 >
-                                                                                    {u.sheetCount}/
+                                                                                    {
+                                                                                        u.sheetCount
+                                                                                    }
+                                                                                    /
                                                                                     {
                                                                                         selectedSheets.length
                                                                                     }
@@ -2214,20 +2715,31 @@ ensureCalibrationsInitialized();
                                                                                 className="max-w-[22ch] truncate font-mono text-xs"
                                                                                 title={u.locations
                                                                                     .map(
-                                                                                        (l) =>
+                                                                                        (
+                                                                                            l,
+                                                                                        ) =>
                                                                                             l.address,
                                                                                     )
-                                                                                    .join(", ")}
+                                                                                    .join(
+                                                                                        ', ',
+                                                                                    )}
                                                                             >
                                                                                 {u.locations
-                                                                                    .slice(0, 1)
+                                                                                    .slice(
+                                                                                        0,
+                                                                                        1,
+                                                                                    )
                                                                                     .map(
-                                                                                        (l) =>
+                                                                                        (
+                                                                                            l,
+                                                                                        ) =>
                                                                                             l.address,
                                                                                     )
-                                                                                    .join(", ")}
+                                                                                    .join(
+                                                                                        ', ',
+                                                                                    )}
                                                                                 <span className="text-muted-foreground">
-                                                                                    {" "}
+                                                                                    {' '}
                                                                                     (
                                                                                     {
                                                                                         u
@@ -2243,7 +2755,9 @@ ensureCalibrationsInitialized();
                                                                                 </span>
                                                                             </TableCell>
                                                                             <TableCell className="text-center font-mono text-xs">
-                                                                                {u.count}
+                                                                                {
+                                                                                    u.count
+                                                                                }
                                                                             </TableCell>
                                                                             <TableCell className="text-center">
                                                                                 <Switch
@@ -2251,7 +2765,8 @@ ensureCalibrationsInitialized();
                                                                                         isAdditionalDraft[
                                                                                             u
                                                                                                 .normalized
-                                                                                        ] ?? false
+                                                                                        ] ??
+                                                                                        false
                                                                                     }
                                                                                     onCheckedChange={(
                                                                                         v,
@@ -2275,30 +2790,53 @@ ensureCalibrationsInitialized();
                                                         </TableBody>
                                                     </Table>
                                                 </div>
-                                                {extractResult.unique.length > 80 && (
-                                                    <div className="p-2 text-center text-xs text-muted-foreground">
-                                                        Showing first 80 of{" "}
-                                                        {extractResult.unique.length}
+                                                {extractResult.unique.length >
+                                                    80 && (
+                                                    <div className="text-muted-foreground p-2 text-center text-xs">
+                                                        Showing first 80 of{' '}
+                                                        {
+                                                            extractResult.unique
+                                                                .length
+                                                        }
                                                     </div>
                                                 )}
-                                                <div className="p-3 text-xs text-muted-foreground">
-                                                    Total filtered {extractResult.filtered.length} —
-                                                    unique {extractResult.unique.length} —
-                                                    duplicates {extractResult.duplicates.length} —
-                                                    selected {selected.size}. Each unique shows
-                                                    where it was found:{" "}
-                                                    <span className="font-mono">Sheet1!F12</span>.
-                                                    Strict = exact DB match; Partial = substring (≥4
-                                                    or oil/gas/ink/lab/cop/car/med/law) or
-                                                    Levenshtein ≤1/2/3.
+                                                <div className="text-muted-foreground p-3 text-xs">
+                                                    Total filtered{' '}
+                                                    {
+                                                        extractResult.filtered
+                                                            .length
+                                                    }{' '}
+                                                    — unique{' '}
+                                                    {
+                                                        extractResult.unique
+                                                            .length
+                                                    }{' '}
+                                                    — duplicates{' '}
+                                                    {
+                                                        extractResult.duplicates
+                                                            .length
+                                                    }{' '}
+                                                    — selected {selected.size}.
+                                                    Each unique shows where it
+                                                    was found:{' '}
+                                                    <span className="font-mono">
+                                                        Sheet1!F12
+                                                    </span>
+                                                    . Strict = exact DB match;
+                                                    Partial = substring (≥4 or
+                                                    oil/gas/ink/lab/cop/car/med/law)
+                                                    or Levenshtein ≤1/2/3.
                                                 </div>
                                             </div>
 
-                                            {extractResult.duplicates.length > 0 && (
+                                            {extractResult.duplicates.length >
+                                                0 && (
                                                 <div className="rounded-lg border p-3">
                                                     <h4 className="text-xs font-semibold">
-                                                        Duplicates (normalized exact) — global
-                                                        across {selectedSheets.length} sheets
+                                                        Duplicates (normalized
+                                                        exact) — global across{' '}
+                                                        {selectedSheets.length}{' '}
+                                                        sheets
                                                     </h4>
                                                     <ul className="mt-1 max-h-40 list-disc overflow-auto pl-5 text-xs">
                                                         {extractResult.duplicates
@@ -2306,40 +2844,62 @@ ensureCalibrationsInitialized();
                                                             .map((d, i) => (
                                                                 <li key={i}>
                                                                     <span className="font-mono">
-                                                                        {d.normalized}
-                                                                    </span>{" "}
-                                                                    — kept{" "}
+                                                                        {
+                                                                            d.normalized
+                                                                        }
+                                                                    </span>{' '}
+                                                                    — kept{' '}
                                                                     <span className="font-mono">
-                                                                        {d.keptAddress}
-                                                                    </span>{" "}
-                                                                    ({d.keptSheet}!{d.keptRow}),
-                                                                    duplicate{" "}
+                                                                        {
+                                                                            d.keptAddress
+                                                                        }
+                                                                    </span>{' '}
+                                                                    (
+                                                                    {
+                                                                        d.keptSheet
+                                                                    }
+                                                                    !{d.keptRow}
+                                                                    ), duplicate{' '}
                                                                     <span className="font-mono">
-                                                                        {d.duplicateAddress}
-                                                                    </span>{" "}
-                                                                    (“{d.duplicateRaw}”)
+                                                                        {
+                                                                            d.duplicateAddress
+                                                                        }
+                                                                    </span>{' '}
+                                                                    (“
+                                                                    {
+                                                                        d.duplicateRaw
+                                                                    }
+                                                                    ”)
                                                                 </li>
                                                             ))}
                                                     </ul>
-                                                    {extractResult.duplicates.length > 15 && (
-                                                        <div className="mt-1 text-xs text-muted-foreground">
-                                                            Showing 15 of{" "}
-                                                            {extractResult.duplicates.length}
+                                                    {extractResult.duplicates
+                                                        .length > 15 && (
+                                                        <div className="text-muted-foreground mt-1 text-xs">
+                                                            Showing 15 of{' '}
+                                                            {
+                                                                extractResult
+                                                                    .duplicates
+                                                                    .length
+                                                            }
                                                         </div>
                                                     )}
                                                 </div>
                                             )}
 
-                                            {extractResult.skippedProblematic.length > 0 && (
+                                            {extractResult.skippedProblematic
+                                                .length > 0 && (
                                                 <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
                                                     <h4 className="text-xs font-semibold text-amber-900">
-                                                        Skipped: Problematic (from Verify) — per
+                                                        Skipped: Problematic
+                                                        (from Verify) — per
                                                         sheet
                                                     </h4>
                                                     <p className="text-xs text-amber-800">
-                                                        Excluded rows flagged in Verify (row or
-                                                        normalized match) per sheet. Shown for
-                                                        review.
+                                                        Excluded rows flagged in
+                                                        Verify (row or
+                                                        normalized match) per
+                                                        sheet. Shown for review.
                                                     </p>
                                                     <ul className="mt-1 max-h-40 list-disc overflow-auto pl-5 text-xs text-amber-900">
                                                         {extractResult.skippedProblematic
@@ -2347,25 +2907,35 @@ ensureCalibrationsInitialized();
                                                             .map((s, i) => (
                                                                 <li key={i}>
                                                                     <span className="font-mono">
-                                                                        {s.sheet}!{s.row}:
-                                                                    </span>{" "}
-                                                                    “{s.raw}” →{" "}
+                                                                        {
+                                                                            s.sheet
+                                                                        }
+                                                                        !{s.row}
+                                                                        :
+                                                                    </span>{' '}
+                                                                    “{s.raw}” →{' '}
                                                                     <span className="font-mono">
-                                                                        {s.normalized}
-                                                                    </span>{" "}
-                                                                    —{" "}
+                                                                        {
+                                                                            s.normalized
+                                                                        }
+                                                                    </span>{' '}
+                                                                    —{' '}
                                                                     <span className="italic">
-                                                                        {s.reason}
+                                                                        {
+                                                                            s.reason
+                                                                        }
                                                                     </span>
                                                                 </li>
                                                             ))}
                                                     </ul>
-                                                    {extractResult.skippedProblematic.length >
-                                                        20 && (
+                                                    {extractResult
+                                                        .skippedProblematic
+                                                        .length > 20 && (
                                                         <div className="mt-1 text-xs text-amber-800">
-                                                            Showing first 20 of{" "}
+                                                            Showing first 20 of{' '}
                                                             {
-                                                                extractResult.skippedProblematic
+                                                                extractResult
+                                                                    .skippedProblematic
                                                                     .length
                                                             }
                                                         </div>
@@ -2376,22 +2946,32 @@ ensureCalibrationsInitialized();
                                             <div className="flex items-center gap-2 rounded-lg border p-3">
                                                 <Button
                                                     onClick={handleImport}
-                                                    disabled={importing || selected.size === 0}
+                                                    disabled={
+                                                        importing ||
+                                                        selected.size === 0
+                                                    }
                                                 >
                                                     {importing ? (
                                                         <>
-                                                            <Spinner /> Importing...
+                                                            <Spinner />{' '}
+                                                            Importing...
                                                         </>
                                                     ) : (
                                                         `Import ${selected.size} Categories`
                                                     )}
                                                 </Button>
-                                                <span className="text-xs text-muted-foreground">
-                                                    Will create ppmp_categories where not exists
-                                                    (strict normalized match). Selected{" "}
-                                                    {selected.size}/{extractResult.unique.length}.
-                                                    Additional flag per row (default false,
-                                                    sentinels is_additional false).
+                                                <span className="text-muted-foreground text-xs">
+                                                    Will create ppmp_categories
+                                                    where not exists (strict
+                                                    normalized match). Selected{' '}
+                                                    {selected.size}/
+                                                    {
+                                                        extractResult.unique
+                                                            .length
+                                                    }
+                                                    . Additional flag per row
+                                                    (default false, sentinels
+                                                    is_additional false).
                                                 </span>
                                             </div>
                                         </>
@@ -2399,10 +2979,16 @@ ensureCalibrationsInitialized();
                                 </>
                             )}
                             <div className="flex justify-between">
-                                <Button variant="outline" onClick={() => setStep("verify")}>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setStep('verify')}
+                                >
                                     Back
                                 </Button>
-                                <Button variant="ghost" onClick={() => setStep("calibrate")}>
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setStep('calibrate')}
+                                >
                                     Recalibrate
                                 </Button>
                             </div>
@@ -2418,7 +3004,7 @@ ensureCalibrationsInitialized();
 
 CategoryImport.layout = {
     breadcrumbs: [
-        { title: "Imports", href: importsIndex().url },
-        { title: "Category Import", href: categoryImportIndex().url },
+        { title: 'Imports', href: importsIndex().url },
+        { title: 'Category Import', href: categoryImportIndex().url },
     ],
 };

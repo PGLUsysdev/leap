@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import * as React from "react";
+import { format } from 'date-fns';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import * as React from 'react';
 
-import { Button } from "@/components/base-ui-components/ui/button";
-import { Calendar } from "@/components/base-ui-components/ui/calendar";
+import { Button } from '@/components/base-ui-components/ui/button';
+import { Calendar } from '@/components/base-ui-components/ui/calendar';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/base-ui-components/ui/popover";
+} from '@/components/base-ui-components/ui/popover';
 // import { cn } from '@/lib/utils';
 
 type DatePickerProps = Omit<
     React.ComponentProps<typeof Calendar>,
-    "mode" | "selected" | "onSelect"
+    'mode' | 'selected' | 'onSelect'
 > & {
     year?: number;
     value?: Date;
@@ -23,7 +23,13 @@ type DatePickerProps = Omit<
     invalid?: boolean;
 };
 
-export function DatePicker({ year, value, onValueChange, invalid, ...props }: DatePickerProps) {
+export function DatePicker({
+    year,
+    value,
+    onValueChange,
+    invalid,
+    ...props
+}: DatePickerProps) {
     const [internalDate, setInternalDate] = React.useState<Date>();
 
     const date = value !== undefined ? value : internalDate;
@@ -43,13 +49,13 @@ export function DatePicker({ year, value, onValueChange, invalid, ...props }: Da
                     <Button
                         variant="outline"
                         data-empty={!date}
-                        className="justify-start text-left font-normal data-[empty=true]:text-muted-foreground"
+                        className="data-[empty=true]:text-muted-foreground justify-start text-left font-normal"
                         aria-invalid={invalid}
                     />
                 }
             >
                 <CalendarIcon />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
+                {date ? format(date, 'PPP') : <span>Pick a date</span>}
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
                 <Calendar
@@ -57,10 +63,18 @@ export function DatePicker({ year, value, onValueChange, invalid, ...props }: Da
                     selected={date}
                     onSelect={handleSelect}
                     {...props}
-                    defaultMonth={year != null ? new Date(year, 0) : props.defaultMonth}
-                    startMonth={year != null ? new Date(year, 0) : props.startMonth}
-                    endMonth={year != null ? new Date(year, 11) : props.endMonth}
-                    showOutsideDays={year != null ? false : props.showOutsideDays}
+                    defaultMonth={
+                        year != null ? new Date(year, 0) : props.defaultMonth
+                    }
+                    startMonth={
+                        year != null ? new Date(year, 0) : props.startMonth
+                    }
+                    endMonth={
+                        year != null ? new Date(year, 11) : props.endMonth
+                    }
+                    showOutsideDays={
+                        year != null ? false : props.showOutsideDays
+                    }
                 />
             </PopoverContent>
         </Popover>

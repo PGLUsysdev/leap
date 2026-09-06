@@ -1,13 +1,13 @@
-import type { Auth } from "@/types/auth";
-import type { FiscalYear, CcTypology } from ".";
+import type { Auth } from '@/types/auth';
+import type { FiscalYear, CcTypology } from '.';
 
-declare module "react" {
+declare module 'react' {
     interface InputHTMLAttributes<T> {
         passwordrules?: string;
     }
 }
 
-declare module "@inertiajs/core" {
+declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
@@ -18,7 +18,7 @@ declare module "@inertiajs/core" {
     }
 }
 
-declare module "@tanstack/react-table" {
+declare module '@tanstack/react-table' {
     // Generic params must match TanStack's ColumnMeta exactly for merging,
     // even though they are not referenced here.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -42,7 +42,10 @@ declare module "@tanstack/react-table" {
 
         onUpdate?: (data: TData) => void;
         onAdd?: (data: TData, type?: string) => void;
-        onUpdateStatus?: (data: TData, status: "draft" | "open" | "locked" | "archived") => void;
+        onUpdateStatus?: (
+            data: TData,
+            status: 'draft' | 'open' | 'locked' | 'archived',
+        ) => void;
         onOpen?: (data: TData) => void;
         onGeneratePdf?: (data: TData) => void;
         onOpenPpmpSummary?: (data: TData) => void;
@@ -91,7 +94,11 @@ declare module "@tanstack/react-table" {
         // Editable PPA funding source columns
         onSaveAmount?: (
             id: number,
-            field: "ps_amount" | "fe_amount" | "ccet_adaptation" | "ccet_mitigation",
+            field:
+                | 'ps_amount'
+                | 'fe_amount'
+                | 'ccet_adaptation'
+                | 'ccet_mitigation',
             value: number,
         ) => void;
         onSaveCcTypology?: (id: number) => void;

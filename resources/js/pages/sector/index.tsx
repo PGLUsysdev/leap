@@ -1,12 +1,15 @@
-import { router } from "@inertiajs/react";
-import { useState } from "react";
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { DeleteDialog } from "@/components/delete-dialog";
-import type { Sector } from "@/types";
-import columns from "./columns/columns";
-import FormDialog from "./form-dialog";
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import type { Sector } from '@/types';
+import columns from './columns/columns';
+import FormDialog from './form-dialog';
 
 interface SectorPageProps {
     sectors: Sector[];
@@ -72,7 +75,9 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
                         canDelete: can?.delete ?? false,
                     }}
                 >
-                    {can?.add && <Button onClick={handleAdd}>Add Sector</Button>}
+                    {can?.add && (
+                        <Button onClick={handleAdd}>Add Sector</Button>
+                    )}
                 </DataTable>
 
                 <ScrollBar orientation="vertical" />
@@ -90,8 +95,11 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
                 title="Delete Sector?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">"{selectedSector?.name}"</span>?
+                        Are you sure you want to remove{' '}
+                        <span className="text-foreground font-bold">
+                            "{selectedSector?.name}"
+                        </span>
+                        ?
                     </>
                 }
                 onConfirm={handleDelete}
@@ -105,4 +113,4 @@ export default function SectorPage({ sectors, can }: SectorPageProps) {
     );
 }
 
-SectorPage.layout = { breadcrumbs: [{ title: "Sectors", href: "#" }] };
+SectorPage.layout = { breadcrumbs: [{ title: 'Sectors', href: '#' }] };

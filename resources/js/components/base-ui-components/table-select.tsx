@@ -1,18 +1,18 @@
-import type { ColumnDef } from "@tanstack/react-table";
-import { ChevronsUpDown, Delete } from "lucide-react";
-import { useState } from "react";
-import DataTable from "@/components/base-ui-components/data-table";
+import type { ColumnDef } from '@tanstack/react-table';
+import { ChevronsUpDown, Delete } from 'lucide-react';
+import { useState } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from "@/components/base-ui-components/ui/dialog";
-import { cn } from "@/lib/utils";
-import type { PaginatedResponse } from "@/types";
-import { Button } from "./ui/button";
-import { ButtonGroup, ButtonGroupSeparator } from "./ui/button-group";
+} from '@/components/base-ui-components/ui/dialog';
+import { cn } from '@/lib/utils';
+import type { PaginatedResponse } from '@/types';
+import { Button } from './ui/button';
+import { ButtonGroup, ButtonGroupSeparator } from './ui/button-group';
 
 interface TableSelectProps<TData> {
     data: TData[];
@@ -25,7 +25,7 @@ interface TableSelectProps<TData> {
     className?: string;
     title?: string;
     description?: string;
-    paginationData?: Omit<PaginatedResponse<TData>, "data">;
+    paginationData?: Omit<PaginatedResponse<TData>, 'data'>;
     only?: string[];
     pageParamName?: string;
     searchParamName?: string;
@@ -44,17 +44,22 @@ export function TableSelect<TData>({
     description,
     paginationData,
     only,
-    pageParamName = "page",
-    searchParamName = "search",
+    pageParamName = 'page',
+    searchParamName = 'search',
 }: TableSelectProps<TData>) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className={cn("flex max-h-[calc(100dvh-2rem)] flex-col p-0 sm:max-w-96", className)}
+                className={cn(
+                    'flex max-h-[calc(100dvh-2rem)] flex-col p-0 sm:max-w-96',
+                    className,
+                )}
             >
                 <DialogHeader className="flex-none px-4 pt-4">
-                    <DialogTitle>{title ?? "Title"}</DialogTitle>
-                    <DialogDescription>{description ?? "desc..."}</DialogDescription>
+                    <DialogTitle>{title ?? 'Title'}</DialogTitle>
+                    <DialogDescription>
+                        {description ?? 'desc...'}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
@@ -95,7 +100,7 @@ export function TableSelectButton<TData>({
     hook,
     displayValue,
     placeholder,
-    valueKey = "id" as keyof TData,
+    valueKey = 'id' as keyof TData,
     invalid,
     onClear,
     disabled = false,
@@ -113,11 +118,11 @@ export function TableSelectButton<TData>({
                 type="button"
                 variant="outline"
                 className={cn(
-                    "min-w-0 flex-1 justify-between text-left font-normal",
-                    wrapText ? "h-auto py-2" : "h-10",
+                    'min-w-0 flex-1 justify-between text-left font-normal',
+                    wrapText ? 'h-auto py-2' : 'h-10',
                     !hook.selectedItem
-                        ? "text-muted-foreground hover:text-muted-foreground"
-                        : "hover:text-current",
+                        ? 'text-muted-foreground hover:text-muted-foreground'
+                        : 'hover:text-current',
                 )}
                 onClick={hook.openDialog}
                 aria-invalid={invalid}
@@ -125,8 +130,10 @@ export function TableSelectButton<TData>({
             >
                 <span
                     className={cn(
-                        "min-w-0 flex-1",
-                        wrapText ? "pr-2 wrap-break-word whitespace-normal" : "truncate pr-2",
+                        'min-w-0 flex-1',
+                        wrapText
+                            ? 'pr-2 wrap-break-word whitespace-normal'
+                            : 'truncate pr-2',
                     )}
                 >
                     {text}
@@ -139,7 +146,7 @@ export function TableSelectButton<TData>({
             <Button
                 type="button"
                 variant="secondary"
-                className={cn(wrapText ? "h-auto" : "h-10")}
+                className={cn(wrapText ? 'h-auto' : 'h-10')}
                 aria-label="clear selection"
                 aria-invalid={invalid}
                 onClick={onClear}
@@ -160,11 +167,13 @@ interface UseTableSelectArgs<TData> {
 export function useTableSelect<TData>({
     data,
     value,
-    valueKey = "id" as keyof TData,
+    valueKey = 'id' as keyof TData,
 }: UseTableSelectArgs<TData>) {
     const [open, setOpen] = useState(false);
 
-    const selectedItem = value ? data.find((item) => String(item[valueKey]) === value) : undefined;
+    const selectedItem = value
+        ? data.find((item) => String(item[valueKey]) === value)
+        : undefined;
 
     return {
         open,

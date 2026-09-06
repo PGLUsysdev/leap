@@ -1,9 +1,9 @@
 // resources\js\pages\ppmp\pdf-render\ppmp\render-ppmp-pdf.ts
 
-import type { DocumentProps } from "@react-pdf/renderer";
-import { createElement } from "react";
-import type { ReactElement } from "react";
-import type { AipEntry, FiscalYear, PpaFundingSource } from "@/types";
+import type { DocumentProps } from '@react-pdf/renderer';
+import { createElement } from 'react';
+import type { ReactElement } from 'react';
+import type { AipEntry, FiscalYear, PpaFundingSource } from '@/types';
 
 export interface PpmpPdfPayload {
     aipEntry?: AipEntry;
@@ -25,11 +25,14 @@ export interface PpmpPdfPayload {
  */
 export const renderPdf = async (payload: PpmpPdfPayload): Promise<Blob> => {
     const [{ pdf }, { PpmpDocument }] = await Promise.all([
-        import("@react-pdf/renderer"),
-        import("./document"),
+        import('@react-pdf/renderer'),
+        import('./document'),
     ]);
 
-    const element = createElement(PpmpDocument, payload) as unknown as ReactElement<DocumentProps>;
+    const element = createElement(
+        PpmpDocument,
+        payload,
+    ) as unknown as ReactElement<DocumentProps>;
 
     return pdf(element).toBlob();
 };

@@ -1,13 +1,16 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@inertiajs/react";
-import { createColumnHelper } from "@tanstack/react-table";
-import { ChevronsUpDown, Delete } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
-import * as z from "zod";
-import { TableSelect } from "@/components/base-ui-components/table-select";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ButtonGroup, ButtonGroupSeparator } from "@/components/base-ui-components/ui/button-group";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { createColumnHelper } from '@tanstack/react-table';
+import { ChevronsUpDown, Delete } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm, Controller, useWatch } from 'react-hook-form';
+import * as z from 'zod';
+import { TableSelect } from '@/components/base-ui-components/table-select';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+} from '@/components/base-ui-components/ui/button-group';
 import {
     Dialog,
     DialogContent,
@@ -15,32 +18,40 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from "@/components/base-ui-components/ui/dialog";
+} from '@/components/base-ui-components/ui/dialog';
 import {
     Field,
     FieldLabel,
     FieldError,
     FieldContent,
-} from "@/components/base-ui-components/ui/field";
-import { Input } from "@/components/base-ui-components/ui/input";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/base-ui-components/ui/select";
-import { CommandSelect } from "@/components/command-select";
-import type { Ios, Office, PaginatedResponse, Position } from "@/types";
+} from '@/components/base-ui-components/ui/select';
+import { CommandSelect } from '@/components/command-select';
+import type { Ios, Office, PaginatedResponse, Position } from '@/types';
 
 const formSchema = z.object({
-    item_number: z.string().min(1, "Item number is required"),
-    office_id: z.string().min(1, "Office is required"),
-    ios_id: z.string().min(1, "IOS is required"),
-    employment_type: z.enum(["permanent", "casual", "contractual", "job_order"]),
+    item_number: z.string().min(1, 'Item number is required'),
+    office_id: z.string().min(1, 'Office is required'),
+    ios_id: z.string().min(1, 'IOS is required'),
+    employment_type: z.enum([
+        'permanent',
+        'casual',
+        'contractual',
+        'job_order',
+    ]),
     is_funded: z.string().min(1),
-    status: z.enum(["occupied", "vacant", "abolished"]),
+    status: z.enum(['occupied', 'vacant', 'abolished']),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -57,16 +68,16 @@ interface FormDialogProps {
 const columnHelper = createColumnHelper<Ios>();
 
 const selectColumns = [
-    columnHelper.accessor("class_id", {
-        header: "Class ID",
+    columnHelper.accessor('class_id', {
+        header: 'Class ID',
         cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor("class", {
-        header: "Class",
+    columnHelper.accessor('class', {
+        header: 'Class',
         cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor("salary_grade", {
-        header: "SG",
+    columnHelper.accessor('salary_grade', {
+        header: 'SG',
         cell: (info) => info.getValue(),
     }),
 ];
@@ -85,43 +96,47 @@ export default function FormDialog({
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            item_number: "",
-            office_id: userOfficeId ? String(userOfficeId) : "",
-            ios_id: "",
-            employment_type: "permanent",
-            is_funded: "true",
-            status: "vacant",
+            item_number: '',
+            office_id: userOfficeId ? String(userOfficeId) : '',
+            ios_id: '',
+            employment_type: 'permanent',
+            is_funded: 'true',
+            status: 'vacant',
         },
     });
 
     const watchedIosId = useWatch({
         control: form.control,
-        name: "ios_id",
+        name: 'ios_id',
     });
     const watchedEmploymentType = useWatch({
         control: form.control,
-        name: "employment_type",
+        name: 'employment_type',
     });
 
     const employmentTypeOptions = watchedIosId
         ? ([
-              { value: "permanent", label: "Permanent" },
-              { value: "contractual", label: "Contractual" },
-              ...(watchedEmploymentType === "casual" ? [{ value: "casual", label: "Casual" }] : []),
+              { value: 'permanent', label: 'Permanent' },
+              { value: 'contractual', label: 'Contractual' },
+              ...(watchedEmploymentType === 'casual'
+                  ? [{ value: 'casual', label: 'Casual' }]
+                  : []),
           ] as const)
         : ([
-              { value: "permanent", label: "Permanent" },
-              { value: "casual", label: "Casual" },
-              { value: "contractual", label: "Contractual" },
-              { value: "job_order", label: "Job Order" },
+              { value: 'permanent', label: 'Permanent' },
+              { value: 'casual', label: 'Casual' },
+              { value: 'contractual', label: 'Contractual' },
+              { value: 'job_order', label: 'Job Order' },
           ] as const);
 
     useEffect(() => {
-        if (watchedEmploymentType === "casual") {
-            const laborerI = iosList.data.find((ios) => ios.class === "Laborer I");
+        if (watchedEmploymentType === 'casual') {
+            const laborerI = iosList.data.find(
+                (ios) => ios.class === 'Laborer I',
+            );
 
             if (laborerI) {
-                form.setValue("ios_id", String(laborerI.id));
+                form.setValue('ios_id', String(laborerI.id));
             }
         }
     }, [watchedEmploymentType, iosList, form]);
@@ -133,17 +148,17 @@ export default function FormDialog({
                 office_id: String(data.office_id),
                 ios_id: String(data.ios_id),
                 employment_type: data.employment_type,
-                is_funded: data.is_funded ? "true" : "false",
+                is_funded: data.is_funded ? 'true' : 'false',
                 status: data.status,
             });
         } else {
             form.reset({
-                item_number: "",
-                office_id: userOfficeId ? String(userOfficeId) : "",
-                ios_id: "",
-                employment_type: "permanent",
-                is_funded: "true",
-                status: "vacant",
+                item_number: '',
+                office_id: userOfficeId ? String(userOfficeId) : '',
+                ios_id: '',
+                employment_type: 'permanent',
+                is_funded: 'true',
+                status: 'vacant',
             });
         }
     }, [data, form, userOfficeId]);
@@ -156,7 +171,7 @@ export default function FormDialog({
             office_id: Number(values.office_id),
             ios_id: Number(values.ios_id),
             employment_type: values.employment_type,
-            is_funded: values.is_funded === "true",
+            is_funded: values.is_funded === 'true',
             status: values.status,
         };
 
@@ -176,7 +191,7 @@ export default function FormDialog({
         if (data) {
             router.patch(`/position/${data.id}`, payload, options);
         } else {
-            router.post("/position", payload, options);
+            router.post('/position', payload, options);
         }
     }
 
@@ -188,12 +203,12 @@ export default function FormDialog({
                 <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>
-                            {isEditing ? "Edit Position" : "Add New Position"}
+                            {isEditing ? 'Edit Position' : 'Add New Position'}
                         </DialogTitle>
                         <DialogDescription>
                             {isEditing
-                                ? "Modify the details of the existing position below."
-                                : "Fill in the information to create a new position."}
+                                ? 'Modify the details of the existing position below.'
+                                : 'Fill in the information to create a new position.'}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -208,20 +223,30 @@ export default function FormDialog({
                                     name="item_number"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
                                             <FieldContent>
-                                                <FieldLabel htmlFor={field.name}>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
                                                     Item Number
                                                 </FieldLabel>
                                                 <Input
                                                     {...field}
                                                     id={field.name}
                                                     placeholder="e.g. 001"
-                                                    aria-invalid={fieldState.invalid}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
                                                     autoComplete="off"
                                                 />
                                                 {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -232,15 +257,27 @@ export default function FormDialog({
                                     name="office_id"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
                                             <FieldContent>
-                                                <FieldLabel htmlFor={field.name}>Office</FieldLabel>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Office
+                                                </FieldLabel>
                                                 <CommandSelect<Office>
                                                     value={field.value}
-                                                    onChange={(value) => field.onChange(value)}
+                                                    onChange={(value) =>
+                                                        field.onChange(value)
+                                                    }
                                                     options={offices}
-                                                    getOptionValue={(office) => String(office.id)}
-                                                    getOptionSearchText={(office) => office.name}
+                                                    getOptionValue={(office) =>
+                                                        String(office.id)
+                                                    }
+                                                    getOptionSearchText={(
+                                                        office,
+                                                    ) => office.name}
                                                     renderTrigger={(office) => (
                                                         <span className="truncate">
                                                             {office.acronym
@@ -261,7 +298,11 @@ export default function FormDialog({
                                                     disabled
                                                 />
                                                 {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -273,13 +314,20 @@ export default function FormDialog({
                                     control={form.control}
                                     render={({ field, fieldState }) => {
                                         const selectedIos = iosList.data.find(
-                                            (ios) => String(ios.id) === field.value,
+                                            (ios) =>
+                                                String(ios.id) === field.value,
                                         );
 
                                         return (
-                                            <Field data-invalid={fieldState.invalid}>
+                                            <Field
+                                                data-invalid={
+                                                    fieldState.invalid
+                                                }
+                                            >
                                                 <FieldContent>
-                                                    <FieldLabel htmlFor={field.name}>
+                                                    <FieldLabel
+                                                        htmlFor={field.name}
+                                                    >
                                                         IOS Classification
                                                     </FieldLabel>
 
@@ -288,13 +336,19 @@ export default function FormDialog({
                                                             type="button"
                                                             variant="outline"
                                                             className="min-w-0 flex-1 justify-between text-left font-normal hover:text-current"
-                                                            onClick={() => setOpenIosSelect(true)}
-                                                            aria-invalid={fieldState.invalid}
+                                                            onClick={() =>
+                                                                setOpenIosSelect(
+                                                                    true,
+                                                                )
+                                                            }
+                                                            aria-invalid={
+                                                                fieldState.invalid
+                                                            }
                                                         >
                                                             <span className="truncate">
                                                                 {selectedIos
                                                                     ? `${selectedIos.class} (SG ${selectedIos.salary_grade})`
-                                                                    : "Select IOS classification"}
+                                                                    : 'Select IOS classification'}
                                                             </span>
                                                             <ChevronsUpDown />
                                                         </Button>
@@ -303,11 +357,17 @@ export default function FormDialog({
                                                             type="button"
                                                             variant="secondary"
                                                             aria-label="clear selection"
-                                                            aria-invalid={fieldState.invalid}
+                                                            aria-invalid={
+                                                                fieldState.invalid
+                                                            }
                                                             onClick={() =>
-                                                                form.resetField("ios_id", {
-                                                                    defaultValue: "",
-                                                                })
+                                                                form.resetField(
+                                                                    'ios_id',
+                                                                    {
+                                                                        defaultValue:
+                                                                            '',
+                                                                    },
+                                                                )
                                                             }
                                                         >
                                                             <Delete />
@@ -315,7 +375,11 @@ export default function FormDialog({
                                                     </ButtonGroup>
 
                                                     {fieldState.invalid && (
-                                                        <FieldError errors={[fieldState.error]} />
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
                                                     )}
                                                 </FieldContent>
                                             </Field>
@@ -327,34 +391,52 @@ export default function FormDialog({
                                     name="employment_type"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
                                             <FieldContent>
-                                                <FieldLabel htmlFor={field.name}>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
                                                     Employment Type
                                                 </FieldLabel>
                                                 <Select
                                                     value={field.value}
-                                                    onValueChange={field.onChange}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
                                                 >
                                                     <SelectTrigger
                                                         className="w-full"
-                                                        aria-invalid={fieldState.invalid}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
                                                     >
                                                         <SelectValue placeholder="Select type" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {employmentTypeOptions.map((opt) => (
-                                                            <SelectItem
-                                                                key={opt.value}
-                                                                value={opt.value}
-                                                            >
-                                                                {opt.label}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {employmentTypeOptions.map(
+                                                            (opt) => (
+                                                                <SelectItem
+                                                                    key={
+                                                                        opt.value
+                                                                    }
+                                                                    value={
+                                                                        opt.value
+                                                                    }
+                                                                >
+                                                                    {opt.label}
+                                                                </SelectItem>
+                                                            ),
+                                                        )}
                                                     </SelectContent>
                                                 </Select>
                                                 {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -365,26 +447,44 @@ export default function FormDialog({
                                     name="is_funded"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
                                             <FieldContent>
-                                                <FieldLabel htmlFor={field.name}>Funded</FieldLabel>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Funded
+                                                </FieldLabel>
                                                 <Select
                                                     value={field.value}
-                                                    onValueChange={field.onChange}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
                                                 >
                                                     <SelectTrigger
                                                         className="w-full"
-                                                        aria-invalid={fieldState.invalid}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
                                                     >
                                                         <SelectValue placeholder="Select" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <SelectItem value="true">Yes</SelectItem>
-                                                        <SelectItem value="false">No</SelectItem>
+                                                        <SelectItem value="true">
+                                                            Yes
+                                                        </SelectItem>
+                                                        <SelectItem value="false">
+                                                            No
+                                                        </SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                                 {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -395,16 +495,26 @@ export default function FormDialog({
                                     name="status"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
-                                        <Field data-invalid={fieldState.invalid}>
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                        >
                                             <FieldContent>
-                                                <FieldLabel htmlFor={field.name}>Status</FieldLabel>
+                                                <FieldLabel
+                                                    htmlFor={field.name}
+                                                >
+                                                    Status
+                                                </FieldLabel>
                                                 <Select
                                                     value={field.value}
-                                                    onValueChange={field.onChange}
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
                                                 >
                                                     <SelectTrigger
                                                         className="w-full"
-                                                        aria-invalid={fieldState.invalid}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
                                                     >
                                                         <SelectValue placeholder="Select status" />
                                                     </SelectTrigger>
@@ -421,7 +531,11 @@ export default function FormDialog({
                                                     </SelectContent>
                                                 </Select>
                                                 {fieldState.invalid && (
-                                                    <FieldError errors={[fieldState.error]} />
+                                                    <FieldError
+                                                        errors={[
+                                                            fieldState.error,
+                                                        ]}
+                                                    />
                                                 )}
                                             </FieldContent>
                                         </Field>
@@ -445,8 +559,16 @@ export default function FormDialog({
                             Cancel
                         </Button>
 
-                        <Button type="submit" form="position-form" disabled={submitting}>
-                            {submitting ? "Saving..." : isEditing ? "Save Changes" : "Add Position"}
+                        <Button
+                            type="submit"
+                            form="position-form"
+                            disabled={submitting}
+                        >
+                            {submitting
+                                ? 'Saving...'
+                                : isEditing
+                                  ? 'Save Changes'
+                                  : 'Add Position'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -458,11 +580,11 @@ export default function FormDialog({
                 open={openIosSelect}
                 onOpenChange={setOpenIosSelect}
                 paginationData={iosList}
-                only={["iosList"]}
+                only={['iosList']}
                 onRowSelect={(row) => {
-                    form.setValue("ios_id", String(row.id));
+                    form.setValue('ios_id', String(row.id));
                 }}
-                value={form.watch("ios_id")}
+                value={form.watch('ios_id')}
                 valueKey="id"
                 title="Select IOS Classification"
                 description="Search and select an IOS classification"

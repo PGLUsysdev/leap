@@ -1,21 +1,24 @@
 // resources\js\pages\ppmp\pdf-render\coa-summary\prepare-summary-rows.ts
 
-import type { TableRow } from "../types";
+import type { TableRow } from '../types';
 
-const EXPENSE_CLASSES = ["MOOE", "CO", "FE"] as const;
+const EXPENSE_CLASSES = ['MOOE', 'CO', 'FE'] as const;
 type ExpenseClass = (typeof EXPENSE_CLASSES)[number];
 
 function sumMonthRange(item: any, months: string[]): number {
-    return months.reduce((sum, m) => sum + (Number(item[`${m}_amount`]) || 0), 0);
+    return months.reduce(
+        (sum, m) => sum + (Number(item[`${m}_amount`]) || 0),
+        0,
+    );
 }
 
 function calculateTotals(items: any[]) {
     const totals = { total: 0, q1: 0, q2: 0, q3: 0, q4: 0 };
     items.forEach((item) => {
-        const q1 = sumMonthRange(item, ["jan", "feb", "mar"]);
-        const q2 = sumMonthRange(item, ["apr", "may", "jun"]);
-        const q3 = sumMonthRange(item, ["jul", "aug", "sep"]);
-        const q4 = sumMonthRange(item, ["oct", "nov", "dec"]);
+        const q1 = sumMonthRange(item, ['jan', 'feb', 'mar']);
+        const q2 = sumMonthRange(item, ['apr', 'may', 'jun']);
+        const q3 = sumMonthRange(item, ['jul', 'aug', 'sep']);
+        const q4 = sumMonthRange(item, ['oct', 'nov', 'dec']);
         totals.total += q1 + q2 + q3 + q4;
         totals.q1 += q1;
         totals.q2 += q2;
@@ -35,7 +38,9 @@ export function prepareSummaryRows(rawItems: any[]): TableRow[] {
     EXPENSE_CLASSES.forEach((cls) => classMap.set(cls, new Map()));
 
     rawItems.forEach((item) => {
-        const coa = item.ppmp_price_list?.chart_of_account_ppmp_category?.chart_of_account;
+        const coa =
+            item.ppmp_price_list?.chart_of_account_ppmp_category
+                ?.chart_of_account;
 
         if (!coa) return;
 
@@ -59,7 +64,7 @@ export function prepareSummaryRows(rawItems: any[]): TableRow[] {
         // Banner – already unique
         rows.push({
             id: `prog-${expenseClass}`,
-            type: "banner",
+            type: 'banner',
             label: expenseClass,
         });
 
@@ -68,7 +73,7 @@ export function prepareSummaryRows(rawItems: any[]): TableRow[] {
             const totals = calculateTotals(entry.items);
             rows.push({
                 id: `item-${expenseClass}-${entry.accountCode}`, // unique per expense class
-                type: "item",
+                type: 'item',
                 item: {
                     accountCode: entry.accountCode,
                     accountTitle: entry.accountTitle,
@@ -84,7 +89,7 @@ export function prepareSummaryRows(rawItems: any[]): TableRow[] {
         const subtotal = calculateTotals(coaEntries.flatMap((e) => e.items));
         rows.push({
             id: `summary-subtotal-${expenseClass}`, // unique
-            type: "subtotal",
+            type: 'subtotal',
             label: `${expenseClass} - SUBTOTAL`,
             totals: {
                 total: subtotal.total,
@@ -97,15 +102,15 @@ export function prepareSummaryRows(rawItems: any[]): TableRow[] {
 
         rows.push({
             id: `spacer-${expenseClass}`, // unique
-            type: "spacer",
+            type: 'spacer',
         });
     }
 
     const grand = calculateTotals(rawItems);
     rows.push({
-        id: "summary-grand-total", // unique
-        type: "grand-total",
-        label: "GRAND TOTAL - FOR THE PPA",
+        id: 'summary-grand-total', // unique
+        type: 'grand-total',
+        label: 'GRAND TOTAL - FOR THE PPA',
         totals: {
             total: grand.total,
             q1: grand.q1,

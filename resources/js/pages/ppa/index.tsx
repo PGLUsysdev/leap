@@ -1,28 +1,37 @@
-import { router, usePage } from "@inertiajs/react";
-import { useMemo, useState } from "react";
+import { router, usePage } from '@inertiajs/react';
+import { useMemo, useState } from 'react';
 
 // Layouts & UI Components
-import { AlertErrorDialog } from "@/components/alert-error-dialog";
-import DataTable from "@/components/base-ui-components/data-table";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { CommandSelect } from "@/components/command-select";
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import DataTable from '@/components/base-ui-components/data-table';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { CommandSelect } from '@/components/command-select';
 // import { DataTable } from '@/components/data-table';
-import { DeleteDialog } from "@/components/delete-dialog";
-import { Button } from "@/components/ui/button";
+import { DeleteDialog } from '@/components/delete-dialog';
+import { Button } from '@/components/ui/button';
 
 // Page-Specific Components
-import PpaFormDialog from "@/pages/ppa/form-dialog";
-import PpaMoveDialog from "@/pages/ppa/move-dialog";
-import PpaImportDialog from "@/pages/ppa/ppa-import-dialog";
+import PpaFormDialog from '@/pages/ppa/form-dialog';
+import PpaMoveDialog from '@/pages/ppa/move-dialog';
+import PpaImportDialog from '@/pages/ppa/ppa-import-dialog';
 
 // Routes & API
-import { index, reorder } from "@/routes/ppa";
-import { destroy } from "@/routes/ppas";
+import { index, reorder } from '@/routes/ppa';
+import { destroy } from '@/routes/ppas';
 
 // Types
 // import { type BreadcrumbItem } from "@/types";
-import type { Ppa, Office, SharedData, PaginatedResponse, Filter } from "@/types";
-import columns from "./columns/columns";
+import type {
+    Ppa,
+    Office,
+    SharedData,
+    PaginatedResponse,
+    Filter,
+} from '@/types';
+import columns from './columns/columns';
 
 interface PpaPageProps {
     offices: Office[];
@@ -38,7 +47,7 @@ interface PpaPageProps {
     showAllOffices?: boolean;
     selectedOfficeId?: number;
     parentOffices?: Office[];
-    ppaTypes: Ppa["type"][];
+    ppaTypes: Ppa['type'][];
     ppaTypePadding: Record<string, number>;
 }
 
@@ -62,12 +71,12 @@ export default function PpaPage({
     const { auth } = usePage<SharedData>().props;
     const activeFiscalYear = (page.props as any).activeFiscalYear;
 
-    const rootType = ppaTypes[0] || "Program";
+    const rootType = ppaTypes[0] || 'Program';
 
     // Form Dialog States
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [formMode, setFormMode] = useState<"add" | "edit">("add");
-    const [targetType, setTargetType] = useState<Ppa["type"]>(rootType);
+    const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
+    const [targetType, setTargetType] = useState<Ppa['type']>(rootType);
 
     // Explicitly separated states for "Parent" (Add) and "Self" (Edit)
     const [parentPpa, setParentPpa] = useState<Ppa | null>(null);
@@ -97,18 +106,22 @@ export default function PpaPage({
         return map;
     }, [ppaTypes]);
 
-    const getNextType = (currentType: Ppa["type"]): Ppa["type"] | null => {
-        return nextTypeMap[currentType] as Ppa["type"] | null;
+    const getNextType = (currentType: Ppa['type']): Ppa['type'] | null => {
+        return nextTypeMap[currentType] as Ppa['type'] | null;
     };
 
-    const nextType = current.length > 0 ? (getNextType(current[0].type) ?? rootType) : rootType;
+    const nextType =
+        current.length > 0
+            ? (getNextType(current[0].type) ?? rootType)
+            : rootType;
 
-    const canAddNext = current.length === 0 || getNextType(current[0].type) !== null;
+    const canAddNext =
+        current.length === 0 || getNextType(current[0].type) !== null;
 
     // Handlers
     function handleAddChild(parent: Ppa) {
         const childType = getNextType(parent.type) ?? rootType;
-        setFormMode("add");
+        setFormMode('add');
         setTargetType(childType);
         setParentPpa(parent);
         setEditPpa(null);
@@ -125,7 +138,7 @@ export default function PpaPage({
     }
 
     function handleEdit(item: Ppa) {
-        setFormMode("edit");
+        setFormMode('edit');
         setTargetType(item.type);
         setEditPpa(item);
         setParentPpa(null);
@@ -154,7 +167,9 @@ export default function PpaPage({
                     setErrorMessage(errors.error);
                     setIsErrorOpen(true);
                 } else {
-                    setErrorMessage("An unexpected error occurred while deleting.");
+                    setErrorMessage(
+                        'An unexpected error occurred while deleting.',
+                    );
                     setIsErrorOpen(true);
                 }
             },
@@ -182,14 +197,14 @@ export default function PpaPage({
             index({
                 query: {
                     ...filters,
-                    dialog_mode: "move",
+                    dialog_mode: 'move',
                     dialog_id: filters.id,
                     dialog_page: 1,
                 },
             }),
             {
                 preserveState: true,
-                only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
                     setMovePpa(ppa);
                     setIsMoveDialogOpen(true);
@@ -203,13 +218,13 @@ export default function PpaPage({
             index({
                 query: {
                     ...filters,
-                    dialog_mode: "import",
+                    dialog_mode: 'import',
                     dialog_page: 1,
                 },
             }),
             {
                 preserveState: true,
-                only: ["dialogPpaTree", "dialogCurrent", "filters"],
+                only: ['dialogPpaTree', 'dialogCurrent', 'filters'],
                 onSuccess: () => {
                     setIsImportDialogOpen(true);
                 },
@@ -221,7 +236,7 @@ export default function PpaPage({
         router.visit(
             index({
                 query: {
-                    selected_office_id: officeId?.toString() ?? "",
+                    selected_office_id: officeId?.toString() ?? '',
                 },
             }),
             {},
@@ -241,7 +256,7 @@ export default function PpaPage({
     }
 
     function handleAddNew() {
-        setFormMode("add");
+        setFormMode('add');
         setEditPpa(null);
 
         if (current.length === 0) {
@@ -283,7 +298,7 @@ export default function PpaPage({
                                     options={parentOffices}
                                     getOptionValue={(office) => office.id}
                                     getOptionSearchText={(office) =>
-                                        `${office.acronym ?? ""} ${office.name}`
+                                        `${office.acronym ?? ''} ${office.name}`
                                     }
                                     renderTrigger={(office) => (
                                         <span className="truncate">
@@ -293,9 +308,9 @@ export default function PpaPage({
                                     renderOption={(office) => (
                                         <div className="grid w-full grid-cols-12 gap-2 text-sm">
                                             <span className="col-span-3 font-medium">
-                                                {office.acronym ?? "-"}
+                                                {office.acronym ?? '-'}
                                             </span>
-                                            <span className="col-span-9 whitespace-normal text-muted-foreground">
+                                            <span className="text-muted-foreground col-span-9 whitespace-normal">
                                                 {office.name}
                                             </span>
                                         </div>
@@ -309,12 +324,17 @@ export default function PpaPage({
                         )}
 
                         {can?.import && (
-                            <Button variant="outline" onClick={() => handleImportOpen()}>
+                            <Button
+                                variant="outline"
+                                onClick={() => handleImportOpen()}
+                            >
                                 Import from Last Year
                             </Button>
                         )}
                         {can?.add && canAddNext && (
-                            <Button onClick={handleAddNew}>New {nextType}</Button>
+                            <Button onClick={handleAddNew}>
+                                New {nextType}
+                            </Button>
                         )}
                     </div>
                 </DataTable>
@@ -362,8 +382,11 @@ export default function PpaPage({
                 description={
                     <span className="grid gap-2">
                         <span>
-                            Are you sure you want to remove{" "}
-                            <span className="font-bold text-foreground">"{deletePpa?.name}"</span>?
+                            Are you sure you want to remove{' '}
+                            <span className="text-foreground font-bold">
+                                "{deletePpa?.name}"
+                            </span>
+                            ?
                         </span>
                         <span className="text-destructive">
                             This will also delete all Sub-PPAs.
@@ -385,7 +408,7 @@ export default function PpaPage({
 }
 
 PpaPage.layout = (props: PpaPageProps) => {
-    const items = [{ title: "PPA Master Library", href: index().url }];
+    const items = [{ title: 'PPA Master Library', href: index().url }];
 
     const ancestors = [...(props.current || [])].reverse();
     const ppaTypes = props.ppaTypes || [];
@@ -403,7 +426,8 @@ PpaPage.layout = (props: PpaPageProps) => {
         const childType = getNextType(ppa.type);
 
         items.push({
-            title: isLast && childType ? `${ppa.name}'s ${childType}s` : ppa.name,
+            title:
+                isLast && childType ? `${ppa.name}'s ${childType}s` : ppa.name,
             href: index({
                 query: {
                     id: ppa.id,

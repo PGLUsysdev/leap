@@ -1,10 +1,13 @@
-import type { ColumnDef } from "@tanstack/react-table";
-import { ChevronsUpDown, Delete } from "lucide-react";
-import { useMemo, useState } from "react";
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ButtonGroup, ButtonGroupSeparator } from "@/components/base-ui-components/ui/button-group";
-import { Checkbox } from "@/components/base-ui-components/ui/checkbox";
+import type { ColumnDef } from '@tanstack/react-table';
+import { ChevronsUpDown, Delete } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+} from '@/components/base-ui-components/ui/button-group';
+import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -12,8 +15,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/base-ui-components/ui/dialog";
-import { cn } from "@/lib/utils";
+} from '@/components/base-ui-components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 interface MultiTableSelectProps<TData> {
     data: TData[];
@@ -37,7 +40,7 @@ export function MultiTableSelect<TData>({
     open,
     onOpenChange,
     selectedValues,
-    valueKey = "id" as keyof TData,
+    valueKey = 'id' as keyof TData,
     onConfirm,
     title,
     description,
@@ -59,16 +62,20 @@ export function MultiTableSelect<TData>({
 
     const toggle = (id: string) => {
         setSelectedIds((previous) =>
-            previous.includes(id) ? previous.filter((value) => value !== id) : [...previous, id],
+            previous.includes(id)
+                ? previous.filter((value) => value !== id)
+                : [...previous, id],
         );
     };
 
     const columnsWithSelection = useMemo<ColumnDef<TData, any>[]>(
         () => [
             {
-                id: "__select",
+                id: '__select',
                 size: 40,
-                header: () => <div className="text-center text-wrap">&nbsp;</div>,
+                header: () => (
+                    <div className="text-center text-wrap">&nbsp;</div>
+                ),
                 cell: ({ row }) => {
                     const id = String(row.original[valueKey]);
 
@@ -108,11 +115,16 @@ export function MultiTableSelect<TData>({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className={cn("flex max-h-[calc(100dvh-2rem)] flex-col p-0 sm:max-w-96", className)}
+                className={cn(
+                    'flex max-h-[calc(100dvh-2rem)] flex-col p-0 sm:max-w-96',
+                    className,
+                )}
             >
                 <DialogHeader className="flex-none px-4 pt-4">
-                    <DialogTitle>{title ?? "Title"}</DialogTitle>
-                    <DialogDescription>{description ?? "desc..."}</DialogDescription>
+                    <DialogTitle>{title ?? 'Title'}</DialogTitle>
+                    <DialogDescription>
+                        {description ?? 'desc...'}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-b-xl">
@@ -126,10 +138,14 @@ export function MultiTableSelect<TData>({
                 </div>
 
                 <DialogFooter className="flex-none gap-2 px-4 py-3">
-                    <span className="mr-auto self-center text-sm text-muted-foreground tabular-nums">
+                    <span className="text-muted-foreground mr-auto self-center text-sm tabular-nums">
                         {selectedItems.length} selected
                     </span>
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => onOpenChange(false)}
+                    >
                         Cancel
                     </Button>
                     <Button type="button" onClick={handleConfirm}>
@@ -167,11 +183,11 @@ export function MultiTableSelectButton({
                 type="button"
                 variant="outline"
                 className={cn(
-                    "min-w-0 flex-1 justify-between text-left font-normal",
-                    "h-auto py-2",
+                    'min-w-0 flex-1 justify-between text-left font-normal',
+                    'h-auto py-2',
                     !hasSelection
-                        ? "text-muted-foreground hover:text-muted-foreground"
-                        : "hover:text-current",
+                        ? 'text-muted-foreground hover:text-muted-foreground'
+                        : 'hover:text-current',
                 )}
                 onClick={onOpen}
                 aria-invalid={invalid}

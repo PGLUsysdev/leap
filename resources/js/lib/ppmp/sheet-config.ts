@@ -1,5 +1,5 @@
 export type SheetRowConfig = {
-    headerRow: number | "";
+    headerRow: number | '';
     additionalItemsHeaderRow?: number | null;
     nonProcurementHeaderRow?: number | null;
 };
@@ -16,16 +16,26 @@ export type SheetColumnConfig = {
 export type SharedSheetConfig = {
     columnConfig: SheetColumnConfig;
     rowConfig: SheetRowConfig;
-    coaLabelMode: "with-label" | "without-label";
-    coaMatchField?: "auto" | "account_number" | "account_title";
+    coaLabelMode: 'with-label' | 'without-label';
+    coaMatchField?: 'auto' | 'account_number' | 'account_title';
 };
 
 export function getDefaultSharedConfig(): SharedSheetConfig {
     return {
-        columnConfig: { category: "F", coa: "D", unit: "G", price: "H", itemNumber: "E" },
-        rowConfig: { headerRow: 7, additionalItemsHeaderRow: null, nonProcurementHeaderRow: null },
-        coaLabelMode: "with-label",
-        coaMatchField: "account_title",
+        columnConfig: {
+            category: 'F',
+            coa: 'D',
+            unit: 'G',
+            price: 'H',
+            itemNumber: 'E',
+        },
+        rowConfig: {
+            headerRow: 7,
+            additionalItemsHeaderRow: null,
+            nonProcurementHeaderRow: null,
+        },
+        coaLabelMode: 'with-label',
+        coaMatchField: 'account_title',
     };
 }
 

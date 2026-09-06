@@ -1,14 +1,14 @@
-import { DataTable } from "@/components/data-table";
-import AppLayout from "@/layouts/app-layout";
-import type { BreadcrumbItem } from "@/types";
-import type { User, Ppa } from "@/types";
+import { DataTable } from '@/components/data-table';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+import type { User, Ppa } from '@/types';
 
-import AipSummaryCols from "./aip-summary-cols/columns";
-import columns from "./data-table/columns";
-import threeColumns from "./data-table-three/columns";
-import twoColumns from "./data-table-two/columns";
+import AipSummaryCols from './aip-summary-cols/columns';
+import columns from './data-table/columns';
+import threeColumns from './data-table-three/columns';
+import twoColumns from './data-table-two/columns';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Test Table", href: "#" }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Test Table', href: '#' }];
 
 interface UsersIndexProps {
     users: User[];
@@ -22,50 +22,54 @@ export interface Employee {
     role: string;
     department: string;
     email: string;
-    status: "Active" | "Inactive" | "On Leave";
+    status: 'Active' | 'Inactive' | 'On Leave';
     years_tenure: number;
 }
 
 const dataTwo: Employee[] = [
     {
         id: 1,
-        name: "Alice Johnson",
-        role: "Software Engineer",
-        department: "Engineering",
-        email: "alice.j@company.com",
-        status: "Active",
+        name: 'Alice Johnson',
+        role: 'Software Engineer',
+        department: 'Engineering',
+        email: 'alice.j@company.com',
+        status: 'Active',
         years_tenure: 4,
     },
     {
         id: 2,
-        name: "Marcus Chen",
-        role: "Product Designer",
-        department: "Design",
-        email: "m.chen@company.com",
-        status: "On Leave",
+        name: 'Marcus Chen',
+        role: 'Product Designer',
+        department: 'Design',
+        email: 'm.chen@company.com',
+        status: 'On Leave',
         years_tenure: 2,
     },
     {
         id: 3,
-        name: "Sarah Smith",
-        role: "Operations Manager",
-        department: "Management",
-        email: "s.smith@company.com",
-        status: "Active",
+        name: 'Sarah Smith',
+        role: 'Operations Manager',
+        department: 'Management',
+        email: 's.smith@company.com',
+        status: 'Active',
         years_tenure: 7,
     },
     {
         id: 4,
-        name: "Leo Rodriguez",
-        role: "Data Analyst",
-        department: "Engineering",
-        email: "l.rod@company.com",
-        status: "Inactive",
+        name: 'Leo Rodriguez',
+        role: 'Data Analyst',
+        department: 'Engineering',
+        email: 'l.rod@company.com',
+        status: 'Inactive',
         years_tenure: 1,
     },
 ];
 
-export default function UsersIndex({ users, ppas, aipEntries }: UsersIndexProps) {
+export default function UsersIndex({
+    users,
+    ppas,
+    aipEntries,
+}: UsersIndexProps) {
     // console.log({ users, ppas });
 
     const expandPpaByFundingSource = (ppas: Ppa[], depth = 0): any[] => {
@@ -121,9 +125,17 @@ export default function UsersIndex({ users, ppas, aipEntries }: UsersIndexProps)
                     <div>e</div>
                 </DataTable>
 
-                <DataTable columns={twoColumns} data={dataTwo} withSearch={true} />
+                <DataTable
+                    columns={twoColumns}
+                    data={dataTwo}
+                    withSearch={true}
+                />
 
-                <DataTable columns={threeColumns} data={ppas} withSearch={true} />
+                <DataTable
+                    columns={threeColumns}
+                    data={ppas}
+                    withSearch={true}
+                />
 
                 <DataTable
                     columns={AipSummaryCols}

@@ -1,10 +1,10 @@
-import { Head, Link, router } from "@inertiajs/react";
-import ExcelJS from "exceljs";
-import { FileSpreadsheet } from "lucide-react";
-import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/base-ui-components/ui/badge";
-import { Button } from "@/components/base-ui-components/ui/button";
+import { Head, Link, router } from '@inertiajs/react';
+import ExcelJS from 'exceljs';
+import { FileSpreadsheet } from 'lucide-react';
+import type { ChangeEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Badge } from '@/components/base-ui-components/ui/badge';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Combobox,
     ComboboxContent,
@@ -12,10 +12,17 @@ import {
     ComboboxInput,
     ComboboxItem,
     ComboboxList,
-} from "@/components/base-ui-components/ui/combobox";
-import { Field, FieldDescription, FieldLabel } from "@/components/base-ui-components/ui/field";
-import { Input } from "@/components/base-ui-components/ui/input";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
+} from '@/components/base-ui-components/ui/combobox';
+import {
+    Field,
+    FieldDescription,
+    FieldLabel,
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -23,8 +30,8 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/base-ui-components/ui/select";
-import { Spinner } from "@/components/base-ui-components/ui/spinner";
+} from '@/components/base-ui-components/ui/select';
+import { Spinner } from '@/components/base-ui-components/ui/spinner';
 import {
     Table,
     TableBody,
@@ -32,20 +39,33 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from "@/components/base-ui-components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/base-ui-components/ui/tabs";
-import { ToggleGroup, ToggleGroupItem } from "@/components/base-ui-components/ui/toggle-group";
-import { cellText } from "@/lib/excel/cell-helpers";
+} from '@/components/base-ui-components/ui/table';
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from '@/components/base-ui-components/ui/tabs';
+import {
+    ToggleGroup,
+    ToggleGroupItem,
+} from '@/components/base-ui-components/ui/toggle-group';
+import { cellText } from '@/lib/excel/cell-helpers';
 import {
     formatCoaOption,
     groupUnmatchedByExtractedCoa,
     parseCoaOptionId,
-} from "@/lib/ppmp/batch-match";
-import type { ExtractedCoaGroup } from "@/lib/ppmp/batch-match";
-import { normalize, isTotalRow, getCategoryMatch, getCoaMatch } from "@/lib/ppmp/normalize";
-import type { ExistingCategory, ExistingCoa } from "@/lib/ppmp/normalize";
-import { getDefaultSharedConfig } from "@/lib/ppmp/sheet-config";
-import type { SharedSheetConfig } from "@/lib/ppmp/sheet-config";
+} from '@/lib/ppmp/batch-match';
+import type { ExtractedCoaGroup } from '@/lib/ppmp/batch-match';
+import {
+    normalize,
+    isTotalRow,
+    getCategoryMatch,
+    getCoaMatch,
+} from '@/lib/ppmp/normalize';
+import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
+import { getDefaultSharedConfig } from '@/lib/ppmp/sheet-config';
+import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 
 // Prices are in cols G (unit) H (price) + description/category in F, COA in D
 // Reuse SharedSheetConfig which already has {category, coa, unit, price}
@@ -96,8 +116,8 @@ type VerifiedItem = UniqueItem & {
     mappingExists: boolean;
     priceListExists: boolean;
     junctionId: number | null;
-    catMatchType: "strict" | "partial" | "none";
-    coaMatchType: "strict" | "partial" | "none";
+    catMatchType: 'strict' | 'partial' | 'none';
+    coaMatchType: 'strict' | 'partial' | 'none';
     catTopMatches: Array<{ category: ExistingCategory; score: number }>;
     coaTopMatches: Array<{ coa: ExistingCoa; score: number }>;
     catMatch: ExistingCategory | null;
@@ -106,7 +126,7 @@ type VerifiedItem = UniqueItem & {
     effectiveCoa: ExistingCoa | null;
     effectiveCoaId: number | null;
     effectiveCoaExists: boolean;
-    effectiveCoaMatchType: "strict" | "partial" | "none";
+    effectiveCoaMatchType: 'strict' | 'partial' | 'none';
     effectiveJunctionId: number | null;
     effectiveMappingExists: boolean;
     effectivePriceListExists: boolean;
@@ -114,14 +134,18 @@ type VerifiedItem = UniqueItem & {
     priceValid: boolean;
     unitValid: boolean;
     descriptionValid: boolean;
-    status: "ready" | "update" | "error";
+    status: 'ready' | 'update' | 'error';
     message: string;
 };
 
 interface PriceListImportProps {
     existingCategories: ExistingCategory[];
     existingCoas: ExistingCoa[];
-    existingMappings: Array<{ id: number; chart_of_account_id: number; ppmp_category_id: number }>;
+    existingMappings: Array<{
+        id: number;
+        chart_of_account_id: number;
+        ppmp_category_id: number;
+    }>;
     existingPriceLists: Array<{
         id: number;
         description: string;
@@ -144,25 +168,38 @@ export default function PriceListImport({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [calibrationMode, setCalibrationMode] = useState<"shared" | "per-sheet">("shared");
-    const [sharedConfig, setSharedConfig] = useState<PriceListSheetConfig | null>(null);
-    const [calibrations, setCalibrations] = useState<Record<string, PriceListSheetConfig>>({});
-    const [currentSheet, setCurrentSheet] = useState<string>("");
+    const [calibrationMode, setCalibrationMode] = useState<
+        'shared' | 'per-sheet'
+    >('shared');
+    const [sharedConfig, setSharedConfig] =
+        useState<PriceListSheetConfig | null>(null);
+    const [calibrations, setCalibrations] = useState<
+        Record<string, PriceListSheetConfig>
+    >({});
+    const [currentSheet, setCurrentSheet] = useState<string>('');
 
-    const [verifyResults, setVerifyResults] = useState<Record<string, VerifyResult>>({});
-    const [activeVerifySheet, setActiveVerifySheet] = useState<string>("");
+    const [verifyResults, setVerifyResults] = useState<
+        Record<string, VerifyResult>
+    >({});
+    const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
     const [rawItems, setRawItems] = useState<RawItem[]>([]);
     const [uniqueItems, setUniqueItems] = useState<UniqueItem[]>([]);
-    const [step, setStep] = useState<"upload" | "calibrate" | "verify" | "review">("upload");
+    const [step, setStep] = useState<
+        'upload' | 'calibrate' | 'verify' | 'review'
+    >('upload');
     const [importing, setImporting] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
-    const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>({});
+    const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>(
+        {},
+    );
     // Per extracted-COA-group picker choice for batch matching (keyed by coaNorm).
     // Shown visibly in the group picker; only applied via explicit Apply.
-    const [batchSelections, setBatchSelections] = useState<Record<string, string>>({});
-    const [reviewFilter, setReviewFilter] = useState<"all" | "errors" | "duplicates" | "longDesc">(
-        "all",
-    );
+    const [batchSelections, setBatchSelections] = useState<
+        Record<string, string>
+    >({});
+    const [reviewFilter, setReviewFilter] = useState<
+        'all' | 'errors' | 'duplicates' | 'longDesc'
+    >('all');
     const [showDuplicateDetails, setShowDuplicateDetails] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 
@@ -172,9 +209,11 @@ export default function PriceListImport({
     }, []);
 
     function getEffectiveConfig(sheet: string): PriceListSheetConfig {
-        if (calibrationMode === "shared" && sharedConfig) return sharedConfig;
+        if (calibrationMode === 'shared' && sharedConfig) return sharedConfig;
 
-        return calibrations[sheet] ?? sharedConfig ?? getDefaultPriceListConfig();
+        return (
+            calibrations[sheet] ?? sharedConfig ?? getDefaultPriceListConfig()
+        );
     }
 
     const canCalibrate = selectedSheets.length > 0;
@@ -182,10 +221,11 @@ export default function PriceListImport({
         canCalibrate &&
         !!workbook &&
         !!sharedConfig &&
-        sharedConfig.rowConfig.headerRow !== "" &&
+        sharedConfig.rowConfig.headerRow !== '' &&
         sharedConfig.rowConfig.headerRow != null;
     const allVerifyValid =
-        selectedSheets.length > 0 && selectedSheets.every((s) => verifyResults[s]?.valid);
+        selectedSheets.length > 0 &&
+        selectedSheets.every((s) => verifyResults[s]?.valid);
     const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
     const canReview = canVerify && hasAnyVerify && allVerifyValid;
 
@@ -199,7 +239,10 @@ export default function PriceListImport({
         return m;
     }, [existingMappings]);
 
-    function handleCoaOverrideChange(rowKey: string, selectedValue: string | null) {
+    function handleCoaOverrideChange(
+        rowKey: string,
+        selectedValue: string | null,
+    ) {
         if (!selectedValue) {
             setCoaOverrides((prev) => {
                 const next = { ...prev };
@@ -221,7 +264,8 @@ export default function PriceListImport({
                 (c) => `${c.path} — ${c.account_title}` === selectedValue,
             );
 
-            if (found) setCoaOverrides((prev) => ({ ...prev, [rowKey]: found.id }));
+            if (found)
+                setCoaOverrides((prev) => ({ ...prev, [rowKey]: found.id }));
         }
     }
 
@@ -242,7 +286,7 @@ export default function PriceListImport({
     function handleBatchApplyGroup(group: ExtractedCoaGroup) {
         const picked =
             batchSelections[group.coaNorm] ??
-            (group.topSuggestion ? formatCoaOption(group.topSuggestion) : "");
+            (group.topSuggestion ? formatCoaOption(group.topSuggestion) : '');
         const id = parseCoaOptionId(picked) ?? group.topSuggestion?.id ?? null;
 
         if (id === null) return;
@@ -287,9 +331,9 @@ export default function PriceListImport({
             const catNorm = normalize(u.category);
             const coaNorm = normalize(u.coa);
             const catRes = getCategoryMatch(catNorm, existingCategories);
-            const coaRes = getCoaMatch(coaNorm, existingCoas, "account_title");
-            const catExists = catRes.type === "strict";
-            const coaExists = coaRes.type === "strict";
+            const coaRes = getCoaMatch(coaNorm, existingCoas, 'account_title');
+            const catExists = catRes.type === 'strict';
+            const coaExists = coaRes.type === 'strict';
             const catId = catRes.match?.id ?? null;
             const coaId = coaRes.match?.id ?? null;
 
@@ -300,58 +344,62 @@ export default function PriceListImport({
                 : (coaRes.match ?? null);
             const effectiveCoaExists = !!effectiveCoa;
             const effectiveCoaId = effectiveCoa?.id ?? null;
-            const effectiveCoaMatchType: VerifiedItem["effectiveCoaMatchType"] = effectiveCoa
-                ? "strict"
-                : coaRes.type;
+            const effectiveCoaMatchType: VerifiedItem['effectiveCoaMatchType'] =
+                effectiveCoa ? 'strict' : coaRes.type;
             const effectiveJunctionId =
                 catId && effectiveCoaId
                     ? (junctionByPair.get(`${effectiveCoaId}|${catId}`) ?? null)
                     : null;
             const effectiveMappingExists = effectiveJunctionId !== null;
 
-            const unitValid = u.unit.trim() !== "" && u.unit.trim().length <= 20;
+            const unitValid =
+                u.unit.trim() !== '' && u.unit.trim().length <= 20;
             const priceValid = u.price !== null && u.price > 0;
             const descriptionValid =
-                u.description.trim().length > 0 && u.description.trim().length <= 1000;
+                u.description.trim().length > 0 &&
+                u.description.trim().length <= 1000;
             // check price list exists (junction + normalized desc + uom) using effective junction
             let effectivePriceListExists = false;
 
             if (effectiveMappingExists && effectiveJunctionId) {
                 effectivePriceListExists = existingPriceLists.some(
                     (p) =>
-                        p.chart_of_account_ppmp_category_id === effectiveJunctionId &&
+                        p.chart_of_account_ppmp_category_id ===
+                            effectiveJunctionId &&
                         normalize(p.description) === normalize(u.description) &&
                         normalize(p.unit_of_measurement) === normalize(u.unit),
                 );
             }
 
-            let status: VerifiedItem["status"] = "ready";
-            let message = "Ready to import";
+            let status: VerifiedItem['status'] = 'ready';
+            let message = 'Ready to import';
 
             if (!catExists) {
-                status = "error";
-                message = "Category not found — create via Category Import";
+                status = 'error';
+                message = 'Category not found — create via Category Import';
             } else if (!effectiveCoaExists) {
-                status = "error";
-                message = "COA not found";
+                status = 'error';
+                message = 'COA not found';
             } else if (!effectiveMappingExists) {
-                status = "error";
-                message = "Mapping not found — create via Category–COA Mappings";
+                status = 'error';
+                message =
+                    'Mapping not found — create via Category–COA Mappings';
             } else if (!descriptionValid) {
-                status = "error";
+                status = 'error';
                 message =
                     u.description.trim().length === 0
-                        ? "Description required"
+                        ? 'Description required'
                         : `Description >1000 chars (${u.description.trim().length}) — will be truncated or shorten`;
             } else if (!unitValid) {
-                status = "error";
-                message = u.unit.trim() === "" ? "Unit required" : "Unit >20 chars";
+                status = 'error';
+                message =
+                    u.unit.trim() === '' ? 'Unit required' : 'Unit >20 chars';
             } else if (!priceValid) {
-                status = "error";
-                message = "Price must be >0";
+                status = 'error';
+                message = 'Price must be >0';
             } else if (effectivePriceListExists) {
-                status = "update";
-                message = "Exists — will update price";
+                status = 'update';
+                message = 'Exists — will update price';
             }
 
             return {
@@ -402,26 +450,40 @@ export default function PriceListImport({
         [verifiedItems],
     );
 
-    const importable = verifiedItems.filter((v) => v.status === "ready" || v.status === "update");
+    const importable = verifiedItems.filter(
+        (v) => v.status === 'ready' || v.status === 'update',
+    );
     const importableSelected = importable.filter((v) => selected.has(v.key));
     const readyCount = importable.length;
-    const errorCount = verifiedItems.filter((v) => v.status === "error").length;
-    const updateCount = verifiedItems.filter((v) => v.status === "update").length;
-    const insertCount = verifiedItems.filter((v) => v.status === "ready").length;
+    const errorCount = verifiedItems.filter((v) => v.status === 'error').length;
+    const updateCount = verifiedItems.filter(
+        (v) => v.status === 'update',
+    ).length;
+    const insertCount = verifiedItems.filter(
+        (v) => v.status === 'ready',
+    ).length;
     const missingMappingCount = verifiedItems.filter(
         (v) => !v.effectiveMappingExists && v.catExists && v.effectiveCoaExists,
     ).length;
 
     const duplicateCount = rawItems.length - uniqueItems.length;
-    const duplicateItems = useMemo(() => verifiedItems.filter((v) => v.count > 1), [verifiedItems]);
-    const longDescriptionCount = verifiedItems.filter((v) => !v.descriptionValid).length;
+    const duplicateItems = useMemo(
+        () => verifiedItems.filter((v) => v.count > 1),
+        [verifiedItems],
+    );
+    const longDescriptionCount = verifiedItems.filter(
+        (v) => !v.descriptionValid,
+    ).length;
 
     const filteredItems = useMemo(() => {
-        if (reviewFilter === "duplicates") return verifiedItems.filter((v) => v.count > 1);
+        if (reviewFilter === 'duplicates')
+            return verifiedItems.filter((v) => v.count > 1);
 
-        if (reviewFilter === "errors") return verifiedItems.filter((v) => v.status === "error");
+        if (reviewFilter === 'errors')
+            return verifiedItems.filter((v) => v.status === 'error');
 
-        if (reviewFilter === "longDesc") return verifiedItems.filter((v) => !v.descriptionValid);
+        if (reviewFilter === 'longDesc')
+            return verifiedItems.filter((v) => !v.descriptionValid);
 
         return verifiedItems;
     }, [verifiedItems, reviewFilter]);
@@ -432,19 +494,20 @@ export default function PriceListImport({
         if (!file) return;
 
         const isXlsx =
-            file.name.toLowerCase().endsWith(".xlsx") ||
-            file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            file.name.toLowerCase().endsWith('.xlsx') ||
+            file.type ===
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
         if (!isXlsx) {
-            setError("Only .xlsx files are allowed.");
+            setError('Only .xlsx files are allowed.');
             setSheets([]);
             setWorkbook(null);
             setSelectedSheets([]);
-            setCurrentSheet("");
+            setCurrentSheet('');
             setSharedConfig(null);
             setCalibrations({});
             setFileName(null);
-            e.target.value = "";
+            e.target.value = '';
 
             return;
         }
@@ -453,18 +516,18 @@ export default function PriceListImport({
         setLoading(true);
         setFileName(file.name);
         setSelectedSheets([]);
-        setCurrentSheet("");
+        setCurrentSheet('');
         setSharedConfig(null);
         setCalibrations({});
         setVerifyResults({});
-        setActiveVerifySheet("");
+        setActiveVerifySheet('');
         setRawItems([]);
         setUniqueItems([]);
         setSelected(new Set());
         setCoaOverrides({});
-        setReviewFilter("all");
+        setReviewFilter('all');
         setShowDuplicateDetails(false);
-        setStep("upload");
+        setStep('upload');
 
         try {
             const wb = new ExcelJS.Workbook();
@@ -473,7 +536,7 @@ export default function PriceListImport({
             setWorkbook(wb);
             setSheets(wb.worksheets.map((ws) => ws.name));
         } catch {
-            setError("Failed to parse .xlsx file.");
+            setError('Failed to parse .xlsx file.');
             setSheets([]);
             setWorkbook(null);
             setSelectedSheets([]);
@@ -485,19 +548,22 @@ export default function PriceListImport({
 
     function handleSheetToggle(sheet: string) {
         setSelectedSheets((prev) => {
-            const next = prev.includes(sheet) ? prev.filter((s) => s !== sheet) : [...prev, sheet];
+            const next = prev.includes(sheet)
+                ? prev.filter((s) => s !== sheet)
+                : [...prev, sheet];
             setVerifyResults({});
-            setActiveVerifySheet(next[0] ?? "");
+            setActiveVerifySheet(next[0] ?? '');
             setRawItems([]);
             setUniqueItems([]);
             setSelected(new Set());
             setCoaOverrides({});
-            setReviewFilter("all");
+            setReviewFilter('all');
             setShowDuplicateDetails(false);
 
-            if (next.length > 0 && !next.includes(currentSheet)) setCurrentSheet(next[0]);
+            if (next.length > 0 && !next.includes(currentSheet))
+                setCurrentSheet(next[0]);
 
-            if (next.length === 0) setCurrentSheet("");
+            if (next.length === 0) setCurrentSheet('');
 
             return next;
         });
@@ -520,7 +586,8 @@ export default function PriceListImport({
 
         setCalibrations(clones);
 
-        if (!currentSheet && selectedSheets[0]) setCurrentSheet(selectedSheets[0]);
+        if (!currentSheet && selectedSheets[0])
+            setCurrentSheet(selectedSheets[0]);
     }
 
     function handleApplySharedToAll() {
@@ -558,7 +625,10 @@ export default function PriceListImport({
     }
 
     function updateSharedConfig(patch: Partial<PriceListSheetConfig>) {
-        setSharedConfig((prev) => ({ ...(prev ?? getDefaultPriceListConfig()), ...patch }));
+        setSharedConfig((prev) => ({
+            ...(prev ?? getDefaultPriceListConfig()),
+            ...patch,
+        }));
     }
 
     function updateCurrentCalibration(patch: Partial<PriceListSheetConfig>) {
@@ -567,18 +637,23 @@ export default function PriceListImport({
         setCalibrations((prev) => ({
             ...prev,
             [currentSheet]: {
-                ...(prev[currentSheet] ?? sharedConfig ?? getDefaultPriceListConfig()),
+                ...(prev[currentSheet] ??
+                    sharedConfig ??
+                    getDefaultPriceListConfig()),
                 ...patch,
             },
         }));
     }
 
-    function verifySheet(sheet: string, cfg: PriceListSheetConfig): VerifyResult {
+    function verifySheet(
+        sheet: string,
+        cfg: PriceListSheetConfig,
+    ): VerifyResult {
         if (!workbook) {
             return {
                 valid: false,
-                message: "Workbook not loaded",
-                errors: [{ row: 0, message: "Workbook not loaded" }],
+                message: 'Workbook not loaded',
+                errors: [{ row: 0, message: 'Workbook not loaded' }],
                 details: [],
             };
         }
@@ -595,15 +670,21 @@ export default function PriceListImport({
         }
 
         const { category, coa, unit, price, itemNumber } = cfg.columnConfig;
-        const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } = cfg.rowConfig;
+        const { headerRow, additionalItemsHeaderRow, nonProcurementHeaderRow } =
+            cfg.rowConfig;
         const { coaLabelMode } = cfg;
         const lastRow = ws.actualRowCount;
 
-        if (headerRow === "" || headerRow == null) {
+        if (headerRow === '' || headerRow == null) {
             return {
                 valid: false,
-                message: "Header Row is required",
-                errors: [{ row: 0, message: "Header Row is required — check calibration" }],
+                message: 'Header Row is required',
+                errors: [
+                    {
+                        row: 0,
+                        message: 'Header Row is required — check calibration',
+                    },
+                ],
                 details: [],
             };
         }
@@ -614,9 +695,15 @@ export default function PriceListImport({
             : nonProcurementHeaderRow
               ? nonProcurementHeaderRow - 1
               : lastRow;
-        const additionalStart = additionalItemsHeaderRow ? additionalItemsHeaderRow + 1 : -1;
-        const additionalEnd = nonProcurementHeaderRow ? nonProcurementHeaderRow - 1 : lastRow;
-        const nonProcStart = nonProcurementHeaderRow ? nonProcurementHeaderRow + 1 : -1;
+        const additionalStart = additionalItemsHeaderRow
+            ? additionalItemsHeaderRow + 1
+            : -1;
+        const additionalEnd = nonProcurementHeaderRow
+            ? nonProcurementHeaderRow - 1
+            : lastRow;
+        const nonProcStart = nonProcurementHeaderRow
+            ? nonProcurementHeaderRow + 1
+            : -1;
         const nonProcEnd = lastRow;
 
         const errors: Array<{ row: number; message: string }> = [];
@@ -639,16 +726,24 @@ export default function PriceListImport({
         };
         const groups = {
             procurement: countData(procurementStart, procurementEnd),
-            additional: additionalItemsHeaderRow ? countData(additionalStart, additionalEnd) : 0,
-            nonProcurement: nonProcurementHeaderRow ? countData(nonProcStart, nonProcEnd) : 0,
+            additional: additionalItemsHeaderRow
+                ? countData(additionalStart, additionalEnd)
+                : 0,
+            nonProcurement: nonProcurementHeaderRow
+                ? countData(nonProcStart, nonProcEnd)
+                : 0,
         };
 
         if (!additionalItemsHeaderRow) {
-            details.push("Additional Items header not calibrated — skipping additional check");
+            details.push(
+                'Additional Items header not calibrated — skipping additional check',
+            );
         }
 
         if (!nonProcurementHeaderRow) {
-            details.push("Non-Procurement header not calibrated — skipping non-proc check");
+            details.push(
+                'Non-Procurement header not calibrated — skipping non-proc check',
+            );
         }
 
         if (procurementStart > procurementEnd) {
@@ -657,17 +752,23 @@ export default function PriceListImport({
                 message: `Procurement range invalid [${procurementStart}..${procurementEnd}]`,
             });
         } else if (groups.procurement === 0) {
-            errors.push({ row: procurementStart, message: "No data found in procurement group" });
+            errors.push({
+                row: procurementStart,
+                message: 'No data found in procurement group',
+            });
         }
 
         const verifySection = (
-            sectionName: "procurement" | "additional" | "non-procurement",
+            sectionName: 'procurement' | 'additional' | 'non-procurement',
             startRow: number,
             endRow: number,
         ) => {
             if (startRow < 0 || endRow < 0 || startRow > endRow) return;
 
-            if (sectionName === "additional" || sectionName === "non-procurement") {
+            if (
+                sectionName === 'additional' ||
+                sectionName === 'non-procurement'
+            ) {
                 let itemCount = 0;
 
                 for (let r = startRow; r <= endRow && r <= lastRow; r++) {
@@ -684,17 +785,17 @@ export default function PriceListImport({
 
                     if (!dataNorm) continue;
 
-                    if (dataNorm === "description") continue;
+                    if (dataNorm === 'description') continue;
 
                     if (
                         [
-                            "additional items for procurement",
-                            "additional items",
-                            "non-procurement requirements",
-                            "non - procurement requirements",
-                            "additional items for procurement - total",
-                            "non-procurement requirements - total",
-                            "non-procurement - total",
+                            'additional items for procurement',
+                            'additional items',
+                            'non-procurement requirements',
+                            'non - procurement requirements',
+                            'additional items for procurement - total',
+                            'non-procurement requirements - total',
+                            'non-procurement - total',
                         ].includes(dataNorm) ||
                         isTotalRow(dataNorm)
                     ) {
@@ -704,17 +805,28 @@ export default function PriceListImport({
                     const coaNorm = coaRaw ? normalize(coaRaw) : null;
                     const isFalsy = (v: string | null) =>
                         !v ||
-                        normalize(v) === "0" ||
-                        normalize(v) === "-" ||
-                        normalize(v) === "0.00";
-                    const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, "")) : NaN;
+                        normalize(v) === '0' ||
+                        normalize(v) === '-' ||
+                        normalize(v) === '0.00';
+                    const priceNum = priceRaw
+                        ? Number(priceRaw.replace(/,/g, ''))
+                        : NaN;
                     const isFalsyPrice =
-                        !priceRaw || Number.isNaN(priceNum) || priceNum === 0 || isFalsy(priceRaw);
+                        !priceRaw ||
+                        Number.isNaN(priceNum) ||
+                        priceNum === 0 ||
+                        isFalsy(priceRaw);
                     const isFalsyUnit = isFalsy(unitRaw);
                     const isFalsyCoa = !coaNorm;
                     const isFalsyItem = !itemRaw;
 
-                    if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice) continue;
+                    if (
+                        isFalsyItem &&
+                        isFalsyCoa &&
+                        isFalsyUnit &&
+                        isFalsyPrice
+                    )
+                        continue;
 
                     if (coaNorm && dataRaw) {
                         itemCount++;
@@ -743,7 +855,11 @@ export default function PriceListImport({
             };
             const catGroups: CatGroup[] = [];
             let currentCat: CatGroup | null = null;
-            let currentCoa: { coa: string; coaRow: number; items: number } | null = null;
+            let currentCoa: {
+                coa: string;
+                coaRow: number;
+                items: number;
+            } | null = null;
             const flushCat = (totalRow?: number) => {
                 if (currentCat) {
                     if (currentCoa) {
@@ -768,7 +884,7 @@ export default function PriceListImport({
                 const coaNorm = coaRaw ? normalize(coaRaw) : null;
                 const dataNorm = dataRaw ? normalize(dataRaw) : null;
 
-                if (dataNorm === "description") continue;
+                if (dataNorm === 'description') continue;
 
                 if (coaNorm && dataRaw) {
                     if (!currentCat) {
@@ -779,8 +895,11 @@ export default function PriceListImport({
                         continue;
                     }
 
-                    if (coaLabelMode === "without-label") {
-                        if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
+                    if (coaLabelMode === 'without-label') {
+                        if (
+                            !currentCoa ||
+                            coaNorm !== normalize(currentCoa.coa)
+                        ) {
                             if (currentCoa) {
                                 if (currentCoa.items === 0) {
                                     errors.push({
@@ -822,7 +941,9 @@ export default function PriceListImport({
                 if (!dataRaw || !dataNorm) continue;
 
                 if (isTotalRow(dataNorm)) {
-                    const expected = currentCat ? normalize(`${currentCat.cat} - total`) : null;
+                    const expected = currentCat
+                        ? normalize(`${currentCat.cat} - total`)
+                        : null;
 
                     if (!currentCat) {
                         errors.push({
@@ -864,7 +985,7 @@ export default function PriceListImport({
                     continue;
                 }
 
-                if (coaLabelMode === "with-label") {
+                if (coaLabelMode === 'with-label') {
                     let isCoaLabel = false;
                     let nextCoaRaw: string | null = null;
                     let nextCoaNorm: string | null = null;
@@ -873,7 +994,8 @@ export default function PriceListImport({
                         nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coa));
                         nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
 
-                        if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
+                        if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm)
+                            isCoaLabel = true;
                     }
 
                     if (isCoaLabel) {
@@ -954,23 +1076,29 @@ export default function PriceListImport({
             }
 
             if (catGroups.length) {
-                details.push(`${sectionName} groups: ${catGroups.length} cat(s) verified`);
+                details.push(
+                    `${sectionName} groups: ${catGroups.length} cat(s) verified`,
+                );
 
                 for (const g of catGroups) {
                     details.push(
-                        `  Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : " MISSING total"}`,
+                        `  Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : ' MISSING total'}`,
                     );
                 }
             }
         };
-        verifySection("procurement", procurementStart, procurementEnd);
+        verifySection('procurement', procurementStart, procurementEnd);
 
-        if (additionalItemsHeaderRow) verifySection("additional", additionalStart, additionalEnd);
+        if (additionalItemsHeaderRow)
+            verifySection('additional', additionalStart, additionalEnd);
 
-        if (nonProcurementHeaderRow) verifySection("non-procurement", nonProcStart, nonProcEnd);
+        if (nonProcurementHeaderRow)
+            verifySection('non-procurement', nonProcStart, nonProcEnd);
 
         const valid = errors.length === 0;
-        const message = valid ? `✅ Format OK` : `❌ Found ${errors.length} issue(s)`;
+        const message = valid
+            ? `✅ Format OK`
+            : `❌ Found ${errors.length} issue(s)`;
 
         return { valid, message, errors, details };
     }
@@ -990,28 +1118,28 @@ export default function PriceListImport({
 
         setVerifyResults(next);
         const firstInvalid = selectedSheets.find((s) => !next[s]?.valid);
-        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? "");
+        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? '');
         setRawItems([]);
         setUniqueItems([]);
         setSelected(new Set());
         setCoaOverrides({});
-        setReviewFilter("all");
+        setReviewFilter('all');
         setShowDuplicateDetails(false);
     }
 
     function extractItemsForSection(
         ws: ExcelJS.Worksheet,
         cfg: PriceListSheetConfig,
-        sectionName: "procurement" | "additional" | "non-procurement",
+        sectionName: 'procurement' | 'additional' | 'non-procurement',
         startRow: number,
         endRow: number,
     ): RawItem[] {
         const out: RawItem[] = [];
         const dataColumn = cfg.columnConfig.category;
         const coaColumn = cfg.columnConfig.coa;
-            const unitColumn = cfg.columnConfig.unit;
-            const priceColumn = cfg.columnConfig.price;
-            const itemColumn = cfg.columnConfig.itemNumber;
+        const unitColumn = cfg.columnConfig.unit;
+        const priceColumn = cfg.columnConfig.price;
+        const itemColumn = cfg.columnConfig.itemNumber;
         const coaLabelMode = cfg.coaLabelMode;
         type CatGroup = { cat: string; catRow: number };
         let currentCat: CatGroup | null = null;
@@ -1029,14 +1157,19 @@ export default function PriceListImport({
             const coaNorm = coaRaw ? normalize(coaRaw) : null;
             const dataNorm = dataRaw ? normalize(dataRaw) : null;
 
-            if (dataNorm === "description") continue;
+            if (dataNorm === 'description') continue;
 
-            const unitRaw = cellText(row.getCell(unitColumn)) ?? "";
+            const unitRaw = cellText(row.getCell(unitColumn)) ?? '';
             const priceRaw = cellText(row.getCell(priceColumn));
             const itemRaw = cellText(row.getCell(itemColumn));
-            const priceNum = priceRaw ? Number(priceRaw.replace(/,/g, "")) : null;
+            const priceNum = priceRaw
+                ? Number(priceRaw.replace(/,/g, ''))
+                : null;
             const isFalsy = (v: string | null) =>
-                !v || normalize(v) === "0" || normalize(v) === "-" || normalize(v) === "0.00";
+                !v ||
+                normalize(v) === '0' ||
+                normalize(v) === '-' ||
+                normalize(v) === '0.00';
             const isFalsyPrice =
                 !priceRaw ||
                 priceNum === 0 ||
@@ -1046,20 +1179,36 @@ export default function PriceListImport({
             const isFalsyCoa = !coaNorm;
             const isFalsyItem = !itemRaw;
 
-            if (isFalsyItem && isFalsyCoa && isFalsyUnit && isFalsyPrice && dataRaw) {
-                if (sectionName === "additional" || sectionName === "non-procurement") continue;
+            if (
+                isFalsyItem &&
+                isFalsyCoa &&
+                isFalsyUnit &&
+                isFalsyPrice &&
+                dataRaw
+            ) {
+                if (
+                    sectionName === 'additional' ||
+                    sectionName === 'non-procurement'
+                )
+                    continue;
             }
 
             if (coaNorm && dataRaw) {
                 if (!currentCat) {
-                    if (sectionName === "additional") {
-                        currentCat = { cat: "Additional Items (Uncategorized)", catRow: r };
-                    } else if (sectionName === "non-procurement") {
-                        currentCat = { cat: "Non-Procurement (Uncategorized)", catRow: r };
+                    if (sectionName === 'additional') {
+                        currentCat = {
+                            cat: 'Additional Items (Uncategorized)',
+                            catRow: r,
+                        };
+                    } else if (sectionName === 'non-procurement') {
+                        currentCat = {
+                            cat: 'Non-Procurement (Uncategorized)',
+                            catRow: r,
+                        };
                     } else continue;
                 }
 
-                if (coaLabelMode === "without-label") {
+                if (coaLabelMode === 'without-label') {
                     if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
                         currentCoa = { coa: coaRaw!, coaRow: r };
                     }
@@ -1083,7 +1232,10 @@ export default function PriceListImport({
                     coa: effectiveCoa,
                     description: dataRaw,
                     unit: unitRaw,
-                    price: priceNum !== null && !Number.isNaN(priceNum) ? priceNum : null,
+                    price:
+                        priceNum !== null && !Number.isNaN(priceNum)
+                            ? priceNum
+                            : null,
                     priceRaw,
                 });
                 continue;
@@ -1109,7 +1261,7 @@ export default function PriceListImport({
                 continue;
             }
 
-            if (coaLabelMode === "with-label") {
+            if (coaLabelMode === 'with-label') {
                 let isCoaLabel = false;
                 let nextCoaRaw: string | null = null;
                 let nextCoaNorm: string | null = null;
@@ -1118,15 +1270,22 @@ export default function PriceListImport({
                     nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
                     nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
 
-                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm) isCoaLabel = true;
+                    if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm)
+                        isCoaLabel = true;
                 }
 
                 if (isCoaLabel) {
                     if (!currentCat) {
-                        if (sectionName === "additional") {
-                            currentCat = { cat: "Additional Items (Uncategorized)", catRow: r };
-                        } else if (sectionName === "non-procurement") {
-                            currentCat = { cat: "Non-Procurement (Uncategorized)", catRow: r };
+                        if (sectionName === 'additional') {
+                            currentCat = {
+                                cat: 'Additional Items (Uncategorized)',
+                                catRow: r,
+                            };
+                        } else if (sectionName === 'non-procurement') {
+                            currentCat = {
+                                cat: 'Non-Procurement (Uncategorized)',
+                                catRow: r,
+                            };
                         } else continue;
                     }
 
@@ -1159,7 +1318,11 @@ export default function PriceListImport({
 
             const cfg = getEffectiveConfig(sheet);
 
-            if (cfg.rowConfig.headerRow === "" || cfg.rowConfig.headerRow == null) continue;
+            if (
+                cfg.rowConfig.headerRow === '' ||
+                cfg.rowConfig.headerRow == null
+            )
+                continue;
 
             const lastRow = ws.actualRowCount;
             const procurementStart = cfg.rowConfig.headerRow + 1;
@@ -1179,7 +1342,13 @@ export default function PriceListImport({
                 : -1;
             const nonProcEnd = lastRow;
             all.push(
-                ...extractItemsForSection(ws, cfg, "procurement", procurementStart, procurementEnd),
+                ...extractItemsForSection(
+                    ws,
+                    cfg,
+                    'procurement',
+                    procurementStart,
+                    procurementEnd,
+                ),
             );
 
             if (cfg.rowConfig.additionalItemsHeaderRow) {
@@ -1187,7 +1356,7 @@ export default function PriceListImport({
                     ...extractItemsForSection(
                         ws,
                         cfg,
-                        "additional",
+                        'additional',
                         additionalStart,
                         additionalEnd,
                     ),
@@ -1196,7 +1365,13 @@ export default function PriceListImport({
 
             if (cfg.rowConfig.nonProcurementHeaderRow) {
                 all.push(
-                    ...extractItemsForSection(ws, cfg, "non-procurement", nonProcStart, nonProcEnd),
+                    ...extractItemsForSection(
+                        ws,
+                        cfg,
+                        'non-procurement',
+                        nonProcStart,
+                        nonProcEnd,
+                    ),
                 );
             }
         }
@@ -1224,12 +1399,14 @@ export default function PriceListImport({
             } else {
                 existing.count += 1;
 
-                if (!existing.sheets.includes(it.sheet)) existing.sheets.push(it.sheet);
+                if (!existing.sheets.includes(it.sheet))
+                    existing.sheets.push(it.sheet);
 
                 existing.rows.push(it.row);
 
                 // keep first price, but if existing price null and new has price, update
-                if (existing.price === null && it.price !== null) existing.price = it.price;
+                if (existing.price === null && it.price !== null)
+                    existing.price = it.price;
             }
         }
 
@@ -1239,9 +1416,9 @@ export default function PriceListImport({
         setUniqueItems(unique);
         setSelected(new Set(unique.map((u) => u.key)));
         setCoaOverrides({});
-        setReviewFilter("all");
+        setReviewFilter('all');
         setShowDuplicateDetails(false);
-        console.log("Extract price-list", {
+        console.log('Extract price-list', {
             raw: all.length,
             uniqueCount: unique.length,
             all,
@@ -1251,25 +1428,31 @@ export default function PriceListImport({
 
     function handleImport() {
         const toImport = verifiedItems.filter(
-            (v) => selected.has(v.key) && (v.status === "ready" || v.status === "update"),
+            (v) =>
+                selected.has(v.key) &&
+                (v.status === 'ready' || v.status === 'update'),
         );
 
         if (toImport.length === 0) {
             console.warn(
-                "PriceListImport: nothing to import — selected",
+                'PriceListImport: nothing to import — selected',
                 [...selected],
-                "verified",
+                'verified',
                 verifiedItems.length,
             );
 
             return;
         }
 
-        console.log("PriceListImport: posting", toImport.length, toImport.slice(0, 3));
+        console.log(
+            'PriceListImport: posting',
+            toImport.length,
+            toImport.slice(0, 3),
+        );
 
         setImporting(true);
         router.post(
-            "/price-list-import" as const,
+            '/price-list-import' as const,
             {
                 items: toImport.map((v) => ({
                     chart_of_account_id: v.effectiveCoaId!,
@@ -1282,13 +1465,14 @@ export default function PriceListImport({
             {
                 onFinish: () => setImporting(false),
                 onError: (errors) => {
-                    console.error("PriceListImport: validation 422", errors);
+                    console.error('PriceListImport: validation 422', errors);
                     setImporting(false);
                 },
                 onSuccess: (page) => {
                     console.log(
-                        "PriceListImport: success",
-                        (page.props as unknown as Record<string, unknown>)?.flash,
+                        'PriceListImport: success',
+                        (page.props as unknown as Record<string, unknown>)
+                            ?.flash,
                     );
                 },
             },
@@ -1300,28 +1484,34 @@ export default function PriceListImport({
             <Head title="Price List Import" />
             <div className="flex flex-col gap-4 p-4" suppressHydrationWarning>
                 <h1 className="text-2xl font-semibold">Price List Import</h1>
-                <p className="text-sm text-muted-foreground">
-                    Imports <strong>price list only</strong> (no quantities). Requires official{" "}
+                <p className="text-muted-foreground text-sm">
+                    Imports <strong>price list only</strong> (no quantities).
+                    Requires official{' '}
                     <Link href="/category-import" className="underline">
                         Category Import
-                    </Link>{" "}
-                    and{" "}
+                    </Link>{' '}
+                    and{' '}
                     <Link href="/category-coa-mapping" className="underline">
                         Category–COA Mappings
-                    </Link>{" "}
+                    </Link>{' '}
                     to exist first.
                 </p>
 
                 {fileName && !loading && (
                     <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
-                        <FileSpreadsheet className="h-4 w-4 shrink-0 text-muted-foreground" />
-                        <span className="max-w-[42ch] truncate font-medium" title={fileName}>
+                        <FileSpreadsheet className="text-muted-foreground h-4 w-4 shrink-0" />
+                        <span
+                            className="max-w-[42ch] truncate font-medium"
+                            title={fileName}
+                        >
                             {fileName}
                         </span>
-                        <span className="hidden text-muted-foreground sm:inline">•</span>
-                        <span className="truncate text-muted-foreground">
+                        <span className="text-muted-foreground hidden sm:inline">
+                            •
+                        </span>
+                        <span className="text-muted-foreground truncate">
                             {selectedSheets.length > 0
-                                ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(", ")}`
+                                ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(', ')}`
                                 : `${sheets.length} sheets found`}
                         </span>
                     </div>
@@ -1332,25 +1522,37 @@ export default function PriceListImport({
                     onValueChange={(v) => setStep(v as typeof step)}
                     suppressHydrationWarning
                 >
-                    <TabsList variant="line" className="w-full" suppressHydrationWarning>
+                    <TabsList
+                        variant="line"
+                        className="w-full"
+                        suppressHydrationWarning
+                    >
                         <TabsTrigger value="upload" className="flex-1">
-                            1. Upload & Sheets{" "}
+                            1. Upload & Sheets{' '}
                             {selectedSheets.length > 0 && (
-                                <span className="ml-1 text-xs text-muted-foreground">
+                                <span className="text-muted-foreground ml-1 text-xs">
                                     {selectedSheets.length}✓
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="calibrate" disabled={!canCalibrate} className="flex-1">
-                            2. Calibrate{" "}
+                        <TabsTrigger
+                            value="calibrate"
+                            disabled={!canCalibrate}
+                            className="flex-1"
+                        >
+                            2. Calibrate{' '}
                             {sharedConfig && (
-                                <span className="ml-1 text-xs text-muted-foreground">
+                                <span className="text-muted-foreground ml-1 text-xs">
                                     {calibrationMode}
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="verify" disabled={!canVerify} className="flex-1">
-                            3. Verify Format{" "}
+                        <TabsTrigger
+                            value="verify"
+                            disabled={!canVerify}
+                            className="flex-1"
+                        >
+                            3. Verify Format{' '}
                             {allVerifyValid && (
                                 <span className="ml-1 text-xs text-green-600">
                                     ✓{selectedSheets.length}
@@ -1358,22 +1560,33 @@ export default function PriceListImport({
                             )}
                             {!allVerifyValid && hasAnyVerify && (
                                 <span className="ml-1 text-xs text-amber-600">
-                                    {Object.values(verifyResults).filter((r) => r.valid).length}/
-                                    {selectedSheets.length}
+                                    {
+                                        Object.values(verifyResults).filter(
+                                            (r) => r.valid,
+                                        ).length
+                                    }
+                                    /{selectedSheets.length}
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="review" disabled={!canReview} className="flex-1">
-                            4. Review & Import{" "}
+                        <TabsTrigger
+                            value="review"
+                            disabled={!canReview}
+                            className="flex-1"
+                        >
+                            4. Review & Import{' '}
                             {uniqueItems.length > 0 && (
-                                <span className="ml-1 text-xs text-muted-foreground">
+                                <span className="text-muted-foreground ml-1 text-xs">
                                     {uniqueItems.length}
                                 </span>
                             )}
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="upload" className="mt-4 flex flex-col gap-4">
+                    <TabsContent
+                        value="upload"
+                        className="mt-4 flex flex-col gap-4"
+                    >
                         <Field>
                             <FieldLabel htmlFor="price-list-file">
                                 Excel File (.xlsx only)
@@ -1386,88 +1599,123 @@ export default function PriceListImport({
                                 disabled={loading}
                             />
                             <FieldDescription>
-                                Select an .xlsx price list export (PPMP template).
+                                Select an .xlsx price list export (PPMP
+                                template).
                             </FieldDescription>
-                            {error && <p className="text-sm text-destructive">{error}</p>}
+                            {error && (
+                                <p className="text-destructive text-sm">
+                                    {error}
+                                </p>
+                            )}
                         </Field>
                         {loading && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div className="text-muted-foreground flex items-center gap-2 text-sm">
                                 <Spinner /> Parsing workbook...
                             </div>
                         )}
                         {!loading && sheets.length > 0 && (
                             <Field>
-                                <FieldLabel>Sheets — click to select one or more</FieldLabel>
+                                <FieldLabel>
+                                    Sheets — click to select one or more
+                                </FieldLabel>
                                 <div className="flex flex-wrap gap-2 rounded-lg border p-3">
                                     {sheets.map((sheet) => {
-                                        const isSelected = selectedSheets.includes(sheet);
+                                        const isSelected =
+                                            selectedSheets.includes(sheet);
 
                                         return (
                                             <Badge
                                                 key={sheet}
-                                                variant={isSelected ? "default" : "secondary"}
+                                                variant={
+                                                    isSelected
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
                                                 className="cursor-pointer text-sm hover:opacity-80"
-                                                onClick={() => handleSheetToggle(sheet)}
+                                                onClick={() =>
+                                                    handleSheetToggle(sheet)
+                                                }
                                             >
-                                                {sheet} {isSelected && "✓"}
+                                                {sheet} {isSelected && '✓'}
                                             </Badge>
                                         );
                                     })}
                                 </div>
                                 <FieldDescription>
-                                    Selected:{" "}
-                                    <span className="font-medium text-foreground">
+                                    Selected:{' '}
+                                    <span className="text-foreground font-medium">
                                         {selectedSheets.length > 0
-                                            ? selectedSheets.join(", ")
-                                            : "none"}
-                                    </span>{" "}
-                                    — {selectedSheets.length}/{sheets.length} sheets
+                                            ? selectedSheets.join(', ')
+                                            : 'none'}
+                                    </span>{' '}
+                                    — {selectedSheets.length}/{sheets.length}{' '}
+                                    sheets
                                 </FieldDescription>
                             </Field>
                         )}
                         <div className="flex justify-end">
                             <Button
                                 suppressHydrationWarning
-                                disabled={isMounted ? selectedSheets.length === 0 : false}
+                                disabled={
+                                    isMounted
+                                        ? selectedSheets.length === 0
+                                        : false
+                                }
                                 onClick={() => {
                                     ensureCalibrationsInitialized();
-                                    setStep("calibrate");
+                                    setStep('calibrate');
                                 }}
                             >
-                                Next: Calibrate{" "}
-                                {selectedSheets.length > 0 && `(${selectedSheets.length} sheets)`}
+                                Next: Calibrate{' '}
+                                {selectedSheets.length > 0 &&
+                                    `(${selectedSheets.length} sheets)`}
                             </Button>
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="calibrate" className="mt-4 flex flex-col gap-4">
+                    <TabsContent
+                        value="calibrate"
+                        className="mt-4 flex flex-col gap-4"
+                    >
                         <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
                             <span className="text-sm font-medium">Scope:</span>
                             <div className="flex gap-2">
                                 <Button
-                                    variant={calibrationMode === "shared" ? "default" : "outline"}
+                                    variant={
+                                        calibrationMode === 'shared'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
                                     size="sm"
                                     onClick={() => {
                                         if (
-                                            calibrationMode === "per-sheet" &&
+                                            calibrationMode === 'per-sheet' &&
                                             calibrations[currentSheet]
                                         ) {
-                                            setSharedConfig({ ...calibrations[currentSheet] });
-                                        } else if (!sharedConfig) ensureCalibrationsInitialized();
+                                            setSharedConfig({
+                                                ...calibrations[currentSheet],
+                                            });
+                                        } else if (!sharedConfig)
+                                            ensureCalibrationsInitialized();
 
-                                        setCalibrationMode("shared");
+                                        setCalibrationMode('shared');
                                     }}
                                 >
                                     Shared — all {selectedSheets.length} sheets
                                 </Button>
                                 <Button
                                     variant={
-                                        calibrationMode === "per-sheet" ? "default" : "outline"
+                                        calibrationMode === 'per-sheet'
+                                            ? 'default'
+                                            : 'outline'
                                     }
                                     size="sm"
                                     onClick={() => {
                                         if (sharedConfig) {
-                                            const next: Record<string, PriceListSheetConfig> = {};
+                                            const next: Record<
+                                                string,
+                                                PriceListSheetConfig
+                                            > = {};
 
                                             for (const s of selectedSheets) {
                                                 next[s] = {
@@ -1475,36 +1723,44 @@ export default function PriceListImport({
                                                     columnConfig: {
                                                         ...sharedConfig.columnConfig,
                                                     },
-                                                    rowConfig: { ...sharedConfig.rowConfig },
+                                                    rowConfig: {
+                                                        ...sharedConfig.rowConfig,
+                                                    },
                                                 };
                                             }
 
                                             setCalibrations(next);
 
-                                            if (!currentSheet && selectedSheets[0]) {
-                                                setCurrentSheet(selectedSheets[0]);
+                                            if (
+                                                !currentSheet &&
+                                                selectedSheets[0]
+                                            ) {
+                                                setCurrentSheet(
+                                                    selectedSheets[0],
+                                                );
                                             }
                                         }
 
-                                        setCalibrationMode("per-sheet");
+                                        setCalibrationMode('per-sheet');
                                     }}
                                 >
                                     Per-sheet
                                 </Button>
                             </div>
-                            <span className="text-xs text-muted-foreground">
-                                {calibrationMode === "shared"
-                                    ? `Header row ${sharedConfig?.rowConfig.headerRow === "" || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to every sheet`
-                                    : `Editing ${currentSheet || "—"} only affects that sheet`}
+                            <span className="text-muted-foreground text-xs">
+                                {calibrationMode === 'shared'
+                                    ? `Header row ${sharedConfig?.rowConfig.headerRow === '' || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to every sheet`
+                                    : `Editing ${currentSheet || '—'} only affects that sheet`}
                             </span>
-                            {calibrationMode === "shared" ? (
+                            {calibrationMode === 'shared' ? (
                                 <Button
                                     variant="outline"
                                     size="sm"
                                     onClick={handleApplySharedToAll}
                                     disabled={!sharedConfig}
                                 >
-                                    Apply shared to all ({selectedSheets.length})
+                                    Apply shared to all ({selectedSheets.length}
+                                    )
                                 </Button>
                             ) : (
                                 <Button
@@ -1518,43 +1774,53 @@ export default function PriceListImport({
                             )}
                         </div>
 
-                        {calibrationMode === "per-sheet" && selectedSheets.length > 1 && (
-                            <Field>
-                                <FieldLabel>Editing sheet</FieldLabel>
-                                <Select
-                                    value={currentSheet}
-                                    onValueChange={(v) => setCurrentSheet(v ?? "")}
-                                >
-                                    <SelectTrigger className="w-[260px]">
-                                        <SelectValue placeholder="Select sheet to edit" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {selectedSheets.map((s) => (
-                                                <SelectItem key={s} value={s}>
-                                                    {s}{" "}
-                                                    {verifyResults[s]?.valid
-                                                        ? "✓"
-                                                        : verifyResults[s]
-                                                          ? "❌"
-                                                          : ""}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
-                        )}
+                        {calibrationMode === 'per-sheet' &&
+                            selectedSheets.length > 1 && (
+                                <Field>
+                                    <FieldLabel>Editing sheet</FieldLabel>
+                                    <Select
+                                        value={currentSheet}
+                                        onValueChange={(v) =>
+                                            setCurrentSheet(v ?? '')
+                                        }
+                                    >
+                                        <SelectTrigger className="w-[260px]">
+                                            <SelectValue placeholder="Select sheet to edit" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectGroup>
+                                                {selectedSheets.map((s) => (
+                                                    <SelectItem
+                                                        key={s}
+                                                        value={s}
+                                                    >
+                                                        {s}{' '}
+                                                        {verifyResults[s]?.valid
+                                                            ? '✓'
+                                                            : verifyResults[s]
+                                                              ? '❌'
+                                                              : ''}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        </SelectContent>
+                                    </Select>
+                                </Field>
+                            )}
 
                         {(() => {
                             const cfg =
-                                calibrationMode === "shared"
-                                    ? (sharedConfig ?? getDefaultPriceListConfig())
+                                calibrationMode === 'shared'
+                                    ? (sharedConfig ??
+                                      getDefaultPriceListConfig())
                                     : (calibrations[currentSheet] ??
                                       sharedConfig ??
                                       getDefaultPriceListConfig());
-                            const onChange = (patch: Partial<PriceListSheetConfig>) => {
-                                if (calibrationMode === "shared") updateSharedConfig(patch);
+                            const onChange = (
+                                patch: Partial<PriceListSheetConfig>,
+                            ) => {
+                                if (calibrationMode === 'shared')
+                                    updateSharedConfig(patch);
                                 else updateCurrentCalibration(patch);
 
                                 setVerifyResults({});
@@ -1562,18 +1828,22 @@ export default function PriceListImport({
                                 setUniqueItems([]);
                                 setSelected(new Set());
                                 setCoaOverrides({});
-                                setReviewFilter("all");
+                                setReviewFilter('all');
                                 setShowDuplicateDetails(false);
                             };
                             const onColumn = (
-                                patch: Partial<SharedSheetConfig["columnConfig"]>,
+                                patch: Partial<
+                                    SharedSheetConfig['columnConfig']
+                                >,
                             ) => {
                                 const next = { ...cfg.columnConfig, ...patch };
                                 onChange({
                                     columnConfig: next,
                                 } as Partial<PriceListSheetConfig>);
                             };
-                            const onRow = (patch: Partial<SharedSheetConfig["rowConfig"]>) => {
+                            const onRow = (
+                                patch: Partial<SharedSheetConfig['rowConfig']>,
+                            ) => {
                                 const next = { ...cfg.rowConfig, ...patch };
                                 onChange({
                                     rowConfig: next,
@@ -1582,9 +1852,9 @@ export default function PriceListImport({
 
                             return (
                                 <div className="rounded-lg border p-4">
-                                    <p className="mb-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                        Calibration{" "}
-                                        {calibrationMode === "shared"
+                                    <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
+                                        Calibration{' '}
+                                        {calibrationMode === 'shared'
                                             ? `(Shared – ${selectedSheets.length} sheets)`
                                             : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
                                     </p>
@@ -1606,18 +1876,25 @@ export default function PriceListImport({
                                             </FieldDescription>
                                         </Field>
                                         <Field>
-                                            <FieldLabel>Category / Description Column</FieldLabel>
+                                            <FieldLabel>
+                                                Category / Description Column
+                                            </FieldLabel>
                                             <Input
-                                                value={cfg.columnConfig.category}
+                                                value={
+                                                    cfg.columnConfig.category
+                                                }
                                                 onChange={(e) =>
                                                     onColumn({
-                                                        category: e.target.value.toUpperCase(),
+                                                        category:
+                                                            e.target.value.toUpperCase(),
                                                     })
                                                 }
                                                 className="w-16"
                                                 placeholder="F"
                                             />
-                                            <FieldDescription>F — shared</FieldDescription>
+                                            <FieldDescription>
+                                                F — shared
+                                            </FieldDescription>
                                         </Field>
                                         <Field>
                                             <FieldLabel>Unit Column</FieldLabel>
@@ -1631,10 +1908,14 @@ export default function PriceListImport({
                                                 className="w-16"
                                                 placeholder="G"
                                             />
-                                            <FieldDescription>G</FieldDescription>
+                                            <FieldDescription>
+                                                G
+                                            </FieldDescription>
                                         </Field>
                                         <Field>
-                                            <FieldLabel>Price Column</FieldLabel>
+                                            <FieldLabel>
+                                                Price Column
+                                            </FieldLabel>
                                             <Input
                                                 value={cfg.columnConfig.price}
                                                 onChange={(e) =>
@@ -1645,15 +1926,22 @@ export default function PriceListImport({
                                                 className="w-16"
                                                 placeholder="H"
                                             />
-                                            <FieldDescription>H</FieldDescription>
+                                            <FieldDescription>
+                                                H
+                                            </FieldDescription>
                                         </Field>
                                         <Field>
-                                            <FieldLabel>Item No. Column</FieldLabel>
+                                            <FieldLabel>
+                                                Item No. Column
+                                            </FieldLabel>
                                             <Input
-                                                value={cfg.columnConfig.itemNumber}
+                                                value={
+                                                    cfg.columnConfig.itemNumber
+                                                }
                                                 onChange={(e) =>
                                                     onColumn({
-                                                        itemNumber: e.target.value.toUpperCase(),
+                                                        itemNumber:
+                                                            e.target.value.toUpperCase(),
                                                     })
                                                 }
                                                 className="w-16"
@@ -1669,43 +1957,62 @@ export default function PriceListImport({
                                             <FieldLabel>Header Row</FieldLabel>
                                             <Input
                                                 type="number"
-                                                value={cfg.rowConfig.headerRow ?? ""}
+                                                value={
+                                                    cfg.rowConfig.headerRow ??
+                                                    ''
+                                                }
                                                 onChange={(e) =>
                                                     onRow({
                                                         headerRow:
-                                                            e.target.value === ""
-                                                                ? ""
-                                                                : Number(e.target.value),
+                                                            e.target.value ===
+                                                            ''
+                                                                ? ''
+                                                                : Number(
+                                                                      e.target
+                                                                          .value,
+                                                                  ),
                                                     })
                                                 }
                                                 className="w-20"
                                                 placeholder="7"
                                             />
                                             <FieldDescription>
-                                                Header{" "}
-                                                {cfg.rowConfig.headerRow === "" ||
+                                                Header{' '}
+                                                {cfg.rowConfig.headerRow ===
+                                                    '' ||
                                                 cfg.rowConfig.headerRow == null
-                                                    ? "—"
+                                                    ? '—'
                                                     : cfg.rowConfig.headerRow}
-                                                ; data starts{" "}
-                                                {cfg.rowConfig.headerRow === "" ||
+                                                ; data starts{' '}
+                                                {cfg.rowConfig.headerRow ===
+                                                    '' ||
                                                 cfg.rowConfig.headerRow == null
-                                                    ? "—"
-                                                    : cfg.rowConfig.headerRow + 1}
+                                                    ? '—'
+                                                    : cfg.rowConfig.headerRow +
+                                                      1}
                                             </FieldDescription>
                                         </Field>
                                         <Field>
                                             <FieldLabel>
-                                                Additional Items Header Row (optional)
+                                                Additional Items Header Row
+                                                (optional)
                                             </FieldLabel>
                                             <Input
                                                 type="number"
-                                                value={cfg.rowConfig.additionalItemsHeaderRow ?? ""}
+                                                value={
+                                                    cfg.rowConfig
+                                                        .additionalItemsHeaderRow ??
+                                                    ''
+                                                }
                                                 onChange={(e) =>
                                                     onRow({
-                                                        additionalItemsHeaderRow: e.target.value
-                                                            ? Number(e.target.value)
-                                                            : null,
+                                                        additionalItemsHeaderRow:
+                                                            e.target.value
+                                                                ? Number(
+                                                                      e.target
+                                                                          .value,
+                                                                  )
+                                                                : null,
                                                     })
                                                 }
                                                 className="w-20"
@@ -1717,16 +2024,25 @@ export default function PriceListImport({
                                         </Field>
                                         <Field>
                                             <FieldLabel>
-                                                Non-Procurement Header Row (optional)
+                                                Non-Procurement Header Row
+                                                (optional)
                                             </FieldLabel>
                                             <Input
                                                 type="number"
-                                                value={cfg.rowConfig.nonProcurementHeaderRow ?? ""}
+                                                value={
+                                                    cfg.rowConfig
+                                                        .nonProcurementHeaderRow ??
+                                                    ''
+                                                }
                                                 onChange={(e) =>
                                                     onRow({
-                                                        nonProcurementHeaderRow: e.target.value
-                                                            ? Number(e.target.value)
-                                                            : null,
+                                                        nonProcurementHeaderRow:
+                                                            e.target.value
+                                                                ? Number(
+                                                                      e.target
+                                                                          .value,
+                                                                  )
+                                                                : null,
                                                     })
                                                 }
                                                 className="w-20"
@@ -1738,7 +2054,9 @@ export default function PriceListImport({
                                         </Field>
                                     </div>
                                     <Field className="mt-4">
-                                        <FieldLabel>COA items format *</FieldLabel>
+                                        <FieldLabel>
+                                            COA items format *
+                                        </FieldLabel>
                                         <ToggleGroup
                                             variant="outline"
                                             spacing={2}
@@ -1747,7 +2065,7 @@ export default function PriceListImport({
                                                 if (value.length > 0) {
                                                     onChange({
                                                         coaLabelMode:
-                                                            value[0] as PriceListSheetConfig["coaLabelMode"],
+                                                            value[0] as PriceListSheetConfig['coaLabelMode'],
                                                     });
                                                 }
                                             }}
@@ -1760,12 +2078,14 @@ export default function PriceListImport({
                                                 <span className="font-medium">
                                                     With COA label rows
                                                 </span>
-                                                <span className="text-xs font-normal text-muted-foreground">
-                                                    Category → COA label in F (next D same) → Items
-                                                    with D=COA
+                                                <span className="text-muted-foreground text-xs font-normal">
+                                                    Category → COA label in F
+                                                    (next D same) → Items with
+                                                    D=COA
                                                 </span>
-                                                <span className="font-mono text-xs text-muted-foreground/70">
-                                                    Cat → coa → items → Cat - Total
+                                                <span className="text-muted-foreground/70 font-mono text-xs">
+                                                    Cat → coa → items → Cat -
+                                                    Total
                                                 </span>
                                             </ToggleGroupItem>
                                             <ToggleGroupItem
@@ -1775,11 +2095,13 @@ export default function PriceListImport({
                                                 <span className="font-medium">
                                                     Without COA label rows
                                                 </span>
-                                                <span className="text-xs font-normal text-muted-foreground">
-                                                    Items already have D=COA directly, no label rows
+                                                <span className="text-muted-foreground text-xs font-normal">
+                                                    Items already have D=COA
+                                                    directly, no label rows
                                                 </span>
-                                                <span className="font-mono text-xs text-muted-foreground/70">
-                                                    Cat → items (D=coa) → Cat - Total
+                                                <span className="text-muted-foreground/70 font-mono text-xs">
+                                                    Cat → items (D=coa) → Cat -
+                                                    Total
                                                 </span>
                                             </ToggleGroupItem>
                                         </ToggleGroup>
@@ -1788,12 +2110,15 @@ export default function PriceListImport({
                             );
                         })()}
                         <div className="flex justify-between">
-                            <Button variant="outline" onClick={() => setStep("upload")}>
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep('upload')}
+                            >
                                 Back
                             </Button>
                             <Button
                                 suppressHydrationWarning
-                                onClick={() => setStep("verify")}
+                                onClick={() => setStep('verify')}
                                 disabled={isMounted ? !sharedConfig : false}
                             >
                                 Next: Verify Format
@@ -1801,20 +2126,33 @@ export default function PriceListImport({
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="verify" className="mt-4 flex flex-col gap-4">
+                    <TabsContent
+                        value="verify"
+                        className="mt-4 flex flex-col gap-4"
+                    >
                         <div className="flex gap-2">
                             <Button onClick={handleVerify}>
                                 Run Verify ({selectedSheets.length} sheets)
                             </Button>
                             {hasAnyVerify && allVerifyValid && (
-                                <Badge variant="default" className="self-center">
+                                <Badge
+                                    variant="default"
+                                    className="self-center"
+                                >
                                     All valid ✓
                                 </Badge>
                             )}
                             {hasAnyVerify && !allVerifyValid && (
-                                <Badge variant="destructive" className="self-center">
-                                    {Object.values(verifyResults).filter((r) => r.valid).length}/
-                                    {selectedSheets.length} valid
+                                <Badge
+                                    variant="destructive"
+                                    className="self-center"
+                                >
+                                    {
+                                        Object.values(verifyResults).filter(
+                                            (r) => r.valid,
+                                        ).length
+                                    }
+                                    /{selectedSheets.length} valid
                                 </Badge>
                             )}
                         </div>
@@ -1827,19 +2165,25 @@ export default function PriceListImport({
                                                 key={s}
                                                 variant={
                                                     verifyResults[s]?.valid
-                                                        ? "default"
-                                                        : "secondary"
+                                                        ? 'default'
+                                                        : 'secondary'
                                                 }
                                                 className="cursor-pointer"
-                                                onClick={() => setActiveVerifySheet(s)}
+                                                onClick={() =>
+                                                    setActiveVerifySheet(s)
+                                                }
                                             >
-                                                {s} {verifyResults[s]?.valid ? "✓" : "❌"}
+                                                {s}{' '}
+                                                {verifyResults[s]?.valid
+                                                    ? '✓'
+                                                    : '❌'}
                                             </Badge>
                                         ))}
                                     </div>
                                 )}
                                 {(() => {
-                                    const active = activeVerifySheet || selectedSheets[0];
+                                    const active =
+                                        activeVerifySheet || selectedSheets[0];
                                     const r = verifyResults[active];
 
                                     if (!r) return null;
@@ -1847,7 +2191,7 @@ export default function PriceListImport({
                                     return (
                                         <div className="rounded-lg border p-4">
                                             <p
-                                                className={`text-sm font-medium ${r.valid ? "text-green-600" : "text-destructive"}`}
+                                                className={`text-sm font-medium ${r.valid ? 'text-green-600' : 'text-destructive'}`}
                                             >
                                                 {r.message} — {active}
                                             </p>
@@ -1855,13 +2199,14 @@ export default function PriceListImport({
                                                 <div className="mt-2 max-h-48 overflow-auto rounded border p-2 text-xs">
                                                     {r.errors.map((e, i) => (
                                                         <div key={i}>
-                                                            Row {e.row}: {e.message}
+                                                            Row {e.row}:{' '}
+                                                            {e.message}
                                                         </div>
                                                     ))}
                                                 </div>
                                             )}
                                             {r.details.length > 0 && (
-                                                <div className="mt-2 text-xs text-muted-foreground">
+                                                <div className="text-muted-foreground mt-2 text-xs">
                                                     {r.details.map((d, i) => (
                                                         <div key={i}>{d}</div>
                                                     ))}
@@ -1873,7 +2218,10 @@ export default function PriceListImport({
                             </>
                         )}
                         <div className="flex justify-between">
-                            <Button variant="outline" onClick={() => setStep("calibrate")}>
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep('calibrate')}
+                            >
                                 Back
                             </Button>
                             <Button
@@ -1881,24 +2229,34 @@ export default function PriceListImport({
                                 disabled={isMounted ? !allVerifyValid : false}
                                 onClick={() => {
                                     handleExtract();
-                                    setStep("review");
+                                    setStep('review');
                                 }}
                             >
-                                Next: Extract {allVerifyValid ? "✓" : "(fix errors first)"}
+                                Next: Extract{' '}
+                                {allVerifyValid ? '✓' : '(fix errors first)'}
                             </Button>
                         </div>
                     </TabsContent>
 
-                    <TabsContent value="review" className="mt-4 flex flex-col gap-4">
+                    <TabsContent
+                        value="review"
+                        className="mt-4 flex flex-col gap-4"
+                    >
                         <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Badge variant="secondary">Raw items: {rawItems.length}</Badge>
-                            <Badge variant="secondary">Unique: {uniqueItems.length}</Badge>
+                            <Badge variant="secondary">
+                                Raw items: {rawItems.length}
+                            </Badge>
+                            <Badge variant="secondary">
+                                Unique: {uniqueItems.length}
+                            </Badge>
                             <Badge variant="default">
-                                Ready: {insertCount} + Updates: {updateCount} = {readyCount}
+                                Ready: {insertCount} + Updates: {updateCount} ={' '}
+                                {readyCount}
                             </Badge>
                             {errorCount > 0 && (
                                 <Badge variant="destructive">
-                                    {errorCount} errors (missing official mapping)
+                                    {errorCount} errors (missing official
+                                    mapping)
                                 </Badge>
                             )}
                             {missingMappingCount > 0 && (
@@ -1930,29 +2288,36 @@ export default function PriceListImport({
                                     variant="outline"
                                     className="border-amber-500 text-amber-600"
                                 >
-                                    {duplicateCount} duplicate{duplicateCount > 1 ? "s" : ""} (
+                                    {duplicateCount} duplicate
+                                    {duplicateCount > 1 ? 's' : ''} (
                                     {duplicateItems.length} unique)
                                 </Badge>
                             )}
-                            {(errorCount > 0 || duplicateCount > 0 || longDescriptionCount > 0) && (
+                            {(errorCount > 0 ||
+                                duplicateCount > 0 ||
+                                longDescriptionCount > 0) && (
                                 <ToggleGroup
                                     value={[reviewFilter]}
                                     onValueChange={(v) => {
-                                        const next = (v as unknown as string[])[0] as
-                                            typeof reviewFilter | undefined;
+                                        const next = (
+                                            v as unknown as string[]
+                                        )[0] as typeof reviewFilter | undefined;
 
                                         if (next) {
                                             setReviewFilter(next);
                                             setShowDuplicateDetails(false);
                                         } else {
-                                            setReviewFilter("all");
+                                            setReviewFilter('all');
                                         }
                                     }}
                                     variant="outline"
                                     size="sm"
                                     className="gap-1"
                                 >
-                                    <ToggleGroupItem value="all" aria-label="Show all">
+                                    <ToggleGroupItem
+                                        value="all"
+                                        aria-label="Show all"
+                                    >
                                         All ({verifiedItems.length})
                                     </ToggleGroupItem>
                                     <ToggleGroupItem
@@ -1978,24 +2343,32 @@ export default function PriceListImport({
                                     </ToggleGroupItem>
                                 </ToggleGroup>
                             )}
-                            {duplicateCount > 0 && reviewFilter !== "duplicates" && (
-                                <Button
-                                    variant={showDuplicateDetails ? "default" : "ghost"}
-                                    size="sm"
-                                    onClick={() => setShowDuplicateDetails((v) => !v)}
-                                    className="h-6 text-xs"
-                                >
-                                    {showDuplicateDetails
-                                        ? "Hide duplicate details"
-                                        : "Show duplicate details"}
-                                </Button>
-                            )}
+                            {duplicateCount > 0 &&
+                                reviewFilter !== 'duplicates' && (
+                                    <Button
+                                        variant={
+                                            showDuplicateDetails
+                                                ? 'default'
+                                                : 'ghost'
+                                        }
+                                        size="sm"
+                                        onClick={() =>
+                                            setShowDuplicateDetails((v) => !v)
+                                        }
+                                        className="h-6 text-xs"
+                                    >
+                                        {showDuplicateDetails
+                                            ? 'Hide duplicate details'
+                                            : 'Show duplicate details'}
+                                    </Button>
+                                )}
                             {Object.keys(coaOverrides).length > 0 && (
                                 <Badge
                                     variant="outline"
                                     className="border-amber-500 text-amber-600"
                                 >
-                                    {Object.keys(coaOverrides).length} COA override(s)
+                                    {Object.keys(coaOverrides).length} COA
+                                    override(s)
                                 </Badge>
                             )}
                             {Object.keys(coaOverrides).length > 0 && (
@@ -2012,30 +2385,42 @@ export default function PriceListImport({
                         {Object.keys(coaOverrides).length > 0 && (
                             <p className="text-xs text-amber-600">
                                 Overrides are per unique price-list row
-                                (`category|coa|description|unit`). Counts reflect overridden COAs.
+                                (`category|coa|description|unit`). Counts
+                                reflect overridden COAs.
                             </p>
                         )}
                         {batchGroups.length > 0 && (
                             <div className="rounded-lg border p-3">
                                 <p className="mb-2 text-xs font-semibold">
-                                    Batch match by extracted COA — {batchGroups.length} group
-                                    {batchGroups.length === 1 ? "" : "s"} still need{batchGroups.length === 1 ? "s" : ""} a
-                                    human pick. One choice applies to every row in the group.
+                                    Batch match by extracted COA —{' '}
+                                    {batchGroups.length} group
+                                    {batchGroups.length === 1 ? '' : 's'} still
+                                    need{batchGroups.length === 1 ? 's' : ''} a
+                                    human pick. One choice applies to every row
+                                    in the group.
                                 </p>
                                 <div className="flex max-h-64 flex-col gap-2 overflow-auto">
                                     {batchGroups.map((group) => {
                                         const suggestedIds = new Set(
-                                            group.topMatches.map((m) => m.coa.id),
+                                            group.topMatches.map(
+                                                (m) => m.coa.id,
+                                            ),
                                         );
                                         const groupItems = [
-                                            ...group.topMatches.map((m) => m.coa),
-                                            ...existingCoas.filter((c) => !suggestedIds.has(c.id)),
+                                            ...group.topMatches.map(
+                                                (m) => m.coa,
+                                            ),
+                                            ...existingCoas.filter(
+                                                (c) => !suggestedIds.has(c.id),
+                                            ),
                                         ].map(formatCoaOption);
                                         const groupValue =
                                             batchSelections[group.coaNorm] ??
                                             (group.topSuggestion
-                                                ? formatCoaOption(group.topSuggestion)
-                                                : "");
+                                                ? formatCoaOption(
+                                                      group.topSuggestion,
+                                                  )
+                                                : '');
 
                                         return (
                                             <div
@@ -2046,7 +2431,9 @@ export default function PriceListImport({
                                                     className="flex min-w-0 flex-1 items-center gap-1 truncate text-xs font-medium"
                                                     title={`Excel: ${group.label}`}
                                                 >
-                                                    <span className="truncate">{group.label}</span>
+                                                    <span className="truncate">
+                                                        {group.label}
+                                                    </span>
                                                     <Badge
                                                         variant="outline"
                                                         className="h-4 border-amber-500 px-1 text-[10px] text-amber-600"
@@ -2058,18 +2445,23 @@ export default function PriceListImport({
                                                     items={groupItems}
                                                     value={groupValue}
                                                     onValueChange={(val) =>
-                                                        setBatchSelections((prev) => ({
-                                                            ...prev,
-                                                            [group.coaNorm]:
-                                                                (val as string | null) ?? "",
-                                                        }))
+                                                        setBatchSelections(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [group.coaNorm]:
+                                                                    (val as
+                                                                        | string
+                                                                        | null) ??
+                                                                    '',
+                                                            }),
+                                                        )
                                                     }
                                                 >
                                                     <ComboboxInput
                                                         placeholder={
                                                             group.topSuggestion
-                                                                ? "★ Suggested at top — search..."
-                                                                : "Search COA..."
+                                                                ? '★ Suggested at top — search...'
+                                                                : 'Search COA...'
                                                         }
                                                         className="h-7 text-xs"
                                                     />
@@ -2080,24 +2472,34 @@ export default function PriceListImport({
                                                         <ComboboxList>
                                                             {(item: string) => {
                                                                 const isSuggested =
-                                                                    group.topMatches.some((m) =>
-                                                                        item.includes(
-                                                                            `coa:${m.coa.id}:`,
-                                                                        ),
+                                                                    group.topMatches.some(
+                                                                        (m) =>
+                                                                            item.includes(
+                                                                                `coa:${m.coa.id}:`,
+                                                                            ),
                                                                     );
 
                                                                 return (
                                                                     <ComboboxItem
-                                                                        key={item}
-                                                                        value={item}
+                                                                        key={
+                                                                            item
+                                                                        }
+                                                                        value={
+                                                                            item
+                                                                        }
                                                                         className={
                                                                             isSuggested
-                                                                                ? "font-medium"
-                                                                                : ""
+                                                                                ? 'font-medium'
+                                                                                : ''
                                                                         }
                                                                     >
-                                                                        {isSuggested ? "★ " : ""}
-                                                                        {item.replace(/^coa:\d+:/, "")}
+                                                                        {isSuggested
+                                                                            ? '★ '
+                                                                            : ''}
+                                                                        {item.replace(
+                                                                            /^coa:\d+:/,
+                                                                            '',
+                                                                        )}
                                                                     </ComboboxItem>
                                                                 );
                                                             }}
@@ -2107,7 +2509,11 @@ export default function PriceListImport({
                                                 <Button
                                                     size="sm"
                                                     className="h-7 text-xs"
-                                                    onClick={() => handleBatchApplyGroup(group)}
+                                                    onClick={() =>
+                                                        handleBatchApplyGroup(
+                                                            group,
+                                                        )
+                                                    }
                                                 >
                                                     Apply to all {group.count}
                                                 </Button>
@@ -2117,49 +2523,61 @@ export default function PriceListImport({
                                 </div>
                             </div>
                         )}
-                        {reviewFilter === "errors" && (
-                            <p className="text-xs text-muted-foreground">
-                                Showing {filteredItems.length} of {verifiedItems.length} — only rows
-                                with errors (COA not found, category not found, mapping missing,
-                                description &gt;1000, etc.). Select “All” to see all. COA dropdowns
-                                let you fix partial matches per row (e.g., row 468).
+                        {reviewFilter === 'errors' && (
+                            <p className="text-muted-foreground text-xs">
+                                Showing {filteredItems.length} of{' '}
+                                {verifiedItems.length} — only rows with errors
+                                (COA not found, category not found, mapping
+                                missing, description &gt;1000, etc.). Select
+                                “All” to see all. COA dropdowns let you fix
+                                partial matches per row (e.g., row 468).
                             </p>
                         )}
-                        {reviewFilter === "duplicates" && (
+                        {reviewFilter === 'duplicates' && (
                             <p className="text-xs text-amber-600">
-                                Showing {filteredItems.length} duplicate unique row
-                                {filteredItems.length === 1 ? "" : "s"} ({duplicateCount} extra raw
-                                row{duplicateCount === 1 ? "" : "s"}) — same
-                                category|coa|description|unit appears multiple times. Select “All”
-                                to see all.
+                                Showing {filteredItems.length} duplicate unique
+                                row
+                                {filteredItems.length === 1 ? '' : 's'} (
+                                {duplicateCount} extra raw row
+                                {duplicateCount === 1 ? '' : 's'}) — same
+                                category|coa|description|unit appears multiple
+                                times. Select “All” to see all.
                             </p>
                         )}
-                        {reviewFilter === "longDesc" && (
+                        {reviewFilter === 'longDesc' && (
                             <p className="text-xs text-amber-600">
-                                Showing {filteredItems.length} of {verifiedItems.length} — only rows
-                                with description &gt;1000 chars. Use “Truncate” per row or “Truncate
-                                all to 1000” above. Select “All” to see all.
+                                Showing {filteredItems.length} of{' '}
+                                {verifiedItems.length} — only rows with
+                                description &gt;1000 chars. Use “Truncate” per
+                                row or “Truncate all to 1000” above. Select
+                                “All” to see all.
                             </p>
                         )}
                         {showDuplicateDetails && duplicateItems.length > 0 && (
                             <div className="rounded-lg border p-3">
                                 <p className="mb-2 text-xs font-semibold">
-                                    Duplicate details — {duplicateItems.length} unique duplicate(s),{" "}
-                                    {duplicateCount} extra raw row
-                                    {duplicateCount === 1 ? "" : "s"} (Raw {rawItems.length} →
-                                    Unique {uniqueItems.length})
+                                    Duplicate details — {duplicateItems.length}{' '}
+                                    unique duplicate(s), {duplicateCount} extra
+                                    raw row
+                                    {duplicateCount === 1 ? '' : 's'} (Raw{' '}
+                                    {rawItems.length} → Unique{' '}
+                                    {uniqueItems.length})
                                 </p>
                                 <div className="max-h-64 overflow-auto rounded border">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Description</TableHead>
+                                                <TableHead>
+                                                    Description
+                                                </TableHead>
                                                 <TableHead>Category</TableHead>
                                                 <TableHead>COA</TableHead>
                                                 <TableHead>Unit</TableHead>
                                                 <TableHead>Price</TableHead>
                                                 <TableHead>Count</TableHead>
-                                                <TableHead>Sheets / Rows</TableHead>
+                                                <TableHead>
+                                                    Sheets / Rows
+                                                </TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -2189,7 +2607,7 @@ export default function PriceListImport({
                                                     <TableCell className="text-xs">
                                                         {it.price !== null
                                                             ? `₱${it.price.toLocaleString()}`
-                                                            : "—"}
+                                                            : '—'}
                                                     </TableCell>
                                                     <TableCell className="text-xs">
                                                         <Badge
@@ -2199,19 +2617,20 @@ export default function PriceListImport({
                                                             ×{it.count}
                                                         </Badge>
                                                     </TableCell>
-                                                    <TableCell className="text-[10px] text-muted-foreground">
-                                                        {it.sheets.join(", ")} row{" "}
-                                                        {it.rows.join(", ")}
+                                                    <TableCell className="text-muted-foreground text-[10px]">
+                                                        {it.sheets.join(', ')}{' '}
+                                                        row {it.rows.join(', ')}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
                                 </div>
-                                <p className="mt-2 text-[10px] text-muted-foreground">
+                                <p className="text-muted-foreground mt-2 text-[10px]">
                                     Duplicates are deduped by normalized
-                                    category|coa|description|unit. Raw rows with same key are
-                                    merged; count shows how many raw rows collapsed.
+                                    category|coa|description|unit. Raw rows with
+                                    same key are merged; count shows how many
+                                    raw rows collapsed.
                                 </p>
                             </div>
                         )}
@@ -2225,36 +2644,64 @@ export default function PriceListImport({
                                                     <Input
                                                         type="checkbox"
                                                         checked={
-                                                            filteredItems.length > 0 &&
+                                                            filteredItems.length >
+                                                                0 &&
                                                             filteredItems.every(
                                                                 (v) =>
-                                                                    selected.has(v.key) ||
-                                                                    v.status === "error",
+                                                                    selected.has(
+                                                                        v.key,
+                                                                    ) ||
+                                                                    v.status ===
+                                                                        'error',
                                                             )
                                                         }
                                                         onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                const toAdd = filteredItems
-                                                                    .filter(
-                                                                        (v) => v.status !== "error",
-                                                                    )
-                                                                    .map((v) => v.key);
-                                                                setSelected(
-                                                                    (prev) =>
-                                                                        new Set([
-                                                                            ...prev,
-                                                                            ...toAdd,
-                                                                        ]),
-                                                                );
-                                                            } else {
-                                                                const filteredKeys = new Set(
-                                                                    filteredItems.map((v) => v.key),
-                                                                );
+                                                            if (
+                                                                e.target.checked
+                                                            ) {
+                                                                const toAdd =
+                                                                    filteredItems
+                                                                        .filter(
+                                                                            (
+                                                                                v,
+                                                                            ) =>
+                                                                                v.status !==
+                                                                                'error',
+                                                                        )
+                                                                        .map(
+                                                                            (
+                                                                                v,
+                                                                            ) =>
+                                                                                v.key,
+                                                                        );
                                                                 setSelected(
                                                                     (prev) =>
                                                                         new Set(
-                                                                            [...prev].filter(
-                                                                                (k) =>
+                                                                            [
+                                                                                ...prev,
+                                                                                ...toAdd,
+                                                                            ],
+                                                                        ),
+                                                                );
+                                                            } else {
+                                                                const filteredKeys =
+                                                                    new Set(
+                                                                        filteredItems.map(
+                                                                            (
+                                                                                v,
+                                                                            ) =>
+                                                                                v.key,
+                                                                        ),
+                                                                    );
+                                                                setSelected(
+                                                                    (prev) =>
+                                                                        new Set(
+                                                                            [
+                                                                                ...prev,
+                                                                            ].filter(
+                                                                                (
+                                                                                    k,
+                                                                                ) =>
                                                                                     !filteredKeys.has(
                                                                                         k,
                                                                                     ),
@@ -2265,7 +2712,9 @@ export default function PriceListImport({
                                                         }}
                                                     />
                                                 </TableHead>
-                                                <TableHead>Description</TableHead>
+                                                <TableHead>
+                                                    Description
+                                                </TableHead>
                                                 <TableHead>Category</TableHead>
                                                 <TableHead className="min-w-[320px]">
                                                     COA (Excel → DB)
@@ -2280,34 +2729,48 @@ export default function PriceListImport({
                                                 <TableRow>
                                                     <TableCell
                                                         colSpan={7}
-                                                        className="p-8 text-center text-sm text-muted-foreground"
+                                                        className="text-muted-foreground p-8 text-center text-sm"
                                                     >
-                                                        {reviewFilter === "duplicates"
-                                                            ? "No duplicates — all rows are unique. Select “All” to see all items."
-                                                            : reviewFilter === "errors"
-                                                              ? "No errors — all rows are ready or updates. Select “All” to see all items."
-                                                              : reviewFilter === "longDesc"
-                                                                ? "No long descriptions — all descriptions ≤1000 chars. Select “All” to see all items."
-                                                                : "No items match filter."}
+                                                        {reviewFilter ===
+                                                        'duplicates'
+                                                            ? 'No duplicates — all rows are unique. Select “All” to see all items.'
+                                                            : reviewFilter ===
+                                                                'errors'
+                                                              ? 'No errors — all rows are ready or updates. Select “All” to see all items.'
+                                                              : reviewFilter ===
+                                                                  'longDesc'
+                                                                ? 'No long descriptions — all descriptions ≤1000 chars. Select “All” to see all items.'
+                                                                : 'No items match filter.'}
                                                     </TableCell>
                                                 </TableRow>
                                             ) : (
                                                 filteredItems.map((it) => {
-                                                    const isOverridden = it.overrideId !== null;
-                                                    const selectedDisplay = it.effectiveCoa
-                                                        ? `coa:${it.effectiveCoa.id}:${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`
-                                                        : "";
-                                                    const suggestedIds = new Set(
-                                                        it.coaTopMatches.map((m) => m.coa.id),
-                                                    );
-                                                    const suggestedCoas = it.coaTopMatches.map(
-                                                        (m) => m.coa,
-                                                    );
-                                                    const remainingCoas = existingCoas.filter(
-                                                        (c) => !suggestedIds.has(c.id),
-                                                    );
+                                                    const isOverridden =
+                                                        it.overrideId !== null;
+                                                    const selectedDisplay =
+                                                        it.effectiveCoa
+                                                            ? `coa:${it.effectiveCoa.id}:${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`
+                                                            : '';
+                                                    const suggestedIds =
+                                                        new Set(
+                                                            it.coaTopMatches.map(
+                                                                (m) => m.coa.id,
+                                                            ),
+                                                        );
+                                                    const suggestedCoas =
+                                                        it.coaTopMatches.map(
+                                                            (m) => m.coa,
+                                                        );
+                                                    const remainingCoas =
+                                                        existingCoas.filter(
+                                                            (c) =>
+                                                                !suggestedIds.has(
+                                                                    c.id,
+                                                                ),
+                                                        );
                                                     const itemsForRow =
-                                                        it.coaMatchType === "partial" &&
+                                                        it.coaMatchType ===
+                                                            'partial' &&
                                                         suggestedCoas.length > 0
                                                             ? [
                                                                   ...suggestedCoas.map(
@@ -2329,35 +2792,63 @@ export default function PriceListImport({
                                                             <TableCell>
                                                                 <Input
                                                                     type="checkbox"
-                                                                    checked={selected.has(it.key)}
-                                                                    onChange={(e) => {
-                                                                        const n = new Set(selected);
+                                                                    checked={selected.has(
+                                                                        it.key,
+                                                                    )}
+                                                                    onChange={(
+                                                                        e,
+                                                                    ) => {
+                                                                        const n =
+                                                                            new Set(
+                                                                                selected,
+                                                                            );
 
-                                                                        if (e.target.checked) {
-                                                                            n.add(it.key);
+                                                                        if (
+                                                                            e
+                                                                                .target
+                                                                                .checked
+                                                                        ) {
+                                                                            n.add(
+                                                                                it.key,
+                                                                            );
                                                                         } else {
-                                                                            n.delete(it.key);
+                                                                            n.delete(
+                                                                                it.key,
+                                                                            );
                                                                         }
 
-                                                                        setSelected(n);
+                                                                        setSelected(
+                                                                            n,
+                                                                        );
                                                                     }}
-                                                                    disabled={it.status === "error"}
+                                                                    disabled={
+                                                                        it.status ===
+                                                                        'error'
+                                                                    }
                                                                 />
                                                             </TableCell>
                                                             <TableCell
                                                                 className="max-w-[28ch] truncate"
-                                                                title={it.description}
+                                                                title={
+                                                                    it.description
+                                                                }
                                                             >
                                                                 <span className="flex items-center gap-1">
                                                                     <span className="truncate">
-                                                                        {it.description}
+                                                                        {
+                                                                            it.description
+                                                                        }
                                                                     </span>
-                                                                    {it.count > 1 && (
+                                                                    {it.count >
+                                                                        1 && (
                                                                         <Badge
                                                                             variant="outline"
                                                                             className="h-4 border-amber-500 px-1 text-[10px] text-amber-600"
                                                                         >
-                                                                            ×{it.count}
+                                                                            ×
+                                                                            {
+                                                                                it.count
+                                                                            }
                                                                         </Badge>
                                                                     )}
                                                                     {!it.descriptionValid && (
@@ -2386,14 +2877,24 @@ export default function PriceListImport({
                                                                             }
                                                                             className="h-5 px-1 text-[10px] text-amber-600 hover:text-amber-700"
                                                                         >
-                                                                            Truncate to 1000
+                                                                            Truncate
+                                                                            to
+                                                                            1000
                                                                         </Button>
-                                                                        <span className="self-center text-[10px] text-muted-foreground">
-                                                                            will cut to &quot;
+                                                                        <span className="text-muted-foreground self-center text-[10px]">
+                                                                            will
+                                                                            cut
+                                                                            to
+                                                                            &quot;
                                                                             {it.description
                                                                                 .trim()
-                                                                                .slice(0, 1000)
-                                                                                .slice(-20)}
+                                                                                .slice(
+                                                                                    0,
+                                                                                    1000,
+                                                                                )
+                                                                                .slice(
+                                                                                    -20,
+                                                                                )}
                                                                             &quot;
                                                                         </span>
                                                                     </div>
@@ -2404,9 +2905,13 @@ export default function PriceListImport({
                                                                 <div className="flex items-center gap-1">
                                                                     <span
                                                                         className="truncate"
-                                                                        title={it.category}
+                                                                        title={
+                                                                            it.category
+                                                                        }
                                                                     >
-                                                                        {it.category}
+                                                                        {
+                                                                            it.category
+                                                                        }
                                                                     </span>
                                                                     {it.catExists ? (
                                                                         <Badge
@@ -2416,7 +2921,7 @@ export default function PriceListImport({
                                                                             ✓
                                                                         </Badge>
                                                                     ) : it.catMatchType ===
-                                                                      "partial" ? (
+                                                                      'partial' ? (
                                                                         <Badge
                                                                             variant="outline"
                                                                             className="h-4 px-1 text-[10px]"
@@ -2436,22 +2941,29 @@ export default function PriceListImport({
                                                             <TableCell className="text-xs">
                                                                 <div className="flex flex-col gap-1">
                                                                     <span
-                                                                        className="truncate text-[10px] text-muted-foreground"
+                                                                        className="text-muted-foreground truncate text-[10px]"
                                                                         title={`Excel: ${it.coa}`}
                                                                     >
-                                                                        Excel: {it.coa}{" "}
+                                                                        Excel:{' '}
+                                                                        {it.coa}{' '}
                                                                         {it.coaExists
-                                                                            ? "✓"
+                                                                            ? '✓'
                                                                             : it.coaMatchType ===
-                                                                                "partial"
-                                                                              ? "~ partial"
-                                                                              : "❌"}
+                                                                                'partial'
+                                                                              ? '~ partial'
+                                                                              : '❌'}
                                                                     </span>
                                                                     <div className="flex items-center gap-1">
                                                                         <Combobox
-                                                                            items={itemsForRow}
-                                                                            value={selectedDisplay}
-                                                                            onValueChange={(val) =>
+                                                                            items={
+                                                                                itemsForRow
+                                                                            }
+                                                                            value={
+                                                                                selectedDisplay
+                                                                            }
+                                                                            onValueChange={(
+                                                                                val,
+                                                                            ) =>
                                                                                 handleCoaOverrideChange(
                                                                                     it.key,
                                                                                     val as
@@ -2463,15 +2975,17 @@ export default function PriceListImport({
                                                                             <ComboboxInput
                                                                                 placeholder={
                                                                                     it.coaMatchType ===
-                                                                                    "partial"
-                                                                                        ? "★ Suggested at top — search..."
-                                                                                        : "Search COA..."
+                                                                                    'partial'
+                                                                                        ? '★ Suggested at top — search...'
+                                                                                        : 'Search COA...'
                                                                                 }
                                                                                 className="h-7 text-xs"
                                                                             />
                                                                             <ComboboxContent>
                                                                                 <ComboboxEmpty>
-                                                                                    No COA found.
+                                                                                    No
+                                                                                    COA
+                                                                                    found.
                                                                                 </ComboboxEmpty>
                                                                                 <ComboboxList>
                                                                                     {(
@@ -2497,16 +3011,16 @@ export default function PriceListImport({
                                                                                                 }
                                                                                                 className={
                                                                                                     isSuggested
-                                                                                                        ? "font-medium"
-                                                                                                        : ""
+                                                                                                        ? 'font-medium'
+                                                                                                        : ''
                                                                                                 }
                                                                                             >
                                                                                                 {isSuggested
-                                                                                                    ? "★ "
-                                                                                                    : ""}
+                                                                                                    ? '★ '
+                                                                                                    : ''}
                                                                                                 {item.replace(
                                                                                                     /^coa:\d+:/,
-                                                                                                    "",
+                                                                                                    '',
                                                                                                 )}
                                                                                             </ComboboxItem>
                                                                                         );
@@ -2534,32 +3048,47 @@ export default function PriceListImport({
                                                                             className="truncate text-xs text-green-600"
                                                                             title={`${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`}
                                                                         >
-                                                                            → {it.effectiveCoa.path}{" "}
-                                                                            —{" "}
+                                                                            →{' '}
                                                                             {
-                                                                                it.effectiveCoa
+                                                                                it
+                                                                                    .effectiveCoa
+                                                                                    .path
+                                                                            }{' '}
+                                                                            —{' '}
+                                                                            {
+                                                                                it
+                                                                                    .effectiveCoa
                                                                                     .account_title
                                                                             }
                                                                         </div>
-                                                                    ) : it.coaTopMatches.length >
+                                                                    ) : it
+                                                                          .coaTopMatches
+                                                                          .length >
                                                                       0 ? (
                                                                         <div
-                                                                            className="truncate text-xs text-muted-foreground"
+                                                                            className="text-muted-foreground truncate text-xs"
                                                                             title={it.coaTopMatches
                                                                                 .map(
-                                                                                    (m) =>
+                                                                                    (
+                                                                                        m,
+                                                                                    ) =>
                                                                                         `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
                                                                                 )
-                                                                                .join(" | ")}
+                                                                                .join(
+                                                                                    ' | ',
+                                                                                )}
                                                                         >
-                                                                            Suggest:{" "}
+                                                                            Suggest:{' '}
                                                                             {
-                                                                                it.coaTopMatches[0]
-                                                                                    .coa.path
-                                                                            }{" "}
-                                                                            —{" "}
+                                                                                it
+                                                                                    .coaTopMatches[0]
+                                                                                    .coa
+                                                                                    .path
+                                                                            }{' '}
+                                                                            —{' '}
                                                                             {
-                                                                                it.coaTopMatches[0]
+                                                                                it
+                                                                                    .coaTopMatches[0]
                                                                                     .coa
                                                                                     .account_title
                                                                             }
@@ -2567,26 +3096,33 @@ export default function PriceListImport({
                                                                     ) : null}
                                                                 </div>
                                                             </TableCell>
-                                                            <TableCell>{it.unit}</TableCell>
                                                             <TableCell>
-                                                                {it.price !== null
+                                                                {it.unit}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                {it.price !==
+                                                                null
                                                                     ? `₱${it.price.toLocaleString()}`
-                                                                    : "—"}
+                                                                    : '—'}
                                                             </TableCell>
                                                             <TableCell className="text-xs">
-                                                                {it.status === "error" ? (
+                                                                {it.status ===
+                                                                'error' ? (
                                                                     <span className="text-destructive">
-                                                                        {it.message}{" "}
+                                                                        {
+                                                                            it.message
+                                                                        }{' '}
                                                                         {!it.catExists && (
                                                                             <Link
                                                                                 href="/category-import"
                                                                                 className="underline"
                                                                             >
-                                                                                Category Import
+                                                                                Category
+                                                                                Import
                                                                             </Link>
-                                                                        )}{" "}
+                                                                        )}{' '}
                                                                         {!it.effectiveCoaExists &&
-                                                                            " "}{" "}
+                                                                            ' '}{' '}
                                                                         {!it.effectiveMappingExists &&
                                                                             it.catExists &&
                                                                             it.effectiveCoaExists && (
@@ -2594,23 +3130,36 @@ export default function PriceListImport({
                                                                                     href="/category-coa-mapping"
                                                                                     className="underline"
                                                                                 >
-                                                                                    → Map
+                                                                                    →
+                                                                                    Map
                                                                                 </Link>
                                                                             )}
                                                                     </span>
-                                                                ) : it.status === "update" ? (
+                                                                ) : it.status ===
+                                                                  'update' ? (
                                                                     <span className="text-amber-600">
-                                                                        {it.message}
+                                                                        {
+                                                                            it.message
+                                                                        }
                                                                     </span>
                                                                 ) : (
                                                                     <span className="text-green-600">
-                                                                        {it.message}
+                                                                        {
+                                                                            it.message
+                                                                        }
                                                                     </span>
                                                                 )}
-                                                                <div className="text-[10px] text-muted-foreground">
-                                                                    {it.sheets.join(", ")} row{" "}
-                                                                    {it.rows.join(", ")}{" "}
-                                                                    {it.count > 1 && `×${it.count}`}
+                                                                <div className="text-muted-foreground text-[10px]">
+                                                                    {it.sheets.join(
+                                                                        ', ',
+                                                                    )}{' '}
+                                                                    row{' '}
+                                                                    {it.rows.join(
+                                                                        ', ',
+                                                                    )}{' '}
+                                                                    {it.count >
+                                                                        1 &&
+                                                                        `×${it.count}`}
                                                                 </div>
                                                             </TableCell>
                                                         </TableRow>
@@ -2621,27 +3170,31 @@ export default function PriceListImport({
                                     </Table>
                                 </div>
                                 <div className="flex justify-between">
-                                    <Button variant="outline" onClick={() => setStep("verify")}>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setStep('verify')}
+                                    >
                                         Back
                                     </Button>
                                     <Button
                                         suppressHydrationWarning
                                         disabled={
                                             isMounted
-                                                ? importableSelected.length === 0 || importing
+                                                ? importableSelected.length ===
+                                                      0 || importing
                                                 : false
                                         }
                                         onClick={handleImport}
                                     >
                                         {importing
-                                            ? "Importing..."
+                                            ? 'Importing...'
                                             : `Import ${importableSelected.length} price lists (${insertCount} new + ${updateCount} updates)`}
                                     </Button>
                                 </div>
                                 {importableSelected.length === 0 &&
                                     !importing &&
                                     verifiedItems.length > 0 && (
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-muted-foreground text-xs">
                                             {importable.length === 0
                                                 ? `No importable rows — all ${errorCount} rows are errors. Fix Category/COA via dropdowns or create mappings in Category–COA Mappings.`
                                                 : `No rows selected — ${importable.length} importable available. Check a row or click header checkbox. Selected: ${selected.size}/${verifiedItems.length}`}
@@ -2651,20 +3204,27 @@ export default function PriceListImport({
                                     importableSelected.length === 0 &&
                                     importable.length > 0 && (
                                         <p className="text-xs text-amber-600">
-                                            Selected rows are all errors and cannot be imported.
-                                            Select only Ready/Update rows (green/amber).
+                                            Selected rows are all errors and
+                                            cannot be imported. Select only
+                                            Ready/Update rows (green/amber).
                                         </p>
                                     )}
                             </>
                         ) : (
-                            <p className="text-sm text-muted-foreground">
-                                Run Verify, then Extract to see items. Items require existing
-                                Category (via{" "}
-                                <Link href="/category-import" className="underline">
+                            <p className="text-muted-foreground text-sm">
+                                Run Verify, then Extract to see items. Items
+                                require existing Category (via{' '}
+                                <Link
+                                    href="/category-import"
+                                    className="underline"
+                                >
                                     Category Import
                                 </Link>
-                                ) and Mapping (via{" "}
-                                <Link href="/category-coa-mapping" className="underline">
+                                ) and Mapping (via{' '}
+                                <Link
+                                    href="/category-coa-mapping"
+                                    className="underline"
+                                >
                                     Category–COA Mappings
                                 </Link>
                                 ).
@@ -2681,7 +3241,7 @@ export default function PriceListImport({
 
 PriceListImport.layout = {
     breadcrumbs: [
-        { title: "Imports", href: "/imports" },
-        { title: "Price List Import", href: "/price-list-import" },
+        { title: 'Imports', href: '/imports' },
+        { title: 'Price List Import', href: '/price-list-import' },
     ],
 };

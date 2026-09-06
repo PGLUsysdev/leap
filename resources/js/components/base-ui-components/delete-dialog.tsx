@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -8,8 +8,8 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from "@/components/base-ui-components/ui/alert-dialog";
-import { Spinner } from "@/components/base-ui-components/ui/spinner";
+} from '@/components/base-ui-components/ui/alert-dialog';
+import { Spinner } from '@/components/base-ui-components/ui/spinner';
 
 interface DeleteDialogProps {
     open: boolean;
@@ -33,7 +33,10 @@ export default function DeleteDialog({
         eventDetails: any, // Replace with proper type if available
     ) {
         if (!nextOpen && loading) {
-            if (eventDetails.reason === "escape-key" || eventDetails.reason === "outside-press") {
+            if (
+                eventDetails.reason === 'escape-key' ||
+                eventDetails.reason === 'outside-press'
+            ) {
                 eventDetails.cancel();
 
                 return;
@@ -48,10 +51,14 @@ export default function DeleteDialog({
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>{title}</AlertDialogTitle>
-                    <AlertDialogDescription>{description}</AlertDialogDescription>
+                    <AlertDialogDescription>
+                        {description}
+                    </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel disabled={loading}>
+                        Cancel
+                    </AlertDialogCancel>
                     <AlertDialogAction
                         variant="destructive"
                         disabled={loading}

@@ -1,9 +1,9 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { router } from "@inertiajs/react";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/base-ui-components/ui/button";
+import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/base-ui-components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -11,16 +11,19 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from "@/components/base-ui-components/ui/dialog";
+} from '@/components/base-ui-components/ui/dialog';
 import {
     Field,
     FieldError,
     FieldLabel,
     FieldContent,
-} from "@/components/base-ui-components/ui/field";
-import { Input } from "@/components/base-ui-components/ui/input";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import type { CcStrategicPriority } from "@/types";
+} from '@/components/base-ui-components/ui/field';
+import { Input } from '@/components/base-ui-components/ui/input';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import type { CcStrategicPriority } from '@/types';
 
 interface FormDialogProps {
     open: boolean;
@@ -31,25 +34,29 @@ interface FormDialogProps {
 const formSchema = z.object({
     code: z
         .string()
-        .min(1, "Code is required")
-        .regex(/^\d$/, "Must be exactly 1 digit")
-        .refine((val) => val !== "0", {
-            message: "Code cannot be 0",
+        .min(1, 'Code is required')
+        .regex(/^\d$/, 'Must be exactly 1 digit')
+        .refine((val) => val !== '0', {
+            message: 'Code cannot be 0',
         }),
-    name: z.string().min(1, "Name is required"),
+    name: z.string().min(1, 'Name is required'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function FormDialog({ open, onOpenChange, initialData }: FormDialogProps) {
+export default function FormDialog({
+    open,
+    onOpenChange,
+    initialData,
+}: FormDialogProps) {
     const [isLoading, setIsLoading] = useState(false);
     const isEditing = !!initialData;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            code: "",
-            name: "",
+            code: '',
+            name: '',
         },
     });
 
@@ -62,8 +69,8 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                 });
             } else {
                 form.reset({
-                    code: "",
-                    name: "",
+                    code: '',
+                    name: '',
                 });
             }
         }
@@ -84,7 +91,7 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                 onError: (errors) => {
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: "server",
+                            type: 'server',
                             message: errors[key],
                         });
                     });
@@ -92,7 +99,7 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                 onFinish: () => setIsLoading(false),
             });
         } else {
-            router.post("/cc-strategic-priority", payload, {
+            router.post('/cc-strategic-priority', payload, {
                 preserveState: true,
                 preserveScroll: true,
                 onStart: () => setIsLoading(true),
@@ -100,7 +107,7 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                 onError: (errors) => {
                     Object.keys(errors).forEach((key) => {
                         form.setError(key as any, {
-                            type: "server",
+                            type: 'server',
                             message: errors[key],
                         });
                     });
@@ -115,12 +122,14 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
             <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {isEditing ? "Edit CC Strategic Priority" : "Create CC Strategic Priority"}
+                        {isEditing
+                            ? 'Edit CC Strategic Priority'
+                            : 'Create CC Strategic Priority'}
                     </DialogTitle>
                     <DialogDescription>
                         {isEditing
-                            ? "Modify the details of the existing strategic priority below."
-                            : "Fill in the information to create a new strategic priority."}
+                            ? 'Modify the details of the existing strategic priority below.'
+                            : 'Fill in the information to create a new strategic priority.'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -137,26 +146,34 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel htmlFor={field.name} className="gap-1">
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
                                                 Code
                                             </FieldLabel>
 
                                             <Input
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={fieldState.invalid}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
                                                 placeholder="1"
                                                 autoComplete="off"
                                                 onChange={(e) => {
-                                                    const digits = e.target.value
-                                                        .replace(/\D/g, "")
-                                                        .slice(0, 1);
+                                                    const digits =
+                                                        e.target.value
+                                                            .replace(/\D/g, '')
+                                                            .slice(0, 1);
                                                     field.onChange(digits);
                                                 }}
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError errors={[fieldState.error]} />
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -169,20 +186,27 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                                 render={({ field, fieldState }) => (
                                     <Field data-invalid={fieldState.invalid}>
                                         <FieldContent>
-                                            <FieldLabel htmlFor={field.name} className="gap-1">
+                                            <FieldLabel
+                                                htmlFor={field.name}
+                                                className="gap-1"
+                                            >
                                                 Name
                                             </FieldLabel>
 
                                             <Input
                                                 {...field}
                                                 id={field.name}
-                                                aria-invalid={fieldState.invalid}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
                                                 placeholder="Enter name"
                                                 autoComplete="off"
                                             />
 
                                             {fieldState.invalid && (
-                                                <FieldError errors={[fieldState.error]} />
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
                                             )}
                                         </FieldContent>
                                     </Field>
@@ -203,14 +227,18 @@ export default function FormDialog({ open, onOpenChange, initialData }: FormDial
                         Cancel
                     </Button>
 
-                    <Button type="submit" form="cc-strategic-priority-form" disabled={isLoading}>
+                    <Button
+                        type="submit"
+                        form="cc-strategic-priority-form"
+                        disabled={isLoading}
+                    >
                         {isLoading
                             ? isEditing
-                                ? "Saving..."
-                                : "Creating..."
+                                ? 'Saving...'
+                                : 'Creating...'
                             : isEditing
-                              ? "Save Changes"
-                              : "Create"}
+                              ? 'Save Changes'
+                              : 'Create'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

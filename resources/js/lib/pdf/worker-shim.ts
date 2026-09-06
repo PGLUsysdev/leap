@@ -16,7 +16,7 @@ interface HotWorkerSelf {
 const shimmedSelf = self as typeof self & HotWorkerSelf;
 
 // Workers have no window/global until we alias them to the worker scope.
-if (typeof window === "undefined") {
+if (typeof window === 'undefined') {
     shimmedSelf.global = self;
     shimmedSelf.window = self;
 }

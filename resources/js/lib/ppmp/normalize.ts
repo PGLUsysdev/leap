@@ -1,12 +1,21 @@
 export function normalize(str: string): string {
-    return str.trim().replace(/\s+/g, " ").toLowerCase();
+    return str.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 export function isTotalRow(normalized: string): boolean {
     return /\s*-\s*total$/.test(normalized) || /^total\b/.test(normalized);
 }
 
-export const SHORT_PROCUREMENT_ROOTS = new Set(["oil", "gas", "ink", "lab", "cop", "car", "med", "law"]);
+export const SHORT_PROCUREMENT_ROOTS = new Set([
+    'oil',
+    'gas',
+    'ink',
+    'lab',
+    'cop',
+    'car',
+    'med',
+    'law',
+]);
 
 export function levenshtein(a: string, b: string): number {
     if (a === b) return 0;
@@ -37,17 +46,31 @@ export function levenshtein(a: string, b: string): number {
     return prev[bl];
 }
 
-export type ExistingCategory = { id: number; name: string; is_non_procurement: boolean; is_additional: boolean };
-export type ExistingCoa = { id: number; account_number: string; path: string; account_title: string };
+export type ExistingCategory = {
+    id: number;
+    name: string;
+    is_non_procurement: boolean;
+    is_additional: boolean;
+};
+export type ExistingCoa = {
+    id: number;
+    account_number: string;
+    path: string;
+    account_title: string;
+};
 
 export function getCategoryMatch(
     candidateNorm: string,
     existingCategories: ExistingCategory[],
-): { type: "strict" | "partial" | "none"; match?: ExistingCategory; topMatches?: Array<{ category: ExistingCategory; score: number }> } {
+): {
+    type: 'strict' | 'partial' | 'none';
+    match?: ExistingCategory;
+    topMatches?: Array<{ category: ExistingCategory; score: number }>;
+} {
     for (const dbCat of existingCategories) {
         const dbNorm = normalize(dbCat.name);
 
-        if (candidateNorm === dbNorm) return { type: "strict", match: dbCat };
+        if (candidateNorm === dbNorm) return { type: 'strict', match: dbCat };
     }
 
     const partials: Array<{ category: ExistingCategory; score: number }> = [];
@@ -64,9 +87,13 @@ export function getCategoryMatch(
             continue;
         }
 
-        const isEligibleLength = candidateLen >= 4 || SHORT_PROCUREMENT_ROOTS.has(candidateNorm);
+        const isEligibleLength =
+            candidateLen >= 4 || SHORT_PROCUREMENT_ROOTS.has(candidateNorm);
 
-        if (isEligibleLength && (dbNorm.includes(candidateNorm) || candidateNorm.includes(dbNorm))) {
+        if (
+            isEligibleLength &&
+            (dbNorm.includes(candidateNorm) || candidateNorm.includes(dbNorm))
+        ) {
             partials.push({ category: dbCat, score: 99 });
         }
     }
@@ -74,17 +101,17 @@ export function getCategoryMatch(
     if (partials.length > 0) {
         partials.sort((a, b) => a.score - b.score);
 
-        return { type: "partial", topMatches: partials.slice(0, 3) };
+        return { type: 'partial', topMatches: partials.slice(0, 3) };
     }
 
-    return { type: "none" };
+    return { type: 'none' };
 }
 
 export function columnToNumber(col: string): number {
     let n = 0;
 
     for (const ch of col.toUpperCase()) {
-        if (ch < "A" || ch > "Z") continue;
+        if (ch < 'A' || ch > 'Z') continue;
 
         n = n * 26 + (ch.charCodeAt(0) - 64);
     }
@@ -93,7 +120,7 @@ export function columnToNumber(col: string): number {
 }
 
 export function numberToColumn(n: number): string {
-    let s = "";
+    let s = '';
 
     while (n > 0) {
         const m = (n - 1) % 26;
@@ -117,11 +144,13 @@ export function leftColumn(col: string): string {
  * When several COAs partially match, paths under 5-02 rank first, then any
  * other path under 5, then everything else.
  */
-export const PREFERRED_COA_PATH_PREFIXES = ["5-02", "5"];
+export const PREFERRED_COA_PATH_PREFIXES = ['5-02', '5'];
 
 export function coaPathTier(coa: ExistingCoa): number {
     const p = normalize(coa.path);
-    const idx = PREFERRED_COA_PATH_PREFIXES.findIndex((prefix) => p.startsWith(prefix));
+    const idx = PREFERRED_COA_PATH_PREFIXES.findIndex((prefix) =>
+        p.startsWith(prefix),
+    );
 
     return idx === -1 ? PREFERRED_COA_PATH_PREFIXES.length : idx;
 }
@@ -129,24 +158,40 @@ export function coaPathTier(coa: ExistingCoa): number {
 export function getCoaMatch(
     candidateNorm: string,
     existingCoas: ExistingCoa[],
-    mode: "auto" | "account_number" | "account_title",
-): { type: "strict" | "partial" | "none"; match?: ExistingCoa; topMatches?: Array<{ coa: ExistingCoa; score: number }> } {
+    mode: 'auto' | 'account_number' | 'account_title',
+): {
+    type: 'strict' | 'partial' | 'none';
+    match?: ExistingCoa;
+    topMatches?: Array<{ coa: ExistingCoa; score: number }>;
+} {
     const normalizeCoa = (c: ExistingCoa) => ({
         title: normalize(c.account_title),
         number: normalize(c.account_number),
         path: normalize(c.path),
-        pathNoDash: normalize(c.path.replace(/-/g, " ")),
+        pathNoDash: normalize(c.path.replace(/-/g, ' ')),
     });
 
     for (const coa of existingCoas) {
         const n = normalizeCoa(coa);
 
-        if (mode === "account_title") {
-            if (candidateNorm === n.title) return { type: "strict", match: coa };
-        } else if (mode === "account_number") {
-            if (candidateNorm === n.number || candidateNorm === n.path || candidateNorm === n.pathNoDash) return { type: "strict", match: coa };
+        if (mode === 'account_title') {
+            if (candidateNorm === n.title)
+                return { type: 'strict', match: coa };
+        } else if (mode === 'account_number') {
+            if (
+                candidateNorm === n.number ||
+                candidateNorm === n.path ||
+                candidateNorm === n.pathNoDash
+            )
+                return { type: 'strict', match: coa };
         } else {
-            if (candidateNorm === n.title || candidateNorm === n.number || candidateNorm === n.path || candidateNorm === n.pathNoDash) return { type: "strict", match: coa };
+            if (
+                candidateNorm === n.title ||
+                candidateNorm === n.number ||
+                candidateNorm === n.path ||
+                candidateNorm === n.pathNoDash
+            )
+                return { type: 'strict', match: coa };
         }
     }
 
@@ -155,7 +200,12 @@ export function getCoaMatch(
 
     for (const coa of existingCoas) {
         const n = normalizeCoa(coa);
-        const targets = mode === "account_title" ? [n.title] : mode === "account_number" ? [n.number, n.path, n.pathNoDash] : [n.title, n.number, n.path, n.pathNoDash];
+        const targets =
+            mode === 'account_title'
+                ? [n.title]
+                : mode === 'account_number'
+                  ? [n.number, n.path, n.pathNoDash]
+                  : [n.title, n.number, n.path, n.pathNoDash];
         let bestScore: number | null = null;
 
         for (const t of targets) {
@@ -164,12 +214,16 @@ export function getCoaMatch(
             const dist = levenshtein(candidateNorm, t);
 
             if (dist <= levThreshold) {
-                bestScore = bestScore === null ? dist : Math.min(bestScore, dist);
+                bestScore =
+                    bestScore === null ? dist : Math.min(bestScore, dist);
             }
 
             const isEligibleLength = candidateLen >= 4;
 
-            if (isEligibleLength && (t.includes(candidateNorm) || candidateNorm.includes(t))) {
+            if (
+                isEligibleLength &&
+                (t.includes(candidateNorm) || candidateNorm.includes(t))
+            ) {
                 bestScore = bestScore === null ? 99 : Math.min(bestScore, 99);
             }
         }
@@ -178,10 +232,13 @@ export function getCoaMatch(
     }
 
     if (partials.length > 0) {
-        partials.sort((a, b) => coaPathTier(a.coa) - coaPathTier(b.coa) || a.score - b.score);
+        partials.sort(
+            (a, b) =>
+                coaPathTier(a.coa) - coaPathTier(b.coa) || a.score - b.score,
+        );
 
-        return { type: "partial", topMatches: partials.slice(0, 3) };
+        return { type: 'partial', topMatches: partials.slice(0, 3) };
     }
 
-    return { type: "none" };
+    return { type: 'none' };
 }

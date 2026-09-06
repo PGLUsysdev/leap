@@ -1,24 +1,24 @@
 // resources\js\pages\aip\pdf-render\prepare-rows.ts
 
-import type { TableRow } from "@/pages/ppmp/pdf-render/types";
-import type { App, AppItem } from "@/types";
+import type { TableRow } from '@/pages/ppmp/pdf-render/types';
+import type { App, AppItem } from '@/types';
 
 const slugify = (value: string) =>
     value
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)/g, "");
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
 
 const sumBy = (items: AppItem[], key: keyof AppItem) =>
     items.reduce((sum, item) => sum + (Number(item[key]) || 0), 0);
 
 function buildCategoryTotals(items: AppItem[]): Record<string, number> {
     return {
-        total_amount: sumBy(items, "total_amount"),
-        q1_amount: sumBy(items, "q1_amount"),
-        q2_amount: sumBy(items, "q2_amount"),
-        q3_amount: sumBy(items, "q3_amount"),
-        q4_amount: sumBy(items, "q4_amount"),
+        total_amount: sumBy(items, 'total_amount'),
+        q1_amount: sumBy(items, 'q1_amount'),
+        q2_amount: sumBy(items, 'q2_amount'),
+        q3_amount: sumBy(items, 'q3_amount'),
+        q4_amount: sumBy(items, 'q4_amount'),
     };
 }
 
@@ -42,25 +42,27 @@ export function prepareAppRows(data: App): TableRow[] {
 
         rows.push({
             id: `cat-${categorySlug}`,
-            type: "banner",
+            type: 'banner',
             label: categoryName,
         });
 
-        Object.entries(chartOfAccounts).forEach(([accountTitle, items], coaIdx) => {
-            rows.push({
-                id: `coa-${categorySlug}-${coaIdx}-${slugify(accountTitle)}`,
-                type: "banner",
-                label: accountTitle,
-            });
-
-            items.forEach((item, idx) => {
+        Object.entries(chartOfAccounts).forEach(
+            ([accountTitle, items], coaIdx) => {
                 rows.push({
-                    id: `item-${categorySlug}-${coaIdx}-${idx}`,
-                    type: "item",
-                    item,
+                    id: `coa-${categorySlug}-${coaIdx}-${slugify(accountTitle)}`,
+                    type: 'banner',
+                    label: accountTitle,
                 });
-            });
-        });
+
+                items.forEach((item, idx) => {
+                    rows.push({
+                        id: `item-${categorySlug}-${coaIdx}-${idx}`,
+                        type: 'item',
+                        item,
+                    });
+                });
+            },
+        );
 
         const totals = buildCategoryTotals(categoryItems);
         allCategoryTotals.push(totals);
@@ -68,7 +70,7 @@ export function prepareAppRows(data: App): TableRow[] {
         // Inline yellow subtotal directly after the category block.
         rows.push({
             id: `cat-total-${categorySlug}`,
-            type: "subtotal",
+            type: 'subtotal',
             label: `${categoryName.toUpperCase()} - TOTAL`,
             totals,
         });
@@ -78,16 +80,16 @@ export function prepareAppRows(data: App): TableRow[] {
     Object.entries(data).forEach(([categoryName], catIdx) => {
         rows.push({
             id: `summary-cat-${catIdx}-${slugify(categoryName)}`,
-            type: "subtotal",
+            type: 'subtotal',
             label: `${categoryName.toUpperCase()} - TOTAL`,
             totals: allCategoryTotals[catIdx],
         });
     });
 
     rows.push({
-        id: "summary-grand-total",
-        type: "grand-total",
-        label: "TOTAL BUDGET",
+        id: 'summary-grand-total',
+        type: 'grand-total',
+        label: 'TOTAL BUDGET',
         totals: allCategoryTotals.reduce(
             (acc, totals) => ({
                 total_amount: acc.total_amount + totals.total_amount,
@@ -96,7 +98,13 @@ export function prepareAppRows(data: App): TableRow[] {
                 q3_amount: acc.q3_amount + totals.q3_amount,
                 q4_amount: acc.q4_amount + totals.q4_amount,
             }),
-            { total_amount: 0, q1_amount: 0, q2_amount: 0, q3_amount: 0, q4_amount: 0 },
+            {
+                total_amount: 0,
+                q1_amount: 0,
+                q2_amount: 0,
+                q3_amount: 0,
+                q4_amount: 0,
+            },
         ),
     });
 

@@ -1,27 +1,29 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, Trash } from "lucide-react";
-import { Button } from "@/components/base-ui-components/ui/button";
-import type { OfficeType } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import { Pencil, Trash } from 'lucide-react';
+import { Button } from '@/components/base-ui-components/ui/button';
+import type { OfficeType } from '@/types';
 
 const columnHelper = createColumnHelper<OfficeType>();
 
 const columns = [
-    columnHelper.accessor("code", {
+    columnHelper.accessor('code', {
         size: 100,
         header: () => <div className="px-1">Code</div>,
         cell: (value) => (
             <div className="px-1 text-wrap slashed-zero tabular-nums">
-                {value.getValue().padStart(2, "0")}
+                {value.getValue().padStart(2, '0')}
             </div>
         ),
     }),
-    columnHelper.accessor("name", {
+    columnHelper.accessor('name', {
         size: 100,
         header: () => <div className="px-1">Type</div>,
-        cell: (value) => <div className="px-1 text-wrap">{value.getValue()}</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue()}</div>
+        ),
     }),
     columnHelper.display({
-        id: "actions",
+        id: 'actions',
         size: 82,
         cell: ({ row, table }) => {
             const meta = table.options.meta as

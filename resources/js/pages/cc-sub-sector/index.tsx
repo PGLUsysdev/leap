@@ -1,13 +1,16 @@
-import { router } from "@inertiajs/react";
-import { useState, useCallback } from "react";
-import { AlertErrorDialog } from "@/components/alert-error-dialog";
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { DeleteDialog } from "@/components/delete-dialog";
-import type { CcStrategicPriority, CcSubSector } from "@/types";
-import columns from "./columns/cc-sub-sector-cols";
-import FormDialog from "./form-dialog-base";
+import { router } from '@inertiajs/react';
+import { useState, useCallback } from 'react';
+import { AlertErrorDialog } from '@/components/alert-error-dialog';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import type { CcStrategicPriority, CcSubSector } from '@/types';
+import columns from './columns/cc-sub-sector-cols';
+import FormDialog from './form-dialog-base';
 
 interface CcSubSectorPageProps {
     subSectors: CcSubSector[];
@@ -25,9 +28,11 @@ export default function CcSubSectorPage({
     can,
 }: CcSubSectorPageProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editingSubSector, setEditingSubSector] = useState<CcSubSector | null>(null);
+    const [editingSubSector, setEditingSubSector] =
+        useState<CcSubSector | null>(null);
 
-    const [deletingSubSector, setDeletingSubSector] = useState<CcSubSector | null>(null);
+    const [deletingSubSector, setDeletingSubSector] =
+        useState<CcSubSector | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -87,7 +92,11 @@ export default function CcSubSectorPage({
                         onDelete: handleDeleteRequest,
                     }}
                 >
-                    {can?.add && <Button onClick={handleCreate}>Create CC Sub Sector</Button>}
+                    {can?.add && (
+                        <Button onClick={handleCreate}>
+                            Create CC Sub Sector
+                        </Button>
+                    )}
                 </DataTable>
 
                 <ScrollBar orientation="vertical" />
@@ -113,8 +122,9 @@ export default function CcSubSectorPage({
                 description={
                     deletingSubSector ? (
                         <>
-                            Are you sure you want to delete{" "}
-                            <strong>{deletingSubSector.name}</strong>? This action cannot be undone.
+                            Are you sure you want to delete{' '}
+                            <strong>{deletingSubSector.name}</strong>? This
+                            action cannot be undone.
                         </>
                     ) : null
                 }
@@ -127,5 +137,5 @@ export default function CcSubSectorPage({
 }
 
 CcSubSectorPage.layout = {
-    breadcrumbs: [{ title: "CC Sub Sectors", href: "#" }],
+    breadcrumbs: [{ title: 'CC Sub Sectors', href: '#' }],
 };

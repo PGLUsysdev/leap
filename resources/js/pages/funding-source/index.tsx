@@ -1,12 +1,15 @@
-import { router } from "@inertiajs/react";
-import { useState } from "react";
-import DataTable from "@/components/base-ui-components/data-table";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/base-ui-components/ui/scroll-area";
-import { DeleteDialog } from "@/components/delete-dialog";
-import FormDialog from "@/pages/funding-source/form-dialog-base";
-import type { FundingSource } from "@/types";
-import columns from "./columns/columns";
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
+import DataTable from '@/components/base-ui-components/data-table';
+import { Button } from '@/components/base-ui-components/ui/button';
+import {
+    ScrollArea,
+    ScrollBar,
+} from '@/components/base-ui-components/ui/scroll-area';
+import { DeleteDialog } from '@/components/delete-dialog';
+import FormDialog from '@/pages/funding-source/form-dialog-base';
+import type { FundingSource } from '@/types';
+import columns from './columns/columns';
 
 interface FundingSourcePageProps {
     fundingSources: FundingSource[];
@@ -17,9 +20,14 @@ interface FundingSourcePageProps {
     };
 }
 
-export default function FundingSourcePage({ fundingSources, can }: FundingSourcePageProps) {
+export default function FundingSourcePage({
+    fundingSources,
+    can,
+}: FundingSourcePageProps) {
     const [open, setOpen] = useState(false);
-    const [selectedSource, setSelectedSource] = useState<FundingSource | null>(null);
+    const [selectedSource, setSelectedSource] = useState<FundingSource | null>(
+        null,
+    );
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -97,7 +105,9 @@ export default function FundingSourcePage({ fundingSources, can }: FundingSource
                 >
                     {can?.add && (
                         <div className="flex justify-end">
-                            <Button onClick={handleAdd}>Add Funding Source</Button>
+                            <Button onClick={handleAdd}>
+                                Add Funding Source
+                            </Button>
                         </div>
                     )}
                 </DataTable>
@@ -117,8 +127,10 @@ export default function FundingSourcePage({ fundingSources, can }: FundingSource
                 title="Delete Funding Source?"
                 description={
                     <>
-                        Are you sure you want to remove{" "}
-                        <span className="font-bold text-foreground">"{selectedSource?.title}"</span>
+                        Are you sure you want to remove{' '}
+                        <span className="text-foreground font-bold">
+                            "{selectedSource?.title}"
+                        </span>
                         ?
                     </>
                 }
@@ -134,5 +146,5 @@ export default function FundingSourcePage({ fundingSources, can }: FundingSource
 }
 
 FundingSourcePage.layout = {
-    breadcrumbs: [{ title: "Funding Source", href: "#" }],
+    breadcrumbs: [{ title: 'Funding Source', href: '#' }],
 };

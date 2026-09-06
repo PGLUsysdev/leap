@@ -1,10 +1,10 @@
-export type * from "./auth";
-export type * from "./navigation";
-export type * from "./ui";
+export type * from './auth';
+export type * from './navigation';
+export type * from './ui';
 
-import type { InertiaLinkProps } from "@inertiajs/react";
-import type { LucideIcon } from "lucide-react";
-import type { Auth, User } from "./auth";
+import type { InertiaLinkProps } from '@inertiajs/react';
+import type { LucideIcon } from 'lucide-react';
+import type { Auth, User } from './auth';
 
 export interface NavGroup {
     title: string;
@@ -13,7 +13,7 @@ export interface NavGroup {
 
 export interface NavItem {
     title: string;
-    href: NonNullable<InertiaLinkProps["href"]>;
+    href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon | null;
     isActive?: boolean;
     type?: string;
@@ -87,7 +87,7 @@ export interface Office {
     };
 }
 
-export type FiscalYearStatus = "draft" | "open" | "locked" | "archived";
+export type FiscalYearStatus = 'draft' | 'open' | 'locked' | 'archived';
 
 export interface FiscalYear {
     id: number;
@@ -250,13 +250,13 @@ export interface ChartOfAccount {
     account_number: string;
     path: string;
     account_title: string;
-    account_type: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
-    expense_class: "PS" | "MOOE" | "FE" | "CO";
+    account_type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+    expense_class: 'PS' | 'MOOE' | 'FE' | 'CO';
     account_series: string | null;
     level: number;
     is_postable: boolean;
     is_active: boolean;
-    normal_balance: "DEBIT" | "CREDIT";
+    normal_balance: 'DEBIT' | 'CREDIT';
     description: string | null;
     is_manual?: boolean;
     created_at: string | null;
@@ -526,7 +526,7 @@ export interface PlantillaPosition {
     item_number: string;
     position_title: string;
     incumbent_name: string;
-    position_type: "permanent" | "casual" | "contractual" | "coterminous";
+    position_type: 'permanent' | 'casual' | 'contractual' | 'coterminous';
     current_sg: number;
     current_step: number;
     current_annual_rate: string;
@@ -546,9 +546,9 @@ export interface Position {
     office_id: number;
     item_number: string;
     ios_id: number;
-    employment_type: "permanent" | "casual" | "contractual" | "job_order";
+    employment_type: 'permanent' | 'casual' | 'contractual' | 'job_order';
     is_funded: boolean;
-    status: "occupied" | "vacant" | "abolished";
+    status: 'occupied' | 'vacant' | 'abolished';
     created_at: string | null;
     updated_at: string | null;
 

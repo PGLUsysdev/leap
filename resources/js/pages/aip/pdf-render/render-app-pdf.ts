@@ -1,9 +1,9 @@
 // resources\js\pages\aip\pdf-render\render-app-pdf.ts
 
-import type { DocumentProps } from "@react-pdf/renderer";
-import { createElement } from "react";
-import type { ReactElement } from "react";
-import type { App, FiscalYear } from "@/types";
+import type { DocumentProps } from '@react-pdf/renderer';
+import { createElement } from 'react';
+import type { ReactElement } from 'react';
+import type { App, FiscalYear } from '@/types';
 
 export interface AppPdfPayload {
     data: App;
@@ -26,11 +26,14 @@ export interface AppPdfPayload {
  */
 export const renderPdf = async (payload: AppPdfPayload): Promise<Blob> => {
     const [{ pdf }, { AppDocument }] = await Promise.all([
-        import("@react-pdf/renderer"),
-        import("./document"),
+        import('@react-pdf/renderer'),
+        import('./document'),
     ]);
 
-    const element = createElement(AppDocument, payload) as unknown as ReactElement<DocumentProps>;
+    const element = createElement(
+        AppDocument,
+        payload,
+    ) as unknown as ReactElement<DocumentProps>;
 
     return pdf(element).toBlob();
 };

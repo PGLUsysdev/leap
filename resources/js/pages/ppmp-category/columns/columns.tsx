@@ -1,34 +1,38 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, Trash } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import type { PpmpCategory } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import { Pencil, Trash } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { PpmpCategory } from '@/types';
 
 const columnHelper = createColumnHelper<PpmpCategory>();
 
 const columns = [
-    columnHelper.accessor("name", {
+    columnHelper.accessor('name', {
         size: 300,
         header: () => <div className="px-1">Category Name</div>,
-        cell: (value) => <div className="px-1 text-wrap">{value.getValue()}</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue()}</div>
+        ),
     }),
-    columnHelper.accessor("is_non_procurement", {
+    columnHelper.accessor('is_non_procurement', {
         size: 160,
         header: () => <div className="px-1">Procurement</div>,
         cell: (value) => (
             <div className="px-1 text-wrap">
-                {value.getValue() ? "Non-Proc" : "Procurement"}
+                {value.getValue() ? 'Non-Proc' : 'Procurement'}
             </div>
         ),
     }),
-    columnHelper.accessor("is_additional", {
+    columnHelper.accessor('is_additional', {
         size: 120,
         header: () => <div className="px-1">Additional</div>,
         cell: (value) => (
-            <div className="px-1 text-wrap">{value.getValue() ? "Yes" : "—"}</div>
+            <div className="px-1 text-wrap">
+                {value.getValue() ? 'Yes' : '—'}
+            </div>
         ),
     }),
     columnHelper.display({
-        id: "actions",
+        id: 'actions',
         size: 82,
         cell: ({ row, table }) => (
             <div className="flex items-center gap-1">

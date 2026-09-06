@@ -1,44 +1,52 @@
-import { createColumnHelper } from "@tanstack/react-table";
-import { Pencil, Trash, Plus } from "lucide-react";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import type { Office } from "@/types";
+import { createColumnHelper } from '@tanstack/react-table';
+import { Pencil, Trash, Plus } from 'lucide-react';
+import { Button } from '@/components/base-ui-components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import type { Office } from '@/types';
 
 const columnHelper = createColumnHelper<Office>();
 
 const columns = [
-    columnHelper.accessor("full_code", {
+    columnHelper.accessor('full_code', {
         size: 200,
         header: () => <div className="px-1">Office Account Code</div>,
         cell: (info) => (
-            <div className="px-1 text-wrap slashed-zero tabular-nums">{info.getValue()}</div>
+            <div className="px-1 text-wrap slashed-zero tabular-nums">
+                {info.getValue()}
+            </div>
         ),
     }),
-    columnHelper.accessor("name", {
+    columnHelper.accessor('name', {
         size: 400,
         header: () => <div className="px-1">Office Name</div>,
         cell: ({ row }) => (
             <div className="flex items-center gap-2 px-1 text-wrap">
-                <span className={`flex gap-2 text-wrap ${row.original.parent_id ? "ml-8" : ""}`}>
+                <span
+                    className={`flex gap-2 text-wrap ${row.original.parent_id ? 'ml-8' : ''}`}
+                >
                     {row.original.parent_id && (
-                        <span className="text-muted-foreground opacity-50">↳</span>
+                        <span className="text-muted-foreground opacity-50">
+                            ↳
+                        </span>
                     )}
-                    {row.getValue("name")}
+                    {row.getValue('name')}
                 </span>
             </div>
         ),
     }),
-    columnHelper.accessor("acronym", {
+    columnHelper.accessor('acronym', {
         size: 100,
         header: () => <div className="px-1">Acronym</div>,
-        cell: (value) => <div className="px-1 text-wrap">{value.getValue() ?? "-"}</div>,
+        cell: (value) => (
+            <div className="px-1 text-wrap">{value.getValue() ?? '-'}</div>
+        ),
     }),
-    columnHelper.accessor("is_lee", {
+    columnHelper.accessor('is_lee', {
         size: 100,
         header: () => <div className="px-1">LEE</div>,
         cell: ({ row }) => (
             <div className="flex items-center px-1 text-wrap">
-                {row.getValue("is_lee") ? (
+                {row.getValue('is_lee') ? (
                     <Badge>Yes</Badge>
                 ) : (
                     <Badge variant="secondary">No</Badge>
@@ -47,7 +55,7 @@ const columns = [
         ),
     }),
     columnHelper.display({
-        id: "actions",
+        id: 'actions',
         size: 118,
         cell: ({ row, table }) => {
             const meta = table.options.meta as
@@ -57,7 +65,8 @@ const columns = [
                       onDelete?: (data: Office) => void;
                   }
                 | undefined;
-            const canAddSubUnit = !row.original.parent_id && row.original.can?.addSubUnit;
+            const canAddSubUnit =
+                !row.original.parent_id && row.original.can?.addSubUnit;
             const canEdit = row.original.parent_id
                 ? row.original.can?.editSubUnit
                 : row.original.can?.editOffice;
