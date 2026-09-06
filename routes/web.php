@@ -459,4 +459,4 @@ Route::get('aip-summary-import', [AipSummaryImportController::class, 'index'])->
     'aip-summary-import.index',
 );
 
-require __DIR__ . '/settings.php';
+require __DIR__.'/settings.php';

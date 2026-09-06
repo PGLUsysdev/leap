@@ -12,7 +12,6 @@ use App\Models\PpmpSummary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Http;
 
 class FiscalYearController extends Controller
 {
@@ -30,21 +29,12 @@ class FiscalYearController extends Controller
         $canShowSummaryOwn = $user->can('showSummaryOwn', AipEntry::class);
         $showOffices = $canGenerateAppAll || $canShowSummaryAll;
 
-        // // 1. Send internal HTTP GET request to Laravel 1
-        // $response = Http::withHeaders([
-        //     'X-Internal-Secret' => config('services.laravel1.secret'),
-        // ])->get(config('services.laravel1.url') . '/api/v1/users');
-
-        // // 2. Safely parse JSON array or fall back to empty array if call fails
-        // $users = $response->successful() ? $response->json('data') : [];
-
         return Inertia::render('aip/index', [
-            // 'mockdb' => $users,
             'fiscalYears' => FiscalYear::orderBy('year', 'asc')->get(),
             'offices' => $showOffices ? Office::get() : [],
             'can' => [
                 'add' => request()->user()->can('create', FiscalYear::class),
-                'updateStatus' => request()->user()->can('updateStatus', new FiscalYear()),
+                'updateStatus' => request()->user()->can('updateStatus', new FiscalYear),
                 'showSummaryAll' => $canShowSummaryAll,
                 'showSummaryOwn' => $canShowSummaryOwn,
                 'generateAppAll' => $canGenerateAppAll,
@@ -54,7 +44,7 @@ class FiscalYearController extends Controller
             'app' => Inertia::optional(function () use ($request, $user, $canGenerateAppAll) {
                 $id = $request->query('fiscal_year_id'); // fiscal_year_id = 4
 
-                if (!$id) {
+                if (! $id) {
                     return null;
                 }
 
@@ -122,12 +112,12 @@ class FiscalYearController extends Controller
 
                             $item->$qtyKey = array_reduce(
                                 $mths,
-                                fn($carry, $m) => $carry + (float) $item->{"{$m}_qty"},
+                                fn ($carry, $m) => $carry + (float) $item->{"{$m}_qty"},
                                 0,
                             );
                             $item->$amtKey = array_reduce(
                                 $mths,
-                                fn($carry, $m) => $carry + (float) $item->{"{$m}_amount"},
+                                fn ($carry, $m) => $carry + (float) $item->{"{$m}_amount"},
                                 0,
                             );
                         }
