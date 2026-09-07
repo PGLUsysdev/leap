@@ -19,7 +19,7 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      {/*<ScrollBar />*/}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )

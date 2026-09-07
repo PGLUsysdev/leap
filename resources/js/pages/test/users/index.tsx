@@ -1,4 +1,4 @@
-import { DataTable } from '@/components/data-table';
+import DataTable from '@/components/data-table';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import type { User, Ppa } from '@/types';
