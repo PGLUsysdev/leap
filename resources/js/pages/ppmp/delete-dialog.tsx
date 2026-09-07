@@ -39,10 +39,16 @@ export default function DeleteDialog({
     }
 
     return (
-        <AlertDialog open={open} onOpenChange={setOpen}>
-            <AlertDialogContent
-                onEscapeKeyDown={(e) => isLoading && e.preventDefault()}
-            >
+        <AlertDialog
+            open={open}
+            onOpenChange={(next) => {
+                if (!next && isLoading) {
+                    return;
+                }
+                setOpen(next);
+            }}
+        >
+            <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>
                         Are you absolutely sure?

@@ -2,7 +2,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import DataTable from '@/components/data-table';
-import DeleteDialog from '@/components/delete-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
 import { Button as BaseButton } from '@/components/ui/button';
 import {
     ScrollArea,

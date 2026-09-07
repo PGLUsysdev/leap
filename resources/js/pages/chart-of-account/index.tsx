@@ -9,7 +9,7 @@ import {
     ScrollBar,
 } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
-import DeleteDialog from '@/components/delete-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
 import FormDialog from '@/pages/chart-of-account/form-dialog-base';
 import type { ChartOfAccount } from '@/types';
 import columns from './columns/columns';

@@ -5,7 +5,7 @@ import { Decimal } from 'decimal.js';
 import { Check, Filter, FileUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import DataTable from '@/components/data-table';
-import DeleteDialog from '@/components/delete-dialog';
+import { DeleteDialog } from '@/components/delete-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
