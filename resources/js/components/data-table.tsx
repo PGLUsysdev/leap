@@ -1,647 +1,706 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from "@inertiajs/react";
 import {
-    flexRender,
-    getCoreRowModel,
     useReactTable,
+    getCoreRowModel,
     getExpandedRowModel,
+    // getFacetedMinMaxValues,
+    // getFacetedRowModel,
+    // getFacetedUniqueValues,
     getFilteredRowModel,
-} from '@tanstack/react-table';
-import type { ColumnDef } from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
+    // getGroupedRowModel,
+    // getPaginationRowModel,
+    // getSortedRowModel,
+    flexRender,
+} from "@tanstack/react-table";
+import type {
+    Column,
+    ColumnDef,
+    Table,
+    TableMeta,
+} from "@tanstack/react-table";
 import {
-    ChevronFirst,
-    ChevronLast,
-    ChevronLeft,
     ChevronRight,
+    ChevronLeft,
+    ChevronsRight,
+    ChevronsLeft,
     SearchIcon,
-} from 'lucide-react';
-import { useState, useRef, useMemo, useEffect } from 'react';
-import type { ReactElement } from 'react';
-import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+} from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { Button } from "@/components/base-ui-components/ui/button";
+import { Input } from "@/components/base-ui-components/ui/input";
 import {
     InputGroup,
     InputGroupAddon,
     InputGroupInput,
-} from '@/components/ui/input-group';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+} from "@/components/base-ui-components/ui/input-group";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
+    ScrollArea,
+    ScrollBar,
+} from "@/components/base-ui-components/ui/scroll-area";
+import {
+    Table as DataTable,
     TableHeader,
-    TableRow,
+    TableBody,
     TableFooter,
-} from '@/components/ui/table';
-import { getCommonPinningStyles } from '@/pages/utils/column-pinning-styles';
-import type { PaginatedResponse, Filter } from '@/types';
+    TableRow,
+    TableHead,
+    TableCell,
+} from "@/components/base-ui-components/ui/table";
+import { cn } from "@/lib/utils";
+import type {
+    // PriceList,
+    // ChartOfAccount,
+    // PpmpCategory,
+    PaginatedResponse,
+    // Filter,
+    // ChartOfAccountPpmpCategory,
+} from "@/types";
 
-interface DataTableProps<TData extends { id: unknown }> {
-    columns: ColumnDef<TData, any>[];
+interface TableProps<TData> {
     data: TData[];
-    isExpandedAll?: boolean;
-    withSearch?: boolean;
-    children?: ReactElement;
+    paginationData?: Omit<PaginatedResponse<TData>, "data">;
+    columns: ColumnDef<TData, any>[];
+    // meta?: Partial<TableMeta<TData>>;
+    meta?: TableMeta<TData>;
+    children?: ReactNode;
+    variant?: "table" | "select";
+    onRowClick?: (row: TData) => void;
+    selectedKey?: keyof TData;
+    selectedValue?: string;
+    className?: string;
+    disabledKey?: keyof TData;
+    disabledValue?: string;
+    pageParamName?: string;
+    perPageParamName?: string;
+    searchParamName?: string;
+    only?: string[];
+    getSubRows?: (row: TData) => TData[] | undefined;
+    showFooter?: boolean;
+
     withRowSpan?: boolean;
-    withFooter?: boolean;
-    onEdit?: (data: TData) => void;
-    onDelete?: (data: TData) => void;
-    onAdd?: (parent: TData, childType: any) => void;
-    onUpdateStatus?: (
-        data: TData,
-        status: 'draft' | 'open' | 'locked' | 'archived',
-    ) => void;
-    onOpen?: (data: TData) => void;
-    onGeneratePdf?: (data: TData) => void;
-    onOpenPpmpSummary?: (data: TData) => void;
-    negativeHeight?: number;
-    onReorder?: (activeId: string, overId: string) => void;
-    onMove?: (data: TData) => void;
-    onShowChildren?: (data: TData) => void;
-    onEditPerms?: (data: TData) => void;
-    onSelect?: (data: TData, boolean: boolean) => void;
-    paginationObj?: PaginatedResponse<TData> | [];
-    meta?: any;
-    filters?: Filter;
-    onlyKeys?: { [key: string]: any };
-    searchKey?: string;
-    pageKey?: string;
-    isDialog?: boolean;
-    selectedItemToMove?: TData;
-    getSubRows?: (row: TData) => TData[] | undefined | null;
-    globalFilterFn?: any;
+
+    withColgroup?: boolean;
 }
 
-export function DataTable<TData extends { id: unknown }>({
-    columns,
+const getCommonPinningStyles = <TData,>(
+    column: Column<TData>,
+    table: Table<TData>,
+): CSSProperties => {
+    const isPinned = column.getIsPinned();
+    const isLastLeftPinnedColumn =
+        isPinned === "left" && column.getIsLastColumn("left");
+    const isFirstRightPinnedColumn =
+        isPinned === "right" && column.getIsFirstColumn("right");
+
+    const size = column.getSize();
+    const centerTotal = table.getCenterTotalSize();
+    const percentage = (size / centerTotal) * 100;
+
+    return {
+        boxShadow: isLastLeftPinnedColumn
+            ? "inset -1px 0 0 0 var(--border)"
+            : isFirstRightPinnedColumn
+              ? " inset 1px 0 0 0 var(--border)"
+              : undefined,
+        left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
+        right:
+            isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
+        opacity: isPinned ? 0.95 : 1,
+        position: isPinned ? "sticky" : "relative",
+        zIndex: isPinned ? 1 : 0,
+
+        width: isPinned ? `${size}px` : `${percentage}%`,
+        minWidth: `${size}px`,
+        maxWidth: isPinned ? `${size}px` : undefined,
+    };
+};
+
+export default function Table<TData>({
     data,
-    children,
-    paginationObj,
-    filters,
-    isDialog,
-    selectedItemToMove,
-    getSubRows, // <--- add this
-    globalFilterFn,
-    onAdd,
-    onEdit,
-    onDelete,
-    onUpdateStatus,
-    onOpen,
-    onGeneratePdf,
-    onOpenPpmpSummary,
-    onSelect,
-    onReorder,
-    onEditPerms,
-    onMove,
-    onShowChildren,
-    withSearch = false,
-    withRowSpan = false,
-    withFooter = false,
-    negativeHeight = 8,
-    onlyKeys = [],
-    searchKey = 'search',
-    pageKey = 'page',
+    paginationData,
+    columns,
     meta,
-}: DataTableProps<TData>) {
-    const [errorDialogOpen, setErrorDialogOpen] = useState(false);
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    children,
+    variant = "table",
+    onRowClick,
+    selectedKey,
+    selectedValue,
+    className,
+    disabledKey,
+    disabledValue,
+    pageParamName = "page",
+    // perPageParamName = 'per_page',
+    searchParamName = "search",
+    only,
+    getSubRows,
+    showFooter = false,
 
-    // row selection
-    const [rowSelection, setRowSelection] = useState({});
+    withRowSpan = false,
+    withColgroup = false,
+}: TableProps<TData>) {
+    const isServer = !!paginationData;
 
-    // for global search
-    const [searchValue, setSearchValue] = useState('');
+    const { url } = usePage();
 
-    // logic for server-side filtering ex. search
-    const isServerSide = useMemo(() => {
-        return paginationObj && !Array.isArray(paginationObj);
-    }, [paginationObj]);
+    const params = Object.fromEntries(
+        new URLSearchParams(window.location.search),
+    );
 
-    // sync local state with props when url changes via browser back/forward
+    const [globalFilter, setGlobalFilter] = useState<string>(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        return params.get(searchParamName) || "";
+    });
+    // const [globalFilter, setGlobalFilter] = useState<string>('');
+
+    // pagination
+    const [pageInput, setPageInput] = useState<string>(() => {
+        return paginationData ? String(paginationData.current_page) : "";
+    });
+
     useEffect(() => {
-        const urlSearchValue = filters?.[searchKey] || '';
-
-        if (searchValue !== urlSearchValue) {
-            setSearchValue(urlSearchValue);
+        if (paginationData) {
+            setPageInput(String(paginationData.current_page));
         }
-    }, [filters?.[searchKey], searchKey]);
+    }, [paginationData]);
 
-    // Debounce and Trigger Inertia
+    const prevGlobalFilter = useRef(globalFilter);
+
     useEffect(() => {
-        if (!isServerSide) {
+        if (!isServer) {
             return;
         }
 
-        const delayDebounceFn = setTimeout(() => {
-            const currentFilterValue = filters?.[searchKey] || '';
-
-            if (searchValue !== currentFilterValue) {
-                router.get(
-                    window.location.pathname,
-                    {
-                        ...filters,
-                        [searchKey]: searchValue || undefined,
-                        [pageKey]: 1,
-                    },
-                    {
-                        preserveState: true,
-                        replace: true,
-                        preserveScroll: true,
-                        only:
-                            onlyKeys &&
-                            Array.isArray(onlyKeys) &&
-                            onlyKeys.length > 0
-                                ? onlyKeys
-                                : undefined,
-                    },
-                );
-            }
-        }, 500);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchValue]);
-
-    const tableContainerRef = useRef<HTMLDivElement>(null);
-
-    const table = useReactTable({
-        data,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-
-        initialState: {
-            columnPinning: { right: ['action'] },
-        },
-
-        // server-side search
-        manualFiltering: isServerSide,
-
-        getFilteredRowModel: getFilteredRowModel(),
-
-        meta: {
-            selectedItemToMove,
-            onAdd,
-            onEdit,
-            onDelete,
-            onUpdateStatus,
-            onOpen,
-            onGeneratePdf,
-            onOpenPpmpSummary,
-            onReorder,
-            onEditPerms,
-            onMove,
-            onShowChildren,
-            onSelect,
-            ...meta,
-        } as any,
-
-        // getSubRows: (row: any) => row.children,
-        // getSubRows: (row: any) => (row.isLastInGroup ? row.children : []),
-        getSubRows: getSubRows || ((row: any) => row.children),
-
-        getExpandedRowModel: getExpandedRowModel(),
-        filterFromLeafRows: true,
-        // globalFilterFn: globalFilterFn,
-        ...(globalFilterFn && { globalFilterFn }),
-        enableGlobalFilter: true,
-
-        state: {
-            expanded: true,
-
-            // for global search
-            globalFilter: searchValue,
-
-            // for pagination
-            pagination: {
-                pageIndex:
-                    paginationObj &&
-                    paginationObj !== undefined &&
-                    !Array.isArray(paginationObj) &&
-                    paginationObj.current_page
-                        ? paginationObj.current_page - 1
-                        : 0,
-                pageSize:
-                    paginationObj &&
-                    paginationObj !== undefined &&
-                    !Array.isArray(paginationObj)
-                        ? paginationObj.per_page
-                        : 0,
-            },
-
-            // for select
-            rowSelection,
-        },
-
-        // for pagination
-        manualPagination: isServerSide,
-        pageCount:
-            paginationObj &&
-            paginationObj !== undefined &&
-            !Array.isArray(paginationObj)
-                ? paginationObj.last_page
-                : undefined,
-
-        // row selection
-        enableRowSelection: true,
-        enableMultiRowSelection: false,
-        onRowSelectionChange: setRowSelection,
-    });
-
-    const { rows } = table.getRowModel();
-
-    const rowVirtualizer = useVirtualizer({
-        count: rows.length,
-        getScrollElement: () =>
-            tableContainerRef.current?.querySelector(
-                '[data-radix-scroll-area-viewport]',
-            ) as HTMLElement,
-        estimateSize: () => 50,
-        overscan: 10,
-        getItemKey: (index) => rows[index]?.id,
-        measureElement: (el) => el.getBoundingClientRect().height,
-    });
-
-    const virtualRows = rowVirtualizer.getVirtualItems();
-    const totalSize = rowVirtualizer.getTotalSize();
-
-    const paddingTop =
-        virtualRows.length > 0 ? virtualRows?.[0]?.start || 0 : 0;
-    const paddingBottom =
-        virtualRows.length > 0
-            ? totalSize - (virtualRows?.[virtualRows.length - 1]?.end || 0)
-            : 0;
-
-    const navigate = (url: string | null) => {
-        if (!url) {
+        if (globalFilter === prevGlobalFilter.current) {
             return;
         }
 
-        router.get(
-            url,
-            {},
-            {
-                preserveState: true,
-                preserveScroll: true,
-                only:
-                    onlyKeys && Array.isArray(onlyKeys) && onlyKeys.length > 0
-                        ? onlyKeys
-                        : undefined,
+        prevGlobalFilter.current = globalFilter;
+
+        const timeout = setTimeout(() => {
+            router.get(
+                url,
+                {
+                    ...params,
+                    [searchParamName]: globalFilter || undefined,
+                    [pageParamName]: 1, // reset to first page on search
+                },
+                {
+                    only,
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                },
+            );
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [globalFilter]);
+
+    const goToPage = (page: number) => {
+        if (!isServer) {
+            return;
+        }
+
+        page = Math.max(1, Math.min(page, paginationData.last_page));
+
+        if (page === paginationData.current_page) {
+            return;
+        }
+
+        router.visit(url, {
+            data: {
+                ...params,
+                [pageParamName]: page,
             },
-        );
+            only,
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
     };
 
-    // const { rows } = table.getRowModel();
+    useEffect(() => {
+        if (!paginationData) {
+            return;
+        }
 
-    const spanningMap = useMemo(() => {
-        const firstIndexes: Record<string, number> = {};
-        const counts: Record<string, number> = {};
+        if (pageInput === "") {
+            return;
+        }
 
-        rows.forEach((row, index) => {
-            const id = (row.original as any).id;
+        const page = Number(pageInput);
 
-            if (firstIndexes[id] === undefined) {
-                firstIndexes[id] = index;
-            }
+        if (Number.isNaN(page)) {
+            return;
+        }
 
-            counts[id] = (counts[id] || 0) + 1;
-        });
+        const timeout = setTimeout(() => {
+            goToPage(page);
+        }, 300);
 
-        return { firstIndexes, counts };
-    }, [rows]);
+        return () => clearTimeout(timeout);
+    }, [pageInput, paginationData]);
 
+    // table
+    const table = useReactTable({
+        columns,
+        data,
+
+        // row models
+        getCoreRowModel: getCoreRowModel(),
+        getExpandedRowModel: getSubRows ? getExpandedRowModel() : undefined,
+        // getFacetedMinMaxValues: getFacetedMinMaxValues(),
+        // getFacetedRowModel: getFacetedRowModel(),
+        // getFacetedUniqueValues: getFacetedUniqueValues(),
+        getFilteredRowModel: !isServer ? getFilteredRowModel() : undefined,
+        // getFilteredRowModel: getFilteredRowModel(),
+        // getGroupedRowModel: getGroupedRowModel(),
+        // getPaginationRowModel: getPaginationRowModel(),
+        // getSortedRowModel: getSortedRowModel(),
+
+        getSubRows,
+        filterFromLeafRows: true,
+
+        initialState: {
+            columnPinning: {
+                right: ["actions"],
+            },
+        },
+        state: {
+            globalFilter,
+            expanded: getSubRows ? true : undefined,
+        },
+
+        // for table
+        // defaultColumn: {
+        //     size: 110,
+        // },
+
+        enableColumnPinning: true,
+
+        onGlobalFilterChange: setGlobalFilter,
+
+        manualFiltering: isServer,
+        manualPagination: isServer,
+        pageCount: paginationData?.last_page,
+        rowCount: paginationData?.total,
+
+        meta: meta,
+    });
+
+    const rows = table.getRowModel().rows;
+
+    /**
+     * Row-span data per spanned column id. Each spanned column groups rows
+     * by its own `meta.spanKey` (defaulting to `'id'`), so e.g. PPA-level
+     * columns can group by `entryId` while output-level columns group by
+     * `outputId`.
+     */
     const visibleSpans = useMemo(() => {
-        const firstVisibleIdx: Record<string, number> = {};
-        const visibleCounts: Record<string, number> = {};
+        const spansByColumn: Record<
+            string,
+            {
+                firstVisibleIdx: Record<string, number>;
+                visibleCounts: Record<string, number>;
+            }
+        > = {};
 
-        rows.forEach((row, index) => {
-            const id = (row.original as any).id;
+        if (!withRowSpan) {
+            return spansByColumn;
+        }
 
-            // Track the first time this PPA ID appears in the current visible list
-            if (firstVisibleIdx[id] === undefined) {
-                firstVisibleIdx[id] = index;
+        table.getAllLeafColumns().forEach((column) => {
+            const columnMeta = column.columnDef.meta as
+                { rowSpan?: boolean; spanKey?: string } | undefined;
+
+            if (!columnMeta?.rowSpan) {
+                return;
             }
 
-            // Count how many funding source rows for this PPA are currently visible
-            visibleCounts[id] = (visibleCounts[id] || 0) + 1;
+            const spanKey = columnMeta.spanKey ?? "id";
+            const firstVisibleIdx: Record<string, number> = {};
+            const visibleCounts: Record<string, number> = {};
+
+            rows.forEach((row, index) => {
+                const rawKey = (row.original as Record<string, unknown>)?.[
+                    spanKey
+                ];
+
+                if (rawKey === undefined || rawKey === null) {
+                    return;
+                }
+
+                const key = String(rawKey);
+
+                if (firstVisibleIdx[key] === undefined) {
+                    firstVisibleIdx[key] = index;
+                }
+
+                visibleCounts[key] = (visibleCounts[key] || 0) + 1;
+            });
+
+            spansByColumn[column.id] = {
+                firstVisibleIdx,
+                visibleCounts,
+            };
         });
 
-        return { firstVisibleIdx, visibleCounts };
-    }, [rows]);
+        return spansByColumn;
+    }, [rows, table, withRowSpan]);
 
     return (
-        <>
-            <div className="flex flex-col gap-4">
-                {(withSearch || children) && (
-                    <div className="flex items-center justify-between gap-4 px-4">
-                        {withSearch ? (
-                            <InputGroup className="max-w-sm">
-                                <InputGroupInput
-                                    placeholder="Search..."
-                                    value={searchValue}
-                                    onChange={(e) => {
-                                        setSearchValue(e.target.value);
-                                    }}
-                                />
-                                <InputGroupAddon>
-                                    <SearchIcon />
-                                </InputGroupAddon>
-                            </InputGroup>
-                        ) : (
-                            <div />
-                        )}
-
-                        <div>{children}</div>
-                    </div>
+        <div className={cn("flex h-full min-h-0 flex-col", className)}>
+            <div
+                className={cn(
+                    "flex flex-none justify-between gap-2 p-4",
+                    variant === "select" && "pt-0",
                 )}
+            >
+                <InputGroup className="w-100 min-w-30">
+                    <InputGroupInput
+                        value={globalFilter ?? ""}
+                        onChange={(e) =>
+                            table.setGlobalFilter(String(e.target.value))
+                        }
+                        placeholder="Search..."
+                    />
+                    <InputGroupAddon>
+                        <SearchIcon />
+                    </InputGroupAddon>
+                </InputGroup>
 
-                <ScrollArea
-                    ref={tableContainerRef}
-                    style={{ height: `calc(100vh - ${negativeHeight}rem)` }}
-                    // className="rounded-md border"
-                    className="border-t border-b"
-                >
-                    <Table
-                        style={{
-                            tableLayout: 'fixed',
-                            minWidth: `${table.getCenterTotalSize()}px`,
-                            width: '100%',
-                        }}
-                    >
-                        <TableHeader>
-                            {table
-                                .getHeaderGroups()
-                                .map((headerGroup, groupIndex) => (
-                                    <TableRow
-                                        key={headerGroup.id}
-                                        className="bg-background sticky"
-                                        style={{
-                                            top: `${groupIndex * 40}px`,
-                                            zIndex: 5 - groupIndex,
-                                        }}
-                                    >
-                                        {headerGroup.headers.map((header) => (
-                                            <TableHead
-                                                key={header.id}
-                                                colSpan={header.colSpan}
-                                                className="bg-background"
-                                                style={{
-                                                    width: `${header.getSize()}px`,
-                                                    ...getCommonPinningStyles(
-                                                        header.column,
-                                                        table,
-                                                        false,
-                                                        true,
-                                                    ),
-                                                }}
-                                            >
-                                                {header.isPlaceholder
-                                                    ? null
-                                                    : flexRender(
-                                                          header.column
-                                                              .columnDef.header,
-                                                          header.getContext(),
-                                                      )}
-                                            </TableHead>
-                                        ))}
-                                    </TableRow>
-                                ))}
-                        </TableHeader>
-
-                        <TableBody>
-                            {paddingTop > 0 && (
-                                <TableRow>
-                                    <TableCell
-                                        style={{
-                                            height: `${paddingTop}px`,
-                                        }}
-                                        colSpan={columns.length}
-                                    />
-                                </TableRow>
-                            )}
-
-                            {virtualRows.length > 0 ? (
-                                virtualRows.map((virtualRow) => {
-                                    const row = rows[virtualRow.index];
-                                    const rowData = row.original as any;
-
-                                    return (
-                                        <TableRow
-                                            key={`${row.id}-${virtualRow.index}`}
-                                            data-index={virtualRow.index}
-                                            ref={(node) =>
-                                                rowVirtualizer.measureElement(
-                                                    node,
-                                                )
-                                            }
-                                            data-state={
-                                                row.getIsSelected() &&
-                                                'selected'
-                                            }
-                                            className={
-                                                row.original.id ===
-                                                selectedItemToMove?.id
-                                                    ? 'group text-muted data-[state=selected]:bg-muted transition-colors'
-                                                    : 'group data-[state=selected]:bg-muted transition-colors'
-                                            }
-                                        >
-                                            {row
-                                                .getVisibleCells()
-                                                .map((cell) => {
-                                                    const columnMeta = cell
-                                                        .column.columnDef
-                                                        .meta as any;
-                                                    const isSpannedCol =
-                                                        withRowSpan &&
-                                                        columnMeta?.rowSpan;
-
-                                                    // const hasSpanningData =
-                                                    //     typeof rowData.isFirstInGroup !==
-                                                    //     'undefined';
-                                                    // const activeSpan =
-                                                    //     isSpannedCol &&
-                                                    //     hasSpanningData;
-
-                                                    const rowData =
-                                                        row.original as any;
-                                                    const ppaId = rowData.id;
-
-                                                    // Use our map to figure out if THIS specific row is the first visible one for this PPA
-                                                    const isFirstVisible =
-                                                        visibleSpans
-                                                            .firstVisibleIdx[
-                                                            ppaId
-                                                        ] === virtualRow.index;
-                                                    const spanSize =
-                                                        visibleSpans
-                                                            .visibleCounts[
-                                                            ppaId
-                                                        ];
-
-                                                    if (isSpannedCol) {
-                                                        // If it's a spanned column (like AIP Code) but not the first visible row, don't draw it
-                                                        if (!isFirstVisible) {
-                                                            return null;
-                                                        }
-                                                    }
-
-                                                    return (
-                                                        <TableCell
-                                                            key={cell.id}
-                                                            rowSpan={
-                                                                isSpannedCol
-                                                                    ? spanSize
-                                                                    : 1
-                                                            }
-                                                            style={{
-                                                                width: `${cell.column.getSize()}px`,
-                                                                ...getCommonPinningStyles(
-                                                                    cell.column,
-                                                                    table,
-                                                                    false,
-                                                                    false,
-                                                                ),
-                                                            }}
-                                                            className="py-2"
-                                                        >
-                                                            {flexRender(
-                                                                cell.column
-                                                                    .columnDef
-                                                                    .cell,
-                                                                cell.getContext(),
-                                                            )}
-                                                        </TableCell>
-                                                    );
-                                                })}
-                                        </TableRow>
-                                    );
-                                })
-                            ) : (
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={columns.length}
-                                        className="h-24 text-center"
-                                    >
-                                        No results.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-
-                            {paddingBottom > 0 && (
-                                <TableRow>
-                                    <TableCell
-                                        style={{
-                                            height: `${paddingBottom}px`,
-                                        }}
-                                        colSpan={columns.length}
-                                    />
-                                </TableRow>
-                            )}
-                        </TableBody>
-
-                        {withFooter && (
-                            <TableFooter className="sticky bottom-0 z-20 shadow-[inset_0_1px_0_0_var(--muted)]">
-                                <TableRow>
-                                    {table.getAllLeafColumns().map((column) => (
-                                        <TableCell
-                                            key={column.id}
-                                            style={{
-                                                width: `${column.getSize()}px`,
-                                                ...getCommonPinningStyles(
-                                                    column,
-                                                    table,
-                                                    true,
-                                                ),
-                                            }}
-                                        >
-                                            {column.columnDef.footer
-                                                ? flexRender(
-                                                      column.columnDef.footer,
-                                                      {
-                                                          column,
-                                                          table,
-                                                      } as any,
-                                                  )
-                                                : null}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            </TableFooter>
-                        )}
-                    </Table>
-
-                    <ScrollBar orientation="vertical" className="z-30" />
-                    <ScrollBar orientation="horizontal" className="z-30" />
-                    {/* <ScrollBar orientation="vertical" />
-                        <ScrollBar orientation="horizontal" /> */}
-                </ScrollArea>
-
-                {paginationObj &&
-                    paginationObj !== undefined &&
-                    !Array.isArray(paginationObj) && (
-                        <div className="flex items-center gap-1 px-4">
-                            <Button
-                                size="icon"
-                                onClick={() =>
-                                    navigate(paginationObj.first_page_url)
-                                }
-                                disabled={paginationObj.current_page === 1}
-                            >
-                                <ChevronFirst />
-                            </Button>
-
-                            <Button
-                                size="icon"
-                                onClick={() =>
-                                    paginationObj.prev_page_url &&
-                                    navigate(paginationObj.prev_page_url)
-                                }
-                                disabled={paginationObj.current_page === 1}
-                            >
-                                <ChevronLeft />
-                            </Button>
-
-                            <Input
-                                value={paginationObj.current_page}
-                                disabled
-                                className="w-10 text-center"
-                            />
-
-                            <Button
-                                size="icon"
-                                onClick={() =>
-                                    paginationObj.next_page_url &&
-                                    navigate(paginationObj.next_page_url)
-                                }
-                                disabled={
-                                    paginationObj.current_page ===
-                                    paginationObj.last_page
-                                }
-                            >
-                                <ChevronRight />
-                            </Button>
-
-                            <Button
-                                size="icon"
-                                onClick={() =>
-                                    navigate(paginationObj.last_page_url)
-                                }
-                                disabled={
-                                    paginationObj.current_page ===
-                                    paginationObj.last_page
-                                }
-                            >
-                                <ChevronLast />
-                            </Button>
-                        </div>
-                    )}
+                {children}
             </div>
 
-            <AlertErrorDialog
-                open={errorDialogOpen}
-                onOpenChange={setErrorDialogOpen}
-                error={errorMessage}
-            />
-        </>
+            <ScrollArea className="min-h-0 flex-1 border-y border-r">
+                <div>
+                    <DataTable
+                        style={{
+                            tableLayout: "fixed",
+                            // tableLayout: 'auto',
+                            width: "100%",
+                            minWidth: `${table.getCenterTotalSize()}px`,
+                            // minWidth: `${table.getTotalSize()}px`,
+                        }}
+                    >
+                        {withColgroup && (
+                            <colgroup>
+                                {table
+                                    .getAllLeafColumns()
+                                    .filter((col) => col.getIsVisible())
+                                    .map((col) => (
+                                        <col
+                                            key={col.id}
+                                            style={{
+                                                width: col.getSize(),
+                                                minWidth: col.getSize(),
+                                            }}
+                                        />
+                                    ))}
+                            </colgroup>
+                        )}
+                        <TableHeader className="sticky top-0 z-2">
+                            {table.getHeaderGroups().map((headerGroup) => {
+                                return (
+                                    <TableRow
+                                        key={headerGroup.id}
+                                        className="shadow-[0_1px_0_0_var(--border)]"
+                                    >
+                                        {headerGroup.headers.map((header) => {
+                                            return (
+                                                <TableHead
+                                                    key={header.id}
+                                                    colSpan={header.colSpan}
+                                                    className="bg-background/95 border-x p-1 px-2 first:border-l-0 last:border-r-0"
+                                                    style={{
+                                                        width: `${header.getSize()}px`,
+                                                        ...getCommonPinningStyles(
+                                                            header.column,
+                                                            table,
+                                                        ),
+                                                    }}
+                                                >
+                                                    {header.isPlaceholder
+                                                        ? null
+                                                        : flexRender(
+                                                              header.column
+                                                                  .columnDef
+                                                                  .header,
+                                                              header.getContext(),
+                                                          )}
+                                                </TableHead>
+                                            );
+                                        })}
+                                    </TableRow>
+                                );
+                            })}
+                        </TableHeader>
+                        <TableBody>
+                            {rows.map((row, rowIndex) => {
+                                const isSelected =
+                                    selectedKey &&
+                                    selectedValue &&
+                                    String(row.original[selectedKey]) ===
+                                        selectedValue;
+                                const isDisabled =
+                                    disabledKey &&
+                                    disabledValue &&
+                                    String(row.original[disabledKey]) ===
+                                        disabledValue;
+
+                                return (
+                                    <TableRow
+                                        key={row.id}
+                                        className={cn(
+                                            variant === "select" &&
+                                                "hover:bg-accent cursor-pointer",
+                                            isSelected && "bg-primary",
+                                            isDisabled &&
+                                                "cursor-not-allowed opacity-50",
+                                        )}
+                                        onClick={() => {
+                                            if (
+                                                variant === "select" &&
+                                                !isDisabled
+                                            ) {
+                                                onRowClick?.(row.original);
+                                            }
+                                        }}
+                                    >
+                                        {row.getVisibleCells().map((cell) => {
+                                            const columnMeta = cell.column
+                                                .columnDef.meta as any;
+
+                                            const isSpannedColumn =
+                                                withRowSpan &&
+                                                columnMeta?.rowSpan;
+
+                                            const rowData = row.original as any;
+
+                                            let isFirstVisible = true;
+                                            let spanSize: number | undefined =
+                                                1;
+
+                                            if (isSpannedColumn) {
+                                                const spanKey: string =
+                                                    columnMeta?.spanKey ?? "id";
+                                                const spanData =
+                                                    visibleSpans[
+                                                        cell.column.id
+                                                    ];
+                                                const rawKey =
+                                                    rowData?.[spanKey];
+                                                const key =
+                                                    rawKey === undefined ||
+                                                    rawKey === null
+                                                        ? null
+                                                        : String(rawKey);
+
+                                                if (key !== null && spanData) {
+                                                    isFirstVisible =
+                                                        spanData
+                                                            .firstVisibleIdx[
+                                                            key
+                                                        ] === rowIndex;
+                                                    spanSize =
+                                                        spanData.visibleCounts[
+                                                            key
+                                                        ] ?? 1;
+                                                }
+                                            }
+
+                                            if (
+                                                isSpannedColumn &&
+                                                !isFirstVisible
+                                            ) {
+                                                return null;
+                                            }
+
+                                            return (
+                                                <TableCell
+                                                    key={cell.id}
+                                                    rowSpan={
+                                                        isSpannedColumn
+                                                            ? spanSize
+                                                            : 1
+                                                    }
+                                                    style={{
+                                                        width: `${cell.column.getSize()}px`,
+                                                        ...getCommonPinningStyles(
+                                                            cell.column,
+                                                            table,
+                                                        ),
+                                                    }}
+                                                    className={cn(
+                                                        "border p-1 px-2 first:border-l-0 last:border-r-0",
+                                                        cell.column.getIsPinned() &&
+                                                            "bg-background/95",
+                                                    )}
+                                                >
+                                                    {flexRender(
+                                                        cell.column.columnDef
+                                                            .cell,
+                                                        cell.getContext(),
+                                                    )}
+                                                </TableCell>
+                                            );
+                                        })}
+                                    </TableRow>
+                                );
+                            })}
+                        </TableBody>
+                        {showFooter && (
+                            <TableFooter className="sticky bottom-0 z-2">
+                                {table
+                                    .getFooterGroups()
+                                    .filter((group) =>
+                                        group.headers.some(
+                                            (header) =>
+                                                !header.isPlaceholder &&
+                                                header.column.columnDef.footer,
+                                        ),
+                                    )
+                                    .map((footerGroup) => {
+                                        return (
+                                            <TableRow
+                                                key={footerGroup.id}
+                                                className="shadow-[0_-1px_0_0_var(--border)]"
+                                            >
+                                                {footerGroup.headers.map(
+                                                    (header) => {
+                                                        return (
+                                                            <TableCell
+                                                                key={header.id}
+                                                                className="bg-background/95 border-x p-1 px-2 first:border-l-0 last:border-r-0"
+                                                                style={{
+                                                                    width: `${header.getSize()}px`,
+                                                                    ...getCommonPinningStyles(
+                                                                        header.column,
+                                                                        table,
+                                                                    ),
+                                                                }}
+                                                            >
+                                                                {header.isPlaceholder
+                                                                    ? null
+                                                                    : flexRender(
+                                                                          header
+                                                                              .column
+                                                                              .columnDef
+                                                                              .footer,
+                                                                          header.getContext(),
+                                                                      )}
+                                                            </TableCell>
+                                                        );
+                                                    },
+                                                )}
+                                            </TableRow>
+                                        );
+                                    })}
+                            </TableFooter>
+                        )}
+                    </DataTable>
+                </div>
+
+                <ScrollBar orientation="vertical" className="z-2" />
+                <ScrollBar orientation="horizontal" className="z-2" />
+            </ScrollArea>
+
+            {paginationData && (
+                <div className="bg-background flex w-full justify-center">
+                    <div className="flex gap-1 px-4 py-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => goToPage(1)}
+                            disabled={paginationData.current_page === 1}
+                        >
+                            <ChevronsLeft />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                                goToPage(paginationData.current_page - 1)
+                            }
+                            disabled={paginationData.current_page === 1}
+                        >
+                            <ChevronLeft />
+                        </Button>
+                        <div className="flex w-24 items-center justify-between pr-2">
+                            <Input
+                                className="w-12"
+                                value={pageInput}
+                                onChange={(e) => {
+                                    const value = e.currentTarget.value;
+
+                                    if (value === "") {
+                                        setPageInput("");
+
+                                        return;
+                                    }
+
+                                    if (!/^\d+$/.test(value)) {
+                                        return;
+                                    }
+
+                                    setPageInput(value);
+                                }}
+                                onBlur={() => {
+                                    if (pageInput === "") {
+                                        setPageInput(
+                                            String(paginationData.current_page),
+                                        );
+
+                                        return;
+                                    }
+
+                                    const page = Math.max(
+                                        1,
+                                        Math.min(
+                                            Number(pageInput),
+                                            paginationData.last_page,
+                                        ),
+                                    );
+
+                                    setPageInput(String(page));
+                                }}
+                                onFocus={(e) => e.target.select()}
+                                pattern="[0-9]*"
+                                inputMode="numeric"
+                                autoComplete="off"
+                            ></Input>
+                            <span>/</span>
+                            <span>{paginationData.last_page}</span>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                                goToPage(paginationData.current_page + 1)
+                            }
+                            disabled={
+                                paginationData.current_page ===
+                                paginationData.last_page
+                            }
+                        >
+                            <ChevronRight />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => goToPage(paginationData.last_page)}
+                            disabled={
+                                paginationData.current_page ===
+                                paginationData.last_page
+                            }
+                        >
+                            <ChevronsRight />
+                        </Button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }
