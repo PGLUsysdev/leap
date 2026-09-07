@@ -27,17 +27,17 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { Button } from "@/components/base-ui-components/ui/button";
-import { Input } from "@/components/base-ui-components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
     InputGroup,
     InputGroupAddon,
     InputGroupInput,
-} from "@/components/base-ui-components/ui/input-group";
+} from "@/components/ui/input-group";
 import {
     ScrollArea,
     ScrollBar,
-} from "@/components/base-ui-components/ui/scroll-area";
+} from "@/components/ui/scroll-area";
 import {
     Table as DataTable,
     TableHeader,
@@ -46,7 +46,7 @@ import {
     TableRow,
     TableHead,
     TableCell,
-} from "@/components/base-ui-components/ui/table";
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import type {
     // PriceList,

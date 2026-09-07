@@ -1,13 +1,13 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { ChevronsUpDown, Delete } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
+import DataTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
 import {
     ButtonGroup,
     ButtonGroupSeparator,
-} from '@/components/base-ui-components/ui/button-group';
-import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
+} from '@/components/ui/button-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -15,7 +15,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
 interface MultiTableSelectProps<TData> {

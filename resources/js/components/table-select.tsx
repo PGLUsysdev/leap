@@ -1,18 +1,18 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { ChevronsUpDown, Delete } from 'lucide-react';
 import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/data-table';
 import {
     Dialog,
     DialogContent,
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { PaginatedResponse } from '@/types';
-import { Button } from './ui/button';
-import { ButtonGroup, ButtonGroupSeparator } from './ui/button-group';
+import { Button } from '@/components/ui/button';
+import { ButtonGroup, ButtonGroupSeparator } from '@/components/ui/button-group';
 
 interface TableSelectProps<TData> {
     data: TData[];

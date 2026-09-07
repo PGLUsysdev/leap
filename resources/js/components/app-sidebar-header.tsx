@@ -8,14 +8,14 @@ import {
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
-} from '@/components/base-ui-components/ui/breadcrumb';
+} from '@/components/ui/breadcrumb';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from '@/components/base-ui-components/ui/dropdown-menu';
-import { SidebarTrigger } from '@/components/base-ui-components/ui/sidebar';
+} from '@/components/ui/dropdown-menu';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { collapseBreadcrumbs } from '@/lib/breadcrumb-collapse';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 

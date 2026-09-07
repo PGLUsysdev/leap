@@ -1,7 +1,7 @@
 import { ChevronsUpDown, Delete } from 'lucide-react';
 import type { useTableSelect } from '@/hooks/use-table-select';
-import { Button } from './ui/button';
-import { ButtonGroup, ButtonGroupSeparator } from './ui/button-group';
+import { Button } from '@/components/ui/button';
+import { ButtonGroup, ButtonGroupSeparator } from '@/components/ui/button-group';
 
 interface TableSelectButtonProps<TData> {
     hook: ReturnType<typeof useTableSelect<TData>>;

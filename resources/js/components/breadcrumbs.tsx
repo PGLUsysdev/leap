@@ -1,4 +1,4 @@
-/** @deprecated Radix wrapper — retained for reference, not used. Use Base UI breadcrumb directly: `@/components/base-ui-components/ui/breadcrumb` with `render` prop (see AppSidebarHeader). */
+/** @deprecated Radix wrapper — retained for reference, not used. Use Base UI breadcrumb directly: `@/components/ui/breadcrumb` with `render` prop (see AppSidebarHeader). */
 import { Link } from '@inertiajs/react';
 import { Fragment } from 'react';
 import {
@@ -32,10 +32,12 @@ export function Breadcrumbs({
                                                 {item.title}
                                             </BreadcrumbPage>
                                         ) : (
-                                            <BreadcrumbLink asChild>
-                                                <Link href={item.href}>
-                                                    {item.title}
-                                                </Link>
+                                            <BreadcrumbLink
+                                                render={
+                                                    <Link href={item.href} />
+                                                }
+                                            >
+                                                {item.title}
                                             </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>

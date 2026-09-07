@@ -32,7 +32,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/base-ui-components/ui/sidebar';
+} from '@/components/ui/sidebar';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import { dashboard } from '@/routes';
