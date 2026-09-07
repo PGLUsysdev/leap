@@ -1,8 +1,8 @@
 import { router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
-import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
+import DataTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { CommandSelect } from '@/components/command-select';
 import FormDialog from '@/pages/aip/form-dialog';
 import { index } from '@/routes/ppmp-summaries';

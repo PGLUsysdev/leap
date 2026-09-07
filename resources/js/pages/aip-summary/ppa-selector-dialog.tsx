@@ -1,7 +1,7 @@
 import { router } from '@inertiajs/react';
 import { ChevronRight, Home, Info } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/data-table';
 import {
     Dialog,
     DialogContent,
@@ -9,7 +9,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import type { Ppa, PaginatedResponse, Filter } from '@/types';

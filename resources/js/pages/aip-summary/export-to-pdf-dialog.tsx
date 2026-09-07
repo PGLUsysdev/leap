@@ -5,9 +5,9 @@ import {
     Field,
     FieldGroup,
     FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import { Separator } from '@/components/base-ui-components/ui/separator';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import {
     Dialog,
     DialogContent,

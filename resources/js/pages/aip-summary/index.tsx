@@ -3,7 +3,7 @@
 import { router, usePage } from '@inertiajs/react';
 import { FileUp, Library, Sheet, ShieldCheck } from 'lucide-react';
 import { useState, useCallback, useMemo } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/data-table';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,8 +13,8 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/base-ui-components/ui/alert-dialog';
-import { Button } from '@/components/base-ui-components/ui/button';
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,11 +23,11 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/base-ui-components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import FormDialog from '@/pages/aip-summary/form-dialog';
 import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';

@@ -1,7 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Pencil, ExternalLink, FileText, List } from 'lucide-react';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuTrigger,
-} from '@/components/base-ui-components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import type { FiscalYear } from '@/types';
 
 const columnHelper = createColumnHelper<FiscalYear>();

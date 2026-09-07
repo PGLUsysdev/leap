@@ -6,7 +6,7 @@ import {
     Tags,
     Upload,
 } from 'lucide-react';
-import { Badge } from '@/components/base-ui-components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
@@ -14,7 +14,7 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-} from '@/components/base-ui-components/ui/card';
+} from '@/components/ui/card';
 import { index as aipSummaryImportIndex } from '@/routes/aip-summary-import';
 import { index as categoryCoaMappingIndex } from '@/routes/category-coa-mapping';
 import { index as categoryImportIndex } from '@/routes/category-import';

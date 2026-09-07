@@ -4,17 +4,17 @@ import { router } from '@inertiajs/react';
 import { Decimal } from 'decimal.js';
 import { Check, Filter, FileUp } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import DeleteDialog from '@/components/base-ui-components/delete-dialog';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import DataTable from '@/components/data-table';
+import DeleteDialog from '@/components/delete-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
     // DialogDescription,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,19 +25,19 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/base-ui-components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import {
     Field,
     FieldGroup,
     FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { Separator } from '@/components/base-ui-components/ui/separator';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
+} from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Spinner } from '@/components/ui/spinner';
 import { PdfPreviewPane } from '@/lib/pdf/pdf-preview-pane';
 import { usePdfPreview } from '@/lib/pdf/use-pdf-preview';
 import { formatCurrency } from '@/lib/utils';

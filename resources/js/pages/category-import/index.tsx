@@ -3,18 +3,18 @@ import ExcelJS from 'exceljs';
 import { FileSpreadsheet } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useState, useMemo } from 'react';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Field,
     FieldDescription,
     FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -22,9 +22,9 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
-import { Switch } from '@/components/base-ui-components/ui/switch';
+} from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import { Switch } from '@/components/ui/switch';
 import {
     Table,
     TableBody,
@@ -32,17 +32,17 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/base-ui-components/ui/table';
+} from '@/components/ui/table';
 import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger,
-} from '@/components/base-ui-components/ui/tabs';
+} from '@/components/ui/tabs';
 import {
     ToggleGroup,
     ToggleGroupItem,
-} from '@/components/base-ui-components/ui/toggle-group';
+} from '@/components/ui/toggle-group';
 import { cellText } from '@/lib/excel/cell-helpers';
 import { getCategoryMatch, isTotalRow, normalize } from '@/lib/ppmp/normalize';
 import type { ExistingCategory } from '@/lib/ppmp/normalize';

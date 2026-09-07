@@ -12,8 +12,8 @@ import { useState } from 'react';
 import {
     TableSelectButton,
     useTableSelect,
-} from '@/components/base-ui-components/table-select';
-import { Button } from '@/components/base-ui-components/ui/button';
+} from '@/components/table-select';
+import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,8 +22,8 @@ import {
     DropdownMenuLabel,
     // DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/base-ui-components/ui/dropdown-menu';
-import { Input } from '@/components/base-ui-components/ui/input';
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import type { CcTypology, PpaFundingSource } from '@/types';
 
 type AmountField =

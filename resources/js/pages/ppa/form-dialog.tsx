@@ -12,9 +12,9 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-} from '@/components/base-ui-components/ui/alert-dialog';
-import { Button } from '@/components/base-ui-components/ui/button';
-import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -22,7 +22,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     Field,
     // FieldDescription,
@@ -33,10 +33,10 @@ import {
     // FieldSeparator,
     FieldSet,
     // FieldTitle,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
-import { Textarea } from '@/components/base-ui-components/ui/textarea';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import {
     Command,
     CommandDialog,

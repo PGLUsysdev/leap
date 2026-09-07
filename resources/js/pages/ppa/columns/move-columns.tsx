@@ -1,10 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { FolderOpen } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
     ButtonGroup,
     ButtonGroupSeparator,
-} from '@/components/base-ui-components/ui/button-group';
+} from '@/components/ui/button-group';
 import { Badge } from '@/components/ui/badge';
 import type { Ppa } from '@/types';
 

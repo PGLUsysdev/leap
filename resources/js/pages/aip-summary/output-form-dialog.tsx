@@ -6,13 +6,13 @@ import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import * as z from 'zod';
-import { DatePicker } from '@/components/base-ui-components/date-picker';
+import { DatePicker } from '@/components/date-picker';
 import {
     MultiTableSelect,
     MultiTableSelectButton,
-} from '@/components/base-ui-components/multi-table-select';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+} from '@/components/multi-table-select';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -20,9 +20,9 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
-import { Textarea } from '@/components/base-ui-components/ui/textarea';
+} from '@/components/ui/dialog';
+import { Spinner } from '@/components/ui/spinner';
+import { Textarea } from '@/components/ui/textarea';
 import { Field, FieldError, FieldLabel } from '@/components/ui/field';
 import { store, update } from '@/routes/aip-outputs';
 import type { AipEntry, AipOutput, Office } from '@/types';

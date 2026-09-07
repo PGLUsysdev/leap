@@ -4,23 +4,23 @@ import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import { Checkbox } from '@/components/base-ui-components/ui/checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Field,
     FieldError,
     FieldLabel,
     FieldContent,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import { ScrollArea } from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
-import { Textarea } from '@/components/base-ui-components/ui/textarea';
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { FormDialogShell } from '@/components/form-dialog-shell';
 import type { ChartOfAccount } from '@/types';
 

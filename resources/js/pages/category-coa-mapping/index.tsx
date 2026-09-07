@@ -2,8 +2,8 @@ import { router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import { useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Combobox,
     ComboboxContent,
@@ -11,17 +11,17 @@ import {
     ComboboxInput,
     ComboboxItem,
     ComboboxList,
-} from '@/components/base-ui-components/ui/combobox';
+} from '@/components/ui/combobox';
 import {
     Field,
     FieldDescription,
     FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -29,18 +29,18 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
+} from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger,
-} from '@/components/base-ui-components/ui/tabs';
+} from '@/components/ui/tabs';
 import {
     ToggleGroup,
     ToggleGroupItem,
-} from '@/components/base-ui-components/ui/toggle-group';
+} from '@/components/ui/toggle-group';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
     normalize,

@@ -9,8 +9,8 @@ import {
     ChevronRight,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import NewTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
+import NewTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -18,7 +18,7 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';

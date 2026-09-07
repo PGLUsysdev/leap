@@ -5,12 +5,12 @@ import { ChevronsUpDown, Delete } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import * as z from 'zod';
-import { TableSelect } from '@/components/base-ui-components/table-select';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { TableSelect } from '@/components/table-select';
+import { Button } from '@/components/ui/button';
 import {
     ButtonGroup,
     ButtonGroupSeparator,
-} from '@/components/base-ui-components/ui/button-group';
+} from '@/components/ui/button-group';
 import {
     Dialog,
     DialogContent,
@@ -18,25 +18,25 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     Field,
     FieldLabel,
     FieldError,
     FieldContent,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/base-ui-components/ui/select';
+} from '@/components/ui/select';
 import { CommandSelect } from '@/components/command-select';
 import type { Ios, Office, PaginatedResponse, Position } from '@/types';
 

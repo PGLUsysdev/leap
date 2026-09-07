@@ -1,5 +1,5 @@
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
+import DataTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -7,7 +7,7 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import type { PriceList, PaginatedResponse } from '@/types';
 import columns from './columns/columns';
 

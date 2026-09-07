@@ -3,9 +3,9 @@
 import { router } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
-import { Button } from '@/components/base-ui-components/ui/button';
-import { Card, CardContent } from '@/components/base-ui-components/ui/card';
+import DataTable from '@/components/data-table';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
     Dialog,
     DialogContent,
@@ -13,12 +13,12 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { Separator } from '@/components/base-ui-components/ui/separator';
+} from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import {
     AlertDialog,
     AlertDialogAction,

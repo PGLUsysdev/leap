@@ -3,9 +3,9 @@ import { router } from '@inertiajs/react';
 import { useEffect } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import * as z from 'zod';
-import { TableSelect } from '@/components/base-ui-components/table-select';
-import { TableSelectButton } from '@/components/base-ui-components/table-select-button';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { TableSelect } from '@/components/table-select';
+import { TableSelectButton } from '@/components/table-select-button';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -13,17 +13,17 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     Field,
     FieldError,
     FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/scroll-area';
 import { useTableSelect } from '@/hooks/use-table-select';
 import { store, update } from '@/routes/price-lists';
 import type {

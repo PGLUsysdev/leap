@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/data-table';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/scroll-area';
 import type { Office, Role, User } from '@/types';
 import columns from './columns/columns';
 import FormDialog from './form-dialog';

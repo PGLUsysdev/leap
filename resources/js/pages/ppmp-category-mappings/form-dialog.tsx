@@ -3,8 +3,8 @@ import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { TableSelect } from '@/components/base-ui-components/table-select';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { TableSelect } from '@/components/table-select';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -12,12 +12,12 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     Field,
     FieldError,
     FieldLabel,
-} from '@/components/base-ui-components/ui/field';
+} from '@/components/ui/field';
 import type { ChartOfAccount, PpmpCategory } from '@/types';
 import categoryCols from './columns/category-cols';
 import coaCols from '../ppmp-category/columns/coa-cols';

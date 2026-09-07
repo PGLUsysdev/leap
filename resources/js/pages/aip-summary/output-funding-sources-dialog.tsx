@@ -3,13 +3,13 @@
 import { router } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/data-table';
 import {
     TableSelect,
     useTableSelect,
-} from '@/components/base-ui-components/table-select';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+} from '@/components/table-select';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -17,12 +17,12 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
+} from '@/components/ui/scroll-area';
+import { Spinner } from '@/components/ui/spinner';
 import {
     AlertDialog,
     AlertDialogAction,

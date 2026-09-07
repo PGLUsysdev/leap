@@ -3,24 +3,24 @@ import ExcelJS from 'exceljs';
 import { FileSpreadsheet, ScrollText } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useState } from 'react';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
     Field,
     FieldDescription,
     FieldLabel,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
-import { Spinner } from '@/components/base-ui-components/ui/spinner';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import {
     Tabs,
     TabsContent,
     TabsList,
     TabsTrigger,
-} from '@/components/base-ui-components/ui/tabs';
+} from '@/components/ui/tabs';
 import {
     ToggleGroup,
     ToggleGroupItem,
-} from '@/components/base-ui-components/ui/toggle-group';
+} from '@/components/ui/toggle-group';
 import type {
     AipSummaryField,
     AipSummarySheetConfig,

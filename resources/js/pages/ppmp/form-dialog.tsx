@@ -8,8 +8,8 @@ import {
     TableSelect,
     useTableSelect,
     TableSelectButton,
-} from '@/components/base-ui-components/table-select';
-import { Button } from '@/components/base-ui-components/ui/button';
+} from '@/components/table-select';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -17,12 +17,12 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     Field,
     FieldLabel,
     FieldError,
-} from '@/components/base-ui-components/ui/field';
+} from '@/components/ui/field';
 
 import type {
     ChartOfAccount,

@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
@@ -11,19 +11,19 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
-} from '@/components/base-ui-components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
     Field,
     FieldError,
     FieldLabel,
     FieldContent,
-} from '@/components/base-ui-components/ui/field';
-import { Input } from '@/components/base-ui-components/ui/input';
+} from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
-import { Textarea } from '@/components/base-ui-components/ui/textarea';
+} from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 import type { FundingSource } from '@/types';
 
 interface FormDialogProps {

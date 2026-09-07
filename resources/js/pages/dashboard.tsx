@@ -9,22 +9,22 @@ import {
     XAxis,
     YAxis,
 } from 'recharts';
-import { Badge } from '@/components/base-ui-components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
-} from '@/components/base-ui-components/ui/card';
+} from '@/components/ui/card';
 import {
     ChartContainer,
     ChartLegend,
     ChartLegendContent,
     ChartTooltip,
     ChartTooltipContent,
-} from '@/components/base-ui-components/ui/chart';
-import type { ChartConfig } from '@/components/base-ui-components/ui/chart';
+} from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 import { dashboard } from '@/routes';
 
 const PALETTE = [

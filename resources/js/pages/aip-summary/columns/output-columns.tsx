@@ -2,7 +2,7 @@
 
 import { createColumnHelper } from '@tanstack/react-table';
 import { Coins, Pencil, Trash } from 'lucide-react';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { AipOutput } from '@/types';
 
 const columnHelper = createColumnHelper<AipOutput>();

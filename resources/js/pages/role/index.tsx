@@ -1,10 +1,10 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
-import DataTable from '@/components/base-ui-components/data-table';
+import DataTable from '@/components/data-table';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 import type { Role } from '@/types';

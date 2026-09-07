@@ -1,13 +1,13 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AlertErrorDialog } from '@/components/alert-error-dialog';
-import DataTable from '@/components/base-ui-components/data-table';
-import DeleteDialog from '@/components/base-ui-components/delete-dialog';
-import { Button as BaseButton } from '@/components/base-ui-components/ui/button';
+import DataTable from '@/components/data-table';
+import DeleteDialog from '@/components/delete-dialog';
+import { Button as BaseButton } from '@/components/ui/button';
 import {
     ScrollArea,
     ScrollBar,
-} from '@/components/base-ui-components/ui/scroll-area';
+} from '@/components/ui/scroll-area';
 import { reorder, destroy } from '@/routes/price-lists';
 import type {
     PriceList,

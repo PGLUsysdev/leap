@@ -3,8 +3,8 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { Decimal } from 'decimal.js';
 import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
-import { Badge } from '@/components/base-ui-components/ui/badge';
-import { Button } from '@/components/base-ui-components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { AipEntry, AipOutput, PpaFundingSource } from '@/types';
 
 type FundingSourceRow = AipEntry & {
