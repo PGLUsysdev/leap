@@ -1,7 +1,5 @@
 {
-    "agents": [
-        "zed"
-    ],
+    "agents": ["zed"],
     "cloud": false,
     "guidelines": true,
     "mcp": true,

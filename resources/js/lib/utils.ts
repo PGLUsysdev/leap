@@ -1,4 +1,4 @@
-export { cn } from "cn"
+export { cn } from 'cn';
 import type { InertiaLinkProps } from '@inertiajs/react';
 
 export function toUrl(url: NonNullable<InertiaLinkProps['href']>): string {

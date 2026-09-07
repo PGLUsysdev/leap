@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId } from 'react';
 
 interface PlaceholderPatternProps {
     className?: string;
@@ -21,7 +21,12 @@ export function PlaceholderPattern({ className }: PlaceholderPatternProps) {
                     <path d="M-3 13 15-5M-5 5l18-18M-1 21 17 3"></path>
                 </pattern>
             </defs>
-            <rect stroke="none" fill={`url(#${patternId})`} width="100%" height="100%"></rect>
+            <rect
+                stroke="none"
+                fill={`url(#${patternId})`}
+                width="100%"
+                height="100%"
+            ></rect>
         </svg>
     );
 }
