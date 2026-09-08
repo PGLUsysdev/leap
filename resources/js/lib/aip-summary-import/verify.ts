@@ -220,6 +220,31 @@ export function parseColBPrefix(
     return { numbers, letter: null, warnings, stripped: rest.trim() };
 }
 
+/** Lenient GF Proper check — dashes/spaces/case ignored (`GF-Proper`, `GF Proper`, `GF`). */
+export function isGfProperFund(value: string | null): boolean {
+    if (value == null) return false;
+
+    const compact = value
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+
+    return compact === 'gfproper' || compact === 'gf';
+}
+
+/** Blank, `-`, or any numeric zero (`0`, `0.00`) counts as no CC value. */
+export function isEmptyCcValue(value: string | null): boolean {
+    if (value == null) return true;
+
+    const trimmed = value.trim();
+
+    if (trimmed === '' || trimmed === '-') return true;
+
+    const numeric = Number(trimmed);
+
+    return !Number.isNaN(numeric) && numeric === 0;
+}
+
 /** True for `Mon-YY` (Jan-27 = January 2027) or full `YYYY-MM-DD`. */
 function isParsableSchedule(value: string): boolean {
     const trimmed = value.trim();
@@ -463,6 +488,30 @@ export function verifyAipSummarySheet(
                 errors.push({
                     row,
                     message: `Unparseable schedule "${value}" — use Mon-YY (Jan-27) or YYYY-MM-DD`,
+                });
+            }
+        }
+
+        // Climate fields ride on GF Proper funding only — any other fund
+        // (or none) with a CC value set is an error.
+        if (!isGfProperFund(values.fundingSource)) {
+            const set = (
+                [
+                    'adaptation',
+                    'mitigation',
+                    'typology',
+                ] as const
+            ).filter((field) => !isEmptyCcValue(values[field]));
+
+            if (set.length > 0) {
+                const names = set
+                    .map((field) => AIP_SUMMARY_FIELD_LABELS[field])
+                    .join(', ');
+                errors.push({
+                    row,
+                    message:
+                        `CC fields require "GF Proper" funding ` +
+                        `(got "${values.fundingSource ?? '—'}"): ${names} must be blank`,
                 });
             }
         }

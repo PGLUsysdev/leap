@@ -325,8 +325,7 @@ describe('verifyAipSummarySheet', () => {
         expect(result.warnings).toHaveLength(0);
     });
 
-    it('accepts real Excel dates in schedule columns', () => {
-        const wb = buildSheet([
+    it('accepts real Excel dates in schedule columns', () => {        const wb = buildSheet([
             [
                 '1000-1-03-009-001',
                 'A. Health Program',
@@ -430,7 +429,7 @@ describe('verifyAipSummarySheet', () => {
     it('stays silent when cols A and B are both blank', () => {
         const wb = buildSheet([
             PROGRAM,
-            [null, null, 'MHO', 'Jan-26', 'Dec-26', 'Extra', 'SEF', '0', '0', 'A123'],
+            [null, null, 'MHO', 'Jan-26', 'Dec-26', 'Extra', 'SEF', '0', '0', '-'],
         ]);
         const result = verifyAipSummarySheet(
             wb,
@@ -441,5 +440,61 @@ describe('verifyAipSummarySheet', () => {
         expect(result.valid).toBe(true);
         expect(result.errors).toHaveLength(0);
         expect(result.rowsKept).toBe(2);
+    });
+});
+
+describe('GF Proper climate rule', () => {
+    function ccRow(fund: string | null, adaptation: string | null, mitigation: string | null, typology: string | null) {
+        return [
+            '1000-1-03-009-001',
+            'A. Health Program',
+            'MHO',
+            'Jan-26',
+            'Dec-26',
+            'Served',
+            fund,
+            adaptation,
+            mitigation,
+            typology,
+        ];
+    }
+
+    function check(fund: string | null, adaptation: string | null, mitigation: string | null, typology: string | null) {
+        const wb = buildSheet([ccRow(fund, adaptation, mitigation, typology)]);
+        return verifyAipSummarySheet(wb, 'Sheet1', getDefaultAipSummaryConfig());
+    }
+
+    it('allows CC values on GF Proper variants', () => {
+        for (const fund of ['GF-Proper', 'GF Proper', 'GF', 'gf-proper']) {
+            const result = check(fund, '50.00', '300.00', 'A123');
+            expect(result.valid).toBe(true);
+        }
+    });
+
+    it('errors on CC values without GF Proper funding', () => {
+        const result = check('SEF', '50.00', '0', '-');
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some((e) => e.message.includes('Adaptation')),
+        ).toBe(true);
+    });
+
+    it('treats blank, dash, and zero CC as empty on other funds', () => {
+        const result = check('SEF', '0', '0.00', '-');
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+    });
+
+    it('errors on typology alone with a missing fund', () => {
+        const result = check(null, null, null, 'A123');
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some((e) => e.message.includes('Typology')),
+        ).toBe(true);
+    });
+
+    it('errors on a multi-fund cell carrying CC values', () => {
+        const result = check('GF-Proper/ 20%-DF', '10.00', null, null);
+        expect(result.valid).toBe(false);
     });
 });
