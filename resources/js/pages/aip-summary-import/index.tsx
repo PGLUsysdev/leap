@@ -1,26 +1,21 @@
-import { Head } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import { FileSpreadsheet, ScrollText } from 'lucide-react';
 import type { ChangeEvent } from 'react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-    Field,
-    FieldDescription,
-    FieldLabel,
-} from '@/components/ui/field';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-} from '@/components/ui/toggle-group';
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import type {
     AipSummaryField,
     AipSummarySheetConfig,
@@ -40,8 +35,34 @@ import {
     extractAipSummaryRecords,
     formatAipScheduleShort,
 } from '@/lib/aip-summary-import/extract';
+import { normalize } from '@/lib/ppmp/normalize';
 
 export default function AipSummaryImport() {
+    // ----- Inertia props (offices, ppas, fiscal years, auth user) -----
+    const { existingOffices, existingPpas, fiscalYears, activeFiscalYear, auth } =
+        usePage().props as unknown as {
+            existingOffices: {
+                id: number;
+                acronym: string | null;
+                name: string;
+                full_code: string;
+            }[];
+            existingPpas: {
+                id: number;
+                office_id: number;
+                parent_id: number | null;
+                name: string;
+                type: string;
+                code_suffix: string | null;
+                full_code: string;
+                fiscal_year_id: number;
+            }[];
+            fiscalYears: { id: number; year: number; status: string }[];
+            activeFiscalYear: { id: number; year: number; status: string } | null;
+            auth: { user: { office_id: number | null } };
+        };
+
+    // ----- Existing state -----
     const [sheets, setSheets] = useState<string[]>([]);
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
@@ -49,7 +70,7 @@ export default function AipSummaryImport() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [step, setStep] = useState<
-        'upload' | 'calibrate' | 'verify' | 'extract'
+        'upload' | 'calibrate' | 'verify' | 'extract' | 'import-ppa'
     >('upload');
     const [config, setConfig] = useState<AipSummarySheetConfig>(() =>
         getDefaultAipSummaryConfig(),
@@ -58,7 +79,33 @@ export default function AipSummaryImport() {
         useState<AipSummaryVerifyResult | null>(null);
     const [extractResult, setExtractResult] =
         useState<AipSummaryExtractResult | null>(null);
+    const [importing, setImporting] = useState(false);
 
+    // ----- State for selected office (defaults to user's office) -----
+    const [selectedOffice, setSelectedOffice] = useState<string>(
+        auth.user.office_id?.toString() || '',
+    );
+
+    // ----- State for selected fiscal year (defaults to active fiscal year) -----
+    const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(
+        activeFiscalYear?.id.toString() || '',
+    );
+
+    // ----- Derived display label for the office trigger (acronym, name fallback) -----
+    const selectedOfficeLabel = useMemo(() => {
+        const office = existingOffices.find(
+            (o) => o.id.toString() === selectedOffice,
+        );
+        return office?.acronym?.trim() || office?.name || '';
+    }, [existingOffices, selectedOffice]);
+
+    // ----- Derived display label for the fiscal year trigger -----
+    const selectedFiscalYearLabel = useMemo(() => {
+        const fy = fiscalYears.find((f) => f.id.toString() === selectedFiscalYear);
+        return fy ? String(fy.year) : '';
+    }, [fiscalYears, selectedFiscalYear]);
+
+    // ----- Derived flags -----
     const canCalibrate = selectedSheet !== '';
     const canVerify =
         canCalibrate &&
@@ -66,10 +113,63 @@ export default function AipSummaryImport() {
         config.headerRow != null &&
         !!workbook;
     const canExtract = canVerify && verifyResult?.valid === true;
+    const canImportPpa = canExtract && !!extractResult;
 
+    // ----- Compute blocks for import based on selected office + fiscal year -----
+    const blocksForImport = useMemo(() => {
+        if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
+
+        const officeId = Number(selectedOffice);
+        const fiscalYearId = Number(selectedFiscalYear);
+        const office = existingOffices.find((o) => o.id === officeId);
+        if (!office) return [];
+
+        // Filter PPAs that belong to the selected office + fiscal year
+        const ppasForOffice = existingPpas.filter(
+            (p) => p.office_id === officeId && p.fiscal_year_id === fiscalYearId,
+        );
+        const ppasByCode = new Map<string, (typeof existingPpas)[0]>();
+        for (const ppa of ppasForOffice) {
+            const key = normalize(ppa.full_code);
+            if (!ppasByCode.has(key)) {
+                ppasByCode.set(key, ppa);
+            }
+        }
+
+        // Group extracted records by fullCode
+        const groups = new Map<
+            string,
+            { fullCode: string; name: string; type: string; rows: number[] }
+        >();
+        for (const record of extractResult.records) {
+            let group = groups.get(record.fullCode);
+            if (!group) {
+                group = {
+                    fullCode: record.fullCode,
+                    name: record.name,
+                    type: record.type,
+                    rows: [],
+                };
+                groups.set(record.fullCode, group);
+            }
+            group.rows.push(record.row);
+        }
+
+        // Build result with status
+        const result = [];
+        for (const [fullCode, group] of groups) {
+            const ppa = ppasByCode.get(normalize(fullCode));
+            result.push({
+                ...group,
+                status: ppa ? 'exists' : 'new',
+            });
+        }
+        return result;
+    }, [extractResult, selectedOffice, selectedFiscalYear, existingOffices, existingPpas]);
+
+    // ----- Handlers -----
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
-
         if (!file) return;
 
         const isXlsx =
@@ -85,9 +185,8 @@ export default function AipSummaryImport() {
             setFileName(null);
             setStep('upload');
             setVerifyResult(null);
-        setExtractResult(null);
+            setExtractResult(null);
             e.target.value = '';
-
             return;
         }
 
@@ -151,22 +250,18 @@ export default function AipSummaryImport() {
 
     function handleLogContents() {
         if (!workbook || !selectedSheet) return;
-
         if (config.headerRow === '' || config.headerRow == null) {
             console.log(
                 'AipSummaryImport: header row is required before logging contents.',
             );
-
             return;
         }
 
         const ws = workbook.getWorksheet(selectedSheet);
-
         if (!ws) {
             console.log(
                 `AipSummaryImport: worksheet "${selectedSheet}" not found.`,
             );
-
             return;
         }
 
@@ -197,7 +292,6 @@ export default function AipSummaryImport() {
                 const row = ws.getRow(k.row);
                 const startCell = row.getCell(config.columnConfig.startDate);
                 const endCell = row.getCell(config.columnConfig.endDate);
-
                 return {
                     _row: String(k.row),
                     startDateRaw: startCell.value,
@@ -211,20 +305,15 @@ export default function AipSummaryImport() {
 
     function handleVerify() {
         if (!workbook || !selectedSheet) return;
-
         setVerifyResult(verifyAipSummarySheet(workbook, selectedSheet, config));
         setExtractResult(null);
     }
 
     function handleExtract() {
         if (!workbook || !selectedSheet) return;
-
         if (config.headerRow === '' || config.headerRow == null) return;
-
         const ws = workbook.getWorksheet(selectedSheet);
-
         if (!ws) return;
-
         setExtractResult(
             extractAipSummaryRecords(ws, {
                 ...config,
@@ -233,6 +322,33 @@ export default function AipSummaryImport() {
         );
     }
 
+    const newBlocks = useMemo(
+        () => blocksForImport.filter((b) => b.status === 'new'),
+        [blocksForImport],
+    );
+
+    function handleConfirmImport() {
+        if (!selectedOffice || !selectedFiscalYear || newBlocks.length === 0)
+            return;
+        setImporting(true);
+        router.post(
+            '/aip-summary-import',
+            {
+                office_id: Number(selectedOffice),
+                fiscal_year_id: Number(selectedFiscalYear),
+                blocks: newBlocks.map((b) => ({
+                    full_code: b.fullCode,
+                    name: b.name,
+                    type: b.type,
+                })),
+            },
+            {
+                onFinish: () => setImporting(false),
+            },
+        );
+    }
+
+    // ----- Render -----
     return (
         <>
             <Head title="AIP Summary Import" />
@@ -311,8 +427,16 @@ export default function AipSummaryImport() {
                                 </span>
                             )}
                         </TabsTrigger>
+                        <TabsTrigger
+                            value="import-ppa"
+                            disabled={!canImportPpa}
+                            className="flex-1"
+                        >
+                            5. Import PPA
+                        </TabsTrigger>
                     </TabsList>
 
+                    {/* ----- Upload Tab (unchanged) ----- */}
                     <TabsContent
                         value="upload"
                         className="mt-4 flex flex-col gap-4"
@@ -381,6 +505,7 @@ export default function AipSummaryImport() {
                         </div>
                     </TabsContent>
 
+                    {/* ----- Calibrate Tab (unchanged) ----- */}
                     <TabsContent
                         value="calibrate"
                         className="mt-4 flex flex-col gap-4"
@@ -482,6 +607,7 @@ export default function AipSummaryImport() {
                         </div>
                     </TabsContent>
 
+                    {/* ----- Verify Tab (unchanged) ----- */}
                     <TabsContent
                         value="verify"
                         className="mt-4 flex flex-col gap-4"
@@ -530,8 +656,7 @@ export default function AipSummaryImport() {
                                         <p className="text-sm font-medium text-amber-600">
                                             ⚠ {verifyResult.warnings.length}{' '}
                                             warning
-                                            {verifyResult.warnings.length ===
-                                            1
+                                            {verifyResult.warnings.length === 1
                                                 ? ''
                                                 : 's'}{' '}
                                             — formatting only, sheet still
@@ -581,6 +706,7 @@ export default function AipSummaryImport() {
                         </div>
                     </TabsContent>
 
+                    {/* ----- Extract Tab (unchanged) ----- */}
                     <TabsContent
                         value="extract"
                         className="mt-4 flex flex-col gap-4"
@@ -606,8 +732,8 @@ export default function AipSummaryImport() {
                         {extractResult && (
                             <div className="flex flex-col gap-2 rounded-md border p-3">
                                 <p className="text-sm font-medium text-green-600">
-                                    ✅ Extracted{' '}
-                                    {extractResult.records.length} record
+                                    ✅ Extracted {extractResult.records.length}{' '}
+                                    record
                                     {extractResult.records.length === 1
                                         ? ''
                                         : 's'}{' '}
@@ -723,12 +849,243 @@ export default function AipSummaryImport() {
                             </div>
                         )}
 
-                        <div className="flex justify-start">
+                        <div className="flex items-center justify-between">
                             <Button
                                 variant="outline"
                                 onClick={() => setStep('verify')}
                             >
                                 Back: Verify
+                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    disabled={!canImportPpa}
+                                    onClick={() => setStep('import-ppa')}
+                                >
+                                    Import PPA
+                                </Button>
+                                <Button>
+                                    Import Expected Outputs
+                                </Button>
+                                <Button>
+                                    Import Funding Source
+                                </Button>
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    {/* ----- Import PPA Tab (Office dropdown controls the target office) ----- */}
+                    <TabsContent
+                        value="import-ppa"
+                        className="mt-4 flex flex-col gap-4"
+                    >
+                        <div className="flex flex-col gap-1">
+                            <h2 className="text-lg font-semibold tracking-tight">
+                                Import PPA
+                            </h2>
+                            <p className="text-muted-foreground text-sm">
+                                Review and import PPA blocks extracted from
+                                sheet “{selectedSheet}”.
+                            </p>
+                        </div>
+
+                        {/* Office + fiscal year dropdowns side by side */}
+                        <div className="flex flex-wrap gap-4">
+                            <Field>
+                                <FieldLabel>Target Office</FieldLabel>
+                                <Select
+                                    value={selectedOffice}
+                                    onValueChange={(v) =>
+                                        setSelectedOffice(v ?? '')
+                                    }
+                                >
+                                    <SelectTrigger className="w-[200px]">
+                                        {selectedOfficeLabel ? (
+                                            <span className="flex flex-1 text-left">
+                                                {selectedOfficeLabel}
+                                            </span>
+                                        ) : (
+                                            <SelectValue placeholder="Select an office" />
+                                        )}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {existingOffices.map((office) => (
+                                            <SelectItem
+                                                key={office.id}
+                                                value={office.id.toString()}
+                                            >
+                                                {office.acronym || office.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    PPAs will be created under this office.
+                                </FieldDescription>
+                            </Field>
+
+                            <Field>
+                                <FieldLabel>Fiscal Year</FieldLabel>
+                                <Select
+                                    value={selectedFiscalYear}
+                                    onValueChange={(v) =>
+                                        setSelectedFiscalYear(v ?? '')
+                                    }
+                                >
+                                    <SelectTrigger className="w-[160px]">
+                                        {selectedFiscalYearLabel ? (
+                                            <span className="flex flex-1 text-left">
+                                                {selectedFiscalYearLabel}
+                                            </span>
+                                        ) : (
+                                            <SelectValue placeholder="Select a year" />
+                                        )}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {fiscalYears.map((fy) => (
+                                            <SelectItem
+                                                key={fy.id}
+                                                value={fy.id.toString()}
+                                            >
+                                                {fy.year}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    PPAs will be created for this fiscal year.
+                                </FieldDescription>
+                            </Field>
+                        </div>
+
+                        {/* Only show stats and table if an office + fiscal year is selected */}
+                        {selectedOffice && selectedFiscalYear ? (
+                            <>
+                                <div className="flex flex-wrap items-center gap-3 rounded-md border p-3 text-sm">
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Total PPA blocks:
+                                        </span>{' '}
+                                        <span className="font-medium">
+                                            {blocksForImport.length}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            New:
+                                        </span>{' '}
+                                        <span className="font-medium text-blue-600">
+                                            {
+                                                blocksForImport.filter(
+                                                    (b) => b.status === 'new',
+                                                ).length
+                                            }
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Exists:
+                                        </span>{' '}
+                                        <span className="font-medium text-green-600">
+                                            {
+                                                blocksForImport.filter(
+                                                    (b) =>
+                                                        b.status === 'exists',
+                                                ).length
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {blocksForImport.length > 0 && (
+                                    <div className="overflow-x-auto rounded-md border">
+                                        <table className="w-full text-left text-xs">
+                                            <thead>
+                                                <tr className="bg-muted/50 text-muted-foreground border-b">
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Full Code
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Name &amp; Type
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Status
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Rows
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {blocksForImport.map(
+                                                    (block) => (
+                                                        <tr
+                                                            key={block.fullCode}
+                                                            className="border-b last:border-0"
+                                                        >
+                                                            <td className="px-3 py-2 font-mono font-medium whitespace-nowrap">
+                                                                {block.fullCode}
+                                                            </td>
+                                                            <td className="px-3 py-2">
+                                                                <div className="font-medium">
+                                                                    {block.name}
+                                                                </div>
+                                                                <div className="text-muted-foreground text-[10px] uppercase">
+                                                                    {block.type}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-3 py-2">
+                                                                {block.status ===
+                                                                    'exists' && (
+                                                                    <span className="font-medium text-green-600">
+                                                                        Exists
+                                                                    </span>
+                                                                )}
+                                                                {block.status ===
+                                                                    'new' && (
+                                                                    <span className="font-medium text-blue-600">
+                                                                        New
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="text-muted-foreground px-3 py-2 font-mono whitespace-nowrap">
+                                                                {block.rows.join(
+                                                                    ', ',
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    ),
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-muted-foreground text-sm">
+                                Please select a target office and fiscal year to
+                                review the extracted PPAs.
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep('extract')}
+                            >
+                                Back: Extract
+                            </Button>
+                            <Button
+                                onClick={handleConfirmImport}
+                                disabled={
+                                    !selectedOffice ||
+                                    !selectedFiscalYear ||
+                                    newBlocks.length === 0 ||
+                                    importing
+                                }
+                            >
+                                {importing && <Spinner />}
+                                Confirm &amp; Import {newBlocks.length} PPA
+                                {newBlocks.length === 1 ? '' : 's'}
                             </Button>
                         </div>
                     </TabsContent>
