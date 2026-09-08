@@ -189,6 +189,142 @@ describe('verifyAipSummarySheet', () => {
         expect(result.valid).toBe(true);
     });
 
+    it('passes a dotted prefix without a trailing dot as a warning', () => {
+        const wb = buildSheet([
+            PROGRAM,
+            PROJECT,
+            [
+                '1000-1-03-009-001-001-01',
+                '1.1 Support to Maintenance',
+                'MHO',
+                'Jan-26',
+                'Jun-26',
+                'Support',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0].message).toContain('missing trailing');
+    });
+
+    it('passes a program letter without a trailing dot as a warning', () => {
+        const wb = buildSheet([
+            [
+                '1000-1-03-009-001',
+                'A Health Program',
+                'MHO',
+                'Jan-26',
+                'Dec-26',
+                'Served',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0].message).toContain('missing trailing');
+    });
+
+    it('passes a spaced prefix as a warning and sequences on the collapsed form', () => {
+        const wb = buildSheet([
+            PROGRAM,
+            PROJECT,
+            [
+                '1000-1-03-009-001-001-01',
+                '1. 1. Spaced activity',
+                'MHO',
+                'Jan-26',
+                'Jun-26',
+                'Support',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.warnings).toHaveLength(1);
+        expect(result.warnings[0].message).toContain('spacing');
+    });
+
+    it('passes a spaced prefix without a trailing dot with both warnings', () => {
+        const wbActivity = buildSheet([
+            PROGRAM,
+            [
+                '1000-1-03-009-001-001',
+                '1. Project',
+                'MHO',
+                'Jan-26',
+                'Jun-26',
+                'Support',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+            [
+                '1000-1-03-009-001-001-01',
+                '1. 1 Spaced activity without dot',
+                'MHO',
+                'Jan-26',
+                'Jun-26',
+                'Support',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+        ]);
+        const result = verifyAipSummarySheet(
+            wbActivity,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.warnings).toHaveLength(2);
+    });
+
+    it('reports no warnings for canonical prefixes', () => {
+        const wb = buildSheet([PROGRAM, PROJECT]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.warnings).toHaveLength(0);
+    });
+
     it('rejects a tandem mismatch between code depth and description prefix', () => {
         const wb = buildSheet([
             PROGRAM,

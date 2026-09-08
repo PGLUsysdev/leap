@@ -241,11 +241,18 @@ export default function AipSummaryImport() {
                             className="flex-1"
                         >
                             3. Verify
-                            {verifyResult?.valid && (
-                                <span className="ml-1 text-xs text-green-600">
-                                    ✓
-                                </span>
-                            )}
+                            {verifyResult?.valid &&
+                                verifyResult.warnings.length === 0 && (
+                                    <span className="ml-1 text-xs text-green-600">
+                                        ✓
+                                    </span>
+                                )}
+                            {verifyResult?.valid &&
+                                verifyResult.warnings.length > 0 && (
+                                    <span className="ml-1 text-xs text-amber-600">
+                                        ⚠ {verifyResult.warnings.length}
+                                    </span>
+                                )}
                         </TabsTrigger>
                     </TabsList>
 
@@ -452,7 +459,7 @@ export default function AipSummaryImport() {
                                 {verifyResult.errors.length > 0 && (
                                     <ul className="flex max-h-64 flex-col gap-1 overflow-y-auto text-sm">
                                         {verifyResult.errors.map((issue, i) => (
-                                            <li key={`${issue.row}-${i}`}>
+                                            <li key={`error-${issue.row}-${i}`}>
                                                 <span className="text-muted-foreground font-mono">
                                                     Row {issue.row}:
                                                 </span>{' '}
@@ -460,6 +467,34 @@ export default function AipSummaryImport() {
                                             </li>
                                         ))}
                                     </ul>
+                                )}
+                                {verifyResult.warnings.length > 0 && (
+                                    <>
+                                        <p className="text-sm font-medium text-amber-600">
+                                            ⚠ {verifyResult.warnings.length}{' '}
+                                            warning
+                                            {verifyResult.warnings.length ===
+                                            1
+                                                ? ''
+                                                : 's'}{' '}
+                                            — formatting only, sheet still
+                                            passes
+                                        </p>
+                                        <ul className="flex max-h-64 flex-col gap-1 overflow-y-auto text-sm text-amber-700">
+                                            {verifyResult.warnings.map(
+                                                (issue, i) => (
+                                                    <li
+                                                        key={`warning-${issue.row}-${i}`}
+                                                    >
+                                                        <span className="font-mono opacity-70">
+                                                            Row {issue.row}:
+                                                        </span>{' '}
+                                                        {issue.message}
+                                                    </li>
+                                                ),
+                                            )}
+                                        </ul>
+                                    </>
                                 )}
                                 {verifyResult.details.length > 0 && (
                                     <ul className="text-muted-foreground flex flex-col gap-1 text-xs">

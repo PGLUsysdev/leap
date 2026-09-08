@@ -10,6 +10,11 @@
  * skipped (col A lacks the office prefix), blank-A rows attach to the
  * preceding PPA block as continuations, orphan continuations skipped.
  *
+ * Issues come in two severities: `errors` block the import, `warnings`
+ * pass with a formatting notify (missing trailing "." in the col B
+ * prefix, extra spaces inside the prefix which are collapsed before
+ * sequencing).
+ *
  * Docs: `docs/aip-summary-file-structure.md` (rules),
  * `docs/aip-summary-import.md` (pipeline).
  */
@@ -27,6 +32,8 @@ export type AipSummaryVerifyResult = {
     valid: boolean;
     message: string;
     errors: AipSummaryVerifyIssue[];
+    /** Formatting notifies — sheet still passes when only warnings exist. */
+    warnings: AipSummaryVerifyIssue[];
     details: string[];
     ppaBlocks: number;
     rowsKept: number;
@@ -131,22 +138,70 @@ function parseRefCode(
 function parseColBPrefix(
     description: string,
     typeIndex: number,
-): { numbers: number[] | null; letter: string | null } | null {
+): {
+    numbers: number[] | null;
+    letter: string | null;
+    warnings: string[];
+} | null {
     const trimmed = description.trim();
 
     if (typeIndex === 0) {
-        const match = /^([A-Z])\.\s*\S/.exec(trimmed);
+        const canonical = /^([A-Z])\. +(\S.*)$/.exec(trimmed);
 
-        return match ? { numbers: null, letter: match[1] } : null;
+        if (canonical) {
+            return { numbers: null, letter: canonical[1], warnings: [] };
+        }
+
+        const loose = /^([A-Z])(?:\.\s*|\s+)(\S.*)$/.exec(trimmed);
+
+        if (!loose) return null;
+
+        const head = trimmed.slice(0, trimmed.length - loose[2].length);
+
+        // No dot at all ("A Health") → missing-dot; any other
+        // non-canonical dot usage ("A.Health", "A . Health") → spaced.
+        return {
+            numbers: null,
+            letter: loose[1],
+            warnings: [head.includes('.') ? 'spaced' : 'missing-dot'],
+        };
     }
 
-    const match = /^(\d+(?:\.\d+)*)\.\s*\S/.exec(trimmed);
+    // Dotted prefixes scan as one run: leading number components may be
+    // split by spaces ("19. 1."), which collapse to dotted form ("19.1").
+    // A space-separated numeric token only continues the prefix when it
+    // carries its own dot — "1. 2024 Accomplishments" stays prefix "1.".
+    const m = /^(\d+(?:\s*\.\s*\d+)*)(\s*\.?)([\s\S]*)$/.exec(trimmed);
 
-    if (!match) return null;
+    if (!m) return null;
 
-    const numbers = match[1].split('.').map(Number);
+    const rawNum = m[1];
+    const sep = m[2];
+    const rest = m[3];
 
-    return numbers.length === typeIndex ? { numbers, letter: null } : null;
+    // No dot/space between prefix and text ("4.5Support"), or no
+    // description text at all — still an error, not a warning.
+    if (sep === '' || rest.trim() === '') return null;
+
+    const compact = rawNum.replace(/\s+/g, '');
+    const numbers = compact.split('.').map(Number);
+
+    if (numbers.length !== typeIndex) return null;
+
+    const warnings: string[] = [];
+    const sepHasDot = sep.includes('.');
+
+    if (!sepHasDot) warnings.push('missing-dot');
+
+    if (
+        /\s/.test(rawNum) ||
+        /^\s+\./.test(sep) ||
+        (sepHasDot && !/^\s/.test(rest))
+    ) {
+        warnings.push('spaced');
+    }
+
+    return { numbers, letter: null, warnings };
 }
 
 /** True for `Mon-YY` (Jan-27 = January 2027) or full `YYYY-MM-DD`. */
@@ -241,6 +296,7 @@ export function verifyAipSummarySheet(
                     message: 'Header Row is required — check calibration',
                 },
             ],
+            warnings: [],
             details: [],
             ppaBlocks: 0,
             rowsKept: 0,
@@ -254,6 +310,7 @@ export function verifyAipSummarySheet(
             valid: false,
             message: `Worksheet "${sheetName}" not found`,
             errors: [{ row: 0, message: `Worksheet "${sheetName}" not found` }],
+            warnings: [],
             details: [],
             ppaBlocks: 0,
             rowsKept: 0,
@@ -261,6 +318,7 @@ export function verifyAipSummarySheet(
     }
 
     const errors: AipSummaryVerifyIssue[] = [];
+    const warnings: AipSummaryVerifyIssue[] = [];
     const details: string[] = [];
 
     // Calibrated columns must sit inside the A–O sheet spec.
@@ -329,6 +387,16 @@ export function verifyAipSummarySheet(
                         row,
                         message: `Description prefix doesn't match ${PPA_TYPES[ref.typeIndex]} depth for "${code}"`,
                     });
+                } else {
+                    for (const kind of prefix.warnings) {
+                        warnings.push({
+                            row,
+                            message:
+                                kind === 'missing-dot'
+                                    ? `Prefix missing trailing "." for "${code}" (warning — formatting only)`
+                                    : `Prefix spacing normalized for "${code}" (warning — formatting only)`,
+                        });
+                    }
                 }
 
                 if (parsed.has(code)) {
@@ -484,13 +552,18 @@ export function verifyAipSummarySheet(
     );
 
     const valid = errors.length === 0;
+    const warningSuffix =
+        warnings.length > 0
+            ? `, ${warnings.length} warning${warnings.length === 1 ? '' : 's'}`
+            : '';
 
     return {
         valid,
         message: valid
-            ? `Format OK — ${parsed.size} PPA block${parsed.size === 1 ? '' : 's'}, ${kept.length} rows kept`
-            : `Found ${errors.length} issue${errors.length === 1 ? '' : 's'}`,
+            ? `Format OK — ${parsed.size} PPA block${parsed.size === 1 ? '' : 's'}, ${kept.length} rows kept${warningSuffix}`
+            : `Found ${errors.length} issue${errors.length === 1 ? '' : 's'}${warningSuffix}`,
         errors,
+        warnings,
         details,
         ppaBlocks: parsed.size,
         rowsKept: kept.length,
