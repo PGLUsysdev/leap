@@ -94,12 +94,40 @@ export function normalizeAipSchedule(value: string | null): string | null {
     return /^(\d{4})-(\d{2})-(\d{2})$/.test(trimmed) ? trimmed : null;
 }
 
-/** `PICTO/SDU` → `['PICTO', 'SDU']`. */
+const MONTH_SHORT = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+];
+
+/** `2027-12-01` → `Dec-27` for display; null passes through. */
+export function formatAipScheduleShort(value: string | null): string | null {
+    if (value == null) return null;
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+
+    if (!match) return value;
+
+    const month = MONTH_SHORT[Number(match[2]) - 1] ?? match[2];
+
+    return `${month}-${match[1].slice(2)}`;
+}
+
+/** `PICTO/SDU` or `OPG,PGENRO,PHO` → acronym list (slash or comma). */
 export function splitAipOffices(value: string | null): string[] {
     if (value == null) return [];
 
     return value
-        .split('/')
+        .split(/[/,]/)
         .map((part) => part.trim())
         .filter((part) => part !== '');
 }

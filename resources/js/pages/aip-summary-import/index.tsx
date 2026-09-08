@@ -36,7 +36,10 @@ import {
     verifyAipSummarySheet,
 } from '@/lib/aip-summary-import/verify';
 import type { AipSummaryExtractResult } from '@/lib/aip-summary-import/extract';
-import { extractAipSummaryRecords } from '@/lib/aip-summary-import/extract';
+import {
+    extractAipSummaryRecords,
+    formatAipScheduleShort,
+} from '@/lib/aip-summary-import/extract';
 
 export default function AipSummaryImport() {
     const [sheets, setSheets] = useState<string[]>([]);
@@ -190,6 +193,19 @@ export default function AipSummaryImport() {
                 _kind: k.kind,
                 ...k.values,
             })),
+            scheduleRaw: extracted.kept.map((k) => {
+                const row = ws.getRow(k.row);
+                const startCell = row.getCell(config.columnConfig.startDate);
+                const endCell = row.getCell(config.columnConfig.endDate);
+
+                return {
+                    _row: String(k.row),
+                    startDateRaw: startCell.value,
+                    startDateText: k.values.startDate,
+                    endDateRaw: endCell.value,
+                    endDateText: k.values.endDate,
+                };
+            }),
         });
     }
 
@@ -666,11 +682,13 @@ export default function AipSummaryImport() {
                                                             ) || '—'}
                                                         </td>
                                                         <td className="px-2 py-1 whitespace-nowrap">
-                                                            {record.startDate ??
-                                                                '—'}{' '}
+                                                            {formatAipScheduleShort(
+                                                                record.startDate,
+                                                            ) ?? '—'}{' '}
                                                             →{' '}
-                                                            {record.endDate ??
-                                                                '—'}
+                                                            {formatAipScheduleShort(
+                                                                record.endDate,
+                                                            ) ?? '—'}
                                                         </td>
                                                         <td className="max-w-[24ch] truncate px-2 py-1">
                                                             {record.expectedOutput ??

@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import {
     extractAipSummaryRecords,
+    formatAipScheduleShort,
     normalizeAipSchedule,
     splitAipOffices,
 } from './extract';
@@ -10,7 +11,7 @@ import { getDefaultAipSummaryConfig } from './sheet-config';
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'M', 'N', 'O'];
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 13, 14, 15];
 
-function buildWorkbook(dataRows: Array<Array<string | null>>) {
+function buildWorkbook(dataRows: Array<Array<string | Date | null>>) {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Sheet1');
 
@@ -67,11 +68,28 @@ describe('normalizeAipSchedule', () => {
     });
 });
 
+describe('formatAipScheduleShort', () => {
+    it('renders Mon-YY shortcuts', () => {
+        expect(formatAipScheduleShort('2027-12-01')).toBe('Dec-27');
+        expect(formatAipScheduleShort('2026-01-01')).toBe('Jan-26');
+        expect(formatAipScheduleShort(null)).toBeNull();
+    });
+});
+
 describe('splitAipOffices', () => {
     it('splits on slashes and trims', () => {
         expect(splitAipOffices('PICTO/SDU')).toEqual(['PICTO', 'SDU']);
         expect(splitAipOffices('MHO')).toEqual(['MHO']);
         expect(splitAipOffices(null)).toEqual([]);
+    });
+
+    it('splits on commas too', () => {
+        expect(splitAipOffices('OPG,PGENRO,PHO')).toEqual([
+            'OPG',
+            'PGENRO',
+            'PHO',
+        ]);
+        expect(splitAipOffices('OPG, PIO')).toEqual(['OPG', 'PIO']);
     });
 });
 
@@ -140,5 +158,31 @@ describe('extractAipSummaryRecords', () => {
         expect(cont.fundingSource).toBe('SEF');
         expect(cont.outputNorm).toBe('2 rhus upgraded');
         expect(cont.key).not.toBe(leader.key);
+    });
+
+    it('reads real Excel dates in schedule columns', () => {
+        const wb = buildWorkbook([
+            [
+                '1000-1-03-009-001',
+                'A. Health Program',
+                'MHO',
+                new Date(2027, 0, 1),
+                new Date(2027, 11, 1),
+                'Served',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+        ]);
+        const ws = wb.getWorksheet('Sheet1')!;
+        const result = extractAipSummaryRecords(ws, {
+            ...getDefaultAipSummaryConfig(),
+            headerRow: 7,
+        });
+
+        expect(result.records).toHaveLength(1);
+        expect(result.records[0].startDate).toBe('2027-01-01');
+        expect(result.records[0].endDate).toBe('2027-12-01');
     });
 });

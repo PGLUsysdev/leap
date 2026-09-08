@@ -60,4 +60,14 @@ describe('cellText', () => {
     it('should_ReturnNull_When_ValueIsUnknownObject', () => {
         expect(cellText(fakeCell({ foo: 1 }))).toBeNull();
     });
+
+    it('should_FormatLocalDate_When_ValueIsDate', () => {
+        // Local-midnight construction: local getters are TZ-independent.
+        expect(cellText(fakeCell(new Date(2027, 11, 1)))).toBe('2027-12-01');
+        expect(cellText(fakeCell(new Date(2026, 0, 5)))).toBe('2026-01-05');
+    });
+
+    it('should_ReturnNull_When_DateIsInvalid', () => {
+        expect(cellText(fakeCell(new Date('nope')))).toBeNull();
+    });
 });

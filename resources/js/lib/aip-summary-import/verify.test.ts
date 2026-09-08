@@ -7,7 +7,7 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'M', 'N', 'O'];
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 13, 14, 15];
 
 function buildSheet(
-    dataRows: Array<Array<string | null>>,
+    dataRows: Array<Array<string | Date | null>>,
     numberRow?: Array<number | null>,
 ) {
     const wb = new ExcelJS.Workbook();
@@ -323,6 +323,30 @@ describe('verifyAipSummarySheet', () => {
 
         expect(result.valid).toBe(true);
         expect(result.warnings).toHaveLength(0);
+    });
+
+    it('accepts real Excel dates in schedule columns', () => {
+        const wb = buildSheet([
+            [
+                '1000-1-03-009-001',
+                'A. Health Program',
+                'MHO',
+                new Date(2027, 0, 1),
+                new Date(2027, 11, 1),
+                'Served',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+
+        expect(result.valid).toBe(true);
     });
 
     it('rejects a tandem mismatch between code depth and description prefix', () => {        const wb = buildSheet([
