@@ -70,7 +70,13 @@ export default function AipSummaryImport() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [step, setStep] = useState<
-        'upload' | 'calibrate' | 'verify' | 'extract' | 'import-ppa'
+        | 'upload'
+        | 'calibrate'
+        | 'verify'
+        | 'extract'
+        | 'import-ppa'
+        | 'import-outputs'
+        | 'import-funding'
     >('upload');
     const [config, setConfig] = useState<AipSummarySheetConfig>(() =>
         getDefaultAipSummaryConfig(),
@@ -80,6 +86,34 @@ export default function AipSummaryImport() {
     const [extractResult, setExtractResult] =
         useState<AipSummaryExtractResult | null>(null);
     const [importing, setImporting] = useState(false);
+
+    // ----- Which import flow the 5th step shows (set by the Extract buttons) -----
+    const [importTarget, setImportTarget] = useState<
+        'ppa' | 'outputs' | 'funding'
+    >('ppa');
+    const importStep =
+        importTarget === 'outputs'
+            ? 'import-outputs'
+            : importTarget === 'funding'
+              ? 'import-funding'
+              : 'import-ppa';
+    const importTitle =
+        importTarget === 'outputs'
+            ? 'Import Expected Outputs'
+            : importTarget === 'funding'
+              ? 'Import Funding Source'
+              : 'Import PPA';
+
+    function goToImport(target: typeof importTarget) {
+        setImportTarget(target);
+        setStep(
+            target === 'outputs'
+                ? 'import-outputs'
+                : target === 'funding'
+                  ? 'import-funding'
+                  : 'import-ppa',
+        );
+    }
 
     // ----- State for selected office (defaults to user's office) -----
     const [selectedOffice, setSelectedOffice] = useState<string>(
@@ -428,11 +462,11 @@ export default function AipSummaryImport() {
                             )}
                         </TabsTrigger>
                         <TabsTrigger
-                            value="import-ppa"
+                            value={importStep}
                             disabled={!canImportPpa}
                             className="flex-1"
                         >
-                            5. Import PPA
+                            5. {importTitle}
                         </TabsTrigger>
                     </TabsList>
 
@@ -859,14 +893,20 @@ export default function AipSummaryImport() {
                             <div className="flex gap-2">
                                 <Button
                                     disabled={!canImportPpa}
-                                    onClick={() => setStep('import-ppa')}
+                                    onClick={() => goToImport('ppa')}
                                 >
                                     Import PPA
                                 </Button>
-                                <Button>
+                                <Button
+                                    disabled={!canImportPpa}
+                                    onClick={() => goToImport('outputs')}
+                                >
                                     Import Expected Outputs
                                 </Button>
-                                <Button>
+                                <Button
+                                    disabled={!canImportPpa}
+                                    onClick={() => goToImport('funding')}
+                                >
                                     Import Funding Source
                                 </Button>
                             </div>
@@ -1086,6 +1126,57 @@ export default function AipSummaryImport() {
                                 {importing && <Spinner />}
                                 Confirm &amp; Import {newBlocks.length} PPA
                                 {newBlocks.length === 1 ? '' : 's'}
+                            </Button>
+                        </div>
+                    </TabsContent>
+
+                    {/* ----- Import Expected Outputs (title only for now) ----- */}
+                    <TabsContent
+                        value="import-outputs"
+                        className="mt-4 flex flex-col gap-4"
+                    >
+                        <div className="flex flex-col gap-1">
+                            <h2 className="text-lg font-semibold tracking-tight">
+                                Import Expected Outputs
+                            </h2>
+                            <p className="text-muted-foreground text-sm">
+                                Review and import expected outputs extracted
+                                from sheet “{selectedSheet}” — office, start
+                                date, completion date, and expected output.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep('extract')}
+                            >
+                                Back: Extract
+                            </Button>
+                        </div>
+                    </TabsContent>
+
+                    {/* ----- Import Funding Source (title only for now) ----- */}
+                    <TabsContent
+                        value="import-funding"
+                        className="mt-4 flex flex-col gap-4"
+                    >
+                        <div className="flex flex-col gap-1">
+                            <h2 className="text-lg font-semibold tracking-tight">
+                                Import Funding Source
+                            </h2>
+                            <p className="text-muted-foreground text-sm">
+                                Review and import funding sources extracted
+                                from sheet “{selectedSheet}”.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep('extract')}
+                            >
+                                Back: Extract
                             </Button>
                         </div>
                     </TabsContent>
