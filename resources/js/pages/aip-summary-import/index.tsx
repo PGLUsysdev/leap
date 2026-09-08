@@ -1130,7 +1130,7 @@ export default function AipSummaryImport() {
                         </div>
                     </TabsContent>
 
-                    {/* ----- Import Expected Outputs (title only for now) ----- */}
+                    {/* ----- Import Expected Outputs (review UI only, no backend yet) ----- */}
                     <TabsContent
                         value="import-outputs"
                         className="mt-4 flex flex-col gap-4"
@@ -1140,11 +1140,203 @@ export default function AipSummaryImport() {
                                 Import Expected Outputs
                             </h2>
                             <p className="text-muted-foreground text-sm">
-                                Review and import expected outputs extracted
-                                from sheet “{selectedSheet}” — office, start
-                                date, completion date, and expected output.
+                                Review expected outputs extracted from sheet
+                                “{selectedSheet}” — office, start date,
+                                completion date, and expected output.
                             </p>
                         </div>
+
+                        {/* Office + fiscal year dropdowns side by side (shared with PPA import) */}
+                        <div className="flex flex-wrap gap-4">
+                            <Field>
+                                <FieldLabel>Target Office</FieldLabel>
+                                <Select
+                                    value={selectedOffice}
+                                    onValueChange={(v) =>
+                                        setSelectedOffice(v ?? '')
+                                    }
+                                >
+                                    <SelectTrigger className="w-[200px]">
+                                        {selectedOfficeLabel ? (
+                                            <span className="flex flex-1 text-left">
+                                                {selectedOfficeLabel}
+                                            </span>
+                                        ) : (
+                                            <SelectValue placeholder="Select an office" />
+                                        )}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {existingOffices.map((office) => (
+                                            <SelectItem
+                                                key={office.id}
+                                                value={office.id.toString()}
+                                            >
+                                                {office.acronym || office.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Outputs will be imported under this office.
+                                </FieldDescription>
+                            </Field>
+
+                            <Field>
+                                <FieldLabel>Fiscal Year</FieldLabel>
+                                <Select
+                                    value={selectedFiscalYear}
+                                    onValueChange={(v) =>
+                                        setSelectedFiscalYear(v ?? '')
+                                    }
+                                >
+                                    <SelectTrigger className="w-[160px]">
+                                        {selectedFiscalYearLabel ? (
+                                            <span className="flex flex-1 text-left">
+                                                {selectedFiscalYearLabel}
+                                            </span>
+                                        ) : (
+                                            <SelectValue placeholder="Select a year" />
+                                        )}
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {fiscalYears.map((fy) => (
+                                            <SelectItem
+                                                key={fy.id}
+                                                value={fy.id.toString()}
+                                            >
+                                                {fy.year}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FieldDescription>
+                                    Outputs will be imported for this fiscal
+                                    year.
+                                </FieldDescription>
+                            </Field>
+                        </div>
+
+                        {/* Only show stats and table if an office + fiscal year is selected */}
+                        {selectedOffice && selectedFiscalYear ? (
+                            <>
+                                <div className="flex flex-wrap items-center gap-3 rounded-md border p-3 text-sm">
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Total rows:
+                                        </span>{' '}
+                                        <span className="font-medium">
+                                            {extractResult?.records.length ?? 0}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            With expected output:
+                                        </span>{' '}
+                                        <span className="font-medium text-blue-600">
+                                            {extractResult?.records.filter(
+                                                (r) => r.expectedOutput,
+                                            ).length ?? 0}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Missing output:
+                                        </span>{' '}
+                                        <span className="font-medium text-amber-600">
+                                            {extractResult?.records.filter(
+                                                (r) => !r.expectedOutput,
+                                            ).length ?? 0}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {(extractResult?.records.length ?? 0) > 0 && (
+                                    <div className="overflow-x-auto rounded-md border">
+                                        <table className="w-full text-left text-xs">
+                                            <thead>
+                                                <tr className="bg-muted/50 text-muted-foreground border-b">
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Row
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        PPA Code
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        PPA Name
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Office
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Start Date
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Completion Date
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Expected Output
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {extractResult?.records.map(
+                                                    (record) => (
+                                                        <tr
+                                                            key={record.key}
+                                                            className="border-b last:border-0"
+                                                        >
+                                                            <td className="px-3 py-2 font-mono whitespace-nowrap">
+                                                                {record.row}
+                                                                {record.isContinuation && (
+                                                                    <span
+                                                                        className="text-muted-foreground ml-1"
+                                                                        title={`Continuation of row ${record.blockRow}`}
+                                                                    >
+                                                                        ↳
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-3 py-2 font-mono whitespace-nowrap">
+                                                                {record.isContinuation
+                                                                    ? '—'
+                                                                    : record.fullCode}
+                                                            </td>
+                                                            <td className="max-w-[24ch] truncate px-3 py-2">
+                                                                {record.name}
+                                                            </td>
+                                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                                {record.offices.join(
+                                                                    ' / ',
+                                                                ) || '—'}
+                                                            </td>
+                                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                                {formatAipScheduleShort(
+                                                                    record.startDate,
+                                                                ) ?? '—'}
+                                                            </td>
+                                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                                {formatAipScheduleShort(
+                                                                    record.endDate,
+                                                                ) ?? '—'}
+                                                            </td>
+                                                            <td className="max-w-[32ch] truncate px-3 py-2">
+                                                                {record.expectedOutput ??
+                                                                    '—'}
+                                                            </td>
+                                                        </tr>
+                                                    ),
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-muted-foreground text-sm">
+                                Please select a target office and fiscal year to
+                                review the extracted outputs.
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-between">
                             <Button
@@ -1153,6 +1345,19 @@ export default function AipSummaryImport() {
                             >
                                 Back: Extract
                             </Button>
+                            <div className="flex flex-col items-end gap-1">
+                                <Button disabled={true}>
+                                    Confirm &amp; Import{' '}
+                                    {extractResult?.records.length ?? 0}{' '}
+                                    Output
+                                    {extractResult?.records.length === 1
+                                        ? ''
+                                        : 's'}
+                                </Button>
+                                <p className="text-muted-foreground text-xs">
+                                    Preview only — import endpoint TBD.
+                                </p>
+                            </div>
                         </div>
                     </TabsContent>
 
