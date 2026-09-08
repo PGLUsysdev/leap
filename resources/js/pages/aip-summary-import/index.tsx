@@ -1,8 +1,11 @@
 import { Head, router, usePage } from '@inertiajs/react';
+import { createColumnHelper } from '@tanstack/react-table';
 import ExcelJS from 'exceljs';
-import { FileSpreadsheet, ScrollText } from 'lucide-react';
+import { FileSpreadsheet, Pencil, RotateCcw, ScrollText } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useState, useMemo } from 'react';
+import { MultiTableSelect } from '@/components/multi-table-select';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -35,7 +38,38 @@ import {
     extractAipSummaryRecords,
     formatAipScheduleShort,
 } from '@/lib/aip-summary-import/extract';
+import type { RecordOfficeMatch } from '@/lib/aip-summary-import/match-offices';
+import {
+    matchRecordOffices,
+    unmatchedOfficeFrequency,
+} from '@/lib/aip-summary-import/match-offices';
 import { normalize } from '@/lib/ppmp/normalize';
+
+type ImportOffice = {
+    id: number;
+    acronym: string | null;
+    name: string;
+    full_code: string;
+};
+
+const importOfficeColumnHelper = createColumnHelper<ImportOffice>();
+
+const importOfficeColumns = [
+    importOfficeColumnHelper.accessor('acronym', {
+        size: 100,
+        header: () => <div className="text-center text-wrap">Acronym</div>,
+        cell: (info) => (
+            <div className="text-center text-wrap">
+                {info.getValue() || '—'}
+            </div>
+        ),
+    }),
+    importOfficeColumnHelper.accessor('name', {
+        size: 200,
+        header: () => <div className="text-center text-wrap">Name</div>,
+        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+    }),
+];
 
 export default function AipSummaryImport() {
     // ----- Inertia props (offices, ppas, fiscal years, auth user) -----
@@ -138,6 +172,36 @@ export default function AipSummaryImport() {
         const fy = fiscalYears.find((f) => f.id.toString() === selectedFiscalYear);
         return fy ? String(fy.year) : '';
     }, [fiscalYears, selectedFiscalYear]);
+
+    // ----- Per-record office overrides (record.key -> office ids), set via the picker -----
+    const [officeOverrides, setOfficeOverrides] = useState<Record<string, number[]>>({});
+    const [officePickerKey, setOfficePickerKey] = useState<string | null>(null);
+
+    // ----- Auto-match of implementing-office tokens (strict-normalized) -----
+    const officeMatches = useMemo(() => {
+        if (!extractResult) return new Map<string, RecordOfficeMatch>();
+
+        return new Map(
+            extractResult.records.map((record) => [
+                record.key,
+                matchRecordOffices(record.key, record.offices, existingOffices),
+            ]),
+        );
+    }, [extractResult, existingOffices]);
+
+    // ----- Unmatched token frequencies (shows where to loosen matching later) -----
+    const unmatchedFrequency = useMemo(
+        () => unmatchedOfficeFrequency([...officeMatches.values()]),
+        [officeMatches],
+    );
+
+    /** Effective office ids for a record: manual override wins over auto-match. */
+    function officeIdsForRecord(key: string): number[] {
+        const override = officeOverrides[key];
+        if (override) return override;
+
+        return officeMatches.get(key)?.matched.map((o) => o.id) ?? [];
+    }
 
     // ----- Derived flags -----
     const canCalibrate = selectedSheet !== '';
@@ -354,6 +418,8 @@ export default function AipSummaryImport() {
                 headerRow: config.headerRow,
             }),
         );
+        setOfficeOverrides({});
+        setOfficePickerKey(null);
     }
 
     const newBlocks = useMemo(
@@ -1248,7 +1314,42 @@ export default function AipSummaryImport() {
                                             ).length ?? 0}
                                         </span>
                                     </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Unresolved offices:
+                                        </span>{' '}
+                                        <span className="font-medium text-amber-600">
+                                            {
+                                                extractResult?.records.filter(
+                                                    (r) =>
+                                                        officeIdsForRecord(
+                                                            r.key,
+                                                        ).length === 0,
+                                                ).length
+                                            }
+                                        </span>
+                                    </div>
                                 </div>
+
+                                {unmatchedFrequency.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs dark:border-amber-900 dark:bg-amber-950">
+                                        <span className="text-muted-foreground font-medium">
+                                            Unmatched office tokens (strict
+                                            normalized match — candidates for
+                                            loosening):
+                                        </span>
+                                        {unmatchedFrequency.map((entry) => (
+                                            <Badge
+                                                key={entry.token}
+                                                variant="outline"
+                                                className="border-amber-300 text-amber-700 dark:text-amber-400"
+                                                title={`${entry.count} row(s)`}
+                                            >
+                                                {entry.token} ×{entry.count}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
 
                                 {(extractResult?.records.length ?? 0) > 0 && (
                                     <div className="overflow-x-auto rounded-md border">
@@ -1301,13 +1402,123 @@ export default function AipSummaryImport() {
                                                                     ? '—'
                                                                     : record.fullCode}
                                                             </td>
-                                                            <td className="max-w-[24ch] truncate px-3 py-2">
+                                                            <td className="px-3 py-2 whitespace-nowrap">
                                                                 {record.name}
                                                             </td>
-                                                            <td className="px-3 py-2 whitespace-nowrap">
-                                                                {record.offices.join(
-                                                                    ' / ',
-                                                                ) || '—'}
+                                                            <td className="px-3 py-2">
+                                                                {(() => {
+                                                                    const match =
+                                                                        officeMatches.get(
+                                                                            record.key,
+                                                                        );
+                                                                    const override =
+                                                                        officeOverrides[
+                                                                            record.key
+                                                                        ];
+                                                                    const effectiveIds =
+                                                                        override ??
+                                                                        (match?.matched.map(
+                                                                            (o) =>
+                                                                                o.id,
+                                                                        ) ??
+                                                                            []);
+                                                                    const effective =
+                                                                        existingOffices.filter(
+                                                                            (
+                                                                                o,
+                                                                            ) =>
+                                                                                effectiveIds.includes(
+                                                                                    o.id,
+                                                                                ),
+                                                                        );
+
+                                                                    return (
+                                                                        <div className="flex max-w-[32ch] flex-wrap items-center gap-1">
+                                                                            {effective.length ===
+                                                                            0 ? (
+                                                                                <span className="text-muted-foreground">
+                                                                                    —
+                                                                                </span>
+                                                                            ) : (
+                                                                                effective.map(
+                                                                                    (
+                                                                                        o,
+                                                                                    ) => (
+                                                                                        <Badge
+                                                                                            key={
+                                                                                                o.id
+                                                                                            }
+                                                                                            variant="secondary"
+                                                                                            className="text-[10px]"
+                                                                                        >
+                                                                                            {o.acronym ||
+                                                                                                o.name}
+                                                                                        </Badge>
+                                                                                    ),
+                                                                                )
+                                                                            )}
+                                                                            {(
+                                                                                match?.unmatched ??
+                                                                                []
+                                                                            ).map(
+                                                                                (
+                                                                                    token,
+                                                                                ) => (
+                                                                                    <Badge
+                                                                                        key={
+                                                                                            token
+                                                                                        }
+                                                                                        variant="outline"
+                                                                                        className="border-amber-300 text-[10px] text-amber-700 dark:text-amber-400"
+                                                                                        title={`No office matches "${token}"`}
+                                                                                    >
+                                                                                        {token} ?
+                                                                                    </Badge>
+                                                                                ),
+                                                                            )}
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon-xs"
+                                                                                onClick={() =>
+                                                                                    setOfficePickerKey(
+                                                                                        record.key,
+                                                                                    )
+                                                                                }
+                                                                                title="Edit offices for this output"
+                                                                            >
+                                                                                <Pencil />
+                                                                            </Button>
+                                                                            {override && (
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    size="icon-xs"
+                                                                                    onClick={() =>
+                                                                                        setOfficeOverrides(
+                                                                                            (
+                                                                                                prev,
+                                                                                            ) => {
+                                                                                                const next =
+                                                                                                    {
+                                                                                                        ...prev,
+                                                                                                    };
+                                                                                                delete next[
+                                                                                                    record.key
+                                                                                                ];
+
+                                                                                                return next;
+                                                                                            },
+                                                                                        )
+                                                                                    }
+                                                                                    title="Reset to auto-matched offices"
+                                                                                >
+                                                                                    <RotateCcw />
+                                                                                </Button>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })()}
                                                             </td>
                                                             <td className="px-3 py-2 whitespace-nowrap">
                                                                 {formatAipScheduleShort(
@@ -1359,6 +1570,37 @@ export default function AipSummaryImport() {
                                 </p>
                             </div>
                         </div>
+
+                        <MultiTableSelect<ImportOffice>
+                            data={existingOffices}
+                            columns={importOfficeColumns}
+                            open={officePickerKey !== null}
+                            onOpenChange={(open) => {
+                                if (!open) setOfficePickerKey(null);
+                            }}
+                            selectedValues={
+                                officePickerKey
+                                    ? officeIdsForRecord(officePickerKey).map(
+                                          String,
+                                      )
+                                    : []
+                            }
+                            valueKey="id"
+                            title="Offices for this output"
+                            description="Select one or more implementing offices. Overrides the auto-matched offices for this row only."
+                            className="sm:max-w-[30rem]"
+                            onConfirm={(selected) => {
+                                const key = officePickerKey;
+                                setOfficePickerKey(null);
+
+                                if (key) {
+                                    setOfficeOverrides((prev) => ({
+                                        ...prev,
+                                        [key]: selected.map((o) => o.id),
+                                    }));
+                                }
+                            }}
+                        />
                     </TabsContent>
 
                     {/* ----- Import Funding Source (title only for now) ----- */}
