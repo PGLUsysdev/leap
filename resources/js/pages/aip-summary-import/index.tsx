@@ -35,6 +35,8 @@ import {
     extractAipSummaryRows,
     verifyAipSummarySheet,
 } from '@/lib/aip-summary-import/verify';
+import type { AipSummaryExtractResult } from '@/lib/aip-summary-import/extract';
+import { extractAipSummaryRecords } from '@/lib/aip-summary-import/extract';
 
 export default function AipSummaryImport() {
     const [sheets, setSheets] = useState<string[]>([]);
@@ -43,14 +45,16 @@ export default function AipSummaryImport() {
     const [selectedSheet, setSelectedSheet] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [step, setStep] = useState<'upload' | 'calibrate' | 'verify'>(
-        'upload',
-    );
+    const [step, setStep] = useState<
+        'upload' | 'calibrate' | 'verify' | 'extract'
+    >('upload');
     const [config, setConfig] = useState<AipSummarySheetConfig>(() =>
         getDefaultAipSummaryConfig(),
     );
     const [verifyResult, setVerifyResult] =
         useState<AipSummaryVerifyResult | null>(null);
+    const [extractResult, setExtractResult] =
+        useState<AipSummaryExtractResult | null>(null);
 
     const canCalibrate = selectedSheet !== '';
     const canVerify =
@@ -58,6 +62,7 @@ export default function AipSummaryImport() {
         config.headerRow !== '' &&
         config.headerRow != null &&
         !!workbook;
+    const canExtract = canVerify && verifyResult?.valid === true;
 
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -77,6 +82,7 @@ export default function AipSummaryImport() {
             setFileName(null);
             setStep('upload');
             setVerifyResult(null);
+        setExtractResult(null);
             e.target.value = '';
 
             return;
@@ -88,6 +94,7 @@ export default function AipSummaryImport() {
         setSelectedSheet('');
         setStep('upload');
         setVerifyResult(null);
+        setExtractResult(null);
 
         try {
             const wb = new ExcelJS.Workbook();
@@ -109,6 +116,7 @@ export default function AipSummaryImport() {
     function handleSheetChange(value: string[]) {
         setSelectedSheet(value[0] ?? '');
         setVerifyResult(null);
+        setExtractResult(null);
     }
 
     function updateColumn(field: AipSummaryField, letter: string) {
@@ -120,6 +128,7 @@ export default function AipSummaryImport() {
             },
         }));
         setVerifyResult(null);
+        setExtractResult(null);
     }
 
     function updateHeaderRow(value: string) {
@@ -128,11 +137,13 @@ export default function AipSummaryImport() {
             headerRow: value === '' ? '' : Number(value),
         }));
         setVerifyResult(null);
+        setExtractResult(null);
     }
 
     function handleResetDefaults() {
         setConfig(getDefaultAipSummaryConfig());
         setVerifyResult(null);
+        setExtractResult(null);
     }
 
     function handleLogContents() {
@@ -186,6 +197,24 @@ export default function AipSummaryImport() {
         if (!workbook || !selectedSheet) return;
 
         setVerifyResult(verifyAipSummarySheet(workbook, selectedSheet, config));
+        setExtractResult(null);
+    }
+
+    function handleExtract() {
+        if (!workbook || !selectedSheet) return;
+
+        if (config.headerRow === '' || config.headerRow == null) return;
+
+        const ws = workbook.getWorksheet(selectedSheet);
+
+        if (!ws) return;
+
+        setExtractResult(
+            extractAipSummaryRecords(ws, {
+                ...config,
+                headerRow: config.headerRow,
+            }),
+        );
     }
 
     return (
@@ -253,6 +282,18 @@ export default function AipSummaryImport() {
                                         ⚠ {verifyResult.warnings.length}
                                     </span>
                                 )}
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="extract"
+                            disabled={!canExtract}
+                            className="flex-1"
+                        >
+                            4. Extract
+                            {extractResult && (
+                                <span className="text-muted-foreground ml-1 text-xs">
+                                    {extractResult.records.length}
+                                </span>
+                            )}
                         </TabsTrigger>
                     </TabsList>
 
@@ -508,12 +549,168 @@ export default function AipSummaryImport() {
                             </div>
                         )}
 
-                        <div className="flex justify-start">
+                        <div className="flex items-center justify-between gap-2">
                             <Button
                                 variant="outline"
                                 onClick={() => setStep('calibrate')}
                             >
                                 Back: Calibrate
+                            </Button>
+                            <Button
+                                disabled={!canExtract}
+                                onClick={() => setStep('extract')}
+                            >
+                                Next: Extract
+                            </Button>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent
+                        value="extract"
+                        className="mt-4 flex flex-col gap-4"
+                    >
+                        <p className="text-muted-foreground text-sm">
+                            Sheet{' '}
+                            <span className="text-foreground font-medium">
+                                {selectedSheet}
+                            </span>{' '}
+                            · one record per output × funding source ·
+                            continuation rows attach to their PPA block
+                        </p>
+
+                        <div>
+                            <Button
+                                onClick={handleExtract}
+                                disabled={!canExtract}
+                            >
+                                Run extract
+                            </Button>
+                        </div>
+
+                        {extractResult && (
+                            <div className="flex flex-col gap-2 rounded-md border p-3">
+                                <p className="text-sm font-medium text-green-600">
+                                    ✅ Extracted{' '}
+                                    {extractResult.records.length} record
+                                    {extractResult.records.length === 1
+                                        ? ''
+                                        : 's'}{' '}
+                                    across {extractResult.blocks} PPA block
+                                    {extractResult.blocks === 1 ? '' : 's'}
+                                </p>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-xs">
+                                        <thead>
+                                            <tr className="text-muted-foreground border-b">
+                                                <th className="px-2 py-1 font-medium">
+                                                    Row
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Code
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Name
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Offices
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Schedule
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Output
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Fund
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Adapt.
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Mitig.
+                                                </th>
+                                                <th className="px-2 py-1 font-medium">
+                                                    Typology
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {extractResult.records.map(
+                                                (record) => (
+                                                    <tr
+                                                        key={record.key}
+                                                        className="border-b last:border-0"
+                                                    >
+                                                        <td className="px-2 py-1 font-mono whitespace-nowrap">
+                                                            {record.row}
+                                                            {record.isContinuation && (
+                                                                <span
+                                                                    className="text-muted-foreground ml-1"
+                                                                    title={`Continuation of row ${record.blockRow}`}
+                                                                >
+                                                                    ↳
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-2 py-1 font-mono whitespace-nowrap">
+                                                            {record.isContinuation
+                                                                ? '—'
+                                                                : record.fullCode}
+                                                        </td>
+                                                        <td className="max-w-[24ch] truncate px-2 py-1">
+                                                            {record.name}
+                                                        </td>
+                                                        <td className="px-2 py-1 whitespace-nowrap">
+                                                            {record.offices.join(
+                                                                ' / ',
+                                                            ) || '—'}
+                                                        </td>
+                                                        <td className="px-2 py-1 whitespace-nowrap">
+                                                            {record.startDate ??
+                                                                '—'}{' '}
+                                                            →{' '}
+                                                            {record.endDate ??
+                                                                '—'}
+                                                        </td>
+                                                        <td className="max-w-[24ch] truncate px-2 py-1">
+                                                            {record.expectedOutput ??
+                                                                '—'}
+                                                        </td>
+                                                        <td className="px-2 py-1 whitespace-nowrap">
+                                                            {record.fundingSource ??
+                                                                '—'}
+                                                        </td>
+                                                        <td className="px-2 py-1 whitespace-nowrap">
+                                                            {record.adaptation ??
+                                                                '—'}
+                                                        </td>
+                                                        <td className="px-2 py-1 whitespace-nowrap">
+                                                            {record.mitigation ??
+                                                                '—'}
+                                                        </td>
+                                                        <td className="px-2 py-1 whitespace-nowrap">
+                                                            {record.typology ??
+                                                                '—'}
+                                                        </td>
+                                                    </tr>
+                                                ),
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <p className="text-muted-foreground text-xs">
+                                    Preview only — Review &amp; Import comes
+                                    next (matching, selection, POST).
+                                </p>
+                            </div>
+                        )}
+
+                        <div className="flex justify-start">
+                            <Button
+                                variant="outline"
+                                onClick={() => setStep('verify')}
+                            >
+                                Back: Verify
                             </Button>
                         </div>
                     </TabsContent>

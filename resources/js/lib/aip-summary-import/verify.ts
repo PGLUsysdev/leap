@@ -9,6 +9,9 @@
  * `extractAipSummaryRows`): blank rows skipped, footer/signatory rows
  * skipped (col A lacks the office prefix), blank-A rows attach to the
  * preceding PPA block as continuations, orphan continuations skipped.
+ * A row with a PPA Description but a blank AIP Reference Code (default
+ * cols B / A) is never a continuation — it is collected as
+ * `descWithoutCode` and Verify errors on it.
  *
  * Issues come in two severities: `errors` block the import, `warnings`
  * pass with a formatting notify (missing trailing "." in the col B
@@ -21,6 +24,7 @@
 import type ExcelJS from 'exceljs';
 import { cellText } from '@/lib/excel/cell-helpers';
 import { hasAipRefCodePrefix } from './ref-code';
+import { AIP_SUMMARY_FIELD_LABELS } from './sheet-config';
 import type { AipSummarySheetConfig } from './sheet-config';
 
 export type AipSummaryVerifyIssue = {
@@ -53,15 +57,19 @@ export type AipSummaryExtracted = {
     lastRow: number;
     skippedBlank: number;
     skippedFooter: number;
+    /** Rows with text in col B but a blank col A — Verify errors. */
+    descWithoutCode: number[];
 };
 
-const PPA_TYPES = [
+export const PPA_TYPES = [
     'Program',
     'Project',
     'Activity',
     'Subactivity',
     'Subsubactivity',
 ] as const;
+
+export type AipPpaType = (typeof PPA_TYPES)[number];
 const PPA_WIDTHS = [3, 3, 2, 1, 1];
 const OFFICE_SEGMENT_PATTERNS = [/^\d{4}$/, /^\d$/, /^\d{2}$/, /^\d{3}$/];
 const COLUMN_LETTERS = 'ABCDEFGHIJKLMNO';
@@ -135,13 +143,15 @@ function parseRefCode(
 }
 
 /** Parse a col B numbering prefix for the expected depth. Null when the shape is wrong. */
-function parseColBPrefix(
+export function parseColBPrefix(
     description: string,
     typeIndex: number,
 ): {
     numbers: number[] | null;
     letter: string | null;
     warnings: string[];
+    /** Description with the numbering prefix + separator removed. */
+    stripped: string;
 } | null {
     const trimmed = description.trim();
 
@@ -149,7 +159,12 @@ function parseColBPrefix(
         const canonical = /^([A-Z])\. +(\S.*)$/.exec(trimmed);
 
         if (canonical) {
-            return { numbers: null, letter: canonical[1], warnings: [] };
+            return {
+                numbers: null,
+                letter: canonical[1],
+                warnings: [],
+                stripped: canonical[2],
+            };
         }
 
         const loose = /^([A-Z])(?:\.\s*|\s+)(\S.*)$/.exec(trimmed);
@@ -164,6 +179,7 @@ function parseColBPrefix(
             numbers: null,
             letter: loose[1],
             warnings: [head.includes('.') ? 'spaced' : 'missing-dot'],
+            stripped: loose[2],
         };
     }
 
@@ -201,7 +217,7 @@ function parseColBPrefix(
         warnings.push('spaced');
     }
 
-    return { numbers, letter: null, warnings };
+    return { numbers, letter: null, warnings, stripped: rest.trim() };
 }
 
 /** True for `Mon-YY` (Jan-27 = January 2027) or full `YYYY-MM-DD`. */
@@ -238,6 +254,7 @@ export function extractAipSummaryRows(
     const kept: AipSummaryKeptRow[] = [];
     let skippedBlank = 0;
     let skippedFooter = 0;
+    const descWithoutCode: number[] = [];
     let currentBlock = false;
 
     for (let r = dataStartRow; r <= lastRow; r++) {
@@ -254,6 +271,15 @@ export function extractAipSummaryRows(
 
         if (isBlank) {
             skippedBlank++;
+            continue;
+        }
+
+        // A PPA Description with a blank AIP Reference Code is malformed —
+        // a real continuation leaves both fields blank together. Never
+        // kept; Verify reports it. (A footer row instead carries text in
+        // the ref-code field.)
+        if (values.refCode === null && values.description !== null) {
+            descWithoutCode.push(r);
             continue;
         }
 
@@ -277,6 +303,7 @@ export function extractAipSummaryRows(
         lastRow,
         skippedBlank,
         skippedFooter,
+        descWithoutCode,
     };
 }
 
@@ -331,11 +358,21 @@ export function verifyAipSummarySheet(
         }
     }
 
-    const { kept, numberRow, skippedBlank, skippedFooter } =
+    const { kept, numberRow, skippedBlank, skippedFooter, descWithoutCode } =
         extractAipSummaryRows(ws, {
             ...config,
             headerRow: config.headerRow,
         });
+
+    for (const row of descWithoutCode) {
+        errors.push({
+            row,
+            message:
+                `${AIP_SUMMARY_FIELD_LABELS.description} (col ${config.columnConfig.description}) ` +
+                `without an ${AIP_SUMMARY_FIELD_LABELS.refCode} (col ${config.columnConfig.refCode}) — ` +
+                'continuations leave both blank together',
+        });
+    }
 
     // Number row is always exactly one row below the header.
     const numberMismatches: string[] = [];

@@ -325,8 +325,7 @@ describe('verifyAipSummarySheet', () => {
         expect(result.warnings).toHaveLength(0);
     });
 
-    it('rejects a tandem mismatch between code depth and description prefix', () => {
-        const wb = buildSheet([
+    it('rejects a tandem mismatch between code depth and description prefix', () => {        const wb = buildSheet([
             PROGRAM,
             [
                 '1000-1-03-009-001-001',
@@ -351,5 +350,72 @@ describe('verifyAipSummarySheet', () => {
         expect(
             result.errors.some((e) => e.message.includes("doesn't match")),
         ).toBe(true);
+    });
+
+    it('errors on a description in col B with a blank col A', () => {
+        const wb = buildSheet([
+            PROGRAM,
+            [
+                null,
+                '1. Orphan description without code',
+                'MHO',
+                'Jan-26',
+                'Jun-26',
+                'Stray',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some((e) =>
+                e.message.includes('without an AIP Reference Code'),
+            ),
+        ).toBe(true);
+    });
+
+    it('names the calibrated columns in the missing-code error', () => {
+        const config = getDefaultAipSummaryConfig();
+        const wb = buildSheet([
+            ['1000-1-03-009-001', 'MHO', 'A. Health Program', 'Jan-26', 'Dec-26', 'Served', 'GF', '0', '0', 'A123'],
+            [null, 'MHO', '1. Stray desc', 'Jan-26', 'Jun-26', 'Stray', 'GF', '0', '0', 'A123'],
+        ]);
+        const result = verifyAipSummarySheet(wb, 'Sheet1', {
+            ...config,
+            columnConfig: { ...config.columnConfig, office: 'B', description: 'C' },
+        });
+
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some(
+                (e) =>
+                    e.message.includes('PPA Description (col C)') &&
+                    e.message.includes('AIP Reference Code (col A)'),
+            ),
+        ).toBe(true);
+    });
+
+    it('stays silent when cols A and B are both blank', () => {
+        const wb = buildSheet([
+            PROGRAM,
+            [null, null, 'MHO', 'Jan-26', 'Dec-26', 'Extra', 'SEF', '0', '0', 'A123'],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.rowsKept).toBe(2);
     });
 });
