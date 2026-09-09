@@ -6,7 +6,9 @@
  * re-validating. One record per kept sheet row (the sheet's grain is one
  * row per expected output × funding source); blank-A continuation rows
  * attach to the preceding PPA block. Amount columns (H–L) are ignored —
- * only A–G and M–O are consumed.
+ * only A–G and M–O are consumed. Funding source is coerced via
+ * `effectiveFundingSource` (Verify gate): rows without an expected output
+ * carry `fundingSource: null`, even if the cell is filled.
  *
  * Docs: `docs/aip-summary-file-structure.md` (spec),
  * `docs/aip-summary-import.md` (pipeline).
@@ -15,6 +17,7 @@ import type ExcelJS from 'exceljs';
 import { normalize } from '@/lib/ppmp/normalize';
 import {
     PPA_TYPES,
+    effectiveFundingSource,
     extractAipSummaryRows,
     parseColBPrefix,
 } from './verify';
@@ -176,7 +179,9 @@ export function extractAipSummaryRecords(
 
         const values = keptRow.values;
         const expectedOutput = values.expectedOutput;
-        const fundingSource = values.fundingSource;
+        // Funding source anchors on the expected output (Verify gate):
+        // rows without one carry no fund, even if the cell is filled.
+        const fundingSource = effectiveFundingSource(values);
         const typology = values.typology;
 
         records.push({

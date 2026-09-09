@@ -45,10 +45,16 @@ Sheets → Calibrate → Verify → Review/Extract → Import**. Each stage TBD:
    segments, per-level widths), col B prefix matches code depth on PPA rows
    (description is the only required cell). Office, expected output,
    funding source, and schedule are optional — a present schedule must
-   still parse (`Mon-YY`/`YYYY-MM-DD`). Climate fields ride on GF Proper
-   funding only: a row whose fund isn't GF Proper (dash/space/case
-   ignored) with Adaptation, Mitigation, or Typology set is an error
-   (blank, `-`, and zero amounts count as empty). Pass 2
+   still parse (`Mon-YY`/`YYYY-MM-DD`). Funding source anchors on the
+   expected output (`outputRowState`): output set → fund allowed even
+   without office/schedule; output blank but office/schedule present
+   (context row) → fund silently coerced to null (`effectiveFundingSource`,
+   no info line); office, schedule, and output all blank (hierarchy row)
+   with a fund set → error. Blank means empty, `-`, or `—`. Climate
+   fields ride on the effective (post-coercion) fund: GF Proper only —
+   a row whose effective fund isn't GF Proper (dash/space/case ignored)
+   with Adaptation, Mitigation, or Typology set is an error (blank, `-`,
+   and zero amounts count as empty). Pass 2
    hierarchy: no skipped levels (mirrors `UpdatePpaRequest` parent-type
    rule), parent present in sheet, parent before child, no duplicate PPA
    blocks, sibling sequence (`A,B,C…` programs from A; `1,2,3…` dotted

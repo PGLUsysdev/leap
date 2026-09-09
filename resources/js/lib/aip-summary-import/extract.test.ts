@@ -185,4 +185,73 @@ describe('extractAipSummaryRecords', () => {
         expect(result.records[0].startDate).toBe('2027-01-01');
         expect(result.records[0].endDate).toBe('2027-12-01');
     });
+
+    it('keeps the fund on output rows, even bare ones', () => {
+        const wb = buildWorkbook([
+            [
+                '1000-1-03-009-001',
+                'A. Health Program',
+                null,
+                null,
+                null,
+                '20 Component LGU',
+                'GF-Proper',
+                null,
+                null,
+                null,
+            ],
+        ]);
+        const ws = wb.getWorksheet('Sheet1')!;
+        const result = extractAipSummaryRecords(ws, {
+            ...getDefaultAipSummaryConfig(),
+            headerRow: 7,
+        });
+
+        expect(result.records).toHaveLength(1);
+        expect(result.records[0].fundingSource).toBe('GF-Proper');
+        expect(result.records[0].fundNorm).toBe('gf-proper');
+    });
+
+    it('coerces the fund to null on rows without an expected output', () => {
+        const wb = buildWorkbook([
+            // Context row: office + dates set, output blank.
+            [
+                '1000-1-03-009-001',
+                'A. Health Program',
+                'OPG',
+                'Jan-27',
+                'Dec-27',
+                null,
+                'GF-Proper',
+                null,
+                null,
+                null,
+            ],
+            // Continuation row without its own output.
+            [
+                null,
+                null,
+                'OPG',
+                'Jan-27',
+                'Dec-27',
+                null,
+                'SEF',
+                null,
+                null,
+                null,
+            ],
+        ]);
+        const ws = wb.getWorksheet('Sheet1')!;
+        const result = extractAipSummaryRecords(ws, {
+            ...getDefaultAipSummaryConfig(),
+            headerRow: 7,
+        });
+
+        expect(result.records).toHaveLength(2);
+
+        for (const record of result.records) {
+            expect(record.fundingSource).toBeNull();
+            expect(record.fundNorm).toBeNull();
+        }
+    });
 });
