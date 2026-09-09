@@ -220,6 +220,56 @@ export function parseColBPrefix(
     return { numbers, letter: null, warnings, stripped: rest.trim() };
 }
 
+/** Blank, `-`, or `—` counts as no value (sheet dash convention). */
+export function isBlankCell(value: string | null): boolean {
+    if (value == null) return true;
+
+    const trimmed = value.trim();
+
+    return trimmed === '' || trimmed === '-' || trimmed === '—';
+}
+
+/**
+ * Which output context a kept row carries — the anchor for the funding
+ * source rule:
+ * - `output`: expected output set — funding source allowed, schedule and
+ *   office not required.
+ * - `context`: output blank but office/schedule present — funding source
+ *   coerced to null (see `effectiveFundingSource`).
+ * - `hierarchy`: office, schedule, and output all blank — funding source
+ *   must be blank (pure hierarchy row).
+ */
+export type OutputRowState = 'output' | 'context' | 'hierarchy';
+
+export function outputRowState(
+    values: Record<string, string | null>,
+): OutputRowState {
+    if (!isBlankCell(values.expectedOutput)) return 'output';
+
+    if (
+        !isBlankCell(values.office) ||
+        !isBlankCell(values.startDate) ||
+        !isBlankCell(values.endDate)
+    ) {
+        return 'context';
+    }
+
+    return 'hierarchy';
+}
+
+/**
+ * Funding source that counts: only `output` rows carry one. Context rows
+ * silently coerce to null (no info line); hierarchy rows are judged by
+ * the funding-source rule instead.
+ */
+export function effectiveFundingSource(
+    values: Record<string, string | null>,
+): string | null {
+    return outputRowState(values) === 'output'
+        ? (values.fundingSource ?? null)
+        : null;
+}
+
 /** Lenient GF Proper check — dashes/spaces/case ignored (`GF-Proper`, `GF Proper`, `GF`). */
 export function isGfProperFund(value: string | null): boolean {
     if (value == null) return false;
@@ -492,9 +542,27 @@ export function verifyAipSummarySheet(
             }
         }
 
+        // Funding source anchors on the expected output: a hierarchy row
+        // (office, schedule, and output all blank) carrying a funding
+        // source is an error. Context rows silently coerce their fund to
+        // null (see `effectiveFundingSource`) — no info line.
+        if (
+            outputRowState(values) === 'hierarchy' &&
+            !isBlankCell(values.fundingSource)
+        ) {
+            errors.push({
+                row,
+                message:
+                    `Funding source "${values.fundingSource}" has no expected output ` +
+                    `(office, schedule, and output are all blank) — must be blank`,
+            });
+        }
+
         // Climate fields ride on GF Proper funding only — any other fund
-        // (or none) with a CC value set is an error.
-        if (!isGfProperFund(values.fundingSource)) {
+        // (or none) with a CC value set is an error. Runs on the
+        // effective fund, so context rows (fund coerced to null) with CC
+        // values set fail here too.
+        if (!isGfProperFund(effectiveFundingSource(values))) {
             const set = (
                 [
                     'adaptation',
@@ -511,7 +579,7 @@ export function verifyAipSummarySheet(
                     row,
                     message:
                         `CC fields require "GF Proper" funding ` +
-                        `(got "${values.fundingSource ?? '—'}"): ${names} must be blank`,
+                        `(got "${effectiveFundingSource(values) ?? '—'}"): ${names} must be blank`,
                 });
             }
         }

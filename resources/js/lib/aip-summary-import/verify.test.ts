@@ -1,7 +1,13 @@
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import { getDefaultAipSummaryConfig } from './sheet-config';
-import { extractAipSummaryRows, verifyAipSummarySheet } from './verify';
+import {
+    effectiveFundingSource,
+    extractAipSummaryRows,
+    isBlankCell,
+    outputRowState,
+    verifyAipSummarySheet,
+} from './verify';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'M', 'N', 'O'];
 const NUMBERS = [1, 2, 3, 4, 5, 6, 7, 13, 14, 15];
@@ -496,5 +502,153 @@ describe('GF Proper climate rule', () => {
     it('errors on a multi-fund cell carrying CC values', () => {
         const result = check('GF-Proper/ 20%-DF', '10.00', null, null);
         expect(result.valid).toBe(false);
+    });
+});
+
+describe('funding source anchors on expected output', () => {
+    // Cols: A refCode, B description, C office, D start, E end,
+    // F expectedOutput, G fundingSource, M/N/O climate.
+    function anchorRow(
+        office: string | null,
+        start: string | null,
+        end: string | null,
+        output: string | null,
+        fund: string | null,
+    ) {
+        return [
+            '1000-1-03-009-001',
+            'A. Health Program',
+            office,
+            start,
+            end,
+            output,
+            fund,
+            null,
+            null,
+            null,
+        ];
+    }
+
+    function check(
+        office: string | null,
+        start: string | null,
+        end: string | null,
+        output: string | null,
+        fund: string | null,
+    ) {
+        const wb = buildSheet([
+            anchorRow(office, start, end, output, fund),
+        ]);
+        return verifyAipSummarySheet(wb, 'Sheet1', getDefaultAipSummaryConfig());
+    }
+
+    it('treats null, blank, dash, and em-dash as blank cells', () => {
+        for (const value of [null, '', '   ', '-', '—']) {
+            expect(isBlankCell(value)).toBe(true);
+        }
+        expect(isBlankCell('MHO')).toBe(false);
+        expect(isBlankCell('100% served')).toBe(false);
+    });
+
+    it('classifies output, context, and hierarchy rows', () => {
+        const values = (
+            office: string | null,
+            start: string | null,
+            end: string | null,
+            output: string | null,
+        ) => ({
+            office,
+            startDate: start,
+            endDate: end,
+            expectedOutput: output,
+        });
+
+        expect(
+            outputRowState(values('MHO', 'Jan-26', 'Dec-26', 'Served')),
+        ).toBe('output');
+        // Output alone anchors, even without office or schedule.
+        expect(outputRowState(values(null, null, null, 'Served'))).toBe(
+            'output',
+        );
+        expect(outputRowState(values(null, null, null, '—'))).toBe(
+            'hierarchy',
+        );
+        expect(outputRowState(values('MHO', null, null, null))).toBe(
+            'context',
+        );
+        expect(outputRowState(values(null, 'Jan-26', null, null))).toBe(
+            'context',
+        );
+        expect(outputRowState(values(null, null, null, null))).toBe(
+            'hierarchy',
+        );
+    });
+
+    it('coerces context-row funds to null', () => {
+        expect(
+            effectiveFundingSource({
+                office: 'MHO',
+                startDate: 'Jan-26',
+                endDate: 'Dec-26',
+                expectedOutput: null,
+                fundingSource: 'GF-Proper',
+            }),
+        ).toBeNull();
+        expect(
+            effectiveFundingSource({
+                office: null,
+                startDate: null,
+                endDate: null,
+                expectedOutput: 'Served',
+                fundingSource: 'GF-Proper',
+            }),
+        ).toBe('GF-Proper');
+    });
+
+    it('passes an output row carrying only a funding source', () => {
+        const result = check(null, null, null, '20 Component LGU', 'GF-Proper');
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+    });
+
+    it('passes a context row (no output, office and dates set)', () => {
+        const result = check('OPG', 'Jan-27', 'Dec-27', null, 'GF-Proper');
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+    });
+
+    it('passes a pure hierarchy row with no funding source', () => {
+        const result = check(null, null, null, null, null);
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+    });
+
+    it('errors on a hierarchy row carrying a funding source', () => {
+        const result = check(null, null, null, null, 'GF-Proper');
+        expect(result.valid).toBe(false);
+        expect(result.errors).toHaveLength(1);
+        expect(result.errors[0].message).toContain('Funding source');
+        expect(result.errors[0].row).toBe(9);
+    });
+
+    it('errors on CC values riding a coerced (context-row) fund', () => {
+        const wb = buildSheet([
+            anchorRow('MHO', 'Jan-26', 'Dec-26', null, 'GF-Proper').map(
+                (value, i) => (i === 7 ? '50.00' : value),
+            ),
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some(
+                (e) =>
+                    e.message.includes('Adaptation') &&
+                    e.message.includes('(got "—")'),
+            ),
+        ).toBe(true);
     });
 });
