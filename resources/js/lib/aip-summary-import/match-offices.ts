@@ -104,3 +104,48 @@ export function unmatchedOfficeFrequency(
 
     return [...counts.values()].sort((a, b) => b.count - a.count);
 }
+
+/** Manual 1:1 token → office links for one record. */
+export type TokenMapping = Record<string, number>;
+
+/**
+ * Effective office ids for a record: manual bulk override wins over
+ * auto-match as the base, then 1:1 token mappings are unioned in.
+ * De-duplicated, first-seen order (base first).
+ */
+export function effectiveOfficeIds(
+    auto: RecordOfficeMatch | undefined,
+    override: number[] | undefined,
+    mappings: TokenMapping,
+): number[] {
+    const base = override ?? auto?.matched.map((o) => o.id) ?? [];
+    const seen = new Set<number>();
+    const result: number[] = [];
+
+    for (const id of [...base, ...Object.values(mappings)]) {
+        if (!seen.has(id)) {
+            seen.add(id);
+            result.push(id);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Unmatched tokens still needing attention: auto-unmatched minus mapped
+ * (1:1 context exists) minus dismissed (explicitly removed), sheet order.
+ */
+export function visibleUnmatched(
+    auto: RecordOfficeMatch | undefined,
+    mappings: TokenMapping,
+    dismissed: string[],
+): string[] {
+    if (!auto) return [];
+
+    const dismissedKeys = new Set(dismissed.map((t) => normalize(t)));
+
+    return auto.unmatched.filter(
+        (token) => !(token in mappings) && !dismissedKeys.has(normalize(token)),
+    );
+}

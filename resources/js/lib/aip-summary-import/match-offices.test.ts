@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ExistingOffice } from './match';
 import {
+    effectiveOfficeIds,
     matchRecordOffices,
     unmatchedOfficeFrequency,
+    visibleUnmatched,
 } from './match-offices';
 
 const OFFICES: ExistingOffice[] = [
@@ -58,5 +60,47 @@ describe('unmatchedOfficeFrequency', () => {
             { token: 'etc.', count: 2 },
             { token: 'PSWDO', count: 1 },
         ]);
+    });
+});
+
+describe('effectiveOfficeIds', () => {
+    it('unions auto-match with 1:1 mappings, de-duplicated', () => {
+        const auto = matchRecordOffices('a#1', ['OPG', 'etc.'], OFFICES);
+
+        expect(effectiveOfficeIds(auto, undefined, {})).toEqual([1]);
+        expect(effectiveOfficeIds(auto, undefined, { 'etc.': 2 })).toEqual([
+            1, 2,
+        ]);
+        // Mapping to an already-present office adds nothing twice.
+        expect(effectiveOfficeIds(auto, undefined, { 'etc.': 1 })).toEqual([1]);
+    });
+
+    it('lets a bulk override replace the auto base, mappings still union in', () => {
+        const auto = matchRecordOffices('a#1', ['OPG', 'etc.'], OFFICES);
+
+        expect(effectiveOfficeIds(auto, [2], {})).toEqual([2]);
+        expect(effectiveOfficeIds(auto, [2], { 'etc.': 1 })).toEqual([2, 1]);
+    });
+
+    it('handles a missing auto-match', () => {
+        expect(effectiveOfficeIds(undefined, undefined, {})).toEqual([]);
+        expect(effectiveOfficeIds(undefined, [2], {})).toEqual([2]);
+    });
+});
+
+describe('visibleUnmatched', () => {
+    it('hides mapped and dismissed tokens only', () => {
+        const auto = matchRecordOffices(
+            'a#1',
+            ['OPG', 'etc.', 'PSWDO'],
+            OFFICES,
+        );
+
+        expect(visibleUnmatched(auto, {}, [])).toEqual(['etc.', 'PSWDO']);
+        expect(visibleUnmatched(auto, { 'etc.': 2 }, [])).toEqual(['PSWDO']);
+        expect(visibleUnmatched(auto, {}, ['PSWDO'])).toEqual(['etc.']);
+        expect(
+            visibleUnmatched(auto, { 'etc.': 2 }, ['pswdo', 'nope']),
+        ).toEqual([]);
     });
 });

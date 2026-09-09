@@ -1,7 +1,7 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { createColumnHelper } from '@tanstack/react-table';
 import ExcelJS from 'exceljs';
-import { FileSpreadsheet, Pencil, RotateCcw, ScrollText } from 'lucide-react';
+import { FileSpreadsheet, Pencil, RotateCcw, ScrollText, X } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useState, useMemo } from 'react';
 import { MultiTableSelect } from '@/components/multi-table-select';
@@ -38,10 +38,15 @@ import {
     extractAipSummaryRecords,
     formatAipScheduleShort,
 } from '@/lib/aip-summary-import/extract';
-import type { RecordOfficeMatch } from '@/lib/aip-summary-import/match-offices';
+import type {
+    RecordOfficeMatch,
+    TokenMapping,
+} from '@/lib/aip-summary-import/match-offices';
 import {
+    effectiveOfficeIds,
     matchRecordOffices,
     unmatchedOfficeFrequency,
+    visibleUnmatched,
 } from '@/lib/aip-summary-import/match-offices';
 import { normalize } from '@/lib/ppmp/normalize';
 
@@ -176,6 +181,10 @@ export default function AipSummaryImport() {
     // ----- Per-record office overrides (record.key -> office ids), set via the picker -----
     const [officeOverrides, setOfficeOverrides] = useState<Record<string, number[]>>({});
     const [officePickerKey, setOfficePickerKey] = useState<string | null>(null);
+    // ----- Per-record 1:1 token -> office links (manual mapping context) -----
+    const [tokenMappings, setTokenMappings] = useState<Record<string, TokenMapping>>({});
+    // ----- Per-record explicitly removed unresolved tokens -----
+    const [dismissedTokens, setDismissedTokens] = useState<Record<string, string[]>>({});
 
     // ----- Auto-match of implementing-office tokens (strict-normalized) -----
     const officeMatches = useMemo(() => {
@@ -190,17 +199,52 @@ export default function AipSummaryImport() {
     }, [extractResult, existingOffices]);
 
     // ----- Unmatched token frequencies (shows where to loosen matching later) -----
-    const unmatchedFrequency = useMemo(
-        () => unmatchedOfficeFrequency([...officeMatches.values()]),
-        [officeMatches],
-    );
+    // Only tokens still needing attention count: mapped + dismissed are out.
+    const unmatchedFrequency = useMemo(() => {
+        if (!extractResult) return [];
 
-    /** Effective office ids for a record: manual override wins over auto-match. */
+        return unmatchedOfficeFrequency(
+            extractResult.records.map((record) => ({
+                key: record.key,
+                tokens: [],
+                matched: [],
+                unmatched: visibleUnmatched(
+                    officeMatches.get(record.key),
+                    tokenMappings[record.key] ?? {},
+                    dismissedTokens[record.key] ?? [],
+                ),
+            })),
+        );
+    }, [extractResult, officeMatches, tokenMappings, dismissedTokens]);
+
+    /** Effective office ids for a record: override base + 1:1 mappings unioned. */
     function officeIdsForRecord(key: string): number[] {
-        const override = officeOverrides[key];
-        if (override) return override;
+        return effectiveOfficeIds(
+            officeMatches.get(key),
+            officeOverrides[key],
+            tokenMappings[key] ?? {},
+        );
+    }
 
-        return officeMatches.get(key)?.matched.map((o) => o.id) ?? [];
+    function resetRowOffices(key: string) {
+        setOfficeOverrides((prev) => {
+            const next = { ...prev };
+            delete next[key];
+
+            return next;
+        });
+        setTokenMappings((prev) => {
+            const next = { ...prev };
+            delete next[key];
+
+            return next;
+        });
+        setDismissedTokens((prev) => {
+            const next = { ...prev };
+            delete next[key];
+
+            return next;
+        });
     }
 
     // ----- Derived flags -----
@@ -420,6 +464,8 @@ export default function AipSummaryImport() {
         );
         setOfficeOverrides({});
         setOfficePickerKey(null);
+        setTokenMappings({});
+        setDismissedTokens({});
     }
 
     const newBlocks = useMemo(
@@ -1411,17 +1457,29 @@ export default function AipSummaryImport() {
                                                                         officeMatches.get(
                                                                             record.key,
                                                                         );
-                                                                    const override =
+                                                                    const mappings =
+                                                                        tokenMappings[
+                                                                            record.key
+                                                                        ] ?? {};
+                                                                    const dismissed =
+                                                                        dismissedTokens[
+                                                                            record.key
+                                                                        ] ?? [];
+                                                                    const hasManual =
                                                                         officeOverrides[
                                                                             record.key
-                                                                        ];
+                                                                        ] !==
+                                                                            undefined ||
+                                                                        Object.keys(
+                                                                            mappings,
+                                                                        ).length >
+                                                                            0 ||
+                                                                        dismissed.length >
+                                                                            0;
                                                                     const effectiveIds =
-                                                                        override ??
-                                                                        (match?.matched.map(
-                                                                            (o) =>
-                                                                                o.id,
-                                                                        ) ??
-                                                                            []);
+                                                                        officeIdsForRecord(
+                                                                            record.key,
+                                                                        );
                                                                     const effective =
                                                                         existingOffices.filter(
                                                                             (
@@ -1431,9 +1489,96 @@ export default function AipSummaryImport() {
                                                                                     o.id,
                                                                                 ),
                                                                         );
+                                                                    const visible =
+                                                                        visibleUnmatched(
+                                                                            match,
+                                                                            mappings,
+                                                                            dismissed,
+                                                                        );
+
+                                                                    function setMapping(
+                                                                        token: string,
+                                                                        value: string | null,
+                                                                    ) {
+                                                                        setTokenMappings(
+                                                                            (
+                                                                                prev,
+                                                                            ) => {
+                                                                                const rowMappings =
+                                                                                    {
+                                                                                        ...(prev[
+                                                                                            record.key
+                                                                                        ] ??
+                                                                                            {}),
+                                                                                    };
+
+                                                                                if (
+                                                                                    value ===
+                                                                                        null ||
+                                                                                    value ===
+                                                                                        ''
+                                                                                ) {
+                                                                                    delete rowMappings[
+                                                                                        token
+                                                                                    ];
+                                                                                } else {
+                                                                                    rowMappings[
+                                                                                        token
+                                                                                    ] =
+                                                                                        Number(
+                                                                                            value,
+                                                                                        );
+                                                                                }
+
+                                                                                if (
+                                                                                    Object.keys(
+                                                                                        rowMappings,
+                                                                                    )
+                                                                                        .length ===
+                                                                                    0
+                                                                                ) {
+                                                                                    const next =
+                                                                                        {
+                                                                                            ...prev,
+                                                                                        };
+                                                                                    delete next[
+                                                                                        record.key
+                                                                                    ];
+
+                                                                                    return next;
+                                                                                }
+
+                                                                                return {
+                                                                                    ...prev,
+                                                                                    [record.key]:
+                                                                                        rowMappings,
+                                                                                };
+                                                                            },
+                                                                        );
+                                                                    }
+
+                                                                    function dismissToken(
+                                                                        token: string,
+                                                                    ) {
+                                                                        setDismissedTokens(
+                                                                            (
+                                                                                prev,
+                                                                            ) => ({
+                                                                                ...prev,
+                                                                                [record.key]:
+                                                                                    [
+                                                                                        ...(prev[
+                                                                                            record.key
+                                                                                        ] ??
+                                                                                            []),
+                                                                                        token,
+                                                                                    ],
+                                                                            }),
+                                                                        );
+                                                                    }
 
                                                                     return (
-                                                                        <div className="flex max-w-[32ch] flex-wrap items-center gap-1">
+                                                                        <div className="flex max-w-[40ch] flex-wrap items-center gap-1">
                                                                             {effective.length ===
                                                                             0 ? (
                                                                                 <span className="text-muted-foreground">
@@ -1457,23 +1602,115 @@ export default function AipSummaryImport() {
                                                                                     ),
                                                                                 )
                                                                             )}
-                                                                            {(
-                                                                                match?.unmatched ??
-                                                                                []
+                                                                            {Object.entries(
+                                                                                mappings,
                                                                             ).map(
+                                                                                ([
+                                                                                    token,
+                                                                                    officeId,
+                                                                                ]) => {
+                                                                                    const office =
+                                                                                        existingOffices.find(
+                                                                                            (
+                                                                                                o,
+                                                                                            ) =>
+                                                                                                o.id ===
+                                                                                                officeId,
+                                                                                        );
+
+                                                                                    return (
+                                                                                        <span
+                                                                                            key={`mapped-${token}`}
+                                                                                            className="inline-flex items-center gap-1 rounded-md border border-blue-300 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400"
+                                                                                            title={`"${token}" manually mapped to ${office?.acronym || office?.name || 'unknown office'}`}
+                                                                                        >
+                                                                                            {
+                                                                                                token
+                                                                                            }{' '}
+                                                                                            →{' '}
+                                                                                            {office?.acronym ||
+                                                                                                office?.name ||
+                                                                                                '?'}
+                                                                                            <button
+                                                                                                type="button"
+                                                                                                className="cursor-pointer opacity-60 hover:opacity-100"
+                                                                                                onClick={() =>
+                                                                                                    setMapping(
+                                                                                                        token,
+                                                                                                        null,
+                                                                                                    )
+                                                                                                }
+                                                                                                title={`Unmap "${token}"`}
+                                                                                            >
+                                                                                                <X className="h-3 w-3" />
+                                                                                            </button>
+                                                                                        </span>
+                                                                                    );
+                                                                                },
+                                                                            )}
+                                                                            {visible.map(
                                                                                 (
                                                                                     token,
                                                                                 ) => (
-                                                                                    <Badge
+                                                                                    <span
                                                                                         key={
                                                                                             token
                                                                                         }
-                                                                                        variant="outline"
-                                                                                        className="border-amber-300 text-[10px] text-amber-700 dark:text-amber-400"
-                                                                                        title={`No office matches "${token}"`}
+                                                                                        className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+                                                                                        title={`No office matches "${token}" — map it or remove it`}
                                                                                     >
-                                                                                        {token} ?
-                                                                                    </Badge>
+                                                                                        {
+                                                                                            token
+                                                                                        }{' '}
+                                                                                        ?
+                                                                                        <Select
+                                                                                            value=""
+                                                                                            onValueChange={(
+                                                                                                v,
+                                                                                            ) =>
+                                                                                                setMapping(
+                                                                                                    token,
+                                                                                                    v,
+                                                                                                )
+                                                                                            }
+                                                                                        >
+                                                                                            <SelectTrigger
+                                                                                                size="sm"
+                                                                                                className="h-5 gap-0.5 border-0 bg-transparent px-1 py-0 text-[10px] text-amber-700 dark:text-amber-400"
+                                                                                            >
+                                                                                                <SelectValue placeholder="Map…" />
+                                                                                            </SelectTrigger>
+                                                                                            <SelectContent>
+                                                                                                {existingOffices.map(
+                                                                                                    (
+                                                                                                        office,
+                                                                                                    ) => (
+                                                                                                        <SelectItem
+                                                                                                            key={
+                                                                                                                office.id
+                                                                                                            }
+                                                                                                            value={office.id.toString()}
+                                                                                                        >
+                                                                                                            {office.acronym ||
+                                                                                                                office.name}
+                                                                                                        </SelectItem>
+                                                                                                    ),
+                                                                                                )}
+                                                                                            </SelectContent>
+                                                                                        </Select>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            className="cursor-pointer opacity-60 hover:opacity-100"
+                                                                                            onClick={() =>
+                                                                                                dismissToken(
+                                                                                                    token,
+                                                                                                )
+                                                                                            }
+                                                                                            title={`Remove "${token}" from the unresolved list`}
+                                                                                        >
+                                                                                            <X className="h-3 w-3" />
+                                                                                        </button>
+                                                                                    </span>
                                                                                 ),
                                                                             )}
                                                                             <Button
@@ -1485,33 +1722,21 @@ export default function AipSummaryImport() {
                                                                                         record.key,
                                                                                     )
                                                                                 }
-                                                                                title="Edit offices for this output"
+                                                                                title="Add or remove offices for this output (bulk, resolves nothing)"
                                                                             >
                                                                                 <Pencil />
                                                                             </Button>
-                                                                            {override && (
+                                                                            {hasManual && (
                                                                                 <Button
                                                                                     type="button"
                                                                                     variant="ghost"
                                                                                     size="icon-xs"
                                                                                     onClick={() =>
-                                                                                        setOfficeOverrides(
-                                                                                            (
-                                                                                                prev,
-                                                                                            ) => {
-                                                                                                const next =
-                                                                                                    {
-                                                                                                        ...prev,
-                                                                                                    };
-                                                                                                delete next[
-                                                                                                    record.key
-                                                                                                ];
-
-                                                                                                return next;
-                                                                                            },
+                                                                                        resetRowOffices(
+                                                                                            record.key,
                                                                                         )
                                                                                     }
-                                                                                    title="Reset to auto-matched offices"
+                                                                                    title="Reset row to auto-matched offices"
                                                                                 >
                                                                                     <RotateCcw />
                                                                                 </Button>
