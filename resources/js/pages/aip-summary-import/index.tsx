@@ -1,10 +1,17 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { createColumnHelper } from '@tanstack/react-table';
 import ExcelJS from 'exceljs';
-import { FileSpreadsheet, Pencil, RotateCcw, ScrollText, X } from 'lucide-react';
+import {
+    FileSpreadsheet,
+    Pencil,
+    RotateCcw,
+    ScrollText,
+    X,
+} from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useState, useMemo } from 'react';
 import { MultiTableSelect } from '@/components/multi-table-select';
+import { TableSelect } from '@/components/table-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
@@ -78,28 +85,33 @@ const importOfficeColumns = [
 
 export default function AipSummaryImport() {
     // ----- Inertia props (offices, ppas, fiscal years, auth user) -----
-    const { existingOffices, existingPpas, fiscalYears, activeFiscalYear, auth } =
-        usePage().props as unknown as {
-            existingOffices: {
-                id: number;
-                acronym: string | null;
-                name: string;
-                full_code: string;
-            }[];
-            existingPpas: {
-                id: number;
-                office_id: number;
-                parent_id: number | null;
-                name: string;
-                type: string;
-                code_suffix: string | null;
-                full_code: string;
-                fiscal_year_id: number;
-            }[];
-            fiscalYears: { id: number; year: number; status: string }[];
-            activeFiscalYear: { id: number; year: number; status: string } | null;
-            auth: { user: { office_id: number | null } };
-        };
+    const {
+        existingOffices,
+        existingPpas,
+        fiscalYears,
+        activeFiscalYear,
+        auth,
+    } = usePage().props as unknown as {
+        existingOffices: {
+            id: number;
+            acronym: string | null;
+            name: string;
+            full_code: string;
+        }[];
+        existingPpas: {
+            id: number;
+            office_id: number;
+            parent_id: number | null;
+            name: string;
+            type: string;
+            code_suffix: string | null;
+            full_code: string;
+            fiscal_year_id: number;
+        }[];
+        fiscalYears: { id: number; year: number; status: string }[];
+        activeFiscalYear: { id: number; year: number; status: string } | null;
+        auth: { user: { office_id: number | null } };
+    };
 
     // ----- Existing state -----
     const [sheets, setSheets] = useState<string[]>([]);
@@ -174,17 +186,30 @@ export default function AipSummaryImport() {
 
     // ----- Derived display label for the fiscal year trigger -----
     const selectedFiscalYearLabel = useMemo(() => {
-        const fy = fiscalYears.find((f) => f.id.toString() === selectedFiscalYear);
+        const fy = fiscalYears.find(
+            (f) => f.id.toString() === selectedFiscalYear,
+        );
         return fy ? String(fy.year) : '';
     }, [fiscalYears, selectedFiscalYear]);
 
     // ----- Per-record office overrides (record.key -> office ids), set via the picker -----
-    const [officeOverrides, setOfficeOverrides] = useState<Record<string, number[]>>({});
+    const [officeOverrides, setOfficeOverrides] = useState<
+        Record<string, number[]>
+    >({});
     const [officePickerKey, setOfficePickerKey] = useState<string | null>(null);
     // ----- Per-record 1:1 token -> office links (manual mapping context) -----
-    const [tokenMappings, setTokenMappings] = useState<Record<string, TokenMapping>>({});
+    const [tokenMappings, setTokenMappings] = useState<
+        Record<string, TokenMapping>
+    >({});
     // ----- Per-record explicitly removed unresolved tokens -----
-    const [dismissedTokens, setDismissedTokens] = useState<Record<string, string[]>>({});
+    const [dismissedTokens, setDismissedTokens] = useState<
+        Record<string, string[]>
+    >({});
+    // ----- Which unresolved token the shared picker is mapping (null = bulk mode) -----
+    const [mappingTarget, setMappingTarget] = useState<{
+        key: string;
+        token: string;
+    } | null>(null);
 
     // ----- Auto-match of implementing-office tokens (strict-normalized) -----
     const officeMatches = useMemo(() => {
@@ -247,6 +272,32 @@ export default function AipSummaryImport() {
         });
     }
 
+    /** Set (officeId) or clear (null) the 1:1 link for one unresolved token. */
+    function setTokenMapping(
+        key: string,
+        token: string,
+        officeId: number | null,
+    ) {
+        setTokenMappings((prev) => {
+            const rowMappings = { ...(prev[key] ?? {}) };
+
+            if (officeId === null) {
+                delete rowMappings[token];
+            } else {
+                rowMappings[token] = officeId;
+            }
+
+            if (Object.keys(rowMappings).length === 0) {
+                const next = { ...prev };
+                delete next[key];
+
+                return next;
+            }
+
+            return { ...prev, [key]: rowMappings };
+        });
+    }
+
     // ----- Derived flags -----
     const canCalibrate = selectedSheet !== '';
     const canVerify =
@@ -268,7 +319,8 @@ export default function AipSummaryImport() {
 
         // Filter PPAs that belong to the selected office + fiscal year
         const ppasForOffice = existingPpas.filter(
-            (p) => p.office_id === officeId && p.fiscal_year_id === fiscalYearId,
+            (p) =>
+                p.office_id === officeId && p.fiscal_year_id === fiscalYearId,
         );
         const ppasByCode = new Map<string, (typeof existingPpas)[0]>();
         for (const ppa of ppasForOffice) {
@@ -307,7 +359,13 @@ export default function AipSummaryImport() {
             });
         }
         return result;
-    }, [extractResult, selectedOffice, selectedFiscalYear, existingOffices, existingPpas]);
+    }, [
+        extractResult,
+        selectedOffice,
+        selectedFiscalYear,
+        existingOffices,
+        existingPpas,
+    ]);
 
     // ----- Handlers -----
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
@@ -466,6 +524,7 @@ export default function AipSummaryImport() {
         setOfficePickerKey(null);
         setTokenMappings({});
         setDismissedTokens({});
+        setMappingTarget(null);
     }
 
     const newBlocks = useMemo(
@@ -1252,8 +1311,8 @@ export default function AipSummaryImport() {
                                 Import Expected Outputs
                             </h2>
                             <p className="text-muted-foreground text-sm">
-                                Review expected outputs extracted from sheet
-                                “{selectedSheet}” — office, start date,
+                                Review expected outputs extracted from sheet “
+                                {selectedSheet}” — office, start date,
                                 completion date, and expected output.
                             </p>
                         </div>
@@ -1459,20 +1518,24 @@ export default function AipSummaryImport() {
                                                                         );
                                                                     const mappings =
                                                                         tokenMappings[
-                                                                            record.key
+                                                                            record
+                                                                                .key
                                                                         ] ?? {};
                                                                     const dismissed =
                                                                         dismissedTokens[
-                                                                            record.key
+                                                                            record
+                                                                                .key
                                                                         ] ?? [];
                                                                     const hasManual =
                                                                         officeOverrides[
-                                                                            record.key
+                                                                            record
+                                                                                .key
                                                                         ] !==
                                                                             undefined ||
                                                                         Object.keys(
                                                                             mappings,
-                                                                        ).length >
+                                                                        )
+                                                                            .length >
                                                                             0 ||
                                                                         dismissed.length >
                                                                             0;
@@ -1498,62 +1561,21 @@ export default function AipSummaryImport() {
 
                                                                     function setMapping(
                                                                         token: string,
-                                                                        value: string | null,
+                                                                        value:
+                                                                            | string
+                                                                            | null,
                                                                     ) {
-                                                                        setTokenMappings(
-                                                                            (
-                                                                                prev,
-                                                                            ) => {
-                                                                                const rowMappings =
-                                                                                    {
-                                                                                        ...(prev[
-                                                                                            record.key
-                                                                                        ] ??
-                                                                                            {}),
-                                                                                    };
-
-                                                                                if (
-                                                                                    value ===
-                                                                                        null ||
-                                                                                    value ===
-                                                                                        ''
-                                                                                ) {
-                                                                                    delete rowMappings[
-                                                                                        token
-                                                                                    ];
-                                                                                } else {
-                                                                                    rowMappings[
-                                                                                        token
-                                                                                    ] =
-                                                                                        Number(
-                                                                                            value,
-                                                                                        );
-                                                                                }
-
-                                                                                if (
-                                                                                    Object.keys(
-                                                                                        rowMappings,
-                                                                                    )
-                                                                                        .length ===
-                                                                                    0
-                                                                                ) {
-                                                                                    const next =
-                                                                                        {
-                                                                                            ...prev,
-                                                                                        };
-                                                                                    delete next[
-                                                                                        record.key
-                                                                                    ];
-
-                                                                                    return next;
-                                                                                }
-
-                                                                                return {
-                                                                                    ...prev,
-                                                                                    [record.key]:
-                                                                                        rowMappings,
-                                                                                };
-                                                                            },
+                                                                        setTokenMapping(
+                                                                            record.key,
+                                                                            token,
+                                                                            value ===
+                                                                                null ||
+                                                                                value ===
+                                                                                    ''
+                                                                                ? null
+                                                                                : Number(
+                                                                                      value,
+                                                                                  ),
                                                                         );
                                                                     }
 
@@ -1568,7 +1590,8 @@ export default function AipSummaryImport() {
                                                                                 [record.key]:
                                                                                     [
                                                                                         ...(prev[
-                                                                                            record.key
+                                                                                            record
+                                                                                                .key
                                                                                         ] ??
                                                                                             []),
                                                                                         token,
@@ -1663,41 +1686,21 @@ export default function AipSummaryImport() {
                                                                                             token
                                                                                         }{' '}
                                                                                         ?
-                                                                                        <Select
-                                                                                            value=""
-                                                                                            onValueChange={(
-                                                                                                v,
-                                                                                            ) =>
-                                                                                                setMapping(
-                                                                                                    token,
-                                                                                                    v,
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            className="cursor-pointer rounded px-0.5 font-semibold underline decoration-dotted underline-offset-2 opacity-70 hover:opacity-100"
+                                                                                            onClick={() =>
+                                                                                                setMappingTarget(
+                                                                                                    {
+                                                                                                        key: record.key,
+                                                                                                        token,
+                                                                                                    },
                                                                                                 )
                                                                                             }
+                                                                                            title={`Map "${token}" to an office`}
                                                                                         >
-                                                                                            <SelectTrigger
-                                                                                                size="sm"
-                                                                                                className="h-5 gap-0.5 border-0 bg-transparent px-1 py-0 text-[10px] text-amber-700 dark:text-amber-400"
-                                                                                            >
-                                                                                                <SelectValue placeholder="Map…" />
-                                                                                            </SelectTrigger>
-                                                                                            <SelectContent>
-                                                                                                {existingOffices.map(
-                                                                                                    (
-                                                                                                        office,
-                                                                                                    ) => (
-                                                                                                        <SelectItem
-                                                                                                            key={
-                                                                                                                office.id
-                                                                                                            }
-                                                                                                            value={office.id.toString()}
-                                                                                                        >
-                                                                                                            {office.acronym ||
-                                                                                                                office.name}
-                                                                                                        </SelectItem>
-                                                                                                    ),
-                                                                                                )}
-                                                                                            </SelectContent>
-                                                                                        </Select>
+                                                                                            Map
+                                                                                        </button>
                                                                                         <button
                                                                                             type="button"
                                                                                             className="cursor-pointer opacity-60 hover:opacity-100"
@@ -1784,8 +1787,7 @@ export default function AipSummaryImport() {
                             <div className="flex flex-col items-end gap-1">
                                 <Button disabled={true}>
                                     Confirm &amp; Import{' '}
-                                    {extractResult?.records.length ?? 0}{' '}
-                                    Output
+                                    {extractResult?.records.length ?? 0} Output
                                     {extractResult?.records.length === 1
                                         ? ''
                                         : 's'}
@@ -1826,6 +1828,46 @@ export default function AipSummaryImport() {
                                 }
                             }}
                         />
+
+                        <TableSelect<ImportOffice>
+                            data={existingOffices}
+                            columns={importOfficeColumns}
+                            open={mappingTarget !== null}
+                            onOpenChange={(open) => {
+                                if (!open) setMappingTarget(null);
+                            }}
+                            onRowSelect={(row) => {
+                                if (mappingTarget) {
+                                    setTokenMapping(
+                                        mappingTarget.key,
+                                        mappingTarget.token,
+                                        row.id,
+                                    );
+                                }
+                            }}
+                            value={
+                                mappingTarget
+                                    ? (() => {
+                                          const mapped =
+                                              tokenMappings[
+                                                  mappingTarget.key
+                                              ]?.[mappingTarget.token];
+
+                                          return mapped === undefined
+                                              ? undefined
+                                              : String(mapped);
+                                      })()
+                                    : undefined
+                            }
+                            valueKey="id"
+                            title={
+                                mappingTarget
+                                    ? `Map "${mappingTarget.token}" to an office`
+                                    : 'Map office'
+                            }
+                            description="Click a row to map this token to that office."
+                            className="sm:max-w-[30rem]"
+                        />
                     </TabsContent>
 
                     {/* ----- Import Funding Source (title only for now) ----- */}
@@ -1838,8 +1880,8 @@ export default function AipSummaryImport() {
                                 Import Funding Source
                             </h2>
                             <p className="text-muted-foreground text-sm">
-                                Review and import funding sources extracted
-                                from sheet “{selectedSheet}”.
+                                Review and import funding sources extracted from
+                                sheet “{selectedSheet}”.
                             </p>
                         </div>
 

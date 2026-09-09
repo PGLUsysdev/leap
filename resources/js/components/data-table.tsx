@@ -1,4 +1,4 @@
-import { router, usePage } from "@inertiajs/react";
+import { router, usePage } from '@inertiajs/react';
 import {
     useReactTable,
     getCoreRowModel,
@@ -11,33 +11,30 @@ import {
     // getPaginationRowModel,
     // getSortedRowModel,
     flexRender,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
 import type {
     Column,
     ColumnDef,
     Table,
     TableMeta,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
 import {
     ChevronRight,
     ChevronLeft,
     ChevronsRight,
     ChevronsLeft,
     SearchIcon,
-} from "lucide-react";
-import { useState, useEffect, useRef, useMemo } from "react";
-import type { CSSProperties, ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     InputGroup,
     InputGroupAddon,
     InputGroupInput,
-} from "@/components/ui/input-group";
-import {
-    ScrollArea,
-    ScrollBar,
-} from "@/components/ui/scroll-area";
+} from '@/components/ui/input-group';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Table as DataTable,
     TableHeader,
@@ -46,8 +43,8 @@ import {
     TableRow,
     TableHead,
     TableCell,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import type {
     // PriceList,
     // ChartOfAccount,
@@ -55,16 +52,16 @@ import type {
     PaginatedResponse,
     // Filter,
     // ChartOfAccountPpmpCategory,
-} from "@/types";
+} from '@/types';
 
 interface TableProps<TData> {
     data: TData[];
-    paginationData?: Omit<PaginatedResponse<TData>, "data">;
+    paginationData?: Omit<PaginatedResponse<TData>, 'data'>;
     columns: ColumnDef<TData, any>[];
     // meta?: Partial<TableMeta<TData>>;
     meta?: TableMeta<TData>;
     children?: ReactNode;
-    variant?: "table" | "select";
+    variant?: 'table' | 'select';
     onRowClick?: (row: TData) => void;
     selectedKey?: keyof TData;
     selectedValue?: string;
@@ -89,9 +86,9 @@ const getCommonPinningStyles = <TData,>(
 ): CSSProperties => {
     const isPinned = column.getIsPinned();
     const isLastLeftPinnedColumn =
-        isPinned === "left" && column.getIsLastColumn("left");
+        isPinned === 'left' && column.getIsLastColumn('left');
     const isFirstRightPinnedColumn =
-        isPinned === "right" && column.getIsFirstColumn("right");
+        isPinned === 'right' && column.getIsFirstColumn('right');
 
     const size = column.getSize();
     const centerTotal = table.getCenterTotalSize();
@@ -99,15 +96,15 @@ const getCommonPinningStyles = <TData,>(
 
     return {
         boxShadow: isLastLeftPinnedColumn
-            ? "inset -1px 0 0 0 var(--border)"
+            ? 'inset -1px 0 0 0 var(--border)'
             : isFirstRightPinnedColumn
-              ? " inset 1px 0 0 0 var(--border)"
+              ? ' inset 1px 0 0 0 var(--border)'
               : undefined,
-        left: isPinned === "left" ? `${column.getStart("left")}px` : undefined,
+        left: isPinned === 'left' ? `${column.getStart('left')}px` : undefined,
         right:
-            isPinned === "right" ? `${column.getAfter("right")}px` : undefined,
+            isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
         opacity: isPinned ? 0.95 : 1,
-        position: isPinned ? "sticky" : "relative",
+        position: isPinned ? 'sticky' : 'relative',
         zIndex: isPinned ? 1 : 0,
 
         width: isPinned ? `${size}px` : `${percentage}%`,
@@ -122,16 +119,16 @@ export default function Table<TData>({
     columns,
     meta,
     children,
-    variant = "table",
+    variant = 'table',
     onRowClick,
     selectedKey,
     selectedValue,
     className,
     disabledKey,
     disabledValue,
-    pageParamName = "page",
+    pageParamName = 'page',
     // perPageParamName = 'per_page',
-    searchParamName = "search",
+    searchParamName = 'search',
     only,
     getSubRows,
     showFooter = false,
@@ -150,13 +147,13 @@ export default function Table<TData>({
     const [globalFilter, setGlobalFilter] = useState<string>(() => {
         const params = new URLSearchParams(window.location.search);
 
-        return params.get(searchParamName) || "";
+        return params.get(searchParamName) || '';
     });
     // const [globalFilter, setGlobalFilter] = useState<string>('');
 
     // pagination
     const [pageInput, setPageInput] = useState<string>(() => {
-        return paginationData ? String(paginationData.current_page) : "";
+        return paginationData ? String(paginationData.current_page) : '';
     });
 
     useEffect(() => {
@@ -226,7 +223,7 @@ export default function Table<TData>({
             return;
         }
 
-        if (pageInput === "") {
+        if (pageInput === '') {
             return;
         }
 
@@ -265,7 +262,7 @@ export default function Table<TData>({
 
         initialState: {
             columnPinning: {
-                right: ["actions"],
+                right: ['actions'],
             },
         },
         state: {
@@ -313,13 +310,14 @@ export default function Table<TData>({
 
         table.getAllLeafColumns().forEach((column) => {
             const columnMeta = column.columnDef.meta as
-                { rowSpan?: boolean; spanKey?: string } | undefined;
+                | { rowSpan?: boolean; spanKey?: string }
+                | undefined;
 
             if (!columnMeta?.rowSpan) {
                 return;
             }
 
-            const spanKey = columnMeta.spanKey ?? "id";
+            const spanKey = columnMeta.spanKey ?? 'id';
             const firstVisibleIdx: Record<string, number> = {};
             const visibleCounts: Record<string, number> = {};
 
@@ -351,16 +349,16 @@ export default function Table<TData>({
     }, [rows, table, withRowSpan]);
 
     return (
-        <div className={cn("flex h-full min-h-0 flex-col", className)}>
+        <div className={cn('flex h-full min-h-0 flex-col', className)}>
             <div
                 className={cn(
-                    "flex flex-none justify-between gap-2 p-4",
-                    variant === "select" && "pt-0",
+                    'flex flex-none justify-between gap-2 p-4',
+                    variant === 'select' && 'pt-0',
                 )}
             >
                 <InputGroup className="w-100 min-w-30">
                     <InputGroupInput
-                        value={globalFilter ?? ""}
+                        value={globalFilter ?? ''}
                         onChange={(e) =>
                             table.setGlobalFilter(String(e.target.value))
                         }
@@ -378,9 +376,9 @@ export default function Table<TData>({
                 <div>
                     <DataTable
                         style={{
-                            tableLayout: "fixed",
+                            tableLayout: 'fixed',
                             // tableLayout: 'auto',
-                            width: "100%",
+                            width: '100%',
                             minWidth: `${table.getCenterTotalSize()}px`,
                             // minWidth: `${table.getTotalSize()}px`,
                         }}
@@ -454,15 +452,15 @@ export default function Table<TData>({
                                     <TableRow
                                         key={row.id}
                                         className={cn(
-                                            variant === "select" &&
-                                                "hover:bg-accent cursor-pointer",
-                                            isSelected && "bg-primary",
+                                            variant === 'select' &&
+                                                'hover:bg-accent cursor-pointer',
+                                            isSelected && 'bg-primary',
                                             isDisabled &&
-                                                "cursor-not-allowed opacity-50",
+                                                'cursor-not-allowed opacity-50',
                                         )}
                                         onClick={() => {
                                             if (
-                                                variant === "select" &&
+                                                variant === 'select' &&
                                                 !isDisabled
                                             ) {
                                                 onRowClick?.(row.original);
@@ -485,7 +483,7 @@ export default function Table<TData>({
 
                                             if (isSpannedColumn) {
                                                 const spanKey: string =
-                                                    columnMeta?.spanKey ?? "id";
+                                                    columnMeta?.spanKey ?? 'id';
                                                 const spanData =
                                                     visibleSpans[
                                                         cell.column.id
@@ -534,9 +532,9 @@ export default function Table<TData>({
                                                         ),
                                                     }}
                                                     className={cn(
-                                                        "border p-1 px-2 first:border-l-0 last:border-r-0",
+                                                        'border p-1 px-2 first:border-l-0 last:border-r-0',
                                                         cell.column.getIsPinned() &&
-                                                            "bg-background/95",
+                                                            'bg-background/95',
                                                     )}
                                                 >
                                                     {flexRender(
@@ -635,8 +633,8 @@ export default function Table<TData>({
                                 onChange={(e) => {
                                     const value = e.currentTarget.value;
 
-                                    if (value === "") {
-                                        setPageInput("");
+                                    if (value === '') {
+                                        setPageInput('');
 
                                         return;
                                     }
@@ -648,7 +646,7 @@ export default function Table<TData>({
                                     setPageInput(value);
                                 }}
                                 onBlur={() => {
-                                    if (pageInput === "") {
+                                    if (pageInput === '') {
                                         setPageInput(
                                             String(paginationData.current_page),
                                         );
