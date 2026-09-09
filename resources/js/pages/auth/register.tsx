@@ -25,8 +25,8 @@ export default function Register({ passwordRules, flash }: Props) {
                         An administrator needs to approve your account before
                         you can log in. You'll get an email once you're cleared!
                     </p>
-                    <Button asChild className="w-full">
-                        <Link href={login()}>Back to Login</Link>
+                    <Button render={<Link href={login()} />} nativeButton={false} className="w-full">
+                        Back to Login
                     </Button>
                 </div>
             </>

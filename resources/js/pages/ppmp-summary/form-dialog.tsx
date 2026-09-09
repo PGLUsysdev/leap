@@ -253,8 +253,11 @@ export default function FormDialog({
                 </div>
 
                 <DialogFooter>
-                    <DialogClose asChild disabled={isLoading}>
-                        <Button variant="outline">Cancel</Button>
+                    <DialogClose
+                        render={<Button variant="outline" />}
+                        disabled={isLoading}
+                    >
+                        Cancel
                     </DialogClose>
 
                     <Button
