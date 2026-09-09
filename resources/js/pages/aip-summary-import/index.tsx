@@ -124,6 +124,7 @@ export default function AipSummaryImport() {
         fundingSources,
         ccTypologies,
         existingOutputs,
+        existingFundLinks,
         auth,
     } = usePage().props as unknown as {
         existingOffices: {
@@ -157,6 +158,14 @@ export default function AipSummaryImport() {
             office_id: number;
             fiscal_year_id: number | null;
             expected_output: string | null;
+        }[];
+        existingFundLinks: {
+            id: number;
+            output_id: number;
+            funding_source_id: number;
+            ppa_id: number;
+            office_id: number;
+            fiscal_year_id: number | null;
         }[];
         auth: { user: { office_id: number | null } };
     };
@@ -857,6 +866,8 @@ export default function AipSummaryImport() {
         const links: Array<{
             key: string;
             full_code: string;
+            fullCodeNorm: string;
+            outputNorm: string | null;
             name: string;
             expected_output: string | null;
             funding_source_id: number;
@@ -875,6 +886,8 @@ export default function AipSummaryImport() {
             links.push({
                 key: r.key,
                 full_code: r.fullCode,
+                fullCodeNorm: r.fullCodeNorm,
+                outputNorm: r.outputNorm,
                 name: r.name,
                 expected_output: r.expectedOutput,
                 funding_source_id: fundingSourceId,
@@ -895,11 +908,95 @@ export default function AipSummaryImport() {
         dismissedFunds,
     ]);
 
+    // Exists/new status per fund link: resolve the PPA by normalized ref
+    // code, then the output by expected-output text, then check for an
+    // existing link on (output, fund). Mirrors the outputs tab.
+    type FundLinkStatus = 'exists' | 'new' | 'no-output';
+
+    const fundStatuses = useMemo(() => {
+        const map = new Map<string, FundLinkStatus>();
+
+        if (!selectedOffice || !selectedFiscalYear) return map;
+
+        const officeId = Number(selectedOffice);
+        const fiscalYearId = Number(selectedFiscalYear);
+        const byCodeNorm = new Map<string, (typeof existingPpas)[number]>();
+        for (const ppa of existingPpas) {
+            if (
+                ppa.office_id !== officeId ||
+                ppa.fiscal_year_id !== fiscalYearId
+            ) {
+                continue;
+            }
+            const key = normalize(ppa.full_code);
+            if (!byCodeNorm.has(key)) byCodeNorm.set(key, ppa);
+        }
+        const outputsByPpa = new Map<number, typeof existingOutputs>();
+        for (const output of existingOutputs) {
+            if (
+                output.office_id !== officeId ||
+                output.fiscal_year_id !== fiscalYearId
+            ) {
+                continue;
+            }
+            const list = outputsByPpa.get(output.ppa_id) ?? [];
+            list.push(output);
+            outputsByPpa.set(output.ppa_id, list);
+        }
+        const linksByOutput = new Map<number, typeof existingFundLinks>();
+        for (const link of existingFundLinks) {
+            if (
+                link.office_id !== officeId ||
+                link.fiscal_year_id !== fiscalYearId
+            ) {
+                continue;
+            }
+            const list = linksByOutput.get(link.output_id) ?? [];
+            list.push(link);
+            linksByOutput.set(link.output_id, list);
+        }
+
+        for (const row of importableFunds) {
+            const ppa = byCodeNorm.get(row.fullCodeNorm);
+            const output = ppa
+                ? (outputsByPpa.get(ppa.id) ?? []).find((o) =>
+                      row.outputNorm == null
+                          ? o.expected_output == null
+                          : o.expected_output != null &&
+                            normalize(o.expected_output) === row.outputNorm,
+                  )
+                : undefined;
+            if (!output) {
+                map.set(row.key, 'no-output');
+                continue;
+            }
+            const match = (linksByOutput.get(output.id) ?? []).some(
+                (l) => l.funding_source_id === row.funding_source_id,
+            );
+            map.set(row.key, match ? 'exists' : 'new');
+        }
+
+        return map;
+    }, [
+        importableFunds,
+        selectedOffice,
+        selectedFiscalYear,
+        existingPpas,
+        existingOutputs,
+        existingFundLinks,
+    ]);
+
+    const newFunds = useMemo(
+        () =>
+            importableFunds.filter((r) => fundStatuses.get(r.key) === 'new'),
+        [importableFunds, fundStatuses],
+    );
+
     function handleConfirmFunds() {
         if (
             !selectedOffice ||
             !selectedFiscalYear ||
-            importableFunds.length === 0
+            newFunds.length === 0
         )
             return;
         setImportingFunds(true);
@@ -909,7 +1006,9 @@ export default function AipSummaryImport() {
             {
                 office_id: Number(selectedOffice),
                 fiscal_year_id: Number(selectedFiscalYear),
-                links: importableFunds.map(({ key, ...payload }) => payload),
+                links: newFunds.map(
+                    ({ key, fullCodeNorm, outputNorm, ...payload }) => payload,
+                ),
             },
             {
                 onFinish: () => setImportingFunds(false),
@@ -2401,6 +2500,29 @@ export default function AipSummaryImport() {
                                     </div>
                                     <div>
                                         <span className="text-muted-foreground">
+                                            New:
+                                        </span>{' '}
+                                        <span className="font-medium text-blue-600">
+                                            {newFunds.length}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Exists:
+                                        </span>{' '}
+                                        <span className="font-medium text-green-600">
+                                            {
+                                                importableFunds.filter(
+                                                    (r) =>
+                                                        fundStatuses.get(
+                                                            r.key,
+                                                        ) === 'exists',
+                                                ).length
+                                            }
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
                                             Unresolved fund:
                                         </span>{' '}
                                         <span className="font-medium text-amber-600">
@@ -2409,7 +2531,7 @@ export default function AipSummaryImport() {
                                     </div>
                                 </div>
 
-                                {unmatchedFundFrequency.length > 0 && (
+                                {unmatchedFundEntries.length > 0 && (
                                     <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs dark:border-amber-900 dark:bg-amber-950">
                                         <span className="text-muted-foreground font-medium">
                                             Unmatched fund tokens (strict
@@ -2445,6 +2567,9 @@ export default function AipSummaryImport() {
                                                     </th>
                                                     <th className="px-3 py-2 font-medium">
                                                         Climate
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Status
                                                     </th>
                                                 </tr>
                                             </thead>
@@ -2636,6 +2761,65 @@ export default function AipSummaryImport() {
                                                                         </span>
                                                                     )}
                                                                 </td>
+                                                                <td className="px-3 py-2 whitespace-nowrap">
+                                                                    {(() => {
+                                                                        const status =
+                                                                            fundStatuses.get(
+                                                                                record.key,
+                                                                            );
+
+                                                                        if (
+                                                                            status ===
+                                                                            'exists'
+                                                                        ) {
+                                                                            return (
+                                                                                <span className="font-medium text-green-600">
+                                                                                    Exists
+                                                                                </span>
+                                                                            );
+                                                                        }
+
+                                                                        if (
+                                                                            status ===
+                                                                            'no-output'
+                                                                        ) {
+                                                                            return record.fundingSource ==
+                                                                                null ||
+                                                                                dismissedFunds[
+                                                                                    record.key
+                                                                                ] ? (
+                                                                                <span className="text-muted-foreground">
+                                                                                    —
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span
+                                                                                    className="font-medium text-amber-600"
+                                                                                    title="No matching PPA output yet — import expected outputs first"
+                                                                                >
+                                                                                    No
+                                                                                    output
+                                                                                </span>
+                                                                            );
+                                                                        }
+
+                                                                        if (
+                                                                            status ===
+                                                                            'new'
+                                                                        ) {
+                                                                            return (
+                                                                                <span className="font-medium text-blue-600">
+                                                                                    New
+                                                                                </span>
+                                                                            );
+                                                                        }
+
+                                                                        return (
+                                                                            <span className="text-muted-foreground">
+                                                                                —
+                                                                            </span>
+                                                                        );
+                                                                    })()}
+                                                                </td>
                                                             </tr>
                                                         );
                                                     },
@@ -2665,14 +2849,14 @@ export default function AipSummaryImport() {
                                     disabled={
                                         !selectedOffice ||
                                         !selectedFiscalYear ||
-                                        importableFunds.length === 0 ||
+                                        newFunds.length === 0 ||
                                         importingFunds
                                     }
                                 >
                                     {importingFunds && <Spinner />}
-                                    Confirm &amp; Import{' '}
-                                    {importableFunds.length} Fund Link
-                                    {importableFunds.length === 1 ? '' : 's'}
+                                    Confirm &amp; Import {newFunds.length}{' '}
+                                    Fund Link
+                                    {newFunds.length === 1 ? '' : 's'}
                                 </Button>
                                 <p className="text-muted-foreground text-xs">
                                     Links + climate only — peso amounts stay

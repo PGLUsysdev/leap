@@ -117,6 +117,28 @@ class AipSummaryImportController extends Controller
             'ccTypologies' => CcTypology::select(['id', 'code'])
                 ->orderBy('code')
                 ->get(),
+            'existingFundLinks' => PpaFundingSource::join('aip_outputs', 'aip_outputs.id', '=', 'ppa_funding_sources.aip_output_id')
+                ->join('aip_entries', 'aip_entries.id', '=', 'aip_outputs.aip_entry_id')
+                ->join('ppas', 'ppas.id', '=', 'aip_entries.ppa_id')
+                ->orderBy('ppa_funding_sources.id')
+                ->get([
+                    'ppa_funding_sources.id',
+                    'ppa_funding_sources.aip_output_id',
+                    'ppa_funding_sources.funding_source_id',
+                    'aip_entries.ppa_id',
+                    'ppas.office_id',
+                    'ppas.fiscal_year_id',
+                ])
+                ->map(
+                    fn ($row) => [
+                        'id' => $row->id,
+                        'output_id' => $row->aip_output_id,
+                        'funding_source_id' => $row->funding_source_id,
+                        'ppa_id' => $row->ppa_id,
+                        'office_id' => $row->office_id,
+                        'fiscal_year_id' => $row->fiscal_year_id,
+                    ],
+                ),
         ]);
     }
 
