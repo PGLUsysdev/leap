@@ -468,4 +468,8 @@ Route::post('aip-summary-import/outputs', [AipSummaryImportController::class, 's
     'aip-summary-import.store-outputs',
 );
 
+Route::post('aip-summary-import/funding-sources', [AipSummaryImportController::class, 'storeFundingSources'])->name(
+    'aip-summary-import.store-funding-sources',
+);
+
 require __DIR__.'/settings.php';

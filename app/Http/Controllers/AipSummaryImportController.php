@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AipEntry;
+use App\Models\CcTypology;
 use App\Models\FiscalYear;
+use App\Models\FundingSource;
 use App\Models\Office;
 use App\Models\Ppa;
+use App\Models\PpaFundingSource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -88,6 +91,12 @@ class AipSummaryImportController extends Controller
             'fiscalYears' => $fiscalYears,
             'existingOffices' => $offices,
             'existingPpas' => $ppas,
+            'fundingSources' => FundingSource::select(['id', 'fund_type', 'code', 'title'])
+                ->orderBy('code')
+                ->get(),
+            'ccTypologies' => CcTypology::select(['id', 'code'])
+                ->orderBy('code')
+                ->get(),
         ]);
     }
 
@@ -377,6 +386,161 @@ class AipSummaryImportController extends Controller
             Inertia::flash('toast', ['type' => 'success', 'message' => "Imported {$inserted} outputs."]);
         } else {
             Inertia::flash('toast', ['type' => 'error', 'message' => 'No outputs imported — all duplicates or invalid.']);
+        }
+
+        return redirect()->back();
+    }
+
+    public function storeFundingSources(Request $request)
+    {
+        $validated = $request->validate([
+            'office_id' => ['required', 'exists:offices,id'],
+            'fiscal_year_id' => ['required', 'exists:fiscal_years,id'],
+            'links' => ['required', 'array', 'min:1'],
+            'links.*.full_code' => ['nullable', 'string', 'max:255'],
+            'links.*.name' => ['required', 'string', 'max:255'],
+            'links.*.expected_output' => ['nullable', 'string', 'max:65535'],
+            'links.*.funding_source_id' => ['required', 'integer', 'exists:funding_sources,id'],
+            'links.*.ccet_adaptation' => ['nullable', 'numeric', 'min:0'],
+            'links.*.ccet_mitigation' => ['nullable', 'numeric', 'min:0'],
+            'links.*.cc_typology_id' => ['nullable', 'integer', 'exists:cc_typologies,id'],
+        ]);
+
+        $officeId = (int) $validated['office_id'];
+        $fiscalYearId = (int) $validated['fiscal_year_id'];
+
+        // Same normalization as the frontend `normalize` helper
+        // (trim, collapse whitespace, lowercase) — PPAs match by name.
+        $normalize = fn (string $s): string => strtolower(
+            trim((string) preg_replace('/\s+/', ' ', $s) ?? $s),
+        );
+
+        // Index PPAs of this office + fiscal year by normalized name.
+        // `type` is selected: `full_code` zero-pads by type for the
+        // same-name tiebreak below.
+        $ppasByName = Ppa::where('office_id', $officeId)
+            ->where('fiscal_year_id', $fiscalYearId)
+            ->orderBy('id')
+            ->get(['id', 'name', 'type', 'code_suffix', 'parent_id', 'office_id', 'fiscal_year_id'])
+            ->groupBy(fn (Ppa $ppa) => $normalize($ppa->name));
+
+        $inserted = 0;
+        $skipped = 0;
+        $details = [];
+
+        DB::transaction(function () use (
+            $validated,
+            $normalize,
+            $ppasByName,
+            &$inserted,
+            &$skipped,
+            &$details,
+        ) {
+            foreach ($validated['links'] as $item) {
+                $expectedRaw = $item['expected_output'] ?? null;
+                $expected = $expectedRaw === null || trim($expectedRaw) === ''
+                    ? null
+                    : trim($expectedRaw);
+                $label = trim($item['name']).' / '.($expected ?? '—');
+                $skip = function (string $status) use (&$skipped, &$details, $label) {
+                    $skipped++;
+                    $details[] = ['output' => $label, 'status' => $status];
+                };
+
+                $candidates = $ppasByName[$normalize($item['name'])] ?? collect();
+
+                if ($candidates->isEmpty()) {
+                    $skip('skipped: no PPA matches name');
+
+                    continue;
+                }
+
+                // Disambiguate same-name PPAs by ref code when provided.
+                if ($candidates->count() > 1 && ! empty($item['full_code'])) {
+                    $codeKey = $normalize($item['full_code']);
+                    $byCode = $candidates->filter(
+                        fn (Ppa $ppa) => $normalize($ppa->full_code) === $codeKey,
+                    );
+                    if ($byCode->count() === 1) {
+                        $candidates = $byCode;
+                    }
+                }
+
+                if ($candidates->count() > 1) {
+                    $skip('skipped: PPA name is ambiguous');
+
+                    continue;
+                }
+
+                /** @var Ppa $ppa */
+                $ppa = $candidates->first();
+                $entry = AipEntry::where('ppa_id', $ppa->id)->first();
+
+                if (! $entry) {
+                    $skip('skipped: no AIP entry for PPA (import outputs first)');
+
+                    continue;
+                }
+
+                Gate::authorize('update', $entry);
+
+                $outputQuery = $entry->outputs();
+                if ($expected === null) {
+                    $outputQuery->whereNull('expected_output');
+                } else {
+                    $outputQuery->where('expected_output', $expected);
+                }
+                $output = $outputQuery->orderBy('id')->first();
+
+                if (! $output) {
+                    $skip('skipped: no matching output (import outputs first)');
+
+                    continue;
+                }
+
+                $duplicate = PpaFundingSource::where('aip_output_id', $output->id)
+                    ->where('funding_source_id', $item['funding_source_id'])
+                    ->whereNull('supplemental_aip_id')
+                    ->exists();
+                if ($duplicate) {
+                    $skip('skipped: exists');
+
+                    continue;
+                }
+
+                $link = PpaFundingSource::create([
+                    'aip_output_id' => $output->id,
+                    'funding_source_id' => $item['funding_source_id'],
+                    'ps_amount' => 0,
+                    'mooe_amount' => 0,
+                    'fe_amount' => 0,
+                    'co_amount' => 0,
+                    'ccet_adaptation' => $item['ccet_adaptation'] ?? 0,
+                    'ccet_mitigation' => $item['ccet_mitigation'] ?? 0,
+                    'cc_typology_id' => $item['cc_typology_id'] ?? null,
+                ]);
+
+                $inserted++;
+                $details[] = ['output' => $label, 'status' => 'inserted', 'id' => $link->id];
+            }
+        });
+
+        Inertia::flash('importReport', [
+            'total' => count($validated['links']),
+            'inserted' => $inserted,
+            'skipped' => $skipped,
+            'details' => $details,
+            'status' => $skipped > 0 && $inserted > 0
+                ? 'partial_success'
+                : ($inserted > 0 ? 'success' : 'failed'),
+        ]);
+
+        if ($skipped > 0 && $inserted > 0) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => "Imported {$inserted}, skipped {$skipped} fund links."]);
+        } elseif ($inserted > 0) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => "Imported {$inserted} fund links."]);
+        } else {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'No fund links imported — all duplicates or invalid.']);
         }
 
         return redirect()->back();

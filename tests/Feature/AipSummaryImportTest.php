@@ -2,13 +2,17 @@
 
 use App\Models\AipEntry;
 use App\Models\AipOutput;
+use App\Models\CcStrategicPriority;
+use App\Models\CcTypology;
 use App\Models\FiscalYear;
+use App\Models\FundingSource;
 use App\Models\LguLevel;
 use App\Models\Office;
 use App\Models\OfficeType;
 use App\Models\Permission;
 use App\Models\PermissionRole;
 use App\Models\Ppa;
+use App\Models\PpaFundingSource;
 use App\Models\Role;
 use App\Models\Sector;
 use App\Models\User;
@@ -341,4 +345,117 @@ test('it creates bare ancestor entries for imported outputs', function () {
     $ancestorEntry = AipEntry::where('ppa_id', $program->id)->firstOrFail();
     expect($ancestorEntry->outputs()->count())->toBe(0);
     expect(AipEntry::where('ppa_id', $project->id)->firstOrFail()->outputs()->count())->toBe(1);
+});
+
+test('it imports fund links with climate on matched outputs', function () {
+    $office = createImportOffice();
+    $user = createOutputsUser($office);
+    $fiscalYear = FiscalYear::factory()->create(['status' => 'draft']);
+    $fund = FundingSource::firstOrCreate(
+        ['code' => 'GF Proper'],
+        ['fund_type' => 'General Fund', 'title' => 'General Fund'],
+    );
+    $typology = CcTypology::create([
+        'code' => 'A123-01',
+        'description' => 'Test typology',
+        'response_type' => 'A',
+        'strategic_priority_id' => CcStrategicPriority::create(['code' => 1, 'name' => 'Test priority'])->id,
+        'category_code' => '1',
+        'item_num' => 1,
+    ]);
+    $ppa = Ppa::create([
+        'office_id' => $office->id,
+        'parent_id' => null,
+        'name' => 'Governance Initiatives',
+        'type' => 'Program',
+        'code_suffix' => '1',
+        'fiscal_year_id' => $fiscalYear->id,
+    ]);
+    $entry = AipEntry::create(['ppa_id' => $ppa->id]);
+    $output = $entry->outputs()->create([
+        'expected_output' => '100% services provided',
+        'start_date' => '2027-01-01',
+        'end_date' => '2027-12-01',
+        'sort_order' => 1,
+    ]);
+
+    $payload = [
+        'office_id' => $office->id,
+        'fiscal_year_id' => $fiscalYear->id,
+        'links' => [
+            [
+                'full_code' => $ppa->full_code,
+                'name' => 'Governance Initiatives',
+                'expected_output' => '100% services provided',
+                'funding_source_id' => $fund->id,
+                'ccet_adaptation' => 20.5,
+                'ccet_mitigation' => 0,
+                'cc_typology_id' => $typology->id,
+            ],
+        ],
+    ];
+
+    $this->actingAs($user)->post('/aip-summary-import/funding-sources', $payload)->assertRedirect();
+    // Re-import: duplicate link.
+    $this->actingAs($user)->post('/aip-summary-import/funding-sources', $payload)->assertRedirect();
+
+    $links = PpaFundingSource::where('aip_output_id', $output->id)->get();
+    expect($links)->toHaveCount(1);
+    expect($links->first()->funding_source_id)->toBe($fund->id);
+    expect((float) $links->first()->ccet_adaptation)->toBe(20.5);
+    expect((float) $links->first()->ccet_mitigation)->toBe(0.0);
+    expect($links->first()->cc_typology_id)->toBe($typology->id);
+    expect((float) $links->first()->ps_amount)->toBe(0.0);
+    expect((float) $links->first()->mooe_amount)->toBe(0.0);
+});
+
+test('it skips fund links with no ppa, no output, or bad fund', function () {
+    $office = createImportOffice();
+    $user = createOutputsUser($office);
+    $fiscalYear = FiscalYear::factory()->create(['status' => 'draft']);
+    $fund = FundingSource::firstOrCreate(
+        ['code' => 'GF Proper'],
+        ['fund_type' => 'General Fund', 'title' => 'General Fund'],
+    );
+    $ppa = Ppa::create([
+        'office_id' => $office->id,
+        'parent_id' => null,
+        'name' => 'Governance Initiatives',
+        'type' => 'Program',
+        'code_suffix' => '1',
+        'fiscal_year_id' => $fiscalYear->id,
+    ]);
+    AipEntry::create(['ppa_id' => $ppa->id]);
+
+    $base = [
+        'full_code' => $ppa->full_code,
+        'name' => 'Governance Initiatives',
+        'expected_output' => 'Never imported',
+        'funding_source_id' => $fund->id,
+        'ccet_adaptation' => 0,
+        'ccet_mitigation' => 0,
+        'cc_typology_id' => null,
+    ];
+
+    $this->actingAs($user)->post('/aip-summary-import/funding-sources', [
+        'office_id' => $office->id,
+        'fiscal_year_id' => $fiscalYear->id,
+        'links' => [
+            $base,
+            array_merge($base, ['name' => 'Missing Program']),
+            array_merge($base, ['funding_source_id' => 999999]),
+        ],
+    ])->assertSessionHasErrors(['links.2.funding_source_id']);
+
+    // Fix the bad fund: both remaining rows skip (no PPA / no output).
+    $this->actingAs($user)->post('/aip-summary-import/funding-sources', [
+        'office_id' => $office->id,
+        'fiscal_year_id' => $fiscalYear->id,
+        'links' => [
+            $base,
+            array_merge($base, ['name' => 'Missing Program']),
+        ],
+    ])->assertRedirect();
+
+    expect(PpaFundingSource::count())->toBe(0);
 });

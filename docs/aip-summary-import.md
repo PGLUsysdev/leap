@@ -50,7 +50,14 @@ Sheets → Calibrate → Verify → Review/Extract → Import**. Each stage TBD:
    without office/schedule; output blank but office/schedule present
    (context row) → fund silently coerced to null (`effectiveFundingSource`,
    no info line); office, schedule, and output all blank (hierarchy row)
-   with a fund set → error. Blank means empty, `-`, or `—`. Climate
+   with a fund set → error. Blank means empty, `-`, or `—`.
+   Continuation rows inherit their block leader's office/schedule/output
+   for this judgment (own non-blank values win); only their own fund
+   cell counts. One row
+   carries exactly one funding source — the grain is one row per
+   expected output × funding source, so a cell naming several funds
+   (`GF-Proper /GF-20% DF`) is an error; split it across rows first.
+   Climate
    fields ride on the effective (post-coercion) fund: GF Proper only —
    a row whose effective fund isn't GF Proper (dash/space/case ignored)
    with Adaptation, Mitigation, or Typology set is an error (blank, `-`,

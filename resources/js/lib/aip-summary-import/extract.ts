@@ -19,6 +19,7 @@ import {
     PPA_TYPES,
     effectiveFundingSource,
     extractAipSummaryRows,
+    isBlankCell,
     parseColBPrefix,
 } from './verify';
 import type { AipPpaType } from './verify';
@@ -152,6 +153,7 @@ export function extractAipSummaryRecords(
         name: string;
         nameRaw: string;
         blockRow: number;
+        values: Record<string, string | null>;
     } | null = null;
 
     for (const keptRow of kept) {
@@ -169,6 +171,7 @@ export function extractAipSummaryRecords(
                 name: prefix?.stripped ?? description.trim(),
                 nameRaw: description,
                 blockRow: keptRow.row,
+                values: keptRow.values,
             };
             blocks++;
         }
@@ -178,10 +181,28 @@ export function extractAipSummaryRecords(
         if (!block) continue;
 
         const values = keptRow.values;
-        const expectedOutput = values.expectedOutput;
+        // Continuation rows inherit the leader's output context for blank
+        // cells (same output × additional funds grain); own values win.
+        // This keeps fund links attached to the block's expected output.
+        const leaderValues = block.values;
+        const pick = (
+            field: 'office' | 'startDate' | 'endDate' | 'expectedOutput',
+        ): string | null => {
+            const own = values[field];
+            if (!isBlankCell(own)) return own;
+            const inherited = leaderValues[field];
+            return isBlankCell(inherited) ? null : inherited;
+        };
+
+        const expectedOutput = pick('expectedOutput');
+        const officeText = pick('office');
+        const startText = pick('startDate');
+        const endText = pick('endDate');
         // Funding source anchors on the expected output (Verify gate):
         // rows without one carry no fund, even if the cell is filled.
-        const fundingSource = effectiveFundingSource(values);
+        // Continuations inherit the leader's context for that judgment
+        // but keep their own fund cell (one fund per row).
+        const fundingSource = effectiveFundingSource(values, block.values);
         const typology = values.typology;
 
         records.push({
@@ -194,11 +215,11 @@ export function extractAipSummaryRecords(
             typeIndex: block.typeIndex,
             name: block.name,
             nameRaw: block.nameRaw,
-            offices: splitAipOffices(values.office),
-            startDate: normalizeAipSchedule(values.startDate),
-            endDate: normalizeAipSchedule(values.endDate),
-            startDateRaw: values.startDate,
-            endDateRaw: values.endDate,
+            offices: splitAipOffices(officeText),
+            startDate: normalizeAipSchedule(startText),
+            endDate: normalizeAipSchedule(endText),
+            startDateRaw: startText,
+            endDateRaw: endText,
             expectedOutput,
             fundingSource,
             adaptation: values.adaptation,

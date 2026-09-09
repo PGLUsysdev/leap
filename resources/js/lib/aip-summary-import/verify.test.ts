@@ -6,6 +6,8 @@ import {
     extractAipSummaryRows,
     isBlankCell,
     outputRowState,
+    resolveRowContext,
+    splitFundSources,
     verifyAipSummarySheet,
 } from './verify';
 
@@ -648,6 +650,201 @@ describe('funding source anchors on expected output', () => {
                 (e) =>
                     e.message.includes('Adaptation') &&
                     e.message.includes('(got "—")'),
+            ),
+        ).toBe(true);
+    });
+
+    it('splits fund cells on slashes and commas, dropping blanks', () => {
+        expect(splitFundSources(null)).toEqual([]);
+        expect(splitFundSources('GF-Proper')).toEqual(['GF-Proper']);
+        expect(splitFundSources('GF-Proper /GF-20% DF')).toEqual([
+            'GF-Proper',
+            'GF-20% DF',
+        ]);
+        expect(
+            splitFundSources('GF-Proper/ 20%-DF/ 5%-LDRRMF/ Other sources'),
+        ).toEqual(['GF-Proper', '20%-DF', '5%-LDRRMF', 'Other sources']);
+        expect(splitFundSources('GF-Proper / -')).toEqual(['GF-Proper']);
+        expect(splitFundSources('—')).toEqual([]);
+    });
+
+    it('errors on a multi-fund cell, even with an expected output', () => {
+        const result = check(
+            'OPG',
+            'Jan-27',
+            'Dec-27',
+            'Lots Procured',
+            'GF-Proper /GF-20% DF',
+        );
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some((e) =>
+                e.message.includes('one funding source per row'),
+            ),
+        ).toBe(true);
+    });
+
+    it('errors on a multi-fund cell stacked with commas', () => {
+        const result = check(
+            'OPG',
+            'Jan-27',
+            'Dec-27',
+            'Support provided',
+            'GF-Proper/ 20%-DF/ 5%-LDRRMF/ Other sources of fund',
+        );
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some((e) =>
+                e.message.includes('one funding source per row'),
+            ),
+        ).toBe(true);
+    });
+
+    it('passes a single fund followed by a dash fragment', () => {
+        const result = check(
+            'OPG',
+            'Jan-27',
+            'Dec-27',
+            'Lots Procured',
+            'GF-Proper / -',
+        );
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+    });
+
+    it('merges a continuation row over its leader context', () => {
+        const leader = {
+            office: 'OPG',
+            startDate: 'Jan-27',
+            endDate: 'Dec-27',
+            expectedOutput: 'Support provided',
+        };
+        const blank = {
+            office: null,
+            startDate: null,
+            endDate: null,
+            expectedOutput: null,
+        };
+
+        expect(resolveRowContext(blank, leader)).toEqual(leader);
+        // Own non-blank values always win.
+        expect(
+            resolveRowContext({ ...blank, expectedOutput: 'Own output' }, leader),
+        ).toMatchObject({ expectedOutput: 'Own output', office: 'OPG' });
+        // No leader: own values alone.
+        expect(resolveRowContext(blank, undefined)).toEqual(blank);
+        expect(effectiveFundingSource({ ...blank, fundingSource: 'SEF' }, leader)).toBe('SEF');
+        expect(effectiveFundingSource({ ...blank, fundingSource: 'SEF' })).toBeNull();
+    });
+
+    it('passes fund-carrying continuations under an output leader', () => {
+        // Program + project leader row 10 + three blank-A continuations,
+        // one fund each.
+        const wb = buildSheet([
+            [
+                '1000-1-03-009-001',
+                'A. Support program',
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+            ],
+            [
+                '1000-1-03-009-001-001',
+                '1. Support work',
+                'OPG',
+                'Jan-27',
+                'Dec-27',
+                'Support provided',
+                'GF-Proper',
+                null,
+                null,
+                null,
+            ],
+            [null, null, null, null, null, null, '20%-DF', null, null, null],
+            [null, null, null, null, null, null, '5%-LDRRMF', null, null, null],
+            [null, null, null, null, null, null, 'Other sources', null, null, null],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+    });
+
+    it('errors on a fund-carrying continuation under a hierarchy leader', () => {
+        const wb = buildSheet([
+            [
+                '1000-1-03-009-001',
+                'A. Bare program',
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+            ],
+            [null, null, null, null, null, null, 'GF-Proper', null, null, null],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some((e) => e.message.includes('has no expected output')),
+        ).toBe(true);
+    });
+
+    it('judges each continuation climate row against its own fund', () => {
+        const wb = buildSheet([
+            [
+                '1000-1-03-009-001',
+                'A. Support program',
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+            ],
+            [
+                '1000-1-03-009-001-001',
+                '1. Support work',
+                'OPG',
+                'Jan-27',
+                'Dec-27',
+                'Support provided',
+                'GF-Proper',
+                null,
+                null,
+                null,
+            ],
+            // Same block output context, non-GF fund + CC set → CC error.
+            [null, null, null, null, null, null, 'SEF', '10.00', null, null],
+        ]);
+        const result = verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
+        expect(result.valid).toBe(false);
+        expect(
+            result.errors.some(
+                (e) =>
+                    e.message.includes('Adaptation') &&
+                    e.message.includes('(got "SEF")'),
             ),
         ).toBe(true);
     });

@@ -55,6 +55,11 @@ import {
     unmatchedOfficeFrequency,
     visibleUnmatched,
 } from '@/lib/aip-summary-import/match-offices';
+import type { RecordFundMatch } from '@/lib/aip-summary-import/match-funds';
+import {
+    matchRecordFunds,
+    unmatchedFundFrequency,
+} from '@/lib/aip-summary-import/match-funds';
 import { normalize } from '@/lib/ppmp/normalize';
 
 type ImportOffice = {
@@ -64,7 +69,33 @@ type ImportOffice = {
     full_code: string;
 };
 
+type ImportFund = {
+    id: number;
+    fund_type: string;
+    code: string;
+    title: string;
+};
+
 const importOfficeColumnHelper = createColumnHelper<ImportOffice>();
+
+const importFundColumnHelper = createColumnHelper<ImportFund>();
+
+const importFundColumns = [
+    importFundColumnHelper.accessor('code', {
+        size: 140,
+        header: () => <div className="text-center text-wrap">Code</div>,
+        cell: (info) => (
+            <div className="text-center font-mono text-wrap">
+                {info.getValue()}
+            </div>
+        ),
+    }),
+    importFundColumnHelper.accessor('title', {
+        size: 220,
+        header: () => <div className="text-center text-wrap">Title</div>,
+        cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
+    }),
+];
 
 const importOfficeColumns = [
     importOfficeColumnHelper.accessor('acronym', {
@@ -84,12 +115,14 @@ const importOfficeColumns = [
 ];
 
 export default function AipSummaryImport() {
-    // ----- Inertia props (offices, ppas, fiscal years, auth user) -----
+    // ----- Inertia props (offices, ppas, fiscal years, funds, auth user) -----
     const {
         existingOffices,
         existingPpas,
         fiscalYears,
         activeFiscalYear,
+        fundingSources,
+        ccTypologies,
         auth,
     } = usePage().props as unknown as {
         existingOffices: {
@@ -110,6 +143,13 @@ export default function AipSummaryImport() {
         }[];
         fiscalYears: { id: number; year: number; status: string }[];
         activeFiscalYear: { id: number; year: number; status: string } | null;
+        fundingSources: {
+            id: number;
+            fund_type: string;
+            code: string;
+            title: string;
+        }[];
+        ccTypologies: { id: number; code: string }[];
         auth: { user: { office_id: number | null } };
     };
 
@@ -211,6 +251,17 @@ export default function AipSummaryImport() {
         token: string;
     } | null>(null);
 
+    // ----- Per-record fund overrides (record.key -> funding_source_id) -----
+    const [fundOverrides, setFundOverrides] = useState<Record<string, number>>(
+        {},
+    );
+    // ----- Per-record explicitly removed unresolved funds -----
+    const [dismissedFunds, setDismissedFunds] = useState<
+        Record<string, boolean>
+    >({});
+    // ----- Which record the shared fund picker is mapping -----
+    const [fundPickerKey, setFundPickerKey] = useState<string | null>(null);
+
     // ----- Auto-match of implementing-office tokens (strict-normalized) -----
     const officeMatches = useMemo(() => {
         if (!extractResult) return new Map<string, RecordOfficeMatch>();
@@ -249,6 +300,65 @@ export default function AipSummaryImport() {
             officeOverrides[key],
             tokenMappings[key] ?? {},
         );
+    }
+
+    // ----- Auto-match of fund + typology tokens (strict-normalized) -----
+    const fundMatches = useMemo(() => {
+        if (!extractResult) return new Map<string, RecordFundMatch>();
+
+        return new Map(
+            extractResult.records.map((record) => [
+                record.key,
+                matchRecordFunds(
+                    record.key,
+                    record.fundingSource,
+                    record.typology,
+                    fundingSources,
+                    ccTypologies,
+                ),
+            ]),
+        );
+    }, [extractResult, fundingSources, ccTypologies]);
+
+    // ----- Unmatched fund frequencies (shows where to loosen matching later) -----
+    // Overridden + dismissed rows are out — already resolved.
+    const unmatchedFundEntries = useMemo(() => {
+        if (!extractResult) return [];
+
+        return unmatchedFundFrequency(
+            extractResult.records
+                .filter(
+                    (record) =>
+                        fundOverrides[record.key] === undefined &&
+                        !dismissedFunds[record.key],
+                )
+                .map(
+                    (record) =>
+                        fundMatches.get(record.key) ?? {
+                            key: record.key,
+                            fundToken: record.fundingSource,
+                            fund: null,
+                            typology: null,
+                        },
+                ),
+        );
+    }, [extractResult, fundMatches, fundOverrides, dismissedFunds]);
+
+    /** Effective funding_source_id for a record: override wins over auto-match. */
+    function fundIdForRecord(key: string): number | null {
+        const override = fundOverrides[key];
+        if (override !== undefined) return override;
+
+        return fundMatches.get(key)?.fund?.id ?? null;
+    }
+
+    /** CC peso amounts ride the fund link; blank/dash/non-numeric → 0. */
+    function ccAmount(value: string | null): number {
+        if (value == null) return 0;
+
+        const parsed = Number.parseFloat(value.trim());
+
+        return Number.isFinite(parsed) ? parsed : 0;
     }
 
     function resetRowOffices(key: string) {
@@ -525,6 +635,9 @@ export default function AipSummaryImport() {
         setTokenMappings({});
         setDismissedTokens({});
         setMappingTarget(null);
+        setFundOverrides({});
+        setDismissedFunds({});
+        setFundPickerKey(null);
     }
 
     const newBlocks = useMemo(
@@ -630,6 +743,103 @@ export default function AipSummaryImport() {
                     ).flash?.importReport;
 
                     console.log('AipSummaryImport outputs result:', report);
+                    console.table(
+                        report?.details.filter(
+                            (d) => d.status !== 'inserted',
+                        ) ?? [],
+                    );
+                },
+            },
+        );
+    }
+
+    const [importingFunds, setImportingFunds] = useState(false);
+
+    // Importable fund links: records carrying a fund with an effective
+    // funding_source_id and not dismissed. Typology falls back to null
+    // when unmatched; peso amounts stay out (zeros on the backend).
+    const importableFunds = useMemo(() => {
+        if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
+
+        const links: Array<{
+            key: string;
+            full_code: string;
+            name: string;
+            expected_output: string | null;
+            funding_source_id: number;
+            ccet_adaptation: number;
+            ccet_mitigation: number;
+            cc_typology_id: number | null;
+        }> = [];
+
+        for (const r of extractResult.records) {
+            if (r.fundingSource == null) continue;
+            if (dismissedFunds[r.key]) continue;
+
+            const fundingSourceId = fundIdForRecord(r.key);
+            if (fundingSourceId == null) continue;
+
+            links.push({
+                key: r.key,
+                full_code: r.fullCode,
+                name: r.name,
+                expected_output: r.expectedOutput,
+                funding_source_id: fundingSourceId,
+                ccet_adaptation: ccAmount(r.adaptation),
+                ccet_mitigation: ccAmount(r.mitigation),
+                cc_typology_id:
+                    fundMatches.get(r.key)?.typology?.id ?? null,
+            });
+        }
+
+        return links;
+    }, [
+        extractResult,
+        selectedOffice,
+        selectedFiscalYear,
+        fundMatches,
+        fundOverrides,
+        dismissedFunds,
+    ]);
+
+    function handleConfirmFunds() {
+        if (
+            !selectedOffice ||
+            !selectedFiscalYear ||
+            importableFunds.length === 0
+        )
+            return;
+        setImportingFunds(true);
+
+        router.post(
+            '/aip-summary-import/funding-sources',
+            {
+                office_id: Number(selectedOffice),
+                fiscal_year_id: Number(selectedFiscalYear),
+                links: importableFunds.map(({ key, ...payload }) => payload),
+            },
+            {
+                onFinish: () => setImportingFunds(false),
+                onSuccess: (page) => {
+                    const report = (
+                        page.props as unknown as {
+                            flash?: {
+                                importReport?: {
+                                    total: number;
+                                    inserted: number;
+                                    skipped: number;
+                                    status: string;
+                                    details: Array<{
+                                        output: string;
+                                        status: string;
+                                        id?: number;
+                                    }>;
+                                };
+                            };
+                        }
+                    ).flash?.importReport;
+
+                    console.log('AipSummaryImport funds result:', report);
                     console.table(
                         report?.details.filter(
                             (d) => d.status !== 'inserted',
@@ -1966,7 +2176,7 @@ export default function AipSummaryImport() {
                         />
                     </TabsContent>
 
-                    {/* ----- Import Funding Source (title only for now) ----- */}
+                    {/* ----- Import Funding Source (review UI + POST) ----- */}
                     <TabsContent
                         value="import-funding"
                         className="mt-4 flex flex-col gap-4"
@@ -1976,10 +2186,286 @@ export default function AipSummaryImport() {
                                 Import Funding Source
                             </h2>
                             <p className="text-muted-foreground text-sm">
-                                Review and import funding sources extracted from
-                                sheet “{selectedSheet}”.
+                                Review fund links extracted from sheet
+                                “{selectedSheet}” — funding source plus
+                                climate (adaptation / mitigation / typology).
+                                Peso amounts stay zero.
                             </p>
                         </div>
+
+                        {selectedOffice && selectedFiscalYear ? (
+                            <>
+                                <div className="flex flex-wrap items-center gap-3 rounded-md border p-3 text-sm">
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Rows with fund:
+                                        </span>{' '}
+                                        <span className="font-medium">
+                                            {extractResult?.records.filter(
+                                                (r) => r.fundingSource != null,
+                                            ).length ?? 0}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Importable:
+                                        </span>{' '}
+                                        <span className="font-medium text-blue-600">
+                                            {importableFunds.length}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Unresolved fund:
+                                        </span>{' '}
+                                        <span className="font-medium text-amber-600">
+                                            {unmatchedFundEntries.length}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {unmatchedFundFrequency.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs dark:border-amber-900 dark:bg-amber-950">
+                                        <span className="text-muted-foreground font-medium">
+                                            Unmatched fund tokens (strict
+                                            normalized match — candidates for
+                                            loosening):
+                                        </span>
+                                        {unmatchedFundEntries.map((entry) => (
+                                            <Badge
+                                                key={entry.token}
+                                                variant="outline"
+                                                className="border-amber-300 text-amber-700 dark:text-amber-400"
+                                                title={`${entry.count} row(s)`}
+                                            >
+                                                {entry.token} ×{entry.count}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {(extractResult?.records.length ?? 0) > 0 && (
+                                    <div className="overflow-x-auto rounded-md border">
+                                        <table className="w-full text-left text-xs">
+                                            <thead>
+                                                <tr className="bg-muted/50 text-muted-foreground border-b">
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Row
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        PPA / Output
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Fund
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Climate
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {extractResult?.records.map(
+                                                    (record) => {
+                                                        const match =
+                                                            fundMatches.get(
+                                                                record.key,
+                                                            );
+                                                        const override =
+                                                            fundOverrides[
+                                                                record.key
+                                                            ];
+                                                        const dismissed =
+                                                            !!dismissedFunds[
+                                                                record.key
+                                                            ];
+                                                        const effectiveId =
+                                                            fundIdForRecord(
+                                                                record.key,
+                                                            );
+                                                        const effective =
+                                                            effectiveId == null
+                                                                ? null
+                                                                : fundingSources.find(
+                                                                      (f) =>
+                                                                          f.id ===
+                                                                          effectiveId,
+                                                                  ) ?? null;
+
+                                                        return (
+                                                            <tr
+                                                                key={record.key}
+                                                                className="border-b last:border-0"
+                                                            >
+                                                                <td className="px-3 py-2 font-mono whitespace-nowrap">
+                                                                    {
+                                                                        record.row
+                                                                    }
+                                                                    {record.isContinuation && (
+                                                                        <span
+                                                                            className="text-muted-foreground ml-1"
+                                                                            title={`Continuation of row ${record.blockRow}`}
+                                                                        >
+                                                                            ↳
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="max-w-[28ch] px-3 py-2">
+                                                                    <div className="truncate font-medium">
+                                                                        {
+                                                                            record.name
+                                                                        }
+                                                                    </div>
+                                                                    <div className="text-muted-foreground truncate">
+                                                                        {record.expectedOutput ??
+                                                                            '—'}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-3 py-2">
+                                                                    {record.fundingSource ==
+                                                                    null ? (
+                                                                        <span className="text-muted-foreground">
+                                                                            —
+                                                                        </span>
+                                                                    ) : dismissed ? (
+                                                                        <span className="text-muted-foreground italic">
+                                                                            dismissed
+                                                                        </span>
+                                                                    ) : (
+                                                                        <div className="flex max-w-[30ch] flex-wrap items-center gap-1">
+                                                                            {override !==
+                                                                            undefined ? (
+                                                                                <span
+                                                                                    className="inline-flex items-center gap-1 rounded-md border border-blue-300 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-400"
+                                                                                    title={`"${record.fundingSource}" manually mapped to ${effective?.code ?? 'unknown fund'}`}
+                                                                                >
+                                                                                    {
+                                                                                        record.fundingSource
+                                                                                    }{' '}
+                                                                                    →{' '}
+                                                                                    {effective?.code ??
+                                                                                        '?'}
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        className="cursor-pointer opacity-60 hover:opacity-100"
+                                                                                        onClick={() =>
+                                                                                            setFundOverrides(
+                                                                                                (
+                                                                                                    prev,
+                                                                                                ) => {
+                                                                                                    const next =
+                                                                                                        {
+                                                                                                            ...prev,
+                                                                                                        };
+                                                                                                    delete next[
+                                                                                                        record.key
+                                                                                                    ];
+
+                                                                                                    return next;
+                                                                                                },
+                                                                                            )
+                                                                                        }
+                                                                                        title={`Unmap "${record.fundingSource}"`}
+                                                                                    >
+                                                                                        <X className="h-3 w-3" />
+                                                                                    </button>
+                                                                                </span>
+                                                                            ) : match?.fund ? (
+                                                                                <Badge
+                                                                                    variant="secondary"
+                                                                                    className="text-[10px]"
+                                                                                >
+                                                                                    {
+                                                                                        match
+                                                                                            .fund
+                                                                                            .code
+                                                                                    }
+                                                                                </Badge>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <span
+                                                                                        className="inline-flex items-center gap-1 rounded-md border border-amber-300 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+                                                                                        title={`No funding source matches "${record.fundingSource}" — map it or remove it`}
+                                                                                    >
+                                                                                        {
+                                                                                            record.fundingSource
+                                                                                        }{' '}
+                                                                                        ?
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            className="cursor-pointer rounded px-0.5 font-semibold underline decoration-dotted underline-offset-2 opacity-70 hover:opacity-100"
+                                                                                            onClick={() =>
+                                                                                                setFundPickerKey(
+                                                                                                    record.key,
+                                                                                                )
+                                                                                            }
+                                                                                            title={`Map "${record.fundingSource}" to a funding source`}
+                                                                                        >
+                                                                                            Map
+                                                                                        </button>
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            className="cursor-pointer opacity-60 hover:opacity-100"
+                                                                                            onClick={() =>
+                                                                                                setDismissedFunds(
+                                                                                                    (
+                                                                                                        prev,
+                                                                                                    ) => ({
+                                                                                                        ...prev,
+                                                                                                        [record.key]:
+                                                                                                            true,
+                                                                                                    }),
+                                                                                                )
+                                                                                            }
+                                                                                            title={`Remove this row from the fund import`}
+                                                                                        >
+                                                                                            <X className="h-3 w-3" />
+                                                                                        </button>
+                                                                                    </span>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-3 py-2 whitespace-nowrap">
+                                                                    {record.adaptation ??
+                                                                        '—'}{' '}
+                                                                    /{' '}
+                                                                    {record.mitigation ??
+                                                                        '—'}{' '}
+                                                                    /{' '}
+                                                                    {match?.typology ? (
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="text-[10px]"
+                                                                        >
+                                                                            {
+                                                                                match
+                                                                                    .typology
+                                                                                    .code
+                                                                            }
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-muted-foreground">
+                                                                            {record.typology ??
+                                                                                '—'}
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    },
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="text-muted-foreground text-sm">
+                                Please select a target office and fiscal year to
+                                review the extracted fund links.
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-between">
                             <Button
@@ -1988,7 +2474,54 @@ export default function AipSummaryImport() {
                             >
                                 Back: Extract
                             </Button>
+                            <div className="flex flex-col items-end gap-1">
+                                <Button
+                                    onClick={handleConfirmFunds}
+                                    disabled={
+                                        !selectedOffice ||
+                                        !selectedFiscalYear ||
+                                        importableFunds.length === 0 ||
+                                        importingFunds
+                                    }
+                                >
+                                    {importingFunds && <Spinner />}
+                                    Confirm &amp; Import{' '}
+                                    {importableFunds.length} Fund Link
+                                    {importableFunds.length === 1 ? '' : 's'}
+                                </Button>
+                                <p className="text-muted-foreground text-xs">
+                                    Links + climate only — peso amounts stay
+                                    zero.
+                                </p>
+                            </div>
                         </div>
+
+                        <TableSelect<ImportFund>
+                            data={fundingSources}
+                            columns={importFundColumns}
+                            open={fundPickerKey !== null}
+                            onOpenChange={(open) => {
+                                if (!open) setFundPickerKey(null);
+                            }}
+                            onRowSelect={(row) => {
+                                if (fundPickerKey) {
+                                    setFundOverrides((prev) => ({
+                                        ...prev,
+                                        [fundPickerKey]: row.id,
+                                    }));
+                                }
+                            }}
+                            value={
+                                fundPickerKey &&
+                                fundOverrides[fundPickerKey] !== undefined
+                                    ? String(fundOverrides[fundPickerKey])
+                                    : undefined
+                            }
+                            valueKey="id"
+                            title="Map fund to a funding source"
+                            description="Click a row to map this token to that funding source."
+                            className="sm:max-w-[30rem]"
+                        />
                     </TabsContent>
                 </Tabs>
             </div>

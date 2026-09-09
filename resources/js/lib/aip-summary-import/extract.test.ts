@@ -212,8 +212,7 @@ describe('extractAipSummaryRecords', () => {
         expect(result.records[0].fundNorm).toBe('gf-proper');
     });
 
-    it('coerces the fund to null on rows without an expected output', () => {
-        const wb = buildWorkbook([
+    it('coerces the fund to null on rows without an expected output', () => {        const wb = buildWorkbook([
             // Context row: office + dates set, output blank.
             [
                 '1000-1-03-009-001',
@@ -253,5 +252,80 @@ describe('extractAipSummaryRecords', () => {
             expect(record.fundingSource).toBeNull();
             expect(record.fundNorm).toBeNull();
         }
+    });
+
+    it('keeps each continuation fund under an output leader', () => {
+        const wb = buildWorkbook([
+            [
+                '1000-1-03-009-001-001',
+                '1. Support work',
+                'OPG',
+                'Jan-27',
+                'Dec-27',
+                'Support provided',
+                'GF-Proper',
+                null,
+                null,
+                null,
+            ],
+            [null, null, null, null, null, null, '20%-DF', null, null, null],
+            [null, null, null, null, null, null, '5%-LDRRMF', null, null, null],
+        ]);
+        const ws = wb.getWorksheet('Sheet1')!;
+        const result = extractAipSummaryRecords(ws, {
+            ...getDefaultAipSummaryConfig(),
+            headerRow: 7,
+        });
+
+        expect(result.records).toHaveLength(3);
+        expect(result.records.map((r) => r.fundingSource)).toEqual([
+            'GF-Proper',
+            '20%-DF',
+            '5%-LDRRMF',
+        ]);
+        expect(result.records.map((r) => r.fundNorm)).toEqual([
+            'gf-proper',
+            '20%-df',
+            '5%-ldrrmf',
+        ]);
+        // Leader carries the output; blank continuations inherit it, so
+        // their fund links attach to the block's expected output.
+        for (const record of result.records) {
+            expect(record.expectedOutput).toBe('Support provided');
+            expect(record.fullCode).toBe('1000-1-03-009-001-001');
+        }
+        expect(result.records[0].isContinuation).toBe(false);
+        expect(result.records[1].offices).toEqual(['OPG']);
+    });
+
+    it('inherits leader offices and schedule on blank continuations', () => {
+        const wb = buildWorkbook([
+            [
+                '1000-1-03-009-001-001',
+                '1. Support work',
+                'OPG',
+                'Jan-27',
+                'Dec-27',
+                'Support provided',
+                'GF-Proper',
+                null,
+                null,
+                null,
+            ],
+            [null, null, null, null, null, null, '20%-DF', null, null, null],
+        ]);
+        const ws = wb.getWorksheet('Sheet1')!;
+        const result = extractAipSummaryRecords(ws, {
+            ...getDefaultAipSummaryConfig(),
+            headerRow: 7,
+        });
+
+        const cont = result.records[1];
+        expect(cont.isContinuation).toBe(true);
+        expect(cont.expectedOutput).toBe('Support provided');
+        expect(cont.offices).toEqual(['OPG']);
+        expect(cont.startDate).toBe('2027-01-01');
+        expect(cont.endDate).toBe('2027-12-01');
+        expect(cont.fundingSource).toBe('20%-DF');
     });
 });

@@ -230,6 +230,21 @@ export function isBlankCell(value: string | null): boolean {
 }
 
 /**
+ * Split a funding-source cell on `/` or `,` into its fund tokens,
+ * dropping blanks and dash-only fragments. The sheet grain is one row
+ * per expected output × funding source, so more than one token is a
+ * structural error (see the funding-source rule in Pass 1).
+ */
+export function splitFundSources(value: string | null): string[] {
+    if (value == null) return [];
+
+    return value
+        .split(/[/,]/)
+        .map((part) => part.trim())
+        .filter((part) => !isBlankCell(part));
+}
+
+/**
  * Which output context a kept row carries — the anchor for the funding
  * source rule:
  * - `output`: expected output set — funding source allowed, schedule and
@@ -261,13 +276,48 @@ export function outputRowState(
  * Funding source that counts: only `output` rows carry one. Context rows
  * silently coerce to null (no info line); hierarchy rows are judged by
  * the funding-source rule instead.
+ *
+ * Continuation rows inherit their block leader's context: pass the
+ * leader's values as `blockValues` so a fund-carrying continuation under
+ * an output block keeps its own fund cell. `'ppa'` rows pass their own
+ * values (or nothing — same result).
  */
 export function effectiveFundingSource(
     values: Record<string, string | null>,
+    blockValues?: Record<string, string | null>,
 ): string | null {
-    return outputRowState(values) === 'output'
+    return outputRowState(resolveRowContext(values, blockValues)) ===
+        'output'
         ? (values.fundingSource ?? null)
         : null;
+}
+
+/**
+ * Merge a kept row's anchor fields over its block leader's. Continuation
+ * rows leave office/schedule/output blank by format; the leader's values
+ * fill those gaps so the anchor rule judges the block context, not the
+ * blank cells. A row's own non-blank values always win.
+ */
+export function resolveRowContext(
+    values: Record<string, string | null>,
+    blockValues?: Record<string, string | null>,
+): Record<string, string | null> {
+    if (!blockValues) return values;
+
+    const merged = { ...values };
+
+    for (const field of [
+        'office',
+        'startDate',
+        'endDate',
+        'expectedOutput',
+    ] as const) {
+        if (isBlankCell(merged[field])) {
+            merged[field] = blockValues[field] ?? null;
+        }
+    }
+
+    return merged;
 }
 
 /** Lenient GF Proper check — dashes/spaces/case ignored (`GF-Proper`, `GF Proper`, `GF`). */
@@ -476,10 +526,15 @@ export function verifyAipSummarySheet(
     const parsed = new Map<string, ParsedRow>();
     const ppaRows = kept.filter((k) => k.kind === 'ppa');
 
+    // Current block leader's anchor fields. Continuation rows inherit
+    // them for the anchor rule (they leave these cells blank by format).
+    let blockValues: Record<string, string | null> | null = null;
+
     for (const keptRow of kept) {
         const { row, kind, values } = keptRow;
 
         if (kind === 'ppa') {
+            blockValues = values;
             const ref = parseRefCode(values.refCode ?? '', row, errors);
 
             if (ref) {
@@ -546,8 +601,10 @@ export function verifyAipSummarySheet(
         // (office, schedule, and output all blank) carrying a funding
         // source is an error. Context rows silently coerce their fund to
         // null (see `effectiveFundingSource`) — no info line.
+        // Continuation rows inherit their block leader's context.
         if (
-            outputRowState(values) === 'hierarchy' &&
+            outputRowState(resolveRowContext(values, blockValues ?? undefined)) ===
+                'hierarchy' &&
             !isBlankCell(values.fundingSource)
         ) {
             errors.push({
@@ -558,11 +615,28 @@ export function verifyAipSummarySheet(
             });
         }
 
+        // One row carries exactly one funding source: the sheet grain is
+        // one row per expected output × funding source, so a cell naming
+        // several funds must be split across rows first.
+        if (splitFundSources(values.fundingSource).length > 1) {
+            errors.push({
+                row,
+                message:
+                    `Funding source lists ${splitFundSources(values.fundingSource).length} sources ` +
+                    `("${values.fundingSource}") — one funding source per row; split across rows`,
+            });
+        }
+
         // Climate fields ride on GF Proper funding only — any other fund
         // (or none) with a CC value set is an error. Runs on the
         // effective fund, so context rows (fund coerced to null) with CC
-        // values set fail here too.
-        if (!isGfProperFund(effectiveFundingSource(values))) {
+        // values set fail here too. Each continuation judges its own fund
+        // cell against its (possibly inherited) output context.
+        if (
+            !isGfProperFund(
+                effectiveFundingSource(values, blockValues ?? undefined),
+            )
+        ) {
             const set = (
                 [
                     'adaptation',
@@ -579,7 +653,7 @@ export function verifyAipSummarySheet(
                     row,
                     message:
                         `CC fields require "GF Proper" funding ` +
-                        `(got "${effectiveFundingSource(values) ?? '—'}"): ${names} must be blank`,
+                        `(got "${effectiveFundingSource(values, blockValues ?? undefined) ?? '—'}"): ${names} must be blank`,
                 });
             }
         }
