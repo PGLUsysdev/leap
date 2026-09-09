@@ -5,10 +5,10 @@ import { Decimal } from 'decimal.js';
 import { Pencil, Plus, ShieldCheck, Trash } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import type { NumberedAipEntry } from '@/lib/aip-summary/sort-tree';
 import type { AipEntry, AipOutput, PpaFundingSource } from '@/types';
 
-type FundingSourceRow = AipEntry & {
-    number: string;
+type FundingSourceRow = NumberedAipEntry & {
     current_fs: PpaFundingSource | null;
     output: AipOutput | null;
     // Flat grouping keys used by DataTable column meta.spanKey:

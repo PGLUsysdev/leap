@@ -464,4 +464,8 @@ Route::post('aip-summary-import', [AipSummaryImportController::class, 'store'])-
     'aip-summary-import.store',
 );
 
+Route::post('aip-summary-import/outputs', [AipSummaryImportController::class, 'storeOutputs'])->name(
+    'aip-summary-import.store-outputs',
+);
+
 require __DIR__.'/settings.php';

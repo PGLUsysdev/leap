@@ -43,6 +43,8 @@ import type {
     AipOutput,
     PpaFundingSource,
 } from '@/types';
+import type { NumberedAipEntry } from '@/lib/aip-summary/sort-tree';
+import { sortFlatLikeTree } from '@/lib/aip-summary/sort-tree';
 import newColumns from './columns/new-columns';
 import ExportToPdfDialog from './export-to-pdf-dialog';
 import ExportSummaryToPdfDialog from './pdf-render/amounts-by-fs/pdf-preview-dialog';
@@ -86,76 +88,6 @@ interface AipSummaryProps {
     newAipEntries: AipEntry[];
     ppaTypes: string[];
     ppaTypePadding: Record<string, number>;
-}
-
-type NumberedAipEntry = AipEntry & { number: string };
-
-function toLetters(n: number): string {
-    let s = '';
-
-    while (n > 0) {
-        n--;
-        s = String.fromCharCode(65 + (n % 26)) + s;
-        n = Math.floor(n / 26);
-    }
-
-    return s;
-}
-
-function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
-    const byParent = new Map<number | null, AipEntry[]>();
-    const seen = new Set<number>();
-
-    for (const entry of entries) {
-        if (seen.has(entry.ppa_id)) {
-            throw new Error(`Duplicate ppa_id found: ${entry.ppa_id}`);
-        }
-
-        seen.add(entry.ppa_id);
-
-        const parentId = entry.ppa?.parent_id ?? null;
-
-        if (!byParent.has(parentId)) {
-            byParent.set(parentId, []);
-        }
-
-        byParent.get(parentId)!.push(entry);
-    }
-
-    const sortSiblings = (list: AipEntry[]) =>
-        list.sort(
-            (a, b) => (a.ppa?.sort_order ?? 0) - (b.ppa?.sort_order ?? 0),
-        );
-
-    const counters: number[] = [];
-    const result: NumberedAipEntry[] = [];
-    const stack: { entry: AipEntry; depth: number }[] = [
-        ...sortSiblings(byParent.get(null) ?? []),
-    ]
-        .reverse()
-        .map((entry) => ({ entry, depth: 0 }));
-
-    while (stack.length) {
-        const { entry, depth } = stack.pop()!;
-
-        counters[depth] = (counters[depth] ?? 0) + 1;
-        counters.length = depth + 1;
-
-        const number =
-            (depth === 0
-                ? toLetters(counters[0])
-                : counters.slice(1, depth + 1).join('.')) + '.';
-
-        result.push({ ...entry, number });
-
-        const kids = sortSiblings(byParent.get(entry.ppa_id) ?? []);
-
-        for (let i = kids.length - 1; i >= 0; i--) {
-            stack.push({ entry: kids[i], depth: depth + 1 });
-        }
-    }
-
-    return result;
 }
 
 type FundingSourceRow = NumberedAipEntry & {

@@ -553,6 +553,93 @@ export default function AipSummaryImport() {
         );
     }
 
+    const [importingOutputs, setImportingOutputs] = useState(false);
+
+    // Importable grain: output rows plus context rows (office/schedule
+    // present, output null — e.g. MANPOWER SERVICES). Pure hierarchy rows
+    // (nothing carried) are excluded. Office ids are the effective
+    // resolution (auto + mappings + overrides); rows with none are still
+    // sent so the backend can report them as skipped.
+    const importableOutputs = useMemo(() => {
+        if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
+
+        return extractResult.records
+            .filter(
+                (r) =>
+                    (r.expectedOutput != null &&
+                        r.expectedOutput.trim() !== '') ||
+                    r.offices.length > 0 ||
+                    r.startDate != null ||
+                    r.endDate != null,
+            )
+            .map((r) => ({
+                key: r.key,
+                full_code: r.fullCode,
+                name: r.name,
+                expected_output: r.expectedOutput,
+                start_date: r.startDate,
+                end_date: r.endDate,
+                office_ids: officeIdsForRecord(r.key),
+            }));
+    }, [
+        extractResult,
+        selectedOffice,
+        selectedFiscalYear,
+        officeMatches,
+        officeOverrides,
+        tokenMappings,
+    ]);
+
+    function handleConfirmOutputs() {
+        if (
+            !selectedOffice ||
+            !selectedFiscalYear ||
+            importableOutputs.length === 0
+        )
+            return;
+        setImportingOutputs(true);
+
+        router.post(
+            '/aip-summary-import/outputs',
+            {
+                office_id: Number(selectedOffice),
+                fiscal_year_id: Number(selectedFiscalYear),
+                outputs: importableOutputs.map(
+                    ({ key, ...payload }) => payload,
+                ),
+            },
+            {
+                onFinish: () => setImportingOutputs(false),
+                onSuccess: (page) => {
+                    const report = (
+                        page.props as unknown as {
+                            flash?: {
+                                importReport?: {
+                                    total: number;
+                                    inserted: number;
+                                    skipped: number;
+                                    status: string;
+                                    details: Array<{
+                                        output: string;
+                                        status: string;
+                                        id?: number;
+                                    }>;
+                                };
+                            };
+                        }
+                    ).flash?.importReport;
+
+                    console.log('AipSummaryImport outputs result:', report);
+                    console.table(
+                        report?.details.filter(
+                            (d) => d.status !== 'inserted',
+                        ) ?? [],
+                    );
+                },
+            },
+        );
+    }
+
     // ----- Render -----
     return (
         <>
@@ -1785,15 +1872,24 @@ export default function AipSummaryImport() {
                                 Back: Extract
                             </Button>
                             <div className="flex flex-col items-end gap-1">
-                                <Button disabled={true}>
+                                <Button
+                                    onClick={handleConfirmOutputs}
+                                    disabled={
+                                        !selectedOffice ||
+                                        !selectedFiscalYear ||
+                                        importableOutputs.length === 0 ||
+                                        importingOutputs
+                                    }
+                                >
+                                    {importingOutputs && <Spinner />}
                                     Confirm &amp; Import{' '}
-                                    {extractResult?.records.length ?? 0} Output
-                                    {extractResult?.records.length === 1
-                                        ? ''
-                                        : 's'}
+                                    {importableOutputs.length} Output
+                                    {importableOutputs.length === 1 ? '' : 's'}
                                 </Button>
                                 <p className="text-muted-foreground text-xs">
-                                    Preview only — import endpoint TBD.
+                                    Matched by PPA name — rows without a
+                                    resolved office or PPA are reported as
+                                    skipped.
                                 </p>
                             </div>
                         </div>
