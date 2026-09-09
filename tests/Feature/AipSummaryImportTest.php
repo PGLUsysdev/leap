@@ -154,7 +154,7 @@ test('it imports outputs matched by normalized ppa name', function () {
     expect($output->offices()->pluck('offices.id')->all())->toBe([$office->id]);
 });
 
-test('it skips outputs with no ppa, no offices, or duplicates', function () {
+test('it skips outputs with no ppa or duplicates', function () {
     $office = createImportOffice();
     $user = createOutputsUser($office);
     $fiscalYear = FiscalYear::factory()->create(['status' => 'draft']);
@@ -182,7 +182,6 @@ test('it skips outputs with no ppa, no offices, or duplicates', function () {
         'outputs' => [
             $base,
             array_merge($base, ['name' => 'Missing Program']),
-            array_merge($base, ['expected_output' => 'Orphan output', 'office_ids' => []]),
         ],
     ];
 
@@ -191,6 +190,40 @@ test('it skips outputs with no ppa, no offices, or duplicates', function () {
     $this->actingAs($user)->post('/aip-summary-import/outputs', $payload)->assertRedirect();
 
     expect(AipOutput::count())->toBe(1);
+});
+
+test('it imports outputs with no resolved offices', function () {
+    $office = createImportOffice();
+    $user = createOutputsUser($office);
+    $fiscalYear = FiscalYear::factory()->create(['status' => 'draft']);
+    $ppa = Ppa::create([
+        'office_id' => $office->id,
+        'parent_id' => null,
+        'name' => 'ISO Program',
+        'type' => 'Program',
+        'code_suffix' => '1',
+        'fiscal_year_id' => $fiscalYear->id,
+    ]);
+
+    $this->actingAs($user)->post('/aip-summary-import/outputs', [
+        'office_id' => $office->id,
+        'fiscal_year_id' => $fiscalYear->id,
+        'outputs' => [
+            [
+                'full_code' => $ppa->full_code,
+                'name' => 'ISO Program',
+                'expected_output' => '100% of needed ISO requirements implemented',
+                'start_date' => null,
+                'end_date' => null,
+                'office_ids' => [],
+            ],
+        ],
+    ])->assertRedirect();
+
+    $entry = AipEntry::where('ppa_id', $ppa->id)->firstOrFail();
+    $output = $entry->outputs()->firstOrFail();
+    expect($output->expected_output)->toBe('100% of needed ISO requirements implemented');
+    expect($output->offices()->count())->toBe(0);
 });
 
 test('it disambiguates same-name ppas by full code', function () {

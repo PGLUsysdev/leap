@@ -123,6 +123,7 @@ export default function AipSummaryImport() {
         activeFiscalYear,
         fundingSources,
         ccTypologies,
+        existingOutputs,
         auth,
     } = usePage().props as unknown as {
         existingOffices: {
@@ -150,6 +151,13 @@ export default function AipSummaryImport() {
             title: string;
         }[];
         ccTypologies: { id: number; code: string }[];
+        existingOutputs: {
+            id: number;
+            ppa_id: number;
+            office_id: number;
+            fiscal_year_id: number | null;
+            expected_output: string | null;
+        }[];
         auth: { user: { office_id: number | null } };
     };
 
@@ -688,6 +696,8 @@ export default function AipSummaryImport() {
             .map((r) => ({
                 key: r.key,
                 full_code: r.fullCode,
+                fullCodeNorm: r.fullCodeNorm,
+                outputNorm: r.outputNorm,
                 name: r.name,
                 expected_output: r.expectedOutput,
                 start_date: r.startDate,
@@ -703,11 +713,94 @@ export default function AipSummaryImport() {
         tokenMappings,
     ]);
 
+    // Exists/new status per output row: resolve the PPA by normalized ref
+    // code within the selected office + fiscal year, then match the
+    // expected output text (null matches null). Rows with no resolved
+    // offices are flagged `no-offices` but still importable — offices
+    // attach later via the edit dialog. Mirrors the PPA tab.
+    type OutputImportStatus = 'exists' | 'new' | 'no-ppa' | 'no-offices';
+
+    const outputStatuses = useMemo(() => {
+        const map = new Map<string, OutputImportStatus>();
+
+        if (!selectedOffice || !selectedFiscalYear) return map;
+
+        const officeId = Number(selectedOffice);
+        const fiscalYearId = Number(selectedFiscalYear);
+        const ppasByCode = new Map<number, (typeof existingPpas)[number]>();
+        for (const ppa of existingPpas) {
+            if (
+                ppa.office_id === officeId &&
+                ppa.fiscal_year_id === fiscalYearId &&
+                !ppasByCode.has(ppa.id)
+            ) {
+                ppasByCode.set(ppa.id, ppa);
+            }
+        }
+        const byCodeNorm = new Map<string, (typeof existingPpas)[number]>();
+        for (const ppa of ppasByCode.values()) {
+            const key = normalize(ppa.full_code);
+            if (!byCodeNorm.has(key)) byCodeNorm.set(key, ppa);
+        }
+        const outputsByPpa = new Map<number, typeof existingOutputs>();
+        for (const output of existingOutputs) {
+            if (
+                output.office_id !== officeId ||
+                output.fiscal_year_id !== fiscalYearId
+            ) {
+                continue;
+            }
+            const list = outputsByPpa.get(output.ppa_id) ?? [];
+            list.push(output);
+            outputsByPpa.set(output.ppa_id, list);
+        }
+
+        for (const row of importableOutputs) {
+            const ppa = byCodeNorm.get(row.fullCodeNorm);
+            if (!ppa) {
+                map.set(row.key, 'no-ppa');
+                continue;
+            }
+            const match = (outputsByPpa.get(ppa.id) ?? []).some((o) =>
+                row.outputNorm == null
+                    ? o.expected_output == null
+                    : o.expected_output != null &&
+                      normalize(o.expected_output) === row.outputNorm,
+            );
+            if (match) {
+                map.set(row.key, 'exists');
+                continue;
+            }
+            map.set(
+                row.key,
+                row.office_ids.length === 0 ? 'no-offices' : 'new',
+            );
+        }
+
+        return map;
+    }, [
+        importableOutputs,
+        selectedOffice,
+        selectedFiscalYear,
+        existingPpas,
+        existingOutputs,
+    ]);
+
+    const newOutputs = useMemo(
+        () =>
+            importableOutputs.filter((r) => {
+                const status = outputStatuses.get(r.key);
+
+                return status === 'new' || status === 'no-offices';
+            }),
+        [importableOutputs, outputStatuses],
+    );
+
     function handleConfirmOutputs() {
         if (
             !selectedOffice ||
             !selectedFiscalYear ||
-            importableOutputs.length === 0
+            newOutputs.length === 0
         )
             return;
         setImportingOutputs(true);
@@ -717,8 +810,8 @@ export default function AipSummaryImport() {
             {
                 office_id: Number(selectedOffice),
                 fiscal_year_id: Number(selectedFiscalYear),
-                outputs: importableOutputs.map(
-                    ({ key, ...payload }) => payload,
+                outputs: newOutputs.map(
+                    ({ key, fullCodeNorm, outputNorm, ...payload }) => payload,
                 ),
             },
             {
@@ -1718,6 +1811,29 @@ export default function AipSummaryImport() {
                                     </div>
                                     <div>
                                         <span className="text-muted-foreground">
+                                            New:
+                                        </span>{' '}
+                                        <span className="font-medium text-blue-600">
+                                            {newOutputs.length}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
+                                            Exists:
+                                        </span>{' '}
+                                        <span className="font-medium text-green-600">
+                                            {
+                                                importableOutputs.filter(
+                                                    (r) =>
+                                                        outputStatuses.get(
+                                                            r.key,
+                                                        ) === 'exists',
+                                                ).length
+                                            }
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-muted-foreground">
                                             Unresolved offices:
                                         </span>{' '}
                                         <span className="font-medium text-amber-600">
@@ -1778,6 +1894,9 @@ export default function AipSummaryImport() {
                                                     </th>
                                                     <th className="px-3 py-2 font-medium">
                                                         Expected Output
+                                                    </th>
+                                                    <th className="px-3 py-2 font-medium">
+                                                        Status
                                                     </th>
                                                 </tr>
                                             </thead>
@@ -2059,6 +2178,72 @@ export default function AipSummaryImport() {
                                                                 {record.expectedOutput ??
                                                                     '—'}
                                                             </td>
+                                                            <td className="px-3 py-2 whitespace-nowrap">
+                                                                {(() => {
+                                                                    const status =
+                                                                        outputStatuses.get(
+                                                                            record.key,
+                                                                        );
+
+                                                                    if (
+                                                                        status ===
+                                                                        'exists'
+                                                                    ) {
+                                                                        return (
+                                                                            <span className="font-medium text-green-600">
+                                                                                Exists
+                                                                            </span>
+                                                                        );
+                                                                    }
+
+                                                                    if (
+                                                                        status ===
+                                                                        'no-ppa'
+                                                                    ) {
+                                                                        return (
+                                                                            <span
+                                                                                className="font-medium text-amber-600"
+                                                                                title="No PPA with this ref code in the selected office + fiscal year"
+                                                                            >
+                                                                                No
+                                                                                PPA
+                                                                            </span>
+                                                                        );
+                                                                    }
+
+                                                                    if (
+                                                                        status ===
+                                                                        'new'
+                                                                    ) {
+                                                                        return (
+                                                                            <span className="font-medium text-blue-600">
+                                                                                New
+                                                                            </span>
+                                                                        );
+                                                                    }
+
+                                                                    if (
+                                                                        status ===
+                                                                        'no-offices'
+                                                                    ) {
+                                                                        return (
+                                                                            <span
+                                                                                className="font-medium text-amber-600"
+                                                                                title="No offices resolved — imports without offices; attach them later via edit"
+                                                                            >
+                                                                                No
+                                                                                offices
+                                                                            </span>
+                                                                        );
+                                                                    }
+
+                                                                    return (
+                                                                        <span className="text-muted-foreground">
+                                                                            —
+                                                                        </span>
+                                                                    );
+                                                                })()}
+                                                            </td>
                                                         </tr>
                                                     ),
                                                 )}
@@ -2087,19 +2272,19 @@ export default function AipSummaryImport() {
                                     disabled={
                                         !selectedOffice ||
                                         !selectedFiscalYear ||
-                                        importableOutputs.length === 0 ||
+                                        newOutputs.length === 0 ||
                                         importingOutputs
                                     }
                                 >
                                     {importingOutputs && <Spinner />}
-                                    Confirm &amp; Import{' '}
-                                    {importableOutputs.length} Output
-                                    {importableOutputs.length === 1 ? '' : 's'}
+                                    Confirm &amp; Import {newOutputs.length}{' '}
+                                    Output
+                                    {newOutputs.length === 1 ? '' : 's'}
                                 </Button>
                                 <p className="text-muted-foreground text-xs">
-                                    Matched by PPA name — rows without a
-                                    resolved office or PPA are reported as
-                                    skipped.
+                                    Matched by PPA name — any row with office,
+                                    schedule, or output imports (offices
+                                    attach later when unresolved).
                                 </p>
                             </div>
                         </div>

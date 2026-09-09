@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AipEntry;
+use App\Models\AipOutput;
 use App\Models\CcTypology;
 use App\Models\FiscalYear;
 use App\Models\FundingSource;
@@ -91,6 +92,25 @@ class AipSummaryImportController extends Controller
             'fiscalYears' => $fiscalYears,
             'existingOffices' => $offices,
             'existingPpas' => $ppas,
+            'existingOutputs' => AipOutput::join('aip_entries', 'aip_entries.id', '=', 'aip_outputs.aip_entry_id')
+                ->join('ppas', 'ppas.id', '=', 'aip_entries.ppa_id')
+                ->orderBy('aip_outputs.id')
+                ->get([
+                    'aip_outputs.id',
+                    'aip_outputs.expected_output',
+                    'aip_entries.ppa_id',
+                    'ppas.office_id',
+                    'ppas.fiscal_year_id',
+                ])
+                ->map(
+                    fn ($row) => [
+                        'id' => $row->id,
+                        'ppa_id' => $row->ppa_id,
+                        'office_id' => $row->office_id,
+                        'fiscal_year_id' => $row->fiscal_year_id,
+                        'expected_output' => $row->expected_output,
+                    ],
+                ),
             'fundingSources' => FundingSource::select(['id', 'fund_type', 'code', 'title'])
                 ->orderBy('code')
                 ->get(),
@@ -333,12 +353,11 @@ class AipSummaryImportController extends Controller
                 $entry = AipEntry::firstOrCreate(['ppa_id' => $ppa->id]);
                 Gate::authorize('update', $entry);
 
+                // Offices are optional on import: a row with any one valid
+                // column (office, schedule, or output) imports, attaching
+                // whatever offices resolved (possibly none — added later
+                // via the edit dialog).
                 $officeIds = array_values(array_unique($item['office_ids'] ?? []));
-                if ($officeIds === []) {
-                    $skip('skipped: no offices resolved');
-
-                    continue;
-                }
 
                 $start = $item['start_date'] ?? null;
                 $end = $item['end_date'] ?? null;
@@ -363,7 +382,9 @@ class AipSummaryImportController extends Controller
                     'end_date' => $end,
                     'sort_order' => ((int) $entry->outputs()->max('sort_order')) + 1,
                 ]);
-                $output->offices()->sync($officeIds);
+                if ($officeIds !== []) {
+                    $output->offices()->sync($officeIds);
+                }
 
                 $inserted++;
                 $details[] = ['output' => $label, 'status' => 'inserted', 'id' => $output->id];
