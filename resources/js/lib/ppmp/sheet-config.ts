@@ -47,3 +47,32 @@ export type CategoryCoaRowConfig = SheetRowConfig;
 export function getDefaultMappingConfig(): CategoryCoaSheetConfig {
     return getDefaultSharedConfig() as CategoryCoaSheetConfig;
 }
+
+// Price-list quantities import: same PPMP sheet layout as the price-list
+// importer, plus 12 consecutive monthly quantity columns (Jan–Dec)
+// starting at qtyStart.
+export type QuantitiesColumnConfig = SheetColumnConfig & {
+    /**
+     * January quantity column — months alternate qty/amount pairs
+     * (K=Jan qty, L=Jan amount, M=Feb qty …), so quantities are read
+     * from every other column starting here.
+     */
+    qtyStart: string;
+};
+
+export type QuantitiesSheetConfig = Omit<SharedSheetConfig, 'columnConfig'> & {
+    columnConfig: QuantitiesColumnConfig;
+};
+
+export function getDefaultQuantitiesConfig(): QuantitiesSheetConfig {
+    const base = getDefaultSharedConfig();
+
+    return {
+        ...base,
+        columnConfig: {
+            ...base.columnConfig,
+            qtyStart: 'K',
+        },
+        rowConfig: { ...base.rowConfig },
+    };
+}

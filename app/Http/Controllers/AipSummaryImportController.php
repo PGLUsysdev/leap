@@ -194,6 +194,9 @@ class AipSummaryImportController extends Controller
                 $key = $normalize($fullCode);
 
                 if (isset($existingByCode[$key])) {
+                    // Heal the entry for re-imported blocks (file membership
+                    // ⇔ entry existence). Rides on the `create Ppa` gate.
+                    AipEntry::firstOrCreate(['ppa_id' => $existingByCode[$key]]);
                     $skipped++;
                     $details[] = ['full_code' => $fullCode, 'status' => 'skipped: exists'];
 
@@ -248,8 +251,11 @@ class AipSummaryImportController extends Controller
                 $existingByCode[$key] = $ppa->id;
                 // Index by actual full_code too (padding-normalized form).
                 $existingByCode[$normalize($ppa->full_code)] = $ppa->id;
+                // Every imported block gets its bare header entry (file
+                // membership ⇔ entry existence). Rides on `create Ppa`.
+                $entry = AipEntry::firstOrCreate(['ppa_id' => $ppa->id]);
                 $inserted++;
-                $details[] = ['full_code' => $ppa->full_code, 'status' => 'inserted', 'id' => $ppa->id];
+                $details[] = ['full_code' => $ppa->full_code, 'status' => 'inserted', 'id' => $ppa->id, 'entry_id' => $entry->id];
             }
         });
 

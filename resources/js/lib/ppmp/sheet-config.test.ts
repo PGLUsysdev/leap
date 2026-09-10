@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     getDefaultMappingConfig,
+    getDefaultQuantitiesConfig,
     getDefaultSharedConfig,
 } from '@/lib/ppmp/sheet-config';
 import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
@@ -73,5 +74,21 @@ describe('shared calibration shape', () => {
 describe('getDefaultMappingConfig', () => {
     it('should_MatchSharedDefaults_When_Called', () => {
         expect(getDefaultMappingConfig()).toEqual(getDefaultSharedConfig());
+    });
+});
+
+describe('getDefaultQuantitiesConfig', () => {
+    it('should_ExtendSharedDefaultsWithQtyStart_When_Called', () => {
+        const cfg = getDefaultQuantitiesConfig();
+        expect(cfg.columnConfig).toMatchObject({
+            category: 'F',
+            coa: 'D',
+            unit: 'G',
+            price: 'H',
+            itemNumber: 'E',
+            qtyStart: 'K',
+        });
+        expect(cfg.rowConfig.headerRow).toBe(7);
+        expect(cfg.coaLabelMode).toBe('with-label');
     });
 });

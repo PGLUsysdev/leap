@@ -321,6 +321,8 @@ export interface PriceList {
     chart_of_account_ppmp_category_id: number;
 
     chart_of_account_ppmp_category?: ChartOfAccountPpmpCategory;
+
+    ppmps_count?: number;
 }
 
 export interface PpmpCategory {

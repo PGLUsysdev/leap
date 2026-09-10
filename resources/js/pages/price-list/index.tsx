@@ -114,17 +114,26 @@ export default function PriceListPage({
             onStart: () => setIsLoading(true),
             onSuccess: () => {
                 setDeleteDialogOpen(false);
-                // setSelectedPriceList(null);
+                setSelectedPriceList(null);
             },
             onError: (errors) => {
                 const errorMessage =
                     errors.database || 'An unknown error occurred';
                 console.error('Delete Error:', errorMessage);
                 setError(errorMessage);
+                setDeleteDialogOpen(false);
                 setIsErrorDialogOpen(true);
             },
             onFinish: () => setIsLoading(false),
         });
+    }
+
+    function handleDeleteDialogClose(open: boolean) {
+        setDeleteDialogOpen(open);
+
+        if (!open) {
+            setSelectedPriceList(null);
+        }
     }
 
     function handleCreate() {
@@ -213,66 +222,51 @@ export default function PriceListPage({
                 description={`Select a target position for "${selectedItem?.description}" and click Move Down.`}
             />
 
-            {/*<DeleteDialog
-                isOpen={isDeleteDialogOpen}
-                onOpenChange={setIsDeleteDialogOpen}
-                title="Delete Price List?"
+            <DeleteDialog
+                isOpen={deleteDialogOpen}
+                onOpenChange={handleDeleteDialogClose}
+                title="Delete price list item?"
                 description={
                     <>
-                        Are you sure you want to remove{' '}
-                        <span className="font-bold text-foreground">
+                        <span className="text-foreground font-bold">
                             "{selectedPriceList?.description}"
+                        </span>{' '}
+                        will be permanently deleted. This cannot be undone.
+                        <span className="mt-2 block">
+                            {(selectedPriceList?.ppmps_count ?? 0) > 0 ? (
+                                <>
+                                    {selectedPriceList?.ppmps_count} PPMP{' '}
+                                    {selectedPriceList?.ppmps_count === 1
+                                        ? 'entry'
+                                        : 'entries'}{' '}
+                                    using this item will be kept but unlinked
+                                    (quantities stay, the price reference is
+                                    removed).
+                                </>
+                            ) : (
+                                <>No PPMP entries use this item.</>
+                            )}
                         </span>
-                        ?
+                        <span className="mt-1 block">
+                            Remaining items are renumbered so item numbers stay
+                            sequential.
+                        </span>
                     </>
                 }
+                confirmText="Delete item"
                 onConfirm={handleDelete}
                 onCancel={() => {
-                    setIsDeleteDialogOpen(false);
+                    setDeleteDialogOpen(false);
                     setSelectedPriceList(null);
                 }}
                 isLoading={isLoading}
-            />*/}
-
-            <DeleteDialog
-                open={deleteDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                title={'Delete Price List?'}
-                description={
-                    <>
-                        Are you sure you want to remove{' '}
-                        <span className="text-foreground font-bold">
-                            "{selectedPriceList?.description}"
-                        </span>
-                        ?
-                    </>
-                }
-                loading={isLoading}
-                handleDelete={handleDelete}
             />
 
-            <DeleteDialog
-                open={isErrorDialogOpen}
-                onOpenChange={setDeleteDialogOpen}
-                title={'Delete Price List?'}
-                description={
-                    <>
-                        Are you sure you want to remove{' '}
-                        <span className="text-foreground font-bold">
-                            "{selectedPriceList?.description}"
-                        </span>
-                        ?
-                    </>
-                }
-                loading={isLoading}
-                handleDelete={handleDelete}
-            />
-
-            {/*<AlertErrorDialog
+            <AlertErrorDialog
                 open={isErrorDialogOpen}
                 onOpenChange={setIsErrorDialogOpen}
                 error={error}
-            />*/}
+            />
         </>
     );
 }

@@ -35,6 +35,7 @@ use App\Http\Controllers\PpmpPriceListController;
 use App\Http\Controllers\PpmpSummaryController;
 // use App\Http\Controllers\PsBreakdownController;
 use App\Http\Controllers\PriceListImportController;
+use App\Http\Controllers\PriceListQuantitiesImportController;
 // Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\SalaryStandardController;
 use App\Http\Controllers\RoleController;
@@ -323,10 +324,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     );
 
     // PPMP Price List (Duplicate/Alternative endpoints)
-    Route::delete('/ppmp-price-list/{priceList}', [
-        PpmpController::class,
-        'destroyPriceList',
-    ])->name('ppmp-price-list.destroy');
     Route::get('/ppmp-price-list', [PpmpPriceListController::class, 'index'])->name(
         'ppmp-price-list.index',
     );
@@ -446,6 +443,10 @@ Route::get('price-list-import', [PriceListImportController::class, 'index'])->na
 
 Route::post('price-list-import', [PriceListImportController::class, 'store'])->name(
     'price-list-import.store',
+);
+
+Route::get('price-list-quantities-import', [PriceListQuantitiesImportController::class, 'index'])->name(
+    'price-list-quantities-import.index',
 );
 
 Route::get('category-import', [CategoryImportController::class, 'index'])->name(

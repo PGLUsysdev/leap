@@ -19,6 +19,7 @@ import { index as aipSummaryImportIndex } from '@/routes/aip-summary-import';
 import { index as categoryCoaMappingIndex } from '@/routes/category-coa-mapping';
 import { index as categoryImportIndex } from '@/routes/category-import';
 import { index as priceListImportIndex } from '@/routes/price-list-import';
+import { index as priceListQuantitiesImportIndex } from '@/routes/price-list-quantities-import';
 
 type ImportItem = {
     title: string;
@@ -53,6 +54,14 @@ const IMPORTS: ImportItem[] = [
         href: priceListImportIndex().url,
         icon: Receipt,
         badge: 'Price Lists',
+    },
+    {
+        title: 'Price List Quantities Import',
+        description:
+            'Import quantities against existing price list items from XLSX.',
+        href: priceListQuantitiesImportIndex().url,
+        icon: FileSpreadsheet,
+        badge: 'Quantities',
     },
     {
         title: 'AIP Summary Import',
