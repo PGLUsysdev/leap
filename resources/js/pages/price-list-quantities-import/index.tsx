@@ -110,6 +110,7 @@ export default function PriceListQuantitiesImport({
     const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
 
     const [hideEmptyQty, setHideEmptyQty] = useState(false);
+    const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(false);
 
     const canCalibrate = selectedSheets.length > 0;
     const canVerify =
@@ -1273,11 +1274,27 @@ export default function PriceListQuantitiesImport({
                                     })}
                                 </div>
 
-                                <div className="flex flex-wrap items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-3">
                                     <Badge variant="default">
                                         {matchedCount} of {mappedItems.length}{' '}
                                         mapped
                                     </Badge>
+                                    <label
+                                        htmlFor="show-only-unmapped"
+                                        className="flex cursor-pointer items-center gap-2 text-sm"
+                                    >
+                                        <Checkbox
+                                            id="show-only-unmapped"
+                                            checked={showOnlyUnmapped}
+                                            onCheckedChange={(v) =>
+                                                setShowOnlyUnmapped(v === true)
+                                            }
+                                        />
+                                        Show only unmapped
+                                        {mappedItems.length - matchedCount >
+                                            0 &&
+                                            ` (${mappedItems.length - matchedCount})`}
+                                    </label>
                                     <span className="text-muted-foreground text-xs">
                                         Sheet: {effectiveImportSheet} — mapping
                                         only for now, nothing is written to the
@@ -1306,7 +1323,14 @@ export default function PriceListQuantitiesImport({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {mappedItems.map((m) => (
+                                            {(showOnlyUnmapped
+                                                ? mappedItems.filter(
+                                                      (m) =>
+                                                          m.status !==
+                                                          'matched',
+                                                  )
+                                                : mappedItems
+                                            ).map((m) => (
                                                 <TableRow key={m.key}>
                                                     <TableCell className="text-right tabular-nums">
                                                         {m.rows.join(', ')}

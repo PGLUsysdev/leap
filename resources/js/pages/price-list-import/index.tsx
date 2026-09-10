@@ -5,6 +5,7 @@ import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Combobox,
     ComboboxContent,
@@ -134,7 +135,7 @@ type VerifiedItem = UniqueItem & {
     priceValid: boolean;
     unitValid: boolean;
     descriptionValid: boolean;
-    status: 'ready' | 'update' | 'error';
+    status: 'ready' | 'update' | 'error' | 'skipped';
     message: string;
 };
 
@@ -201,6 +202,7 @@ export default function PriceListImport({
         'all' | 'errors' | 'duplicates' | 'longDesc'
     >('all');
     const [showDuplicateDetails, setShowDuplicateDetails] = useState(false);
+    const [excludeMissingCategory, setExcludeMissingCategory] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -375,8 +377,13 @@ export default function PriceListImport({
             let message = 'Ready to import';
 
             if (!catExists) {
-                status = 'error';
-                message = 'Category not found — create via Category Import';
+                if (excludeMissingCategory) {
+                    status = 'skipped';
+                    message = 'Skipped — category not found (excluded)';
+                } else {
+                    status = 'error';
+                    message = 'Category not found — create via Category Import';
+                }
             } else if (!effectiveCoaExists) {
                 status = 'error';
                 message = 'COA not found';
@@ -442,6 +449,7 @@ export default function PriceListImport({
         junctionByPair,
         existingPriceLists,
         coaOverrides,
+        excludeMissingCategory,
     ]);
 
     // Rows still needing a human COA pick, grouped by normalized extracted label.
@@ -464,6 +472,12 @@ export default function PriceListImport({
     ).length;
     const missingMappingCount = verifiedItems.filter(
         (v) => !v.effectiveMappingExists && v.catExists && v.effectiveCoaExists,
+    ).length;
+    const missingCategoryCount = verifiedItems.filter(
+        (v) => !v.catExists,
+    ).length;
+    const skippedCount = verifiedItems.filter(
+        (v) => v.status === 'skipped',
     ).length;
 
     const duplicateCount = rawItems.length - uniqueItems.length;
@@ -2293,6 +2307,11 @@ export default function PriceListImport({
                                     {duplicateItems.length} unique)
                                 </Badge>
                             )}
+                            {skippedCount > 0 && (
+                                <Badge variant="secondary">
+                                    {skippedCount} skipped (category not found)
+                                </Badge>
+                            )}
                             {(errorCount > 0 ||
                                 duplicateCount > 0 ||
                                 longDescriptionCount > 0) && (
@@ -2652,7 +2671,9 @@ export default function PriceListImport({
                                                                         v.key,
                                                                     ) ||
                                                                     v.status ===
-                                                                        'error',
+                                                                        'error' ||
+                                                                    v.status ===
+                                                                        'skipped',
                                                             )
                                                         }
                                                         onChange={(e) => {
@@ -2666,7 +2687,9 @@ export default function PriceListImport({
                                                                                 v,
                                                                             ) =>
                                                                                 v.status !==
-                                                                                'error',
+                                                                                    'error' &&
+                                                                                v.status !==
+                                                                                    'skipped',
                                                                         )
                                                                         .map(
                                                                             (
@@ -2823,7 +2846,9 @@ export default function PriceListImport({
                                                                     }}
                                                                     disabled={
                                                                         it.status ===
-                                                                        'error'
+                                                                            'error' ||
+                                                                        it.status ===
+                                                                            'skipped'
                                                                     }
                                                                 />
                                                             </TableCell>
@@ -3133,7 +3158,21 @@ export default function PriceListImport({
                                                                                     →
                                                                                     Map
                                                                                 </Link>
-                                                                            )}
+                                                                                )}
+                                                                    </span>
+                                                                ) : it.status ===
+                                                                  'skipped' ? (
+                                                                    <span className="text-muted-foreground">
+                                                                        {
+                                                                            it.message
+                                                                        }{' '}
+                                                                        <Link
+                                                                            href="/category-import"
+                                                                            className="underline"
+                                                                        >
+                                                                            Category
+                                                                            Import
+                                                                        </Link>
                                                                     </span>
                                                                 ) : it.status ===
                                                                   'update' ? (
@@ -3176,27 +3215,55 @@ export default function PriceListImport({
                                     >
                                         Back
                                     </Button>
-                                    <Button
-                                        suppressHydrationWarning
-                                        disabled={
-                                            isMounted
-                                                ? importableSelected.length ===
-                                                      0 || importing
-                                                : false
-                                        }
-                                        onClick={handleImport}
-                                    >
-                                        {importing
-                                            ? 'Importing...'
-                                            : `Import ${importableSelected.length} price lists (${insertCount} new + ${updateCount} updates)`}
-                                    </Button>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <label
+                                            htmlFor="exclude-missing-category"
+                                            className="flex cursor-pointer items-center gap-2 text-sm"
+                                        >
+                                            <Checkbox
+                                                id="exclude-missing-category"
+                                                checked={excludeMissingCategory}
+                                                onCheckedChange={(v) =>
+                                                    setExcludeMissingCategory(
+                                                        v === true,
+                                                    )
+                                                }
+                                            />
+                                            Exclude items with missing category
+                                            {missingCategoryCount > 0 &&
+                                                ` (${missingCategoryCount})`}
+                                        </label>
+                                        <Button
+                                            suppressHydrationWarning
+                                            disabled={
+                                                isMounted
+                                                    ? importableSelected.length ===
+                                                          0 || importing
+                                                    : false
+                                            }
+                                            onClick={handleImport}
+                                        >
+                                            {importing
+                                                ? 'Importing...'
+                                                : `Import ${importableSelected.length} price lists (${insertCount} new + ${updateCount} updates)`}
+                                        </Button>
+                                        {skippedCount > 0 && !importing && (
+                                            <p className="text-muted-foreground text-xs">
+                                                {skippedCount}{' '}
+                                                {skippedCount === 1
+                                                    ? 'row'
+                                                    : 'rows'}{' '}
+                                                excluded — category not found.
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                                 {importableSelected.length === 0 &&
                                     !importing &&
                                     verifiedItems.length > 0 && (
                                         <p className="text-muted-foreground text-xs">
                                             {importable.length === 0
-                                                ? `No importable rows — all ${errorCount} rows are errors. Fix Category/COA via dropdowns or create mappings in Category–COA Mappings.`
+                                                ? `No importable rows — ${errorCount} error${errorCount === 1 ? '' : 's'}, ${skippedCount} skipped. Fix Category/COA via dropdowns or create mappings in Category–COA Mappings.`
                                                 : `No rows selected — ${importable.length} importable available. Check a row or click header checkbox. Selected: ${selected.size}/${verifiedItems.length}`}
                                         </p>
                                     )}
@@ -3204,9 +3271,10 @@ export default function PriceListImport({
                                     importableSelected.length === 0 &&
                                     importable.length > 0 && (
                                         <p className="text-xs text-amber-600">
-                                            Selected rows are all errors and
-                                            cannot be imported. Select only
-                                            Ready/Update rows (green/amber).
+                                            Selected rows are all errors or
+                                            skipped and cannot be imported.
+                                            Select only Ready/Update rows
+                                            (green/amber).
                                         </p>
                                     )}
                             </>
