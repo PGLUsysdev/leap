@@ -1,31 +1,11 @@
+// resources/js/pages/category-coa-mapping/index.tsx
+
 import { Head, router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import { useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Combobox,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxInput,
-    ComboboxItem,
-    ComboboxList,
-} from '@/components/ui/combobox';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
     normalize,
@@ -43,18 +23,22 @@ import type {
 import { index as categoryCoaMappingIndex } from '@/routes/category-coa-mapping';
 import { index as importsIndex } from '@/routes/imports';
 
-type VerifyFormatResult = {
-    valid: boolean;
-    message: string;
-    errors: Array<{ row: number; message: string }>;
-    groups: { procurement: number; additional: number; nonProcurement: number };
-    details: string[];
-};
-
-type ExistingMapping = {
-    chart_of_account_id: number;
-    ppmp_category_id: number;
-};
+import type {
+    CalibrationMode,
+    CategoryCoaMappingState,
+    CcmStep,
+    EffectiveVerificationState,
+    ExistingMapping,
+    ExtractedPair,
+    VerificationState,
+    VerifiedPair,
+    VerifyFormatResult,
+} from './types';
+import { UploadStep } from './steps/upload-step';
+import { CalibrateStep } from './steps/calibrate-step';
+import { VerifyFormatStep } from './steps/verify-format-step';
+import { VerifyMapStep } from './steps/verify-map-step';
+import { ReviewStep } from './steps/review-step';
 
 interface CategoryCoaMappingProps {
     existingCategories?: ExistingCategory[];
@@ -75,9 +59,8 @@ export default function CategoryCoaMappingPage({
     const [fileName, setFileName] = useState<string | null>(null);
 
     // Calibration – shared + per-sheet (multi-sheet)
-    const [calibrationMode, setCalibrationMode] = useState<
-        'shared' | 'per-sheet'
-    >('shared');
+    const [calibrationMode, setCalibrationMode] =
+        useState<CalibrationMode>('shared');
     const [sharedConfig, setSharedConfig] =
         useState<CategoryCoaSheetConfig | null>(null);
     const [calibrations, setCalibrations] = useState<
@@ -87,41 +70,11 @@ export default function CategoryCoaMappingPage({
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>(
         {},
     );
-    const [verification, setVerification] = useState<{
-        total: number;
-        catFound: number;
-        coaFound: number;
-        mappingFound: number;
-        missingCat: number;
-        missingCoa: number;
-        missingMapping: number;
-        verifiedPairs: Array<{
-            category: string;
-            coa: string;
-            section: string;
-            sheet: string;
-            catRow: number;
-            coaRow: number;
-            items: number;
-            catNorm: string;
-            coaNorm: string;
-            catExists: boolean;
-            coaExists: boolean;
-            mappingExists: boolean;
-            catId: number | null;
-            coaId: number | null;
-            catMatchType: 'strict' | 'partial' | 'none';
-            coaMatchType: 'strict' | 'partial' | 'none';
-            catMatch: ExistingCategory | null;
-            coaMatch: ExistingCoa | null;
-            catTopMatches: Array<{ category: ExistingCategory; score: number }>;
-            coaTopMatches: Array<{ coa: ExistingCoa; score: number }>;
-        }>;
-    } | null>(null);
+    const [verification, setVerification] = useState<VerificationState | null>(
+        null,
+    );
     const [isSaving, setIsSaving] = useState(false);
-    const [step, setStep] = useState<
-        'upload' | 'calibrate' | 'verifyFormat' | 'verifyMap' | 'review'
-    >('upload');
+    const [step, setStep] = useState<CcmStep>('upload');
     const [formatResults, setFormatResults] = useState<
         Record<string, VerifyFormatResult>
     >({});
@@ -201,106 +154,67 @@ export default function CategoryCoaMappingPage({
         setCalibrations(next);
     }
 
-    function updateSharedConfig(patch: Partial<CategoryCoaSheetConfig>) {
-        setSharedConfig((prev) => ({
-            ...(prev ?? getDefaultMappingConfig()),
-            ...patch,
-        }));
-    }
+    const effectiveVerification =
+        useMemo<EffectiveVerificationState | null>(() => {
+            if (!verification) return null;
 
-    function updateCurrentCalibration(patch: Partial<CategoryCoaSheetConfig>) {
-        if (!currentSheet) return;
+            const mappingSet = new Set(
+                existingMappings.map(
+                    (m) => `${m.ppmp_category_id}|${m.chart_of_account_id}`,
+                ),
+            );
+            const effectivePairs = verification.verifiedPairs.map((v) => {
+                const key = `${v.sheet}|${v.catRow}|${v.coaRow}`;
+                const overrideId = coaOverrides[key] ?? null;
+                const effectiveCoa = overrideId
+                    ? (existingCoas.find((c) => c.id === overrideId) ?? null)
+                    : v.coaMatch;
+                const effectiveCoaExists =
+                    overrideId !== null ? true : v.coaExists;
+                const effectiveCoaId = overrideId ?? v.coaId;
+                const effectiveCoaMatchType =
+                    overrideId !== null ? ('strict' as const) : v.coaMatchType;
+                const effectiveMappingExists =
+                    v.catId !== null &&
+                    effectiveCoaId !== null &&
+                    mappingSet.has(`${v.catId}|${effectiveCoaId}`);
 
-        setCalibrations((prev) => ({
-            ...prev,
-            [currentSheet]: {
-                ...(prev[currentSheet] ??
-                    sharedConfig ??
-                    getDefaultMappingConfig()),
-                ...patch,
-            },
-        }));
-    }
-
-    function updateSharedColumnConfig(patch: Partial<CategoryCoaColumnConfig>) {
-        updateSharedConfig({
-            columnConfig: {
-                ...(sharedConfig?.columnConfig ??
-                    getDefaultMappingConfig().columnConfig),
-                ...patch,
-            },
-        });
-    }
-
-    function updateSharedRowConfig(patch: Partial<CategoryCoaRowConfig>) {
-        updateSharedConfig({
-            rowConfig: {
-                ...(sharedConfig?.rowConfig ??
-                    getDefaultMappingConfig().rowConfig),
-                ...patch,
-            },
-        });
-    }
-
-    const effectiveVerification = useMemo(() => {
-        if (!verification) return null;
-
-        const mappingSet = new Set(
-            existingMappings.map(
-                (m) => `${m.ppmp_category_id}|${m.chart_of_account_id}`,
-            ),
-        );
-        const effectivePairs = verification.verifiedPairs.map((v) => {
-            const key = `${v.sheet}|${v.catRow}|${v.coaRow}`;
-            const overrideId = coaOverrides[key] ?? null;
-            const effectiveCoa = overrideId
-                ? (existingCoas.find((c) => c.id === overrideId) ?? null)
-                : v.coaMatch;
-            const effectiveCoaExists = overrideId !== null ? true : v.coaExists;
-            const effectiveCoaId = overrideId ?? v.coaId;
-            const effectiveCoaMatchType =
-                overrideId !== null ? ('strict' as const) : v.coaMatchType;
-            const effectiveMappingExists =
-                v.catId !== null &&
-                effectiveCoaId !== null &&
-                mappingSet.has(`${v.catId}|${effectiveCoaId}`);
+                return {
+                    ...v,
+                    key,
+                    overrideId,
+                    effectiveCoa,
+                    effectiveCoaExists,
+                    effectiveCoaId,
+                    effectiveCoaMatchType,
+                    effectiveMappingExists,
+                };
+            });
+            const effCoaFound = effectivePairs.filter(
+                (p) => p.effectiveCoaExists,
+            ).length;
+            const effMappingFound = effectivePairs.filter(
+                (p) => p.effectiveMappingExists,
+            ).length;
+            const effMissingMapping = effectivePairs.filter(
+                (p) =>
+                    p.catExists &&
+                    p.effectiveCoaExists &&
+                    !p.effectiveMappingExists,
+            ).length;
+            const effMissingCoa = effectivePairs.filter(
+                (p) => !p.effectiveCoaExists,
+            ).length;
 
             return {
-                ...v,
-                key,
-                overrideId,
-                effectiveCoa,
-                effectiveCoaExists,
-                effectiveCoaId,
-                effectiveCoaMatchType,
-                effectiveMappingExists,
+                ...verification,
+                effectivePairs,
+                effCoaFound,
+                effMappingFound,
+                effMissingMapping,
+                effMissingCoa,
             };
-        });
-        const effCoaFound = effectivePairs.filter(
-            (p) => p.effectiveCoaExists,
-        ).length;
-        const effMappingFound = effectivePairs.filter(
-            (p) => p.effectiveMappingExists,
-        ).length;
-        const effMissingMapping = effectivePairs.filter(
-            (p) =>
-                p.catExists &&
-                p.effectiveCoaExists &&
-                !p.effectiveMappingExists,
-        ).length;
-        const effMissingCoa = effectivePairs.filter(
-            (p) => !p.effectiveCoaExists,
-        ).length;
-
-        return {
-            ...verification,
-            effectivePairs,
-            effCoaFound,
-            effMappingFound,
-            effMissingMapping,
-            effMissingCoa,
-        };
-    }, [verification, coaOverrides, existingCoas, existingMappings]);
+        }, [verification, coaOverrides, existingCoas, existingMappings]);
 
     function handleCoaOverrideChange(
         rowKey: string,
@@ -317,14 +231,12 @@ export default function CategoryCoaMappingPage({
             return;
         }
 
-        // selectedValue format: "coa:<id>:<path> — <title>" or just "coa:<id>"
         const idMatch = selectedValue.match(/^coa:(\d+)/);
 
         if (idMatch) {
             const id = Number(idMatch[1]);
             setCoaOverrides((prev) => ({ ...prev, [rowKey]: id }));
         } else {
-            // fallback try find by path/title
             const found = existingCoas.find(
                 (c) => `${c.path} — ${c.account_title}` === selectedValue,
             );
@@ -362,7 +274,6 @@ export default function CategoryCoaMappingPage({
 
         if (toCreate.length === 0) return;
 
-        // dedupe by ppmp_category_id|chart_of_account_id (same mapping may appear from multiple rows due to dedupe already)
         const seen = new Set<string>();
         const uniqueToCreate: typeof toCreate = [];
 
@@ -381,7 +292,6 @@ export default function CategoryCoaMappingPage({
             { mappings: uniqueToCreate } as never,
             {
                 onFinish: () => setIsSaving(false),
-                // Keep overrides after success so UI still shows manual mapping; page will reload with new existingMappings
             },
         );
     }
@@ -519,8 +429,6 @@ export default function CategoryCoaMappingPage({
                 sectionName === 'additional' ||
                 sectionName === 'non-procurement'
             ) {
-                // Item-only: header → items (F+D+G+H) → optional section total, no categories
-                // If E/D/G/H all falsy, it's not a true pricelist (e.g., placeholder "Miscellaneous Goods..." with G/H 0) — skip
                 let itemCount = 0;
 
                 for (let r = startRow; r <= endRow && r <= lastRow; r++) {
@@ -545,7 +453,6 @@ export default function CategoryCoaMappingPage({
 
                     if (dataNorm === 'description') continue;
 
-                    // Skip section header echo and section totals
                     if (
                         dataNorm === 'additional items for procurement' ||
                         dataNorm === 'additional items' ||
@@ -578,7 +485,6 @@ export default function CategoryCoaMappingPage({
                     const isFalsyCoa = !coaNorm;
                     const isFalsyItem = !itemRaw;
 
-                    // If E/D/G/H all falsy, it's not a true pricelist (placeholder like Miscellaneous... with G/H 0) — skip, not an error
                     if (
                         isFalsyItem &&
                         isFalsyCoa &&
@@ -607,7 +513,6 @@ export default function CategoryCoaMappingPage({
                 return;
             }
 
-            // Procurement: strict cat → coa → items → total
             type CatGroup = {
                 cat: string;
                 catRow: number;
@@ -672,7 +577,11 @@ export default function CategoryCoaMappingPage({
                                 currentCat.coas.push(currentCoa);
                             }
 
-                            currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
+                            currentCoa = {
+                                coa: coaRaw!,
+                                coaRow: r,
+                                items: 1,
+                            };
                         } else {
                             currentCoa.items += 1;
                         }
@@ -1135,7 +1044,6 @@ export default function CategoryCoaMappingPage({
         setCoaOverrides({});
     }
 
-    // Relationship extraction – all sections, no verification (from scratch, mirrors category-import grouping)
     function extractRelationshipsForSection(
         ws: ExcelJS.Worksheet,
         cfg: CategoryCoaSheetConfig,
@@ -1151,8 +1059,11 @@ export default function CategoryCoaMappingPage({
         };
         const catGroups: CatGroup[] = [];
         let currentCat: CatGroup | null = null;
-        let currentCoa: { coa: string; coaRow: number; items: number } | null =
-            null;
+        let currentCoa: {
+            coa: string;
+            coaRow: number;
+            items: number;
+        } | null = null;
 
         const dataColumn = cfg.columnConfig.category;
         const coaColumn = cfg.columnConfig.coa;
@@ -1213,7 +1124,6 @@ export default function CategoryCoaMappingPage({
                 isFalsyPrice &&
                 dataRaw
             ) {
-                // Placeholder like Miscellaneous... with G/H 0 and no COA/item-no — not a true pricelist, skip for additional/non-proc
                 if (
                     sectionName === 'additional' ||
                     sectionName === 'non-procurement'
@@ -1221,9 +1131,7 @@ export default function CategoryCoaMappingPage({
                     continue;
             }
 
-            // Item row: both F (description) + D (COA) present
             if (coaNorm && dataRaw) {
-                // COA-only sentinel handling: create sentinel cat lazily if no currentCat in non-proc/additional
                 if (!currentCat) {
                     if (sectionName === 'additional') {
                         currentCat = {
@@ -1256,14 +1164,11 @@ export default function CategoryCoaMappingPage({
                     continue;
                 } else {
                     if (!currentCoa) {
-                        // with-label but item appears without prior label – treat as implicit COA group for mapping
-                        // try to reuse existing coa in cat if same, else new
                         const existing = currentCat.coas.find(
                             (c) => normalize(c.coa) === coaNorm,
                         );
 
                         if (existing) {
-                            // create transient currentCoa to count
                             if (currentCoa) currentCat.coas.push(currentCoa!);
 
                             currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
@@ -1277,7 +1182,6 @@ export default function CategoryCoaMappingPage({
                     }
 
                     if (coaNorm !== normalize(currentCoa.coa)) {
-                        // COA mismatch -> start new group (label missing case)
                         currentCat.coas.push(currentCoa!);
                         currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
                     } else {
@@ -1291,11 +1195,6 @@ export default function CategoryCoaMappingPage({
             if (!dataRaw || !dataNorm) continue;
 
             if (isTotalRow(dataNorm)) {
-                const expected = currentCat
-                    ? normalize(`${currentCat.cat} - total`)
-                    : null;
-
-                // For relationship log, we don't enforce expected, just flush if totals match or not
                 if (currentCat) {
                     if (currentCoa) {
                         currentCat.coas.push(currentCoa!);
@@ -1349,7 +1248,6 @@ export default function CategoryCoaMappingPage({
                 }
             }
 
-            // Otherwise it's a category header
             if (currentCat) {
                 if (currentCoa) {
                     currentCat.coas.push(currentCoa!);
@@ -1368,7 +1266,6 @@ export default function CategoryCoaMappingPage({
                 currentCat.coas.push(currentCoa!);
             }
 
-            // totalRow optional for log
             catGroups.push(currentCat);
         }
 
@@ -1392,17 +1289,9 @@ export default function CategoryCoaMappingPage({
         const allSheetData: Array<{
             sheet: string;
             sections: Record<string, any>;
-            pairs: Array<{
-                category: string;
-                coa: string;
-                catRow: number;
-                coaRow: number;
-                items: number;
-                section: string;
-                sheet: string;
-            }>;
+            pairs: ExtractedPair[];
         }> = [];
-        const combinedAllPairs: (typeof allSheetData)[0]['pairs'] = [];
+        const combinedAllPairs: ExtractedPair[] = [];
 
         for (const sheet of selectedSheets) {
             const ws = workbook.getWorksheet(sheet);
@@ -1501,7 +1390,7 @@ export default function CategoryCoaMappingPage({
                 };
             }
 
-            const pairsForSheet: typeof procPairsWithSheet = [];
+            const pairsForSheet: ExtractedPair[] = [];
             pairsForSheet.push(...procPairsWithSheet);
 
             if ((sections.additional as any).pairs) {
@@ -1518,8 +1407,7 @@ export default function CategoryCoaMappingPage({
             combinedAllPairs.push(...pairsForSheet);
         }
 
-        // dedupe across sheets and sections by normalized category|coa
-        const seen = new Map<string, (typeof combinedAllPairs)[number]>();
+        const seen = new Map<string, ExtractedPair>();
 
         for (const p of combinedAllPairs) {
             const key = `${normalize(p.category)}|${normalize(p.coa)}`;
@@ -1530,16 +1418,15 @@ export default function CategoryCoaMappingPage({
         const uniquePairs = [...seen.values()];
         const duplicates = combinedAllPairs.length - uniquePairs.length;
 
-        // DB verification: category exists, coa exists, mapping exists (global across sheets)
         const mappingSet = new Set(
             existingMappings.map(
                 (m) => `${m.ppmp_category_id}|${m.chart_of_account_id}`,
             ),
         );
-        const verifiedPairs = uniquePairs.map((p) => {
+        const verifiedPairs: VerifiedPair[] = uniquePairs.map((p) => {
             const catNorm = normalize(p.category);
             const coaNorm = normalize(p.coa);
-            const sheetCfg = getEffectiveConfig((p as any).sheet);
+            const sheetCfg = getEffectiveConfig(p.sheet ?? '');
             const catRes = getCategoryMatch(catNorm, existingCategories);
             const coaRes = getCoaMatch(
                 coaNorm,
@@ -1556,7 +1443,13 @@ export default function CategoryCoaMappingPage({
                 mappingSet.has(`${catId}|${coaId}`);
 
             return {
-                ...p,
+                category: p.category,
+                coa: p.coa,
+                section: p.section,
+                sheet: p.sheet ?? '',
+                catRow: p.catRow,
+                coaRow: p.coaRow,
+                items: p.items,
                 catNorm,
                 coaNorm,
                 catMatchType: catRes.type,
@@ -1583,17 +1476,6 @@ export default function CategoryCoaMappingPage({
         const missingMapping = verifiedPairs.filter(
             (v) => v.catExists && v.coaExists && !v.mappingExists,
         ).length;
-
-        setVerification({
-            total: verifiedPairs.length,
-            catFound,
-            coaFound,
-            mappingFound,
-            missingCat,
-            missingCoa,
-            missingMapping,
-            verifiedPairs,
-        });
 
         setVerification({
             total: verifiedPairs.length,
@@ -1658,7 +1540,7 @@ export default function CategoryCoaMappingPage({
 
         console.table(
             uniquePairs.map((p) => ({
-                sheet: (p as any).sheet,
+                sheet: p.sheet,
                 section: p.section,
                 category: p.category,
                 coa: p.coa,
@@ -1677,7 +1559,6 @@ export default function CategoryCoaMappingPage({
             );
         }
 
-        // DB verification logs
         console.log(
             `[Category COA Mapping] DB Verification — ${selectedSheets.join(', ')} (multi-sheet) — ${verifiedPairs.length} unique pairs checked against DB`,
             {
@@ -1700,7 +1581,7 @@ export default function CategoryCoaMappingPage({
         );
         console.table(
             verifiedPairs.map((v) => ({
-                sheet: (v as any).sheet,
+                sheet: v.sheet,
                 section: v.section,
                 category: v.category,
                 catExists: v.catExists
@@ -1731,7 +1612,7 @@ export default function CategoryCoaMappingPage({
                 verifiedPairs
                     .filter((v) => !v.catExists)
                     .map((v) => ({
-                        sheet: (v as any).sheet,
+                        sheet: v.sheet,
                         category: v.category,
                         matchType: v.catMatchType,
                         topMatches: v.catTopMatches,
@@ -1741,7 +1622,7 @@ export default function CategoryCoaMappingPage({
                 verifiedPairs
                     .filter((v) => !v.catExists)
                     .map((v) => ({
-                        sheet: (v as any).sheet,
+                        sheet: v.sheet,
                         category: v.category,
                         normalized: v.catNorm,
                         matchType: v.catMatchType,
@@ -1762,7 +1643,7 @@ export default function CategoryCoaMappingPage({
                 verifiedPairs
                     .filter((v) => !v.coaExists)
                     .map((v) => ({
-                        sheet: (v as any).sheet,
+                        sheet: v.sheet,
                         coa: v.coa,
                         matchType: v.coaMatchType,
                         topMatches: v.coaTopMatches,
@@ -1772,7 +1653,7 @@ export default function CategoryCoaMappingPage({
                 verifiedPairs
                     .filter((v) => !v.coaExists)
                     .map((v) => ({
-                        sheet: (v as any).sheet,
+                        sheet: v.sheet,
                         coa: v.coa,
                         normalized: v.coaNorm,
                         matchType: v.coaMatchType,
@@ -1800,7 +1681,7 @@ export default function CategoryCoaMappingPage({
                         (v) => v.catExists && v.coaExists && !v.mappingExists,
                     )
                     .map((v) => ({
-                        sheet: (v as any).sheet,
+                        sheet: v.sheet,
                         category: `${v.category} [${v.catId}]`,
                         coa: `${v.coa} [${v.coaId}] ${v.coaMatch?.path}`,
                         section: v.section,
@@ -1908,7 +1789,6 @@ export default function CategoryCoaMappingPage({
                 }
 
                 if (!cat && coa && !sentinel && section === 'procurement') {
-                    // procurement COA-only without category – would be invalid unless you intend sentinel mapping
                     sentinel = '— (no category, no sentinel)';
                 }
 
@@ -1920,7 +1800,6 @@ export default function CategoryCoaMappingPage({
                 'Sentinels: 276=Additional (is_additional), 277=Non-Proc (is_non_procurement+is_additional) — COA-only rows map to these when section headers calibrated',
             );
 
-            // also log raw first 5 rows for reference
             for (let r = 1; r <= Math.min(5, ws.rowCount); r++) {
                 const row = ws.getRow(r);
                 const values = (row.values as unknown[])?.slice(1);
@@ -1928,6 +1807,69 @@ export default function CategoryCoaMappingPage({
             }
         }
     }
+
+    // ----- Build the state object once -----
+    const s: CategoryCoaMappingState = {
+        sheets,
+        workbook,
+        fileName,
+        selectedSheets,
+        loading,
+        error,
+
+        step,
+        setStep,
+        canCalibrate,
+        canVerifyFormat,
+        hasFormatResult,
+        formatValid,
+        canVerifyMap,
+        canReview,
+
+        calibrationMode,
+        setCalibrationMode,
+        sharedConfig,
+        setSharedConfig,
+        calibrations,
+        setCalibrations,
+        currentSheet,
+        setCurrentSheet,
+        getEffectiveConfig,
+        ensureCalibrationsInitialized,
+        handleApplySharedToAll,
+        handleCopyCurrentToAll,
+        handleRowConfigChange,
+        handleColumnConfigChange,
+        handleMatchFieldChange,
+        handleCoaLabelModeChange,
+        handleResetCalibration,
+
+        handleFileChange,
+        handleSheetToggle,
+        handleSheetClick,
+
+        formatResults,
+        activeFormatSheet,
+        setActiveFormatSheet,
+        handleVerifyFormat,
+
+        verification,
+        effectiveVerification,
+        activeVerifySheet,
+        setActiveVerifySheet,
+        coaOverrides,
+        setCoaOverrides,
+        handleCoaOverrideChange,
+        handleClearOverride,
+        handleLog,
+        handleLogRelationships,
+        isSaving,
+        handleBulkCreateMappings,
+
+        existingCategories,
+        existingCoas,
+        existingMappings,
+    };
 
     return (
         <ScrollArea className="h-[calc(100vh-3rem)]">
@@ -1964,10 +1906,7 @@ export default function CategoryCoaMappingPage({
                     </div>
                 )}
 
-                <Tabs
-                    value={step}
-                    onValueChange={(v) => setStep(v as typeof step)}
-                >
+                <Tabs value={step} onValueChange={(v) => setStep(v as CcmStep)}>
                     <TabsList>
                         <TabsTrigger value="upload">
                             1. Upload{' '}
@@ -2026,1727 +1965,11 @@ export default function CategoryCoaMappingPage({
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent
-                        value="upload"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        <Field>
-                            <FieldLabel htmlFor="file">Excel File</FieldLabel>
-                            <Input
-                                id="file"
-                                type="file"
-                                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                                onChange={handleFileChange}
-                                disabled={loading}
-                            />
-                            <FieldDescription>
-                                Select an .xlsx file.
-                            </FieldDescription>
-                            {error && (
-                                <p className="text-destructive text-sm">
-                                    {error}
-                                </p>
-                            )}
-                        </Field>
-
-                        {loading && (
-                            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                                <Spinner /> Parsing workbook...
-                            </div>
-                        )}
-
-                        {!loading && sheets.length > 0 && (
-                            <Field>
-                                <FieldLabel>
-                                    Sheets — click to select one or more
-                                    (multi-sheet)
-                                </FieldLabel>
-                                <div className="flex flex-wrap gap-2 rounded-lg border p-3">
-                                    {sheets.map((sheet) => {
-                                        const isSelected =
-                                            selectedSheets.includes(sheet);
-
-                                        return (
-                                            <Badge
-                                                key={sheet}
-                                                variant={
-                                                    isSelected
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                                className="cursor-pointer text-sm transition-colors hover:opacity-80"
-                                                onClick={() =>
-                                                    handleSheetToggle(sheet)
-                                                }
-                                            >
-                                                {sheet} {isSelected && '✓'}
-                                            </Badge>
-                                        );
-                                    })}
-                                </div>
-                                <FieldDescription>
-                                    Selected:{' '}
-                                    <span className="text-foreground font-medium">
-                                        {selectedSheets.length > 0
-                                            ? selectedSheets.join(', ')
-                                            : 'none'}
-                                    </span>{' '}
-                                    — {selectedSheets.length}/{sheets.length}{' '}
-                                    sheets
-                                </FieldDescription>
-                                {selectedSheets.length > 1 && (
-                                    <p className="text-muted-foreground text-xs">
-                                        Shared calibration will apply to all{' '}
-                                        {selectedSheets.length} sheets;
-                                        per-sheet mode lets you adjust
-                                        individually.
-                                    </p>
-                                )}
-                            </Field>
-                        )}
-
-                        <div className="flex justify-end">
-                            <Button
-                                disabled={selectedSheets.length === 0}
-                                onClick={() => {
-                                    ensureCalibrationsInitialized();
-                                    setStep('calibrate');
-                                }}
-                            >
-                                Next: Calibrate{' '}
-                                {selectedSheets.length > 0
-                                    ? `(${selectedSheets.length} sheets)`
-                                    : ''}
-                            </Button>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="calibrate"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        <div className="bg-card flex flex-wrap items-center gap-3 rounded-lg border p-3">
-                            <span className="text-sm font-medium">Scope:</span>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant={
-                                        calibrationMode === 'shared'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size="sm"
-                                    onClick={() => {
-                                        if (
-                                            calibrationMode === 'per-sheet' &&
-                                            calibrations[currentSheet]
-                                        ) {
-                                            setSharedConfig({
-                                                ...calibrations[currentSheet],
-                                            });
-                                        } else if (!sharedConfig)
-                                            ensureCalibrationsInitialized();
-
-                                        setCalibrationMode('shared');
-                                    }}
-                                >
-                                    Shared — all {selectedSheets.length} sheets
-                                </Button>
-                                <Button
-                                    variant={
-                                        calibrationMode === 'per-sheet'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size="sm"
-                                    onClick={() => {
-                                        if (sharedConfig) {
-                                            const next: Record<
-                                                string,
-                                                CategoryCoaSheetConfig
-                                            > = {};
-
-                                            for (const s of selectedSheets) {
-                                                next[s] = {
-                                                    ...sharedConfig,
-                                                    ...calibrations[s],
-                                                };
-                                            }
-
-                                            setCalibrations(next);
-
-                                            if (
-                                                !currentSheet &&
-                                                selectedSheets[0]
-                                            ) {
-                                                setCurrentSheet(
-                                                    selectedSheets[0],
-                                                );
-                                            }
-                                        }
-
-                                        setCalibrationMode('per-sheet');
-                                    }}
-                                >
-                                    Per-sheet
-                                </Button>
-                            </div>
-                            <span className="text-muted-foreground text-xs">
-                                {calibrationMode === 'shared'
-                                    ? `Shared — header ${sharedConfig?.rowConfig.headerRow === '' || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to all ${selectedSheets.length} sheets.`
-                                    : `Per-sheet — editing ${currentSheet || '—'} only.`}
-                            </span>
-                            {calibrationMode === 'shared' ? (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleApplySharedToAll}
-                                    disabled={!sharedConfig}
-                                >
-                                    Apply shared to all ({selectedSheets.length}
-                                    )
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleCopyCurrentToAll}
-                                    disabled={!currentSheet}
-                                >
-                                    Copy “{currentSheet}” to all
-                                </Button>
-                            )}
-                        </div>
-
-                        {calibrationMode === 'per-sheet' &&
-                            selectedSheets.length > 1 && (
-                                <Field>
-                                    <FieldLabel>Editing sheet</FieldLabel>
-                                    <Select
-                                        value={currentSheet}
-                                        onValueChange={(v) =>
-                                            setCurrentSheet(v ?? '')
-                                        }
-                                    >
-                                        <SelectTrigger className="w-[260px]">
-                                            <SelectValue placeholder="Select sheet to edit" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {selectedSheets.map((s) => (
-                                                    <SelectItem
-                                                        key={s}
-                                                        value={s}
-                                                    >
-                                                        {s}{' '}
-                                                        {formatResults[s]?.valid
-                                                            ? '✓'
-                                                            : formatResults[s]
-                                                              ? '❌'
-                                                              : ''}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                    <FieldDescription>
-                                        Per-sheet calibration — changes affect
-                                        only the selected sheet.
-                                    </FieldDescription>
-                                </Field>
-                            )}
-
-                        {(() => {
-                            const cfg =
-                                calibrationMode === 'shared'
-                                    ? (sharedConfig ??
-                                      getDefaultMappingConfig())
-                                    : (calibrations[currentSheet] ??
-                                      sharedConfig ??
-                                      getDefaultMappingConfig());
-                            const onColumnChange = (
-                                patch: Partial<CategoryCoaColumnConfig>,
-                            ) => {
-                                if (calibrationMode === 'shared')
-                                    updateSharedColumnConfig(patch);
-                                else handleColumnConfigChange(patch);
-                                // handleColumnConfigChange already handles mode, but we need to ensure it uses correct mode
-                            };
-
-                            // Use existing handlers which already handle mode, so just use them
-                            return null;
-                        })()}
-
-                        {(() => {
-                            const cfg =
-                                calibrationMode === 'shared'
-                                    ? (sharedConfig ??
-                                      getDefaultMappingConfig())
-                                    : (calibrations[currentSheet] ??
-                                      sharedConfig ??
-                                      getDefaultMappingConfig());
-
-                            return (
-                                <div className="rounded-lg border p-4">
-                                    <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
-                                        Calibration{' '}
-                                        {calibrationMode === 'shared'
-                                            ? `(Shared – ${selectedSheets.length} sheets)`
-                                            : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
-                                    </p>
-                                    <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
-                                        Calibration — Category ↔ COA mapping
-                                        reference
-                                    </p>
-                                    <p className="text-muted-foreground mb-3 text-xs">
-                                        Tell us where Category and COA live in
-                                        the sheet. Data is read from{' '}
-                                        <span className="font-medium">
-                                            headerRow + 1 → end
-                                        </span>
-                                        . Sentinel categories for COA-only rows:{' '}
-                                        <span className="font-medium">
-                                            Additional Items (Uncategorized)
-                                        </span>{' '}
-                                        (id 276) and{' '}
-                                        <span className="font-medium">
-                                            Non-Procurement (Uncategorized)
-                                        </span>{' '}
-                                        (id 277) handle COA without category.
-                                    </p>
-
-                                    <div className="grid grid-cols-2 gap-6">
-                                        <div className="bg-card rounded-md border p-3">
-                                            <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-                                                Column Config
-                                            </p>
-                                            <div className="grid grid-cols-4 gap-4">
-                                                <Field>
-                                                    <FieldLabel htmlFor="coa-column">
-                                                        COA Column
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="coa-column"
-                                                        value={
-                                                            cfg.columnConfig.coa
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleColumnConfigChange(
-                                                                {
-                                                                    coa: e.target.value.toUpperCase(),
-                                                                },
-                                                            )
-                                                        }
-                                                        className="w-16"
-                                                        placeholder="D"
-                                                    />
-                                                    <FieldDescription>
-                                                        COA — col{' '}
-                                                        {cfg.columnConfig.coa ||
-                                                            'D'}
-                                                    </FieldDescription>
-                                                </Field>
-                                                <Field>
-                                                    <FieldLabel htmlFor="category-column">
-                                                        Category Column
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="category-column"
-                                                        value={
-                                                            cfg.columnConfig
-                                                                .category
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleColumnConfigChange(
-                                                                {
-                                                                    category:
-                                                                        e.target.value.toUpperCase(),
-                                                                },
-                                                            )
-                                                        }
-                                                        className="w-16"
-                                                        placeholder="F"
-                                                    />
-                                                    <FieldDescription>
-                                                        Category — col{' '}
-                                                        {cfg.columnConfig
-                                                            .category || 'F'}
-                                                    </FieldDescription>
-                                                </Field>
-                                                <Field>
-                                                    <FieldLabel htmlFor="unit-column">
-                                                        Unit Column
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="unit-column"
-                                                        value={
-                                                            cfg.columnConfig
-                                                                .unit
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleColumnConfigChange(
-                                                                {
-                                                                    unit: e.target.value.toUpperCase(),
-                                                                },
-                                                            )
-                                                        }
-                                                        className="w-16"
-                                                        placeholder="G"
-                                                    />
-                                                    <FieldDescription>
-                                                        Unit — col{' '}
-                                                        {cfg.columnConfig
-                                                            .unit || 'G'}
-                                                    </FieldDescription>
-                                                </Field>
-                                                <Field>
-                                                    <FieldLabel htmlFor="price-column">
-                                                        Price Column
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="price-column"
-                                                        value={
-                                                            cfg.columnConfig
-                                                                .price
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleColumnConfigChange(
-                                                                {
-                                                                    price: e.target.value.toUpperCase(),
-                                                                },
-                                                            )
-                                                        }
-                                                        className="w-16"
-                                                        placeholder="H"
-                                                    />
-                                                    <FieldDescription>
-                                                        Price — col{' '}
-                                                        {cfg.columnConfig
-                                                            .price || 'H'}
-                                                    </FieldDescription>
-                                                </Field>
-                                                <Field>
-                                                    <FieldLabel htmlFor="item-number-column">
-                                                        Item No. Column
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="item-number-column"
-                                                        value={
-                                                            cfg.columnConfig
-                                                                .itemNumber
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleColumnConfigChange(
-                                                                {
-                                                                    itemNumber:
-                                                                        e.target.value.toUpperCase(),
-                                                                },
-                                                            )
-                                                        }
-                                                        className="w-16"
-                                                        placeholder="E"
-                                                    />
-                                                    <FieldDescription>
-                                                        Item no. — col{' '}
-                                                        {cfg.columnConfig
-                                                            .itemNumber ||
-                                                            'E'}{' '}
-                                                        — placeholder detection
-                                                    </FieldDescription>
-                                                </Field>
-                                            </div>
-                                            <Field className="mt-3">
-                                                <FieldLabel>
-                                                    COA Match Field
-                                                </FieldLabel>
-                                                <Select
-                                                    value={cfg.coaMatchField}
-                                                    onValueChange={(v) =>
-                                                        handleMatchFieldChange(
-                                                            v as CategoryCoaSheetConfig['coaMatchField'],
-                                                        )
-                                                    }
-                                                >
-                                                    <SelectTrigger className="w-[200px]">
-                                                        <SelectValue placeholder="Select match field" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectGroup>
-                                                            <SelectItem value="auto">
-                                                                Auto (title or
-                                                                number)
-                                                            </SelectItem>
-                                                            <SelectItem value="account_title">
-                                                                Account Title
-                                                            </SelectItem>
-                                                            <SelectItem value="account_number">
-                                                                Account Number
-                                                            </SelectItem>
-                                                        </SelectGroup>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FieldDescription>
-                                                    How to match COA to DB
-                                                    (column-level matching)
-                                                </FieldDescription>
-                                            </Field>
-                                        </div>
-
-                                        <div className="bg-card rounded-md border p-3">
-                                            <p className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
-                                                Row Config
-                                            </p>
-                                            <div className="flex flex-col gap-3">
-                                                <Field>
-                                                    <FieldLabel htmlFor="header-row">
-                                                        Header Row
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="header-row"
-                                                        type="number"
-                                                        value={
-                                                            cfg.rowConfig
-                                                                .headerRow ?? ''
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleRowConfigChange(
-                                                                {
-                                                                    headerRow:
-                                                                        e.target
-                                                                            .value ===
-                                                                        ''
-                                                                            ? ''
-                                                                            : Number(
-                                                                                  e
-                                                                                      .target
-                                                                                      .value,
-                                                                              ),
-                                                                },
-                                                            )
-                                                        }
-                                                        className="w-20"
-                                                        placeholder="7"
-                                                    />
-                                                    <FieldDescription>
-                                                        Header{' '}
-                                                        {cfg.rowConfig
-                                                            .headerRow === '' ||
-                                                        cfg.rowConfig
-                                                            .headerRow == null
-                                                            ? '—'
-                                                            : cfg.rowConfig
-                                                                  .headerRow}
-                                                        ; data starts{' '}
-                                                        {cfg.rowConfig
-                                                            .headerRow === '' ||
-                                                        cfg.rowConfig
-                                                            .headerRow == null
-                                                            ? '—'
-                                                            : cfg.rowConfig
-                                                                  .headerRow +
-                                                              1}
-                                                    </FieldDescription>
-                                                </Field>
-                                                <Field>
-                                                    <FieldLabel htmlFor="additional-header-row">
-                                                        Additional Items Header
-                                                        Row
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="additional-header-row"
-                                                        type="number"
-                                                        value={
-                                                            cfg.rowConfig
-                                                                .additionalItemsHeaderRow ??
-                                                            ''
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleRowConfigChange(
-                                                                {
-                                                                    additionalItemsHeaderRow:
-                                                                        e.target
-                                                                            .value
-                                                                            ? Number(
-                                                                                  e
-                                                                                      .target
-                                                                                      .value,
-                                                                              )
-                                                                            : null,
-                                                                },
-                                                            )
-                                                        }
-                                                        placeholder="blank = ignore"
-                                                        className="w-20"
-                                                    />
-                                                    <FieldDescription>
-                                                        Sentinel: Additional
-                                                        Items (Uncategorized) •
-                                                        COA-only rows above this
-                                                        map to sentinel
-                                                    </FieldDescription>
-                                                </Field>
-                                                <Field>
-                                                    <FieldLabel htmlFor="non-proc-header-row">
-                                                        Non-Procurement Header
-                                                        Row
-                                                    </FieldLabel>
-                                                    <Input
-                                                        id="non-proc-header-row"
-                                                        type="number"
-                                                        value={
-                                                            cfg.rowConfig
-                                                                .nonProcurementHeaderRow ??
-                                                            ''
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleRowConfigChange(
-                                                                {
-                                                                    nonProcurementHeaderRow:
-                                                                        e.target
-                                                                            .value
-                                                                            ? Number(
-                                                                                  e
-                                                                                      .target
-                                                                                      .value,
-                                                                              )
-                                                                            : null,
-                                                                },
-                                                            )
-                                                        }
-                                                        placeholder="blank = ignore"
-                                                        className="w-20"
-                                                    />
-                                                    <FieldDescription>
-                                                        Sentinel:
-                                                        Non-Procurement
-                                                        (Uncategorized) •
-                                                        COA-only rows below map
-                                                        to sentinel
-                                                    </FieldDescription>
-                                                </Field>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <Field className="mt-4">
-                                        <FieldLabel>
-                                            COA items format *
-                                        </FieldLabel>
-                                        <ToggleGroup
-                                            variant="outline"
-                                            spacing={2}
-                                            value={[cfg.coaLabelMode]}
-                                            onValueChange={(value) => {
-                                                if (value.length > 0) {
-                                                    handleCoaLabelModeChange(
-                                                        value[0] as CategoryCoaSheetConfig['coaLabelMode'],
-                                                    );
-                                                }
-                                            }}
-                                            className="w-full"
-                                        >
-                                            <ToggleGroupItem
-                                                value="with-label"
-                                                className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
-                                            >
-                                                <span className="font-medium">
-                                                    With COA label rows
-                                                </span>
-                                                <span className="text-muted-foreground text-xs font-normal whitespace-normal">
-                                                    Category → COA label in F
-                                                    (next D same) → Items with
-                                                    D=COA
-                                                </span>
-                                                <span className="text-muted-foreground/70 font-mono text-xs">
-                                                    Cat 1 → coa 1 → items / coa
-                                                    2 → items → Cat 1 - Total
-                                                </span>
-                                            </ToggleGroupItem>
-                                            <ToggleGroupItem
-                                                value="without-label"
-                                                className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
-                                            >
-                                                <span className="font-medium">
-                                                    Without label (COA on item
-                                                    rows)
-                                                </span>
-                                                <span className="text-muted-foreground text-xs font-normal whitespace-normal">
-                                                    COA directly on item row —
-                                                    grouped by COA value
-                                                </span>
-                                                <span className="text-muted-foreground/70 font-mono text-xs">
-                                                    Cat 1 → items (D=coa1) /
-                                                    items (D=coa2) → Cat 1 -
-                                                    Total
-                                                </span>
-                                            </ToggleGroupItem>
-                                        </ToggleGroup>
-                                        <FieldDescription>
-                                            What format is your sheet in? This
-                                            affects how we detect COA groups.
-                                        </FieldDescription>
-                                    </Field>
-
-                                    <div className="mt-4 flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleResetCalibration}
-                                        >
-                                            Reset to defaults
-                                        </Button>
-                                        <span className="text-muted-foreground self-center text-xs">
-                                            Column: D=COA, F=category → Row:
-                                            header 7 → Mode: {cfg.coaLabelMode}
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-
-                        <div className="flex justify-between">
-                            <Button
-                                variant="outline"
-                                onClick={() => setStep('upload')}
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                onClick={() => setStep('verifyFormat')}
-                                disabled={!canVerifyFormat}
-                            >
-                                Next: Verify Format
-                            </Button>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="verifyFormat"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        <div className="rounded-lg border p-4">
-                            <p className="mb-2 text-sm font-medium">
-                                Verify Sheet Format — check calibration and
-                                structure (all 3 sections)
-                            </p>
-                            <p className="text-muted-foreground mb-3 text-xs">
-                                Checks {selectedSheets.length} sheet
-                                {selectedSheets.length === 1 ? '' : 's'} with
-                                current calibration (
-                                {calibrationMode === 'shared'
-                                    ? `shared header ${sharedConfig?.rowConfig.headerRow === '' || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow}`
-                                    : `per-sheet`}
-                                ). Validates cat → coa(s) → items → cat - TOTAL
-                                per section.
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    size="sm"
-                                    onClick={handleVerifyFormat}
-                                    disabled={!canVerifyFormat}
-                                >
-                                    Verify Format{' '}
-                                    {selectedSheets.length > 1
-                                        ? `(${selectedSheets.length} sheets)`
-                                        : ''}
-                                </Button>
-                                {hasFormatResult && (
-                                    <span
-                                        className={`text-xs ${formatValid ? 'text-green-600' : 'text-amber-600'}`}
-                                    >
-                                        {formatValid
-                                            ? `✅ All ${selectedSheets.length} valid`
-                                            : `❌ ${Object.values(formatResults).filter((r) => !r.valid).length}/${selectedSheets.length} issues`}
-                                    </span>
-                                )}
-                            </div>
-                            {hasFormatResult && (
-                                <div className="mt-3 flex flex-wrap gap-2">
-                                    {selectedSheets.map((s) => {
-                                        const r = formatResults[s];
-
-                                        if (!r) {
-                                            return (
-                                                <Badge
-                                                    key={s}
-                                                    variant="secondary"
-                                                >
-                                                    {s}: —
-                                                </Badge>
-                                            );
-                                        }
-
-                                        return (
-                                            <Badge
-                                                key={s}
-                                                variant={
-                                                    r.valid
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                                className={
-                                                    r.valid
-                                                        ? 'bg-primary'
-                                                        : 'bg-secondary'
-                                                }
-                                            >
-                                                {s}: {r.valid ? '✅' : '❌'}{' '}
-                                                {r.errors.length} issues
-                                            </Badge>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-
-                        {hasFormatResult && selectedSheets.length > 1 && (
-                            <Tabs
-                                value={activeFormatSheet}
-                                onValueChange={setActiveFormatSheet}
-                            >
-                                <TabsList>
-                                    {selectedSheets.map((s) => {
-                                        const r = formatResults[s];
-
-                                        return (
-                                            <TabsTrigger key={s} value={s}>
-                                                {s}{' '}
-                                                {r?.valid ? (
-                                                    <span className="ml-1 text-xs text-green-600">
-                                                        ✓
-                                                    </span>
-                                                ) : r ? (
-                                                    <span className="ml-1 text-xs text-amber-600">
-                                                        ❌ {r.errors.length}
-                                                    </span>
-                                                ) : null}
-                                            </TabsTrigger>
-                                        );
-                                    })}
-                                </TabsList>
-                                {selectedSheets.map((s) => {
-                                    const r = formatResults[s];
-
-                                    if (!r) {
-                                        return (
-                                            <TabsContent key={s} value={s}>
-                                                <div className="text-muted-foreground p-4 text-sm">
-                                                    Not verified yet.
-                                                </div>
-                                            </TabsContent>
-                                        );
-                                    }
-
-                                    return (
-                                        <TabsContent key={s} value={s}>
-                                            <div
-                                                className={`rounded-lg border p-4 ${r.valid ? 'bg-card border' : 'bg-card border'}`}
-                                            >
-                                                <div className="flex flex-wrap gap-2 text-xs">
-                                                    <Badge
-                                                        variant={
-                                                            r.groups.procurement
-                                                                ? 'default'
-                                                                : 'secondary'
-                                                        }
-                                                    >
-                                                        Procurement:{' '}
-                                                        {r.groups.procurement}{' '}
-                                                        cells
-                                                    </Badge>
-                                                    <Badge
-                                                        variant={
-                                                            r.groups.additional
-                                                                ? 'default'
-                                                                : 'secondary'
-                                                        }
-                                                    >
-                                                        Additional:{' '}
-                                                        {r.groups.additional}{' '}
-                                                        cells
-                                                    </Badge>
-                                                    <Badge
-                                                        variant={
-                                                            r.groups
-                                                                .nonProcurement
-                                                                ? 'default'
-                                                                : 'secondary'
-                                                        }
-                                                    >
-                                                        Non-Proc:{' '}
-                                                        {
-                                                            r.groups
-                                                                .nonProcurement
-                                                        }{' '}
-                                                        cells
-                                                    </Badge>
-                                                </div>
-                                                {r.details.length > 0 && (
-                                                    <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
-                                                        {r.details.map(
-                                                            (d, i) => (
-                                                                <li key={i}>
-                                                                    {d}
-                                                                </li>
-                                                            ),
-                                                        )}
-                                                    </ul>
-                                                )}
-                                                {r.errors.length > 0 && (
-                                                    <div className="mt-3">
-                                                        <div className="text-xs font-semibold">
-                                                            Issues (
-                                                            {r.errors.length})
-                                                            in {s}:
-                                                        </div>
-                                                        <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">
-                                                            {r.errors.map(
-                                                                (e, i) => (
-                                                                    <li key={i}>
-                                                                        <span className="font-mono">
-                                                                            Row{' '}
-                                                                            {
-                                                                                e.row
-                                                                            }
-                                                                            :
-                                                                        </span>{' '}
-                                                                        {
-                                                                            e.message
-                                                                        }
-                                                                    </li>
-                                                                ),
-                                                            )}
-                                                        </ul>
-                                                    </div>
-                                                )}
-                                                {!r.valid && (
-                                                    <p className="mt-2 text-xs text-amber-800">
-                                                        Fix calibration or sheet
-                                                        format — Next is blocked
-                                                        until valid.
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </TabsContent>
-                                    );
-                                })}
-                            </Tabs>
-                        )}
-
-                        {hasFormatResult &&
-                            selectedSheets.length === 1 &&
-                            (() => {
-                                const s = selectedSheets[0];
-                                const r = formatResults[s];
-
-                                if (!r) return null;
-
-                                return (
-                                    <div
-                                        className={`rounded-lg border p-4 ${r.valid ? 'bg-card border' : 'bg-card border'}`}
-                                    >
-                                        <div className="flex flex-wrap gap-2 text-xs">
-                                            <Badge
-                                                variant={
-                                                    r.groups.procurement
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                            >
-                                                Procurement:{' '}
-                                                {r.groups.procurement} cells
-                                            </Badge>
-                                            <Badge
-                                                variant={
-                                                    r.groups.additional
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                            >
-                                                Additional:{' '}
-                                                {r.groups.additional} cells
-                                            </Badge>
-                                            <Badge
-                                                variant={
-                                                    r.groups.nonProcurement
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                            >
-                                                Non-Proc:{' '}
-                                                {r.groups.nonProcurement} cells
-                                            </Badge>
-                                        </div>
-                                        {r.details.length > 0 && (
-                                            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
-                                                {r.details.map((d, i) => (
-                                                    <li key={i}>{d}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                        {r.errors.length > 0 && (
-                                            <div className="mt-3">
-                                                <div className="text-xs font-semibold">
-                                                    Issues ({r.errors.length}):
-                                                </div>
-                                                <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">
-                                                    {r.errors.map((e, i) => (
-                                                        <li key={i}>
-                                                            <span className="font-mono">
-                                                                Row {e.row}:
-                                                            </span>{' '}
-                                                            {e.message}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                        {!r.valid && (
-                                            <p className="mt-2 text-xs text-amber-800">
-                                                Fix calibration or sheet format
-                                                — Next is blocked until valid.
-                                            </p>
-                                        )}
-                                    </div>
-                                );
-                            })()}
-
-                        {!hasFormatResult && (
-                            <div className="text-muted-foreground rounded-lg border p-8 text-center text-sm">
-                                Click Verify Format to check sheet structure.
-                            </div>
-                        )}
-
-                        <div className="flex justify-between">
-                            <Button
-                                variant="outline"
-                                onClick={() => setStep('calibrate')}
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                onClick={() => setStep('verifyMap')}
-                                disabled={!canVerifyMap}
-                            >
-                                Next: Verify & Map{' '}
-                                {hasFormatResult && !formatValid
-                                    ? '(blocked)'
-                                    : ''}
-                            </Button>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="verifyMap"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        <div className="rounded-lg border p-4">
-                            <p className="mb-2 text-sm font-medium">
-                                Verify & Map — extract relationships and check
-                                DB
-                            </p>
-                            <p className="text-muted-foreground mb-3 text-xs">
-                                Click Log Unique Relationships to extract from{' '}
-                                {selectedSheets.length} sheet
-                                {selectedSheets.length === 1 ? '' : 's'} and
-                                verify against DB. Use dropdowns for ~ partial /
-                                ❌ missing COAs.
-                            </p>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleLog}
-                                >
-                                    Log{' '}
-                                    {(currentSheet || selectedSheets[0]) ??
-                                        'sheet'}{' '}
-                                    + calibration
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    onClick={handleLogRelationships}
-                                >
-                                    Log Unique Relationships{' '}
-                                    {selectedSheets.length > 1
-                                        ? `(${selectedSheets.length} sheets)`
-                                        : ''}
-                                </Button>
-                            </div>
-                        </div>
-
-                        {effectiveVerification ? (
-                            <div className="rounded-lg border">
-                                <div className="border-b p-3">
-                                    <h3 className="text-sm font-semibold">
-                                        DB Verification —{' '}
-                                        {effectiveVerification.total} unique
-                                        pairs
-                                    </h3>
-                                    <p className="text-muted-foreground text-xs">
-                                        Checked against{' '}
-                                        {existingCategories.length} categories,{' '}
-                                        {existingCoas.length} COAs (
-                                        {(currentSheet
-                                            ? getEffectiveConfig(currentSheet)
-                                                  .coaMatchField
-                                            : sharedConfig?.coaMatchField) ??
-                                            'account_title'}
-                                        ), {existingMappings.length} existing
-                                        mappings
-                                    </p>
-                                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                        <Badge
-                                            variant={
-                                                effectiveVerification.catFound ===
-                                                effectiveVerification.total
-                                                    ? 'default'
-                                                    : 'secondary'
-                                            }
-                                        >
-                                            Categories:{' '}
-                                            {effectiveVerification.catFound}/
-                                            {effectiveVerification.total}{' '}
-                                            {effectiveVerification.catFound ===
-                                            effectiveVerification.total
-                                                ? '✅'
-                                                : `❌ ${effectiveVerification.missingCat} missing`}
-                                        </Badge>
-                                        <Badge
-                                            variant={
-                                                effectiveVerification.effCoaFound ===
-                                                effectiveVerification.total
-                                                    ? 'default'
-                                                    : 'secondary'
-                                            }
-                                        >
-                                            COAs:{' '}
-                                            {effectiveVerification.effCoaFound}/
-                                            {effectiveVerification.total}{' '}
-                                            {effectiveVerification.effCoaFound ===
-                                            effectiveVerification.total
-                                                ? '✅'
-                                                : `❌ ${effectiveVerification.effMissingCoa} missing`}
-                                        </Badge>
-                                        <Badge
-                                            variant={
-                                                effectiveVerification.effMappingFound ===
-                                                effectiveVerification.total
-                                                    ? 'default'
-                                                    : effectiveVerification.effMappingFound >
-                                                        0
-                                                      ? 'secondary'
-                                                      : 'outline'
-                                            }
-                                        >
-                                            Mappings:{' '}
-                                            {
-                                                effectiveVerification.effMappingFound
-                                            }
-                                            /{effectiveVerification.total}{' '}
-                                            {effectiveVerification.effMappingFound ===
-                                            effectiveVerification.total
-                                                ? '✅ all mapped'
-                                                : effectiveVerification.effMissingMapping >
-                                                    0
-                                                  ? `${effectiveVerification.effMissingMapping} missing`
-                                                  : '—'}
-                                        </Badge>
-                                    </div>
-                                    {Object.keys(coaOverrides).length > 0 && (
-                                        <p className="mt-2 text-xs text-amber-600">
-                                            {Object.keys(coaOverrides).length}{' '}
-                                            COA override(s) selected — mapping
-                                            counts reflect overrides.
-                                        </p>
-                                    )}
-                                </div>
-                                <div className="max-h-[480px] overflow-auto">
-                                    <table className="w-full text-xs">
-                                        <thead className="bg-card text-muted-foreground sticky top-0">
-                                            <tr className="border-b">
-                                                <th className="p-2 text-left">
-                                                    Sheet
-                                                </th>
-                                                <th className="p-2 text-left">
-                                                    Section
-                                                </th>
-                                                <th className="p-2 text-left">
-                                                    Category
-                                                </th>
-                                                <th className="p-2 text-center">
-                                                    Cat DB
-                                                </th>
-                                                <th className="p-2 text-left">
-                                                    COA (Excel)
-                                                </th>
-                                                <th className="min-w-[280px] p-2 text-left">
-                                                    COA DB
-                                                </th>
-                                                <th className="p-2 text-center">
-                                                    Mapping
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {effectiveVerification.effectivePairs.map(
-                                                (v) => {
-                                                    const needsDropdown =
-                                                        !v.coaExists;
-                                                    const isOverridden =
-                                                        v.overrideId !== null;
-                                                    const selectedDisplay =
-                                                        v.effectiveCoa
-                                                            ? `coa:${v.effectiveCoa.id}:${v.effectiveCoa.path} — ${v.effectiveCoa.account_title}`
-                                                            : '';
-                                                    // Build items per row: suggested + remaining
-                                                    const suggestedIds =
-                                                        new Set(
-                                                            v.coaTopMatches.map(
-                                                                (m) => m.coa.id,
-                                                            ),
-                                                        );
-                                                    const suggestedCoas =
-                                                        v.coaTopMatches.map(
-                                                            (m) => m.coa,
-                                                        );
-                                                    const remainingCoas =
-                                                        existingCoas.filter(
-                                                            (c) =>
-                                                                !suggestedIds.has(
-                                                                    c.id,
-                                                                ),
-                                                        );
-                                                    const itemsForRow =
-                                                        v.coaMatchType ===
-                                                            'partial' &&
-                                                        suggestedCoas.length > 0
-                                                            ? [
-                                                                  ...suggestedCoas.map(
-                                                                      (c) =>
-                                                                          `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                                  ),
-                                                                  ...remainingCoas.map(
-                                                                      (c) =>
-                                                                          `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                                  ),
-                                                              ]
-                                                            : existingCoas.map(
-                                                                  (c) =>
-                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                              );
-
-                                                    return (
-                                                        <tr
-                                                            key={v.key}
-                                                            className="hover:bg-accent border-b"
-                                                        >
-                                                            <td className="text-muted-foreground p-2">
-                                                                {v.sheet}
-                                                            </td>
-                                                            <td className="text-muted-foreground p-2">
-                                                                {v.section}
-                                                            </td>
-                                                            <td
-                                                                className="max-w-[16ch] truncate p-2"
-                                                                title={
-                                                                    v.category
-                                                                }
-                                                            >
-                                                                {v.category}
-                                                            </td>
-                                                            <td className="p-2 text-center">
-                                                                {v.catExists ? (
-                                                                    <Badge
-                                                                        variant="secondary"
-                                                                        className="bg-secondary text-secondary-foreground"
-                                                                    >
-                                                                        ✅{' '}
-                                                                        {
-                                                                            v.catId
-                                                                        }
-                                                                    </Badge>
-                                                                ) : v.catMatchType ===
-                                                                  'partial' ? (
-                                                                    <Badge
-                                                                        variant="outline"
-                                                                        title={v.catTopMatches
-                                                                            .map(
-                                                                                (
-                                                                                    m,
-                                                                                ) =>
-                                                                                    `${m.category.name} (lev ${m.score})`,
-                                                                            )
-                                                                            .join(
-                                                                                ', ',
-                                                                            )}
-                                                                    >
-                                                                        ~
-                                                                        partial
-                                                                    </Badge>
-                                                                ) : (
-                                                                    <Badge
-                                                                        variant="secondary"
-                                                                        className="bg-secondary text-secondary-foreground"
-                                                                    >
-                                                                        ❌
-                                                                        missing
-                                                                    </Badge>
-                                                                )}
-                                                            </td>
-                                                            <td
-                                                                className="max-w-[18ch] truncate p-2"
-                                                                title={v.coa}
-                                                            >
-                                                                {v.coa}
-                                                            </td>
-                                                            <td className="p-2">
-                                                                {needsDropdown ? (
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Combobox
-                                                                            items={
-                                                                                itemsForRow
-                                                                            }
-                                                                            value={
-                                                                                selectedDisplay
-                                                                            }
-                                                                            onValueChange={(
-                                                                                val,
-                                                                            ) =>
-                                                                                handleCoaOverrideChange(
-                                                                                    v.key,
-                                                                                    val as
-                                                                                        | string
-                                                                                        | null,
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <ComboboxInput
-                                                                                placeholder={
-                                                                                    v.coaMatchType ===
-                                                                                    'partial'
-                                                                                        ? '★ Suggested at top — search...'
-                                                                                        : 'Search COA...'
-                                                                                }
-                                                                                className="h-7 text-xs"
-                                                                            />
-                                                                            <ComboboxContent>
-                                                                                <ComboboxEmpty>
-                                                                                    No
-                                                                                    COA
-                                                                                    found.
-                                                                                </ComboboxEmpty>
-                                                                                <ComboboxList>
-                                                                                    {(
-                                                                                        item: string,
-                                                                                    ) => {
-                                                                                        const isSuggested =
-                                                                                            v.coaTopMatches.some(
-                                                                                                (
-                                                                                                    m,
-                                                                                                ) =>
-                                                                                                    item.includes(
-                                                                                                        `coa:${m.coa.id}:`,
-                                                                                                    ),
-                                                                                            );
-
-                                                                                        return (
-                                                                                            <ComboboxItem
-                                                                                                key={
-                                                                                                    item
-                                                                                                }
-                                                                                                value={
-                                                                                                    item
-                                                                                                }
-                                                                                                className={
-                                                                                                    isSuggested
-                                                                                                        ? 'bg-card font-medium'
-                                                                                                        : ''
-                                                                                                }
-                                                                                            >
-                                                                                                {isSuggested
-                                                                                                    ? '★ '
-                                                                                                    : ''}
-                                                                                                {item.replace(
-                                                                                                    /^coa:\d+:/,
-                                                                                                    '',
-                                                                                                )}
-                                                                                            </ComboboxItem>
-                                                                                        );
-                                                                                    }}
-                                                                                </ComboboxList>
-                                                                            </ComboboxContent>
-                                                                        </Combobox>
-                                                                        {isOverridden && (
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="h-7 px-1 text-xs"
-                                                                                onClick={() =>
-                                                                                    handleClearOverride(
-                                                                                        v.key,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                ✕
-                                                                            </Button>
-                                                                        )}
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Badge
-                                                                            variant="secondary"
-                                                                            className="bg-secondary text-secondary-foreground"
-                                                                        >
-                                                                            ✅{' '}
-                                                                            {
-                                                                                v.coaId
-                                                                            }
-                                                                        </Badge>
-                                                                        <span
-                                                                            className="text-muted-foreground truncate"
-                                                                            title={
-                                                                                v
-                                                                                    .effectiveCoa
-                                                                                    ?.path
-                                                                            }
-                                                                        >
-                                                                            {
-                                                                                v
-                                                                                    .effectiveCoa
-                                                                                    ?.path
-                                                                            }
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                                {needsDropdown &&
-                                                                    v.effectiveCoa && (
-                                                                        <div className="mt-1 text-xs text-green-600">
-                                                                            →{' '}
-                                                                            {
-                                                                                v
-                                                                                    .effectiveCoa
-                                                                                    .path
-                                                                            }{' '}
-                                                                            —{' '}
-                                                                            {
-                                                                                v
-                                                                                    .effectiveCoa
-                                                                                    .account_title
-                                                                            }
-                                                                        </div>
-                                                                    )}
-                                                                {needsDropdown &&
-                                                                    !v.effectiveCoa &&
-                                                                    v
-                                                                        .coaTopMatches
-                                                                        .length >
-                                                                        0 && (
-                                                                        <div
-                                                                            className="text-muted-foreground mt-1 truncate text-xs"
-                                                                            title={v.coaTopMatches
-                                                                                .map(
-                                                                                    (
-                                                                                        m,
-                                                                                    ) =>
-                                                                                        `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
-                                                                                )
-                                                                                .join(
-                                                                                    ' | ',
-                                                                                )}
-                                                                        >
-                                                                            Suggest:{' '}
-                                                                            {
-                                                                                v
-                                                                                    .coaTopMatches[0]
-                                                                                    .coa
-                                                                                    .path
-                                                                            }{' '}
-                                                                            —{' '}
-                                                                            {
-                                                                                v
-                                                                                    .coaTopMatches[0]
-                                                                                    .coa
-                                                                                    .account_title
-                                                                            }
-                                                                        </div>
-                                                                    )}
-                                                            </td>
-                                                            <td className="p-2 text-center">
-                                                                {v.effectiveMappingExists ? (
-                                                                    <span className="text-green-600">
-                                                                        ✅
-                                                                        exists
-                                                                    </span>
-                                                                ) : v.catExists &&
-                                                                  v.effectiveCoaExists ? (
-                                                                    <span className="text-amber-600">
-                                                                        ❌ not
-                                                                        mapped
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-muted-foreground">
-                                                                        —
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                },
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
-                                    <span className="text-muted-foreground text-xs">
-                                        Detailed logs in console (F12) — with
-                                        top suggestions. Mode:{' '}
-                                        {(currentSheet
-                                            ? getEffectiveConfig(currentSheet)
-                                                  .coaMatchField
-                                            : sharedConfig?.coaMatchField) ??
-                                            'account_title'}{' '}
-                                        — overrides are row-unique (
-                                        {Object.keys(coaOverrides).length}{' '}
-                                        active).
-                                    </span>
-                                    <div className="flex gap-2">
-                                        {Object.keys(coaOverrides).length >
-                                            0 && (
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() =>
-                                                    setCoaOverrides({})
-                                                }
-                                            >
-                                                Clear overrides
-                                            </Button>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-muted-foreground rounded-lg border p-8 text-center text-sm">
-                                No verification yet — click Log Unique
-                                Relationships.
-                            </div>
-                        )}
-
-                        <div className="flex justify-between">
-                            <Button
-                                variant="outline"
-                                onClick={() => setStep('verifyFormat')}
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                onClick={() => setStep('review')}
-                                disabled={!canReview}
-                            >
-                                Next: Review & Save{' '}
-                                {effectiveVerification
-                                    ? `(${effectiveVerification.effMissingMapping} to create)`
-                                    : ''}
-                            </Button>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="review"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        {effectiveVerification ? (
-                            <div className="rounded-lg border">
-                                <div className="border-b p-3">
-                                    <h3 className="text-sm font-semibold">
-                                        Review — {effectiveVerification.total}{' '}
-                                        unique pairs
-                                    </h3>
-                                    <p className="text-muted-foreground text-xs">
-                                        Checked against{' '}
-                                        {existingCategories.length} categories,{' '}
-                                        {existingCoas.length} COAs,{' '}
-                                        {existingMappings.length} mappings —{' '}
-                                        {
-                                            effectiveVerification.effMissingMapping
-                                        }{' '}
-                                        will be created.
-                                    </p>
-                                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                        <Badge
-                                            variant={
-                                                effectiveVerification.catFound ===
-                                                effectiveVerification.total
-                                                    ? 'default'
-                                                    : 'secondary'
-                                            }
-                                        >
-                                            Categories:{' '}
-                                            {effectiveVerification.catFound}/
-                                            {effectiveVerification.total}
-                                        </Badge>
-                                        <Badge
-                                            variant={
-                                                effectiveVerification.effCoaFound ===
-                                                effectiveVerification.total
-                                                    ? 'default'
-                                                    : 'secondary'
-                                            }
-                                        >
-                                            COAs:{' '}
-                                            {effectiveVerification.effCoaFound}/
-                                            {effectiveVerification.total}
-                                        </Badge>
-                                        <Badge
-                                            variant={
-                                                effectiveVerification.effMappingFound ===
-                                                effectiveVerification.total
-                                                    ? 'default'
-                                                    : 'secondary'
-                                            }
-                                        >
-                                            Mappings:{' '}
-                                            {
-                                                effectiveVerification.effMappingFound
-                                            }
-                                            /{effectiveVerification.total}
-                                        </Badge>
-                                    </div>
-                                </div>
-                                <div className="max-h-96 overflow-auto">
-                                    <table className="w-full text-xs">
-                                        <thead className="bg-card text-muted-foreground sticky top-0">
-                                            <tr className="border-b">
-                                                <th className="p-2 text-left">
-                                                    Sheet
-                                                </th>
-                                                <th className="p-2 text-left">
-                                                    Category
-                                                </th>
-                                                <th className="p-2 text-left">
-                                                    COA (Excel → DB)
-                                                </th>
-                                                <th className="p-2 text-center">
-                                                    Mapping
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {effectiveVerification.effectivePairs
-                                                .filter(
-                                                    (p) =>
-                                                        p.catExists &&
-                                                        p.effectiveCoaExists &&
-                                                        !p.effectiveMappingExists,
-                                                )
-                                                .map((p) => (
-                                                    <tr
-                                                        key={p.key}
-                                                        className="border-b"
-                                                    >
-                                                        <td className="text-muted-foreground p-2">
-                                                            {p.sheet}
-                                                        </td>
-                                                        <td className="p-2">
-                                                            {p.category}{' '}
-                                                            <span className="text-muted-foreground">
-                                                                [{p.catId}]
-                                                            </span>
-                                                        </td>
-                                                        <td className="p-2">
-                                                            {p.coa}{' '}
-                                                            <span className="text-muted-foreground">
-                                                                →
-                                                            </span>{' '}
-                                                            {
-                                                                p.effectiveCoa
-                                                                    ?.path
-                                                            }{' '}
-                                                            —{' '}
-                                                            {
-                                                                p.effectiveCoa
-                                                                    ?.account_title
-                                                            }
-                                                        </td>
-                                                        <td className="p-2 text-center text-amber-600">
-                                                            ❌ not mapped
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            {effectiveVerification.effMissingMapping ===
-                                                0 && (
-                                                <tr>
-                                                    <td
-                                                        colSpan={4}
-                                                        className="text-muted-foreground p-4 text-center"
-                                                    >
-                                                        All mappings already
-                                                        exist — nothing to
-                                                        create.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
-                                    <span className="text-muted-foreground text-xs">
-                                        {
-                                            effectiveVerification.effMissingMapping
-                                        }{' '}
-                                        mapping(s) will be created. COAs are not
-                                        created, only linked.
-                                    </span>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setCoaOverrides({})}
-                                        >
-                                            Clear overrides
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            disabled={
-                                                isSaving ||
-                                                effectiveVerification.effMissingMapping ===
-                                                    0
-                                            }
-                                            onClick={handleBulkCreateMappings}
-                                        >
-                                            {isSaving ? (
-                                                <>
-                                                    <Spinner className="mr-1 h-3 w-3" />{' '}
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                `Create ${effectiveVerification.effMissingMapping} Mapping${effectiveVerification.effMissingMapping === 1 ? '' : 's'}`
-                                            )}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-muted-foreground rounded-lg border p-8 text-center text-sm">
-                                Verify first to review mappings.
-                            </div>
-                        )}
-
-                        <div className="flex justify-between">
-                            <Button
-                                variant="outline"
-                                onClick={() => setStep('verifyMap')}
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() => setStep('calibrate')}
-                            >
-                                Recalibrate
-                            </Button>
-                        </div>
-                    </TabsContent>
+                    <UploadStep s={s} />
+                    <CalibrateStep s={s} />
+                    <VerifyFormatStep s={s} />
+                    <VerifyMapStep s={s} />
+                    <ReviewStep s={s} />
                 </Tabs>
             </div>
 

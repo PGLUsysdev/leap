@@ -1,41 +1,12 @@
+// resources/js/pages/price-list-import/index.tsx
+
 import { Head, Link, router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import { FileSpreadsheet } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Combobox,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxInput,
-    ComboboxItem,
-    ComboboxList,
-} from '@/components/ui/combobox';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Spinner } from '@/components/ui/spinner';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
     formatCoaOption,
@@ -51,94 +22,34 @@ import {
 } from '@/lib/ppmp/normalize';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import { getDefaultSharedConfig } from '@/lib/ppmp/sheet-config';
-import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 
-// Prices are in cols G (unit) H (price) + description/category in F, COA in D
-// Reuse SharedSheetConfig which already has {category, coa, unit, price}
-type PriceListSheetConfig = SharedSheetConfig;
+import type {
+    CalibrationMode,
+    ExistingMapping,
+    ExistingPriceList,
+    PriceListImportState,
+    PriceListSheetConfig,
+    PliStep,
+    RawItem,
+    ReviewFilter,
+    UniqueItem,
+    VerifiedItem,
+    VerifyResult,
+} from './types';
+import { UploadStep } from './steps/upload-step';
+import { CalibrateStep } from './steps/calibrate-step';
+import { VerifyStep } from './steps/verify-step';
+import { ReviewStep } from './steps/review-step';
 
 function getDefaultPriceListConfig(): PriceListSheetConfig {
     return getDefaultSharedConfig();
 }
 
-type VerifyResult = {
-    valid: boolean;
-    message: string;
-    errors: Array<{ row: number; message: string }>;
-    details: string[];
-};
-
-type RawItem = {
-    sheet: string;
-    row: number;
-    category: string;
-    coa: string;
-    description: string;
-    unit: string;
-    price: number | null;
-    priceRaw: string | null;
-};
-
-type UniqueItem = {
-    key: string;
-    category: string;
-    coa: string;
-    description: string;
-    unit: string;
-    price: number | null;
-    sheets: string[];
-    rows: number[];
-    count: number;
-};
-
-type VerifiedItem = UniqueItem & {
-    catNorm: string;
-    coaNorm: string;
-    categoryId: number | null;
-    coaId: number | null;
-    mappingId: number | null;
-    catExists: boolean;
-    coaExists: boolean;
-    mappingExists: boolean;
-    priceListExists: boolean;
-    junctionId: number | null;
-    catMatchType: 'strict' | 'partial' | 'none';
-    coaMatchType: 'strict' | 'partial' | 'none';
-    catTopMatches: Array<{ category: ExistingCategory; score: number }>;
-    coaTopMatches: Array<{ coa: ExistingCoa; score: number }>;
-    catMatch: ExistingCategory | null;
-    coaMatch: ExistingCoa | null;
-    // effective after override (per row granular)
-    effectiveCoa: ExistingCoa | null;
-    effectiveCoaId: number | null;
-    effectiveCoaExists: boolean;
-    effectiveCoaMatchType: 'strict' | 'partial' | 'none';
-    effectiveJunctionId: number | null;
-    effectiveMappingExists: boolean;
-    effectivePriceListExists: boolean;
-    overrideId: number | null;
-    priceValid: boolean;
-    unitValid: boolean;
-    descriptionValid: boolean;
-    status: 'ready' | 'update' | 'error' | 'skipped';
-    message: string;
-};
-
 interface PriceListImportProps {
     existingCategories: ExistingCategory[];
     existingCoas: ExistingCoa[];
-    existingMappings: Array<{
-        id: number;
-        chart_of_account_id: number;
-        ppmp_category_id: number;
-    }>;
-    existingPriceLists: Array<{
-        id: number;
-        description: string;
-        unit_of_measurement: string;
-        price: string;
-        chart_of_account_ppmp_category_id: number;
-    }>;
+    existingMappings: ExistingMapping[];
+    existingPriceLists: ExistingPriceList[];
 }
 
 export default function PriceListImport({
@@ -154,9 +65,8 @@ export default function PriceListImport({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [calibrationMode, setCalibrationMode] = useState<
-        'shared' | 'per-sheet'
-    >('shared');
+    const [calibrationMode, setCalibrationMode] =
+        useState<CalibrationMode>('shared');
     const [sharedConfig, setSharedConfig] =
         useState<PriceListSheetConfig | null>(null);
     const [calibrations, setCalibrations] = useState<
@@ -170,28 +80,21 @@ export default function PriceListImport({
     const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
     const [rawItems, setRawItems] = useState<RawItem[]>([]);
     const [uniqueItems, setUniqueItems] = useState<UniqueItem[]>([]);
-    const [step, setStep] = useState<
-        'upload' | 'calibrate' | 'verify' | 'review'
-    >('upload');
+    const [step, setStep] = useState<PliStep>('upload');
     const [importing, setImporting] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>(
         {},
     );
-    // Per extracted-COA-group picker choice for batch matching (keyed by coaNorm).
-    // Shown visibly in the group picker; only applied via explicit Apply.
     const [batchSelections, setBatchSelections] = useState<
         Record<string, string>
     >({});
-    const [reviewFilter, setReviewFilter] = useState<
-        'all' | 'errors' | 'duplicates' | 'longDesc'
-    >('all');
+    const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
     const [showDuplicateDetails, setShowDuplicateDetails] = useState(false);
     const [excludeMissingCategory, setExcludeMissingCategory] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMounted(true);
     }, []);
 
@@ -324,7 +227,6 @@ export default function PriceListImport({
             const catId = catRes.match?.id ?? null;
             const coaId = coaRes.match?.id ?? null;
 
-            // effective COA after per-row override
             const overrideId = coaOverrides[u.key] ?? null;
             const effectiveCoa = overrideId
                 ? (existingCoas.find((c) => c.id === overrideId) ?? null)
@@ -345,7 +247,6 @@ export default function PriceListImport({
             const descriptionValid =
                 u.description.trim().length > 0 &&
                 u.description.trim().length <= 1000;
-            // check price list exists (junction + normalized desc + uom) using effective junction
             let effectivePriceListExists = false;
 
             if (effectiveMappingExists && effectiveJunctionId) {
@@ -437,7 +338,6 @@ export default function PriceListImport({
         excludeMissingCategory,
     ]);
 
-    // Rows still needing a human COA pick, grouped by normalized extracted label.
     const batchGroups = useMemo(
         () => groupUnmatchedByExtractedCoa(verifiedItems),
         [verifiedItems],
@@ -845,7 +745,6 @@ export default function PriceListImport({
                 return;
             }
 
-            // procurement strict cat -> coa -> items -> total
             type CatGroup = {
                 cat: string;
                 catRow: number;
@@ -1219,11 +1118,8 @@ export default function PriceListImport({
                     }
                 }
 
-                // For without-label, item COA is coaRaw itself; for with-label, also coaRaw (since D has COA)
-                // But we prefer currentCoa.coa
                 const effectiveCoa = currentCoa?.coa ?? coaRaw!;
                 const effectiveCat = currentCat.cat;
-                // skip if description is same as COA label? Already handled
                 out.push({
                     sheet: sheetName,
                     row: r,
@@ -1244,15 +1140,8 @@ export default function PriceListImport({
 
             if (isTotalRow(dataNorm)) {
                 if (currentCat) {
-                    // flush – but for price list extraction we just keep cat until next
-                    // total indicates end of currentCat
                     if (currentCoa) currentCoa = null;
 
-                    // keep currentCat until next cat overwrites? Instead null to avoid stray items
-                    // For simplicity, keep cat until overwritten; but total means next rows are new cat or end
-                    // We'll set a flag: after total, next item without cat should not be captured until new cat
-                    // So clear currentCat only if next cat will be set; for now keep but will be overwritten
-                    // To align with grouping, clear after total
                     currentCat = null;
                     currentCoa = null;
                 }
@@ -1293,7 +1182,6 @@ export default function PriceListImport({
                 }
             }
 
-            // category header
             if (currentCat) {
                 /* push previous cat done */
             }
@@ -1376,7 +1264,6 @@ export default function PriceListImport({
         }
 
         setRawItems(all);
-        // dedupe by normalize(category|coa|description+unit)
         const seen = new Map<string, UniqueItem>();
 
         for (const it of all) {
@@ -1403,7 +1290,6 @@ export default function PriceListImport({
 
                 existing.rows.push(it.row);
 
-                // keep first price, but if existing price null and new has price, update
                 if (existing.price === null && it.price !== null)
                     existing.price = it.price;
             }
@@ -1478,6 +1364,100 @@ export default function PriceListImport({
         );
     }
 
+    // ----- Build the state object once -----
+    const s: PriceListImportState = {
+        sheets,
+        workbook,
+        fileName,
+        selectedSheets,
+        loading,
+        error,
+        isMounted,
+
+        step,
+        setStep,
+        canCalibrate,
+        canVerify,
+        allVerifyValid,
+        hasAnyVerify,
+        canReview,
+
+        calibrationMode,
+        setCalibrationMode,
+        sharedConfig,
+        setSharedConfig,
+        calibrations,
+        setCalibrations,
+        currentSheet,
+        setCurrentSheet,
+        getEffectiveConfig,
+        ensureCalibrationsInitialized,
+        handleApplySharedToAll,
+        handleCopyCurrentToAll,
+        updateSharedConfig,
+        updateCurrentCalibration,
+
+        handleFileChange,
+        handleSheetToggle,
+
+        verifyResults,
+        setVerifyResults,
+        activeVerifySheet,
+        setActiveVerifySheet,
+        handleVerify,
+
+        rawItems,
+        setRawItems,
+        uniqueItems,
+        setUniqueItems,
+        handleExtract,
+
+        verifiedItems,
+        filteredItems,
+        batchGroups,
+        batchSelections,
+        setBatchSelections,
+        coaOverrides,
+        setCoaOverrides,
+        handleCoaOverrideChange,
+        handleClearOverride,
+        handleClearAllOverrides,
+        handleBatchApplyGroup,
+        handleTruncateDescription,
+        handleTruncateAllLongDescriptions,
+
+        selected,
+        setSelected,
+
+        reviewFilter,
+        setReviewFilter,
+        showDuplicateDetails,
+        setShowDuplicateDetails,
+        excludeMissingCategory,
+        setExcludeMissingCategory,
+
+        readyCount,
+        errorCount,
+        updateCount,
+        insertCount,
+        missingMappingCount,
+        missingCategoryCount,
+        skippedCount,
+        duplicateCount,
+        duplicateItems,
+        longDescriptionCount,
+        importable,
+        importableSelected,
+
+        importing,
+        handleImport,
+
+        existingCategories,
+        existingCoas,
+        existingMappings,
+        existingPriceLists,
+    };
+
     return (
         <ScrollArea className="h-[calc(100vh-3rem)]">
             <Head title="Price List Import" />
@@ -1516,13 +1496,10 @@ export default function PriceListImport({
                     </div>
                 )}
 
-                <Tabs
-                    value={step}
-                    onValueChange={(v) => setStep(v as typeof step)}
-                >
+                <Tabs value={step} onValueChange={(v) => setStep(v as PliStep)}>
                     <TabsList>
                         <TabsTrigger value="upload">
-                            1. Upload{' '}
+                            1. Upload & Sheets{' '}
                             {selectedSheets.length > 0 && (
                                 <span className="text-muted-foreground ml-1 text-xs">
                                     {selectedSheets.length}✓
@@ -1565,1708 +1542,10 @@ export default function PriceListImport({
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent
-                        value="upload"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        <Field>
-                            <FieldLabel htmlFor="price-list-file">
-                                Excel File (.xlsx only)
-                            </FieldLabel>
-                            <Input
-                                id="price-list-file"
-                                type="file"
-                                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                                onChange={handleFileChange}
-                                disabled={loading}
-                            />
-                            <FieldDescription>
-                                Select an .xlsx price list export (PPMP
-                                template).
-                            </FieldDescription>
-                            {error && (
-                                <p className="text-destructive text-sm">
-                                    {error}
-                                </p>
-                            )}
-                        </Field>
-                        {loading && (
-                            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                                <Spinner /> Parsing workbook...
-                            </div>
-                        )}
-                        {!loading && sheets.length > 0 && (
-                            <Field>
-                                <FieldLabel>
-                                    Sheets — click to select one or more
-                                </FieldLabel>
-                                <div className="flex flex-wrap gap-2 rounded-lg border p-3">
-                                    {sheets.map((sheet) => {
-                                        const isSelected =
-                                            selectedSheets.includes(sheet);
-
-                                        return (
-                                            <Badge
-                                                key={sheet}
-                                                variant={
-                                                    isSelected
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                                className="cursor-pointer text-sm hover:opacity-80"
-                                                onClick={() =>
-                                                    handleSheetToggle(sheet)
-                                                }
-                                            >
-                                                {sheet} {isSelected && '✓'}
-                                            </Badge>
-                                        );
-                                    })}
-                                </div>
-                                <FieldDescription>
-                                    Selected:{' '}
-                                    <span className="text-foreground font-medium">
-                                        {selectedSheets.length > 0
-                                            ? selectedSheets.join(', ')
-                                            : 'none'}
-                                    </span>{' '}
-                                    — {selectedSheets.length}/{sheets.length}{' '}
-                                    sheets
-                                </FieldDescription>
-                            </Field>
-                        )}
-                        <div className="flex justify-end">
-                            <Button
-                                suppressHydrationWarning
-                                disabled={
-                                    isMounted
-                                        ? selectedSheets.length === 0
-                                        : false
-                                }
-                                onClick={() => {
-                                    ensureCalibrationsInitialized();
-                                    setStep('calibrate');
-                                }}
-                            >
-                                Next: Calibrate{' '}
-                                {selectedSheets.length > 0 &&
-                                    `(${selectedSheets.length} sheets)`}
-                            </Button>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="calibrate"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
-                            <span className="text-sm font-medium">Scope:</span>
-                            <div className="flex gap-2">
-                                <Button
-                                    variant={
-                                        calibrationMode === 'shared'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size="sm"
-                                    onClick={() => {
-                                        if (
-                                            calibrationMode === 'per-sheet' &&
-                                            calibrations[currentSheet]
-                                        ) {
-                                            setSharedConfig({
-                                                ...calibrations[currentSheet],
-                                            });
-                                        } else if (!sharedConfig)
-                                            ensureCalibrationsInitialized();
-
-                                        setCalibrationMode('shared');
-                                    }}
-                                >
-                                    Shared — all {selectedSheets.length} sheets
-                                </Button>
-                                <Button
-                                    variant={
-                                        calibrationMode === 'per-sheet'
-                                            ? 'default'
-                                            : 'outline'
-                                    }
-                                    size="sm"
-                                    onClick={() => {
-                                        if (sharedConfig) {
-                                            const next: Record<
-                                                string,
-                                                PriceListSheetConfig
-                                            > = {};
-
-                                            for (const s of selectedSheets) {
-                                                next[s] = {
-                                                    ...sharedConfig,
-                                                    columnConfig: {
-                                                        ...sharedConfig.columnConfig,
-                                                    },
-                                                    rowConfig: {
-                                                        ...sharedConfig.rowConfig,
-                                                    },
-                                                };
-                                            }
-
-                                            setCalibrations(next);
-
-                                            if (
-                                                !currentSheet &&
-                                                selectedSheets[0]
-                                            ) {
-                                                setCurrentSheet(
-                                                    selectedSheets[0],
-                                                );
-                                            }
-                                        }
-
-                                        setCalibrationMode('per-sheet');
-                                    }}
-                                >
-                                    Per-sheet
-                                </Button>
-                            </div>
-                            <span className="text-muted-foreground text-xs">
-                                {calibrationMode === 'shared'
-                                    ? `Header row ${sharedConfig?.rowConfig.headerRow === '' || sharedConfig?.rowConfig.headerRow == null ? 7 : sharedConfig.rowConfig.headerRow} applies to every sheet`
-                                    : `Editing ${currentSheet || '—'} only affects that sheet`}
-                            </span>
-                            {calibrationMode === 'shared' ? (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleApplySharedToAll}
-                                    disabled={!sharedConfig}
-                                >
-                                    Apply shared to all ({selectedSheets.length}
-                                    )
-                                </Button>
-                            ) : (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleCopyCurrentToAll}
-                                    disabled={!currentSheet}
-                                >
-                                    Copy “{currentSheet}” to all
-                                </Button>
-                            )}
-                        </div>
-
-                        {calibrationMode === 'per-sheet' &&
-                            selectedSheets.length > 1 && (
-                                <Field>
-                                    <FieldLabel>Editing sheet</FieldLabel>
-                                    <Select
-                                        value={currentSheet}
-                                        onValueChange={(v) =>
-                                            setCurrentSheet(v ?? '')
-                                        }
-                                    >
-                                        <SelectTrigger className="w-[260px]">
-                                            <SelectValue placeholder="Select sheet to edit" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectGroup>
-                                                {selectedSheets.map((s) => (
-                                                    <SelectItem
-                                                        key={s}
-                                                        value={s}
-                                                    >
-                                                        {s}{' '}
-                                                        {verifyResults[s]?.valid
-                                                            ? '✓'
-                                                            : verifyResults[s]
-                                                              ? '❌'
-                                                              : ''}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectGroup>
-                                        </SelectContent>
-                                    </Select>
-                                </Field>
-                            )}
-
-                        {(() => {
-                            const cfg =
-                                calibrationMode === 'shared'
-                                    ? (sharedConfig ??
-                                      getDefaultPriceListConfig())
-                                    : (calibrations[currentSheet] ??
-                                      sharedConfig ??
-                                      getDefaultPriceListConfig());
-                            const onChange = (
-                                patch: Partial<PriceListSheetConfig>,
-                            ) => {
-                                if (calibrationMode === 'shared')
-                                    updateSharedConfig(patch);
-                                else updateCurrentCalibration(patch);
-
-                                setVerifyResults({});
-                                setRawItems([]);
-                                setUniqueItems([]);
-                                setSelected(new Set());
-                                setCoaOverrides({});
-                                setReviewFilter('all');
-                                setShowDuplicateDetails(false);
-                            };
-                            const onColumn = (
-                                patch: Partial<
-                                    SharedSheetConfig['columnConfig']
-                                >,
-                            ) => {
-                                const next = { ...cfg.columnConfig, ...patch };
-                                onChange({
-                                    columnConfig: next,
-                                } as Partial<PriceListSheetConfig>);
-                            };
-                            const onRow = (
-                                patch: Partial<SharedSheetConfig['rowConfig']>,
-                            ) => {
-                                const next = { ...cfg.rowConfig, ...patch };
-                                onChange({
-                                    rowConfig: next,
-                                } as unknown as Partial<PriceListSheetConfig>);
-                            };
-
-                            return (
-                                <div className="rounded-lg border p-4">
-                                    <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
-                                        Calibration{' '}
-                                        {calibrationMode === 'shared'
-                                            ? `(Shared – ${selectedSheets.length} sheets)`
-                                            : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
-                                    </p>
-                                    <div className="grid grid-cols-4 gap-4">
-                                        <Field>
-                                            <FieldLabel>COA Column</FieldLabel>
-                                            <Input
-                                                value={cfg.columnConfig.coa}
-                                                onChange={(e) =>
-                                                    onColumn({
-                                                        coa: e.target.value.toUpperCase(),
-                                                    })
-                                                }
-                                                className="w-16"
-                                                placeholder="D"
-                                            />
-                                            <FieldDescription>
-                                                D — empty means category
-                                            </FieldDescription>
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>
-                                                Category / Description Column
-                                            </FieldLabel>
-                                            <Input
-                                                value={
-                                                    cfg.columnConfig.category
-                                                }
-                                                onChange={(e) =>
-                                                    onColumn({
-                                                        category:
-                                                            e.target.value.toUpperCase(),
-                                                    })
-                                                }
-                                                className="w-16"
-                                                placeholder="F"
-                                            />
-                                            <FieldDescription>
-                                                F — shared
-                                            </FieldDescription>
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>Unit Column</FieldLabel>
-                                            <Input
-                                                value={cfg.columnConfig.unit}
-                                                onChange={(e) =>
-                                                    onColumn({
-                                                        unit: e.target.value.toUpperCase(),
-                                                    })
-                                                }
-                                                className="w-16"
-                                                placeholder="G"
-                                            />
-                                            <FieldDescription>
-                                                G
-                                            </FieldDescription>
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>
-                                                Price Column
-                                            </FieldLabel>
-                                            <Input
-                                                value={cfg.columnConfig.price}
-                                                onChange={(e) =>
-                                                    onColumn({
-                                                        price: e.target.value.toUpperCase(),
-                                                    })
-                                                }
-                                                className="w-16"
-                                                placeholder="H"
-                                            />
-                                            <FieldDescription>
-                                                H
-                                            </FieldDescription>
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>
-                                                Item No. Column
-                                            </FieldLabel>
-                                            <Input
-                                                value={
-                                                    cfg.columnConfig.itemNumber
-                                                }
-                                                onChange={(e) =>
-                                                    onColumn({
-                                                        itemNumber:
-                                                            e.target.value.toUpperCase(),
-                                                    })
-                                                }
-                                                className="w-16"
-                                                placeholder="E"
-                                            />
-                                            <FieldDescription>
-                                                E — placeholder detection
-                                            </FieldDescription>
-                                        </Field>
-                                    </div>
-                                    <div className="mt-4 grid grid-cols-3 gap-4">
-                                        <Field>
-                                            <FieldLabel>Header Row</FieldLabel>
-                                            <Input
-                                                type="number"
-                                                value={
-                                                    cfg.rowConfig.headerRow ??
-                                                    ''
-                                                }
-                                                onChange={(e) =>
-                                                    onRow({
-                                                        headerRow:
-                                                            e.target.value ===
-                                                            ''
-                                                                ? ''
-                                                                : Number(
-                                                                      e.target
-                                                                          .value,
-                                                                  ),
-                                                    })
-                                                }
-                                                className="w-20"
-                                                placeholder="7"
-                                            />
-                                            <FieldDescription>
-                                                Header{' '}
-                                                {cfg.rowConfig.headerRow ===
-                                                    '' ||
-                                                cfg.rowConfig.headerRow == null
-                                                    ? '—'
-                                                    : cfg.rowConfig.headerRow}
-                                                ; data starts{' '}
-                                                {cfg.rowConfig.headerRow ===
-                                                    '' ||
-                                                cfg.rowConfig.headerRow == null
-                                                    ? '—'
-                                                    : cfg.rowConfig.headerRow +
-                                                      1}
-                                            </FieldDescription>
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>
-                                                Additional Items Header Row
-                                                (optional)
-                                            </FieldLabel>
-                                            <Input
-                                                type="number"
-                                                value={
-                                                    cfg.rowConfig
-                                                        .additionalItemsHeaderRow ??
-                                                    ''
-                                                }
-                                                onChange={(e) =>
-                                                    onRow({
-                                                        additionalItemsHeaderRow:
-                                                            e.target.value
-                                                                ? Number(
-                                                                      e.target
-                                                                          .value,
-                                                                  )
-                                                                : null,
-                                                    })
-                                                }
-                                                className="w-20"
-                                                placeholder="—"
-                                            />
-                                            <FieldDescription>
-                                                Blank = no additional section
-                                            </FieldDescription>
-                                        </Field>
-                                        <Field>
-                                            <FieldLabel>
-                                                Non-Procurement Header Row
-                                                (optional)
-                                            </FieldLabel>
-                                            <Input
-                                                type="number"
-                                                value={
-                                                    cfg.rowConfig
-                                                        .nonProcurementHeaderRow ??
-                                                    ''
-                                                }
-                                                onChange={(e) =>
-                                                    onRow({
-                                                        nonProcurementHeaderRow:
-                                                            e.target.value
-                                                                ? Number(
-                                                                      e.target
-                                                                          .value,
-                                                                  )
-                                                                : null,
-                                                    })
-                                                }
-                                                className="w-20"
-                                                placeholder="—"
-                                            />
-                                            <FieldDescription>
-                                                Blank = no non-proc section
-                                            </FieldDescription>
-                                        </Field>
-                                    </div>
-                                    <Field className="mt-4">
-                                        <FieldLabel>
-                                            COA items format *
-                                        </FieldLabel>
-                                        <ToggleGroup
-                                            variant="outline"
-                                            spacing={2}
-                                            value={[cfg.coaLabelMode]}
-                                            onValueChange={(value) => {
-                                                if (value.length > 0) {
-                                                    onChange({
-                                                        coaLabelMode:
-                                                            value[0] as PriceListSheetConfig['coaLabelMode'],
-                                                    });
-                                                }
-                                            }}
-                                            className="w-full"
-                                        >
-                                            <ToggleGroupItem
-                                                value="with-label"
-                                                className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
-                                            >
-                                                <span className="font-medium">
-                                                    With COA label rows
-                                                </span>
-                                                <span className="text-muted-foreground text-xs font-normal">
-                                                    Category → COA label in F
-                                                    (next D same) → Items with
-                                                    D=COA
-                                                </span>
-                                                <span className="text-muted-foreground/70 font-mono text-xs">
-                                                    Cat → coa → items → Cat -
-                                                    Total
-                                                </span>
-                                            </ToggleGroupItem>
-                                            <ToggleGroupItem
-                                                value="without-label"
-                                                className="h-auto flex-1 flex-col items-start gap-1 border p-3 text-left whitespace-normal"
-                                            >
-                                                <span className="font-medium">
-                                                    Without COA label rows
-                                                </span>
-                                                <span className="text-muted-foreground text-xs font-normal">
-                                                    Items already have D=COA
-                                                    directly, no label rows
-                                                </span>
-                                                <span className="text-muted-foreground/70 font-mono text-xs">
-                                                    Cat → items (D=coa) → Cat -
-                                                    Total
-                                                </span>
-                                            </ToggleGroupItem>
-                                        </ToggleGroup>
-                                    </Field>
-                                </div>
-                            );
-                        })()}
-                        <div className="flex justify-between">
-                            <Button
-                                variant="outline"
-                                onClick={() => setStep('upload')}
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                suppressHydrationWarning
-                                onClick={() => setStep('verify')}
-                                disabled={isMounted ? !sharedConfig : false}
-                            >
-                                Next: Verify Format
-                            </Button>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="verify"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        <div className="flex gap-2">
-                            <Button onClick={handleVerify}>
-                                Run Verify ({selectedSheets.length} sheets)
-                            </Button>
-                            {hasAnyVerify && allVerifyValid && (
-                                <Badge
-                                    variant="default"
-                                    className="self-center"
-                                >
-                                    All valid ✓
-                                </Badge>
-                            )}
-                            {hasAnyVerify && !allVerifyValid && (
-                                <Badge
-                                    variant="destructive"
-                                    className="self-center"
-                                >
-                                    {
-                                        Object.values(verifyResults).filter(
-                                            (r) => r.valid,
-                                        ).length
-                                    }
-                                    /{selectedSheets.length} valid
-                                </Badge>
-                            )}
-                        </div>
-                        {hasAnyVerify && (
-                            <>
-                                {selectedSheets.length > 1 && (
-                                    <div className="flex gap-2">
-                                        {selectedSheets.map((s) => (
-                                            <Badge
-                                                key={s}
-                                                variant={
-                                                    verifyResults[s]?.valid
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                                className="cursor-pointer"
-                                                onClick={() =>
-                                                    setActiveVerifySheet(s)
-                                                }
-                                            >
-                                                {s}{' '}
-                                                {verifyResults[s]?.valid
-                                                    ? '✓'
-                                                    : '❌'}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                )}
-                                {(() => {
-                                    const active =
-                                        activeVerifySheet || selectedSheets[0];
-                                    const r = verifyResults[active];
-
-                                    if (!r) return null;
-
-                                    return (
-                                        <div className="rounded-lg border p-4">
-                                            <p
-                                                className={`text-sm font-medium ${r.valid ? 'text-green-600' : 'text-destructive'}`}
-                                            >
-                                                {r.message} — {active}
-                                            </p>
-                                            {r.errors.length > 0 && (
-                                                <div className="mt-2 max-h-48 overflow-auto rounded border p-2 text-xs">
-                                                    {r.errors.map((e, i) => (
-                                                        <div key={i}>
-                                                            Row {e.row}:{' '}
-                                                            {e.message}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {r.details.length > 0 && (
-                                                <div className="text-muted-foreground mt-2 text-xs">
-                                                    {r.details.map((d, i) => (
-                                                        <div key={i}>{d}</div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })()}
-                            </>
-                        )}
-                        <div className="flex justify-between">
-                            <Button
-                                variant="outline"
-                                onClick={() => setStep('calibrate')}
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                suppressHydrationWarning
-                                disabled={isMounted ? !allVerifyValid : false}
-                                onClick={() => {
-                                    handleExtract();
-                                    setStep('review');
-                                }}
-                            >
-                                Next: Extract{' '}
-                                {allVerifyValid ? '✓' : '(fix errors first)'}
-                            </Button>
-                        </div>
-                    </TabsContent>
-
-                    <TabsContent
-                        value="review"
-                        className="mt-4 flex flex-col gap-4"
-                    >
-                        <div className="flex flex-wrap items-center gap-2 text-sm">
-                            <Badge variant="secondary">
-                                Raw items: {rawItems.length}
-                            </Badge>
-                            <Badge variant="secondary">
-                                Unique: {uniqueItems.length}
-                            </Badge>
-                            <Badge variant="default">
-                                Ready: {insertCount} + Updates: {updateCount} ={' '}
-                                {readyCount}
-                            </Badge>
-                            {errorCount > 0 && (
-                                <Badge variant="destructive">
-                                    {errorCount} errors (missing official
-                                    mapping)
-                                </Badge>
-                            )}
-                            {missingMappingCount > 0 && (
-                                <Badge
-                                    variant="outline"
-                                    className="border-amber-500 text-amber-600"
-                                >
-                                    {missingMappingCount} missing mapping
-                                </Badge>
-                            )}
-                            {longDescriptionCount > 0 && (
-                                <Badge variant="destructive">
-                                    {longDescriptionCount} description &gt;1000
-                                </Badge>
-                            )}
-                            {longDescriptionCount > 0 && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleTruncateAllLongDescriptions}
-                                    className="h-6 border-amber-600 text-xs text-amber-700"
-                                    title="Truncate all long descriptions to 1000 characters"
-                                >
-                                    Truncate all to 1000
-                                </Button>
-                            )}
-                            {duplicateCount > 0 && (
-                                <Badge
-                                    variant="outline"
-                                    className="border-amber-500 text-amber-600"
-                                >
-                                    {duplicateCount} duplicate
-                                    {duplicateCount > 1 ? 's' : ''} (
-                                    {duplicateItems.length} unique)
-                                </Badge>
-                            )}
-                            {skippedCount > 0 && (
-                                <Badge variant="secondary">
-                                    {skippedCount} skipped (category not found)
-                                </Badge>
-                            )}
-                            {(errorCount > 0 ||
-                                duplicateCount > 0 ||
-                                longDescriptionCount > 0) && (
-                                <ToggleGroup
-                                    value={[reviewFilter]}
-                                    onValueChange={(v) => {
-                                        const next = (
-                                            v as unknown as string[]
-                                        )[0] as typeof reviewFilter | undefined;
-
-                                        if (next) {
-                                            setReviewFilter(next);
-                                            setShowDuplicateDetails(false);
-                                        } else {
-                                            setReviewFilter('all');
-                                        }
-                                    }}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1"
-                                >
-                                    <ToggleGroupItem
-                                        value="all"
-                                        aria-label="Show all"
-                                    >
-                                        All ({verifiedItems.length})
-                                    </ToggleGroupItem>
-                                    <ToggleGroupItem
-                                        value="errors"
-                                        aria-label="Show only errors"
-                                        disabled={errorCount === 0}
-                                    >
-                                        Errors ({errorCount})
-                                    </ToggleGroupItem>
-                                    <ToggleGroupItem
-                                        value="duplicates"
-                                        aria-label="Show only duplicates"
-                                        disabled={duplicateCount === 0}
-                                    >
-                                        Duplicates ({duplicateItems.length})
-                                    </ToggleGroupItem>
-                                    <ToggleGroupItem
-                                        value="longDesc"
-                                        aria-label="Show only long descriptions"
-                                        disabled={longDescriptionCount === 0}
-                                    >
-                                        Long desc ({longDescriptionCount})
-                                    </ToggleGroupItem>
-                                </ToggleGroup>
-                            )}
-                            {duplicateCount > 0 &&
-                                reviewFilter !== 'duplicates' && (
-                                    <Button
-                                        variant={
-                                            showDuplicateDetails
-                                                ? 'default'
-                                                : 'ghost'
-                                        }
-                                        size="sm"
-                                        onClick={() =>
-                                            setShowDuplicateDetails((v) => !v)
-                                        }
-                                        className="h-6 text-xs"
-                                    >
-                                        {showDuplicateDetails
-                                            ? 'Hide duplicate details'
-                                            : 'Show duplicate details'}
-                                    </Button>
-                                )}
-                            {Object.keys(coaOverrides).length > 0 && (
-                                <Badge
-                                    variant="outline"
-                                    className="border-amber-500 text-amber-600"
-                                >
-                                    {Object.keys(coaOverrides).length} COA
-                                    override(s)
-                                </Badge>
-                            )}
-                            {Object.keys(coaOverrides).length > 0 && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleClearAllOverrides}
-                                    className="h-6 text-xs"
-                                >
-                                    Clear overrides
-                                </Button>
-                            )}
-                        </div>
-                        {Object.keys(coaOverrides).length > 0 && (
-                            <p className="text-xs text-amber-600">
-                                Overrides are per unique price-list row
-                                (`category|coa|description|unit`). Counts
-                                reflect overridden COAs.
-                            </p>
-                        )}
-                        {batchGroups.length > 0 && (
-                            <div className="rounded-lg border p-3">
-                                <p className="mb-2 text-xs font-semibold">
-                                    Batch match by extracted COA —{' '}
-                                    {batchGroups.length} group
-                                    {batchGroups.length === 1 ? '' : 's'} still
-                                    need{batchGroups.length === 1 ? 's' : ''} a
-                                    human pick. One choice applies to every row
-                                    in the group.
-                                </p>
-                                <div className="flex max-h-64 flex-col gap-2 overflow-auto">
-                                    {batchGroups.map((group) => {
-                                        const suggestedIds = new Set(
-                                            group.topMatches.map(
-                                                (m) => m.coa.id,
-                                            ),
-                                        );
-                                        const groupItems = [
-                                            ...group.topMatches.map(
-                                                (m) => m.coa,
-                                            ),
-                                            ...existingCoas.filter(
-                                                (c) => !suggestedIds.has(c.id),
-                                            ),
-                                        ].map(formatCoaOption);
-                                        const groupValue =
-                                            batchSelections[group.coaNorm] ??
-                                            (group.topSuggestion
-                                                ? formatCoaOption(
-                                                      group.topSuggestion,
-                                                  )
-                                                : '');
-
-                                        return (
-                                            <div
-                                                key={group.coaNorm}
-                                                className="flex flex-wrap items-center gap-2 rounded border px-2 py-1.5"
-                                            >
-                                                <span
-                                                    className="flex min-w-0 flex-1 items-center gap-1 truncate text-xs font-medium"
-                                                    title={`Excel: ${group.label}`}
-                                                >
-                                                    <span className="truncate">
-                                                        {group.label}
-                                                    </span>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="h-4 border-amber-500 px-1 text-[10px] text-amber-600"
-                                                    >
-                                                        ×{group.count}
-                                                    </Badge>
-                                                </span>
-                                                <Combobox
-                                                    items={groupItems}
-                                                    value={groupValue}
-                                                    onValueChange={(val) =>
-                                                        setBatchSelections(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                [group.coaNorm]:
-                                                                    (val as
-                                                                        | string
-                                                                        | null) ??
-                                                                    '',
-                                                            }),
-                                                        )
-                                                    }
-                                                >
-                                                    <ComboboxInput
-                                                        placeholder={
-                                                            group.topSuggestion
-                                                                ? '★ Suggested at top — search...'
-                                                                : 'Search COA...'
-                                                        }
-                                                        className="h-7 text-xs"
-                                                    />
-                                                    <ComboboxContent>
-                                                        <ComboboxEmpty>
-                                                            No COA found.
-                                                        </ComboboxEmpty>
-                                                        <ComboboxList>
-                                                            {(item: string) => {
-                                                                const isSuggested =
-                                                                    group.topMatches.some(
-                                                                        (m) =>
-                                                                            item.includes(
-                                                                                `coa:${m.coa.id}:`,
-                                                                            ),
-                                                                    );
-
-                                                                return (
-                                                                    <ComboboxItem
-                                                                        key={
-                                                                            item
-                                                                        }
-                                                                        value={
-                                                                            item
-                                                                        }
-                                                                        className={
-                                                                            isSuggested
-                                                                                ? 'font-medium'
-                                                                                : ''
-                                                                        }
-                                                                    >
-                                                                        {isSuggested
-                                                                            ? '★ '
-                                                                            : ''}
-                                                                        {item.replace(
-                                                                            /^coa:\d+:/,
-                                                                            '',
-                                                                        )}
-                                                                    </ComboboxItem>
-                                                                );
-                                                            }}
-                                                        </ComboboxList>
-                                                    </ComboboxContent>
-                                                </Combobox>
-                                                <Button
-                                                    size="sm"
-                                                    className="h-7 text-xs"
-                                                    onClick={() =>
-                                                        handleBatchApplyGroup(
-                                                            group,
-                                                        )
-                                                    }
-                                                >
-                                                    Apply to all {group.count}
-                                                </Button>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                        {reviewFilter === 'errors' && (
-                            <p className="text-muted-foreground text-xs">
-                                Showing {filteredItems.length} of{' '}
-                                {verifiedItems.length} — only rows with errors
-                                (COA not found, category not found, mapping
-                                missing, description &gt;1000, etc.). Select
-                                “All” to see all. COA dropdowns let you fix
-                                partial matches per row (e.g., row 468).
-                            </p>
-                        )}
-                        {reviewFilter === 'duplicates' && (
-                            <p className="text-xs text-amber-600">
-                                Showing {filteredItems.length} duplicate unique
-                                row
-                                {filteredItems.length === 1 ? '' : 's'} (
-                                {duplicateCount} extra raw row
-                                {duplicateCount === 1 ? '' : 's'}) — same
-                                category|coa|description|unit appears multiple
-                                times. Select “All” to see all.
-                            </p>
-                        )}
-                        {reviewFilter === 'longDesc' && (
-                            <p className="text-xs text-amber-600">
-                                Showing {filteredItems.length} of{' '}
-                                {verifiedItems.length} — only rows with
-                                description &gt;1000 chars. Use “Truncate” per
-                                row or “Truncate all to 1000” above. Select
-                                “All” to see all.
-                            </p>
-                        )}
-                        {showDuplicateDetails && duplicateItems.length > 0 && (
-                            <div className="rounded-lg border p-3">
-                                <p className="mb-2 text-xs font-semibold">
-                                    Duplicate details — {duplicateItems.length}{' '}
-                                    unique duplicate(s), {duplicateCount} extra
-                                    raw row
-                                    {duplicateCount === 1 ? '' : 's'} (Raw{' '}
-                                    {rawItems.length} → Unique{' '}
-                                    {uniqueItems.length})
-                                </p>
-                                <div className="max-h-64 overflow-auto rounded border">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>
-                                                    Description
-                                                </TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead>COA</TableHead>
-                                                <TableHead>Unit</TableHead>
-                                                <TableHead>Price</TableHead>
-                                                <TableHead>Count</TableHead>
-                                                <TableHead>
-                                                    Sheets / Rows
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {duplicateItems.map((it) => (
-                                                <TableRow key={it.key}>
-                                                    <TableCell
-                                                        className="max-w-[24ch] truncate text-xs"
-                                                        title={it.description}
-                                                    >
-                                                        {it.description}
-                                                    </TableCell>
-                                                    <TableCell
-                                                        className="max-w-[16ch] truncate text-xs"
-                                                        title={it.category}
-                                                    >
-                                                        {it.category}
-                                                    </TableCell>
-                                                    <TableCell
-                                                        className="max-w-[16ch] truncate text-xs"
-                                                        title={it.coa}
-                                                    >
-                                                        {it.coa}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs">
-                                                        {it.unit}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs">
-                                                        {it.price !== null
-                                                            ? `₱${it.price.toLocaleString()}`
-                                                            : '—'}
-                                                    </TableCell>
-                                                    <TableCell className="text-xs">
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="border-amber-500 text-amber-600"
-                                                        >
-                                                            ×{it.count}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="text-muted-foreground text-[10px]">
-                                                        {it.sheets.join(', ')}{' '}
-                                                        row {it.rows.join(', ')}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                                <p className="text-muted-foreground mt-2 text-[10px]">
-                                    Duplicates are deduped by normalized
-                                    category|coa|description|unit. Raw rows with
-                                    same key are merged; count shows how many
-                                    raw rows collapsed.
-                                </p>
-                            </div>
-                        )}
-                        {verifiedItems.length > 0 ? (
-                            <>
-                                <div className="rounded-lg border">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-8">
-                                                    <Input
-                                                        type="checkbox"
-                                                        checked={
-                                                            filteredItems.length >
-                                                                0 &&
-                                                            filteredItems.every(
-                                                                (v) =>
-                                                                    selected.has(
-                                                                        v.key,
-                                                                    ) ||
-                                                                    v.status ===
-                                                                        'error' ||
-                                                                    v.status ===
-                                                                        'skipped',
-                                                            )
-                                                        }
-                                                        onChange={(e) => {
-                                                            if (
-                                                                e.target.checked
-                                                            ) {
-                                                                const toAdd =
-                                                                    filteredItems
-                                                                        .filter(
-                                                                            (
-                                                                                v,
-                                                                            ) =>
-                                                                                v.status !==
-                                                                                    'error' &&
-                                                                                v.status !==
-                                                                                    'skipped',
-                                                                        )
-                                                                        .map(
-                                                                            (
-                                                                                v,
-                                                                            ) =>
-                                                                                v.key,
-                                                                        );
-                                                                setSelected(
-                                                                    (prev) =>
-                                                                        new Set(
-                                                                            [
-                                                                                ...prev,
-                                                                                ...toAdd,
-                                                                            ],
-                                                                        ),
-                                                                );
-                                                            } else {
-                                                                const filteredKeys =
-                                                                    new Set(
-                                                                        filteredItems.map(
-                                                                            (
-                                                                                v,
-                                                                            ) =>
-                                                                                v.key,
-                                                                        ),
-                                                                    );
-                                                                setSelected(
-                                                                    (prev) =>
-                                                                        new Set(
-                                                                            [
-                                                                                ...prev,
-                                                                            ].filter(
-                                                                                (
-                                                                                    k,
-                                                                                ) =>
-                                                                                    !filteredKeys.has(
-                                                                                        k,
-                                                                                    ),
-                                                                            ),
-                                                                        ),
-                                                                );
-                                                            }
-                                                        }}
-                                                    />
-                                                </TableHead>
-                                                <TableHead>
-                                                    Description
-                                                </TableHead>
-                                                <TableHead>Category</TableHead>
-                                                <TableHead className="min-w-[320px]">
-                                                    COA (Excel → DB)
-                                                </TableHead>
-                                                <TableHead>Unit</TableHead>
-                                                <TableHead>Price</TableHead>
-                                                <TableHead>Status</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredItems.length === 0 ? (
-                                                <TableRow>
-                                                    <TableCell
-                                                        colSpan={7}
-                                                        className="text-muted-foreground p-8 text-center text-sm"
-                                                    >
-                                                        {reviewFilter ===
-                                                        'duplicates'
-                                                            ? 'No duplicates — all rows are unique. Select “All” to see all items.'
-                                                            : reviewFilter ===
-                                                                'errors'
-                                                              ? 'No errors — all rows are ready or updates. Select “All” to see all items.'
-                                                              : reviewFilter ===
-                                                                  'longDesc'
-                                                                ? 'No long descriptions — all descriptions ≤1000 chars. Select “All” to see all items.'
-                                                                : 'No items match filter.'}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ) : (
-                                                filteredItems.map((it) => {
-                                                    const isOverridden =
-                                                        it.overrideId !== null;
-                                                    const selectedDisplay =
-                                                        it.effectiveCoa
-                                                            ? `coa:${it.effectiveCoa.id}:${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`
-                                                            : '';
-                                                    const suggestedIds =
-                                                        new Set(
-                                                            it.coaTopMatches.map(
-                                                                (m) => m.coa.id,
-                                                            ),
-                                                        );
-                                                    const suggestedCoas =
-                                                        it.coaTopMatches.map(
-                                                            (m) => m.coa,
-                                                        );
-                                                    const remainingCoas =
-                                                        existingCoas.filter(
-                                                            (c) =>
-                                                                !suggestedIds.has(
-                                                                    c.id,
-                                                                ),
-                                                        );
-                                                    const itemsForRow =
-                                                        it.coaMatchType ===
-                                                            'partial' &&
-                                                        suggestedCoas.length > 0
-                                                            ? [
-                                                                  ...suggestedCoas.map(
-                                                                      (c) =>
-                                                                          `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                                  ),
-                                                                  ...remainingCoas.map(
-                                                                      (c) =>
-                                                                          `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                                  ),
-                                                              ]
-                                                            : existingCoas.map(
-                                                                  (c) =>
-                                                                      `coa:${c.id}:${c.path} — ${c.account_title}`,
-                                                              );
-
-                                                    return (
-                                                        <TableRow key={it.key}>
-                                                            <TableCell>
-                                                                <Input
-                                                                    type="checkbox"
-                                                                    checked={selected.has(
-                                                                        it.key,
-                                                                    )}
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) => {
-                                                                        const n =
-                                                                            new Set(
-                                                                                selected,
-                                                                            );
-
-                                                                        if (
-                                                                            e
-                                                                                .target
-                                                                                .checked
-                                                                        ) {
-                                                                            n.add(
-                                                                                it.key,
-                                                                            );
-                                                                        } else {
-                                                                            n.delete(
-                                                                                it.key,
-                                                                            );
-                                                                        }
-
-                                                                        setSelected(
-                                                                            n,
-                                                                        );
-                                                                    }}
-                                                                    disabled={
-                                                                        it.status ===
-                                                                            'error' ||
-                                                                        it.status ===
-                                                                            'skipped'
-                                                                    }
-                                                                />
-                                                            </TableCell>
-                                                            <TableCell
-                                                                className="max-w-[28ch] truncate"
-                                                                title={
-                                                                    it.description
-                                                                }
-                                                            >
-                                                                <span className="flex items-center gap-1">
-                                                                    <span className="truncate">
-                                                                        {
-                                                                            it.description
-                                                                        }
-                                                                    </span>
-                                                                    {it.count >
-                                                                        1 && (
-                                                                        <Badge
-                                                                            variant="outline"
-                                                                            className="h-4 border-amber-500 px-1 text-[10px] text-amber-600"
-                                                                        >
-                                                                            ×
-                                                                            {
-                                                                                it.count
-                                                                            }
-                                                                        </Badge>
-                                                                    )}
-                                                                    {!it.descriptionValid && (
-                                                                        <Badge
-                                                                            variant="destructive"
-                                                                            className="h-4 px-1 text-[10px]"
-                                                                            title={`Length ${it.description.trim().length} > 1000`}
-                                                                        >
-                                                                            {
-                                                                                it.description.trim()
-                                                                                    .length
-                                                                            }
-                                                                            /1000
-                                                                        </Badge>
-                                                                    )}
-                                                                </span>
-                                                                {!it.descriptionValid && (
-                                                                    <div className="mt-1 flex gap-1">
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            onClick={() =>
-                                                                                handleTruncateDescription(
-                                                                                    it.key,
-                                                                                )
-                                                                            }
-                                                                            className="h-5 px-1 text-[10px] text-amber-600 hover:text-amber-700"
-                                                                        >
-                                                                            Truncate
-                                                                            to
-                                                                            1000
-                                                                        </Button>
-                                                                        <span className="text-muted-foreground self-center text-[10px]">
-                                                                            will
-                                                                            cut
-                                                                            to
-                                                                            &quot;
-                                                                            {it.description
-                                                                                .trim()
-                                                                                .slice(
-                                                                                    0,
-                                                                                    1000,
-                                                                                )
-                                                                                .slice(
-                                                                                    -20,
-                                                                                )}
-                                                                            &quot;
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </TableCell>
-
-                                                            <TableCell className="text-xs">
-                                                                <div className="flex items-center gap-1">
-                                                                    <span
-                                                                        className="truncate"
-                                                                        title={
-                                                                            it.category
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            it.category
-                                                                        }
-                                                                    </span>
-                                                                    {it.catExists ? (
-                                                                        <Badge
-                                                                            variant="secondary"
-                                                                            className="h-4 px-1 text-[10px]"
-                                                                        >
-                                                                            ✓
-                                                                        </Badge>
-                                                                    ) : it.catMatchType ===
-                                                                      'partial' ? (
-                                                                        <Badge
-                                                                            variant="outline"
-                                                                            className="h-4 px-1 text-[10px]"
-                                                                        >
-                                                                            ~
-                                                                        </Badge>
-                                                                    ) : (
-                                                                        <Badge
-                                                                            variant="secondary"
-                                                                            className="h-4 px-1 text-[10px]"
-                                                                        >
-                                                                            ❌
-                                                                        </Badge>
-                                                                    )}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell className="text-xs">
-                                                                <div className="flex flex-col gap-1">
-                                                                    <span
-                                                                        className="text-muted-foreground truncate text-[10px]"
-                                                                        title={`Excel: ${it.coa}`}
-                                                                    >
-                                                                        Excel:{' '}
-                                                                        {it.coa}{' '}
-                                                                        {it.coaExists
-                                                                            ? '✓'
-                                                                            : it.coaMatchType ===
-                                                                                'partial'
-                                                                              ? '~ partial'
-                                                                              : '❌'}
-                                                                    </span>
-                                                                    <div className="flex items-center gap-1">
-                                                                        <Combobox
-                                                                            items={
-                                                                                itemsForRow
-                                                                            }
-                                                                            value={
-                                                                                selectedDisplay
-                                                                            }
-                                                                            onValueChange={(
-                                                                                val,
-                                                                            ) =>
-                                                                                handleCoaOverrideChange(
-                                                                                    it.key,
-                                                                                    val as
-                                                                                        | string
-                                                                                        | null,
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <ComboboxInput
-                                                                                placeholder={
-                                                                                    it.coaMatchType ===
-                                                                                    'partial'
-                                                                                        ? '★ Suggested at top — search...'
-                                                                                        : 'Search COA...'
-                                                                                }
-                                                                                className="h-7 text-xs"
-                                                                            />
-                                                                            <ComboboxContent>
-                                                                                <ComboboxEmpty>
-                                                                                    No
-                                                                                    COA
-                                                                                    found.
-                                                                                </ComboboxEmpty>
-                                                                                <ComboboxList>
-                                                                                    {(
-                                                                                        item: string,
-                                                                                    ) => {
-                                                                                        const isSuggested =
-                                                                                            it.coaTopMatches.some(
-                                                                                                (
-                                                                                                    m,
-                                                                                                ) =>
-                                                                                                    item.includes(
-                                                                                                        `coa:${m.coa.id}:`,
-                                                                                                    ),
-                                                                                            );
-
-                                                                                        return (
-                                                                                            <ComboboxItem
-                                                                                                key={
-                                                                                                    item
-                                                                                                }
-                                                                                                value={
-                                                                                                    item
-                                                                                                }
-                                                                                                className={
-                                                                                                    isSuggested
-                                                                                                        ? 'font-medium'
-                                                                                                        : ''
-                                                                                                }
-                                                                                            >
-                                                                                                {isSuggested
-                                                                                                    ? '★ '
-                                                                                                    : ''}
-                                                                                                {item.replace(
-                                                                                                    /^coa:\d+:/,
-                                                                                                    '',
-                                                                                                )}
-                                                                                            </ComboboxItem>
-                                                                                        );
-                                                                                    }}
-                                                                                </ComboboxList>
-                                                                            </ComboboxContent>
-                                                                        </Combobox>
-                                                                        {isOverridden && (
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="h-7 px-1 text-xs"
-                                                                                onClick={() =>
-                                                                                    handleClearOverride(
-                                                                                        it.key,
-                                                                                    )
-                                                                                }
-                                                                            >
-                                                                                ✕
-                                                                            </Button>
-                                                                        )}
-                                                                    </div>
-                                                                    {it.effectiveCoa ? (
-                                                                        <div
-                                                                            className="truncate text-xs text-green-600"
-                                                                            title={`${it.effectiveCoa.path} — ${it.effectiveCoa.account_title}`}
-                                                                        >
-                                                                            →{' '}
-                                                                            {
-                                                                                it
-                                                                                    .effectiveCoa
-                                                                                    .path
-                                                                            }{' '}
-                                                                            —{' '}
-                                                                            {
-                                                                                it
-                                                                                    .effectiveCoa
-                                                                                    .account_title
-                                                                            }
-                                                                        </div>
-                                                                    ) : it
-                                                                          .coaTopMatches
-                                                                          .length >
-                                                                      0 ? (
-                                                                        <div
-                                                                            className="text-muted-foreground truncate text-xs"
-                                                                            title={it.coaTopMatches
-                                                                                .map(
-                                                                                    (
-                                                                                        m,
-                                                                                    ) =>
-                                                                                        `${m.coa.path} — ${m.coa.account_title} (score ${m.score})`,
-                                                                                )
-                                                                                .join(
-                                                                                    ' | ',
-                                                                                )}
-                                                                        >
-                                                                            Suggest:{' '}
-                                                                            {
-                                                                                it
-                                                                                    .coaTopMatches[0]
-                                                                                    .coa
-                                                                                    .path
-                                                                            }{' '}
-                                                                            —{' '}
-                                                                            {
-                                                                                it
-                                                                                    .coaTopMatches[0]
-                                                                                    .coa
-                                                                                    .account_title
-                                                                            }
-                                                                        </div>
-                                                                    ) : null}
-                                                                </div>
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {it.unit}
-                                                            </TableCell>
-                                                            <TableCell>
-                                                                {it.price !==
-                                                                null
-                                                                    ? `₱${it.price.toLocaleString()}`
-                                                                    : '—'}
-                                                            </TableCell>
-                                                            <TableCell className="text-xs">
-                                                                {it.status ===
-                                                                'error' ? (
-                                                                    <span className="text-destructive">
-                                                                        {
-                                                                            it.message
-                                                                        }{' '}
-                                                                        {!it.catExists && (
-                                                                            <Link
-                                                                                href="/category-import"
-                                                                                className="underline"
-                                                                            >
-                                                                                Category
-                                                                                Import
-                                                                            </Link>
-                                                                        )}{' '}
-                                                                        {!it.effectiveCoaExists &&
-                                                                            ' '}{' '}
-                                                                        {!it.effectiveMappingExists &&
-                                                                            it.catExists &&
-                                                                            it.effectiveCoaExists && (
-                                                                                <Link
-                                                                                    href="/category-coa-mapping"
-                                                                                    className="underline"
-                                                                                >
-                                                                                    →
-                                                                                    Map
-                                                                                </Link>
-                                                                            )}
-                                                                    </span>
-                                                                ) : it.status ===
-                                                                  'skipped' ? (
-                                                                    <span className="text-muted-foreground">
-                                                                        {
-                                                                            it.message
-                                                                        }{' '}
-                                                                        <Link
-                                                                            href="/category-import"
-                                                                            className="underline"
-                                                                        >
-                                                                            Category
-                                                                            Import
-                                                                        </Link>
-                                                                    </span>
-                                                                ) : it.status ===
-                                                                  'update' ? (
-                                                                    <span className="text-amber-600">
-                                                                        {
-                                                                            it.message
-                                                                        }
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-green-600">
-                                                                        {
-                                                                            it.message
-                                                                        }
-                                                                    </span>
-                                                                )}
-                                                                <div className="text-muted-foreground text-[10px]">
-                                                                    {it.sheets.join(
-                                                                        ', ',
-                                                                    )}{' '}
-                                                                    row{' '}
-                                                                    {it.rows.join(
-                                                                        ', ',
-                                                                    )}{' '}
-                                                                    {it.count >
-                                                                        1 &&
-                                                                        `×${it.count}`}
-                                                                </div>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                                <div className="flex justify-between">
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setStep('verify')}
-                                    >
-                                        Back
-                                    </Button>
-                                    <div className="flex flex-col items-end gap-2">
-                                        <label
-                                            htmlFor="exclude-missing-category"
-                                            className="flex cursor-pointer items-center gap-2 text-sm"
-                                        >
-                                            <Checkbox
-                                                id="exclude-missing-category"
-                                                checked={excludeMissingCategory}
-                                                onCheckedChange={(v) =>
-                                                    setExcludeMissingCategory(
-                                                        v === true,
-                                                    )
-                                                }
-                                            />
-                                            Exclude items with missing category
-                                            {missingCategoryCount > 0 &&
-                                                ` (${missingCategoryCount})`}
-                                        </label>
-                                        <Button
-                                            suppressHydrationWarning
-                                            disabled={
-                                                isMounted
-                                                    ? importableSelected.length ===
-                                                          0 || importing
-                                                    : false
-                                            }
-                                            onClick={handleImport}
-                                        >
-                                            {importing
-                                                ? 'Importing...'
-                                                : `Import ${importableSelected.length} price lists (${insertCount} new + ${updateCount} updates)`}
-                                        </Button>
-                                        {skippedCount > 0 && !importing && (
-                                            <p className="text-muted-foreground text-xs">
-                                                {skippedCount}{' '}
-                                                {skippedCount === 1
-                                                    ? 'row'
-                                                    : 'rows'}{' '}
-                                                excluded — category not found.
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                                {importableSelected.length === 0 &&
-                                    !importing &&
-                                    verifiedItems.length > 0 && (
-                                        <p className="text-muted-foreground text-xs">
-                                            {importable.length === 0
-                                                ? `No importable rows — ${errorCount} error${errorCount === 1 ? '' : 's'}, ${skippedCount} skipped. Fix Category/COA via dropdowns or create mappings in Category–COA Mappings.`
-                                                : `No rows selected — ${importable.length} importable available. Check a row or click header checkbox. Selected: ${selected.size}/${verifiedItems.length}`}
-                                        </p>
-                                    )}
-                                {selected.size > 0 &&
-                                    importableSelected.length === 0 &&
-                                    importable.length > 0 && (
-                                        <p className="text-xs text-amber-600">
-                                            Selected rows are all errors or
-                                            skipped and cannot be imported.
-                                            Select only Ready/Update rows
-                                            (green/amber).
-                                        </p>
-                                    )}
-                            </>
-                        ) : (
-                            <p className="text-muted-foreground text-sm">
-                                Run Verify, then Extract to see items. Items
-                                require existing Category (via{' '}
-                                <Link
-                                    href="/category-import"
-                                    className="underline"
-                                >
-                                    Category Import
-                                </Link>
-                                ) and Mapping (via{' '}
-                                <Link
-                                    href="/category-coa-mapping"
-                                    className="underline"
-                                >
-                                    Category–COA Mappings
-                                </Link>
-                                ).
-                            </p>
-                        )}
-                    </TabsContent>
+                    <UploadStep s={s} />
+                    <CalibrateStep s={s} />
+                    <VerifyStep s={s} />
+                    <ReviewStep s={s} />
                 </Tabs>
             </div>
 
