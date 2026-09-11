@@ -31,7 +31,7 @@ class PpaFundingSourceTotalsService
         $sumExpression = implode(
             ' + ',
             array_map(
-                fn (string $column) => "ppmps.{$column}",
+                fn (string $column) => "COALESCE(ppmps.{$column}, 0)",
                 self::MONTH_AMOUNT_COLUMNS,
             ),
         );

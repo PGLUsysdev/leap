@@ -20,6 +20,16 @@ class PpmpObserver
     public function updated(Ppmp $ppmp): void
     {
         $this->syncBridge($ppmp);
+
+        $oldBridgeId = $ppmp->getOriginal('ppa_funding_source_id');
+
+        if ($oldBridgeId && $oldBridgeId !== $ppmp->ppa_funding_source_id) {
+            $oldBridge = PpaFundingSource::find($oldBridgeId);
+
+            if ($oldBridge instanceof PpaFundingSource) {
+                $this->totalsService->syncOne($oldBridge);
+            }
+        }
     }
 
     public function deleted(Ppmp $ppmp): void

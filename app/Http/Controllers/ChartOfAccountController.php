@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreChartOfAccountRequest;
 use App\Http\Requests\UpdateChartOfAccountRequest;
 use App\Models\ChartOfAccount;
+use App\Services\ChartOfAccountClassifier;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -64,6 +65,8 @@ class ChartOfAccountController extends Controller
 
         $validated = $request->validated();
 
+        $validated['expense_class'] ??= ChartOfAccountClassifier::fromPath($validated['path'] ?? null);
+
         ChartOfAccount::create($validated);
     }
 
@@ -93,6 +96,10 @@ class ChartOfAccountController extends Controller
         Gate::authorize('update', $chartOfAccount);
 
         $validated = $request->validated();
+
+        $validated['expense_class'] ??= ChartOfAccountClassifier::fromPath(
+            $validated['path'] ?? $chartOfAccount->path,
+        );
 
         $chartOfAccount->update($validated);
     }

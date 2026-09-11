@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\ChartOfAccount;
+use App\Services\ChartOfAccountClassifier;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -1749,6 +1750,7 @@ class ChartOfAccountSeeder extends Seeder
                     'path' => $path,
                     'is_postable' => $isPostable,
                     'is_active' => true,
+                    'expense_class' => ChartOfAccountClassifier::fromPath($path),
                 ]);
 
                 $codeToIdMap[$fullCode] = $newAccount->id;

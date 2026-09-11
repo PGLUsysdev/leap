@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import { FileSpreadsheet } from 'lucide-react';
 import type { ChangeEvent } from 'react';
@@ -44,6 +44,14 @@ import {
     ToggleGroupItem,
 } from '@/components/ui/toggle-group';
 import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '@/components/ui/combobox';
+import {
     getDefaultQuantitiesConfig,
 } from '@/lib/ppmp/sheet-config';
 import type { QuantitiesSheetConfig } from '@/lib/ppmp/sheet-config';
@@ -67,11 +75,55 @@ import type {
     ExistingCoa,
 } from '@/lib/ppmp/normalize';
 
+interface ExistingOffice {
+    id: number;
+    name: string;
+    acronym: string | null;
+}
+
+interface ExistingPpa {
+    id: number;
+    office_id: number;
+    parent_id: number | null;
+    name: string;
+    type: string;
+    full_code: string;
+    fiscal_year_id: number;
+}
+
+interface FiscalYearOption {
+    id: number;
+    year: number;
+    status: string;
+}
+
+interface ExistingFundingSource {
+    id: number;
+    aip_output_id: number;
+    funding_source_id: number | null;
+    funding_source_code: string | null;
+    funding_source_title: string | null;
+    expected_output: string | null;
+    ppa_id: number | null;
+}
+
+interface ExistingOutput {
+    id: number;
+    expected_output: string | null;
+    sort_order: number | null;
+    ppa_id: number | null;
+}
+
 interface PriceListQuantitiesImportProps {
     existingCategories: ExistingCategory[];
     existingCoas: ExistingCoa[];
     existingMappings: ExistingMapping[];
     existingPriceLists: ExistingPriceList[];
+    existingOffices: ExistingOffice[];
+    fiscalYears: FiscalYearOption[];
+    existingPpas: ExistingPpa[];
+    existingFundingSources: ExistingFundingSource[];
+    existingOutputs: ExistingOutput[];
 }
 
 export default function PriceListQuantitiesImport({
@@ -79,6 +131,11 @@ export default function PriceListQuantitiesImport({
     existingCoas,
     existingMappings,
     existingPriceLists,
+    existingOffices,
+    fiscalYears,
+    existingPpas,
+    existingFundingSources,
+    existingOutputs,
 }: PriceListQuantitiesImportProps) {
     const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [sheets, setSheets] = useState<string[]>([]);
@@ -111,6 +168,121 @@ export default function PriceListQuantitiesImport({
 
     const [hideEmptyQty, setHideEmptyQty] = useState(false);
     const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(false);
+    const [showOnlyWithQty, setShowOnlyWithQty] = useState(false);
+    const [selectedOfficeId, setSelectedOfficeId] = useState<number | null>(
+        null,
+    );
+    const [selectedFiscalYearId, setSelectedFiscalYearId] = useState<
+        number | null
+    >(null);
+    const [selectedPpaId, setSelectedPpaId] = useState<number | null>(null);
+    const [selectedAipOutputId, setSelectedAipOutputId] = useState<
+        number | null
+    >(null);
+    const [selectedPpaFundingSourceId, setSelectedPpaFundingSourceId] =
+        useState<number | null>(null);
+
+    const officeItems = useMemo(
+        () =>
+            existingOffices.map(
+                (o) =>
+                    `office:${o.id}:${o.acronym ? `${o.acronym} — ` : ''}${o.name}`,
+            ),
+        [existingOffices],
+    );
+    const officeValue = useMemo(() => {
+        const found = existingOffices.find((o) => o.id === selectedOfficeId);
+
+        return found
+            ? `office:${found.id}:${found.acronym ? `${found.acronym} — ` : ''}${found.name}`
+            : '';
+    }, [existingOffices, selectedOfficeId]);
+
+    const ppasForSelection = useMemo(
+        () =>
+            existingPpas.filter(
+                (p) =>
+                    (selectedOfficeId == null ||
+                        p.office_id === selectedOfficeId) &&
+                    (selectedFiscalYearId == null ||
+                        p.fiscal_year_id === selectedFiscalYearId),
+            ),
+        [existingPpas, selectedOfficeId, selectedFiscalYearId],
+    );
+    const ppaItems = useMemo(
+        () =>
+            ppasForSelection.map(
+                (p) => `ppa:${p.id}:${p.full_code} — ${p.name}`,
+            ),
+        [ppasForSelection],
+    );
+    const ppaValue = useMemo(() => {
+        const found = existingPpas.find((p) => p.id === selectedPpaId);
+
+        return found ? `ppa:${found.id}:${found.full_code} — ${found.name}` : '';
+    }, [existingPpas, selectedPpaId]);
+
+    const fundingSourcesForSelection = useMemo(() => {
+        if (selectedAipOutputId != null) {
+            return existingFundingSources.filter(
+                (f) => f.aip_output_id === selectedAipOutputId,
+            );
+        }
+
+        const scopedPpaIds = new Set(ppasForSelection.map((p) => p.id));
+
+        return existingFundingSources.filter(
+            (f) =>
+                f.ppa_id != null &&
+                (selectedPpaId != null
+                    ? f.ppa_id === selectedPpaId
+                    : scopedPpaIds.has(f.ppa_id)),
+        );
+    }, [
+        existingFundingSources,
+        ppasForSelection,
+        selectedAipOutputId,
+        selectedPpaId,
+    ]);
+    const fundingSourceItems = useMemo(
+        () =>
+            fundingSourcesForSelection.map(
+                (f) =>
+                    `fs:${f.id}:${f.funding_source_code ?? '—'} — ${f.funding_source_title ?? 'Unnamed fund'}`,
+            ),
+        [fundingSourcesForSelection],
+    );
+    const fundingSourceValue = useMemo(() => {
+        const found = existingFundingSources.find(
+            (f) => f.id === selectedPpaFundingSourceId,
+        );
+
+        return found
+            ? `fs:${found.id}:${found.funding_source_code ?? '—'} — ${found.funding_source_title ?? 'Unnamed fund'}`
+            : '';
+    }, [existingFundingSources, selectedPpaFundingSourceId]);
+
+    const outputsForSelection = useMemo(
+        () =>
+            selectedPpaId == null
+                ? []
+                : existingOutputs.filter((o) => o.ppa_id === selectedPpaId),
+        [existingOutputs, selectedPpaId],
+    );
+    const outputItems = useMemo(
+        () =>
+            outputsForSelection.map(
+                (o) => `output:${o.id}:${o.expected_output ?? `Output #${o.id}`}`,
+            ),
+        [outputsForSelection],
+    );
+    const outputValue = useMemo(() => {
+        const found = existingOutputs.find((o) => o.id === selectedAipOutputId);
+
+        return found
+            ? `output:${found.id}:${found.expected_output ?? `Output #${found.id}`}`
+            : '';
+    }, [existingOutputs, selectedAipOutputId]);
 
     const canCalibrate = selectedSheets.length > 0;
     const canVerify =
@@ -157,6 +329,63 @@ export default function PriceListQuantitiesImport({
     const matchedCount = mappedItems.filter(
         (m) => m.status === 'matched',
     ).length;
+    const [excludeUnmapped, setExcludeUnmapped] = useState(true);
+    const [excludeAmbiguous, setExcludeAmbiguous] = useState(true);
+    const [importing, setImporting] = useState(false);
+
+    const isAmbiguous = (message: string): boolean =>
+        message.includes('Multiple price list matches');
+    const isUnmapped = (message: string): boolean =>
+        message.includes('Item not in price list');
+
+    const importableItems = useMemo(
+        () =>
+            mappedItems.filter((m) => {
+                if (m.status === 'matched') {
+                    return m.monthTotal > 0;
+                }
+                if (excludeAmbiguous && isAmbiguous(m.message)) {
+                    return false;
+                }
+                if (excludeUnmapped && isUnmapped(m.message)) {
+                    return false;
+                }
+                return false;
+            }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [mappedItems, excludeAmbiguous, excludeUnmapped],
+    );
+
+    function handleImport() {
+        if (
+            !selectedPpaId ||
+            !selectedAipOutputId ||
+            !selectedPpaFundingSourceId ||
+            importableItems.length === 0 ||
+            importing
+        ) {
+            return;
+        }
+
+        setImporting(true);
+        router.post(
+            '/price-list-quantities-import' as never,
+            {
+                ppa_id: selectedPpaId,
+                aip_output_id: selectedAipOutputId,
+                ppa_funding_source_id: selectedPpaFundingSourceId,
+                items: importableItems
+                    .filter((m) => m.status === 'matched' && m.monthTotal > 0)
+                    .map((m) => ({
+                        ppmp_price_list_id: m.priceListId,
+                        qtys: m.qtys,
+                    })),
+            } as never,
+            {
+                onFinish: () => setImporting(false),
+            },
+        );
+    }
 
     function getEffectiveConfig(sheet: string): QuantitiesSheetConfig {
         if (calibrationMode === 'shared' && sharedConfig) {
@@ -1248,6 +1477,263 @@ export default function PriceListQuantitiesImport({
 
                         {importSheets.length > 0 && (
                             <div className="flex flex-col gap-3">
+                                <div className="flex flex-wrap items-end gap-3">
+                                    <Field className="w-64 max-w-md">
+                                    <FieldLabel>Office</FieldLabel>
+                                    <Combobox
+                                        items={officeItems}
+                                        value={officeValue}
+                                        onValueChange={(val) => {
+                                            const match = /^office:(\d+):/.exec(
+                                                (val as string | null) ?? '',
+                                            );
+                                            setSelectedOfficeId(
+                                                match
+                                                    ? Number(match[1])
+                                                    : null,
+                                            );
+                                            setSelectedPpaId(null);
+                                            setSelectedAipOutputId(null);
+                                            setSelectedPpaFundingSourceId(null);
+                                        }}
+                                    >
+                                        <ComboboxInput
+                                            placeholder="Search offices..."
+                                            className="h-9"
+                                        />
+                                        <ComboboxContent>
+                                            <ComboboxEmpty>
+                                                No office found.
+                                            </ComboboxEmpty>
+                                            <ComboboxList>
+                                                {(item: string) => (
+                                                    <ComboboxItem
+                                                        key={item}
+                                                        value={item}
+                                                    >
+                                                        {item.replace(
+                                                            /^office:\d+:/,
+                                                            '',
+                                                        )}
+                                                    </ComboboxItem>
+                                                )}
+                                            </ComboboxList>
+                                        </ComboboxContent>
+                                    </Combobox>
+                                    <FieldDescription>
+                                        {selectedOfficeId
+                                            ? `${existingOffices.length} offices — 1 selected`
+                                            : `Displaying all ${existingOffices.length} offices — pick one to scope this import.`}
+                                    </FieldDescription>
+                                </Field>
+                                    <Field className="w-40">
+                                        <FieldLabel>Year</FieldLabel>
+                                        <Select
+                                            value={
+                                                selectedFiscalYearId != null
+                                                    ? String(selectedFiscalYearId)
+                                                    : ''
+                                            }
+                                            onValueChange={(v) => {
+                                                setSelectedFiscalYearId(
+                                                    v ? Number(v) : null,
+                                                );
+                                                setSelectedPpaId(null);
+                                                setSelectedAipOutputId(null);
+                                                setSelectedPpaFundingSourceId(
+                                                    null,
+                                                );
+                                            }}
+                                        >
+                                            <SelectTrigger className="h-9">
+                                                <SelectValue placeholder="Select year" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectGroup>
+                                                    {fiscalYears.map((fy) => (
+                                                        <SelectItem
+                                                            key={fy.id}
+                                                            value={String(fy.id)}
+                                                        >
+                                                            {fy.year}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectGroup>
+                                            </SelectContent>
+                                        </Select>
+                                        <FieldDescription>
+                                            {selectedFiscalYearId
+                                                ? `${ppasForSelection.length} PPAs in scope`
+                                                : `Pick a year to filter PPAs.`}
+                                        </FieldDescription>
+                                    </Field>
+                                    <Field className="w-96 max-w-full">
+                                        <FieldLabel>PPA</FieldLabel>
+                                        <Combobox
+                                            items={ppaItems}
+                                            value={ppaValue}
+                                            onValueChange={(val) => {
+                                                const match = /^ppa:(\d+):/.exec(
+                                                    (val as string | null) ??
+                                                        '',
+                                                );
+                                                setSelectedPpaId(
+                                                    match
+                                                        ? Number(match[1])
+                                                        : null,
+                                                );
+                                                setSelectedAipOutputId(null);
+                                                setSelectedPpaFundingSourceId(
+                                                    null,
+                                                );
+                                            }}
+                                        >
+                                            <ComboboxInput
+                                                placeholder={
+                                                    selectedOfficeId ||
+                                                    selectedFiscalYearId
+                                                        ? 'Search PPAs...'
+                                                        : 'Select office/year first...'
+                                                }
+                                                className="h-9"
+                                            />
+                                            <ComboboxContent>
+                                                <ComboboxEmpty>
+                                                    No PPA found.
+                                                </ComboboxEmpty>
+                                                <ComboboxList>
+                                                    {(item: string) => (
+                                                        <ComboboxItem
+                                                            key={item}
+                                                            value={item}
+                                                        >
+                                                            {item.replace(
+                                                                /^ppa:\d+:/,
+                                                                '',
+                                                            )}
+                                                        </ComboboxItem>
+                                                    )}
+                                                </ComboboxList>
+                                            </ComboboxContent>
+                                        </Combobox>
+                                        <FieldDescription>
+                                            {selectedPpaId
+                                                ? '1 PPA selected'
+                                                : `Showing ${ppasForSelection.length} of ${existingPpas.length} PPAs for the selected office/year.`}
+                                        </FieldDescription>
+                                    </Field>
+                                    <Field className="w-96 max-w-full">
+                                        <FieldLabel>Expected output</FieldLabel>
+                                        <Combobox
+                                            items={outputItems}
+                                            value={outputValue}
+                                            onValueChange={(val) => {
+                                                const match =
+                                                    /^output:(\d+):/.exec(
+                                                        (val as
+                                                            | string
+                                                            | null) ?? '',
+                                                    );
+                                                setSelectedAipOutputId(
+                                                    match
+                                                        ? Number(match[1])
+                                                        : null,
+                                                );
+                                                setSelectedPpaFundingSourceId(
+                                                    null,
+                                                );
+                                            }}
+                                        >
+                                            <ComboboxInput
+                                                placeholder={
+                                                    selectedPpaId
+                                                        ? 'Search outputs...'
+                                                        : 'Select a PPA first...'
+                                                }
+                                                disabled={!selectedPpaId}
+                                                className="h-9"
+                                            />
+                                            <ComboboxContent>
+                                                <ComboboxEmpty>
+                                                    No output found.
+                                                </ComboboxEmpty>
+                                                <ComboboxList>
+                                                    {(item: string) => (
+                                                        <ComboboxItem
+                                                            key={item}
+                                                            value={item}
+                                                        >
+                                                            {item.replace(
+                                                                /^output:\d+:/,
+                                                                '',
+                                                            )}
+                                                        </ComboboxItem>
+                                                    )}
+                                                </ComboboxList>
+                                            </ComboboxContent>
+                                        </Combobox>
+                                        <FieldDescription>
+                                            {selectedAipOutputId
+                                                ? '1 output selected'
+                                                : selectedPpaId
+                                                  ? `Showing ${outputsForSelection.length} output(s) for the selected PPA.`
+                                                  : 'Pick a PPA to list its expected outputs.'}
+                                        </FieldDescription>
+                                    </Field>
+                                    <Field className="w-96 max-w-full">
+                                        <FieldLabel>Funding source</FieldLabel>
+                                        <Combobox
+                                            items={fundingSourceItems}
+                                            value={fundingSourceValue}
+                                            onValueChange={(val) => {
+                                                const match = /^fs:(\d+):/.exec(
+                                                    (val as string | null) ??
+                                                        '',
+                                                );
+                                                setSelectedPpaFundingSourceId(
+                                                    match
+                                                        ? Number(match[1])
+                                                        : null,
+                                                );
+                                            }}
+                                        >
+                                            <ComboboxInput
+                                                placeholder={
+                                                    selectedAipOutputId
+                                                        ? 'Search funding sources...'
+                                                        : 'Select an output first...'
+                                                }
+                                                disabled={!selectedAipOutputId}
+                                                className="h-9"
+                                            />
+                                            <ComboboxContent>
+                                                <ComboboxEmpty>
+                                                    No funding source found.
+                                                </ComboboxEmpty>
+                                                <ComboboxList>
+                                                    {(item: string) => (
+                                                        <ComboboxItem
+                                                            key={item}
+                                                            value={item}
+                                                        >
+                                                            {item.replace(
+                                                                /^fs:\d+:/,
+                                                                '',
+                                                            )}
+                                                        </ComboboxItem>
+                                                    )}
+                                                </ComboboxList>
+                                            </ComboboxContent>
+                                        </Combobox>
+                                        <FieldDescription>
+                                            {selectedPpaFundingSourceId
+                                                ? '1 funding source selected — quantities import to this source.'
+                                                : selectedAipOutputId
+                                                  ? `Showing ${fundingSourcesForSelection.length} funding source(s) for the selected output.`
+                                                  : 'Pick office, PPA, and output to list funding sources.'}
+                                        </FieldDescription>
+                                    </Field>
+                                </div>
                                 <div className="flex flex-wrap gap-2">
                                     {importSheets.map((s) => {
                                         const items = mappedBySheet[s] ?? [];
@@ -1295,11 +1781,80 @@ export default function PriceListQuantitiesImport({
                                             0 &&
                                             ` (${mappedItems.length - matchedCount})`}
                                     </label>
+                                    <label
+                                        htmlFor="show-only-with-qty"
+                                        className="flex cursor-pointer items-center gap-2 text-sm"
+                                    >
+                                        <Checkbox
+                                            id="show-only-with-qty"
+                                            checked={showOnlyWithQty}
+                                            onCheckedChange={(v) =>
+                                                setShowOnlyWithQty(v === true)
+                                            }
+                                        />
+                                        Show only rows with quantities
+                                        {mappedItems.filter(
+                                            (m) => m.monthTotal > 0,
+                                        ).length > 0 &&
+                                            ` (${mappedItems.filter((m) => m.monthTotal > 0).length})`}
+                                    </label>
                                     <span className="text-muted-foreground text-xs">
-                                        Sheet: {effectiveImportSheet} — mapping
-                                        only for now, nothing is written to the
-                                        database yet.
+                                        Sheet: {effectiveImportSheet} —{' '}
+                                        {importableItems.length} of{' '}
+                                        {mappedItems.length} queued for import.
                                     </span>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-3 rounded-lg border p-3">
+                                    <label
+                                        htmlFor="exclude-unmapped"
+                                        className="flex cursor-pointer items-center gap-2 text-sm"
+                                    >
+                                        <Checkbox
+                                            id="exclude-unmapped"
+                                            checked={excludeUnmapped}
+                                            onCheckedChange={(v) =>
+                                                setExcludeUnmapped(v === true)
+                                            }
+                                        />
+                                        Exclude unmapped (not in price list)
+                                    </label>
+                                    <label
+                                        htmlFor="exclude-ambiguous"
+                                        className="flex cursor-pointer items-center gap-2 text-sm"
+                                    >
+                                        <Checkbox
+                                            id="exclude-ambiguous"
+                                            checked={excludeAmbiguous}
+                                            onCheckedChange={(v) =>
+                                                setExcludeAmbiguous(v === true)
+                                            }
+                                        />
+                                        Exclude ambiguous (multiple matches)
+                                    </label>
+                                    <Button
+                                        disabled={
+                                            !selectedPpaId ||
+                                            !selectedAipOutputId ||
+                                            !selectedPpaFundingSourceId ||
+                                            importableItems.length === 0 ||
+                                            importing
+                                        }
+                                        onClick={handleImport}
+                                    >
+                                        {importing
+                                            ? 'Importing…'
+                                            : `Import ${importableItems.length} to PPMP`}
+                                    </Button>
+                                    {(!selectedPpaId ||
+                                        !selectedAipOutputId ||
+                                        !selectedPpaFundingSourceId) && (
+                                        <span className="text-muted-foreground text-xs">
+                                            Select office, year, PPA, output,
+                                            and funding source above to enable
+                                            import.
+                                        </span>
+                                    )}
                                 </div>
 
                                 <ScrollArea className="w-full rounded-lg border">
@@ -1323,14 +1878,18 @@ export default function PriceListQuantitiesImport({
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {(showOnlyUnmapped
-                                                ? mappedItems.filter(
-                                                      (m) =>
-                                                          m.status !==
-                                                          'matched',
-                                                  )
-                                                : mappedItems
-                                            ).map((m) => (
+                                            {mappedItems
+                                                .filter(
+                                                    (m) =>
+                                                        !showOnlyUnmapped ||
+                                                        m.status !== 'matched',
+                                                )
+                                                .filter(
+                                                    (m) =>
+                                                        !showOnlyWithQty ||
+                                                        m.monthTotal > 0,
+                                                )
+                                                .map((m) => (
                                                 <TableRow key={m.key}>
                                                     <TableCell className="text-right tabular-nums">
                                                         {m.rows.join(', ')}
