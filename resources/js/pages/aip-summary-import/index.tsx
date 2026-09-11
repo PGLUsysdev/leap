@@ -1068,7 +1068,7 @@ export default function AipSummaryImport() {
                 >
                     <TabsList>
                         <TabsTrigger value="upload">
-                            1. Upload & Sheet
+                            1. Upload
                             {selectedSheet && (
                                 <span className="text-muted-foreground ml-1 text-xs">
                                     ✓

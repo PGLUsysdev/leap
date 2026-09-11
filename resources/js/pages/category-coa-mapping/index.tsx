@@ -1970,7 +1970,7 @@ export default function CategoryCoaMappingPage({
                 >
                     <TabsList>
                         <TabsTrigger value="upload">
-                            1. Upload & Sheet{' '}
+                            1. Upload{' '}
                             {selectedSheets.length > 0 && (
                                 <span className="text-muted-foreground ml-1 text-xs">
                                     {selectedSheets.length}✓
