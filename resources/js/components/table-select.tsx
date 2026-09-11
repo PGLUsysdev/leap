@@ -12,7 +12,10 @@ import {
 import { cn } from '@/lib/utils';
 import type { PaginatedResponse } from '@/types';
 import { Button } from '@/components/ui/button';
-import { ButtonGroup, ButtonGroupSeparator } from '@/components/ui/button-group';
+import {
+    ButtonGroup,
+    ButtonGroupSeparator,
+} from '@/components/ui/button-group';
 
 interface TableSelectProps<TData> {
     data: TData[];

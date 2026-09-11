@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -406,7 +407,7 @@ export default function AipSummaryImport() {
         officeId: number | null,
     ) {
         setTokenMappings((prev) => {
-            const rowMappings = { ...(prev[key] ?? {}) };
+            const rowMappings = { ...prev[key] };
 
             if (officeId === null) {
                 delete rowMappings[token];
@@ -806,11 +807,7 @@ export default function AipSummaryImport() {
     );
 
     function handleConfirmOutputs() {
-        if (
-            !selectedOffice ||
-            !selectedFiscalYear ||
-            newOutputs.length === 0
-        )
+        if (!selectedOffice || !selectedFiscalYear || newOutputs.length === 0)
             return;
         setImportingOutputs(true);
 
@@ -893,8 +890,7 @@ export default function AipSummaryImport() {
                 funding_source_id: fundingSourceId,
                 ccet_adaptation: ccAmount(r.adaptation),
                 ccet_mitigation: ccAmount(r.mitigation),
-                cc_typology_id:
-                    fundMatches.get(r.key)?.typology?.id ?? null,
+                cc_typology_id: fundMatches.get(r.key)?.typology?.id ?? null,
             });
         }
 
@@ -987,17 +983,12 @@ export default function AipSummaryImport() {
     ]);
 
     const newFunds = useMemo(
-        () =>
-            importableFunds.filter((r) => fundStatuses.get(r.key) === 'new'),
+        () => importableFunds.filter((r) => fundStatuses.get(r.key) === 'new'),
         [importableFunds, fundStatuses],
     );
 
     function handleConfirmFunds() {
-        if (
-            !selectedOffice ||
-            !selectedFiscalYear ||
-            newFunds.length === 0
-        )
+        if (!selectedOffice || !selectedFiscalYear || newFunds.length === 0)
             return;
         setImportingFunds(true);
 
@@ -1044,12 +1035,13 @@ export default function AipSummaryImport() {
 
     // ----- Render -----
     return (
-        <>
+        <ScrollArea className="h-[calc(100vh-3rem)]">
             <Head title="AIP Summary Import" />
-            <div className="flex flex-col gap-4 p-4 md:p-6">
-                <h1 className="text-2xl font-semibold tracking-tight">
-                    AIP Summary Import
-                </h1>
+            <div className="flex flex-col gap-4 p-4">
+                <h1 className="text-2xl font-bold">AIP Summary Import</h1>
+                <p className="text-muted-foreground text-sm">
+                    Import AIP Summary from XLSX.
+                </p>
 
                 {fileName && !loading && (
                     <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
@@ -1074,8 +1066,8 @@ export default function AipSummaryImport() {
                     value={step}
                     onValueChange={(v) => setStep(v as typeof step)}
                 >
-                    <TabsList variant="line" className="w-full">
-                        <TabsTrigger value="upload" className="flex-1">
+                    <TabsList>
+                        <TabsTrigger value="upload">
                             1. Upload & Sheet
                             {selectedSheet && (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -1083,18 +1075,10 @@ export default function AipSummaryImport() {
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="calibrate"
-                            disabled={!canCalibrate}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="calibrate" disabled={!canCalibrate}>
                             2. Calibrate
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="verify"
-                            disabled={!canVerify}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="verify" disabled={!canVerify}>
                             3. Verify
                             {verifyResult?.valid &&
                                 verifyResult.warnings.length === 0 && (
@@ -1109,11 +1093,7 @@ export default function AipSummaryImport() {
                                     </span>
                                 )}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="extract"
-                            disabled={!canExtract}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="extract" disabled={!canExtract}>
                             4. Extract
                             {extractResult && (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -1124,7 +1104,6 @@ export default function AipSummaryImport() {
                         <TabsTrigger
                             value={importStep}
                             disabled={!canImportPpa}
-                            className="flex-1"
                         >
                             5. {importTitle}
                         </TabsTrigger>
@@ -2376,14 +2355,16 @@ export default function AipSummaryImport() {
                                     }
                                 >
                                     {importingOutputs && <Spinner />}
-                                    Confirm &amp; Import {newOutputs.length}{' '}
+                                    Confirm &amp; Import {
+                                        newOutputs.length
+                                    }{' '}
                                     Output
                                     {newOutputs.length === 1 ? '' : 's'}
                                 </Button>
                                 <p className="text-muted-foreground text-xs">
                                     Matched by PPA name — any row with office,
-                                    schedule, or output imports (offices
-                                    attach later when unresolved).
+                                    schedule, or output imports (offices attach
+                                    later when unresolved).
                                 </p>
                             </div>
                         </div>
@@ -2470,10 +2451,10 @@ export default function AipSummaryImport() {
                                 Import Funding Source
                             </h2>
                             <p className="text-muted-foreground text-sm">
-                                Review fund links extracted from sheet
-                                “{selectedSheet}” — funding source plus
-                                climate (adaptation / mitigation / typology).
-                                Peso amounts stay zero.
+                                Review fund links extracted from sheet “
+                                {selectedSheet}” — funding source plus climate
+                                (adaptation / mitigation / typology). Peso
+                                amounts stay zero.
                             </p>
                         </div>
 
@@ -2595,11 +2576,11 @@ export default function AipSummaryImport() {
                                                         const effective =
                                                             effectiveId == null
                                                                 ? null
-                                                                : fundingSources.find(
+                                                                : (fundingSources.find(
                                                                       (f) =>
                                                                           f.id ===
                                                                           effectiveId,
-                                                                  ) ?? null;
+                                                                  ) ?? null);
 
                                                         return (
                                                             <tr
@@ -2607,9 +2588,7 @@ export default function AipSummaryImport() {
                                                                 className="border-b last:border-0"
                                                             >
                                                                 <td className="px-3 py-2 font-mono whitespace-nowrap">
-                                                                    {
-                                                                        record.row
-                                                                    }
+                                                                    {record.row}
                                                                     {record.isContinuation && (
                                                                         <span
                                                                             className="text-muted-foreground ml-1"
@@ -2667,7 +2646,8 @@ export default function AipSummaryImport() {
                                                                                                             ...prev,
                                                                                                         };
                                                                                                     delete next[
-                                                                                                        record.key
+                                                                                                        record
+                                                                                                            .key
                                                                                                     ];
 
                                                                                                     return next;
@@ -2721,8 +2701,7 @@ export default function AipSummaryImport() {
                                                                                                         prev,
                                                                                                     ) => ({
                                                                                                         ...prev,
-                                                                                                        [record.key]:
-                                                                                                            true,
+                                                                                                        [record.key]: true,
                                                                                                     }),
                                                                                                 )
                                                                                             }
@@ -2786,7 +2765,8 @@ export default function AipSummaryImport() {
                                                                             return record.fundingSource ==
                                                                                 null ||
                                                                                 dismissedFunds[
-                                                                                    record.key
+                                                                                    record
+                                                                                        .key
                                                                                 ] ? (
                                                                                 <span className="text-muted-foreground">
                                                                                     —
@@ -2854,8 +2834,8 @@ export default function AipSummaryImport() {
                                     }
                                 >
                                     {importingFunds && <Spinner />}
-                                    Confirm &amp; Import {newFunds.length}{' '}
-                                    Fund Link
+                                    Confirm &amp; Import {newFunds.length} Fund
+                                    Link
                                     {newFunds.length === 1 ? '' : 's'}
                                 </Button>
                                 <p className="text-muted-foreground text-xs">
@@ -2894,7 +2874,7 @@ export default function AipSummaryImport() {
                     </TabsContent>
                 </Tabs>
             </div>
-        </>
+        </ScrollArea>
     );
 }
 

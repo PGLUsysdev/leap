@@ -212,7 +212,8 @@ describe('extractAipSummaryRecords', () => {
         expect(result.records[0].fundNorm).toBe('gf-proper');
     });
 
-    it('coerces the fund to null on rows without an expected output', () => {        const wb = buildWorkbook([
+    it('coerces the fund to null on rows without an expected output', () => {
+        const wb = buildWorkbook([
             // Context row: office + dates set, output blank.
             [
                 '1000-1-03-009-001',

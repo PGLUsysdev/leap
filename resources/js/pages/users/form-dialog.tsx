@@ -18,10 +18,7 @@ import {
     FieldError,
     FieldContent,
 } from '@/components/ui/field';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,

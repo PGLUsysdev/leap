@@ -33,16 +33,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-} from '@/components/ui/toggle-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     Combobox,
     ComboboxContent,
@@ -51,9 +43,7 @@ import {
     ComboboxItem,
     ComboboxList,
 } from '@/components/ui/combobox';
-import {
-    getDefaultQuantitiesConfig,
-} from '@/lib/ppmp/sheet-config';
+import { getDefaultQuantitiesConfig } from '@/lib/ppmp/sheet-config';
 import type { QuantitiesSheetConfig } from '@/lib/ppmp/sheet-config';
 import {
     QUANTITY_MONTHS,
@@ -70,10 +60,7 @@ import type {
     ExistingMapping,
     ExistingPriceList,
 } from '@/lib/ppmp/quantities-match';
-import type {
-    ExistingCategory,
-    ExistingCoa,
-} from '@/lib/ppmp/normalize';
+import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 
 interface ExistingOffice {
     id: number;
@@ -219,7 +206,9 @@ export default function PriceListQuantitiesImport({
     const ppaValue = useMemo(() => {
         const found = existingPpas.find((p) => p.id === selectedPpaId);
 
-        return found ? `ppa:${found.id}:${found.full_code} — ${found.name}` : '';
+        return found
+            ? `ppa:${found.id}:${found.full_code} — ${found.name}`
+            : '';
     }, [existingPpas, selectedPpaId]);
 
     const fundingSourcesForSelection = useMemo(() => {
@@ -272,7 +261,8 @@ export default function PriceListQuantitiesImport({
     const outputItems = useMemo(
         () =>
             outputsForSelection.map(
-                (o) => `output:${o.id}:${o.expected_output ?? `Output #${o.id}`}`,
+                (o) =>
+                    `output:${o.id}:${o.expected_output ?? `Output #${o.id}`}`,
             ),
         [outputsForSelection],
     );
@@ -630,15 +620,16 @@ export default function PriceListQuantitiesImport({
     }
 
     return (
-        <>
+        <ScrollArea className="h-[calc(100vh-3rem)]">
             <Head title="Price List Quantities Import" />
-            <div className="flex flex-col gap-6 p-4 md:p-6">
-                <div className="flex flex-col gap-1">
-                    <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-                        <FileSpreadsheet className="h-6 w-6" />
-                        Price List Quantities Import
-                    </h1>
-                </div>
+            <div className="flex flex-col gap-4 p-4">
+                <h1 className="text-2xl font-bold">
+                    Price List Quantities Import
+                </h1>
+                <p className="text-muted-foreground text-sm">
+                    Import quantities against existing price list items from
+                    XLSX.
+                </p>
 
                 <Tabs
                     value={step}
@@ -841,7 +832,10 @@ export default function PriceListQuantitiesImport({
                                         <SelectContent>
                                             <SelectGroup>
                                                 {selectedSheets.map((s) => (
-                                                    <SelectItem key={s} value={s}>
+                                                    <SelectItem
+                                                        key={s}
+                                                        value={s}
+                                                    >
                                                         {s}
                                                     </SelectItem>
                                                 ))}
@@ -855,7 +849,7 @@ export default function PriceListQuantitiesImport({
                             const cfg = getEffectiveConfig(
                                 calibrationMode === 'shared'
                                     ? (selectedSheets[0] ?? '')
-                                    : (currentSheet || selectedSheets[0]!),
+                                    : currentSheet || selectedSheets[0]!,
                             );
                             const onChange = (
                                 patch: Partial<QuantitiesSheetConfig>,
@@ -950,7 +944,9 @@ export default function PriceListQuantitiesImport({
                                                 className="w-16"
                                                 placeholder="G"
                                             />
-                                            <FieldDescription>G</FieldDescription>
+                                            <FieldDescription>
+                                                G
+                                            </FieldDescription>
                                         </Field>
                                         <Field>
                                             <FieldLabel>
@@ -966,7 +962,9 @@ export default function PriceListQuantitiesImport({
                                                 className="w-16"
                                                 placeholder="H"
                                             />
-                                            <FieldDescription>H</FieldDescription>
+                                            <FieldDescription>
+                                                H
+                                            </FieldDescription>
                                         </Field>
                                         <Field>
                                             <FieldLabel>
@@ -1213,8 +1211,8 @@ export default function PriceListQuantitiesImport({
                                     </CardTitle>
                                     <CardDescription>
                                         Runs against each selected sheet using
-                                        its calibration. Extraction stays
-                                        locked until every sheet passes.
+                                        its calibration. Extraction stays locked
+                                        until every sheet passes.
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
@@ -1231,8 +1229,8 @@ export default function PriceListQuantitiesImport({
                                             (amount columns are skipped)
                                         </li>
                                         <li>
-                                            Every item row carries quantities
-                                            in at least one month
+                                            Every item row carries quantities in
+                                            at least one month
                                         </li>
                                     </ul>
                                     {selectedSheets.length > 0 && (
@@ -1316,15 +1314,14 @@ export default function PriceListQuantitiesImport({
                                         </CardTitle>
                                         <CardDescription>
                                             {
-                                                verifyResults[
-                                                    activeVerifySheet
-                                                ].message
+                                                verifyResults[activeVerifySheet]
+                                                    .message
                                             }
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="flex flex-col gap-3">
-                                        {verifyResults[activeVerifySheet]
-                                            .errors.length > 0 && (
+                                        {verifyResults[activeVerifySheet].errors
+                                            .length > 0 && (
                                             <ul className="text-destructive flex flex-col gap-1 text-sm">
                                                 {verifyResults[
                                                     activeVerifySheet
@@ -1346,9 +1343,7 @@ export default function PriceListQuantitiesImport({
 
                                         {allVerifyValid && (
                                             <div>
-                                                <Button
-                                                    onClick={runExtraction}
-                                                >
+                                                <Button onClick={runExtraction}>
                                                     Run extraction
                                                 </Button>
                                             </div>
@@ -1396,9 +1391,7 @@ export default function PriceListQuantitiesImport({
                                                 : 'outline'
                                         }
                                         size="sm"
-                                        onClick={() =>
-                                            setActiveExtractSheet(s)
-                                        }
+                                        onClick={() => setActiveExtractSheet(s)}
                                     >
                                         {s}{' '}
                                         {extractResults[s]?.valid
@@ -1461,8 +1454,7 @@ export default function PriceListQuantitiesImport({
                                         ).length;
                                         const visibleItems = hideEmptyQty
                                             ? items.filter(
-                                                  (item) =>
-                                                      item.monthTotal > 0,
+                                                  (item) => item.monthTotal > 0,
                                               )
                                             : items;
 
@@ -1493,10 +1485,8 @@ export default function PriceListQuantitiesImport({
                                                     </label>
                                                     <span className="text-muted-foreground text-xs">
                                                         Showing{' '}
-                                                        {
-                                                            visibleItems.length
-                                                        }{' '}
-                                                        of {items.length} items
+                                                        {visibleItems.length} of{' '}
+                                                        {items.length} items
                                                     </span>
                                                 </div>
 
@@ -1524,59 +1514,66 @@ export default function PriceListQuantitiesImport({
                             <div className="flex flex-col gap-3">
                                 <div className="flex flex-wrap items-end gap-3">
                                     <Field className="w-64 max-w-md">
-                                    <FieldLabel>Office</FieldLabel>
-                                    <Combobox
-                                        items={officeItems}
-                                        value={officeValue}
-                                        onValueChange={(val) => {
-                                            const match = /^office:(\d+):/.exec(
-                                                (val as string | null) ?? '',
-                                            );
-                                            setSelectedOfficeId(
-                                                match
-                                                    ? Number(match[1])
-                                                    : null,
-                                            );
-                                            setSelectedPpaId(null);
-                                            setSelectedAipOutputId(null);
-                                            setSelectedPpaFundingSourceId(null);
-                                        }}
-                                    >
-                                        <ComboboxInput
-                                            placeholder="Search offices..."
-                                            className="h-9"
-                                        />
-                                        <ComboboxContent>
-                                            <ComboboxEmpty>
-                                                No office found.
-                                            </ComboboxEmpty>
-                                            <ComboboxList>
-                                                {(item: string) => (
-                                                    <ComboboxItem
-                                                        key={item}
-                                                        value={item}
-                                                    >
-                                                        {item.replace(
-                                                            /^office:\d+:/,
-                                                            '',
-                                                        )}
-                                                    </ComboboxItem>
-                                                )}
-                                            </ComboboxList>
-                                        </ComboboxContent>
-                                    </Combobox>
-                                    <FieldDescription>
-                                        {selectedOfficeId
-                                            ? `${existingOffices.length} offices — 1 selected`
-                                            : `Displaying all ${existingOffices.length} offices — pick one to scope this import.`}
-                                    </FieldDescription>
-                                </Field>
+                                        <FieldLabel>Office</FieldLabel>
+                                        <Combobox
+                                            items={officeItems}
+                                            value={officeValue}
+                                            onValueChange={(val) => {
+                                                const match =
+                                                    /^office:(\d+):/.exec(
+                                                        (val as
+                                                            | string
+                                                            | null) ?? '',
+                                                    );
+                                                setSelectedOfficeId(
+                                                    match
+                                                        ? Number(match[1])
+                                                        : null,
+                                                );
+                                                setSelectedPpaId(null);
+                                                setSelectedAipOutputId(null);
+                                                setSelectedPpaFundingSourceId(
+                                                    null,
+                                                );
+                                            }}
+                                        >
+                                            <ComboboxInput
+                                                placeholder="Search offices..."
+                                                className="h-9"
+                                            />
+                                            <ComboboxContent>
+                                                <ComboboxEmpty>
+                                                    No office found.
+                                                </ComboboxEmpty>
+                                                <ComboboxList>
+                                                    {(item: string) => (
+                                                        <ComboboxItem
+                                                            key={item}
+                                                            value={item}
+                                                        >
+                                                            {item.replace(
+                                                                /^office:\d+:/,
+                                                                '',
+                                                            )}
+                                                        </ComboboxItem>
+                                                    )}
+                                                </ComboboxList>
+                                            </ComboboxContent>
+                                        </Combobox>
+                                        <FieldDescription>
+                                            {selectedOfficeId
+                                                ? `${existingOffices.length} offices — 1 selected`
+                                                : `Displaying all ${existingOffices.length} offices — pick one to scope this import.`}
+                                        </FieldDescription>
+                                    </Field>
                                     <Field className="w-40">
                                         <FieldLabel>Year</FieldLabel>
                                         <Select
                                             value={
                                                 selectedFiscalYearId != null
-                                                    ? String(selectedFiscalYearId)
+                                                    ? String(
+                                                          selectedFiscalYearId,
+                                                      )
                                                     : ''
                                             }
                                             onValueChange={(v) => {
@@ -1598,7 +1595,9 @@ export default function PriceListQuantitiesImport({
                                                     {fiscalYears.map((fy) => (
                                                         <SelectItem
                                                             key={fy.id}
-                                                            value={String(fy.id)}
+                                                            value={String(
+                                                                fy.id,
+                                                            )}
                                                         >
                                                             {fy.year}
                                                         </SelectItem>
@@ -1618,10 +1617,12 @@ export default function PriceListQuantitiesImport({
                                             items={ppaItems}
                                             value={ppaValue}
                                             onValueChange={(val) => {
-                                                const match = /^ppa:(\d+):/.exec(
-                                                    (val as string | null) ??
-                                                        '',
-                                                );
+                                                const match =
+                                                    /^ppa:(\d+):/.exec(
+                                                        (val as
+                                                            | string
+                                                            | null) ?? '',
+                                                    );
                                                 setSelectedPpaId(
                                                     match
                                                         ? Number(match[1])
@@ -1920,7 +1921,7 @@ export default function PriceListQuantitiesImport({
                                 </div>
 
                                 <ScrollArea className="w-full rounded-lg border">
-                                    <Table className="[&_th]:border-l [&_td]:border-l [&_th:first-child]:border-l-0 [&_td:first-child]:border-l-0">
+                                    <Table className="[&_td]:border-l [&_td:first-child]:border-l-0 [&_th]:border-l [&_th:first-child]:border-l-0">
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="text-right">
@@ -1952,65 +1953,66 @@ export default function PriceListQuantitiesImport({
                                                         m.monthTotal > 0,
                                                 )
                                                 .map((m) => (
-                                                <TableRow key={m.key}>
-                                                    <TableCell className="text-right tabular-nums">
-                                                        {m.rows.join(', ')}
-                                                    </TableCell>
-                                                    <TableCell className="max-w-80 whitespace-normal break-words">
-                                                        {m.description}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {m.unit}
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-medium">
-                                                        {m.monthTotal === 0
-                                                            ? ''
-                                                            : m.monthTotal}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {m.status === 'matched'
-                                                            ? `₱${m.priceListPrice}`
-                                                            : '—'}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {(() => {
-                                                            const noClass =
-                                                                m.status ===
-                                                                    'matched' &&
-                                                                isUnclassified(
-                                                                    m,
-                                                                );
+                                                    <TableRow key={m.key}>
+                                                        <TableCell className="text-right tabular-nums">
+                                                            {m.rows.join(', ')}
+                                                        </TableCell>
+                                                        <TableCell className="max-w-80 break-words whitespace-normal">
+                                                            {m.description}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {m.unit}
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-medium">
+                                                            {m.monthTotal === 0
+                                                                ? ''
+                                                                : m.monthTotal}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {m.status ===
+                                                            'matched'
+                                                                ? `₱${m.priceListPrice}`
+                                                                : '—'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {(() => {
+                                                                const noClass =
+                                                                    m.status ===
+                                                                        'matched' &&
+                                                                    isUnclassified(
+                                                                        m,
+                                                                    );
 
-                                                            return (
-                                                                <>
-                                                                    <Badge
-                                                                        variant={
-                                                                            m.status ===
+                                                                return (
+                                                                    <>
+                                                                        <Badge
+                                                                            variant={
+                                                                                m.status ===
+                                                                                'matched'
+                                                                                    ? noClass
+                                                                                        ? 'destructive'
+                                                                                        : 'default'
+                                                                                    : 'destructive'
+                                                                            }
+                                                                        >
+                                                                            {m.status ===
                                                                             'matched'
                                                                                 ? noClass
-                                                                                    ? 'destructive'
-                                                                                    : 'default'
-                                                                                : 'destructive'
-                                                                        }
-                                                                    >
-                                                                        {m.status ===
-                                                                        'matched'
-                                                                            ? noClass
-                                                                                ? 'No class'
-                                                                                : 'Mapped'
-                                                                            : 'Unmapped'}
-                                                                    </Badge>
-                                                                    <p className="text-muted-foreground mt-1 text-xs">
-                                                                        {noClass
-                                                                            ? 'COA has no expense class — link it on the Expense Class Codes page.'
-                                                                            : m.message}
-                                                                    </p>
-                                                                </>
-                                                            );
-                                                        })()}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                                                                    ? 'No class'
+                                                                                    : 'Mapped'
+                                                                                : 'Unmapped'}
+                                                                        </Badge>
+                                                                        <p className="text-muted-foreground mt-1 text-xs">
+                                                                            {noClass
+                                                                                ? 'COA has no expense class — link it on the Expense Class Codes page.'
+                                                                                : m.message}
+                                                                        </p>
+                                                                    </>
+                                                                );
+                                                            })()}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
                                         </TableBody>
                                     </Table>
                                     <ScrollBar orientation="horizontal" />
@@ -2020,7 +2022,7 @@ export default function PriceListQuantitiesImport({
                     </TabsContent>
                 </Tabs>
             </div>
-        </>
+        </ScrollArea>
     );
 }
 
@@ -2033,7 +2035,7 @@ function ReviewItemsTable({ items }: { items: UniqueQuantityItem[] }) {
 
     return (
         <ScrollArea className="w-full rounded-lg border">
-            <Table className="[&_th]:border-l [&_td]:border-l [&_th:first-child]:border-l-0 [&_td:first-child]:border-l-0">
+            <Table className="[&_td]:border-l [&_td:first-child]:border-l-0 [&_th]:border-l [&_th:first-child]:border-l-0">
                 <TableHeader>
                     <TableRow>
                         <TableHead className="text-right">Row</TableHead>
@@ -2056,7 +2058,7 @@ function ReviewItemsTable({ items }: { items: UniqueQuantityItem[] }) {
                             <TableCell className="text-right tabular-nums">
                                 {item.rows.join(', ')}
                             </TableCell>
-                            <TableCell className="max-w-80 whitespace-normal break-words">
+                            <TableCell className="max-w-80 break-words whitespace-normal">
                                 {item.description}
                             </TableCell>
                             <TableCell>{item.unit}</TableCell>

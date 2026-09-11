@@ -70,7 +70,15 @@ describe('matchPpaBlocks', () => {
 
     it('marks blocks without a DB PPA as new', () => {
         const blocks = matchPpaBlocks(
-            [record({ fullCode: '1000-1-03-009-002', fullCodeNorm: '1000-1-03-009-002', key: 'x#10', row: 10, blockRow: 10 })],
+            [
+                record({
+                    fullCode: '1000-1-03-009-002',
+                    fullCodeNorm: '1000-1-03-009-002',
+                    key: 'x#10',
+                    row: 10,
+                    blockRow: 10,
+                }),
+            ],
             OFFICES,
             PPAS,
         );
@@ -82,7 +90,12 @@ describe('matchPpaBlocks', () => {
 
     it('marks blocks with an unknown office prefix as no-office', () => {
         const blocks = matchPpaBlocks(
-            [record({ fullCode: '9999-9-99-999-001', fullCodeNorm: '9999-9-99-999-001' })],
+            [
+                record({
+                    fullCode: '9999-9-99-999-001',
+                    fullCodeNorm: '9999-9-99-999-001',
+                }),
+            ],
             OFFICES,
             PPAS,
         );

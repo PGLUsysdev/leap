@@ -333,7 +333,8 @@ describe('verifyAipSummarySheet', () => {
         expect(result.warnings).toHaveLength(0);
     });
 
-    it('accepts real Excel dates in schedule columns', () => {        const wb = buildSheet([
+    it('accepts real Excel dates in schedule columns', () => {
+        const wb = buildSheet([
             [
                 '1000-1-03-009-001',
                 'A. Health Program',
@@ -356,7 +357,8 @@ describe('verifyAipSummarySheet', () => {
         expect(result.valid).toBe(true);
     });
 
-    it('rejects a tandem mismatch between code depth and description prefix', () => {        const wb = buildSheet([
+    it('rejects a tandem mismatch between code depth and description prefix', () => {
+        const wb = buildSheet([
             PROGRAM,
             [
                 '1000-1-03-009-001-001',
@@ -416,12 +418,38 @@ describe('verifyAipSummarySheet', () => {
     it('names the calibrated columns in the missing-code error', () => {
         const config = getDefaultAipSummaryConfig();
         const wb = buildSheet([
-            ['1000-1-03-009-001', 'MHO', 'A. Health Program', 'Jan-26', 'Dec-26', 'Served', 'GF', '0', '0', 'A123'],
-            [null, 'MHO', '1. Stray desc', 'Jan-26', 'Jun-26', 'Stray', 'GF', '0', '0', 'A123'],
+            [
+                '1000-1-03-009-001',
+                'MHO',
+                'A. Health Program',
+                'Jan-26',
+                'Dec-26',
+                'Served',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
+            [
+                null,
+                'MHO',
+                '1. Stray desc',
+                'Jan-26',
+                'Jun-26',
+                'Stray',
+                'GF',
+                '0',
+                '0',
+                'A123',
+            ],
         ]);
         const result = verifyAipSummarySheet(wb, 'Sheet1', {
             ...config,
-            columnConfig: { ...config.columnConfig, office: 'B', description: 'C' },
+            columnConfig: {
+                ...config.columnConfig,
+                office: 'B',
+                description: 'C',
+            },
         });
 
         expect(result.valid).toBe(false);
@@ -437,7 +465,18 @@ describe('verifyAipSummarySheet', () => {
     it('stays silent when cols A and B are both blank', () => {
         const wb = buildSheet([
             PROGRAM,
-            [null, null, 'MHO', 'Jan-26', 'Dec-26', 'Extra', 'SEF', '0', '0', '-'],
+            [
+                null,
+                null,
+                'MHO',
+                'Jan-26',
+                'Dec-26',
+                'Extra',
+                'SEF',
+                '0',
+                '0',
+                '-',
+            ],
         ]);
         const result = verifyAipSummarySheet(
             wb,
@@ -452,7 +491,12 @@ describe('verifyAipSummarySheet', () => {
 });
 
 describe('GF Proper climate rule', () => {
-    function ccRow(fund: string | null, adaptation: string | null, mitigation: string | null, typology: string | null) {
+    function ccRow(
+        fund: string | null,
+        adaptation: string | null,
+        mitigation: string | null,
+        typology: string | null,
+    ) {
         return [
             '1000-1-03-009-001',
             'A. Health Program',
@@ -467,9 +511,18 @@ describe('GF Proper climate rule', () => {
         ];
     }
 
-    function check(fund: string | null, adaptation: string | null, mitigation: string | null, typology: string | null) {
+    function check(
+        fund: string | null,
+        adaptation: string | null,
+        mitigation: string | null,
+        typology: string | null,
+    ) {
         const wb = buildSheet([ccRow(fund, adaptation, mitigation, typology)]);
-        return verifyAipSummarySheet(wb, 'Sheet1', getDefaultAipSummaryConfig());
+        return verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
     }
 
     it('allows CC values on GF Proper variants', () => {
@@ -496,9 +549,9 @@ describe('GF Proper climate rule', () => {
     it('errors on typology alone with a missing fund', () => {
         const result = check(null, null, null, 'A123');
         expect(result.valid).toBe(false);
-        expect(
-            result.errors.some((e) => e.message.includes('Typology')),
-        ).toBe(true);
+        expect(result.errors.some((e) => e.message.includes('Typology'))).toBe(
+            true,
+        );
     });
 
     it('errors on a multi-fund cell carrying CC values', () => {
@@ -538,10 +591,12 @@ describe('funding source anchors on expected output', () => {
         output: string | null,
         fund: string | null,
     ) {
-        const wb = buildSheet([
-            anchorRow(office, start, end, output, fund),
-        ]);
-        return verifyAipSummarySheet(wb, 'Sheet1', getDefaultAipSummaryConfig());
+        const wb = buildSheet([anchorRow(office, start, end, output, fund)]);
+        return verifyAipSummarySheet(
+            wb,
+            'Sheet1',
+            getDefaultAipSummaryConfig(),
+        );
     }
 
     it('treats null, blank, dash, and em-dash as blank cells', () => {
@@ -572,12 +627,8 @@ describe('funding source anchors on expected output', () => {
         expect(outputRowState(values(null, null, null, 'Served'))).toBe(
             'output',
         );
-        expect(outputRowState(values(null, null, null, '—'))).toBe(
-            'hierarchy',
-        );
-        expect(outputRowState(values('MHO', null, null, null))).toBe(
-            'context',
-        );
+        expect(outputRowState(values(null, null, null, '—'))).toBe('hierarchy');
+        expect(outputRowState(values('MHO', null, null, null))).toBe('context');
         expect(outputRowState(values(null, 'Jan-26', null, null))).toBe(
             'context',
         );
@@ -729,12 +780,19 @@ describe('funding source anchors on expected output', () => {
         expect(resolveRowContext(blank, leader)).toEqual(leader);
         // Own non-blank values always win.
         expect(
-            resolveRowContext({ ...blank, expectedOutput: 'Own output' }, leader),
+            resolveRowContext(
+                { ...blank, expectedOutput: 'Own output' },
+                leader,
+            ),
         ).toMatchObject({ expectedOutput: 'Own output', office: 'OPG' });
         // No leader: own values alone.
         expect(resolveRowContext(blank, undefined)).toEqual(blank);
-        expect(effectiveFundingSource({ ...blank, fundingSource: 'SEF' }, leader)).toBe('SEF');
-        expect(effectiveFundingSource({ ...blank, fundingSource: 'SEF' })).toBeNull();
+        expect(
+            effectiveFundingSource({ ...blank, fundingSource: 'SEF' }, leader),
+        ).toBe('SEF');
+        expect(
+            effectiveFundingSource({ ...blank, fundingSource: 'SEF' }),
+        ).toBeNull();
     });
 
     it('passes fund-carrying continuations under an output leader', () => {
@@ -767,7 +825,18 @@ describe('funding source anchors on expected output', () => {
             ],
             [null, null, null, null, null, null, '20%-DF', null, null, null],
             [null, null, null, null, null, null, '5%-LDRRMF', null, null, null],
-            [null, null, null, null, null, null, 'Other sources', null, null, null],
+            [
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                'Other sources',
+                null,
+                null,
+                null,
+            ],
         ]);
         const result = verifyAipSummarySheet(
             wb,
@@ -801,7 +870,9 @@ describe('funding source anchors on expected output', () => {
         );
         expect(result.valid).toBe(false);
         expect(
-            result.errors.some((e) => e.message.includes('has no expected output')),
+            result.errors.some((e) =>
+                e.message.includes('has no expected output'),
+            ),
         ).toBe(true);
     });
 

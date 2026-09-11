@@ -18,11 +18,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from '@/components/ui/dialog';
-import {
-    Field,
-    FieldLabel,
-    FieldError,
-} from '@/components/ui/field';
+import { Field, FieldLabel, FieldError } from '@/components/ui/field';
 
 import type {
     ChartOfAccount,

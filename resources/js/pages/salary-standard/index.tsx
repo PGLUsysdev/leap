@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react';
 import DataTable from '@/components/data-table';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,

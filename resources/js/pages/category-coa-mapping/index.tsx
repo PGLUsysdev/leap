@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import { useMemo, useState } from 'react';
 import type { ChangeEvent } from 'react';
@@ -12,16 +12,9 @@ import {
     ComboboxItem,
     ComboboxList,
 } from '@/components/ui/combobox';
-import {
-    Field,
-    FieldDescription,
-    FieldLabel,
-} from '@/components/ui/field';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -31,16 +24,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-} from '@/components/ui/toggle-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
     normalize,
@@ -1945,9 +1930,14 @@ export default function CategoryCoaMappingPage({
     }
 
     return (
-        <ScrollArea className="h-[calc(100vh-3rem)] border">
+        <ScrollArea className="h-[calc(100vh-3rem)]">
+            <Head title="Category COA Mapping" />
             <div className="flex flex-col gap-4 p-4">
                 <h1 className="text-2xl font-bold">Category COA Mapping</h1>
+                <p className="text-muted-foreground text-sm">
+                    Bulk import Category ↔ COA mappings from XLSX. Calibrate,
+                    verify format, and create mappings in bulk.
+                </p>
 
                 {fileName && !loading && (
                     <div className="bg-card supports-[backdrop-filter]:bg-muted/30 sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
@@ -1978,8 +1968,8 @@ export default function CategoryCoaMappingPage({
                     value={step}
                     onValueChange={(v) => setStep(v as typeof step)}
                 >
-                    <TabsList variant="line" className="w-full">
-                        <TabsTrigger value="upload" className="flex-1">
+                    <TabsList>
+                        <TabsTrigger value="upload">
                             1. Upload & Sheet{' '}
                             {selectedSheets.length > 0 && (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -1987,11 +1977,7 @@ export default function CategoryCoaMappingPage({
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="calibrate"
-                            disabled={!canCalibrate}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="calibrate" disabled={!canCalibrate}>
                             2. Calibrate{' '}
                             {sharedConfig ? (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -2009,7 +1995,6 @@ export default function CategoryCoaMappingPage({
                         <TabsTrigger
                             value="verifyFormat"
                             disabled={!canVerifyFormat}
-                            className="flex-1"
                         >
                             3. Verify Format{' '}
                             {hasFormatResult ? (
@@ -2022,11 +2007,7 @@ export default function CategoryCoaMappingPage({
                                 </span>
                             ) : null}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="verifyMap"
-                            disabled={!canVerifyMap}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="verifyMap" disabled={!canVerifyMap}>
                             4. Verify & Map{' '}
                             {verification ? (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -2034,11 +2015,7 @@ export default function CategoryCoaMappingPage({
                                 </span>
                             ) : null}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="review"
-                            disabled={!canReview}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="review" disabled={!canReview}>
                             5. Review & Save{' '}
                             {effectiveVerification ? (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -2826,16 +2803,12 @@ export default function CategoryCoaMappingPage({
                                 value={activeFormatSheet}
                                 onValueChange={setActiveFormatSheet}
                             >
-                                <TabsList variant="line" className="w-full">
+                                <TabsList>
                                     {selectedSheets.map((s) => {
                                         const r = formatResults[s];
 
                                         return (
-                                            <TabsTrigger
-                                                key={s}
-                                                value={s}
-                                                className="flex-1"
-                                            >
+                                            <TabsTrigger key={s} value={s}>
                                                 {s}{' '}
                                                 {r?.valid ? (
                                                     <span className="ml-1 text-xs text-green-600">

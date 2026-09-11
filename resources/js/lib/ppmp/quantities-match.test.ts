@@ -56,16 +56,19 @@ describe('matchQuantityItems', () => {
     });
 
     it('should_Error_When_MultiplePriceListMatches', () => {
-        const [mapped] = matchQuantityItems([baseItem], [
-            ...priceLists,
-            {
-                id: 12,
-                description: 'bond  paper  a4',
-                unit_of_measurement: 'REAM',
-                price: '260.00',
-                chart_of_account_ppmp_category_id: 9,
-            },
-        ]);
+        const [mapped] = matchQuantityItems(
+            [baseItem],
+            [
+                ...priceLists,
+                {
+                    id: 12,
+                    description: 'bond  paper  a4',
+                    unit_of_measurement: 'REAM',
+                    price: '260.00',
+                    chart_of_account_ppmp_category_id: 9,
+                },
+            ],
+        );
 
         expect(mapped.status).toBe('error');
         expect(mapped.message).toContain('Multiple price list matches');

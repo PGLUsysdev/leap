@@ -227,7 +227,8 @@ export function extractAipSummaryRecords(
             typology,
             fullCodeNorm: normalize(block.fullCode),
             nameNorm: normalize(block.name),
-            outputNorm: expectedOutput == null ? null : normalize(expectedOutput),
+            outputNorm:
+                expectedOutput == null ? null : normalize(expectedOutput),
             fundNorm: fundingSource == null ? null : normalize(fundingSource),
             typologyNorm: typology == null ? null : normalize(typology),
         });

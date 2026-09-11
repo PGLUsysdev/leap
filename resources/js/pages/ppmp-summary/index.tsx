@@ -1,10 +1,7 @@
 // import { type BreadcrumbItem } from '@/types';
 import { useMemo } from 'react';
 import DataTable from '@/components/data-table';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { index as aipIndex } from '@/routes/aip';
 import { getPriceListColumns } from './columns/columns';
 

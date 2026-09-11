@@ -21,10 +21,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import FormDialog from '@/pages/aip-summary/form-dialog';
 import PpaSelectorDialog from '@/pages/aip-summary/ppa-selector-dialog';
@@ -522,7 +519,6 @@ export default function AipSummary({
                 officeName={auth.user.office?.name || ''}
                 currentScope={currentScope}
             />
-
         </>
     );
 }

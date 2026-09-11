@@ -9,10 +9,7 @@ import {
     ShoppingBasket,
 } from 'lucide-react';
 import { useState } from 'react';
-import {
-    TableSelectButton,
-    useTableSelect,
-} from '@/components/table-select';
+import { TableSelectButton, useTableSelect } from '@/components/table-select';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,

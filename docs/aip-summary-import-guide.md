@@ -56,11 +56,11 @@ per-level zero-padded widths); col B prefix matches code depth on PPA rows
 **Funding-source anchor rule** (`outputRowState` — blank means empty, `-`,
 or `—`):
 
-| Row state | Condition | Fund handling |
-|---|---|---|
-| `output` | Expected output set | Fund allowed, even without office/schedule |
-| `context` | Output blank, office/schedule present | Fund **silently coerced to null** |
-| `hierarchy` | Office, schedule, output all blank | Fund present → **error** |
+| Row state   | Condition                             | Fund handling                              |
+| ----------- | ------------------------------------- | ------------------------------------------ |
+| `output`    | Expected output set                   | Fund allowed, even without office/schedule |
+| `context`   | Output blank, office/schedule present | Fund **silently coerced to null**          |
+| `hierarchy` | Office, schedule, output all blank    | Fund present → **error**                   |
 
 Continuation rows (blank A–B by format) inherit their block leader's
 office/schedule/output for this judgment (`resolveRowContext`); their own
@@ -70,7 +70,7 @@ non-blank values win. Each continuation judges its own fund cell.
 is an error — split across continuation rows first (`splitFundSources`).
 
 **Climate rule:** Adaptation / Mitigation / Typology ride on the
-*effective* (post-coercion) fund — GF Proper only (dash/space/case
+_effective_ (post-coercion) fund — GF Proper only (dash/space/case
 ignored). Blank, `-`, and numeric zero count as empty.
 
 **Pass 2 (hierarchy):** no skipped levels, parent present in sheet, parent
@@ -100,7 +100,7 @@ table). Confirm posts **new blocks only**.
 Backend (`store`): parents-first ordering, parent resolution by ref-code
 prefix, `code_suffix` zero-trimmed, sibling `sort_order = max + 1`,
 transactional, `importReport` + toast flashes. **Every processed block
-also gets a bare `AipEntry`** (`firstOrCreate`, on insert *and* re-import
+also gets a bare `AipEntry`** (`firstOrCreate`, on insert _and_ re-import
 healing) — file membership ⇔ entry existence (see
 `docs/aip-summary-import-ppa-entries.md`). Gate: `create Ppa`.
 
@@ -157,7 +157,7 @@ office + fiscal year. Defaults: user's office, active fiscal year.
    ends with an `aip_entries` row (bare header if nothing else).
 2. **No duplicate writes.** PPAs dedupe by `(office, FY, full_code)`;
    outputs by `(entry, expected_output)`; fund links by `(output, fund,
-   supplemental)`. Re-imports report `skipped: exists`.
+supplemental)`. Re-imports report `skipped: exists`.
 3. **Financial amounts never import.** H–L stay zero; only A–G and M–O
    are consumed.
 4. **Reviews are honest.** Counts reflect what Confirm will send
@@ -169,16 +169,16 @@ office + fiscal year. Defaults: user's office, active fiscal year.
 
 ## 5. Troubleshooting
 
-| Symptom | Cause | Fix |
-|---|---|---|
-| `/aip/{fy}/summary` empty, data exists | Wrong fiscal year selected (page binds one FY) | Switch year selector |
-| Summary empty on the right year | Root PPAs lack entries (pre-fix data) | Re-run PPA import (heals) or backfill bare entries |
-| Verify: `has no expected output` on fund rows | Continuation rows detached from block output, or hierarchy row carrying a fund | Keep continuations blank-A under the leader; clear stray funds |
-| Verify: `one funding source per row` | Stacked funds in one cell | Split into leader + blank-A continuation rows |
-| Outputs stuck `No offices` | No acronym match and no manual mapping | Map via picker, or import officeless and attach later |
-| Outputs `No PPA` / funds `No output` | Ordering — upstream step not imported | Import PPA → outputs → funds, in order; props refresh between steps |
-| Repeated `skipped: exists` | Correct dedupe on re-import | No action — expected on retry |
-| Imported but summary still stale | Background tab never refetched props | Hard-reload the summary tab |
+| Symptom                                       | Cause                                                                          | Fix                                                                 |
+| --------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `/aip/{fy}/summary` empty, data exists        | Wrong fiscal year selected (page binds one FY)                                 | Switch year selector                                                |
+| Summary empty on the right year               | Root PPAs lack entries (pre-fix data)                                          | Re-run PPA import (heals) or backfill bare entries                  |
+| Verify: `has no expected output` on fund rows | Continuation rows detached from block output, or hierarchy row carrying a fund | Keep continuations blank-A under the leader; clear stray funds      |
+| Verify: `one funding source per row`          | Stacked funds in one cell                                                      | Split into leader + blank-A continuation rows                       |
+| Outputs stuck `No offices`                    | No acronym match and no manual mapping                                         | Map via picker, or import officeless and attach later               |
+| Outputs `No PPA` / funds `No output`          | Ordering — upstream step not imported                                          | Import PPA → outputs → funds, in order; props refresh between steps |
+| Repeated `skipped: exists`                    | Correct dedupe on re-import                                                    | No action — expected on retry                                       |
+| Imported but summary still stale              | Background tab never refetched props                                           | Hard-reload the summary tab                                         |
 
 ## 6. Testing
 

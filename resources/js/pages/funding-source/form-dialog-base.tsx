@@ -19,10 +19,7 @@ import {
     FieldContent,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import type { FundingSource } from '@/types';
 

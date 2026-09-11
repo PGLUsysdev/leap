@@ -126,13 +126,19 @@ function resolveSheet(
         cfg.rowConfig;
 
     if (headerRow === '' || headerRow == null) {
-        return { ok: false, message: 'Header Row is required — check calibration' };
+        return {
+            ok: false,
+            message: 'Header Row is required — check calibration',
+        };
     }
 
     const qtyStartNum = columnToNumber(cfg.columnConfig.qtyStart);
 
     if (qtyStartNum <= 0) {
-        return { ok: false, message: 'Qty Start column is required — check calibration' };
+        return {
+            ok: false,
+            message: 'Qty Start column is required — check calibration',
+        };
     }
 
     // Months alternate qty/amount pairs: K=Jan qty, L=Jan amount,
@@ -169,9 +175,7 @@ function resolveSheet(
                         : lastRow,
                 ],
                 nonProcurement: [
-                    nonProcurementHeaderRow
-                        ? nonProcurementHeaderRow + 1
-                        : -1,
+                    nonProcurementHeaderRow ? nonProcurementHeaderRow + 1 : -1,
                     lastRow,
                 ],
             },
@@ -312,10 +316,7 @@ export function verifyQuantitiesSheet(
         });
     }
 
-    const { rows, labelRows } = readCandidateRows(
-        resolved.resolved,
-        cfg,
-    );
+    const { rows, labelRows } = readCandidateRows(resolved.resolved, cfg);
 
     const procurementRows = rows.filter(
         (r) => r.section === 'procurement',
@@ -387,9 +388,7 @@ export function extractQuantitiesSheet(
     const resolved = resolveSheet(workbook, sheet, cfg);
 
     if (!resolved.ok) {
-        return fail(resolved.message, [
-            { row: 0, message: resolved.message },
-        ]);
+        return fail(resolved.message, [{ row: 0, message: resolved.message }]);
     }
 
     const { qtyCols, ranges } = resolved.resolved;
@@ -418,10 +417,7 @@ export function extractQuantitiesSheet(
 
             return parsed;
         });
-        const monthTotal = qtys.reduce<number>(
-            (sum, q) => sum + (q ?? 0),
-            0,
-        );
+        const monthTotal = qtys.reduce<number>((sum, q) => sum + (q ?? 0), 0);
 
         rawItems.push({
             sheet,
@@ -474,10 +470,7 @@ export function extractQuantitiesSheet(
             existing.qtys = existing.qtys.map(
                 (q, i) => q + (item.qtys[i] ?? 0),
             );
-            existing.monthTotal = existing.qtys.reduce(
-                (sum, q) => sum + q,
-                0,
-            );
+            existing.monthTotal = existing.qtys.reduce((sum, q) => sum + q, 0);
             existing.sheets.push(item.sheet);
             existing.rows.push(item.row);
             existing.count++;

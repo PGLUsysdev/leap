@@ -2,10 +2,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import DataTable from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { DeleteDialog } from '@/components/delete-dialog';
 import type { LguLevel } from '@/types';
 import columns from './columns/columns';

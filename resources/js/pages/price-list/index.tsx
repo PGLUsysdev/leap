@@ -4,10 +4,7 @@ import { AlertErrorDialog } from '@/components/alert-error-dialog';
 import DataTable from '@/components/data-table';
 import { DeleteDialog } from '@/components/delete-dialog';
 import { Button as BaseButton } from '@/components/ui/button';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { reorder, destroy } from '@/routes/price-lists';
 import type {
     PriceList,

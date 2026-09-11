@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react';
 import DataTable from '@/components/data-table';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { index as aipIndex, summary } from '@/routes/aip';
 import type { ChartOfAccount, Position, PsBreakdownItem } from '@/types';
 import getPsBreakdownCols from './columns/ps-breakdown-cols';

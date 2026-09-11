@@ -61,7 +61,12 @@ export function matchRecordOffices(
 ): RecordOfficeMatch {
     const byAcronym = indexOfficesByAcronym(offices);
     const seen = new Set<number>();
-    const result: RecordOfficeMatch = { key, tokens: [], matched: [], unmatched: [] };
+    const result: RecordOfficeMatch = {
+        key,
+        tokens: [],
+        matched: [],
+        unmatched: [],
+    };
 
     for (const raw of tokens) {
         const token = raw.trim();

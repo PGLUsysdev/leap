@@ -143,9 +143,7 @@ describe('verifyQuantitiesSheet', () => {
         expect(messages).toContain('Qty jan "ten" is not a number');
         expect(messages).toContain('Unit is empty');
         // Row 10 (all-zero quantities) is allowed — no issue raised.
-        expect(
-            result.errors.filter((e) => e.row === 10),
-        ).toHaveLength(0);
+        expect(result.errors.filter((e) => e.row === 10)).toHaveLength(0);
         expect(result.errors).toHaveLength(2);
     });
 

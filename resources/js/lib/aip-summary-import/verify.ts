@@ -286,8 +286,7 @@ export function effectiveFundingSource(
     values: Record<string, string | null>,
     blockValues?: Record<string, string | null>,
 ): string | null {
-    return outputRowState(resolveRowContext(values, blockValues)) ===
-        'output'
+    return outputRowState(resolveRowContext(values, blockValues)) === 'output'
         ? (values.fundingSource ?? null)
         : null;
 }
@@ -603,8 +602,9 @@ export function verifyAipSummarySheet(
         // null (see `effectiveFundingSource`) — no info line.
         // Continuation rows inherit their block leader's context.
         if (
-            outputRowState(resolveRowContext(values, blockValues ?? undefined)) ===
-                'hierarchy' &&
+            outputRowState(
+                resolveRowContext(values, blockValues ?? undefined),
+            ) === 'hierarchy' &&
             !isBlankCell(values.fundingSource)
         ) {
             errors.push({
@@ -638,11 +638,7 @@ export function verifyAipSummarySheet(
             )
         ) {
             const set = (
-                [
-                    'adaptation',
-                    'mitigation',
-                    'typology',
-                ] as const
+                ['adaptation', 'mitigation', 'typology'] as const
             ).filter((field) => !isEmptyCcValue(values[field]));
 
             if (set.length > 0) {

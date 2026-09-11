@@ -56,9 +56,7 @@ export function sortFlatLikeTree(entries: AipEntry[]): NumberedAipEntry[] {
     const visited = new Set<number>();
 
     function pushWithKids(entry: AipEntry, depth: number) {
-        const stack: { entry: AipEntry; depth: number }[] = [
-            { entry, depth },
-        ];
+        const stack: { entry: AipEntry; depth: number }[] = [{ entry, depth }];
 
         while (stack.length) {
             const { entry: current, depth: currentDepth } = stack.pop()!;

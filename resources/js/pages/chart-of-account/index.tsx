@@ -4,10 +4,7 @@ import { useState } from 'react';
 import DataTable from '@/components/data-table';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { DeleteDialog } from '@/components/delete-dialog';
 import FormDialog from '@/pages/chart-of-account/form-dialog-base';

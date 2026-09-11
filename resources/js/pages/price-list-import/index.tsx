@@ -14,16 +14,9 @@ import {
     ComboboxItem,
     ComboboxList,
 } from '@/components/ui/combobox';
-import {
-    Field,
-    FieldDescription,
-    FieldLabel,
-} from '@/components/ui/field';
+import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -41,16 +34,8 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-} from '@/components/ui/toggle-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
     formatCoaOption,
@@ -1494,10 +1479,10 @@ export default function PriceListImport({
     }
 
     return (
-        <ScrollArea className="h-[calc(100vh-3rem)]" suppressHydrationWarning>
+        <ScrollArea className="h-[calc(100vh-3rem)]">
             <Head title="Price List Import" />
-            <div className="flex flex-col gap-4 p-4" suppressHydrationWarning>
-                <h1 className="text-2xl font-semibold">Price List Import</h1>
+            <div className="flex flex-col gap-4 p-4">
+                <h1 className="text-2xl font-bold">Price List Import</h1>
                 <p className="text-muted-foreground text-sm">
                     Imports <strong>price list only</strong> (no quantities).
                     Requires official{' '}
@@ -1534,14 +1519,9 @@ export default function PriceListImport({
                 <Tabs
                     value={step}
                     onValueChange={(v) => setStep(v as typeof step)}
-                    suppressHydrationWarning
                 >
-                    <TabsList
-                        variant="line"
-                        className="w-full"
-                        suppressHydrationWarning
-                    >
-                        <TabsTrigger value="upload" className="flex-1">
+                    <TabsList>
+                        <TabsTrigger value="upload">
                             1. Upload & Sheets{' '}
                             {selectedSheets.length > 0 && (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -1549,11 +1529,7 @@ export default function PriceListImport({
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="calibrate"
-                            disabled={!canCalibrate}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="calibrate" disabled={!canCalibrate}>
                             2. Calibrate{' '}
                             {sharedConfig && (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -1561,11 +1537,7 @@ export default function PriceListImport({
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="verify"
-                            disabled={!canVerify}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="verify" disabled={!canVerify}>
                             3. Verify Format{' '}
                             {allVerifyValid && (
                                 <span className="ml-1 text-xs text-green-600">
@@ -1583,11 +1555,7 @@ export default function PriceListImport({
                                 </span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger
-                            value="review"
-                            disabled={!canReview}
-                            className="flex-1"
-                        >
+                        <TabsTrigger value="review" disabled={!canReview}>
                             4. Review & Import{' '}
                             {uniqueItems.length > 0 && (
                                 <span className="text-muted-foreground ml-1 text-xs">
@@ -3158,7 +3126,7 @@ export default function PriceListImport({
                                                                                     →
                                                                                     Map
                                                                                 </Link>
-                                                                                )}
+                                                                            )}
                                                                     </span>
                                                                 ) : it.status ===
                                                                   'skipped' ? (

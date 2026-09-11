@@ -4,10 +4,7 @@ import { router } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import DataTable from '@/components/data-table';
-import {
-    TableSelect,
-    useTableSelect,
-} from '@/components/table-select';
+import { TableSelect, useTableSelect } from '@/components/table-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,10 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import {
     AlertDialog,

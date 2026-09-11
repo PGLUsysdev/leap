@@ -111,8 +111,8 @@ function LinkPicker({
                 <ChevronsUpDown className="shrink-0" />
             </Button>
             <FieldDescription>
-                Only leaf (postable) accounts can be linked. Linking an
-                account that's already classified moves it here.
+                Only leaf (postable) accounts can be linked. Linking an account
+                that's already classified moves it here.
             </FieldDescription>
             <MultiTableSelect<PostableCoa>
                 data={accounts}
@@ -180,9 +180,9 @@ export default function ExpenseClassCodes({
                             Expense Class Codes
                         </h1>
                         <p className="text-muted-foreground text-sm">
-                            Link leaf (postable) chart of accounts to an
-                            expense class. Only linked accounts roll up into
-                            funding source totals on import.
+                            Link leaf (postable) chart of accounts to an expense
+                            class. Only linked accounts roll up into funding
+                            source totals on import.
                         </p>
                     </div>
 
@@ -204,7 +204,9 @@ export default function ExpenseClassCodes({
                                         </CardTitle>
                                         <CardDescription>
                                             {linked.length} account
-                                            {linked.length === 1 ? '' : 's'}{' '}
+                                            {linked.length === 1
+                                                ? ''
+                                                : 's'}{' '}
                                             linked
                                         </CardDescription>
                                     </CardHeader>

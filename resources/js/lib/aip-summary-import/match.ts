@@ -100,7 +100,12 @@ export function matchPpaBlocks(
                 rows: [],
                 office,
                 ppa,
-                status: office === null ? 'no-office' : ppa === null ? 'new' : 'exists',
+                status:
+                    office === null
+                        ? 'no-office'
+                        : ppa === null
+                          ? 'new'
+                          : 'exists',
             };
             seen.set(record.fullCode, block);
         }

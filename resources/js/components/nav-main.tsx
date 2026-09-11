@@ -1,8 +1,5 @@
 import { Link } from '@inertiajs/react';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -43,9 +40,7 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
                                 className="mr-4 py-[0.1rem]"
                             >
                                 <SidebarMenuButton
-                                    render={
-                                        <Link href={item.href} prefetch />
-                                    }
+                                    render={<Link href={item.href} prefetch />}
                                     isActive={isCurrentUrl(item.href)}
                                     tooltip={{ children: item.title }}
                                 >

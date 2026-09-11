@@ -20,10 +20,7 @@ import {
     FieldContent,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import {
-    ScrollArea,
-    ScrollBar,
-} from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import type { Sector } from '@/types';
 
 interface FormDialogProps {

@@ -58,7 +58,9 @@ export function matchQuantityItems(
         );
 
         if (matches.length === 0) {
-            return fail('Item not in price list — create via Price List Import');
+            return fail(
+                'Item not in price list — create via Price List Import',
+            );
         }
 
         if (matches.length > 1) {

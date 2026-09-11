@@ -9,7 +9,7 @@
 ## 1. Invariant
 
 Importing an AIP summary `.xlsx` guarantees **every PPA block in the file
-ends up with an `aip_entries` row**. The file *is* an AIP summary, so file
+ends up with an `aip_entries` row**. The file _is_ an AIP summary, so file
 membership ⇔ entry existence.
 
 - Entries created this way are **bare headers**: no outputs, no schedules,
