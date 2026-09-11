@@ -189,6 +189,63 @@ test('it skips zero-quantity items', function () {
     expect((float) $chain['bridge']->mooe_amount)->toBe(100.0);
 });
 
+test('it rejects items whose account has no expense class', function () {
+    $user = qtyImportUser();
+    $chain = qtyImportChain();
+
+    $coa = ChartOfAccount::create([
+        'account_number' => '50203010-unclassified',
+        'account_title' => 'Unclassified Account',
+        'expense_class' => null,
+        'is_postable' => true,
+        'path' => '9.999',
+    ]);
+    $category = PpmpCategory::create(['name' => 'Unclassified Category']);
+    $junction = ChartOfAccountPpmpCategory::create([
+        'chart_of_account_id' => $coa->id,
+        'ppmp_category_id' => $category->id,
+    ]);
+    $priceList = PpmpPriceList::create([
+        'item_number' => 99,
+        'sort_order' => 99,
+        'description' => 'Unclassified Item',
+        'unit_of_measurement' => 'pc',
+        'price' => 100,
+        'chart_of_account_ppmp_category_id' => $junction->id,
+    ]);
+
+    $this->actingAs($user)->post('/price-list-quantities-import', [
+        'ppa_id' => $chain['ppa']->id,
+        'aip_output_id' => $chain['output']->id,
+        'ppa_funding_source_id' => $chain['bridge']->id,
+        'items' => [
+            ['ppmp_price_list_id' => $priceList->id, 'qtys' => qtyArray(jan: 2)],
+        ],
+    ])->assertSessionHasErrors(['items']);
+
+    expect(Ppmp::count())->toBe(0);
+
+    $chain['bridge']->refresh();
+    expect((float) $chain['bridge']->mooe_amount)->toBe(0.0);
+});
+
+test('it exposes the expense class of each price list on the index page', function () {
+    $user = qtyImportUser();
+    $chain = qtyImportChain();
+    $priceList = qtyImportPriceList('MOOE', 100, 1);
+
+    $response = $this->actingAs($user)->get('/price-list-quantities-import');
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->has('existingPriceLists')
+        ->where('existingPriceLists.0.expense_class', 'MOOE')
+    );
+
+    expect($priceList->fresh())->not->toBeNull();
+    expect($chain['bridge']->fresh())->not->toBeNull();
+});
+
 test('it rejects import when the ppa has no funding source', function () {
     $user = qtyImportUser();
     $office = qtyImportOffice();

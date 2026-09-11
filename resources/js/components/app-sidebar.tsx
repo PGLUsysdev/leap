@@ -41,6 +41,7 @@ import { index as ccStrategicPriorityIndex } from '@/routes/cc-strategic-priorit
 import { index as ccSubSectorIndex } from '@/routes/cc-sub-sector';
 import { index as ccTypologyIndex } from '@/routes/cc-typology';
 import { manage as chartOfAccountsManage } from '@/routes/chart-of-accounts';
+import { index as expenseClassCodesIndex } from '@/routes/expense-class-codes';
 import { index as fundingSourcesIndex } from '@/routes/funding-sources';
 // Disabled for now — PS logic refactor in progress (kept for later).
 // import { index as iosIndex } from "@/routes/ios";
@@ -136,6 +137,11 @@ const mainNavItems: NavItem[] = [
         href: chartOfAccountsManage(),
         icon: Calculator,
         permission: 'chart-of-account.view',
+    },
+    {
+        title: 'Expense Class Codes',
+        href: expenseClassCodesIndex(),
+        icon: Tags,
     },
     {
         title: 'Funding Sources',

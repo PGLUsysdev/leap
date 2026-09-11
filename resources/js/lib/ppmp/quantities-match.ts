@@ -7,6 +7,7 @@ export type ExistingPriceList = {
     unit_of_measurement: string;
     price: string | number;
     chart_of_account_ppmp_category_id: number;
+    expense_class?: string | null;
 };
 
 export type ExistingMapping = {

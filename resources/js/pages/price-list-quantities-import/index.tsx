@@ -331,6 +331,7 @@ export default function PriceListQuantitiesImport({
     ).length;
     const [excludeUnmapped, setExcludeUnmapped] = useState(true);
     const [excludeAmbiguous, setExcludeAmbiguous] = useState(true);
+    const [excludeUnclassified, setExcludeUnclassified] = useState(true);
     const [importing, setImporting] = useState(false);
 
     const isAmbiguous = (message: string): boolean =>
@@ -338,11 +339,55 @@ export default function PriceListQuantitiesImport({
     const isUnmapped = (message: string): boolean =>
         message.includes('Item not in price list');
 
+    const priceListClassById = useMemo(() => {
+        const next = new Map<number, string | null>();
+
+        for (const p of existingPriceLists) {
+            next.set(p.id, p.expense_class ?? null);
+        }
+
+        return next;
+    }, [existingPriceLists]);
+
+    const CLASSIFIED = ['PS', 'MOOE', 'FE', 'CO'];
+
+    function isUnclassified(
+        m: Pick<
+            ReturnType<typeof matchQuantityItems>[number],
+            'status' | 'priceListId'
+        >,
+    ): boolean {
+        if (m.status !== 'matched' || m.priceListId == null) {
+            return false;
+        }
+
+        const cls = priceListClassById.get(m.priceListId) ?? null;
+
+        return cls === null || !CLASSIFIED.includes(cls);
+    }
+
+    const unclassifiedCount = useMemo(
+        () =>
+            mappedItems.filter(
+                (m) => m.status === 'matched' && isUnclassified(m),
+            ).length,
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [mappedItems, priceListClassById],
+    );
+
     const importableItems = useMemo(
         () =>
             mappedItems.filter((m) => {
                 if (m.status === 'matched') {
-                    return m.monthTotal > 0;
+                    if (m.monthTotal <= 0) {
+                        return false;
+                    }
+
+                    if (excludeUnclassified && isUnclassified(m)) {
+                        return false;
+                    }
+
+                    return true;
                 }
                 if (excludeAmbiguous && isAmbiguous(m.message)) {
                     return false;
@@ -353,7 +398,7 @@ export default function PriceListQuantitiesImport({
                 return false;
             }),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [mappedItems, excludeAmbiguous, excludeUnmapped],
+        [mappedItems, excludeAmbiguous, excludeUnmapped, excludeUnclassified],
     );
 
     function handleImport() {
@@ -1832,6 +1877,23 @@ export default function PriceListQuantitiesImport({
                                         />
                                         Exclude ambiguous (multiple matches)
                                     </label>
+                                    <label
+                                        htmlFor="exclude-unclassified"
+                                        className="flex cursor-pointer items-center gap-2 text-sm"
+                                    >
+                                        <Checkbox
+                                            id="exclude-unclassified"
+                                            checked={excludeUnclassified}
+                                            onCheckedChange={(v) =>
+                                                setExcludeUnclassified(
+                                                    v === true,
+                                                )
+                                            }
+                                        />
+                                        Exclude unclassified (no expense class)
+                                        {unclassifiedCount > 0 &&
+                                            ` (${unclassifiedCount})`}
+                                    </label>
                                     <Button
                                         disabled={
                                             !selectedPpaId ||
@@ -1911,22 +1973,41 @@ export default function PriceListQuantitiesImport({
                                                             : '—'}
                                                     </TableCell>
                                                     <TableCell>
-                                                        <Badge
-                                                            variant={
+                                                        {(() => {
+                                                            const noClass =
                                                                 m.status ===
-                                                                'matched'
-                                                                    ? 'default'
-                                                                    : 'destructive'
-                                                            }
-                                                        >
-                                                            {m.status ===
-                                                            'matched'
-                                                                ? 'Mapped'
-                                                                : 'Unmapped'}
-                                                        </Badge>
-                                                        <p className="text-muted-foreground mt-1 text-xs">
-                                                            {m.message}
-                                                        </p>
+                                                                    'matched' &&
+                                                                isUnclassified(
+                                                                    m,
+                                                                );
+
+                                                            return (
+                                                                <>
+                                                                    <Badge
+                                                                        variant={
+                                                                            m.status ===
+                                                                            'matched'
+                                                                                ? noClass
+                                                                                    ? 'destructive'
+                                                                                    : 'default'
+                                                                                : 'destructive'
+                                                                        }
+                                                                    >
+                                                                        {m.status ===
+                                                                        'matched'
+                                                                            ? noClass
+                                                                                ? 'No class'
+                                                                                : 'Mapped'
+                                                                            : 'Unmapped'}
+                                                                    </Badge>
+                                                                    <p className="text-muted-foreground mt-1 text-xs">
+                                                                        {noClass
+                                                                            ? 'COA has no expense class — link it on the Expense Class Codes page.'
+                                                                            : m.message}
+                                                                    </p>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}

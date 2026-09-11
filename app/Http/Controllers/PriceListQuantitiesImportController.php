@@ -33,7 +33,18 @@ class PriceListQuantitiesImportController extends Controller
             'existingMappings' => ChartOfAccountPpmpCategory::select(['id', 'chart_of_account_id', 'ppmp_category_id'])
                 ->get(),
             'existingPriceLists' => PpmpPriceList::select(['id', 'description', 'unit_of_measurement', 'price', 'chart_of_account_ppmp_category_id'])
-                ->get(),
+                ->with(['chartOfAccountPpmpCategory.chartOfAccount:id,expense_class'])
+                ->get()
+                ->map(
+                    fn (PpmpPriceList $priceList) => [
+                        'id' => $priceList->id,
+                        'description' => $priceList->description,
+                        'unit_of_measurement' => $priceList->unit_of_measurement,
+                        'price' => $priceList->price,
+                        'chart_of_account_ppmp_category_id' => $priceList->chart_of_account_ppmp_category_id,
+                        'expense_class' => $priceList->chartOfAccountPpmpCategory?->chartOfAccount?->expense_class,
+                    ],
+                ),
             'existingOffices' => Office::select(['id', 'name', 'acronym'])
                 ->orderBy('name')
                 ->get(),
@@ -156,7 +167,36 @@ class PriceListQuantitiesImportController extends Controller
         $months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
         $priceIds = collect($validated['items'])->pluck('ppmp_price_list_id')->unique()->values()->all();
-        $prices = PpmpPriceList::whereIn('id', $priceIds)->pluck('price', 'id');
+        $priceLists = PpmpPriceList::with('chartOfAccountPpmpCategory.chartOfAccount:id,expense_class')
+            ->whereIn('id', $priceIds)
+            ->get()
+            ->keyBy('id');
+        $prices = $priceLists->mapWithKeys(fn (PpmpPriceList $priceList) => [$priceList->id => $priceList->price]);
+
+        $unclassified = [];
+        foreach ($validated['items'] as $item) {
+            if (array_sum($item['qtys']) === 0) {
+                continue;
+            }
+
+            $class = $priceLists->get($item['ppmp_price_list_id'])
+                ?->chartOfAccountPpmpCategory
+                ?->chartOfAccount
+                ?->expense_class;
+
+            if (! in_array($class, ['PS', 'MOOE', 'FE', 'CO'], true)) {
+                $unclassified[] = $priceLists->get($item['ppmp_price_list_id'])?->description
+                    ?? "Price list #{$item['ppmp_price_list_id']}";
+            }
+        }
+
+        if ($unclassified !== []) {
+            $sample = collect($unclassified)->unique()->take(3)->implode(' | ');
+
+            return redirect()->back()->withErrors([
+                'items' => count($unclassified).' item(s) map to accounts with no expense class (e.g. '.$sample.'). Link them on the Expense Class Codes page first.',
+            ]);
+        }
 
         $counts = DB::transaction(function () use ($validated, $bridge, $months, $prices) {
             $lockedBridge = PpaFundingSource::whereKey($bridge->id)->lockForUpdate()->firstOrFail();

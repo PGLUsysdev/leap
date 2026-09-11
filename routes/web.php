@@ -16,6 +16,7 @@ use App\Http\Controllers\ChartOfAccountController;
 // use App\Http\Controllers\IosController;
 use App\Http\Controllers\ChartOfAccountPpmpCategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExpenseClassCodeController;
 use App\Http\Controllers\FiscalYearController;
 // Disabled for now — PS logic refactor in progress (kept for later).
 // use App\Http\Controllers\PlantillaPositionController;
@@ -307,6 +308,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ChartOfAccountController::class,
         'destroy',
     ])->name('chart-of-accounts.destroy');
+
+    // Expense Class Codes (link postable COAs to PS/MOOE/CO for totals sync)
+    Route::get('expense-class-codes', [ExpenseClassCodeController::class, 'index'])->name(
+        'expense-class-codes.index',
+    );
+    Route::post('expense-class-codes', [ExpenseClassCodeController::class, 'store'])->name(
+        'expense-class-codes.store',
+    );
+    Route::delete('expense-class-codes/{chartOfAccount}', [
+        ExpenseClassCodeController::class,
+        'destroy',
+    ])->name('expense-class-codes.destroy');
 
     // Price Lists
     Route::get('price-lists', [PpmpPriceListController::class, 'index'])->name('price-lists.index');
