@@ -196,6 +196,7 @@ export type AipImportState = {
     handleSheetChange: (v: string[]) => void;
     updateColumn: (field: AipSummaryField, letter: string) => void;
     updateHeaderRow: (v: string) => void;
+    updateHasNumberRow: (v: boolean) => void;
     handleResetDefaults: () => void;
     handleLogContents: () => void;
     handleVerify: () => void;

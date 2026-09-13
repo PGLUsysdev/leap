@@ -10,6 +10,7 @@ export function CalibrateStep({ s }: { s: AipImportState }) {
             selectedSheet={s.selectedSheet}
             canVerify={s.canVerify}
             onHeaderRowChange={s.updateHeaderRow}
+            onHasNumberRowChange={s.updateHasNumberRow}
             onColumnChange={s.updateColumn}
             onResetDefaults={s.handleResetDefaults}
             onLogContents={s.handleLogContents}

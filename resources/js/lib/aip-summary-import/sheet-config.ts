@@ -26,21 +26,23 @@ export type AipSummaryColumnConfig = Record<AipSummaryField, string>;
 
 export type AipSummarySheetConfig = {
     columnConfig: AipSummaryColumnConfig;
-    /** 1-indexed leaf-header row. The number row (`1`–`15`) is always `headerRow + 1`. */
+    /** 1-indexed leaf-header row. Empty until the user calibrates it. */
     headerRow: number | '';
+    /** When true (default), the row directly below the header must hold `1`–`15` at the calibrated columns. */
+    hasNumberRow: boolean;
 };
 
 export const AIP_SUMMARY_FIELD_LABELS: Record<AipSummaryField, string> = {
-    refCode: 'AIP Reference Code',
-    description: 'PPA Description',
-    office: 'Implementing Office',
-    startDate: 'Start',
-    endDate: 'End',
-    expectedOutput: 'Expected Outputs',
-    fundingSource: 'Funding Source',
-    adaptation: 'Adaptation',
-    mitigation: 'Mitigation',
-    typology: 'Typology',
+    refCode: 'AIP Reference Code (A)',
+    description: 'PPA Description (B)',
+    office: 'Implementing Office (C)',
+    startDate: 'Starting Date (D)',
+    endDate: 'Completion Date (E)',
+    expectedOutput: 'Expected Outputs (F)',
+    fundingSource: 'Funding Source (G)',
+    adaptation: 'Adaptation (M)',
+    mitigation: 'Mitigation (N)',
+    typology: 'Typology Code (O)',
 };
 
 export const AIP_SUMMARY_FIELD_GROUPS: Array<{
@@ -64,5 +66,5 @@ export function getDefaultAipSummaryConfig(): AipSummarySheetConfig {
         AIP_SUMMARY_FIELDS.map((field, i) => [field, letters[i]]),
     ) as AipSummaryColumnConfig;
 
-    return { columnConfig, headerRow: 7 };
+    return { columnConfig, headerRow: '', hasNumberRow: true };
 }

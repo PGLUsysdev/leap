@@ -429,6 +429,12 @@ export default function AipSummaryImport() {
         setExtractResult(null);
     }
 
+    function updateHasNumberRow(value: boolean) {
+        setConfig((prev) => ({ ...prev, hasNumberRow: value }));
+        setVerifyResult(null);
+        setExtractResult(null);
+    }
+
     function handleResetDefaults() {
         setConfig(getDefaultAipSummaryConfig());
         setVerifyResult(null);
@@ -946,6 +952,7 @@ export default function AipSummaryImport() {
         handleSheetChange,
         updateColumn,
         updateHeaderRow,
+        updateHasNumberRow,
         handleResetDefaults,
         handleLogContents,
         handleVerify,

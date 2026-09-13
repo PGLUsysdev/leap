@@ -48,6 +48,10 @@ const PROGRAM = [
     'A123',
 ];
 
+function calibratedConfig(): ReturnType<typeof getDefaultAipSummaryConfig> {
+    return { ...getDefaultAipSummaryConfig(), headerRow: 7 };
+}
+
 const PROJECT = [
     '1000-1-03-009-001-001',
     '1. Immunization',
@@ -106,11 +110,7 @@ describe('extractAipSummaryRows', () => {
 describe('verifyAipSummarySheet', () => {
     it('accepts a valid program + project hierarchy', () => {
         const wb = buildSheet([PROGRAM, PROJECT]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(true);
         expect(result.ppaBlocks).toBe(2);
@@ -119,11 +119,7 @@ describe('verifyAipSummarySheet', () => {
 
     it('rejects a child whose parent is missing', () => {
         const wb = buildSheet([PROJECT]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(false);
         expect(
@@ -147,11 +143,7 @@ describe('verifyAipSummarySheet', () => {
                 'A123',
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(false);
         expect(result.errors.some((e) => e.message.includes('5–9'))).toBe(true);
@@ -159,11 +151,7 @@ describe('verifyAipSummarySheet', () => {
 
     it('rejects a wrong number row', () => {
         const wb = buildSheet([PROGRAM], [1, 2, 3, 4, 5, 6, 7, 13, 14, 99]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(false);
         expect(
@@ -188,11 +176,7 @@ describe('verifyAipSummarySheet', () => {
                 null,
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(true);
     });
@@ -214,11 +198,7 @@ describe('verifyAipSummarySheet', () => {
                 'A123',
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(true);
         expect(result.errors).toHaveLength(0);
@@ -241,11 +221,7 @@ describe('verifyAipSummarySheet', () => {
                 'A123',
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(true);
         expect(result.errors).toHaveLength(0);
@@ -270,11 +246,7 @@ describe('verifyAipSummarySheet', () => {
                 'A123',
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(true);
         expect(result.errors).toHaveLength(0);
@@ -313,7 +285,7 @@ describe('verifyAipSummarySheet', () => {
         const result = verifyAipSummarySheet(
             wbActivity,
             'Sheet1',
-            getDefaultAipSummaryConfig(),
+            calibratedConfig(),
         );
 
         expect(result.valid).toBe(true);
@@ -323,11 +295,7 @@ describe('verifyAipSummarySheet', () => {
 
     it('reports no warnings for canonical prefixes', () => {
         const wb = buildSheet([PROGRAM, PROJECT]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(true);
         expect(result.warnings).toHaveLength(0);
@@ -348,11 +316,7 @@ describe('verifyAipSummarySheet', () => {
                 'A123',
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(true);
     });
@@ -373,11 +337,7 @@ describe('verifyAipSummarySheet', () => {
                 'A123',
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(false);
         expect(
@@ -401,11 +361,7 @@ describe('verifyAipSummarySheet', () => {
                 'A123',
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(false);
         expect(
@@ -416,7 +372,10 @@ describe('verifyAipSummarySheet', () => {
     });
 
     it('names the calibrated columns in the missing-code error', () => {
-        const config = getDefaultAipSummaryConfig();
+        const config = {
+            ...getDefaultAipSummaryConfig(),
+            headerRow: 7,
+        } as ReturnType<typeof getDefaultAipSummaryConfig>;
         const wb = buildSheet([
             [
                 '1000-1-03-009-001',
@@ -456,8 +415,10 @@ describe('verifyAipSummarySheet', () => {
         expect(
             result.errors.some(
                 (e) =>
-                    e.message.includes('PPA Description (col C)') &&
-                    e.message.includes('AIP Reference Code (col A)'),
+                    e.message.includes('PPA Description') &&
+                    e.message.includes('col C') &&
+                    e.message.includes('AIP Reference Code') &&
+                    e.message.includes('col A'),
             ),
         ).toBe(true);
     });
@@ -478,11 +439,7 @@ describe('verifyAipSummarySheet', () => {
                 '-',
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
 
         expect(result.valid).toBe(true);
         expect(result.errors).toHaveLength(0);
@@ -518,11 +475,7 @@ describe('GF Proper climate rule', () => {
         typology: string | null,
     ) {
         const wb = buildSheet([ccRow(fund, adaptation, mitigation, typology)]);
-        return verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        return verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
     }
 
     it('allows CC values on GF Proper variants', () => {
@@ -592,11 +545,7 @@ describe('funding source anchors on expected output', () => {
         fund: string | null,
     ) {
         const wb = buildSheet([anchorRow(office, start, end, output, fund)]);
-        return verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        return verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
     }
 
     it('treats null, blank, dash, and em-dash as blank cells', () => {
@@ -690,11 +639,7 @@ describe('funding source anchors on expected output', () => {
                 (value, i) => (i === 7 ? '50.00' : value),
             ),
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
         expect(result.valid).toBe(false);
         expect(
             result.errors.some(
@@ -838,11 +783,7 @@ describe('funding source anchors on expected output', () => {
                 null,
             ],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
         expect(result.valid).toBe(true);
         expect(result.errors).toHaveLength(0);
     });
@@ -863,11 +804,7 @@ describe('funding source anchors on expected output', () => {
             ],
             [null, null, null, null, null, null, 'GF-Proper', null, null, null],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
         expect(result.valid).toBe(false);
         expect(
             result.errors.some((e) =>
@@ -905,11 +842,7 @@ describe('funding source anchors on expected output', () => {
             // Same block output context, non-GF fund + CC set → CC error.
             [null, null, null, null, null, null, 'SEF', '10.00', null, null],
         ]);
-        const result = verifyAipSummarySheet(
-            wb,
-            'Sheet1',
-            getDefaultAipSummaryConfig(),
-        );
+        const result = verifyAipSummarySheet(wb, 'Sheet1', calibratedConfig());
         expect(result.valid).toBe(false);
         expect(
             result.errors.some(

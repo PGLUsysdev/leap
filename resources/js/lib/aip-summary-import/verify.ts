@@ -372,8 +372,9 @@ export function extractAipSummaryRows(
     config: AipSummarySheetConfig & { headerRow: number },
 ): AipSummaryExtracted {
     const headerRow = config.headerRow;
-    const numberRow = headerRow + 1;
-    const dataStartRow = headerRow + 2;
+    const hasNumberRow = config.hasNumberRow ?? true;
+    const numberRow = hasNumberRow ? headerRow + 1 : -1;
+    const dataStartRow = hasNumberRow ? headerRow + 2 : headerRow + 1;
     const lastRow = ws.lastRow?.number ?? ws.rowCount;
     const kept: AipSummaryKeptRow[] = [];
     let skippedBlank = 0;
@@ -498,27 +499,31 @@ export function verifyAipSummarySheet(
         });
     }
 
-    // Number row is always exactly one row below the header.
-    const numberMismatches: string[] = [];
+    // Number row is one row below the header when the toggle is on.
+    if (config.hasNumberRow ?? true) {
+        const numberMismatches: string[] = [];
 
-    for (const [field, letter] of Object.entries(config.columnConfig)) {
-        const expected = COLUMN_LETTERS.indexOf(letter) + 1;
-        const actual = cellText(ws.getRow(numberRow).getCell(letter));
+        for (const [field, letter] of Object.entries(config.columnConfig)) {
+            const expected = COLUMN_LETTERS.indexOf(letter) + 1;
+            const actual = cellText(ws.getRow(numberRow).getCell(letter));
 
-        if (actual !== String(expected)) {
-            numberMismatches.push(
-                `${letter}: got "${actual ?? '∅'}", expected "${expected}" (${field})`,
-            );
+            if (actual !== String(expected)) {
+                numberMismatches.push(
+                    `${letter}: got "${actual ?? '∅'}", expected "${expected}" (${field})`,
+                );
+            }
         }
-    }
 
-    if (numberMismatches.length > 0) {
-        errors.push({
-            row: numberRow,
-            message: `Number row mismatch — ${numberMismatches.join('; ')}`,
-        });
+        if (numberMismatches.length > 0) {
+            errors.push({
+                row: numberRow,
+                message: `Number row mismatch — ${numberMismatches.join('; ')}`,
+            });
+        } else {
+            details.push(`Number row ${numberRow} OK at calibrated columns`);
+        }
     } else {
-        details.push(`Number row ${numberRow} OK at calibrated columns`);
+        details.push('Number row check skipped (toggle off)');
     }
 
     // ---- Pass 1: each row alone ----
