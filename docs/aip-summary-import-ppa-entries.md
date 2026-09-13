@@ -21,10 +21,10 @@ membership ⇔ entry existence.
 
 ## 2. Current behavior (as of 2026-09-09)
 
-- `POST aip-summary-import` (`AipSummaryImportController@store`) creates
+- `POST imports/aip-summary-import` (`AipSummaryImportController@store`) creates
   **PPAs only** — zero entries. Frontend posts `new` blocks scoped to the
   selected office + fiscal year; duplicates skip (`skipped: exists`).
-- Entries come solely from `POST aip-summary-import/outputs`
+- Entries come solely from `POST imports/aip-summary-import/outputs`
   (`storeOutputs`): `firstOrCreate` per matched PPA **plus bare ancestor
   entries** up the `parent_id` chain.
 - Gap: a PPA gets an entry iff it (or a descendant) ships importable

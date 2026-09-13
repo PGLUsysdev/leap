@@ -28,7 +28,7 @@ class PriceListImportController extends Controller
 
     public function index()
     {
-        return Inertia::render('price-list-import/index', [
+        return Inertia::render('imports/price-list-import/index', [
             'existingCategories' => PpmpCategory::select(['id', 'name', 'is_non_procurement', 'is_additional'])
                 ->orderBy('name')
                 ->get(),

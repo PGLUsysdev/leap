@@ -87,7 +87,7 @@ class AipSummaryImportController extends Controller
             ? FiscalYear::select(['id', 'year', 'status'])->find($fiscalYearId)
             : null;
 
-        return Inertia::render('aip-summary-import/index', [
+        return Inertia::render('imports/aip-summary-import/index', [
             'activeFiscalYear' => $activeFiscalYear,
             'fiscalYears' => $fiscalYears,
             'existingOffices' => $offices,

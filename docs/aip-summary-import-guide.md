@@ -7,7 +7,7 @@
 > Related docs: `docs/aip-summary-file-structure.md` (15-column sheet
 > spec), `docs/aip-summary-import.md` (pipeline sketch, now largely
 > realized), `docs/aip-summary-import-ppa-entries.md` (entries invariant).
-> Frontend: `resources/js/pages/aip-summary-import/index.tsx`. Backend:
+> Frontend: `resources/js/pages/imports/aip-summary-import/index.tsx`. Backend:
 > `app/Http/Controllers/AipSummaryImportController.php`.
 
 ## 1. Overview
@@ -19,7 +19,7 @@ implementing offices), and **funding-source links** (+ climate data).
 Each stage has its own review tab with match status and its own POST
 endpoint with an auditable `importReport`.
 
-Route: `/aip-summary-import` (`aip-summary-import.index`). Listed in the
+Route: `/imports/aip-summary-import` (`aip-summary-import.index`). Listed in the
 Imports hub. Accepts **`.xlsx` only**.
 
 ```
@@ -91,7 +91,7 @@ own fund cell — so sibling fund links stay attached to the block's
 expected output. Record carries normalized keys (`fullCodeNorm`,
 `nameNorm`, `outputNorm`, `fundNorm`, `typologyNorm`) for matching.
 
-### 2.5 Import PPA (`POST aip-summary-import`)
+### 2.5 Import PPA (`POST imports/aip-summary-import`)
 
 Review: PPA blocks grouped by ref code, matched by normalized `full_code`
 within the selected office + fiscal year → `Exists` / `New` (counts +
@@ -104,7 +104,7 @@ also gets a bare `AipEntry`** (`firstOrCreate`, on insert _and_ re-import
 healing) — file membership ⇔ entry existence (see
 `docs/aip-summary-import-ppa-entries.md`). Gate: `create Ppa`.
 
-### 2.6 Import Expected Outputs (`POST aip-summary-import/outputs`)
+### 2.6 Import Expected Outputs (`POST imports/aip-summary-import/outputs`)
 
 Review: one row per record — Row (↳ continuation marker), PPA code/name,
 offices (auto-matched badges + amber unmatched badges + per-row picker),
@@ -128,7 +128,7 @@ offices` informational).
   `sort_order = max + 1`, validates `end ≥ start`. Gate: per-entry
   `AipEntryPolicy@update` (`aip-summary.edit` + office scope).
 
-### 2.7 Import Funding Source (`POST aip-summary-import/funding-sources`)
+### 2.7 Import Funding Source (`POST imports/aip-summary-import/funding-sources`)
 
 Review: PPA/output, fund badge (auto-match + single-select Map + dismiss +
 link badge), climate (adaptation/mitigation amounts + typology badge),

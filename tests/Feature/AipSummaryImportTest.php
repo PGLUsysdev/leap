@@ -56,7 +56,7 @@ test('it imports new ppa blocks with parent linkage', function () {
     $fiscalYear = FiscalYear::factory()->create(['status' => 'draft']);
     $prefix = $office->full_code;
 
-    $response = $this->actingAs($user)->post('/aip-summary-import', [
+    $response = $this->actingAs($user)->post('/imports/aip-summary-import', [
         'office_id' => $office->id,
         'fiscal_year_id' => $fiscalYear->id,
         'blocks' => [
@@ -96,8 +96,8 @@ test('it skips existing blocks on re-import', function () {
         ],
     ];
 
-    $this->actingAs($user)->post('/aip-summary-import', $payload)->assertRedirect();
-    $this->actingAs($user)->post('/aip-summary-import', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import', $payload)->assertRedirect();
 
     expect(
         Ppa::where('office_id', $office->id)
@@ -109,7 +109,7 @@ test('it skips existing blocks on re-import', function () {
 test('it validates the import payload', function () {
     $user = createImportUser();
 
-    $this->actingAs($user)->post('/aip-summary-import', [
+    $this->actingAs($user)->post('/imports/aip-summary-import', [
         'office_id' => 999999,
         'fiscal_year_id' => 999999,
         'blocks' => [],
@@ -144,7 +144,7 @@ test('it imports outputs matched by normalized ppa name', function () {
         ],
     ];
 
-    $this->actingAs($user)->post('/aip-summary-import/outputs', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', $payload)->assertRedirect();
 
     $entry = AipEntry::where('ppa_id', $ppa->id)->firstOrFail();
     $output = $entry->outputs()->firstOrFail();
@@ -185,9 +185,9 @@ test('it skips outputs with no ppa or duplicates', function () {
         ],
     ];
 
-    $this->actingAs($user)->post('/aip-summary-import/outputs', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', $payload)->assertRedirect();
     // Re-import: the valid row is now a duplicate.
-    $this->actingAs($user)->post('/aip-summary-import/outputs', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', $payload)->assertRedirect();
 
     expect(AipOutput::count())->toBe(1);
 });
@@ -205,7 +205,7 @@ test('it imports outputs with no resolved offices', function () {
         'fiscal_year_id' => $fiscalYear->id,
     ]);
 
-    $this->actingAs($user)->post('/aip-summary-import/outputs', [
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', [
         'office_id' => $office->id,
         'fiscal_year_id' => $fiscalYear->id,
         'outputs' => [
@@ -263,7 +263,7 @@ test('it disambiguates same-name ppas by full code', function () {
     ];
 
     // Ambiguous without a code: skipped.
-    $this->actingAs($user)->post('/aip-summary-import/outputs', $makePayload([
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', $makePayload([
         'full_code' => null,
         'name' => 'Same Name',
         'expected_output' => 'Ambiguous output',
@@ -274,7 +274,7 @@ test('it disambiguates same-name ppas by full code', function () {
     expect(AipOutput::count())->toBe(0);
 
     // Resolved by full code.
-    $this->actingAs($user)->post('/aip-summary-import/outputs', $makePayload([
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', $makePayload([
         'full_code' => $childB->full_code,
         'name' => 'Same Name',
         'expected_output' => 'Child B output',
@@ -292,7 +292,7 @@ test('it validates the outputs payload', function () {
     $office = createImportOffice();
     $user = createOutputsUser($office);
 
-    $this->actingAs($user)->post('/aip-summary-import/outputs', [
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', [
         'office_id' => $office->id,
         'fiscal_year_id' => 999999,
         'outputs' => [],
@@ -327,9 +327,9 @@ test('it imports context rows with a null expected output', function () {
         ],
     ];
 
-    $this->actingAs($user)->post('/aip-summary-import/outputs', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', $payload)->assertRedirect();
     // Re-import: the null output is now a duplicate.
-    $this->actingAs($user)->post('/aip-summary-import/outputs', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', $payload)->assertRedirect();
 
     $entry = AipEntry::where('ppa_id', $ppa->id)->firstOrFail();
     $outputs = $entry->outputs()->get();
@@ -360,7 +360,7 @@ test('it creates bare ancestor entries for imported outputs', function () {
         'fiscal_year_id' => $fiscalYear->id,
     ]);
 
-    $this->actingAs($user)->post('/aip-summary-import/outputs', [
+    $this->actingAs($user)->post('/imports/aip-summary-import/outputs', [
         'office_id' => $office->id,
         'fiscal_year_id' => $fiscalYear->id,
         'outputs' => [
@@ -428,9 +428,9 @@ test('it imports fund links with climate on matched outputs', function () {
         ],
     ];
 
-    $this->actingAs($user)->post('/aip-summary-import/funding-sources', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import/funding-sources', $payload)->assertRedirect();
     // Re-import: duplicate link.
-    $this->actingAs($user)->post('/aip-summary-import/funding-sources', $payload)->assertRedirect();
+    $this->actingAs($user)->post('/imports/aip-summary-import/funding-sources', $payload)->assertRedirect();
 
     $links = PpaFundingSource::where('aip_output_id', $output->id)->get();
     expect($links)->toHaveCount(1);
@@ -470,7 +470,7 @@ test('it skips fund links with no ppa, no output, or bad fund', function () {
         'cc_typology_id' => null,
     ];
 
-    $this->actingAs($user)->post('/aip-summary-import/funding-sources', [
+    $this->actingAs($user)->post('/imports/aip-summary-import/funding-sources', [
         'office_id' => $office->id,
         'fiscal_year_id' => $fiscalYear->id,
         'links' => [
@@ -481,7 +481,7 @@ test('it skips fund links with no ppa, no output, or bad fund', function () {
     ])->assertSessionHasErrors(['links.2.funding_source_id']);
 
     // Fix the bad fund: both remaining rows skip (no PPA / no output).
-    $this->actingAs($user)->post('/aip-summary-import/funding-sources', [
+    $this->actingAs($user)->post('/imports/aip-summary-import/funding-sources', [
         'office_id' => $office->id,
         'fiscal_year_id' => $fiscalYear->id,
         'links' => [

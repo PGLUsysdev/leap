@@ -124,7 +124,7 @@ test('it imports quantities and syncs mooe and co totals to the funding source',
     $mooeTwo = qtyImportPriceList('MOOE', 50, 2);
     $coOne = qtyImportPriceList('CO', 1000, 3);
 
-    $response = $this->actingAs($user)->post('/price-list-quantities-import', [
+    $response = $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $chain['ppa']->id,
         'items' => [
             ['ppmp_price_list_id' => $mooeOne->id, 'qtys' => qtyArray(jan: 2)],
@@ -157,8 +157,8 @@ test('it updates existing rows without duplicating and recomputes totals', funct
         ],
     ];
 
-    $this->actingAs($user)->post('/price-list-quantities-import', $payload(2))->assertRedirect();
-    $this->actingAs($user)->post('/price-list-quantities-import', $payload(5))->assertRedirect();
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', $payload(2))->assertRedirect();
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', $payload(5))->assertRedirect();
 
     expect(Ppmp::count())->toBe(1);
     expect((int) Ppmp::firstOrFail()->jan_qty)->toBe(5);
@@ -174,7 +174,7 @@ test('it skips zero-quantity items', function () {
     $kept = qtyImportPriceList('MOOE', 100, 1);
     $skipped = qtyImportPriceList('MOOE', 100, 2);
 
-    $this->actingAs($user)->post('/price-list-quantities-import', [
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $chain['ppa']->id,
         'items' => [
             ['ppmp_price_list_id' => $kept->id, 'qtys' => qtyArray(jan: 1)],
@@ -214,7 +214,7 @@ test('it rejects items whose account has no expense class', function () {
         'chart_of_account_ppmp_category_id' => $junction->id,
     ]);
 
-    $this->actingAs($user)->post('/price-list-quantities-import', [
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $chain['ppa']->id,
         'aip_output_id' => $chain['output']->id,
         'ppa_funding_source_id' => $chain['bridge']->id,
@@ -234,7 +234,7 @@ test('it exposes the expense class of each price list on the index page', functi
     $chain = qtyImportChain();
     $priceList = qtyImportPriceList('MOOE', 100, 1);
 
-    $response = $this->actingAs($user)->get('/price-list-quantities-import');
+    $response = $this->actingAs($user)->get('/imports/price-list-quantities-import');
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -261,7 +261,7 @@ test('it rejects import when the ppa has no funding source', function () {
     AipEntry::create(['ppa_id' => $ppa->id]);
     $priceList = qtyImportPriceList('MOOE', 100, 1);
 
-    $this->actingAs($user)->post('/price-list-quantities-import', [
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $ppa->id,
         'items' => [
             ['ppmp_price_list_id' => $priceList->id, 'qtys' => qtyArray(jan: 1)],
@@ -286,7 +286,7 @@ test('it imports to the selected funding source instead of the first bridge', fu
     ]);
     $priceList = qtyImportPriceList('MOOE', 100, 1);
 
-    $this->actingAs($user)->post('/price-list-quantities-import', [
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $chain['ppa']->id,
         'ppa_funding_source_id' => $secondBridge->id,
         'items' => [
@@ -307,7 +307,7 @@ test('it exposes funding sources with ppa linkage on the index page', function (
     $user = qtyImportUser();
     $chain = qtyImportChain();
 
-    $response = $this->actingAs($user)->get('/price-list-quantities-import');
+    $response = $this->actingAs($user)->get('/imports/price-list-quantities-import');
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
@@ -346,7 +346,7 @@ test('it rejects a funding source that does not belong to the selected ppa', fun
     ]);
     $priceList = qtyImportPriceList('MOOE', 100, 1);
 
-    $this->actingAs($user)->post('/price-list-quantities-import', [
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $chain['ppa']->id,
         'ppa_funding_source_id' => $otherBridge->id,
         'items' => [
@@ -378,7 +378,7 @@ test('it rejects an output that does not belong to the selected ppa', function (
     ]);
     $priceList = qtyImportPriceList('MOOE', 100, 1);
 
-    $this->actingAs($user)->post('/price-list-quantities-import', [
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $chain['ppa']->id,
         'aip_output_id' => $otherOutput->id,
         'ppa_funding_source_id' => $chain['bridge']->id,
@@ -405,7 +405,7 @@ test('it rejects a funding source that does not belong to the selected output', 
     ]);
     $priceList = qtyImportPriceList('MOOE', 100, 1);
 
-    $this->actingAs($user)->post('/price-list-quantities-import', [
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $chain['ppa']->id,
         'aip_output_id' => $chain['output']->id,
         'ppa_funding_source_id' => $secondBridge->id,
@@ -422,7 +422,7 @@ test('it imports to the selected output funding source and names the target in t
     $chain = qtyImportChain();
     $priceList = qtyImportPriceList('MOOE', 100, 1);
 
-    $this->actingAs($user)->post('/price-list-quantities-import', [
+    $this->actingAs($user)->post('/imports/price-list-quantities-import', [
         'ppa_id' => $chain['ppa']->id,
         'aip_output_id' => $chain['output']->id,
         'ppa_funding_source_id' => $chain['bridge']->id,

@@ -8,8 +8,8 @@
 >
 > Status: **docs-first — pipeline sketched, no implementation yet.**
 
-Route: `/aip-summary-import` (`AipSummaryImportController@index`,
-`resources/js/pages/aip-summary-import/index.tsx`). Listed in the Imports hub
+Route: `/imports/aip-summary-import` (`AipSummaryImportController@index`,
+`resources/js/pages/imports/aip-summary-import/index.tsx`). Listed in the Imports hub
 (`resources/js/pages/imports/index.tsx`). Accepts **`.xlsx` only** (ExcelJS),
 same as the other importers.
 

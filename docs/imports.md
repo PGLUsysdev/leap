@@ -8,10 +8,10 @@ wizard: **Upload & Sheets → Calibrate → Verify → Review/Extract → Import
 
 Run in this order — each step requires the previous one's data to exist:
 
-1. **Category Import** (`/category-import`) — bulk-creates PPMP categories.
-2. **Category–COA Mappings** (`/category-coa-mapping`) — links each category to a
+1. **Category Import** (`/imports/category-import`) — bulk-creates PPMP categories.
+2. **Category–COA Mappings** (`/imports/category-coa-mapping`) — links each category to a
    postable Chart of Account.
-3. **Price List Import** (`/price-list-import`) — imports priced items. Every row
+3. **Price List Import** (`/imports/price-list-import`) — imports priced items. Every row
    must resolve to an existing Category + COA **mapping**, otherwise it errors
    with “create mapping via Category–COA Mappings first”.
 
@@ -210,7 +210,7 @@ single-spaced, lowercased.
 
 Anti-pattern (do not add new instances): page-local copies of `normalize` /
 matching helpers. Category-import still carries its own today
-(`category-import/index.tsx`, ~lines 32–194, identical to lib) — slated for
+(`imports/category-import/index.tsx`, ~lines 32–194, identical to lib) — slated for
 deletion in a later pass; until then the lib is the definition.
 
 ## Normalization process
@@ -241,9 +241,9 @@ The full pipeline every imported value travels, in order:
 
 | Importer   | Endpoint                           | Result                                                                                                                                    |
 | ---------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Category   | `POST /category-import`            | Creates missing categories (`is_non_procurement=false`); strict-normalized dupes skipped (`inserted`/`skipped` report)                    |
-| Mapping    | `POST /category-coa-mappings/bulk` | Creates missing pairs transactionally; existing pairs skipped                                                                             |
-| Price list | `POST /price-list-import`          | Validates rows; requires the mapping junction; upserts on junction + normalized description + unit (`inserted`/`updated`/`errors` report) |
+| Category   | `POST /imports/category-import`            | Creates missing categories (`is_non_procurement=false`); strict-normalized dupes skipped (`inserted`/`skipped` report)                    |
+| Mapping    | `POST /imports/category-coa-mappings/bulk` | Creates missing pairs transactionally; existing pairs skipped                                                                             |
+| Price list | `POST /imports/price-list-import`          | Validates rows; requires the mapping junction; upserts on junction + normalized description + unit (`inserted`/`updated`/`errors` report) |
 
 All three validate IDs against the database (`exists` rules), authorize via
 policies (`create`), and reply with a toast (`success`/`error`, incl.
@@ -254,6 +254,6 @@ policies (`create`), and reply with a toast (`success`/`error`, incl.
 - Matching/grouping lib: `resources/js/lib/ppmp/normalize.ts`,
   `sheet-config.ts`, `sheet-grouping.ts`, `batch-match.ts`,
   `resources/js/lib/excel/cell-helpers.ts` (unit-tested with vitest).
-- Pages: `resources/js/pages/{imports,category-import,category-coa-mapping,price-list-import}/`.
+- Pages: `resources/js/pages/imports/{index,category-import,category-coa-mapping,price-list-import,price-list-quantities-import,aip-summary-import}/`.
 - Controllers: `app/Http/Controllers/{Imports,CategoryImport,CategoryCoaMapping,PriceListImport}Controller.php`.
 - Routes: `routes/web.php` (`imports.*`, `category-import.*`, `category-coa-mappings.*`, `price-list-import.*`).

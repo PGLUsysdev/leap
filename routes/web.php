@@ -271,10 +271,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ])->name('ppmp-categories.destroy');
 
     // Category COA Mapping
-    Route::get('category-coa-mapping', [CategoryCoaMappingController::class, 'index'])->name(
+    Route::get('imports/category-coa-mapping', [CategoryCoaMappingController::class, 'index'])->name(
         'category-coa-mapping.index',
     );
-    Route::post('category-coa-mappings/bulk', [
+    Route::post('imports/category-coa-mappings/bulk', [
         CategoryCoaMappingController::class,
         'bulkStore',
     ])->name('category-coa-mappings.bulkStore');
@@ -450,43 +450,43 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('aip-ref-code', [AipRefCodeController::class, 'index']);
 });
 
-Route::get('price-list-import', [PriceListImportController::class, 'index'])->name(
+Route::get('imports/price-list-import', [PriceListImportController::class, 'index'])->name(
     'price-list-import.index',
 );
 
-Route::post('price-list-import', [PriceListImportController::class, 'store'])->name(
+Route::post('imports/price-list-import', [PriceListImportController::class, 'store'])->name(
     'price-list-import.store',
 );
 
-Route::get('price-list-quantities-import', [PriceListQuantitiesImportController::class, 'index'])->name(
+Route::get('imports/price-list-quantities-import', [PriceListQuantitiesImportController::class, 'index'])->name(
     'price-list-quantities-import.index',
 );
 
-Route::post('price-list-quantities-import', [PriceListQuantitiesImportController::class, 'store'])->name(
+Route::post('imports/price-list-quantities-import', [PriceListQuantitiesImportController::class, 'store'])->name(
     'price-list-quantities-import.store',
 );
 
-Route::get('category-import', [CategoryImportController::class, 'index'])->name(
+Route::get('imports/category-import', [CategoryImportController::class, 'index'])->name(
     'category-import.index',
 );
 
-Route::post('category-import', [CategoryImportController::class, 'store'])->name(
+Route::post('imports/category-import', [CategoryImportController::class, 'store'])->name(
     'category-import.store',
 );
 
-Route::get('aip-summary-import', [AipSummaryImportController::class, 'index'])->name(
+Route::get('imports/aip-summary-import', [AipSummaryImportController::class, 'index'])->name(
     'aip-summary-import.index',
 );
 
-Route::post('aip-summary-import', [AipSummaryImportController::class, 'store'])->name(
+Route::post('imports/aip-summary-import', [AipSummaryImportController::class, 'store'])->name(
     'aip-summary-import.store',
 );
 
-Route::post('aip-summary-import/outputs', [AipSummaryImportController::class, 'storeOutputs'])->name(
+Route::post('imports/aip-summary-import/outputs', [AipSummaryImportController::class, 'storeOutputs'])->name(
     'aip-summary-import.store-outputs',
 );
 
-Route::post('aip-summary-import/funding-sources', [AipSummaryImportController::class, 'storeFundingSources'])->name(
+Route::post('imports/aip-summary-import/funding-sources', [AipSummaryImportController::class, 'storeFundingSources'])->name(
     'aip-summary-import.store-funding-sources',
 );
 

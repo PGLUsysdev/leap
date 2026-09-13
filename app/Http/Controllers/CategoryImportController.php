@@ -11,7 +11,7 @@ class CategoryImportController extends Controller
 {
     public function index()
     {
-        return Inertia::render('category-import/index', [
+        return Inertia::render('imports/category-import/index', [
             'existingCategories' => PpmpCategory::select(['id', 'name', 'is_non_procurement', 'is_additional'])
                 ->orderBy('name')
                 ->get(),

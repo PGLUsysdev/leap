@@ -14,7 +14,7 @@ class CategoryCoaMappingController extends Controller
 {
     public function index()
     {
-        return Inertia::render('category-coa-mapping/index', [
+        return Inertia::render('imports/category-coa-mapping/index', [
             'existingCategories' => PpmpCategory::select(['id', 'name', 'is_non_procurement', 'is_additional'])
                 ->orderBy('name')
                 ->get(),
