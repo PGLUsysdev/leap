@@ -1,11 +1,7 @@
-// resources/js/pages/imports/category-coa-mapping/index.tsx
-
-import { Head, router } from '@inertiajs/react';
-import ExcelJS from 'exceljs';
+import { router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import type { ChangeEvent } from 'react';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
     normalize,
@@ -46,19 +42,12 @@ interface CategoryCoaMappingProps {
     existingMappings?: ExistingMapping[];
 }
 
-export default function CategoryCoaMappingPage({
+export default function CategoryCoaMappingImport({
     existingCategories = [],
     existingCoas = [],
     existingMappings = [],
 }: CategoryCoaMappingProps) {
-    const [sheets, setSheets] = useState<string[]>([]);
-    const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [fileName, setFileName] = useState<string | null>(null);
-
-    // Calibration – shared + per-sheet (multi-sheet)
     const [calibrationMode, setCalibrationMode] =
         useState<CalibrationMode>('shared');
     const [sharedConfig, setSharedConfig] =
@@ -80,6 +69,20 @@ export default function CategoryCoaMappingPage({
     >({});
     const [activeFormatSheet, setActiveFormatSheet] = useState<string>('');
     const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
+
+    const { sheets, workbook, fileName, loading, error, handleFileChange } =
+        useImportWorkbook(() => {
+            setSelectedSheets([]);
+            setCurrentSheet('');
+            setSharedConfig(null);
+            setCalibrations({});
+            setFormatResults({});
+            setActiveFormatSheet('');
+            setActiveVerifySheet('');
+            setVerification(null);
+            setCoaOverrides({});
+            setStep('upload');
+        });
 
     const canCalibrate = selectedSheets.length > 0;
     const canVerifyFormat =
@@ -806,67 +809,6 @@ export default function CategoryCoaMappingPage({
                     message: r.message,
                 })),
             );
-        }
-    }
-
-    async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-
-        if (!file) return;
-
-        const isXlsx =
-            file.name.toLowerCase().endsWith('.xlsx') ||
-            file.type ===
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-        if (!isXlsx) {
-            setError('Only .xlsx files are allowed.');
-            setSheets([]);
-            setWorkbook(null);
-            setSelectedSheets([]);
-            setCurrentSheet('');
-            setSharedConfig(null);
-            setCalibrations({});
-            setFileName(null);
-            setFormatResults({});
-            setActiveFormatSheet('');
-            setActiveVerifySheet('');
-            e.target.value = '';
-
-            return;
-        }
-
-        setError(null);
-        setLoading(true);
-        setFileName(file.name);
-        setSelectedSheets([]);
-        setCurrentSheet('');
-        setSharedConfig(null);
-        setCalibrations({});
-        setFormatResults({});
-        setActiveFormatSheet('');
-        setActiveVerifySheet('');
-        setVerification(null);
-        setCoaOverrides({});
-        setStep('upload');
-
-        try {
-            const wb = new ExcelJS.Workbook();
-            const arrayBuffer = await file.arrayBuffer();
-            await wb.xlsx.load(arrayBuffer);
-            setWorkbook(wb);
-            setSheets(wb.worksheets.map((ws) => ws.name));
-        } catch {
-            setError('Failed to parse .xlsx file.');
-            setSheets([]);
-            setWorkbook(null);
-            setSelectedSheets([]);
-            setCurrentSheet('');
-            setSharedConfig(null);
-            setCalibrations({});
-            setFileName(null);
-        } finally {
-            setLoading(false);
         }
     }
 
@@ -1808,7 +1750,6 @@ export default function CategoryCoaMappingPage({
         }
     }
 
-    // ----- Build the state object once -----
     const s: CategoryCoaMappingState = {
         sheets,
         workbook,
@@ -1872,60 +1813,47 @@ export default function CategoryCoaMappingPage({
     };
 
     return (
-        <ScrollArea className="h-[calc(100vh-3rem)]">
-            <Head title="Category COA Mapping" />
-            <div className="flex flex-col gap-4 p-4">
-                <h1 className="text-2xl font-bold">Category COA Mapping</h1>
-                <p className="text-muted-foreground text-sm">
-                    Bulk import Category ↔ COA mappings from XLSX. Calibrate,
-                    verify format, and create mappings in bulk.
-                </p>
-
-                {fileName && !loading && (
-                    <div className="bg-card supports-[backdrop-filter]:bg-muted/30 sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
-                        <span
-                            className="max-w-[42ch] truncate font-medium"
-                            title={fileName}
-                        >
-                            {fileName}
-                        </span>
-                    </div>
-                )}
-
-                <Tabs value={step} onValueChange={(v) => setStep(v as CcmStep)}>
-                    <TabsList>
-                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
-                        <TabsTrigger value="calibrate" disabled={!canCalibrate}>
-                            2. Calibrate
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="verifyFormat"
-                            disabled={!canVerifyFormat}
-                        >
-                            3. Verify Format
-                        </TabsTrigger>
-                        <TabsTrigger value="verifyMap" disabled={!canVerifyMap}>
-                            4. Verify & Map
-                        </TabsTrigger>
-                        <TabsTrigger value="review" disabled={!canReview}>
-                            5. Review & Save
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <UploadStep s={s} />
-                    <CalibrateStep s={s} />
-                    <VerifyFormatStep s={s} />
-                    <VerifyMapStep s={s} />
-                    <ReviewStep s={s} />
-                </Tabs>
-            </div>
-
-            <ScrollBar orientation="vertical" />
-        </ScrollArea>
+        <ImportPageShell
+            title="Category COA Mapping"
+            description="Bulk import Category ↔ COA mappings from XLSX. Calibrate, verify format, and create mappings in bulk."
+            fileName={fileName}
+            loading={loading}
+            step={step}
+            onStepChange={(v) => setStep(v as CcmStep)}
+            tabs={[
+                { value: 'upload', label: '1. Upload' },
+                {
+                    value: 'calibrate',
+                    label: '2. Calibrate',
+                    disabled: !canCalibrate,
+                },
+                {
+                    value: 'verifyFormat',
+                    label: '3. Verify Format',
+                    disabled: !canVerifyFormat,
+                },
+                {
+                    value: 'verifyMap',
+                    label: '4. Verify & Map',
+                    disabled: !canVerifyMap,
+                },
+                {
+                    value: 'review',
+                    label: '5. Review & Save',
+                    disabled: !canReview,
+                },
+            ]}
+        >
+            <UploadStep s={s} />
+            <CalibrateStep s={s} />
+            <VerifyFormatStep s={s} />
+            <VerifyMapStep s={s} />
+            <ReviewStep s={s} />
+        </ImportPageShell>
     );
 }
 
-CategoryCoaMappingPage.layout = {
+CategoryCoaMappingImport.layout = {
     breadcrumbs: [
         { title: 'Imports', href: importsIndex().url },
         { title: 'Category COA Mapping', href: categoryCoaMappingIndex().url },

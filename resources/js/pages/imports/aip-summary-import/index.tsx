@@ -1,12 +1,7 @@
-// resources/js/pages/imports/aip-summary-import/index.tsx
-
-import { Head, router, usePage } from '@inertiajs/react';
-import ExcelJS from 'exceljs';
-import { FileSpreadsheet } from 'lucide-react';
-import type { ChangeEvent } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import type {
     AipSummaryField,
     AipSummarySheetConfig,
@@ -46,7 +41,6 @@ import { ImportOutputsStep } from './steps/import-outputs-step';
 import { ImportFundingStep } from './steps/import-funding-step';
 
 export default function AipSummaryImport() {
-    // ----- Inertia props (offices, ppas, fiscal years, funds, auth user) -----
     const {
         existingOffices,
         existingPpas,
@@ -101,13 +95,7 @@ export default function AipSummaryImport() {
         auth: { user: { office_id: number | null } };
     };
 
-    // ----- Existing state -----
-    const [sheets, setSheets] = useState<string[]>([]);
-    const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
-    const [fileName, setFileName] = useState<string | null>(null);
     const [selectedSheet, setSelectedSheet] = useState<string>('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [step, setStep] = useState<
         | 'upload'
         | 'calibrate'
@@ -125,11 +113,55 @@ export default function AipSummaryImport() {
     const [extractResult, setExtractResult] =
         useState<AipSummaryExtractResult | null>(null);
     const [importing, setImporting] = useState(false);
-
-    // ----- Which import flow the 5th step shows (set by the Extract buttons) -----
     const [importTarget, setImportTarget] = useState<
         'ppa' | 'outputs' | 'funding'
     >('ppa');
+    const [selectedOffice, setSelectedOffice] = useState<string>(
+        auth.user.office_id?.toString() || '',
+    );
+    const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(
+        activeFiscalYear?.id.toString() || '',
+    );
+    const [officeOverrides, setOfficeOverrides] = useState<
+        Record<string, number[]>
+    >({});
+    const [officePickerKey, setOfficePickerKey] = useState<string | null>(null);
+    const [tokenMappings, setTokenMappings] = useState<
+        Record<string, TokenMapping>
+    >({});
+    const [dismissedTokens, setDismissedTokens] = useState<
+        Record<string, string[]>
+    >({});
+    const [mappingTarget, setMappingTarget] = useState<{
+        key: string;
+        token: string;
+    } | null>(null);
+    const [fundOverrides, setFundOverrides] = useState<Record<string, number>>(
+        {},
+    );
+    const [dismissedFunds, setDismissedFunds] = useState<
+        Record<string, boolean>
+    >({});
+    const [fundPickerKey, setFundPickerKey] = useState<string | null>(null);
+    const [importingOutputs, setImportingOutputs] = useState(false);
+    const [importingFunds, setImportingFunds] = useState(false);
+
+    const { sheets, workbook, fileName, loading, error, handleFileChange } =
+        useImportWorkbook(() => {
+            setSelectedSheet('');
+            setStep('upload');
+            setVerifyResult(null);
+            setExtractResult(null);
+            setOfficeOverrides({});
+            setOfficePickerKey(null);
+            setTokenMappings({});
+            setDismissedTokens({});
+            setMappingTarget(null);
+            setFundOverrides({});
+            setDismissedFunds({});
+            setFundPickerKey(null);
+        });
+
     const importStep =
         importTarget === 'outputs'
             ? 'import-outputs'
@@ -154,63 +186,22 @@ export default function AipSummaryImport() {
         );
     }
 
-    // ----- State for selected office (defaults to user's office) -----
-    const [selectedOffice, setSelectedOffice] = useState<string>(
-        auth.user.office_id?.toString() || '',
-    );
-
-    // ----- State for selected fiscal year (defaults to active fiscal year) -----
-    const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(
-        activeFiscalYear?.id.toString() || '',
-    );
-
-    // ----- Derived display label for the office trigger (acronym, name fallback) -----
     const selectedOfficeLabel = useMemo(() => {
         const office = existingOffices.find(
             (o) => o.id.toString() === selectedOffice,
         );
+
         return office?.acronym?.trim() || office?.name || '';
     }, [existingOffices, selectedOffice]);
 
-    // ----- Derived display label for the fiscal year trigger -----
     const selectedFiscalYearLabel = useMemo(() => {
         const fy = fiscalYears.find(
             (f) => f.id.toString() === selectedFiscalYear,
         );
+
         return fy ? String(fy.year) : '';
     }, [fiscalYears, selectedFiscalYear]);
 
-    // ----- Per-record office overrides (record.key -> office ids), set via the picker -----
-    const [officeOverrides, setOfficeOverrides] = useState<
-        Record<string, number[]>
-    >({});
-    const [officePickerKey, setOfficePickerKey] = useState<string | null>(null);
-    // ----- Per-record 1:1 token -> office links (manual mapping context) -----
-    const [tokenMappings, setTokenMappings] = useState<
-        Record<string, TokenMapping>
-    >({});
-    // ----- Per-record explicitly removed unresolved tokens -----
-    const [dismissedTokens, setDismissedTokens] = useState<
-        Record<string, string[]>
-    >({});
-    // ----- Which unresolved token the shared picker is mapping (null = bulk mode) -----
-    const [mappingTarget, setMappingTarget] = useState<{
-        key: string;
-        token: string;
-    } | null>(null);
-
-    // ----- Per-record fund overrides (record.key -> funding_source_id) -----
-    const [fundOverrides, setFundOverrides] = useState<Record<string, number>>(
-        {},
-    );
-    // ----- Per-record explicitly removed unresolved funds -----
-    const [dismissedFunds, setDismissedFunds] = useState<
-        Record<string, boolean>
-    >({});
-    // ----- Which record the shared fund picker is mapping -----
-    const [fundPickerKey, setFundPickerKey] = useState<string | null>(null);
-
-    // ----- Auto-match of implementing-office tokens (strict-normalized) -----
     const officeMatches = useMemo(() => {
         if (!extractResult) return new Map<string, RecordOfficeMatch>();
 
@@ -222,8 +213,6 @@ export default function AipSummaryImport() {
         );
     }, [extractResult, existingOffices]);
 
-    // ----- Unmatched token frequencies (shows where to loosen matching later) -----
-    // Only tokens still needing attention count: mapped + dismissed are out.
     const unmatchedFrequency = useMemo(() => {
         if (!extractResult) return [];
 
@@ -241,7 +230,6 @@ export default function AipSummaryImport() {
         );
     }, [extractResult, officeMatches, tokenMappings, dismissedTokens]);
 
-    /** Effective office ids for a record: override base + 1:1 mappings unioned. */
     function officeIdsForRecord(key: string): number[] {
         return effectiveOfficeIds(
             officeMatches.get(key),
@@ -250,7 +238,6 @@ export default function AipSummaryImport() {
         );
     }
 
-    // ----- Auto-match of fund + typology tokens (strict-normalized) -----
     const fundMatches = useMemo(() => {
         if (!extractResult) return new Map<string, RecordFundMatch>();
 
@@ -268,8 +255,6 @@ export default function AipSummaryImport() {
         );
     }, [extractResult, fundingSources, ccTypologies]);
 
-    // ----- Unmatched fund frequencies (shows where to loosen matching later) -----
-    // Overridden + dismissed rows are out — already resolved.
     const unmatchedFundEntries = useMemo(() => {
         if (!extractResult) return [];
 
@@ -292,7 +277,6 @@ export default function AipSummaryImport() {
         );
     }, [extractResult, fundMatches, fundOverrides, dismissedFunds]);
 
-    /** Effective funding_source_id for a record: override wins over auto-match. */
     function fundIdForRecord(key: string): number | null {
         const override = fundOverrides[key];
         if (override !== undefined) return override;
@@ -300,7 +284,6 @@ export default function AipSummaryImport() {
         return fundMatches.get(key)?.fund?.id ?? null;
     }
 
-    /** CC peso amounts ride the fund link; blank/dash/non-numeric → 0. */
     function ccAmount(value: string | null): number {
         if (value == null) return 0;
 
@@ -330,7 +313,6 @@ export default function AipSummaryImport() {
         });
     }
 
-    /** Set (officeId) or clear (null) the 1:1 link for one unresolved token. */
     function setTokenMapping(
         key: string,
         token: string,
@@ -356,7 +338,6 @@ export default function AipSummaryImport() {
         });
     }
 
-    // ----- Derived flags -----
     const canCalibrate = selectedSheet !== '';
     const canVerify =
         canCalibrate &&
@@ -366,7 +347,6 @@ export default function AipSummaryImport() {
     const canExtract = canVerify && verifyResult?.valid === true;
     const canImportPpa = canExtract && !!extractResult;
 
-    // ----- Compute blocks for import based on selected office + fiscal year -----
     const blocksForImport = useMemo(() => {
         if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
 
@@ -375,7 +355,6 @@ export default function AipSummaryImport() {
         const office = existingOffices.find((o) => o.id === officeId);
         if (!office) return [];
 
-        // Filter PPAs that belong to the selected office + fiscal year
         const ppasForOffice = existingPpas.filter(
             (p) =>
                 p.office_id === officeId && p.fiscal_year_id === fiscalYearId,
@@ -388,7 +367,6 @@ export default function AipSummaryImport() {
             }
         }
 
-        // Group extracted records by fullCode
         const groups = new Map<
             string,
             { fullCode: string; name: string; type: string; rows: number[] }
@@ -407,7 +385,6 @@ export default function AipSummaryImport() {
             group.rows.push(record.row);
         }
 
-        // Build result with status
         const result: PpaBlock[] = [];
         for (const [fullCode, group] of groups) {
             const ppa = ppasByCode.get(normalize(fullCode));
@@ -424,54 +401,6 @@ export default function AipSummaryImport() {
         existingOffices,
         existingPpas,
     ]);
-
-    // ----- Handlers -----
-    async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const isXlsx =
-            file.name.toLowerCase().endsWith('.xlsx') ||
-            file.type ===
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-        if (!isXlsx) {
-            setError('Only .xlsx files are allowed.');
-            setSheets([]);
-            setWorkbook(null);
-            setSelectedSheet('');
-            setFileName(null);
-            setStep('upload');
-            setVerifyResult(null);
-            setExtractResult(null);
-            e.target.value = '';
-            return;
-        }
-
-        setError(null);
-        setLoading(true);
-        setFileName(file.name);
-        setSelectedSheet('');
-        setStep('upload');
-        setVerifyResult(null);
-        setExtractResult(null);
-
-        try {
-            const wb = new ExcelJS.Workbook();
-            const buf = await file.arrayBuffer();
-            await wb.xlsx.load(buf);
-            setWorkbook(wb);
-            setSheets(wb.worksheets.map((ws) => ws.name));
-        } catch {
-            setError('Failed to parse .xlsx file.');
-            setSheets([]);
-            setWorkbook(null);
-            setSelectedSheet('');
-            setFileName(null);
-        } finally {
-            setLoading(false);
-        }
-    }
 
     function handleSheetChange(value: string[]) {
         setSelectedSheet(value[0] ?? '');
@@ -614,13 +543,6 @@ export default function AipSummaryImport() {
         );
     }
 
-    const [importingOutputs, setImportingOutputs] = useState(false);
-
-    // Importable grain: output rows plus context rows (office/schedule
-    // present, output null — e.g. MANPOWER SERVICES). Pure hierarchy rows
-    // (nothing carried) are excluded. Office ids are the effective
-    // resolution (auto + mappings + overrides); rows with none are still
-    // sent so the backend can report them as skipped.
     const importableOutputs = useMemo(() => {
         if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
 
@@ -653,11 +575,6 @@ export default function AipSummaryImport() {
         tokenMappings,
     ]);
 
-    // Exists/new status per output row: resolve the PPA by normalized ref
-    // code within the selected office + fiscal year, then match the
-    // expected output text (null matches null). Rows with no resolved
-    // offices are flagged `no-offices` but still importable — offices
-    // attach later via the edit dialog. Mirrors the PPA tab.
     type OutputImportStatus = 'exists' | 'new' | 'no-ppa' | 'no-offices';
 
     const outputStatuses = useMemo(() => {
@@ -782,11 +699,6 @@ export default function AipSummaryImport() {
         );
     }
 
-    const [importingFunds, setImportingFunds] = useState(false);
-
-    // Importable fund links: records carrying a fund with an effective
-    // funding_source_id and not dismissed. Typology falls back to null
-    // when unmatched; peso amounts stay out (zeros on the backend).
     const importableFunds = useMemo(() => {
         if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
 
@@ -834,9 +746,6 @@ export default function AipSummaryImport() {
         dismissedFunds,
     ]);
 
-    // Exists/new status per fund link: resolve the PPA by normalized ref
-    // code, then the output by expected-output text, then check for an
-    // existing link on (output, fund). Mirrors the outputs tab.
     type FundLinkStatus = 'exists' | 'new' | 'no-output';
 
     const fundStatuses = useMemo(() => {
@@ -963,9 +872,7 @@ export default function AipSummaryImport() {
         );
     }
 
-    // ----- Build the state object once -----
     const s: AipImportState = {
-        // file / workbook
         sheets,
         workbook,
         fileName,
@@ -973,7 +880,6 @@ export default function AipSummaryImport() {
         loading,
         error,
 
-        // pipeline
         step,
         setStep,
         config,
@@ -984,7 +890,6 @@ export default function AipSummaryImport() {
         canExtract,
         canImportPpa,
 
-        // targets
         selectedOffice,
         setSelectedOffice,
         selectedOfficeLabel,
@@ -996,7 +901,6 @@ export default function AipSummaryImport() {
         importTitle,
         goToImport,
 
-        // office resolution
         officeMatches,
         officeOverrides,
         setOfficeOverrides,
@@ -1013,7 +917,6 @@ export default function AipSummaryImport() {
         mappingTarget,
         setMappingTarget,
 
-        // fund resolution
         fundMatches,
         fundOverrides,
         setFundOverrides,
@@ -1024,7 +927,6 @@ export default function AipSummaryImport() {
         fundPickerKey,
         setFundPickerKey,
 
-        // per-flow
         blocksForImport,
         newBlocks,
         handleConfirmImport,
@@ -1040,7 +942,6 @@ export default function AipSummaryImport() {
         handleConfirmFunds,
         importingFunds,
 
-        // handlers
         handleFileChange,
         handleSheetChange,
         updateColumn,
@@ -1050,7 +951,6 @@ export default function AipSummaryImport() {
         handleVerify,
         handleExtract,
 
-        // page props
         existingOffices,
         existingPpas,
         fiscalYears,
@@ -1061,59 +961,45 @@ export default function AipSummaryImport() {
     };
 
     return (
-        <ScrollArea className="h-[calc(100vh-3rem)]">
-            <Head title="AIP Summary Import" />
-            <div className="flex flex-col gap-4 p-4">
-                <h1 className="text-2xl font-bold">AIP Summary Import</h1>
-                <p className="text-muted-foreground text-sm">
-                    Import AIP Summary from XLSX.
-                </p>
-
-                {fileName && !loading && (
-                    <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                        <FileSpreadsheet className="text-muted-foreground h-4 w-4 shrink-0" />
-                        <span
-                            className="max-w-[42ch] truncate font-medium"
-                            title={fileName}
-                        >
-                            {fileName}
-                        </span>
-                    </div>
-                )}
-
-                <Tabs
-                    value={step}
-                    onValueChange={(v) => setStep(v as ImportStep)}
-                >
-                    <TabsList>
-                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
-                        <TabsTrigger value="calibrate" disabled={!canCalibrate}>
-                            2. Calibrate
-                        </TabsTrigger>
-                        <TabsTrigger value="verify" disabled={!canVerify}>
-                            3. Verify
-                        </TabsTrigger>
-                        <TabsTrigger value="extract" disabled={!canExtract}>
-                            4. Extract
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value={importStep}
-                            disabled={!canImportPpa}
-                        >
-                            5. {importTitle}
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <UploadStep s={s} />
-                    <CalibrateStep s={s} />
-                    <VerifyStep s={s} />
-                    <ExtractStep s={s} />
-                    <ImportPpaStep s={s} />
-                    <ImportOutputsStep s={s} />
-                    <ImportFundingStep s={s} />
-                </Tabs>
-            </div>
-        </ScrollArea>
+        <ImportPageShell
+            title="AIP Summary Import"
+            description="Import AIP Summary from XLSX."
+            fileName={fileName}
+            loading={loading}
+            step={step}
+            onStepChange={(v) => setStep(v as ImportStep)}
+            tabs={[
+                { value: 'upload', label: '1. Upload' },
+                {
+                    value: 'calibrate',
+                    label: '2. Calibrate',
+                    disabled: !canCalibrate,
+                },
+                {
+                    value: 'verify',
+                    label: '3. Verify',
+                    disabled: !canVerify,
+                },
+                {
+                    value: 'extract',
+                    label: '4. Extract',
+                    disabled: !canExtract,
+                },
+                {
+                    value: importStep,
+                    label: `5. ${importTitle}`,
+                    disabled: !canImportPpa,
+                },
+            ]}
+        >
+            <UploadStep s={s} />
+            <CalibrateStep s={s} />
+            <VerifyStep s={s} />
+            <ExtractStep s={s} />
+            <ImportPpaStep s={s} />
+            <ImportOutputsStep s={s} />
+            <ImportFundingStep s={s} />
+        </ImportPageShell>
     );
 }
 

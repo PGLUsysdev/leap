@@ -1,12 +1,8 @@
-// resources/js/pages/imports/price-list-quantities-import/index.tsx
-
-import { Head, router } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
-import { FileSpreadsheet } from 'lucide-react';
-import type { ChangeEvent } from 'react';
 import { useMemo, useState } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { getDefaultQuantitiesConfig } from '@/lib/ppmp/sheet-config';
 import type { QuantitiesSheetConfig } from '@/lib/ppmp/sheet-config';
 import {
@@ -64,14 +60,8 @@ export default function PriceListQuantitiesImport({
     existingFundingSources,
     existingOutputs,
 }: PriceListQuantitiesImportProps) {
-    const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
-    const [sheets, setSheets] = useState<string[]>([]);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
-    const [fileName, setFileName] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
     const [step, setStep] = useState<PliQtyStep>('upload');
-
     const [calibrationMode, setCalibrationMode] =
         useState<CalibrationMode>('shared');
     const [sharedConfig, setSharedConfig] =
@@ -80,17 +70,14 @@ export default function PriceListQuantitiesImport({
         Record<string, QuantitiesSheetConfig>
     >({});
     const [currentSheet, setCurrentSheet] = useState<string>('');
-
     const [extractResults, setExtractResults] = useState<
         Record<string, QuantitiesExtractResult>
     >({});
     const [activeExtractSheet, setActiveExtractSheet] = useState<string>('');
-
     const [verifyResults, setVerifyResults] = useState<
         Record<string, QuantitiesVerifyResult>
     >({});
     const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
-
     const [hideEmptyQty, setHideEmptyQty] = useState(false);
     const [showOnlyUnmapped, setShowOnlyUnmapped] = useState(false);
     const [showOnlyWithQty, setShowOnlyWithQty] = useState(false);
@@ -106,6 +93,24 @@ export default function PriceListQuantitiesImport({
     >(null);
     const [selectedPpaFundingSourceId, setSelectedPpaFundingSourceId] =
         useState<number | null>(null);
+    const [activeImportSheet, setActiveImportSheet] = useState<string>('');
+    const [excludeUnmapped, setExcludeUnmapped] = useState(true);
+    const [excludeAmbiguous, setExcludeAmbiguous] = useState(true);
+    const [excludeUnclassified, setExcludeUnclassified] = useState(true);
+    const [importing, setImporting] = useState(false);
+
+    const { sheets, workbook, fileName, loading, error, handleFileChange } =
+        useImportWorkbook(() => {
+            setSelectedSheets([]);
+            setStep('upload');
+            setSharedConfig(null);
+            setCalibrations({});
+            setCurrentSheet('');
+            setExtractResults({});
+            setVerifyResults({});
+            setActiveExtractSheet('');
+            setActiveVerifySheet('');
+        });
 
     const officeItems = useMemo(
         () =>
@@ -226,8 +231,6 @@ export default function PriceListQuantitiesImport({
     const canReview = canVerify && hasAnyVerify && allVerifyValid;
     const canImport = Object.keys(extractResults).length > 0;
 
-    const [activeImportSheet, setActiveImportSheet] = useState<string>('');
-
     const mappedBySheet = useMemo(() => {
         const next: Record<string, ReturnType<typeof matchQuantityItems>> = {};
 
@@ -257,10 +260,6 @@ export default function PriceListQuantitiesImport({
     const matchedCount = mappedItems.filter(
         (m) => m.status === 'matched',
     ).length;
-    const [excludeUnmapped, setExcludeUnmapped] = useState(true);
-    const [excludeAmbiguous, setExcludeAmbiguous] = useState(true);
-    const [excludeUnclassified, setExcludeUnclassified] = useState(true);
-    const [importing, setImporting] = useState(false);
 
     const isAmbiguous = (message: string): boolean =>
         message.includes('Multiple price list matches');
@@ -413,38 +412,6 @@ export default function PriceListQuantitiesImport({
         setActiveExtractSheet('');
     }
 
-    async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        setWorkbook(null);
-        setSheets([]);
-        setSelectedSheets([]);
-        setFileName(null);
-        setError('');
-        setSharedConfig(null);
-        setCalibrations({});
-        setCurrentSheet('');
-        setExtractResults({});
-        setVerifyResults({});
-        setActiveExtractSheet('');
-        setActiveVerifySheet('');
-        setStep('upload');
-
-        if (!file) {
-            return;
-        }
-
-        try {
-            const wb = new ExcelJS.Workbook();
-            const buf = await file.arrayBuffer();
-            await wb.xlsx.load(buf);
-            setWorkbook(wb);
-            setSheets(wb.worksheets.map((ws) => ws.name));
-            setFileName(file.name);
-        } catch {
-            setError('Failed to parse .xlsx file.');
-        }
-    }
-
     function handleSheetToggle(name: string) {
         setSelectedSheets((prev) => {
             const next = prev.includes(name)
@@ -552,7 +519,6 @@ export default function PriceListQuantitiesImport({
         }));
     }
 
-    // ----- Build the state object once -----
     const s: PriceListQuantitiesImportState = {
         workbook,
         sheets,
@@ -661,57 +627,43 @@ export default function PriceListQuantitiesImport({
     };
 
     return (
-        <ScrollArea className="h-[calc(100vh-3rem)]">
-            <Head title="Price List Quantities Import" />
-            <div className="flex flex-col gap-4 p-4">
-                <h1 className="text-2xl font-bold">
-                    Price List Quantities Import
-                </h1>
-                <p className="text-muted-foreground text-sm">
-                    Import quantities against existing price list items from
-                    XLSX.
-                </p>
-
-                {fileName && !loading && (
-                    <div className="bg-muted/40 supports-[backdrop-filter]:bg-muted/30 sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
-                        <FileSpreadsheet className="text-muted-foreground h-4 w-4 shrink-0" />
-                        <span
-                            className="max-w-[42ch] truncate font-medium"
-                            title={fileName}
-                        >
-                            {fileName}
-                        </span>
-                    </div>
-                )}
-
-                <Tabs
-                    value={step}
-                    onValueChange={(v) => setStep(v as PliQtyStep)}
-                >
-                    <TabsList>
-                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
-                        <TabsTrigger value="calibrate" disabled={!canCalibrate}>
-                            2. Calibrate
-                        </TabsTrigger>
-                        <TabsTrigger value="verify" disabled={!canVerify}>
-                            3. Verify
-                        </TabsTrigger>
-                        <TabsTrigger value="review" disabled={!canReview}>
-                            4. Review
-                        </TabsTrigger>
-                        <TabsTrigger value="import" disabled={!canImport}>
-                            5. Import
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <UploadStep s={s} />
-                    <CalibrateStep s={s} />
-                    <VerifyStep s={s} />
-                    <ReviewStep s={s} />
-                    <ImportStep s={s} />
-                </Tabs>
-            </div>
-        </ScrollArea>
+        <ImportPageShell
+            title="Price List Quantities Import"
+            description="Import quantities against existing price list items from XLSX."
+            fileName={fileName}
+            loading={loading}
+            step={step}
+            onStepChange={(v) => setStep(v as PliQtyStep)}
+            tabs={[
+                { value: 'upload', label: '1. Upload' },
+                {
+                    value: 'calibrate',
+                    label: '2. Calibrate',
+                    disabled: !canCalibrate,
+                },
+                {
+                    value: 'verify',
+                    label: '3. Verify',
+                    disabled: !canVerify,
+                },
+                {
+                    value: 'review',
+                    label: '4. Review',
+                    disabled: !canReview,
+                },
+                {
+                    value: 'import',
+                    label: '5. Import',
+                    disabled: !canImport,
+                },
+            ]}
+        >
+            <UploadStep s={s} />
+            <CalibrateStep s={s} />
+            <VerifyStep s={s} />
+            <ReviewStep s={s} />
+            <ImportStep s={s} />
+        </ImportPageShell>
     );
 }
 

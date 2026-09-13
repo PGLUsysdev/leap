@@ -1,12 +1,7 @@
-// resources/js/pages/imports/category-import/index.tsx
-
-import { Head, router } from '@inertiajs/react';
-import ExcelJS from 'exceljs';
-import { FileSpreadsheet } from 'lucide-react';
-import type { ChangeEvent } from 'react';
-import { useState, useMemo } from 'react';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { router } from '@inertiajs/react';
+import { useMemo, useState } from 'react';
+import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { cellText } from '@/lib/excel/cell-helpers';
 import { isTotalRow, normalize } from '@/lib/ppmp/normalize';
 import type { ExistingCategory } from '@/lib/ppmp/normalize';
@@ -34,14 +29,7 @@ interface CategoryImportProps {
 export default function CategoryImport({
     existingCategories = [],
 }: CategoryImportProps) {
-    const [sheets, setSheets] = useState<string[]>([]);
-    const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
-    const [fileName, setFileName] = useState<string | null>(null);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    // Calibrations – shared + per-sheet (snapshot mode: shared does not auto-overwrite per-sheet until Apply)
     const [calibrationMode, setCalibrationMode] =
         useState<CalibrationMode>('shared');
     const [sharedConfig, setSharedConfig] = useState<SharedSheetConfig | null>(
@@ -51,7 +39,6 @@ export default function CategoryImport({
         Record<string, SharedSheetConfig>
     >({});
     const [currentSheet, setCurrentSheet] = useState<string>('');
-
     const [verifyResults, setVerifyResults] = useState<
         Record<string, VerifyResult>
     >({});
@@ -66,6 +53,18 @@ export default function CategoryImport({
     const [isAdditionalDraft, setIsAdditionalDraft] = useState<
         Record<string, boolean>
     >({});
+
+    const { sheets, workbook, fileName, loading, error, handleFileChange } =
+        useImportWorkbook(() => {
+            setSelectedSheets([]);
+            setCurrentSheet('');
+            setSharedConfig(null);
+            setCalibrations({});
+            setVerifyResults({});
+            setActiveVerifySheet('');
+            setExtractResult(null);
+            setStep('upload');
+        });
 
     function getEffectiveConfig(sheet: string): SharedSheetConfig {
         if (calibrationMode === 'shared' && sharedConfig) return sharedConfig;
@@ -96,69 +95,11 @@ export default function CategoryImport({
         };
     }, [extractResult]);
 
-    async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-
-        if (!file) return;
-
-        const isXlsx =
-            file.name.toLowerCase().endsWith('.xlsx') ||
-            file.type ===
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-        if (!isXlsx) {
-            setError('Only .xlsx files are allowed.');
-            setSheets([]);
-            setWorkbook(null);
-            setSelectedSheets([]);
-            setCurrentSheet('');
-            setSharedConfig(null);
-            setCalibrations({});
-            setFileName(null);
-            e.target.value = '';
-
-            return;
-        }
-
-        setError(null);
-        setLoading(true);
-        setFileName(file.name);
-        setSelectedSheets([]);
-        setCurrentSheet('');
-        setSharedConfig(null);
-        setCalibrations({});
-        setVerifyResults({});
-        setActiveVerifySheet('');
-        setExtractResult(null);
-        setStep('upload');
-
-        try {
-            const wb = new ExcelJS.Workbook();
-            const arrayBuffer = await file.arrayBuffer();
-            await wb.xlsx.load(arrayBuffer);
-            setWorkbook(wb);
-            setSheets(wb.worksheets.map((ws) => ws.name));
-        } catch {
-            setError(
-                'Failed to parse .xlsx file. Please ensure it is a valid Excel file.',
-            );
-            setSheets([]);
-            setWorkbook(null);
-            setSelectedSheets([]);
-            setCurrentSheet('');
-            setSharedConfig(null);
-            setCalibrations({});
-        } finally {
-            setLoading(false);
-        }
-    }
-
     function handleSheetToggle(sheet: string) {
         setSelectedSheets((prev) => {
             const next = prev.includes(sheet)
                 ? prev.filter((s) => s !== sheet)
                 : [...prev, sheet];
-            // reset verification when selection changes
             setVerifyResults({});
             setActiveVerifySheet(next[0] ?? '');
             setExtractResult(null);
@@ -212,7 +153,6 @@ export default function CategoryImport({
         for (const s of selectedSheets) next[s] = { ...src };
 
         setCalibrations(next);
-        // snapshot – do not overwrite sharedConfig
     }
 
     function updateSharedConfig(patch: Partial<SharedSheetConfig>) {
@@ -417,7 +357,6 @@ export default function CategoryImport({
                 }
 
                 if (coaLabelMode === 'without-label') {
-                    // COA directly on item row – group by COA value, no label rows expected
                     if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
                         if (currentCoa) {
                             if (currentCoa.items === 0) {
@@ -643,7 +582,6 @@ export default function CategoryImport({
 
         if (!workbook || selectedSheets.length === 0) return;
 
-        // ensure calibration initialized
         if (!sharedConfig) ensureCalibrationsInitialized();
 
         const next: Record<string, VerifyResult> = {};
@@ -679,7 +617,6 @@ export default function CategoryImport({
         const skippedCoaNotEmpty: ExtractResult['skippedCoaNotEmpty'] = [];
         const skippedProblematic: ExtractResult['skippedProblematic'] = [];
 
-        // Build per-sheet problematic lookups when skipProblematic is on
         const problematicBySheet = new Map<
             string,
             { rows: Set<number>; norms: Set<string> }
@@ -815,7 +752,6 @@ export default function CategoryImport({
                 }
 
                 if (itemRaw && !coaNorm) {
-                    // Item-numbered row without COA — flagged in verify, never a category
                     continue;
                 }
 
@@ -860,7 +796,6 @@ export default function CategoryImport({
             }
         }
 
-        // Global dedupe across all sheets – keep sheet count + locations
         type SeenVal = {
             raw: string;
             normalized: string;
@@ -918,7 +853,6 @@ export default function CategoryImport({
             sheetCount: v.sheets.length,
             locations: v.locations,
         }));
-        // sort by sheetCount desc then raw
         unique.sort(
             (a, b) => b.sheetCount - a.sheetCount || a.raw.localeCompare(b.raw),
         );
@@ -981,7 +915,6 @@ export default function CategoryImport({
         );
     }
 
-    // ----- Build the state object once -----
     const s: CategoryImportState = {
         sheets,
         workbook,
@@ -1040,53 +973,37 @@ export default function CategoryImport({
     };
 
     return (
-        <ScrollArea className="h-[calc(100vh-3rem)]">
-            <Head title="Category Import" />
-            <div className="flex flex-col gap-4 p-4">
-                <h1 className="text-2xl font-bold">Category Import</h1>
-                <p className="text-muted-foreground text-sm">
-                    Import PPMP categories from XLSX. Calibrate columns/headers,
-                    verify format, and bulk create categories.
-                </p>
-
-                {fileName && !loading && (
-                    <div className="bg-muted/40 supports-[backdrop-filter]:bg-muted/30 sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
-                        <FileSpreadsheet className="text-muted-foreground h-4 w-4 shrink-0" />
-                        <span
-                            className="max-w-[42ch] truncate font-medium"
-                            title={fileName}
-                        >
-                            {fileName}
-                        </span>
-                    </div>
-                )}
-
-                <Tabs
-                    value={step}
-                    onValueChange={(v) => setStep(v as CimpStep)}
-                >
-                    <TabsList>
-                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
-                        <TabsTrigger value="calibrate" disabled={!canCalibrate}>
-                            2. Calibrate
-                        </TabsTrigger>
-                        <TabsTrigger value="verify" disabled={!canVerify}>
-                            3. Verify Format
-                        </TabsTrigger>
-                        <TabsTrigger value="extract" disabled={!canExtract}>
-                            4. Extract & Import
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <UploadStep s={s} />
-                    <CalibrateStep s={s} />
-                    <VerifyStep s={s} />
-                    <ExtractStep s={s} />
-                </Tabs>
-            </div>
-
-            <ScrollBar orientation="vertical" />
-        </ScrollArea>
+        <ImportPageShell
+            title="Category Import"
+            description="Import PPMP categories from XLSX. Calibrate columns/headers, verify format, and bulk create categories."
+            fileName={fileName}
+            loading={loading}
+            step={step}
+            onStepChange={(v) => setStep(v as CimpStep)}
+            tabs={[
+                { value: 'upload', label: '1. Upload' },
+                {
+                    value: 'calibrate',
+                    label: '2. Calibrate',
+                    disabled: !canCalibrate,
+                },
+                {
+                    value: 'verify',
+                    label: '3. Verify Format',
+                    disabled: !canVerify,
+                },
+                {
+                    value: 'extract',
+                    label: '4. Extract & Import',
+                    disabled: !canExtract,
+                },
+            ]}
+        >
+            <UploadStep s={s} />
+            <CalibrateStep s={s} />
+            <VerifyStep s={s} />
+            <ExtractStep s={s} />
+        </ImportPageShell>
     );
 }
 

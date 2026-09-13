@@ -1,12 +1,8 @@
-// resources/js/pages/imports/price-list-import/index.tsx
-
-import { Head, Link, router } from '@inertiajs/react';
-import ExcelJS from 'exceljs';
-import { FileSpreadsheet } from 'lucide-react';
+import { Link, router } from '@inertiajs/react';
 import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
     formatCoaOption,
@@ -58,13 +54,7 @@ export default function PriceListImport({
     existingMappings,
     existingPriceLists,
 }: PriceListImportProps) {
-    const [sheets, setSheets] = useState<string[]>([]);
-    const [workbook, setWorkbook] = useState<ExcelJS.Workbook | null>(null);
-    const [fileName, setFileName] = useState<string | null>(null);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
     const [calibrationMode, setCalibrationMode] =
         useState<CalibrationMode>('shared');
     const [sharedConfig, setSharedConfig] =
@@ -73,7 +63,6 @@ export default function PriceListImport({
         Record<string, PriceListSheetConfig>
     >({});
     const [currentSheet, setCurrentSheet] = useState<string>('');
-
     const [verifyResults, setVerifyResults] = useState<
         Record<string, VerifyResult>
     >({});
@@ -93,6 +82,23 @@ export default function PriceListImport({
     const [showDuplicateDetails, setShowDuplicateDetails] = useState(false);
     const [excludeMissingCategory, setExcludeMissingCategory] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
+
+    const { sheets, workbook, fileName, loading, error, handleFileChange } =
+        useImportWorkbook(() => {
+            setSelectedSheets([]);
+            setCurrentSheet('');
+            setSharedConfig(null);
+            setCalibrations({});
+            setVerifyResults({});
+            setActiveVerifySheet('');
+            setRawItems([]);
+            setUniqueItems([]);
+            setSelected(new Set());
+            setCoaOverrides({});
+            setReviewFilter('all');
+            setShowDuplicateDetails(false);
+            setStep('upload');
+        });
 
     useEffect(() => {
         setIsMounted(true);
@@ -386,64 +392,6 @@ export default function PriceListImport({
 
         return verifiedItems;
     }, [verifiedItems, reviewFilter]);
-
-    async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-
-        if (!file) return;
-
-        const isXlsx =
-            file.name.toLowerCase().endsWith('.xlsx') ||
-            file.type ===
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
-        if (!isXlsx) {
-            setError('Only .xlsx files are allowed.');
-            setSheets([]);
-            setWorkbook(null);
-            setSelectedSheets([]);
-            setCurrentSheet('');
-            setSharedConfig(null);
-            setCalibrations({});
-            setFileName(null);
-            e.target.value = '';
-
-            return;
-        }
-
-        setError(null);
-        setLoading(true);
-        setFileName(file.name);
-        setSelectedSheets([]);
-        setCurrentSheet('');
-        setSharedConfig(null);
-        setCalibrations({});
-        setVerifyResults({});
-        setActiveVerifySheet('');
-        setRawItems([]);
-        setUniqueItems([]);
-        setSelected(new Set());
-        setCoaOverrides({});
-        setReviewFilter('all');
-        setShowDuplicateDetails(false);
-        setStep('upload');
-
-        try {
-            const wb = new ExcelJS.Workbook();
-            const buf = await file.arrayBuffer();
-            await wb.xlsx.load(buf);
-            setWorkbook(wb);
-            setSheets(wb.worksheets.map((ws) => ws.name));
-        } catch {
-            setError('Failed to parse .xlsx file.');
-            setSheets([]);
-            setWorkbook(null);
-            setSelectedSheets([]);
-            setFileName(null);
-        } finally {
-            setLoading(false);
-        }
-    }
 
     function handleSheetToggle(sheet: string) {
         setSelectedSheets((prev) => {
@@ -1364,7 +1312,6 @@ export default function PriceListImport({
         );
     }
 
-    // ----- Build the state object once -----
     const s: PriceListImportState = {
         sheets,
         workbook,
@@ -1459,58 +1406,53 @@ export default function PriceListImport({
     };
 
     return (
-        <ScrollArea className="h-[calc(100vh-3rem)]">
-            <Head title="Price List Import" />
-            <div className="flex flex-col gap-4 p-4">
-                <h1 className="text-2xl font-bold">Price List Import</h1>
-                <p className="text-muted-foreground text-sm">
+        <ImportPageShell
+            title="Price List Import"
+            description={
+                <>
                     Imports <strong>price list only</strong> (no quantities).
                     Requires official{' '}
                     <Link href="/imports/category-import" className="underline">
                         Category Import
                     </Link>{' '}
                     and{' '}
-                    <Link href="/imports/category-coa-mapping" className="underline">
+                    <Link
+                        href="/imports/category-coa-mapping"
+                        className="underline"
+                    >
                         Category–COA Mappings
                     </Link>{' '}
                     to exist first.
-                </p>
-
-                {fileName && !loading && (
-                    <div className="sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
-                        <FileSpreadsheet className="text-muted-foreground h-4 w-4 shrink-0" />
-                        <span
-                            className="max-w-[42ch] truncate font-medium"
-                            title={fileName}
-                        >
-                            {fileName}
-                        </span>
-                    </div>
-                )}
-
-                <Tabs value={step} onValueChange={(v) => setStep(v as PliStep)}>
-                    <TabsList>
-                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
-                        <TabsTrigger value="calibrate" disabled={!canCalibrate}>
-                            2. Calibrates
-                        </TabsTrigger>
-                        <TabsTrigger value="verify" disabled={!canVerify}>
-                            3. Verify Formats
-                        </TabsTrigger>
-                        <TabsTrigger value="review" disabled={!canReview}>
-                            4. Review & Imports
-                        </TabsTrigger>
-                    </TabsList>
-
-                    <UploadStep s={s} />
-                    <CalibrateStep s={s} />
-                    <VerifyStep s={s} />
-                    <ReviewStep s={s} />
-                </Tabs>
-            </div>
-
-            <ScrollBar orientation="vertical" />
-        </ScrollArea>
+                </>
+            }
+            fileName={fileName}
+            loading={loading}
+            step={step}
+            onStepChange={(v) => setStep(v as PliStep)}
+            tabs={[
+                { value: 'upload', label: '1. Upload' },
+                {
+                    value: 'calibrate',
+                    label: '2. Calibrate',
+                    disabled: !canCalibrate,
+                },
+                {
+                    value: 'verify',
+                    label: '3. Verify Format',
+                    disabled: !canVerify,
+                },
+                {
+                    value: 'review',
+                    label: '4. Review & Import',
+                    disabled: !canReview,
+                },
+            ]}
+        >
+            <UploadStep s={s} />
+            <CalibrateStep s={s} />
+            <VerifyStep s={s} />
+            <ReviewStep s={s} />
+        </ImportPageShell>
     );
 }
 
