@@ -1481,7 +1481,7 @@ export default function PriceListImport({
                 },
                 {
                     value: 'verify',
-                    label: '3. Verify Format',
+                    label: '3. Verify',
                     disabled: !canVerify,
                 },
                 {

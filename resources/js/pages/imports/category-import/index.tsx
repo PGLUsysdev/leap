@@ -1040,7 +1040,7 @@ export default function CategoryImport({
                 },
                 {
                     value: 'verify',
-                    label: '3. Verify Format',
+                    label: '3. Verify',
                     disabled: !canVerify,
                 },
                 {

@@ -1881,7 +1881,7 @@ export default function CategoryCoaMappingImport({
                 },
                 {
                     value: 'verifyFormat',
-                    label: '3. Verify Format',
+                    label: '3. Verify',
                     disabled: !canVerifyFormat,
                 },
                 {
