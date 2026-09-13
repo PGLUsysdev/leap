@@ -33,16 +33,16 @@ export type AipSummarySheetConfig = {
 };
 
 export const AIP_SUMMARY_FIELD_LABELS: Record<AipSummaryField, string> = {
-    refCode: 'AIP Reference Code (A)',
-    description: 'PPA Description (B)',
-    office: 'Implementing Office (C)',
-    startDate: 'Starting Date (D)',
-    endDate: 'Completion Date (E)',
-    expectedOutput: 'Expected Outputs (F)',
-    fundingSource: 'Funding Source (G)',
-    adaptation: 'Adaptation (M)',
-    mitigation: 'Mitigation (N)',
-    typology: 'Typology Code (O)',
+    refCode: 'AIP Reference Code',
+    description: 'PPA Description',
+    office: 'Implementing Office',
+    startDate: 'Starting Date',
+    endDate: 'Completion Date',
+    expectedOutput: 'Expected Outputs',
+    fundingSource: 'Funding Source',
+    adaptation: 'Adaptation',
+    mitigation: 'Mitigation',
+    typology: 'Typology Code',
 };
 
 export const AIP_SUMMARY_FIELD_GROUPS: Array<{

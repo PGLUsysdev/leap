@@ -15,7 +15,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Field, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
     Select,
@@ -352,10 +352,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             </SelectGroup>
                         </SelectContent>
                     </Select>
-                    <FieldDescription>
-                        Per-sheet calibration — changes affect only the selected
-                        sheet.
-                    </FieldDescription>
                 </Field>
             )}
 
@@ -367,6 +363,9 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                         : calibrationMode === 'shared'
                           ? `(Shared – ${selectedSheets.length} sheets)`
                           : `(Per-sheet – ${currentSheet || selectedSheets[0]})`}
+                </p>
+                <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
+                    Columns
                 </p>
                 <div className="grid grid-cols-3 gap-4">
                     <Field>
@@ -384,9 +383,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-16"
                             placeholder="D"
                         />
-                        <FieldDescription>
-                            COA — empty means category. Default D
-                        </FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="ppmp-item-number-column">
@@ -403,9 +399,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-16"
                             placeholder="E"
                         />
-                        <FieldDescription>
-                            Placeholder detection — default E
-                        </FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="ppmp-category-column">
@@ -422,9 +415,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-16"
                             placeholder="F"
                         />
-                        <FieldDescription>
-                            Category data — default F
-                        </FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="ppmp-description-column">
@@ -441,10 +431,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-16"
                             placeholder="F"
                         />
-                        <FieldDescription>
-                            Item description — same as category (F) in the
-                            standard template
-                        </FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="ppmp-unit-column">
@@ -461,7 +447,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-16"
                             placeholder="G"
                         />
-                        <FieldDescription>Unit — default G</FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="ppmp-price-column">
@@ -478,7 +463,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-16"
                             placeholder="H"
                         />
-                        <FieldDescription>Price — default H</FieldDescription>
                     </Field>
                     {showQtyStart && (
                         <Field>
@@ -496,15 +480,14 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                                 className="w-16"
                                 placeholder="K"
                             />
-                            <FieldDescription>
-                                Jan qty — alternating qty/amount pairs, Jan K →
-                                Dec AG
-                            </FieldDescription>
                         </Field>
                     )}
                 </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-4">
+                <p className="text-muted-foreground mt-4 mb-3 text-xs font-semibold tracking-wide uppercase">
+                    Rows
+                </p>
+                <div className="grid grid-cols-3 gap-4">
                     <Field>
                         <FieldLabel htmlFor="ppmp-header-row">
                             Header Row *
@@ -524,11 +507,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-20"
                             placeholder="7"
                         />
-                        <FieldDescription>
-                            {headerRow === '' || headerRow == null
-                                ? 'Required — 1-indexed header row'
-                                : `Header ${headerRow}; data starts ${headerRow + 1}`}
-                        </FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="ppmp-additional-header-row">
@@ -548,12 +526,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-20"
                             placeholder="e.g. 85"
                         />
-                        <FieldDescription>
-                            {cfg.rowConfig.additionalItemsHeaderRow === '' ||
-                            cfg.rowConfig.additionalItemsHeaderRow == null
-                                ? 'Required'
-                                : `Resumes at ${cfg.rowConfig.additionalItemsHeaderRow + 1}`}
-                        </FieldDescription>
                     </Field>
                     <Field>
                         <FieldLabel htmlFor="ppmp-nonproc-header-row">
@@ -573,12 +545,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             className="w-20"
                             placeholder="e.g. 1258"
                         />
-                        <FieldDescription>
-                            {cfg.rowConfig.nonProcurementHeaderRow === '' ||
-                            cfg.rowConfig.nonProcurementHeaderRow == null
-                                ? 'Required'
-                                : `Starts at ${cfg.rowConfig.nonProcurementHeaderRow + 1}`}
-                        </FieldDescription>
                     </Field>
                 </div>
 
@@ -608,9 +574,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
-                        <FieldDescription>
-                            How to match COA to DB (column-level matching)
-                        </FieldDescription>
                     </Field>
                 )}
 
@@ -660,9 +623,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                             </span>
                         </ToggleGroupItem>
                     </ToggleGroup>
-                    <FieldDescription>
-                        Choose the layout your sheets use.
-                    </FieldDescription>
                 </Field>
 
                 {showGroupsSummary && (
