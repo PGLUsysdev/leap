@@ -1078,13 +1078,6 @@ export default function AipSummaryImport() {
                         >
                             {fileName}
                         </span>
-                        <span className="text-muted-foreground hidden sm:inline">
-                            •
-                        </span>
-                        <span className="text-muted-foreground truncate">
-                            {sheets.length} sheet
-                            {sheets.length === 1 ? '' : 's'} found
-                        </span>
                     </div>
                 )}
 
@@ -1093,39 +1086,15 @@ export default function AipSummaryImport() {
                     onValueChange={(v) => setStep(v as ImportStep)}
                 >
                     <TabsList>
-                        <TabsTrigger value="upload">
-                            1. Upload
-                            {selectedSheet && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    ✓
-                                </span>
-                            )}
-                        </TabsTrigger>
+                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
                         <TabsTrigger value="calibrate" disabled={!canCalibrate}>
                             2. Calibrate
                         </TabsTrigger>
                         <TabsTrigger value="verify" disabled={!canVerify}>
                             3. Verify
-                            {verifyResult?.valid &&
-                                verifyResult.warnings.length === 0 && (
-                                    <span className="ml-1 text-xs text-green-600">
-                                        ✓
-                                    </span>
-                                )}
-                            {verifyResult?.valid &&
-                                verifyResult.warnings.length > 0 && (
-                                    <span className="ml-1 text-xs text-amber-600">
-                                        ⚠ {verifyResult.warnings.length}
-                                    </span>
-                                )}
                         </TabsTrigger>
                         <TabsTrigger value="extract" disabled={!canExtract}>
                             4. Extract
-                            {extractResult && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {extractResult.records.length}
-                                </span>
-                            )}
                         </TabsTrigger>
                         <TabsTrigger
                             value={importStep}

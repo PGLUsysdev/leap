@@ -1485,60 +1485,20 @@ export default function PriceListImport({
                         >
                             {fileName}
                         </span>
-                        <span className="text-muted-foreground hidden sm:inline">
-                            •
-                        </span>
-                        <span className="text-muted-foreground truncate">
-                            {selectedSheets.length > 0
-                                ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(', ')}`
-                                : `${sheets.length} sheets found`}
-                        </span>
                     </div>
                 )}
 
                 <Tabs value={step} onValueChange={(v) => setStep(v as PliStep)}>
                     <TabsList>
-                        <TabsTrigger value="upload">
-                            1. Upload{' '}
-                            {selectedSheets.length > 0 && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {selectedSheets.length}✓
-                                </span>
-                            )}
-                        </TabsTrigger>
+                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
                         <TabsTrigger value="calibrate" disabled={!canCalibrate}>
-                            2. Calibrate{' '}
-                            {sharedConfig && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {calibrationMode}
-                                </span>
-                            )}
+                            2. Calibrates
                         </TabsTrigger>
                         <TabsTrigger value="verify" disabled={!canVerify}>
-                            3. Verify Format{' '}
-                            {allVerifyValid && (
-                                <span className="ml-1 text-xs text-green-600">
-                                    ✓{selectedSheets.length}
-                                </span>
-                            )}
-                            {!allVerifyValid && hasAnyVerify && (
-                                <span className="ml-1 text-xs text-amber-600">
-                                    {
-                                        Object.values(verifyResults).filter(
-                                            (r) => r.valid,
-                                        ).length
-                                    }
-                                    /{selectedSheets.length}
-                                </span>
-                            )}
+                            3. Verify Formats
                         </TabsTrigger>
                         <TabsTrigger value="review" disabled={!canReview}>
-                            4. Review & Import{' '}
-                            {uniqueItems.length > 0 && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {uniqueItems.length}
-                                </span>
-                            )}
+                            4. Review & Imports
                         </TabsTrigger>
                     </TabsList>
 

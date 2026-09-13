@@ -1058,20 +1058,6 @@ export default function CategoryImport({
                         >
                             {fileName}
                         </span>
-                        <span className="text-muted-foreground hidden sm:inline">
-                            •
-                        </span>
-                        <span className="text-muted-foreground truncate">
-                            {selectedSheets.length > 0
-                                ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(', ')}`
-                                : `${sheets.length} sheet${sheets.length === 1 ? '' : 's'} found`}
-                        </span>
-                        {selectedSheets.length > 0 &&
-                            selectedSheets.length !== sheets.length && (
-                                <span className="text-muted-foreground hidden text-xs sm:inline">
-                                    ({sheets.length} total)
-                                </span>
-                            )}
                     </div>
                 )}
 
@@ -1080,56 +1066,15 @@ export default function CategoryImport({
                     onValueChange={(v) => setStep(v as CimpStep)}
                 >
                     <TabsList>
-                        <TabsTrigger value="upload">
-                            1. Upload
-                            {selectedSheets.length > 0 && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {selectedSheets.length}✓
-                                </span>
-                            )}
-                        </TabsTrigger>
+                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
                         <TabsTrigger value="calibrate" disabled={!canCalibrate}>
                             2. Calibrate
-                            {sharedConfig && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {calibrationMode === 'shared'
-                                        ? 'shared'
-                                        : 'per-sheet'}
-                                </span>
-                            )}
                         </TabsTrigger>
                         <TabsTrigger value="verify" disabled={!canVerify}>
                             3. Verify Format
-                            {allVerifyValid && (
-                                <span className="ml-1 text-xs text-green-600">
-                                    ✓ {selectedSheets.length}
-                                </span>
-                            )}
-                            {!allVerifyValid && hasAnyVerify && (
-                                <span className="ml-1 text-xs text-amber-600">
-                                    {
-                                        Object.values(verifyResults).filter(
-                                            (r) => r.valid,
-                                        ).length
-                                    }
-                                    /{selectedSheets.length}
-                                </span>
-                            )}
                         </TabsTrigger>
                         <TabsTrigger value="extract" disabled={!canExtract}>
                             4. Extract & Import
-                            {extractResult && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {extractResult.unique.length}
-                                </span>
-                            )}
-                            {!allVerifyValid &&
-                                skipProblematic &&
-                                hasAnyVerify && (
-                                    <span className="ml-1 text-xs text-amber-600">
-                                        skip
-                                    </span>
-                                )}
                         </TabsTrigger>
                     </TabsList>
 

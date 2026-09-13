@@ -2,6 +2,7 @@
 
 import { Head, router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
+import { FileSpreadsheet } from 'lucide-react';
 import type { ChangeEvent } from 'react';
 import { useMemo, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -67,6 +68,7 @@ export default function PriceListQuantitiesImport({
     const [sheets, setSheets] = useState<string[]>([]);
     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
     const [fileName, setFileName] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [step, setStep] = useState<PliQtyStep>('upload');
 
@@ -670,6 +672,18 @@ export default function PriceListQuantitiesImport({
                     XLSX.
                 </p>
 
+                {fileName && !loading && (
+                    <div className="bg-muted/40 supports-[backdrop-filter]:bg-muted/30 sticky top-0 z-10 flex items-center gap-2 rounded-md border px-3 py-2 text-sm backdrop-blur">
+                        <FileSpreadsheet className="text-muted-foreground h-4 w-4 shrink-0" />
+                        <span
+                            className="max-w-[42ch] truncate font-medium"
+                            title={fileName}
+                        >
+                            {fileName}
+                        </span>
+                    </div>
+                )}
+
                 <Tabs
                     value={step}
                     onValueChange={(v) => setStep(v as PliQtyStep)}
@@ -677,10 +691,7 @@ export default function PriceListQuantitiesImport({
                     <TabsList>
                         <TabsTrigger value="upload">1. Upload</TabsTrigger>
                         <TabsTrigger value="calibrate" disabled={!canCalibrate}>
-                            2. Calibrate{' '}
-                            {calibrationMode === 'shared'
-                                ? '(shared)'
-                                : '(per-sheet)'}
+                            2. Calibrate
                         </TabsTrigger>
                         <TabsTrigger value="verify" disabled={!canVerify}>
                             3. Verify

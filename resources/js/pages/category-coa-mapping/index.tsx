@@ -1889,79 +1889,26 @@ export default function CategoryCoaMappingPage({
                         >
                             {fileName}
                         </span>
-                        <span className="text-muted-foreground hidden sm:inline">
-                            •
-                        </span>
-                        <span className="text-muted-foreground truncate">
-                            {selectedSheets.length > 0
-                                ? `${selectedSheets.length}/${sheets.length} sheets: ${selectedSheets.join(', ')}`
-                                : `${sheets.length} sheet${sheets.length === 1 ? '' : 's'} found`}
-                        </span>
-                        {selectedSheets.length > 0 &&
-                            selectedSheets.length !== sheets.length && (
-                                <span className="text-muted-foreground hidden text-xs sm:inline">
-                                    ({sheets.length} total)
-                                </span>
-                            )}
                     </div>
                 )}
 
                 <Tabs value={step} onValueChange={(v) => setStep(v as CcmStep)}>
                     <TabsList>
-                        <TabsTrigger value="upload">
-                            1. Upload{' '}
-                            {selectedSheets.length > 0 && (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {selectedSheets.length}✓
-                                </span>
-                            )}
-                        </TabsTrigger>
+                        <TabsTrigger value="upload">1. Upload</TabsTrigger>
                         <TabsTrigger value="calibrate" disabled={!canCalibrate}>
-                            2. Calibrate{' '}
-                            {sharedConfig ? (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    H
-                                    {sharedConfig.rowConfig.headerRow === '' ||
-                                    sharedConfig.rowConfig.headerRow == null
-                                        ? '—'
-                                        : sharedConfig.rowConfig.headerRow}{' '}
-                                    {calibrationMode === 'shared'
-                                        ? 'shared'
-                                        : 'per-sheet'}
-                                </span>
-                            ) : null}
+                            2. Calibrate
                         </TabsTrigger>
                         <TabsTrigger
                             value="verifyFormat"
                             disabled={!canVerifyFormat}
                         >
-                            3. Verify Format{' '}
-                            {hasFormatResult ? (
-                                <span
-                                    className={`ml-1 text-xs ${formatValid ? 'text-green-600' : 'text-amber-600'}`}
-                                >
-                                    {formatValid
-                                        ? `✓ ${selectedSheets.length}`
-                                        : `❌ ${Object.values(formatResults).filter((r) => !r.valid).length}/${selectedSheets.length}`}
-                                </span>
-                            ) : null}
+                            3. Verify Format
                         </TabsTrigger>
                         <TabsTrigger value="verifyMap" disabled={!canVerifyMap}>
-                            4. Verify & Map{' '}
-                            {verification ? (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {verification.missingMapping} missing
-                                </span>
-                            ) : null}
+                            4. Verify & Map
                         </TabsTrigger>
                         <TabsTrigger value="review" disabled={!canReview}>
-                            5. Review & Save{' '}
-                            {effectiveVerification ? (
-                                <span className="text-muted-foreground ml-1 text-xs">
-                                    {effectiveVerification.effMissingMapping} to
-                                    create
-                                </span>
-                            ) : null}
+                            5. Review & Save
                         </TabsTrigger>
                     </TabsList>
 
