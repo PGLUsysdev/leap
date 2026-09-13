@@ -10,19 +10,21 @@ describe('getDefaultSharedConfig', () => {
     it('should_ReturnStandardDefaults_When_Called', () => {
         // Arrange + Act
         const cfg = getDefaultSharedConfig();
-        // Assert: the calibration standard — D/E/F/G/H columns, header row 7,
+        // Assert: the calibration standard — D/E/F/G/H columns (category and
+        // description share F), K qty start, all rows required-but-empty,
         // with-label mode, account-title matching.
         expect(cfg.columnConfig).toEqual({
             category: 'F',
+            description: 'F',
             coa: 'D',
             unit: 'G',
             price: 'H',
             itemNumber: 'E',
         });
         expect(cfg.rowConfig).toEqual({
-            headerRow: 7,
-            additionalItemsHeaderRow: null,
-            nonProcurementHeaderRow: null,
+            headerRow: '',
+            additionalItemsHeaderRow: '',
+            nonProcurementHeaderRow: '',
         });
         expect(cfg.coaLabelMode).toBe('with-label');
         expect(cfg.coaMatchField).toBe('account_title');
@@ -45,6 +47,7 @@ describe('shared calibration shape', () => {
         const cfg: SharedSheetConfig = {
             columnConfig: {
                 category: 'F',
+                description: 'F',
                 coa: 'D',
                 unit: 'G',
                 price: 'H',
@@ -82,13 +85,16 @@ describe('getDefaultQuantitiesConfig', () => {
         const cfg = getDefaultQuantitiesConfig();
         expect(cfg.columnConfig).toMatchObject({
             category: 'F',
+            description: 'F',
             coa: 'D',
             unit: 'G',
             price: 'H',
             itemNumber: 'E',
             qtyStart: 'K',
         });
-        expect(cfg.rowConfig.headerRow).toBe(7);
+        expect(cfg.rowConfig.headerRow).toBe('');
+        expect(cfg.rowConfig.additionalItemsHeaderRow).toBe('');
+        expect(cfg.rowConfig.nonProcurementHeaderRow).toBe('');
         expect(cfg.coaLabelMode).toBe('with-label');
     });
 });

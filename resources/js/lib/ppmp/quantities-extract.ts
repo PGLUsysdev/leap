@@ -132,6 +132,22 @@ function resolveSheet(
         };
     }
 
+    if (additionalItemsHeaderRow === '' || additionalItemsHeaderRow == null) {
+        return {
+            ok: false,
+            message:
+                'Additional Items Header Row is required — check calibration',
+        };
+    }
+
+    if (nonProcurementHeaderRow === '' || nonProcurementHeaderRow == null) {
+        return {
+            ok: false,
+            message:
+                'Non-Procurement Header Row is required — check calibration',
+        };
+    }
+
     const qtyStartNum = columnToNumber(cfg.columnConfig.qtyStart);
 
     if (qtyStartNum <= 0) {
@@ -188,6 +204,7 @@ type CandidateRow = {
     section: QuantitySection;
     coaRaw: string | null;
     dataRaw: string;
+    descriptionRaw: string | null;
     unitRaw: string | null;
     priceRaw: string | null;
     itemRaw: string | null;
@@ -205,6 +222,9 @@ function readCandidateRows(
 ): { rows: CandidateRow[]; labelRows: number } {
     const { ws, qtyCols, ranges, lastRow } = resolved;
     const { category, coa, unit, price, itemNumber } = cfg.columnConfig;
+    // Description lives in its own column (same as category in the standard
+    // template); fall back to the category column when uncalibrated.
+    const descriptionColumn = cfg.columnConfig.description || category;
     const rows: CandidateRow[] = [];
     let labelRows = 0;
 
@@ -220,6 +240,7 @@ function readCandidateRows(
             const row = ws.getRow(r);
             const coaRaw = cellText(row.getCell(coa));
             const dataRaw = cellText(row.getCell(category));
+            const descriptionRaw = cellText(row.getCell(descriptionColumn));
             const unitRaw = cellText(row.getCell(unit));
             const priceRaw = cellText(row.getCell(price));
             const itemRaw = cellText(row.getCell(itemNumber));
@@ -261,6 +282,7 @@ function readCandidateRows(
                 section,
                 coaRaw,
                 dataRaw: dataRaw ?? '',
+                descriptionRaw,
                 unitRaw,
                 priceRaw,
                 itemRaw,
@@ -425,7 +447,7 @@ export function extractQuantitiesSheet(
             section: candidate.section,
             category: candidate.dataRaw,
             coa: candidate.coaRaw ?? '',
-            description: candidate.dataRaw,
+            description: candidate.descriptionRaw ?? candidate.dataRaw,
             unit: candidate.unitRaw ?? '',
             price: Number.isNaN(priceNum) ? null : priceNum,
             priceRaw: candidate.priceRaw,

@@ -144,12 +144,16 @@ export type CategoryCoaMappingState = {
 
     // verify format
     formatResults: Record<string, VerifyFormatResult>;
+    setFormatResults: Dispatch<
+        SetStateAction<Record<string, VerifyFormatResult>>
+    >;
     activeFormatSheet: string;
     setActiveFormatSheet: (s: string) => void;
     handleVerifyFormat: () => void;
 
     // verify + review
     verification: VerificationState | null;
+    setVerification: Dispatch<SetStateAction<VerificationState | null>>;
     effectiveVerification: EffectiveVerificationState | null;
     activeVerifySheet: string;
     setActiveVerifySheet: (s: string) => void;

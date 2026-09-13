@@ -1,11 +1,19 @@
 export type SheetRowConfig = {
+    /** Leaf-header row. Always required — every PPMP sheet has all sections. */
     headerRow: number | '';
-    additionalItemsHeaderRow?: number | null;
-    nonProcurementHeaderRow?: number | null;
+    /** Header row of the Additional Items section. Required. */
+    additionalItemsHeaderRow: number | '';
+    /** Header row of the Non-Procurement section. Required. */
+    nonProcurementHeaderRow: number | '';
 };
 
 export type SheetColumnConfig = {
     category: string;
+    /**
+     * Item description column — same column as category (`F`) in the
+     * standard template. Kept separate so split layouts can calibrate it.
+     */
+    description: string;
     coa: string;
     unit: string;
     price: string;
@@ -24,15 +32,16 @@ export function getDefaultSharedConfig(): SharedSheetConfig {
     return {
         columnConfig: {
             category: 'F',
+            description: 'F',
             coa: 'D',
             unit: 'G',
             price: 'H',
             itemNumber: 'E',
         },
         rowConfig: {
-            headerRow: 7,
-            additionalItemsHeaderRow: null,
-            nonProcurementHeaderRow: null,
+            headerRow: '',
+            additionalItemsHeaderRow: '',
+            nonProcurementHeaderRow: '',
         },
         coaLabelMode: 'with-label',
         coaMatchField: 'account_title',

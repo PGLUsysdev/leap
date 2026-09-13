@@ -85,8 +85,16 @@ export default function CategoryCoaMappingImport({
         });
 
     const canCalibrate = selectedSheets.length > 0;
+    const rowsCalibrated =
+        !!sharedConfig &&
+        sharedConfig.rowConfig.headerRow !== '' &&
+        sharedConfig.rowConfig.headerRow != null &&
+        sharedConfig.rowConfig.additionalItemsHeaderRow !== '' &&
+        sharedConfig.rowConfig.additionalItemsHeaderRow != null &&
+        sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
+        sharedConfig.rowConfig.nonProcurementHeaderRow != null;
     const canVerifyFormat =
-        selectedSheets.length > 0 && !!workbook && !!sharedConfig;
+        selectedSheets.length > 0 && !!workbook && rowsCalibrated;
     const hasFormatResult =
         selectedSheets.length > 0 &&
         selectedSheets.every((s) => !!formatResults[s]);
@@ -327,6 +335,44 @@ export default function CategoryCoaMappingImport({
                     {
                         row: 0,
                         message: 'Header Row is required — check calibration',
+                    },
+                ],
+                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
+                details: [],
+            };
+        }
+
+        if (
+            effective.rowConfig.additionalItemsHeaderRow === '' ||
+            effective.rowConfig.additionalItemsHeaderRow == null
+        ) {
+            return {
+                valid: false,
+                message: 'Additional Items Header Row is required',
+                errors: [
+                    {
+                        row: 0,
+                        message:
+                            'Additional Items Header Row is required — check calibration',
+                    },
+                ],
+                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
+                details: [],
+            };
+        }
+
+        if (
+            effective.rowConfig.nonProcurementHeaderRow === '' ||
+            effective.rowConfig.nonProcurementHeaderRow == null
+        ) {
+            return {
+                valid: false,
+                message: 'Non-Procurement Header Row is required',
+                errors: [
+                    {
+                        row: 0,
+                        message:
+                            'Non-Procurement Header Row is required — check calibration',
                     },
                 ],
                 groups: { procurement: 0, additional: 0, nonProcurement: 0 },
@@ -1244,7 +1290,11 @@ export default function CategoryCoaMappingImport({
 
             if (
                 effective.rowConfig.headerRow === '' ||
-                effective.rowConfig.headerRow == null
+                effective.rowConfig.headerRow == null ||
+                effective.rowConfig.additionalItemsHeaderRow === '' ||
+                effective.rowConfig.additionalItemsHeaderRow == null ||
+                effective.rowConfig.nonProcurementHeaderRow === '' ||
+                effective.rowConfig.nonProcurementHeaderRow == null
             ) {
                 continue;
             }
@@ -1659,7 +1709,7 @@ export default function CategoryCoaMappingImport({
                 ws.actualRowCount,
             );
             console.log(
-                `Preview with calibration — headerRow ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow} → data starts ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow + 1}, category ${effective.columnConfig.category}, coa ${effective.columnConfig.coa}, coaMatchField ${effective.coaMatchField}, coaLabelMode ${effective.coaLabelMode}, additional ${effective.rowConfig.additionalItemsHeaderRow ?? '—'}, nonProc ${effective.rowConfig.nonProcurementHeaderRow ?? '—'}`,
+                `Preview with calibration — headerRow ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow} → data starts ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow + 1}, category ${effective.columnConfig.category}, description ${effective.columnConfig.description}, coa ${effective.columnConfig.coa}, coaMatchField ${effective.coaMatchField}, coaLabelMode ${effective.coaLabelMode}, additional ${effective.rowConfig.additionalItemsHeaderRow === '' || effective.rowConfig.additionalItemsHeaderRow == null ? '—' : effective.rowConfig.additionalItemsHeaderRow}, nonProc ${effective.rowConfig.nonProcurementHeaderRow === '' || effective.rowConfig.nonProcurementHeaderRow == null ? '—' : effective.rowConfig.nonProcurementHeaderRow}`,
             );
 
             if (
@@ -1790,11 +1840,13 @@ export default function CategoryCoaMappingImport({
         handleSheetClick,
 
         formatResults,
+        setFormatResults,
         activeFormatSheet,
         setActiveFormatSheet,
         handleVerifyFormat,
 
         verification,
+        setVerification,
         effectiveVerification,
         activeVerifySheet,
         setActiveVerifySheet,

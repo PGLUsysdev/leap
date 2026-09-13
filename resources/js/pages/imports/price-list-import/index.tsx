@@ -113,12 +113,15 @@ export default function PriceListImport({
     }
 
     const canCalibrate = selectedSheets.length > 0;
-    const canVerify =
-        canCalibrate &&
-        !!workbook &&
+    const rowsCalibrated =
         !!sharedConfig &&
         sharedConfig.rowConfig.headerRow !== '' &&
-        sharedConfig.rowConfig.headerRow != null;
+        sharedConfig.rowConfig.headerRow != null &&
+        sharedConfig.rowConfig.additionalItemsHeaderRow !== '' &&
+        sharedConfig.rowConfig.additionalItemsHeaderRow != null &&
+        sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
+        sharedConfig.rowConfig.nonProcurementHeaderRow != null;
+    const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const allVerifyValid =
         selectedSheets.length > 0 &&
         selectedSheets.every((s) => verifyResults[s]?.valid);
@@ -530,6 +533,39 @@ export default function PriceListImport({
                     {
                         row: 0,
                         message: 'Header Row is required — check calibration',
+                    },
+                ],
+                details: [],
+            };
+        }
+
+        if (
+            additionalItemsHeaderRow === '' ||
+            additionalItemsHeaderRow == null
+        ) {
+            return {
+                valid: false,
+                message: 'Additional Items Header Row is required',
+                errors: [
+                    {
+                        row: 0,
+                        message:
+                            'Additional Items Header Row is required — check calibration',
+                    },
+                ],
+                details: [],
+            };
+        }
+
+        if (nonProcurementHeaderRow === '' || nonProcurementHeaderRow == null) {
+            return {
+                valid: false,
+                message: 'Non-Procurement Header Row is required',
+                errors: [
+                    {
+                        row: 0,
+                        message:
+                            'Non-Procurement Header Row is required — check calibration',
                     },
                 ],
                 details: [],
@@ -982,6 +1018,7 @@ export default function PriceListImport({
     ): RawItem[] {
         const out: RawItem[] = [];
         const dataColumn = cfg.columnConfig.category;
+        const descriptionColumn = cfg.columnConfig.description || dataColumn;
         const coaColumn = cfg.columnConfig.coa;
         const unitColumn = cfg.columnConfig.unit;
         const priceColumn = cfg.columnConfig.price;
@@ -997,6 +1034,8 @@ export default function PriceListImport({
             const row = ws.getRow(r);
             const coaRaw = cellText(row.getCell(coaColumn));
             const dataRaw = cellText(row.getCell(dataColumn));
+            const descriptionRaw =
+                cellText(row.getCell(descriptionColumn)) ?? dataRaw;
 
             if (!dataRaw && !coaRaw) continue;
 
@@ -1073,7 +1112,7 @@ export default function PriceListImport({
                     row: r,
                     category: effectiveCat,
                     coa: effectiveCoa,
-                    description: dataRaw,
+                    description: descriptionRaw ?? dataRaw,
                     unit: unitRaw,
                     price:
                         priceNum !== null && !Number.isNaN(priceNum)
@@ -1155,7 +1194,11 @@ export default function PriceListImport({
 
             if (
                 cfg.rowConfig.headerRow === '' ||
-                cfg.rowConfig.headerRow == null
+                cfg.rowConfig.headerRow == null ||
+                cfg.rowConfig.additionalItemsHeaderRow === '' ||
+                cfg.rowConfig.additionalItemsHeaderRow == null ||
+                cfg.rowConfig.nonProcurementHeaderRow === '' ||
+                cfg.rowConfig.nonProcurementHeaderRow == null
             )
                 continue;
 

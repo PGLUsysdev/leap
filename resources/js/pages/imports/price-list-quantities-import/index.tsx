@@ -218,12 +218,15 @@ export default function PriceListQuantitiesImport({
     }, [existingOutputs, selectedAipOutputId]);
 
     const canCalibrate = selectedSheets.length > 0;
-    const canVerify =
-        canCalibrate &&
-        !!workbook &&
+    const rowsCalibrated =
         !!sharedConfig &&
         sharedConfig.rowConfig.headerRow !== '' &&
-        sharedConfig.rowConfig.headerRow != null;
+        sharedConfig.rowConfig.headerRow != null &&
+        sharedConfig.rowConfig.additionalItemsHeaderRow !== '' &&
+        sharedConfig.rowConfig.additionalItemsHeaderRow != null &&
+        sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
+        sharedConfig.rowConfig.nonProcurementHeaderRow != null;
+    const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
     const allVerifyValid =
         selectedSheets.length > 0 &&

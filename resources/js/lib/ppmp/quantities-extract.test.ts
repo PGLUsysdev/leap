@@ -9,7 +9,8 @@ import { getDefaultQuantitiesConfig } from '@/lib/ppmp/sheet-config';
 async function buildWorkbook(): Promise<ExcelJS.Workbook> {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('PPMP');
-    // Header row 7 (defaults: D=COA, E=item no, F=category/desc, G=unit, H=price, K=Jan…)
+    // Header row 7 (calibrate: D=COA, E=item no, F=category/desc, G=unit, H=price, K=Jan…;
+    // section rows via calibratedConfig below)
     ws.getCell('D7').value = 'COA';
     ws.getCell('F7').value = 'Description';
     // Item row 8 (K=Jan qty, L=Jan amount ignored, M=Feb qty, N=Feb amount ignored)
@@ -45,12 +46,25 @@ async function buildWorkbook(): Promise<ExcelJS.Workbook> {
     return loaded;
 }
 
+/**
+ * Section rows sit past the data (rows 8–11), so ranges match the legacy
+ * layout: procurement [8..11], other sections empty.
+ */
+function calibratedConfig() {
+    const cfg = getDefaultQuantitiesConfig();
+    cfg.rowConfig.headerRow = 7;
+    cfg.rowConfig.additionalItemsHeaderRow = 12;
+    cfg.rowConfig.nonProcurementHeaderRow = 13;
+
+    return cfg;
+}
+
 describe('extractQuantitiesSheet', () => {
     it('should_ExtractRowsAndSumMonthlyQtys_When_SheetHasItems', async () => {
         const result = extractQuantitiesSheet(
             await buildWorkbook(),
             'PPMP',
-            getDefaultQuantitiesConfig(),
+            calibratedConfig(),
         );
 
         expect(result.valid).toBe(true);
@@ -66,7 +80,7 @@ describe('extractQuantitiesSheet', () => {
     });
 
     it('should_Fail_When_HeaderRowMissing', async () => {
-        const cfg = getDefaultQuantitiesConfig();
+        const cfg = calibratedConfig();
         cfg.rowConfig.headerRow = '';
         const result = extractQuantitiesSheet(
             await buildWorkbook(),
@@ -76,6 +90,48 @@ describe('extractQuantitiesSheet', () => {
 
         expect(result.valid).toBe(false);
         expect(result.rawItems).toHaveLength(0);
+    });
+
+    it.each([
+        ['additionalItemsHeaderRow', 'Additional Items Header Row is required'],
+        ['nonProcurementHeaderRow', 'Non-Procurement Header Row is required'],
+    ])('should_Fail_When_%sMissing', async (key, message) => {
+        const cfg = calibratedConfig();
+        cfg.rowConfig[key as 'additionalItemsHeaderRow'] = '';
+        const result = extractQuantitiesSheet(
+            await buildWorkbook(),
+            'PPMP',
+            cfg,
+        );
+
+        expect(result.valid).toBe(false);
+        expect(result.message).toContain(message);
+        expect(result.rawItems).toHaveLength(0);
+    });
+
+    it('should_ReadDescriptionFromSplitColumn_When_DescriptionDiffersFromCategory', async () => {
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('PPMP');
+        ws.getCell('F7').value = 'Description';
+        ws.getCell('D8').value = '5-02-03-010 Office Supplies';
+        ws.getCell('F8').value = 'Bond paper A4';
+        ws.getCell('G8').value = 'ream';
+        ws.getCell('I8').value = 'Bond paper A4, 80gsm, long description';
+        ws.getCell('K8').value = 10;
+        const cfg = calibratedConfig();
+        cfg.columnConfig.description = 'I';
+        const result = extractQuantitiesSheet(
+            await loadWorkbook(wb),
+            'PPMP',
+            cfg,
+        );
+
+        expect(result.valid).toBe(true);
+        expect(result.rawItems).toHaveLength(1);
+        expect(result.rawItems[0].category).toBe('Bond paper A4');
+        expect(result.rawItems[0].description).toBe(
+            'Bond paper A4, 80gsm, long description',
+        );
     });
 
     it('should_Fail_When_SheetMissing', async () => {
@@ -124,18 +180,30 @@ describe('verifyQuantitiesSheet', () => {
         const result = verifyQuantitiesSheet(
             await buildWorkbook(),
             'PPMP',
-            getDefaultQuantitiesConfig(),
+            calibratedConfig(),
         );
 
         expect(result.valid).toBe(true);
         expect(result.errors).toHaveLength(0);
     });
 
+    it('should_ReportAlternatingQtyColumns_When_SheetHasValidItems', async () => {
+        const result = verifyQuantitiesSheet(
+            await buildWorkbook(),
+            'PPMP',
+            calibratedConfig(),
+        );
+
+        expect(result.details.join(' ')).toContain(
+            'K, M, O, Q, S, U, W, Y, AA, AC, AE, AG',
+        );
+    });
+
     it('should_FlagBadQtyAndMissingUnit_When_RowsHaveProblems', async () => {
         const result = verifyQuantitiesSheet(
             await loadWorkbook(problemWorkbook()),
             'PPMP',
-            getDefaultQuantitiesConfig(),
+            calibratedConfig(),
         );
 
         expect(result.valid).toBe(false);
@@ -148,7 +216,7 @@ describe('verifyQuantitiesSheet', () => {
     });
 
     it('should_Fail_When_HeaderRowMissing', async () => {
-        const cfg = getDefaultQuantitiesConfig();
+        const cfg = calibratedConfig();
         cfg.rowConfig.headerRow = '';
         const result = verifyQuantitiesSheet(
             await buildWorkbook(),
@@ -157,5 +225,21 @@ describe('verifyQuantitiesSheet', () => {
         );
 
         expect(result.valid).toBe(false);
+    });
+
+    it.each([
+        ['additionalItemsHeaderRow', 'Additional Items Header Row is required'],
+        ['nonProcurementHeaderRow', 'Non-Procurement Header Row is required'],
+    ])('should_Fail_When_%sMissing', async (key, message) => {
+        const cfg = calibratedConfig();
+        cfg.rowConfig[key as 'additionalItemsHeaderRow'] = '';
+        const result = verifyQuantitiesSheet(
+            await buildWorkbook(),
+            'PPMP',
+            cfg,
+        );
+
+        expect(result.valid).toBe(false);
+        expect(result.message).toContain(message);
     });
 });

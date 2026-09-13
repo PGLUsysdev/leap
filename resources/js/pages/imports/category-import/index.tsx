@@ -73,11 +73,15 @@ export default function CategoryImport({
     }
 
     const canCalibrate = selectedSheets.length > 0;
-    const canVerify =
-        canCalibrate &&
-        !!workbook &&
-        selectedSheets.length > 0 &&
-        !!sharedConfig;
+    const rowsCalibrated =
+        !!sharedConfig &&
+        sharedConfig.rowConfig.headerRow !== '' &&
+        sharedConfig.rowConfig.headerRow != null &&
+        sharedConfig.rowConfig.additionalItemsHeaderRow !== '' &&
+        sharedConfig.rowConfig.additionalItemsHeaderRow != null &&
+        sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
+        sharedConfig.rowConfig.nonProcurementHeaderRow != null;
+    const canVerify = canCalibrate && !!workbook && rowsCalibrated;
     const allVerifyValid =
         selectedSheets.length > 0 &&
         selectedSheets.every((s) => verifyResults[s]?.valid);
@@ -214,6 +218,41 @@ export default function CategoryImport({
                     {
                         row: 0,
                         message: 'Header Row is required — check calibration',
+                    },
+                ],
+                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
+                details: [],
+            };
+        }
+
+        if (
+            additionalItemsHeaderRow === '' ||
+            additionalItemsHeaderRow == null
+        ) {
+            return {
+                valid: false,
+                message: 'Additional Items Header Row is required',
+                errors: [
+                    {
+                        row: 0,
+                        message:
+                            'Additional Items Header Row is required — check calibration',
+                    },
+                ],
+                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
+                details: [],
+            };
+        }
+
+        if (nonProcurementHeaderRow === '' || nonProcurementHeaderRow == null) {
+            return {
+                valid: false,
+                message: 'Non-Procurement Header Row is required',
+                errors: [
+                    {
+                        row: 0,
+                        message:
+                            'Non-Procurement Header Row is required — check calibration',
                     },
                 ],
                 groups: { procurement: 0, additional: 0, nonProcurement: 0 },
@@ -661,6 +700,18 @@ export default function CategoryImport({
             const { coaLabelMode } = cfg;
 
             if (headerRow === '' || headerRow == null) continue;
+
+            if (
+                additionalItemsHeaderRow === '' ||
+                additionalItemsHeaderRow == null
+            )
+                continue;
+
+            if (
+                nonProcurementHeaderRow === '' ||
+                nonProcurementHeaderRow == null
+            )
+                continue;
 
             const ws = workbook!.getWorksheet(sheet);
 

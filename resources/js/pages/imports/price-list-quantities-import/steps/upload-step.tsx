@@ -14,13 +14,23 @@ export function UploadStep({ s }: { s: PriceListQuantitiesImportState }) {
         setStep,
     } = s;
 
+    /**
+     * Single-sheet mode: the shared picker emits `[picked]` or `[]`.
+     * Deselect anything else, then select the picked sheet. The page's
+     * `handleSheetToggle` resets downstream results on each call.
+     */
     function handleSheetsChange(next: string[]) {
-        const toAdd = next.filter((s) => !selectedSheets.includes(s));
-        const toRemove = selectedSheets.filter((s) => !next.includes(s));
+        const picked = next[0] ?? '';
 
-        for (const sheet of toAdd) handleSheetToggle(sheet);
+        for (const sheet of selectedSheets) {
+            if (sheet !== picked) {
+                handleSheetToggle(sheet);
+            }
+        }
 
-        for (const sheet of toRemove) handleSheetToggle(sheet);
+        if (picked && !selectedSheets.includes(picked)) {
+            handleSheetToggle(picked);
+        }
     }
 
     return (
@@ -33,7 +43,7 @@ export function UploadStep({ s }: { s: PriceListQuantitiesImportState }) {
             onFileChange={handleFileChange}
             sheets={sheets}
             selectedSheets={selectedSheets}
-            selectionMode="multiple"
+            selectionMode="single"
             onSheetsChange={handleSheetsChange}
             onNext={() => {
                 ensureCalibrationsInitialized();
