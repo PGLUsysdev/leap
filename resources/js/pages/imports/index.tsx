@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import {
     ArrowRight,
+    ClipboardList,
     FileSpreadsheet,
     Receipt,
     Tags,
@@ -30,47 +31,139 @@ type ImportItem = {
     disabled?: boolean;
 };
 
-const IMPORTS: ImportItem[] = [
+type ImportSource = {
+    key: string;
+    /** File input type this group of importers reads from. */
+    title: string;
+    description: string;
+    icon: typeof FileSpreadsheet;
+    items: ImportItem[];
+};
+
+const IMPORT_SOURCES: ImportSource[] = [
     {
-        title: 'Category Import',
+        key: 'ppmp',
+        title: 'PPMP',
         description:
-            'Import PPMP categories from XLSX. Calibrate columns/headers, verify format, and bulk create categories.',
-        href: categoryImportIndex().url,
+            'Import workflows that read from the PPMP (XLSX) file. Run these in order: Category → Category–COA Mapping → Price List → Quantities.',
         icon: FileSpreadsheet,
-        badge: 'Categories',
+        items: [
+            {
+                title: 'Category Import',
+                description:
+                    'Import PPMP categories from XLSX. Calibrate columns/headers, verify format, and bulk create categories.',
+                href: categoryImportIndex().url,
+                icon: FileSpreadsheet,
+                badge: 'Categories',
+            },
+            {
+                title: 'Category–COA Mappings',
+                description:
+                    'Bulk import Category ↔ COA mappings from XLSX. Calibrate, verify format, and create mappings in bulk.',
+                href: categoryCoaMappingIndex().url,
+                icon: Tags,
+                badge: 'Mappings',
+            },
+            {
+                title: 'Price List Import',
+                description:
+                    'Import price list items (price-list only). Requires official Category + Mapping to exist first.',
+                href: priceListImportIndex().url,
+                icon: Receipt,
+                badge: 'Price Lists',
+            },
+            {
+                title: 'Price List Quantities Import',
+                description:
+                    'Import quantities against existing price list items from XLSX.',
+                href: priceListQuantitiesImportIndex().url,
+                icon: FileSpreadsheet,
+                badge: 'Quantities',
+            },
+        ],
     },
     {
-        title: 'Category–COA Mappings',
+        key: 'aip',
+        title: 'AIP Summary Form',
         description:
-            'Bulk import Category ↔ COA mappings from XLSX. Calibrate, verify format, and create mappings in bulk.',
-        href: categoryCoaMappingIndex().url,
-        icon: Tags,
-        badge: 'Mappings',
-    },
-    {
-        title: 'Price List Import',
-        description:
-            'Import price list items (price-list only). Requires official Category + Mapping to exist first.',
-        href: priceListImportIndex().url,
-        icon: Receipt,
-        badge: 'Price Lists',
-    },
-    {
-        title: 'Price List Quantities Import',
-        description:
-            'Import quantities against existing price list items from XLSX.',
-        href: priceListQuantitiesImportIndex().url,
-        icon: FileSpreadsheet,
-        badge: 'Quantities',
-    },
-    {
-        title: 'AIP Summary Import',
-        description: 'Import AIP Summary from XLSX.',
-        href: aipSummaryImportIndex().url,
-        icon: FileSpreadsheet,
-        badge: 'AIP Summary',
+            'Import workflows that read from the AIP Summary form (XLSX).',
+        icon: ClipboardList,
+        items: [
+            {
+                title: 'AIP Summary Import',
+                description: 'Import AIP Summary from XLSX.',
+                href: aipSummaryImportIndex().url,
+                icon: FileSpreadsheet,
+                badge: 'AIP Summary',
+            },
+        ],
     },
 ];
+
+function ImportCard({ item }: { item: ImportItem }) {
+    return (
+        <Card key={item.title} className="flex flex-col">
+            <CardHeader>
+                <div className="flex items-start justify-between gap-2">
+                    <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
+                        <item.icon className="h-5 w-5" />
+                    </div>
+                    <Badge variant="secondary">{item.badge}</Badge>
+                </div>
+                <CardTitle className="pt-3">{item.title}</CardTitle>
+                <CardDescription>{item.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1" />
+            <CardFooter>
+                <Link
+                    href={item.href}
+                    prefetch
+                    aria-disabled={item.disabled}
+                    className={
+                        'bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium shadow' +
+                        (item.disabled ? ' pointer-events-none opacity-50' : '')
+                    }
+                >
+                    Open <ArrowRight className="h-4 w-4" />
+                </Link>
+            </CardFooter>
+        </Card>
+    );
+}
+
+function ImportSourceSection({ source }: { source: ImportSource }) {
+    return (
+        <section className="flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+                <div className="bg-muted flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                    <source.icon className="h-5 w-5" />
+                </div>
+                <div className="flex flex-col gap-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-lg font-semibold tracking-tight">
+                            {source.title}
+                        </h2>
+                        <Badge variant="outline">
+                            {source.items.length}{' '}
+                            {source.items.length === 1
+                                ? 'importer'
+                                : 'importers'}
+                        </Badge>
+                    </div>
+                    <p className="text-muted-foreground text-sm">
+                        {source.description}
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {source.items.map((item) => (
+                    <ImportCard key={item.title} item={item} />
+                ))}
+            </div>
+        </section>
+    );
+}
 
 export default function ImportsHub() {
     return (
@@ -83,44 +176,18 @@ export default function ImportsHub() {
                         Imports
                     </h1>
                     <p className="text-muted-foreground text-sm">
-                        Central hub for all import workflows. New importers will
-                        be added here as they become available.
+                        Central hub for all import workflows, grouped by the
+                        file they read from. New importers will be added here as
+                        they become available.
                     </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {IMPORTS.map((item) => (
-                        <Card key={item.title} className="flex flex-col">
-                            <CardHeader>
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
-                                        <item.icon className="h-5 w-5" />
-                                    </div>
-                                    <Badge variant="secondary">
-                                        {item.badge}
-                                    </Badge>
-                                </div>
-                                <CardTitle className="pt-3">
-                                    {item.title}
-                                </CardTitle>
-                                <CardDescription>
-                                    {item.description}
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-1" />
-                            <CardFooter>
-                                <Link
-                                    href={item.href}
-                                    prefetch
-                                    className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium shadow"
-                                >
-                                    Open <ArrowRight className="h-4 w-4" />
-                                </Link>
-                            </CardFooter>
-                        </Card>
-                    ))}
+                {IMPORT_SOURCES.map((source) => (
+                    <ImportSourceSection key={source.key} source={source} />
+                ))}
 
-                    {/* Placeholder for future imports */}
+                {/* Placeholder for future imports */}
+                {/*<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     <Card className="flex flex-col border-dashed">
                         <CardHeader>
                             <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
@@ -130,19 +197,19 @@ export default function ImportsHub() {
                                 More imports coming soon
                             </CardTitle>
                             <CardDescription>
-                                AIP Summary and other bulk importers will appear
-                                here.
+                                Additional PPMP and AIP Summary bulk importers
+                                will appear here.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1" />
                         <CardFooter>
                             <span className="text-muted-foreground text-xs">
-                                Registry pattern — add entry to IMPORTS array to
-                                extend.
+                                Registry pattern — add an entry to the matching
+                                group in IMPORT_SOURCES to extend.
                             </span>
                         </CardFooter>
                     </Card>
-                </div>
+                </div>*/}
             </div>
         </>
     );
