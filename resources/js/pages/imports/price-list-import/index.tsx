@@ -2,6 +2,7 @@ import { Link, router } from '@inertiajs/react';
 import type { ChangeEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
@@ -18,7 +19,11 @@ import {
 } from '@/lib/ppmp/normalize';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import { getDefaultSharedConfig } from '@/lib/ppmp/sheet-config';
-import { extractPpmpSheet, type PpmpExtractResult, type RawPpmpItem } from '@/lib/ppmp/extract';
+import {
+    extractPpmpSheet,
+    type PpmpExtractResult,
+    type RawPpmpItem,
+} from '@/lib/ppmp/extract';
 import { extractRawSheets, type RawSheet } from '@/lib/raw-extract';
 import { verifyPpmpSheet } from '@/lib/ppmp/verify';
 
@@ -35,7 +40,6 @@ import type {
     VerifiedItem,
     VerifyResult,
 } from './types';
-import { UploadStep } from './steps/upload-step';
 import { CalibrateStep } from './steps/calibrate-step';
 import { VerifyStep } from './steps/verify-step';
 import { ExtractStep } from './steps/extract-step';
@@ -72,7 +76,9 @@ export default function PriceListImport({
     >({});
     const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
     const [rawItems, setRawItems] = useState<RawItem[]>([]);
-    const [ppmpExtractResults, setPpmpExtractResults] = useState<Record<string, PpmpExtractResult>>({});
+    const [ppmpExtractResults, setPpmpExtractResults] = useState<
+        Record<string, PpmpExtractResult>
+    >({});
     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
     const [rawSheets, setRawSheets] = useState<Record<string, RawSheet>>({});
     const [uniqueItems, setUniqueItems] = useState<UniqueItem[]>([]);
@@ -431,6 +437,37 @@ export default function PriceListImport({
         });
     }
 
+    /**
+     * Single-sheet mode: the shared picker emits `[picked]` or `[]`.
+     * Deselect anything else, then select the picked sheet. The page's
+     * `handleSheetToggle` resets downstream results on each call.
+     */
+    function handleSheetsChange(next: unknown) {
+        console.log(
+            '[price-list handleSheetsChange] raw next:',
+            next,
+            'selectedSheets before:',
+            selectedSheets,
+        );
+        const flat = (
+            Array.isArray(next) ? (next as unknown[]).flat(Infinity) : []
+        )
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
+        console.log('[price-list handleSheetsChange] flat:', flat);
+        const picked = flat[0] ?? '';
+
+        for (const sheet of selectedSheets) {
+            if (sheet !== picked) {
+                handleSheetToggle(String(sheet));
+            }
+        }
+
+        if (picked && !selectedSheets.includes(picked)) {
+            handleSheetToggle(picked);
+        }
+    }
+
     function ensureCalibrationsInitialized() {
         if (sharedConfig) return;
 
@@ -532,9 +569,19 @@ export default function PriceListImport({
             .flat(Infinity)
             .map((s) => String(s).trim())
             .filter(Boolean) as string[];
-        console.log('[verify] selectedSheets raw:', selectedSheets, 'flatSheets:', flatSheets);
+        console.log(
+            '[verify] selectedSheets raw:',
+            selectedSheets,
+            'flatSheets:',
+            flatSheets,
+        );
         if (flatSheets.length !== selectedSheets.length) {
-            console.warn('[verify] flattened nested', selectedSheets, '→', flatSheets);
+            console.warn(
+                '[verify] flattened nested',
+                selectedSheets,
+                '→',
+                flatSheets,
+            );
             setSelectedSheets(flatSheets);
         }
 
@@ -574,7 +621,10 @@ export default function PriceListImport({
 
     function handlePpmpExtract() {
         if (!workbook || selectedSheets.length === 0) return;
-        const flatSheets = (selectedSheets as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+        const flatSheets = (selectedSheets as unknown[])
+            .flat(Infinity)
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
         const next: Record<string, PpmpExtractResult> = {};
         const allRaw: RawPpmpItem[] = [];
         for (const sheet of flatSheets) {
@@ -585,7 +635,11 @@ export default function PriceListImport({
         }
         setPpmpExtractResults(next);
         setPpmpRawItems(allRaw);
-        setRawSheets(extractRawSheets(workbook, flatSheets, (s) => getEffectiveConfig(s)));
+        setRawSheets(
+            extractRawSheets(workbook, flatSheets, (s) =>
+                getEffectiveConfig(s),
+            ),
+        );
     }
 
     function extractItemsForSection(
@@ -1083,7 +1137,23 @@ export default function PriceListImport({
                 },
             ]}
         >
-            <UploadStep s={s} />
+            <ImportUploadStep
+                fileInputId="price-list-file"
+                fileLabel="Excel File (.xlsx only)"
+                fileDescription="Select an .xlsx price list export (PPMP template)."
+                error={error}
+                loading={loading}
+                onFileChange={handleFileChange}
+                sheets={sheets}
+                selectedSheets={selectedSheets}
+                selectionMode="single"
+                onSheetsChange={handleSheetsChange}
+                onNext={() => {
+                    ensureCalibrationsInitialized();
+                    setStep('calibrate');
+                }}
+                nextDisabled={selectedSheets.length === 0}
+            />
             <CalibrateStep s={s} />
             <VerifyStep s={s} />
             <ExtractStep s={s} />

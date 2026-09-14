@@ -1,13 +1,17 @@
+// resources/js/components/imports/import-upload-step.tsx
+
 import type { ChangeEvent, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import { TabsContent } from '@/components/ui/tabs';
-import { ImportFileField } from './import-file-field';
-import { ImportSheetPicker } from './import-sheet-picker';
-import type { SheetSelectionMode } from './import-sheet-picker';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
+const XLSX_ACCEPT =
+    '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 interface ImportUploadStepProps {
-    // file input
     fileInputId: string;
     fileLabel?: string;
     fileDescription?: ReactNode;
@@ -15,14 +19,11 @@ interface ImportUploadStepProps {
     loading?: boolean;
     onFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
 
-    // sheet picker
     sheets: string[];
     selectedSheets: string[];
-    selectionMode: SheetSelectionMode;
     sheetPickerLabel?: string;
     onSheetsChange: (sheets: string[]) => void;
 
-    // next button
     onNext: () => void;
     nextDisabled?: boolean;
     nextLabel?: string;
@@ -30,15 +31,14 @@ interface ImportUploadStepProps {
 
 export function ImportUploadStep({
     fileInputId,
-    fileLabel,
-    fileDescription,
+    fileLabel = 'Excel File (.xlsx only)',
+    fileDescription = 'Select an .xlsx file. Only .xlsx is accepted (ExcelJS).',
     error,
-    loading,
+    loading = false,
     onFileChange,
 
     sheets,
     selectedSheets,
-    selectionMode,
     sheetPickerLabel,
     onSheetsChange,
 
@@ -46,44 +46,50 @@ export function ImportUploadStep({
     nextDisabled,
     nextLabel = 'Next: Calibrate',
 }: ImportUploadStepProps) {
-    const defaultPickerLabel =
-        selectionMode === 'single'
-            ? 'Sheets — select one'
-            : 'Sheets — select one or more (multi-sheet)';
+    const pickerLabel = sheetPickerLabel ?? 'Sheets — select one';
 
-    const isDisabled =
-        nextDisabled ??
-        (selectionMode === 'single'
-            ? selectedSheets.length === 0
-            : selectedSheets.length === 0);
+    const isDisabled = nextDisabled ?? selectedSheets.length === 0;
 
-    const countSuffix =
-        selectionMode === 'multiple' && selectedSheets.length > 0
-            ? ` (${selectedSheets.length} sheet${selectedSheets.length === 1 ? '' : 's'})`
-            : '';
+    const toggleItems = sheets.map((sheet) => (
+        <ToggleGroupItem key={sheet} value={sheet}>
+            {sheet}
+        </ToggleGroupItem>
+    ));
 
     return (
         <TabsContent value="upload" className="mt-4 flex flex-col gap-4">
-            <ImportFileField
-                id={fileInputId}
-                label={fileLabel}
-                description={fileDescription}
-                error={error}
-                loading={loading}
-                onFileChange={onFileChange}
-            />
+            <Field>
+                <FieldLabel htmlFor={fileInputId}>{fileLabel}</FieldLabel>
+                <Input
+                    id={fileInputId}
+                    type="file"
+                    accept={XLSX_ACCEPT}
+                    onChange={onFileChange}
+                    disabled={loading}
+                />
+                <FieldDescription>{fileDescription}</FieldDescription>
+                {error && <p className="text-destructive text-sm">{error}</p>}
+                {loading && (
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                        <Spinner /> Parsing workbook...
+                    </div>
+                )}
+            </Field>
 
             {!loading && sheets.length > 0 && (
                 <Field>
-                    <FieldLabel>
-                        {sheetPickerLabel ?? defaultPickerLabel}
-                    </FieldLabel>
-                    <ImportSheetPicker
-                        sheets={sheets}
-                        selected={selectedSheets}
-                        mode={selectionMode}
-                        onChange={onSheetsChange}
-                    />
+                    <FieldLabel>{pickerLabel}</FieldLabel>
+
+                    <ToggleGroup
+                        value={selectedSheets}
+                        onValueChange={(groupValue) => {
+                            onSheetsChange(groupValue);
+                        }}
+                        className="flex flex-wrap justify-start"
+                    >
+                        {toggleItems}
+                    </ToggleGroup>
+
                     <FieldDescription>
                         Selected:{' '}
                         <span className="text-foreground font-medium">
@@ -91,24 +97,13 @@ export function ImportUploadStep({
                                 ? selectedSheets.join(', ')
                                 : 'none'}
                         </span>
-                        {selectionMode === 'multiple' &&
-                            ` — ${selectedSheets.length}/${sheets.length} sheets`}
                     </FieldDescription>
-                    {selectionMode === 'multiple' &&
-                        selectedSheets.length > 1 && (
-                            <p className="text-muted-foreground text-xs">
-                                Shared calibration will apply to all{' '}
-                                {selectedSheets.length} sheets; per-sheet mode
-                                lets you adjust individually.
-                            </p>
-                        )}
                 </Field>
             )}
 
             <div className="flex justify-end">
                 <Button disabled={isDisabled} onClick={onNext}>
                     {nextLabel}
-                    {countSuffix}
                 </Button>
             </div>
         </TabsContent>

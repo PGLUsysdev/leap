@@ -2,9 +2,14 @@ import { router } from '@inertiajs/react';
 import ExcelJS from 'exceljs';
 import { useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { getDefaultQuantitiesConfig } from '@/lib/ppmp/sheet-config';
-import { extractPpmpSheet, type PpmpExtractResult, type RawPpmpItem } from '@/lib/ppmp/extract';
+import {
+    extractPpmpSheet,
+    type PpmpExtractResult,
+    type RawPpmpItem,
+} from '@/lib/ppmp/extract';
 import { extractRawSheets, type RawSheet } from '@/lib/raw-extract';
 import type { QuantitiesSheetConfig } from '@/lib/ppmp/sheet-config';
 import {
@@ -34,7 +39,6 @@ import type {
     PriceListQuantitiesImportState,
     PliQtyStep,
 } from './types';
-import { UploadStep } from './steps/upload-step';
 import { CalibrateStep } from './steps/calibrate-step';
 import { VerifyStep } from './steps/verify-step';
 import { ExtractStep } from './steps/extract-step';
@@ -78,7 +82,9 @@ export default function PriceListQuantitiesImport({
     const [extractResults, setExtractResults] = useState<
         Record<string, QuantitiesExtractResult>
     >({});
-    const [ppmpExtractResults, setPpmpExtractResults] = useState<Record<string, PpmpExtractResult>>({});
+    const [ppmpExtractResults, setPpmpExtractResults] = useState<
+        Record<string, PpmpExtractResult>
+    >({});
     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
     const [rawSheets, setRawSheets] = useState<Record<string, RawSheet>>({});
     const [activeExtractSheet, setActiveExtractSheet] = useState<string>('');
@@ -416,9 +422,19 @@ export default function PriceListQuantitiesImport({
             .flat(Infinity)
             .map((s) => String(s).trim())
             .filter(Boolean) as string[];
-        console.log('[verify] selectedSheets raw:', selectedSheets, 'flatSheets:', flatSheets);
+        console.log(
+            '[verify] selectedSheets raw:',
+            selectedSheets,
+            'flatSheets:',
+            flatSheets,
+        );
         if (flatSheets.length !== selectedSheets.length) {
-            console.warn('[verify] flattened nested', selectedSheets, '→', flatSheets);
+            console.warn(
+                '[verify] flattened nested',
+                selectedSheets,
+                '→',
+                flatSheets,
+            );
             setSelectedSheets(flatSheets);
         }
 
@@ -462,7 +478,10 @@ export default function PriceListQuantitiesImport({
 
     function handlePpmpExtract() {
         if (!workbook || selectedSheets.length === 0) return;
-        const flatSheets = (selectedSheets as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+        const flatSheets = (selectedSheets as unknown[])
+            .flat(Infinity)
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
         const next: Record<string, PpmpExtractResult> = {};
         const allRaw: RawPpmpItem[] = [];
         for (const sheet of flatSheets) {
@@ -473,7 +492,11 @@ export default function PriceListQuantitiesImport({
         }
         setPpmpExtractResults(next);
         setPpmpRawItems(allRaw);
-        setRawSheets(extractRawSheets(workbook, flatSheets, (s) => getEffectiveConfig(s)));
+        setRawSheets(
+            extractRawSheets(workbook, flatSheets, (s) =>
+                getEffectiveConfig(s),
+            ),
+        );
     }
 
     function handleSheetToggle(name: string) {
@@ -499,6 +522,37 @@ export default function PriceListQuantitiesImport({
         setVerifyResults({});
         setActiveExtractSheet('');
         setActiveVerifySheet('');
+    }
+
+    /**
+     * Single-sheet mode: the shared picker emits `[picked]` or `[]`.
+     * Deselect anything else, then select the picked sheet. The page's
+     * `handleSheetToggle` resets downstream results on each call.
+     */
+    function handleSheetsChange(next: unknown) {
+        console.log(
+            '[price-list-quantities handleSheetsChange] raw next:',
+            next,
+            'selectedSheets before:',
+            selectedSheets,
+        );
+        const flat = (
+            Array.isArray(next) ? (next as unknown[]).flat(Infinity) : []
+        )
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
+        console.log('[price-list-quantities handleSheetsChange] flat:', flat);
+        const picked = flat[0] ?? '';
+
+        for (const sheet of selectedSheets) {
+            if (sheet !== picked) {
+                handleSheetToggle(String(sheet));
+            }
+        }
+
+        if (picked && !selectedSheets.includes(picked)) {
+            handleSheetToggle(picked);
+        }
     }
 
     function ensureCalibrationsInitialized() {
@@ -734,7 +788,23 @@ export default function PriceListQuantitiesImport({
                 },
             ]}
         >
-            <UploadStep s={s} />
+            <ImportUploadStep
+                fileInputId="price-list-quantities-file"
+                fileLabel="Excel File (.xlsx only)"
+                fileDescription="Select an .xlsx file. Only .xlsx is accepted (ExcelJS)."
+                error={error}
+                loading={loading}
+                onFileChange={handleFileChange}
+                sheets={sheets}
+                selectedSheets={selectedSheets}
+                selectionMode="single"
+                onSheetsChange={handleSheetsChange}
+                onNext={() => {
+                    ensureCalibrationsInitialized();
+                    setStep('calibrate');
+                }}
+                nextDisabled={!canCalibrate}
+            />
             <CalibrateStep s={s} />
             <VerifyStep s={s} />
             <ExtractStep s={s} />

@@ -1,6 +1,9 @@
+// resources/js/pages/imports/category-import/index.tsx
+
 import { router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { cellText } from '@/lib/excel/cell-helpers';
 import { isTotalRow, normalize } from '@/lib/ppmp/normalize';
@@ -8,7 +11,11 @@ import type { ExistingCategory } from '@/lib/ppmp/normalize';
 import { getDefaultSharedConfig } from '@/lib/ppmp/sheet-config';
 import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 import { verifyPpmpSheet } from '@/lib/ppmp/verify';
-import { extractPpmpSheet, type PpmpExtractResult, type RawPpmpItem } from '@/lib/ppmp/extract';
+import {
+    extractPpmpSheet,
+    type PpmpExtractResult,
+    type RawPpmpItem,
+} from '@/lib/ppmp/extract';
 import { extractRawSheets, type RawSheet } from '@/lib/raw-extract';
 import { index as categoryImportIndex } from '@/routes/category-import';
 import { index as importsIndex } from '@/routes/imports';
@@ -20,7 +27,6 @@ import type {
     ExtractResult,
     VerifyResult,
 } from './types';
-import { UploadStep } from './steps/upload-step';
 import { CalibrateStep } from './steps/calibrate-step';
 import { VerifyStep } from './steps/verify-step';
 import { ExtractStep } from './steps/extract-step';
@@ -138,6 +144,25 @@ export default function CategoryImport({
         handleSheetToggle(sheet);
     }
 
+    function handleSheetsChange(next: unknown) {
+        const flat = (
+            Array.isArray(next) ? (next as unknown[]).flat(Infinity) : []
+        )
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
+        const picked = flat[0] ?? '';
+
+        for (const sheet of selectedSheets) {
+            if (sheet !== picked) {
+                handleSheetToggle(String(sheet));
+            }
+        }
+
+        if (picked && !selectedSheets.includes(picked)) {
+            handleSheetToggle(picked);
+        }
+    }
+
     function ensureCalibrationsInitialized() {
         if (sharedConfig) return;
 
@@ -219,30 +244,12 @@ export default function CategoryImport({
 
         if (!sharedConfig) ensureCalibrationsInitialized();
 
-        // Normalize — handle nested array from picker version mismatch
         const flatSheets = (selectedSheets as unknown[])
             .flat(Infinity)
             .map((s) => String(s).trim())
             .filter(Boolean) as string[];
-        console.log('[verify] selectedSheets raw:', selectedSheets, 'flatSheets:', flatSheets, 'types:', selectedSheets.map((s: unknown) => typeof s + '/' + Array.isArray(s)));
         if (flatSheets.length !== selectedSheets.length) {
-            console.warn('[verify] flattened nested selectedSheets', selectedSheets, '→', flatSheets);
             setSelectedSheets(flatSheets);
-        }
-
-        const availableNames = workbook
-            ? workbook.worksheets.map((ws) => ws.name)
-            : sheets;
-        const missing = flatSheets.filter((s) => !availableNames.includes(s));
-        if (missing.length > 0) {
-            console.warn(
-                '[verify] stale selectedSheets:',
-                flatSheets,
-                'available:',
-                availableNames,
-                'missing:',
-                missing,
-            );
         }
 
         const next: Record<string, VerifyResult> = {};
@@ -256,23 +263,15 @@ export default function CategoryImport({
         setVerifyResults(next);
         const firstInvalid = flatSheets.find((s) => !next[s]?.valid);
         setActiveVerifySheet(firstInvalid ?? flatSheets[0] ?? '');
-
-        if (Object.keys(next).length) {
-            console.table(
-                Object.entries(next).map(([sh, r]) => ({
-                    sheet: sh,
-                    valid: r.valid,
-                    errors: r.errors.length,
-                    message: r.message,
-                })),
-            );
-        }
     }
 
     function handlePpmpExtract() {
         if (!workbook || selectedSheets.length === 0) return;
 
-        const flatSheets = (selectedSheets as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+        const flatSheets = (selectedSheets as unknown[])
+            .flat(Infinity)
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
         const next: Record<string, PpmpExtractResult> = {};
         const allRaw: RawPpmpItem[] = [];
         for (const sheet of flatSheets) {
@@ -283,17 +282,20 @@ export default function CategoryImport({
         }
         setPpmpExtractResults(next);
         setPpmpRawItems(allRaw);
-        const raws = extractRawSheets(workbook, flatSheets, (s) => getEffectiveConfig(s));
+        const raws = extractRawSheets(workbook, flatSheets, (s) =>
+            getEffectiveConfig(s),
+        );
         setRawSheets(raws);
-        // Keep old unique logic for import step (if needed) — also populate extractResult for backward compat
-        // For now, raw extract is shown in Extract tab; unique handling remains in same step via shared UI
     }
 
     function handleExtract() {
         handlePpmpExtract();
         if (!workbook || selectedSheets.length === 0) return;
 
-        const flatForUnique = (selectedSheets as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+        const flatForUnique = (selectedSheets as unknown[])
+            .flat(Infinity)
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
         const filtered: ExtractResult['filtered'] = [];
         const excludedTotal: ExtractResult['excludedTotal'] = [];
         const excludedCoa: ExtractResult['excludedCoa'] = [];
@@ -552,26 +554,6 @@ export default function CategoryImport({
             (a, b) => b.sheetCount - a.sheetCount || a.raw.localeCompare(b.raw),
         );
 
-        console.log('Extract multi-sheet', {
-            filtered,
-            unique,
-            duplicates,
-            excludedTotal,
-            excludedCoa,
-            skippedProblematic,
-        });
-
-        if (skippedProblematic.length > 0) {
-            console.table(
-                skippedProblematic.map((sk) => ({
-                    sheet: sk.sheet,
-                    row: sk.row,
-                    raw: sk.raw,
-                    reason: sk.reason,
-                })),
-            );
-        }
-
         setExtractResult({
             filtered,
             unique,
@@ -706,7 +688,22 @@ export default function CategoryImport({
                 },
             ]}
         >
-            <UploadStep s={s} />
+            <ImportUploadStep
+                fileInputId="category-import-file"
+                fileLabel="Excel File (.xlsx only)"
+                fileDescription="Select an .xlsx file. Only .xlsx is accepted (ExcelJS)."
+                error={error}
+                loading={loading}
+                onFileChange={handleFileChange}
+                sheets={sheets}
+                selectedSheets={selectedSheets}
+                onSheetsChange={handleSheetsChange}
+                onNext={() => {
+                    ensureCalibrationsInitialized();
+                    setStep('calibrate');
+                }}
+                nextDisabled={selectedSheets.length === 0}
+            />
             <CalibrateStep s={s} />
             <VerifyStep s={s} />
             <ExtractStep s={s} />

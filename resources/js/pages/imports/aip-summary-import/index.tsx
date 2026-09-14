@@ -1,1008 +1,1509 @@
-import { router, usePage } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
-import { ImportPageShell } from '@/components/imports/import-page-shell';
-import { useImportWorkbook } from '@/hooks/use-import-workbook';
-import type {
-    AipSummaryField,
-    AipSummarySheetConfig,
-} from '@/lib/aip-summary-import/sheet-config';
-import { getDefaultAipSummaryConfig } from '@/lib/aip-summary-import/sheet-config';
-import type { AipSummaryVerifyResult } from '@/lib/aip-summary-import/verify';
-import {
-    extractAipSummaryRows,
-    verifyAipSummarySheet,
-} from '@/lib/aip-summary-import/verify';
-import type { AipSummaryExtractResult } from '@/lib/aip-summary-import/extract';
-import { extractAipSummaryRecords } from '@/lib/aip-summary-import/extract';
-import type {
-    RecordOfficeMatch,
-    TokenMapping,
-} from '@/lib/aip-summary-import/match-offices';
-import {
-    effectiveOfficeIds,
-    matchRecordOffices,
-    unmatchedOfficeFrequency,
-    visibleUnmatched,
-} from '@/lib/aip-summary-import/match-offices';
-import type { RecordFundMatch } from '@/lib/aip-summary-import/match-funds';
-import {
-    matchRecordFunds,
-    unmatchedFundFrequency,
-} from '@/lib/aip-summary-import/match-funds';
-import { normalize } from '@/lib/ppmp/normalize';
-
-import type { AipImportState, ImportStep, PpaBlock } from './types';
-import { UploadStep } from './steps/upload-step';
-import { CalibrateStep } from './steps/calibrate-step';
-import { VerifyStep } from './steps/verify-step';
-import { ExtractStep } from './steps/extract-step';
-import { ReviewAndImport } from './steps/review-import-step';
-
-export default function AipSummaryImport() {
-    const {
-        existingOffices,
-        existingPpas,
-        fiscalYears,
-        activeFiscalYear,
-        fundingSources,
-        ccTypologies,
-        existingOutputs,
-        existingFundLinks,
-        auth,
-    } = usePage().props as unknown as {
-        existingOffices: {
-            id: number;
-            acronym: string | null;
-            name: string;
-            full_code: string;
-        }[];
-        existingPpas: {
-            id: number;
-            office_id: number;
-            parent_id: number | null;
-            name: string;
-            type: string;
-            code_suffix: string | null;
-            full_code: string;
-            fiscal_year_id: number;
-        }[];
-        fiscalYears: { id: number; year: number; status: string }[];
-        activeFiscalYear: { id: number; year: number; status: string } | null;
-        fundingSources: {
-            id: number;
-            fund_type: string;
-            code: string;
-            title: string;
-        }[];
-        ccTypologies: { id: number; code: string }[];
-        existingOutputs: {
-            id: number;
-            ppa_id: number;
-            office_id: number;
-            fiscal_year_id: number | null;
-            expected_output: string | null;
-        }[];
-        existingFundLinks: {
-            id: number;
-            output_id: number;
-            funding_source_id: number;
-            ppa_id: number;
-            office_id: number;
-            fiscal_year_id: number | null;
-        }[];
-        auth: { user: { office_id: number | null } };
-    };
-
-    const [selectedSheet, setSelectedSheet] = useState<string>('');
-    const [step, setStep] = useState<
-        | 'upload'
-        | 'calibrate'
-        | 'verify'
-        | 'extract'
-        | 'import-ppa'
-        | 'import-outputs'
-        | 'import-funding'
-    >('upload');
-    const [config, setConfig] = useState<AipSummarySheetConfig>(() =>
-        getDefaultAipSummaryConfig(),
-    );
-    const [verifyResult, setVerifyResult] =
-        useState<AipSummaryVerifyResult | null>(null);
-    const [extractResult, setExtractResult] =
-        useState<AipSummaryExtractResult | null>(null);
-    const [importing, setImporting] = useState(false);
-    const [importTarget, setImportTarget] = useState<
-        'ppa' | 'outputs' | 'funding'
-    >('ppa');
-    const [selectedOffice, setSelectedOffice] = useState<string>(
-        auth.user.office_id?.toString() || '',
-    );
-    const [selectedFiscalYear, setSelectedFiscalYear] = useState<string>(
-        activeFiscalYear?.id.toString() || '',
-    );
-    const [officeOverrides, setOfficeOverrides] = useState<
-        Record<string, number[]>
-    >({});
-    const [officePickerKey, setOfficePickerKey] = useState<string | null>(null);
-    const [tokenMappings, setTokenMappings] = useState<
-        Record<string, TokenMapping>
-    >({});
-    const [dismissedTokens, setDismissedTokens] = useState<
-        Record<string, string[]>
-    >({});
-    const [mappingTarget, setMappingTarget] = useState<{
-        key: string;
-        token: string;
-    } | null>(null);
-    const [fundOverrides, setFundOverrides] = useState<Record<string, number>>(
-        {},
-    );
-    const [dismissedFunds, setDismissedFunds] = useState<
-        Record<string, boolean>
-    >({});
-    const [fundPickerKey, setFundPickerKey] = useState<string | null>(null);
-    const [importingOutputs, setImportingOutputs] = useState(false);
-    const [importingFunds, setImportingFunds] = useState(false);
-
-    const { sheets, workbook, fileName, loading, error, handleFileChange } =
-        useImportWorkbook(() => {
-            setSelectedSheet('');
-            setStep('upload');
-            setVerifyResult(null);
-            setExtractResult(null);
-            setOfficeOverrides({});
-            setOfficePickerKey(null);
-            setTokenMappings({});
-            setDismissedTokens({});
-            setMappingTarget(null);
-            setFundOverrides({});
-            setDismissedFunds({});
-            setFundPickerKey(null);
-        });
-
-    const importStep =
-        importTarget === 'outputs'
-            ? 'import-outputs'
-            : importTarget === 'funding'
-              ? 'import-funding'
-              : 'import-ppa';
-    const importTitle =
-        importTarget === 'outputs'
-            ? 'Import Expected Outputs'
-            : importTarget === 'funding'
-              ? 'Import Funding Source'
-              : 'Import PPA';
-
-    function goToImport(target: typeof importTarget) {
-        setImportTarget(target);
-        setStep('review');
-    }
-
-    const selectedOfficeLabel = useMemo(() => {
-        const office = existingOffices.find(
-            (o) => o.id.toString() === selectedOffice,
-        );
-
-        return office?.acronym?.trim() || office?.name || '';
-    }, [existingOffices, selectedOffice]);
-
-    const selectedFiscalYearLabel = useMemo(() => {
-        const fy = fiscalYears.find(
-            (f) => f.id.toString() === selectedFiscalYear,
-        );
-
-        return fy ? String(fy.year) : '';
-    }, [fiscalYears, selectedFiscalYear]);
-
-    const officeMatches = useMemo(() => {
-        if (!extractResult) return new Map<string, RecordOfficeMatch>();
-
-        return new Map(
-            extractResult.records.map((record) => [
-                record.key,
-                matchRecordOffices(record.key, record.offices, existingOffices),
-            ]),
-        );
-    }, [extractResult, existingOffices]);
-
-    const unmatchedFrequency = useMemo(() => {
-        if (!extractResult) return [];
-
-        return unmatchedOfficeFrequency(
-            extractResult.records.map((record) => ({
-                key: record.key,
-                tokens: [],
-                matched: [],
-                unmatched: visibleUnmatched(
-                    officeMatches.get(record.key),
-                    tokenMappings[record.key] ?? {},
-                    dismissedTokens[record.key] ?? [],
-                ),
-            })),
-        );
-    }, [extractResult, officeMatches, tokenMappings, dismissedTokens]);
-
-    function officeIdsForRecord(key: string): number[] {
-        return effectiveOfficeIds(
-            officeMatches.get(key),
-            officeOverrides[key],
-            tokenMappings[key] ?? {},
-        );
-    }
-
-    const fundMatches = useMemo(() => {
-        if (!extractResult) return new Map<string, RecordFundMatch>();
-
-        return new Map(
-            extractResult.records.map((record) => [
-                record.key,
-                matchRecordFunds(
-                    record.key,
-                    record.fundingSource,
-                    record.typology,
-                    fundingSources,
-                    ccTypologies,
-                ),
-            ]),
-        );
-    }, [extractResult, fundingSources, ccTypologies]);
-
-    const unmatchedFundEntries = useMemo(() => {
-        if (!extractResult) return [];
-
-        return unmatchedFundFrequency(
-            extractResult.records
-                .filter(
-                    (record) =>
-                        fundOverrides[record.key] === undefined &&
-                        !dismissedFunds[record.key],
-                )
-                .map(
-                    (record) =>
-                        fundMatches.get(record.key) ?? {
-                            key: record.key,
-                            fundToken: record.fundingSource,
-                            fund: null,
-                            typology: null,
-                        },
-                ),
-        );
-    }, [extractResult, fundMatches, fundOverrides, dismissedFunds]);
-
-    function fundIdForRecord(key: string): number | null {
-        const override = fundOverrides[key];
-        if (override !== undefined) return override;
-
-        return fundMatches.get(key)?.fund?.id ?? null;
-    }
-
-    function ccAmount(value: string | null): number {
-        if (value == null) return 0;
-
-        const parsed = Number.parseFloat(value.trim());
-
-        return Number.isFinite(parsed) ? parsed : 0;
-    }
-
-    function resetRowOffices(key: string) {
-        setOfficeOverrides((prev) => {
-            const next = { ...prev };
-            delete next[key];
-
-            return next;
-        });
-        setTokenMappings((prev) => {
-            const next = { ...prev };
-            delete next[key];
-
-            return next;
-        });
-        setDismissedTokens((prev) => {
-            const next = { ...prev };
-            delete next[key];
-
-            return next;
-        });
-    }
-
-    function setTokenMapping(
-        key: string,
-        token: string,
-        officeId: number | null,
-    ) {
-        setTokenMappings((prev) => {
-            const rowMappings = { ...prev[key] };
-
-            if (officeId === null) {
-                delete rowMappings[token];
-            } else {
-                rowMappings[token] = officeId;
-            }
-
-            if (Object.keys(rowMappings).length === 0) {
-                const next = { ...prev };
-                delete next[key];
-
-                return next;
-            }
-
-            return { ...prev, [key]: rowMappings };
-        });
-    }
-
-    const canCalibrate = selectedSheet !== '';
-    const canVerify =
-        canCalibrate &&
-        config.headerRow !== '' &&
-        config.headerRow != null &&
-        !!workbook;
-    const canExtract = canVerify && verifyResult?.valid === true;
-    const canImportPpa = canExtract && !!extractResult;
-
-    const blocksForImport = useMemo(() => {
-        if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
-
-        const officeId = Number(selectedOffice);
-        const fiscalYearId = Number(selectedFiscalYear);
-        const office = existingOffices.find((o) => o.id === officeId);
-        if (!office) return [];
-
-        const ppasForOffice = existingPpas.filter(
-            (p) =>
-                p.office_id === officeId && p.fiscal_year_id === fiscalYearId,
-        );
-        const ppasByCode = new Map<string, (typeof existingPpas)[0]>();
-        for (const ppa of ppasForOffice) {
-            const key = normalize(ppa.full_code);
-            if (!ppasByCode.has(key)) {
-                ppasByCode.set(key, ppa);
-            }
-        }
-
-        const groups = new Map<
-            string,
-            { fullCode: string; name: string; type: string; rows: number[] }
-        >();
-        for (const record of extractResult.records) {
-            let group = groups.get(record.fullCode);
-            if (!group) {
-                group = {
-                    fullCode: record.fullCode,
-                    name: record.name,
-                    type: record.type,
-                    rows: [],
-                };
-                groups.set(record.fullCode, group);
-            }
-            group.rows.push(record.row);
-        }
-
-        const result: PpaBlock[] = [];
-        for (const [fullCode, group] of groups) {
-            const ppa = ppasByCode.get(normalize(fullCode));
-            result.push({
-                ...group,
-                status: ppa ? 'exists' : 'new',
-            });
-        }
-        return result;
-    }, [
-        extractResult,
-        selectedOffice,
-        selectedFiscalYear,
-        existingOffices,
-        existingPpas,
-    ]);
-
-    function handleSheetChange(value: string[]) {
-        setSelectedSheet(value[0] ?? '');
-        setVerifyResult(null);
-        setExtractResult(null);
-    }
-
-    function updateColumn(field: AipSummaryField, letter: string) {
-        setConfig((prev) => ({
-            ...prev,
-            columnConfig: {
-                ...prev.columnConfig,
-                [field]: letter.toUpperCase(),
-            },
-        }));
-        setVerifyResult(null);
-        setExtractResult(null);
-    }
-
-    function updateHeaderRow(value: string) {
-        setConfig((prev) => ({
-            ...prev,
-            headerRow: value === '' ? '' : Number(value),
-        }));
-        setVerifyResult(null);
-        setExtractResult(null);
-    }
-
-    function updateHasNumberRow(value: boolean) {
-        setConfig((prev) => ({ ...prev, hasNumberRow: value }));
-        setVerifyResult(null);
-        setExtractResult(null);
-    }
-
-    function handleResetDefaults() {
-        setConfig(getDefaultAipSummaryConfig());
-        setVerifyResult(null);
-        setExtractResult(null);
-    }
-
-    function handleLogContents() {
-        if (!workbook || !selectedSheet) return;
-        if (config.headerRow === '' || config.headerRow == null) {
-            console.log(
-                'AipSummaryImport: header row is required before logging contents.',
-            );
-            return;
-        }
-
-        const ws = workbook.getWorksheet(selectedSheet);
-        if (!ws) {
-            console.log(
-                `AipSummaryImport: worksheet "${selectedSheet}" not found.`,
-            );
-            return;
-        }
-
-        const extracted = extractAipSummaryRows(ws, {
-            ...config,
-            headerRow: config.headerRow,
-        });
-
-        console.log('AipSummaryImport contents:', {
-            fileName,
-            sheet: selectedSheet,
-            headerRow: extracted.headerRow,
-            numberRow: extracted.numberRow,
-            dataStartRow: extracted.dataStartRow,
-            lastRow: extracted.lastRow,
-            actualRowCount: ws.actualRowCount,
-            rowCount: ws.rowCount,
-            rowCountLogged: extracted.kept.length,
-            skippedBlank: extracted.skippedBlank,
-            skippedFooter: extracted.skippedFooter,
-            columnConfig: config.columnConfig,
-            rows: extracted.kept.map((k) => ({
-                _row: String(k.row),
-                _kind: k.kind,
-                ...k.values,
-            })),
-            scheduleRaw: extracted.kept.map((k) => {
-                const row = ws.getRow(k.row);
-                const startCell = row.getCell(config.columnConfig.startDate);
-                const endCell = row.getCell(config.columnConfig.endDate);
-                return {
-                    _row: String(k.row),
-                    startDateRaw: startCell.value,
-                    startDateText: k.values.startDate,
-                    endDateRaw: endCell.value,
-                    endDateText: k.values.endDate,
-                };
-            }),
-        });
-    }
-
-    function handleVerify() {
-        if (!workbook || !selectedSheet) return;
-        setVerifyResult(verifyAipSummarySheet(workbook, selectedSheet, config));
-        setExtractResult(null);
-    }
-
-    function handleExtract() {
-        if (!workbook || !selectedSheet) return;
-        if (config.headerRow === '' || config.headerRow == null) return;
-        const ws = workbook.getWorksheet(selectedSheet);
-        if (!ws) return;
-        setExtractResult(
-            extractAipSummaryRecords(ws, {
-                ...config,
-                headerRow: config.headerRow,
-            }),
-        );
-        setOfficeOverrides({});
-        setOfficePickerKey(null);
-        setTokenMappings({});
-        setDismissedTokens({});
-        setMappingTarget(null);
-        setFundOverrides({});
-        setDismissedFunds({});
-        setFundPickerKey(null);
-    }
-
-    const newBlocks = useMemo(
-        () => blocksForImport.filter((b) => b.status === 'new'),
-        [blocksForImport],
-    );
-
-    function handleConfirmImport() {
-        if (!selectedOffice || !selectedFiscalYear || newBlocks.length === 0)
-            return;
-        setImporting(true);
-        router.post(
-            '/imports/aip-summary-import',
-            {
-                office_id: Number(selectedOffice),
-                fiscal_year_id: Number(selectedFiscalYear),
-                blocks: newBlocks.map((b) => ({
-                    full_code: b.fullCode,
-                    name: b.name,
-                    type: b.type,
-                })),
-            },
-            {
-                onFinish: () => setImporting(false),
-            },
-        );
-    }
-
-    const importableOutputs = useMemo(() => {
-        if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
-
-        return extractResult.records
-            .filter(
-                (r) =>
-                    (r.expectedOutput != null &&
-                        r.expectedOutput.trim() !== '') ||
-                    r.offices.length > 0 ||
-                    r.startDate != null ||
-                    r.endDate != null,
-            )
-            .map((r) => ({
-                key: r.key,
-                full_code: r.fullCode,
-                fullCodeNorm: r.fullCodeNorm,
-                outputNorm: r.outputNorm,
-                name: r.name,
-                expected_output: r.expectedOutput,
-                start_date: r.startDate,
-                end_date: r.endDate,
-                office_ids: officeIdsForRecord(r.key),
-            }));
-    }, [
-        extractResult,
-        selectedOffice,
-        selectedFiscalYear,
-        officeMatches,
-        officeOverrides,
-        tokenMappings,
-    ]);
-
-    type OutputImportStatus = 'exists' | 'new' | 'no-ppa' | 'no-offices';
-
-    const outputStatuses = useMemo(() => {
-        const map = new Map<string, OutputImportStatus>();
-
-        if (!selectedOffice || !selectedFiscalYear) return map;
-
-        const officeId = Number(selectedOffice);
-        const fiscalYearId = Number(selectedFiscalYear);
-        const ppasByCode = new Map<number, (typeof existingPpas)[number]>();
-        for (const ppa of existingPpas) {
-            if (
-                ppa.office_id === officeId &&
-                ppa.fiscal_year_id === fiscalYearId &&
-                !ppasByCode.has(ppa.id)
-            ) {
-                ppasByCode.set(ppa.id, ppa);
-            }
-        }
-        const byCodeNorm = new Map<string, (typeof existingPpas)[number]>();
-        for (const ppa of ppasByCode.values()) {
-            const key = normalize(ppa.full_code);
-            if (!byCodeNorm.has(key)) byCodeNorm.set(key, ppa);
-        }
-        const outputsByPpa = new Map<number, typeof existingOutputs>();
-        for (const output of existingOutputs) {
-            if (
-                output.office_id !== officeId ||
-                output.fiscal_year_id !== fiscalYearId
-            ) {
-                continue;
-            }
-            const list = outputsByPpa.get(output.ppa_id) ?? [];
-            list.push(output);
-            outputsByPpa.set(output.ppa_id, list);
-        }
-
-        for (const row of importableOutputs) {
-            const ppa = byCodeNorm.get(row.fullCodeNorm);
-            if (!ppa) {
-                map.set(row.key, 'no-ppa');
-                continue;
-            }
-            const match = (outputsByPpa.get(ppa.id) ?? []).some((o) =>
-                row.outputNorm == null
-                    ? o.expected_output == null
-                    : o.expected_output != null &&
-                      normalize(o.expected_output) === row.outputNorm,
-            );
-            if (match) {
-                map.set(row.key, 'exists');
-                continue;
-            }
-            map.set(
-                row.key,
-                row.office_ids.length === 0 ? 'no-offices' : 'new',
-            );
-        }
-
-        return map;
-    }, [
-        importableOutputs,
-        selectedOffice,
-        selectedFiscalYear,
-        existingPpas,
-        existingOutputs,
-    ]);
-
-    const newOutputs = useMemo(
-        () =>
-            importableOutputs.filter((r) => {
-                const status = outputStatuses.get(r.key);
-
-                return status === 'new' || status === 'no-offices';
-            }),
-        [importableOutputs, outputStatuses],
-    );
-
-    function handleConfirmOutputs() {
-        if (!selectedOffice || !selectedFiscalYear || newOutputs.length === 0)
-            return;
-        setImportingOutputs(true);
-
-        router.post(
-            '/imports/aip-summary-import/outputs',
-            {
-                office_id: Number(selectedOffice),
-                fiscal_year_id: Number(selectedFiscalYear),
-                outputs: newOutputs.map(
-                    ({ key, fullCodeNorm, outputNorm, ...payload }) => payload,
-                ),
-            },
-            {
-                onFinish: () => setImportingOutputs(false),
-                onSuccess: (page) => {
-                    const report = (
-                        page.props as unknown as {
-                            flash?: {
-                                importReport?: {
-                                    total: number;
-                                    inserted: number;
-                                    skipped: number;
-                                    status: string;
-                                    details: Array<{
-                                        output: string;
-                                        status: string;
-                                        id?: number;
-                                    }>;
-                                };
-                            };
-                        }
-                    ).flash?.importReport;
-
-                    console.log('AipSummaryImport outputs result:', report);
-                    console.table(
-                        report?.details.filter(
-                            (d) => d.status !== 'inserted',
-                        ) ?? [],
-                    );
-                },
-            },
-        );
-    }
-
-    const importableFunds = useMemo(() => {
-        if (!extractResult || !selectedOffice || !selectedFiscalYear) return [];
-
-        const links: Array<{
-            key: string;
-            full_code: string;
-            fullCodeNorm: string;
-            outputNorm: string | null;
-            name: string;
-            expected_output: string | null;
-            funding_source_id: number;
-            ccet_adaptation: number;
-            ccet_mitigation: number;
-            cc_typology_id: number | null;
-        }> = [];
-
-        for (const r of extractResult.records) {
-            if (r.fundingSource == null) continue;
-            if (dismissedFunds[r.key]) continue;
-
-            const fundingSourceId = fundIdForRecord(r.key);
-            if (fundingSourceId == null) continue;
-
-            links.push({
-                key: r.key,
-                full_code: r.fullCode,
-                fullCodeNorm: r.fullCodeNorm,
-                outputNorm: r.outputNorm,
-                name: r.name,
-                expected_output: r.expectedOutput,
-                funding_source_id: fundingSourceId,
-                ccet_adaptation: ccAmount(r.adaptation),
-                ccet_mitigation: ccAmount(r.mitigation),
-                cc_typology_id: fundMatches.get(r.key)?.typology?.id ?? null,
-            });
-        }
-
-        return links;
-    }, [
-        extractResult,
-        selectedOffice,
-        selectedFiscalYear,
-        fundMatches,
-        fundOverrides,
-        dismissedFunds,
-    ]);
-
-    type FundLinkStatus = 'exists' | 'new' | 'no-output';
-
-    const fundStatuses = useMemo(() => {
-        const map = new Map<string, FundLinkStatus>();
-
-        if (!selectedOffice || !selectedFiscalYear) return map;
-
-        const officeId = Number(selectedOffice);
-        const fiscalYearId = Number(selectedFiscalYear);
-        const byCodeNorm = new Map<string, (typeof existingPpas)[number]>();
-        for (const ppa of existingPpas) {
-            if (
-                ppa.office_id !== officeId ||
-                ppa.fiscal_year_id !== fiscalYearId
-            ) {
-                continue;
-            }
-            const key = normalize(ppa.full_code);
-            if (!byCodeNorm.has(key)) byCodeNorm.set(key, ppa);
-        }
-        const outputsByPpa = new Map<number, typeof existingOutputs>();
-        for (const output of existingOutputs) {
-            if (
-                output.office_id !== officeId ||
-                output.fiscal_year_id !== fiscalYearId
-            ) {
-                continue;
-            }
-            const list = outputsByPpa.get(output.ppa_id) ?? [];
-            list.push(output);
-            outputsByPpa.set(output.ppa_id, list);
-        }
-        const linksByOutput = new Map<number, typeof existingFundLinks>();
-        for (const link of existingFundLinks) {
-            if (
-                link.office_id !== officeId ||
-                link.fiscal_year_id !== fiscalYearId
-            ) {
-                continue;
-            }
-            const list = linksByOutput.get(link.output_id) ?? [];
-            list.push(link);
-            linksByOutput.set(link.output_id, list);
-        }
-
-        for (const row of importableFunds) {
-            const ppa = byCodeNorm.get(row.fullCodeNorm);
-            const output = ppa
-                ? (outputsByPpa.get(ppa.id) ?? []).find((o) =>
-                      row.outputNorm == null
-                          ? o.expected_output == null
-                          : o.expected_output != null &&
-                            normalize(o.expected_output) === row.outputNorm,
-                  )
-                : undefined;
-            if (!output) {
-                map.set(row.key, 'no-output');
-                continue;
-            }
-            const match = (linksByOutput.get(output.id) ?? []).some(
-                (l) => l.funding_source_id === row.funding_source_id,
-            );
-            map.set(row.key, match ? 'exists' : 'new');
-        }
-
-        return map;
-    }, [
-        importableFunds,
-        selectedOffice,
-        selectedFiscalYear,
-        existingPpas,
-        existingOutputs,
-        existingFundLinks,
-    ]);
-
-    const newFunds = useMemo(
-        () => importableFunds.filter((r) => fundStatuses.get(r.key) === 'new'),
-        [importableFunds, fundStatuses],
-    );
-
-    function handleConfirmFunds() {
-        if (!selectedOffice || !selectedFiscalYear || newFunds.length === 0)
-            return;
-        setImportingFunds(true);
-
-        router.post(
-            '/imports/aip-summary-import/funding-sources',
-            {
-                office_id: Number(selectedOffice),
-                fiscal_year_id: Number(selectedFiscalYear),
-                links: newFunds.map(
-                    ({ key, fullCodeNorm, outputNorm, ...payload }) => payload,
-                ),
-            },
-            {
-                onFinish: () => setImportingFunds(false),
-                onSuccess: (page) => {
-                    const report = (
-                        page.props as unknown as {
-                            flash?: {
-                                importReport?: {
-                                    total: number;
-                                    inserted: number;
-                                    skipped: number;
-                                    status: string;
-                                    details: Array<{
-                                        output: string;
-                                        status: string;
-                                        id?: number;
-                                    }>;
-                                };
-                            };
-                        }
-                    ).flash?.importReport;
-
-                    console.log('AipSummaryImport funds result:', report);
-                    console.table(
-                        report?.details.filter(
-                            (d) => d.status !== 'inserted',
-                        ) ?? [],
-                    );
-                },
-            },
-        );
-    }
-
-    const s: AipImportState = {
-        sheets,
-        workbook,
-        fileName,
-        selectedSheet,
-        loading,
-        error,
-
-        step,
-        setStep,
-        config,
-        verifyResult,
-        extractResult,
-        canCalibrate,
-        canVerify,
-        canExtract,
-        canImportPpa,
-
-        selectedOffice,
-        setSelectedOffice,
-        selectedOfficeLabel,
-        selectedFiscalYear,
-        setSelectedFiscalYear,
-        selectedFiscalYearLabel,
-        importTarget,
-        importStep,
-        importTitle,
-        goToImport,
-
-        officeMatches,
-        officeOverrides,
-        setOfficeOverrides,
-        tokenMappings,
-        setTokenMappings,
-        dismissedTokens,
-        setDismissedTokens,
-        unmatchedFrequency,
-        officeIdsForRecord,
-        setTokenMapping,
-        resetRowOffices,
-        officePickerKey,
-        setOfficePickerKey,
-        mappingTarget,
-        setMappingTarget,
-
-        fundMatches,
-        fundOverrides,
-        setFundOverrides,
-        dismissedFunds,
-        setDismissedFunds,
-        unmatchedFundEntries,
-        fundIdForRecord,
-        fundPickerKey,
-        setFundPickerKey,
-
-        blocksForImport,
-        newBlocks,
-        handleConfirmImport,
-        importing,
-        importableOutputs,
-        outputStatuses,
-        newOutputs,
-        handleConfirmOutputs,
-        importingOutputs,
-        importableFunds,
-        fundStatuses,
-        newFunds,
-        handleConfirmFunds,
-        importingFunds,
-
-        handleFileChange,
-        handleSheetChange,
-        updateColumn,
-        updateHeaderRow,
-        updateHasNumberRow,
-        handleResetDefaults,
-        handleLogContents,
-        handleVerify,
-        handleExtract,
-
-        existingOffices,
-        existingPpas,
-        fiscalYears,
-        fundingSources,
-        ccTypologies,
-        existingOutputs,
-        existingFundLinks,
-    };
-
-    return (
-        <ImportPageShell
-            title="AIP Summary Import"
-            description="Import AIP Summary from XLSX."
-            fileName={fileName}
-            loading={loading}
-            step={step}
-            onStepChange={(v) => setStep(v as ImportStep)}
-            tabs={[
-                { value: 'upload', label: '1. Upload' },
-                {
-                    value: 'calibrate',
-                    label: '2. Calibrate',
-                    disabled: !canCalibrate,
-                },
-                {
-                    value: 'verify',
-                    label: '3. Verify',
-                    disabled: !canVerify,
-                },
-                {
-                    value: 'extract',
-                    label: '4. Extract',
-                    disabled: !canExtract,
-                },
-                {
-                    value: 'review',
-                    label: '5. Review & Import',
-                    disabled: !canImportPpa,
-                },
-            ]}
-        >
-            <UploadStep s={s} />
-            <CalibrateStep s={s} />
-            <VerifyStep s={s} />
-            <ExtractStep s={s} />
-            <ReviewAndImport s={s} />
-        </ImportPageShell>
-    );
-}
-
-AipSummaryImport.layout = {
-    breadcrumbs: [
-        { title: 'Imports', href: '/imports' },
-        { title: 'AIP Summary Import', href: '/imports/aip-summary-import' },
-    ],
-};
+// import { router } from '@inertiajs/react';
+// import { useMemo, useState } from 'react';
+// import { ImportPageShell } from '@/components/imports/import-page-shell';
+// import { ImportUploadStep } from '@/components/imports/import-upload-step';
+// import { useImportWorkbook } from '@/hooks/use-import-workbook';
+// import { cellText } from '@/lib/excel/cell-helpers';
+// import {
+//     normalize,
+//     isTotalRow,
+//     getCategoryMatch,
+//     getCoaMatch,
+// } from '@/lib/ppmp/normalize';
+// import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
+// import { getDefaultMappingConfig } from '@/lib/ppmp/sheet-config';
+// import {
+//     extractPpmpSheet,
+//     type PpmpExtractResult,
+//     type RawPpmpItem,
+// } from '@/lib/ppmp/extract';
+// import { extractRawSheets } from '@/lib/raw-extract';
+// import type {
+//     CategoryCoaSheetConfig,
+//     CategoryCoaColumnConfig,
+//     CategoryCoaRowConfig,
+// } from '@/lib/ppmp/sheet-config';
+// import { verifyPpmpSheet } from '@/lib/ppmp/verify';
+// import { index as categoryCoaMappingIndex } from '@/routes/category-coa-mapping';
+// import { index as importsIndex } from '@/routes/imports';
+
+// import type {
+//     CalibrationMode,
+//     CategoryCoaMappingState,
+//     CcmStep,
+//     EffectiveVerificationState,
+//     ExistingMapping,
+//     ExtractedPair,
+//     VerificationState,
+//     VerifiedPair,
+//     VerifyFormatResult,
+// } from './types';
+// import { CalibrateStep } from './steps/calibrate-step';
+// import { VerifyFormatStep } from './steps/verify-format-step';
+// import { VerifyMapStep } from './steps/verify-map-step';
+// import { ExtractStep } from './steps/extract-step';
+// import { ReviewStep } from './steps/review-step';
+
+// interface CategoryCoaMappingProps {
+//     existingCategories?: ExistingCategory[];
+//     existingCoas?: ExistingCoa[];
+//     existingMappings?: ExistingMapping[];
+// }
+
+// export default function CategoryCoaMappingImport({
+//     existingCategories = [],
+//     existingCoas = [],
+//     existingMappings = [],
+// }: CategoryCoaMappingProps) {
+//     const [selectedSheets, setSelectedSheets] = useState<string[]>([]);
+//     const [calibrationMode, setCalibrationMode] =
+//         useState<CalibrationMode>('shared');
+//     const [sharedConfig, setSharedConfig] =
+//         useState<CategoryCoaSheetConfig | null>(null);
+//     const [calibrations, setCalibrations] = useState<
+//         Record<string, CategoryCoaSheetConfig>
+//     >({});
+//     const [currentSheet, setCurrentSheet] = useState<string>('');
+//     const [ppmpExtractResults, setPpmpExtractResults] = useState<
+//         Record<string, PpmpExtractResult>
+//     >({});
+//     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
+//     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>(
+//         {},
+//     );
+//     const [verification, setVerification] = useState<VerificationState | null>(
+//         null,
+//     );
+//     const [isSaving, setIsSaving] = useState(false);
+//     const [step, setStep] = useState<CcmStep>('upload');
+//     const [formatResults, setFormatResults] = useState<
+//         Record<string, VerifyFormatResult>
+//     >({});
+//     const [activeFormatSheet, setActiveFormatSheet] = useState<string>('');
+//     const [activeVerifySheet, setActiveVerifySheet] = useState<string>('');
+
+//     const { sheets, workbook, fileName, loading, error, handleFileChange } =
+//         useImportWorkbook(() => {
+//             setSelectedSheets([]);
+//             setCurrentSheet('');
+//             setSharedConfig(null);
+//             setCalibrations({});
+//             setPpmpExtractResults({});
+//             setPpmpRawItems([]);
+//             setFormatResults({});
+//             setActiveFormatSheet('');
+//             setActiveVerifySheet('');
+//             setVerification(null);
+//             setCoaOverrides({});
+//             setStep('upload');
+//         });
+
+//     const canCalibrate = selectedSheets.length > 0;
+//     const rowsCalibrated =
+//         !!sharedConfig &&
+//         sharedConfig.rowConfig.headerRow !== '' &&
+//         sharedConfig.rowConfig.headerRow != null &&
+//         sharedConfig.rowConfig.additionalItemsHeaderRow !== '' &&
+//         sharedConfig.rowConfig.additionalItemsHeaderRow != null &&
+//         sharedConfig.rowConfig.nonProcurementHeaderRow !== '' &&
+//         sharedConfig.rowConfig.nonProcurementHeaderRow != null;
+//     const canVerifyFormat =
+//         selectedSheets.length > 0 && !!workbook && rowsCalibrated;
+//     const hasFormatResult =
+//         selectedSheets.length > 0 &&
+//         selectedSheets.every((s) => !!formatResults[s]);
+//     const formatValid =
+//         selectedSheets.length > 0 &&
+//         selectedSheets.every((s) => formatResults[s]?.valid);
+//     const canVerifyMap = canVerifyFormat && hasFormatResult && formatValid;
+//     const canExtract = canVerifyFormat && hasFormatResult && formatValid;
+//     const hasAnyExtract = ppmpRawItems.length > 0;
+//     const canReview =
+//         canExtract && hasAnyExtract && !!verification && verification.total > 0;
+
+//     function getEffectiveConfig(sheet: string): CategoryCoaSheetConfig {
+//         if (calibrationMode === 'shared' && sharedConfig) return sharedConfig;
+
+//         return calibrations[sheet] ?? sharedConfig ?? getDefaultMappingConfig();
+//     }
+
+//     function ensureCalibrationsInitialized() {
+//         if (sharedConfig) return;
+
+//         const def = getDefaultMappingConfig();
+//         setSharedConfig(def);
+//         const clones: Record<string, CategoryCoaSheetConfig> = {};
+
+//         for (const s of selectedSheets) {
+//             clones[s] = {
+//                 ...def,
+//                 columnConfig: { ...def.columnConfig },
+//                 rowConfig: { ...def.rowConfig },
+//             };
+//         }
+
+//         setCalibrations(clones);
+
+//         if (!currentSheet && selectedSheets[0])
+//             setCurrentSheet(selectedSheets[0]);
+//     }
+
+//     function handleApplySharedToAll() {
+//         if (!sharedConfig) return;
+
+//         const next: Record<string, CategoryCoaSheetConfig> = {};
+
+//         for (const s of selectedSheets) {
+//             next[s] = {
+//                 ...sharedConfig,
+//                 columnConfig: { ...sharedConfig.columnConfig },
+//                 rowConfig: { ...sharedConfig.rowConfig },
+//             };
+//         }
+
+//         setCalibrations(next);
+//     }
+
+//     function handleCopyCurrentToAll() {
+//         const src = calibrations[currentSheet] ?? sharedConfig;
+
+//         if (!src) return;
+
+//         const next: Record<string, CategoryCoaSheetConfig> = {};
+
+//         for (const s of selectedSheets) {
+//             next[s] = {
+//                 ...src,
+//                 columnConfig: { ...src.columnConfig },
+//                 rowConfig: { ...src.rowConfig },
+//             };
+//         }
+
+//         setCalibrations(next);
+//     }
+
+//     const effectiveVerification =
+//         useMemo<EffectiveVerificationState | null>(() => {
+//             if (!verification) return null;
+
+//             const mappingSet = new Set(
+//                 existingMappings.map(
+//                     (m) => `${m.ppmp_category_id}|${m.chart_of_account_id}`,
+//                 ),
+//             );
+//             const effectivePairs = verification.verifiedPairs.map((v) => {
+//                 const key = `${v.sheet}|${v.catRow}|${v.coaRow}`;
+//                 const overrideId = coaOverrides[key] ?? null;
+//                 const effectiveCoa = overrideId
+//                     ? (existingCoas.find((c) => c.id === overrideId) ?? null)
+//                     : v.coaMatch;
+//                 const effectiveCoaExists =
+//                     overrideId !== null ? true : v.coaExists;
+//                 const effectiveCoaId = overrideId ?? v.coaId;
+//                 const effectiveCoaMatchType =
+//                     overrideId !== null ? ('strict' as const) : v.coaMatchType;
+//                 const effectiveMappingExists =
+//                     v.catId !== null &&
+//                     effectiveCoaId !== null &&
+//                     mappingSet.has(`${v.catId}|${effectiveCoaId}`);
+
+//                 return {
+//                     ...v,
+//                     key,
+//                     overrideId,
+//                     effectiveCoa,
+//                     effectiveCoaExists,
+//                     effectiveCoaId,
+//                     effectiveCoaMatchType,
+//                     effectiveMappingExists,
+//                 };
+//             });
+//             const effCoaFound = effectivePairs.filter(
+//                 (p) => p.effectiveCoaExists,
+//             ).length;
+//             const effMappingFound = effectivePairs.filter(
+//                 (p) => p.effectiveMappingExists,
+//             ).length;
+//             const effMissingMapping = effectivePairs.filter(
+//                 (p) =>
+//                     p.catExists &&
+//                     p.effectiveCoaExists &&
+//                     !p.effectiveMappingExists,
+//             ).length;
+//             const effMissingCoa = effectivePairs.filter(
+//                 (p) => !p.effectiveCoaExists,
+//             ).length;
+
+//             return {
+//                 ...verification,
+//                 effectivePairs,
+//                 effCoaFound,
+//                 effMappingFound,
+//                 effMissingMapping,
+//                 effMissingCoa,
+//             };
+//         }, [verification, coaOverrides, existingCoas, existingMappings]);
+
+//     function handleCoaOverrideChange(
+//         rowKey: string,
+//         selectedValue: string | null,
+//     ) {
+//         if (!selectedValue) {
+//             setCoaOverrides((prev) => {
+//                 const next = { ...prev };
+//                 delete next[rowKey];
+
+//                 return next;
+//             });
+
+//             return;
+//         }
+
+//         const idMatch = selectedValue.match(/^coa:(\d+)/);
+
+//         if (idMatch) {
+//             const id = Number(idMatch[1]);
+//             setCoaOverrides((prev) => ({ ...prev, [rowKey]: id }));
+//         } else {
+//             const found = existingCoas.find(
+//                 (c) => `${c.path} — ${c.account_title}` === selectedValue,
+//             );
+
+//             if (found)
+//                 setCoaOverrides((prev) => ({ ...prev, [rowKey]: found.id }));
+//         }
+//     }
+
+//     function handleClearOverride(rowKey: string) {
+//         setCoaOverrides((prev) => {
+//             const next = { ...prev };
+//             delete next[rowKey];
+
+//             return next;
+//         });
+//     }
+
+//     function handleBulkCreateMappings() {
+//         if (!effectiveVerification) return;
+
+//         const toCreate = effectiveVerification.effectivePairs
+//             .filter(
+//                 (p) =>
+//                     p.catExists &&
+//                     p.effectiveCoaExists &&
+//                     !p.effectiveMappingExists &&
+//                     p.catId !== null &&
+//                     p.effectiveCoaId !== null,
+//             )
+//             .map((p) => ({
+//                 ppmp_category_id: p.catId!,
+//                 chart_of_account_id: p.effectiveCoaId!,
+//             }));
+
+//         if (toCreate.length === 0) return;
+
+//         const seen = new Set<string>();
+//         const uniqueToCreate: typeof toCreate = [];
+
+//         for (const m of toCreate) {
+//             const k = `${m.ppmp_category_id}|${m.chart_of_account_id}`;
+
+//             if (!seen.has(k)) {
+//                 seen.add(k);
+//                 uniqueToCreate.push(m);
+//             }
+//         }
+
+//         setIsSaving(true);
+//         router.post(
+//             '/imports/category-coa-mappings/bulk' as never,
+//             { mappings: uniqueToCreate } as never,
+//             {
+//                 onFinish: () => setIsSaving(false),
+//             },
+//         );
+//     }
+
+//     function verifyFormatForSheet(sheet: string): VerifyFormatResult | null {
+//         if (!workbook || !sheet) return null;
+
+//         const effective = getEffectiveConfig(sheet);
+//         const result = verifyPpmpSheet(workbook, sheet, effective);
+
+//         return {
+//             valid: result.valid,
+//             message: result.message,
+//             errors: result.errors,
+//             groups: result.groups,
+//             details: result.details,
+//         };
+//     }
+
+//     function handleVerifyFormat() {
+//         setPpmpExtractResults({});
+//         setPpmpRawItems([]);
+//         if (!workbook || selectedSheets.length === 0) return;
+
+//         const flatSheets = (selectedSheets as unknown[])
+//             .flat(Infinity)
+//             .map((s) => String(s).trim())
+//             .filter(Boolean) as string[];
+//         console.log(
+//             '[verifyFormat] selectedSheets raw:',
+//             selectedSheets,
+//             'flatSheets:',
+//             flatSheets,
+//         );
+//         if (
+//             flatSheets.length !== selectedSheets.length ||
+//             flatSheets.some((s, i) => s !== selectedSheets[i])
+//         ) {
+//             console.warn(
+//                 '[verifyFormat] flattened nested',
+//                 selectedSheets,
+//                 '→',
+//                 flatSheets,
+//             );
+//             setSelectedSheets(flatSheets);
+//         }
+
+//         const availableNames = workbook
+//             ? workbook.worksheets.map((ws) => ws.name)
+//             : sheets;
+//         const missing = flatSheets.filter((s) => !availableNames.includes(s));
+//         if (missing.length > 0) {
+//             console.warn(
+//                 '[verifyFormat] stale selectedSheets:',
+//                 flatSheets,
+//                 'available:',
+//                 availableNames,
+//                 'missing:',
+//                 missing,
+//             );
+//         }
+
+//         const next: Record<string, VerifyFormatResult> = {};
+
+//         for (const sheet of flatSheets) {
+//             const result = verifyFormatForSheet(sheet);
+
+//             if (result) next[sheet] = result;
+//         }
+
+//         setFormatResults(next);
+//         const firstInvalid = flatSheets.find((s) => !next[s]?.valid);
+//         setActiveFormatSheet(firstInvalid ?? flatSheets[0] ?? '');
+//         setVerification(null);
+//         setCoaOverrides({});
+//         setActiveVerifySheet(firstInvalid ?? flatSheets[0] ?? '');
+
+//         if (Object.keys(next).length) {
+//             console.table(
+//                 Object.entries(next).map(([sheet, r]) => ({
+//                     sheet,
+//                     valid: r.valid,
+//                     errors: r.errors.length,
+//                     message: r.message,
+//                 })),
+//             );
+//         }
+//     }
+
+//     function handlePpmpExtract() {
+//         if (!workbook || selectedSheets.length === 0) return;
+//         const flatSheets = (selectedSheets as unknown[])
+//             .flat(Infinity)
+//             .map((s) => String(s).trim())
+//             .filter(Boolean) as string[];
+//         const next: Record<string, PpmpExtractResult> = {};
+//         const allRaw: RawPpmpItem[] = [];
+//         for (const sheet of flatSheets) {
+//             const cfg = getEffectiveConfig(sheet);
+//             const res = extractPpmpSheet(workbook, sheet, cfg);
+//             next[sheet] = res;
+//             allRaw.push(...res.rawItems);
+//         }
+//         setPpmpExtractResults(next);
+//         setPpmpRawItems(allRaw);
+//         setRawSheets(
+//             extractRawSheets(workbook, flatSheets, (s) =>
+//                 getEffectiveConfig(s),
+//             ),
+//         );
+//     }
+
+//     function handleSheetToggle(sheet: string) {
+//         setPpmpExtractResults({});
+//         setPpmpRawItems([]);
+//         setSelectedSheets((prev) => {
+//             const next = prev.includes(sheet)
+//                 ? prev.filter((s) => s !== sheet)
+//                 : [...prev, sheet];
+//             setFormatResults({});
+//             setActiveFormatSheet(next[0] ?? '');
+//             setActiveVerifySheet(next[0] ?? '');
+//             setVerification(null);
+//             setCoaOverrides({});
+
+//             if (next.length > 0 && !next.includes(currentSheet))
+//                 setCurrentSheet(next[0]);
+
+//             if (next.length === 0) setCurrentSheet('');
+
+//             return next;
+//         });
+//     }
+
+//     function handleSheetClick(sheet: string) {
+//         handleSheetToggle(sheet);
+//     }
+
+//     /**
+//      * Single-sheet mode: the shared picker emits `[picked]` or `[]`.
+//      * Deselect anything else, then select the picked sheet. The page's
+//      * `handleSheetToggle` resets downstream results on each call.
+//      */
+//     function handleSheetsChange(next: unknown) {
+//         console.log(
+//             '[category-coa-mapping handleSheetsChange] raw next:',
+//             next,
+//             'selectedSheets before:',
+//             selectedSheets,
+//         );
+//         const flat = (
+//             Array.isArray(next) ? (next as unknown[]).flat(Infinity) : []
+//         )
+//             .map((s) => String(s).trim())
+//             .filter(Boolean) as string[];
+//         console.log('[category-coa-mapping handleSheetsChange] flat:', flat);
+//         const picked = flat[0] ?? '';
+
+//         for (const sheet of selectedSheets) {
+//             if (sheet !== picked) {
+//                 handleSheetToggle(String(sheet));
+//             }
+//         }
+
+//         if (picked && !selectedSheets.includes(picked)) {
+//             handleSheetToggle(picked);
+//         }
+//     }
+
+//     function handleRowConfigChange(patch: Partial<CategoryCoaRowConfig>) {
+//         if (calibrationMode === 'shared') {
+//             setSharedConfig((prev) => {
+//                 const base = prev ?? getDefaultMappingConfig();
+
+//                 return { ...base, rowConfig: { ...base.rowConfig, ...patch } };
+//             });
+//         } else {
+//             if (!currentSheet) return;
+
+//             setCalibrations((prev) => ({
+//                 ...prev,
+//                 [currentSheet]: {
+//                     ...(prev[currentSheet] ??
+//                         sharedConfig ??
+//                         getDefaultMappingConfig()),
+//                     rowConfig: {
+//                         ...(
+//                             prev[currentSheet] ??
+//                             sharedConfig ??
+//                             getDefaultMappingConfig()
+//                         ).rowConfig,
+//                         ...patch,
+//                     },
+//                 },
+//             }));
+//         }
+
+//         setVerification(null);
+//         setFormatResults({});
+//         setActiveFormatSheet(selectedSheets[0] ?? '');
+//         setActiveVerifySheet(selectedSheets[0] ?? '');
+//         setCoaOverrides({});
+//     }
+
+//     function handleColumnConfigChange(patch: Partial<CategoryCoaColumnConfig>) {
+//         if (calibrationMode === 'shared') {
+//             setSharedConfig((prev) => {
+//                 const base = prev ?? getDefaultMappingConfig();
+
+//                 return {
+//                     ...base,
+//                     columnConfig: { ...base.columnConfig, ...patch },
+//                 };
+//             });
+//         } else {
+//             if (!currentSheet) return;
+
+//             setCalibrations((prev) => ({
+//                 ...prev,
+//                 [currentSheet]: {
+//                     ...(prev[currentSheet] ??
+//                         sharedConfig ??
+//                         getDefaultMappingConfig()),
+//                     columnConfig: {
+//                         ...(
+//                             prev[currentSheet] ??
+//                             sharedConfig ??
+//                             getDefaultMappingConfig()
+//                         ).columnConfig,
+//                         ...patch,
+//                     },
+//                 },
+//             }));
+//         }
+
+//         setVerification(null);
+//         setFormatResults({});
+//         setActiveFormatSheet(selectedSheets[0] ?? '');
+//         setActiveVerifySheet(selectedSheets[0] ?? '');
+//         setCoaOverrides({});
+//     }
+
+//     function handleCoaLabelModeChange(
+//         value: CategoryCoaSheetConfig['coaLabelMode'],
+//     ) {
+//         if (calibrationMode === 'shared') {
+//             setSharedConfig((prev) => ({
+//                 ...(prev ?? getDefaultMappingConfig()),
+//                 coaLabelMode: value,
+//             }));
+//         } else {
+//             if (!currentSheet) return;
+
+//             setCalibrations((prev) => ({
+//                 ...prev,
+//                 [currentSheet]: {
+//                     ...(prev[currentSheet] ??
+//                         sharedConfig ??
+//                         getDefaultMappingConfig()),
+//                     coaLabelMode: value,
+//                 },
+//             }));
+//         }
+
+//         setVerification(null);
+//         setFormatResults({});
+//         setActiveFormatSheet(selectedSheets[0] ?? '');
+//         setActiveVerifySheet(selectedSheets[0] ?? '');
+//         setCoaOverrides({});
+//     }
+
+//     function handleResetCalibration() {
+//         if (calibrationMode === 'shared') {
+//             setSharedConfig(getDefaultMappingConfig());
+//         } else {
+//             if (currentSheet) {
+//                 setCalibrations((prev) => ({
+//                     ...prev,
+//                     [currentSheet]: getDefaultMappingConfig(),
+//                 }));
+//             }
+//         }
+
+//         setVerification(null);
+//         setFormatResults({});
+//         setActiveFormatSheet(selectedSheets[0] ?? '');
+//         setActiveVerifySheet(selectedSheets[0] ?? '');
+//         setCoaOverrides({});
+//     }
+
+//     function extractRelationshipsForSection(
+//         ws: ExcelJS.Worksheet,
+//         cfg: CategoryCoaSheetConfig,
+//         sectionName: 'procurement' | 'additional' | 'non-procurement',
+//         startRow: number,
+//         endRow: number,
+//     ) {
+//         type CatGroup = {
+//             cat: string;
+//             catRow: number;
+//             coas: Array<{ coa: string; coaRow: number; items: number }>;
+//             totalRow?: number;
+//         };
+//         const catGroups: CatGroup[] = [];
+//         let currentCat: CatGroup | null = null;
+//         let currentCoa: {
+//             coa: string;
+//             coaRow: number;
+//             items: number;
+//         } | null = null;
+
+//         const dataColumn = cfg.columnConfig.category;
+//         const coaColumn = cfg.columnConfig.coa;
+//         const coaLabelMode = cfg.coaLabelMode;
+
+//         const flushCat = (totalRow?: number) => {
+//             if (currentCat) {
+//                 if (currentCoa) {
+//                     currentCat.coas.push(currentCoa!);
+//                     currentCoa = null;
+//                 }
+
+//                 if (totalRow) currentCat.totalRow = totalRow;
+
+//                 catGroups.push(currentCat);
+//                 currentCat = null;
+//             }
+//         };
+
+//         const lastRow = ws.actualRowCount;
+
+//         for (let r = startRow; r <= endRow && r <= lastRow; r++) {
+//             const row = ws.getRow(r);
+//             const coaRaw = cellText(row.getCell(coaColumn));
+//             const dataRaw = cellText(row.getCell(dataColumn));
+
+//             if (!dataRaw && !coaRaw) continue;
+
+//             const coaNorm = coaRaw ? normalize(coaRaw) : null;
+//             const dataNorm = dataRaw ? normalize(dataRaw) : null;
+
+//             if (dataNorm === 'description') continue;
+
+//             const unitRaw = cellText(row.getCell(cfg.columnConfig.unit));
+//             const priceRaw = cellText(row.getCell(cfg.columnConfig.price));
+//             const itemRaw = cellText(row.getCell(cfg.columnConfig.itemNumber));
+//             const isFalsy = (v: string | null) =>
+//                 !v ||
+//                 normalize(v) === '0' ||
+//                 normalize(v) === '-' ||
+//                 normalize(v) === '0.00';
+//             const priceNum = priceRaw
+//                 ? Number(priceRaw.replace(/,/g, ''))
+//                 : NaN;
+//             const isFalsyPrice =
+//                 !priceRaw ||
+//                 priceNum === 0 ||
+//                 Number.isNaN(priceNum) ||
+//                 isFalsy(priceRaw);
+//             const isFalsyUnit = isFalsy(unitRaw);
+//             const isFalsyCoa = !coaNorm;
+//             const isFalsyItem = !itemRaw;
+
+//             if (
+//                 isFalsyItem &&
+//                 isFalsyCoa &&
+//                 isFalsyUnit &&
+//                 isFalsyPrice &&
+//                 dataRaw
+//             ) {
+//                 if (
+//                     sectionName === 'additional' ||
+//                     sectionName === 'non-procurement'
+//                 )
+//                     continue;
+//             }
+
+//             if (coaNorm && dataRaw) {
+//                 if (!currentCat) {
+//                     if (sectionName === 'additional') {
+//                         currentCat = {
+//                             cat: 'Additional Items (Uncategorized)',
+//                             catRow: r,
+//                             coas: [],
+//                         };
+//                     } else if (sectionName === 'non-procurement') {
+//                         currentCat = {
+//                             cat: 'Non-Procurement (Uncategorized)',
+//                             catRow: r,
+//                             coas: [],
+//                         };
+//                     } else {
+//                         continue;
+//                     }
+//                 }
+
+//                 if (coaLabelMode === 'without-label') {
+//                     if (!currentCoa || coaNorm !== normalize(currentCoa.coa)) {
+//                         if (currentCoa) {
+//                             currentCat.coas.push(currentCoa!);
+//                         }
+
+//                         currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
+//                     } else {
+//                         currentCoa.items += 1;
+//                     }
+
+//                     continue;
+//                 } else {
+//                     if (!currentCoa) {
+//                         const existing = currentCat.coas.find(
+//                             (c) => normalize(c.coa) === coaNorm,
+//                         );
+
+//                         if (existing) {
+//                             if (currentCoa) currentCat.coas.push(currentCoa!);
+
+//                             currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
+//                         } else {
+//                             if (currentCoa) currentCat.coas.push(currentCoa!);
+
+//                             currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
+//                         }
+
+//                         continue;
+//                     }
+
+//                     if (coaNorm !== normalize(currentCoa.coa)) {
+//                         currentCat.coas.push(currentCoa!);
+//                         currentCoa = { coa: coaRaw!, coaRow: r, items: 1 };
+//                     } else {
+//                         currentCoa.items += 1;
+//                     }
+
+//                     continue;
+//                 }
+//             }
+
+//             if (!dataRaw || !dataNorm) continue;
+
+//             if (isTotalRow(dataNorm)) {
+//                 if (currentCat) {
+//                     if (currentCoa) {
+//                         currentCat.coas.push(currentCoa!);
+//                         currentCoa = null;
+//                     }
+
+//                     flushCat(r);
+//                 }
+
+//                 continue;
+//             }
+
+//             if (coaLabelMode === 'with-label') {
+//                 let isCoaLabel = false;
+//                 let nextCoaRaw: string | null = null;
+//                 let nextCoaNorm: string | null = null;
+
+//                 if (r + 1 <= lastRow) {
+//                     nextCoaRaw = cellText(ws.getRow(r + 1).getCell(coaColumn));
+//                     nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
+
+//                     if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm)
+//                         isCoaLabel = true;
+//                 }
+
+//                 if (isCoaLabel) {
+//                     if (!currentCat) {
+//                         if (sectionName === 'additional') {
+//                             currentCat = {
+//                                 cat: 'Additional Items (Uncategorized)',
+//                                 catRow: r,
+//                                 coas: [],
+//                             };
+//                         } else if (sectionName === 'non-procurement') {
+//                             currentCat = {
+//                                 cat: 'Non-Procurement (Uncategorized)',
+//                                 catRow: r,
+//                                 coas: [],
+//                             };
+//                         } else {
+//                             continue;
+//                         }
+//                     }
+
+//                     if (currentCoa) {
+//                         currentCat.coas.push(currentCoa!);
+//                     }
+
+//                     currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
+//                     continue;
+//                 }
+//             }
+
+//             if (currentCat) {
+//                 if (currentCoa) {
+//                     currentCat.coas.push(currentCoa!);
+//                     currentCoa = null;
+//                 }
+
+//                 catGroups.push(currentCat);
+//             }
+
+//             currentCat = { cat: dataRaw, catRow: r, coas: [] };
+//             currentCoa = null;
+//         }
+
+//         if (currentCat) {
+//             if (currentCoa) {
+//                 currentCat.coas.push(currentCoa!);
+//             }
+
+//             catGroups.push(currentCat);
+//         }
+
+//         const pairs = catGroups.flatMap((g) =>
+//             g.coas.map((c) => ({
+//                 category: g.cat,
+//                 coa: c.coa,
+//                 catRow: g.catRow,
+//                 coaRow: c.coaRow,
+//                 items: c.items,
+//                 section: sectionName,
+//             })),
+//         );
+
+//         return { catGroups, pairs };
+//     }
+
+//     function handleLogRelationships() {
+//         if (!workbook || selectedSheets.length === 0) return;
+
+//         const allSheetData: Array<{
+//             sheet: string;
+//             sections: Record<string, any>;
+//             pairs: ExtractedPair[];
+//         }> = [];
+//         const combinedAllPairs: ExtractedPair[] = [];
+
+//         for (const sheet of selectedSheets) {
+//             const ws = workbook.getWorksheet(sheet);
+
+//             if (!ws) continue;
+
+//             const effective = getEffectiveConfig(sheet);
+
+//             if (
+//                 effective.rowConfig.headerRow === '' ||
+//                 effective.rowConfig.headerRow == null ||
+//                 effective.rowConfig.additionalItemsHeaderRow === '' ||
+//                 effective.rowConfig.additionalItemsHeaderRow == null ||
+//                 effective.rowConfig.nonProcurementHeaderRow === '' ||
+//                 effective.rowConfig.nonProcurementHeaderRow == null
+//             ) {
+//                 continue;
+//             }
+
+//             const lastRow = ws.actualRowCount;
+//             const procurementStart = effective.rowConfig.headerRow + 1;
+//             const procurementEnd = effective.rowConfig.additionalItemsHeaderRow
+//                 ? effective.rowConfig.additionalItemsHeaderRow - 1
+//                 : effective.rowConfig.nonProcurementHeaderRow
+//                   ? effective.rowConfig.nonProcurementHeaderRow - 1
+//                   : lastRow;
+//             const additionalStart = effective.rowConfig.additionalItemsHeaderRow
+//                 ? effective.rowConfig.additionalItemsHeaderRow + 1
+//                 : -1;
+//             const additionalEnd = effective.rowConfig.nonProcurementHeaderRow
+//                 ? effective.rowConfig.nonProcurementHeaderRow - 1
+//                 : lastRow;
+//             const nonProcStart = effective.rowConfig.nonProcurementHeaderRow
+//                 ? effective.rowConfig.nonProcurementHeaderRow + 1
+//                 : -1;
+//             const nonProcEnd = lastRow;
+
+//             const sections: Record<string, any> = {};
+
+//             const proc = extractRelationshipsForSection(
+//                 ws,
+//                 effective,
+//                 'procurement',
+//                 procurementStart,
+//                 procurementEnd,
+//             );
+//             const procPairsWithSheet = proc.pairs.map((p) => ({ ...p, sheet }));
+//             sections.procurement = {
+//                 range: [procurementStart, procurementEnd],
+//                 catGroups: proc.catGroups,
+//                 pairs: procPairsWithSheet,
+//                 count: procPairsWithSheet.length,
+//             };
+
+//             if (effective.rowConfig.additionalItemsHeaderRow) {
+//                 const add = extractRelationshipsForSection(
+//                     ws,
+//                     effective,
+//                     'additional',
+//                     additionalStart,
+//                     additionalEnd,
+//                 );
+//                 const addPairsWithSheet = add.pairs.map((p) => ({
+//                     ...p,
+//                     sheet,
+//                 }));
+//                 sections.additional = {
+//                     range: [additionalStart, additionalEnd],
+//                     catGroups: add.catGroups,
+//                     pairs: addPairsWithSheet,
+//                     count: addPairsWithSheet.length,
+//                 };
+//             } else {
+//                 sections.additional = {
+//                     skipped: 'additionalItemsHeaderRow not calibrated',
+//                 };
+//             }
+
+//             if (effective.rowConfig.nonProcurementHeaderRow) {
+//                 const non = extractRelationshipsForSection(
+//                     ws,
+//                     effective,
+//                     'non-procurement',
+//                     nonProcStart,
+//                     nonProcEnd,
+//                 );
+//                 const nonPairsWithSheet = non.pairs.map((p) => ({
+//                     ...p,
+//                     sheet,
+//                 }));
+//                 sections['non-procurement'] = {
+//                     range: [nonProcStart, nonProcEnd],
+//                     catGroups: non.catGroups,
+//                     pairs: nonPairsWithSheet,
+//                     count: nonPairsWithSheet.length,
+//                 };
+//             } else {
+//                 sections['non-procurement'] = {
+//                     skipped: 'nonProcurementHeaderRow not calibrated',
+//                 };
+//             }
+
+//             const pairsForSheet: ExtractedPair[] = [];
+//             pairsForSheet.push(...procPairsWithSheet);
+
+//             if ((sections.additional as any).pairs) {
+//                 pairsForSheet.push(...(sections.additional as any).pairs);
+//             }
+
+//             if ((sections['non-procurement'] as any).pairs) {
+//                 pairsForSheet.push(
+//                     ...(sections['non-procurement'] as any).pairs,
+//                 );
+//             }
+
+//             allSheetData.push({ sheet, sections, pairs: pairsForSheet });
+//             combinedAllPairs.push(...pairsForSheet);
+//         }
+
+//         const seen = new Map<string, ExtractedPair>();
+
+//         for (const p of combinedAllPairs) {
+//             const key = `${normalize(p.category)}|${normalize(p.coa)}`;
+
+//             if (!seen.has(key)) seen.set(key, p);
+//         }
+
+//         const uniquePairs = [...seen.values()];
+//         const duplicates = combinedAllPairs.length - uniquePairs.length;
+
+//         const mappingSet = new Set(
+//             existingMappings.map(
+//                 (m) => `${m.ppmp_category_id}|${m.chart_of_account_id}`,
+//             ),
+//         );
+//         const verifiedPairs: VerifiedPair[] = uniquePairs.map((p) => {
+//             const catNorm = normalize(p.category);
+//             const coaNorm = normalize(p.coa);
+//             const catRes = getCategoryMatch(catNorm, existingCategories);
+//             const coaRes = getCoaMatch(coaNorm, existingCoas, 'account_title');
+//             const catExists = catRes.type === 'strict';
+//             const coaExists = coaRes.type === 'strict';
+//             const catId = catRes.match?.id ?? null;
+//             const coaId = coaRes.match?.id ?? null;
+//             const mappingExists =
+//                 catId !== null &&
+//                 coaId !== null &&
+//                 mappingSet.has(`${catId}|${coaId}`);
+
+//             return {
+//                 category: p.category,
+//                 coa: p.coa,
+//                 section: p.section,
+//                 sheet: p.sheet ?? '',
+//                 catRow: p.catRow,
+//                 coaRow: p.coaRow,
+//                 items: p.items,
+//                 catNorm,
+//                 coaNorm,
+//                 catMatchType: catRes.type,
+//                 catMatch: catRes.match ?? null,
+//                 catTopMatches: catRes.topMatches ?? [],
+//                 coaMatchType: coaRes.type,
+//                 coaMatch: coaRes.match ?? null,
+//                 coaTopMatches: coaRes.topMatches ?? [],
+//                 catExists,
+//                 coaExists,
+//                 catId,
+//                 coaId,
+//                 mappingExists,
+//             };
+//         });
+
+//         const catFound = verifiedPairs.filter((v) => v.catExists).length;
+//         const coaFound = verifiedPairs.filter((v) => v.coaExists).length;
+//         const mappingFound = verifiedPairs.filter(
+//             (v) => v.mappingExists,
+//         ).length;
+//         const missingCat = verifiedPairs.filter((v) => !v.catExists).length;
+//         const missingCoa = verifiedPairs.filter((v) => !v.coaExists).length;
+//         const missingMapping = verifiedPairs.filter(
+//             (v) => v.catExists && v.coaExists && !v.mappingExists,
+//         ).length;
+
+//         setVerification({
+//             total: verifiedPairs.length,
+//             catFound,
+//             coaFound,
+//             mappingFound,
+//             missingCat,
+//             missingCoa,
+//             missingMapping,
+//             verifiedPairs,
+//         });
+//         setActiveVerifySheet(selectedSheets[0] ?? '');
+
+//         const result = {
+//             sheets: selectedSheets,
+//             file: fileName,
+//             sheetsData: allSheetData,
+//             combined: {
+//                 totalPairs: combinedAllPairs.length,
+//                 uniquePairs,
+//                 uniqueCount: uniquePairs.length,
+//                 duplicates,
+//                 allPairs: combinedAllPairs,
+//             },
+//             db: {
+//                 total: uniquePairs.length,
+//                 catFound,
+//                 coaFound,
+//                 mappingFound,
+//                 missingCat,
+//                 missingCoa,
+//                 missingMapping,
+//                 verifiedPairs,
+//             },
+//         };
+
+//         console.log(
+//             `[Category COA Mapping] Relationships — ${selectedSheets.join(', ')} (all sheets, all sections)`,
+//             result,
+//         );
+
+//         for (const sd of allSheetData) {
+//             console.log(
+//                 `Sheet ${sd.sheet} — Procurement pairs: ${sd.sections.procurement.count}`,
+//                 sd.sections.procurement.pairs,
+//             );
+
+//             if ((sd.sections.additional as any).pairs) {
+//                 console.log(
+//                     `Sheet ${sd.sheet} — Additional pairs: ${sd.sections.additional.count}`,
+//                     sd.sections.additional.pairs,
+//                 );
+//             }
+
+//             if ((sd.sections['non-procurement'] as any).pairs) {
+//                 console.log(
+//                     `Sheet ${sd.sheet} — Non-Procurement pairs: ${sd.sections['non-procurement'].count}`,
+//                     sd.sections['non-procurement'].pairs,
+//                 );
+//             }
+//         }
+
+//         console.table(
+//             uniquePairs.map((p) => ({
+//                 sheet: p.sheet,
+//                 section: p.section,
+//                 category: p.category,
+//                 coa: p.coa,
+//                 catRow: p.catRow,
+//                 coaRow: p.coaRow,
+//                 items: p.items,
+//             })),
+//         );
+//         console.log(
+//             `Combined unique Category ↔ COA relationships: ${uniquePairs.length} (from ${combinedAllPairs.length} raw, ${duplicates} dupes) — flat list counts per sheet/section above`,
+//         );
+
+//         if (uniquePairs.some((p) => p.category.includes('Uncategorized'))) {
+//             console.log(
+//                 'Sentinel usage: pairs with Additional/Non-Procurement (Uncategorized) are COA-only rows mapped to sentinels 276/277',
+//             );
+//         }
+
+//         console.log(
+//             `[Category COA Mapping] DB Verification — ${selectedSheets.join(', ')} (multi-sheet) — ${verifiedPairs.length} unique pairs checked against DB`,
+//             {
+//                 summary: {
+//                     totalUnique: verifiedPairs.length,
+//                     categoriesInDB: `${catFound}/${verifiedPairs.length}`,
+//                     coasInDB: `${coaFound}/${verifiedPairs.length}`,
+//                     mappingsInDB: `${mappingFound}/${verifiedPairs.length}`,
+//                     missingCategory: missingCat,
+//                     missingCoa: missingCoa,
+//                     missingMappingButBothExist: missingMapping,
+//                 },
+//                 existingCounts: {
+//                     categories: existingCategories.length,
+//                     coas: existingCoas.length,
+//                     mappings: existingMappings.length,
+//                 },
+//                 verifiedPairs,
+//             },
+//         );
+//         console.table(
+//             verifiedPairs.map((v) => ({
+//                 sheet: v.sheet,
+//                 section: v.section,
+//                 category: v.category,
+//                 catExists: v.catExists
+//                     ? `✅ ${v.catId}`
+//                     : v.catMatchType === 'partial'
+//                       ? `~ partial`
+//                       : '❌ missing',
+//                 coa: v.coa,
+//                 coaExists: v.coaExists
+//                     ? `✅ ${v.coaId} (${v.coaMatch?.path})`
+//                     : v.coaMatchType === 'partial'
+//                       ? `~ partial`
+//                       : '❌ missing',
+//                 mapping: v.mappingExists
+//                     ? '✅ exists'
+//                     : v.catExists && v.coaExists
+//                       ? '❌ not mapped'
+//                       : '—',
+//                 catRow: v.catRow,
+//                 coaRow: v.coaRow,
+//                 items: v.items,
+//             })),
+//         );
+
+//         if (missingCat > 0) {
+//             console.log(
+//                 `Missing categories (${missingCat}):`,
+//                 verifiedPairs
+//                     .filter((v) => !v.catExists)
+//                     .map((v) => ({
+//                         sheet: v.sheet,
+//                         category: v.category,
+//                         matchType: v.catMatchType,
+//                         topMatches: v.catTopMatches,
+//                     })),
+//             );
+//             console.table(
+//                 verifiedPairs
+//                     .filter((v) => !v.catExists)
+//                     .map((v) => ({
+//                         sheet: v.sheet,
+//                         category: v.category,
+//                         normalized: v.catNorm,
+//                         matchType: v.catMatchType,
+//                         topSuggestions:
+//                             v.catTopMatches
+//                                 .map(
+//                                     (m) =>
+//                                         `${m.category.name} (lev ${m.score})`,
+//                                 )
+//                                 .join(' | ') || '—',
+//                     })),
+//             );
+//         }
+
+//         if (missingCoa > 0) {
+//             console.log(
+//                 `Missing COAs (${missingCoa}):`,
+//                 verifiedPairs
+//                     .filter((v) => !v.coaExists)
+//                     .map((v) => ({
+//                         sheet: v.sheet,
+//                         coa: v.coa,
+//                         matchType: v.coaMatchType,
+//                         topMatches: v.coaTopMatches,
+//                     })),
+//             );
+//             console.table(
+//                 verifiedPairs
+//                     .filter((v) => !v.coaExists)
+//                     .map((v) => ({
+//                         sheet: v.sheet,
+//                         coa: v.coa,
+//                         normalized: v.coaNorm,
+//                         matchType: v.coaMatchType,
+//                         topSuggestions:
+//                             v.coaTopMatches
+//                                 .map(
+//                                     (m: { coa: ExistingCoa; score: number }) =>
+//                                         `${m.coa.account_title} [${m.coa.path}] (score ${m.score})`,
+//                                 )
+//                                 .join(' | ') || '—',
+//                     })),
+//             );
+//         }
+
+//         if (missingMapping > 0) {
+//             console.log(
+//                 `Mappings not yet in DB but both sides exist (${missingMapping}):`,
+//                 verifiedPairs.filter(
+//                     (v) => v.catExists && v.coaExists && !v.mappingExists,
+//                 ),
+//             );
+//             console.table(
+//                 verifiedPairs
+//                     .filter(
+//                         (v) => v.catExists && v.coaExists && !v.mappingExists,
+//                     )
+//                     .map((v) => ({
+//                         sheet: v.sheet,
+//                         category: `${v.category} [${v.catId}]`,
+//                         coa: `${v.coa} [${v.coaId}] ${v.coaMatch?.path}`,
+//                         section: v.section,
+//                     })),
+//             );
+//         }
+
+//         console.log(
+//             `DB Verify Summary: ${catFound}/${verifiedPairs.length} categories ✅, ${coaFound}/${verifiedPairs.length} COAs ✅, ${mappingFound}/${verifiedPairs.length} mappings ✅, ${missingMapping} mappings missing`,
+//         );
+//     }
+
+//     function handleLog() {
+//         if (!workbook || selectedSheets.length === 0) return;
+
+//         const sheet = currentSheet || selectedSheets[0];
+//         const ws = workbook.getWorksheet(sheet);
+//         const effective = getEffectiveConfig(sheet);
+//         console.log(`[Category COA Mapping] Sheet: ${sheet}`, ws);
+//         console.log(`Workbook sheets:`, sheets);
+//         console.log(`File:`, fileName);
+//         console.log(`Calibration (columnConfig):`, effective.columnConfig);
+//         console.log(`Calibration (rowConfig):`, effective.rowConfig);
+//         console.log(`Calibration (coaLabelMode):`, effective.coaLabelMode);
+//         console.log(`Calibration (full):`, effective);
+
+//         if (ws) {
+//             console.log(
+//                 `Row count:`,
+//                 ws.rowCount,
+//                 `Actual row count:`,
+//                 ws.actualRowCount,
+//             );
+//             console.log(
+//                 `Preview with calibration — headerRow ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow} → data starts ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow + 1}, category ${effective.columnConfig.category}, description ${effective.columnConfig.description}, coa ${effective.columnConfig.coa}, coaLabelMode ${effective.coaLabelMode}, additional ${effective.rowConfig.additionalItemsHeaderRow === '' || effective.rowConfig.additionalItemsHeaderRow == null ? '—' : effective.rowConfig.additionalItemsHeaderRow}, nonProc ${effective.rowConfig.nonProcurementHeaderRow === '' || effective.rowConfig.nonProcurementHeaderRow == null ? '—' : effective.rowConfig.nonProcurementHeaderRow}`,
+//             );
+
+//             if (
+//                 effective.rowConfig.headerRow === '' ||
+//                 effective.rowConfig.headerRow == null
+//             ) {
+//                 return;
+//             }
+
+//             const startRow = effective.rowConfig.headerRow + 1;
+//             const endRow = Math.min(startRow + 9, ws.rowCount);
+//             const rows: Array<{
+//                 row: number;
+//                 category: string | null;
+//                 coa: string | null;
+//                 sentinel: string | null;
+//                 section: string;
+//             }> = [];
+
+//             for (let r = startRow; r <= endRow; r++) {
+//                 if (
+//                     r === effective.rowConfig.additionalItemsHeaderRow ||
+//                     r === effective.rowConfig.nonProcurementHeaderRow
+//                 ) {
+//                     rows.push({
+//                         row: r,
+//                         category: '[HEADER ROW]',
+//                         coa: '[HEADER ROW]',
+//                         sentinel: null,
+//                         section: 'header',
+//                     });
+//                     continue;
+//                 }
+
+//                 const row = ws.getRow(r);
+//                 const cat = cellText(
+//                     row.getCell(effective.columnConfig.category),
+//                 );
+//                 const coa = cellText(row.getCell(effective.columnConfig.coa));
+//                 let sentinel: string | null = null;
+//                 let section = 'procurement';
+
+//                 if (
+//                     effective.rowConfig.additionalItemsHeaderRow &&
+//                     r > effective.rowConfig.additionalItemsHeaderRow
+//                 ) {
+//                     if (
+//                         effective.rowConfig.nonProcurementHeaderRow &&
+//                         r > effective.rowConfig.nonProcurementHeaderRow
+//                     ) {
+//                         section = 'non-procurement';
+
+//                         if (!cat && coa)
+//                             sentinel = 'Non-Procurement (Uncategorized) [277]';
+//                     } else {
+//                         section = 'additional';
+
+//                         if (!cat && coa)
+//                             sentinel = 'Additional Items (Uncategorized) [276]';
+//                     }
+//                 } else if (
+//                     effective.rowConfig.nonProcurementHeaderRow &&
+//                     r > effective.rowConfig.nonProcurementHeaderRow
+//                 ) {
+//                     section = 'non-procurement';
+
+//                     if (!cat && coa)
+//                         sentinel = 'Non-Procurement (Uncategorized) [277]';
+//                 }
+
+//                 if (!cat && coa && !sentinel && section === 'procurement') {
+//                     sentinel = '— (no category, no sentinel)';
+//                 }
+
+//                 rows.push({ row: r, category: cat, coa, sentinel, section });
+//             }
+
+//             console.table(rows);
+//             console.log(
+//                 'Sentinels: 276=Additional (is_additional), 277=Non-Proc (is_non_procurement+is_additional) — COA-only rows map to these when section headers calibrated',
+//             );
+
+//             for (let r = 1; r <= Math.min(5, ws.rowCount); r++) {
+//                 const row = ws.getRow(r);
+//                 const values = (row.values as unknown[])?.slice(1);
+//                 console.log(`Row ${r} raw:`, values);
+//             }
+//         }
+//     }
+
+//     const s: CategoryCoaMappingState = {
+//         sheets,
+//         workbook,
+//         fileName,
+//         selectedSheets,
+//         loading,
+//         error,
+
+//         step,
+//         setStep,
+//         canCalibrate,
+//         canVerifyFormat,
+//         hasFormatResult,
+//         formatValid,
+//         canVerifyMap,
+//         canExtract,
+//         hasAnyExtract,
+//         canReview,
+
+//         calibrationMode,
+//         setCalibrationMode,
+//         sharedConfig,
+//         setSharedConfig,
+//         calibrations,
+//         setCalibrations,
+//         currentSheet,
+//         setCurrentSheet,
+//         getEffectiveConfig,
+//         ensureCalibrationsInitialized,
+//         handleApplySharedToAll,
+//         handleCopyCurrentToAll,
+//         handleRowConfigChange,
+//         handleColumnConfigChange,
+//         handleCoaLabelModeChange,
+//         handleResetCalibration,
+
+//         handleFileChange,
+//         handleSheetToggle,
+//         handleSheetClick,
+
+//         formatResults,
+//         setFormatResults,
+//         activeFormatSheet,
+//         setActiveFormatSheet,
+//         handleVerifyFormat,
+
+//         verification,
+//         setVerification,
+//         effectiveVerification,
+//         activeVerifySheet,
+//         setActiveVerifySheet,
+//         coaOverrides,
+//         setCoaOverrides,
+//         handleCoaOverrideChange,
+//         handleClearOverride,
+//         handleLog,
+//         handleLogRelationships,
+//         isSaving,
+//         handleBulkCreateMappings,
+
+//         ppmpExtractResults,
+//         setPpmpExtractResults,
+//         ppmpRawItems,
+//         setPpmpRawItems,
+//         handlePpmpExtract,
+
+//         existingCategories,
+//         existingCoas,
+//         existingMappings,
+//     };
+
+//     return (
+//         <ImportPageShell
+//             title="Category COA Mapping"
+//             description="Bulk import Category ↔ COA mappings from XLSX. Calibrate, verify format, and create mappings in bulk."
+//             fileName={fileName}
+//             loading={loading}
+//             step={step}
+//             onStepChange={(v) => setStep(v as CcmStep)}
+//             tabs={[
+//                 { value: 'upload', label: '1. Upload' },
+//                 {
+//                     value: 'calibrate',
+//                     label: '2. Calibrate',
+//                     disabled: !canCalibrate,
+//                 },
+//                 {
+//                     value: 'verifyFormat',
+//                     label: '3. Verify',
+//                     disabled: !canVerifyFormat,
+//                 },
+//                 {
+//                     value: 'extract',
+//                     label: '4. Extract',
+//                     disabled: !canExtract,
+//                 },
+//                 {
+//                     value: 'review',
+//                     label: '5. Review & Import',
+//                     disabled: !canReview,
+//                 },
+//             ]}
+//         >
+//             <ImportUploadStep
+//                 fileInputId="category-coa-mapping-file"
+//                 fileLabel="Excel File (.xlsx only)"
+//                 fileDescription="Select an .xlsx file. Only .xlsx is accepted (ExcelJS)."
+//                 error={error}
+//                 loading={loading}
+//                 onFileChange={handleFileChange}
+//                 sheets={sheets}
+//                 selectedSheets={selectedSheets}
+//                 selectionMode="single"
+//                 onSheetsChange={handleSheetsChange}
+//                 onNext={() => {
+//                     ensureCalibrationsInitialized();
+//                     setStep('calibrate');
+//                 }}
+//                 nextDisabled={selectedSheets.length === 0}
+//             />
+//             <CalibrateStep s={s} />
+//             <VerifyFormatStep s={s} />
+//             <VerifyMapStep s={s} />
+//             <ExtractStep s={s} />
+//             <ReviewStep s={s} />
+//         </ImportPageShell>
+//     );
+// }
+
+// CategoryCoaMappingImport.layout = {
+//     breadcrumbs: [
+//         { title: 'Imports', href: importsIndex().url },
+//         { title: 'Category COA Mapping', href: categoryCoaMappingIndex().url },
+//     ],
+// };

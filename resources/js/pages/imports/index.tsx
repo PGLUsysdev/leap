@@ -56,30 +56,30 @@ const IMPORT_SOURCES: ImportSource[] = [
                 icon: FileSpreadsheet,
                 badge: 'Categories',
             },
-            {
-                title: 'Category–COA Mappings',
-                description:
-                    'Bulk import Category ↔ COA mappings from XLSX. Calibrate, verify format, and create mappings in bulk.',
-                href: categoryCoaMappingIndex().url,
-                icon: Tags,
-                badge: 'Mappings',
-            },
-            {
-                title: 'Price List Import',
-                description:
-                    'Import price list items (price-list only). Requires official Category + Mapping to exist first.',
-                href: priceListImportIndex().url,
-                icon: Receipt,
-                badge: 'Price Lists',
-            },
-            {
-                title: 'Price List Quantities Import',
-                description:
-                    'Import quantities against existing price list items from XLSX.',
-                href: priceListQuantitiesImportIndex().url,
-                icon: FileSpreadsheet,
-                badge: 'Quantities',
-            },
+            // {
+            //     title: 'Category–COA Mappings',
+            //     description:
+            //         'Bulk import Category ↔ COA mappings from XLSX. Calibrate, verify format, and create mappings in bulk.',
+            //     href: categoryCoaMappingIndex().url,
+            //     icon: Tags,
+            //     badge: 'Mappings',
+            // },
+            // {
+            //     title: 'Price List Import',
+            //     description:
+            //         'Import price list items (price-list only). Requires official Category + Mapping to exist first.',
+            //     href: priceListImportIndex().url,
+            //     icon: Receipt,
+            //     badge: 'Price Lists',
+            // },
+            // {
+            //     title: 'Price List Quantities Import',
+            //     description:
+            //         'Import quantities against existing price list items from XLSX.',
+            //     href: priceListQuantitiesImportIndex().url,
+            //     icon: FileSpreadsheet,
+            //     badge: 'Quantities',
+            // },
         ],
     },
     {
@@ -89,13 +89,13 @@ const IMPORT_SOURCES: ImportSource[] = [
             'Import workflows that read from the AIP Summary form (XLSX).',
         icon: ClipboardList,
         items: [
-            {
-                title: 'AIP Summary Import',
-                description: 'Import AIP Summary from XLSX.',
-                href: aipSummaryImportIndex().url,
-                icon: FileSpreadsheet,
-                badge: 'AIP Summary',
-            },
+            // {
+            //     title: 'AIP Summary Import',
+            //     description: 'Import AIP Summary from XLSX.',
+            //     href: aipSummaryImportIndex().url,
+            //     icon: FileSpreadsheet,
+            //     badge: 'AIP Summary',
+            // },
         ],
     },
 ];
@@ -185,31 +185,6 @@ export default function ImportsHub() {
                 {IMPORT_SOURCES.map((source) => (
                     <ImportSourceSection key={source.key} source={source} />
                 ))}
-
-                {/* Placeholder for future imports */}
-                {/*<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <Card className="flex flex-col border-dashed">
-                        <CardHeader>
-                            <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-lg">
-                                <Upload className="text-muted-foreground h-5 w-5" />
-                            </div>
-                            <CardTitle className="text-muted-foreground pt-3">
-                                More imports coming soon
-                            </CardTitle>
-                            <CardDescription>
-                                Additional PPMP and AIP Summary bulk importers
-                                will appear here.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="flex-1" />
-                        <CardFooter>
-                            <span className="text-muted-foreground text-xs">
-                                Registry pattern — add an entry to the matching
-                                group in IMPORT_SOURCES to extend.
-                            </span>
-                        </CardFooter>
-                    </Card>
-                </div>*/}
             </div>
         </>
     );

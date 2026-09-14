@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { cellText } from '@/lib/excel/cell-helpers';
 import {
@@ -11,8 +12,11 @@ import {
 } from '@/lib/ppmp/normalize';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import { getDefaultMappingConfig } from '@/lib/ppmp/sheet-config';
-import { extractPpmpSheet, type PpmpExtractResult, type RawPpmpItem } from '@/lib/ppmp/extract';
-import { extractRawSheets } from '@/lib/raw-extract';
+import {
+    extractPpmpSheet,
+    type PpmpExtractResult,
+    type RawPpmpItem,
+} from '@/lib/ppmp/extract';
 import type {
     CategoryCoaSheetConfig,
     CategoryCoaColumnConfig,
@@ -33,7 +37,6 @@ import type {
     VerifiedPair,
     VerifyFormatResult,
 } from './types';
-import { UploadStep } from './steps/upload-step';
 import { CalibrateStep } from './steps/calibrate-step';
 import { VerifyFormatStep } from './steps/verify-format-step';
 import { VerifyMapStep } from './steps/verify-map-step';
@@ -60,7 +63,9 @@ export default function CategoryCoaMappingImport({
         Record<string, CategoryCoaSheetConfig>
     >({});
     const [currentSheet, setCurrentSheet] = useState<string>('');
-    const [ppmpExtractResults, setPpmpExtractResults] = useState<Record<string, PpmpExtractResult>>({});
+    const [ppmpExtractResults, setPpmpExtractResults] = useState<
+        Record<string, PpmpExtractResult>
+    >({});
     const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>(
         {},
@@ -112,7 +117,8 @@ export default function CategoryCoaMappingImport({
     const canVerifyMap = canVerifyFormat && hasFormatResult && formatValid;
     const canExtract = canVerifyFormat && hasFormatResult && formatValid;
     const hasAnyExtract = ppmpRawItems.length > 0;
-    const canReview = canExtract && hasAnyExtract && !!verification && verification.total > 0;
+    const canReview =
+        canExtract && hasAnyExtract && !!verification && verification.total > 0;
 
     function getEffectiveConfig(sheet: string): CategoryCoaSheetConfig {
         if (calibrationMode === 'shared' && sharedConfig) return sharedConfig;
@@ -341,9 +347,22 @@ export default function CategoryCoaMappingImport({
             .flat(Infinity)
             .map((s) => String(s).trim())
             .filter(Boolean) as string[];
-        console.log('[verifyFormat] selectedSheets raw:', selectedSheets, 'flatSheets:', flatSheets);
-        if (flatSheets.length !== selectedSheets.length || flatSheets.some((s, i) => s !== selectedSheets[i])) {
-            console.warn('[verifyFormat] flattened nested', selectedSheets, '→', flatSheets);
+        console.log(
+            '[verifyFormat] selectedSheets raw:',
+            selectedSheets,
+            'flatSheets:',
+            flatSheets,
+        );
+        if (
+            flatSheets.length !== selectedSheets.length ||
+            flatSheets.some((s, i) => s !== selectedSheets[i])
+        ) {
+            console.warn(
+                '[verifyFormat] flattened nested',
+                selectedSheets,
+                '→',
+                flatSheets,
+            );
             setSelectedSheets(flatSheets);
         }
 
@@ -391,7 +410,10 @@ export default function CategoryCoaMappingImport({
 
     function handlePpmpExtract() {
         if (!workbook || selectedSheets.length === 0) return;
-        const flatSheets = (selectedSheets as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+        const flatSheets = (selectedSheets as unknown[])
+            .flat(Infinity)
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
         const next: Record<string, PpmpExtractResult> = {};
         const allRaw: RawPpmpItem[] = [];
         for (const sheet of flatSheets) {
@@ -402,7 +424,6 @@ export default function CategoryCoaMappingImport({
         }
         setPpmpExtractResults(next);
         setPpmpRawItems(allRaw);
-        setRawSheets(extractRawSheets(workbook, flatSheets, (s) => getEffectiveConfig(s)));
     }
 
     function handleSheetToggle(sheet: string) {
@@ -429,6 +450,37 @@ export default function CategoryCoaMappingImport({
 
     function handleSheetClick(sheet: string) {
         handleSheetToggle(sheet);
+    }
+
+    /**
+     * Single-sheet mode: the shared picker emits `[picked]` or `[]`.
+     * Deselect anything else, then select the picked sheet. The page's
+     * `handleSheetToggle` resets downstream results on each call.
+     */
+    function handleSheetsChange(next: unknown) {
+        console.log(
+            '[category-coa-mapping handleSheetsChange] raw next:',
+            next,
+            'selectedSheets before:',
+            selectedSheets,
+        );
+        const flat = (
+            Array.isArray(next) ? (next as unknown[]).flat(Infinity) : []
+        )
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
+        console.log('[category-coa-mapping handleSheetsChange] flat:', flat);
+        const picked = flat[0] ?? '';
+
+        for (const sheet of selectedSheets) {
+            if (sheet !== picked) {
+                handleSheetToggle(String(sheet));
+            }
+        }
+
+        if (picked && !selectedSheets.includes(picked)) {
+            handleSheetToggle(picked);
+        }
     }
 
     function handleRowConfigChange(patch: Partial<CategoryCoaRowConfig>) {
@@ -1417,7 +1469,23 @@ export default function CategoryCoaMappingImport({
                 },
             ]}
         >
-            <UploadStep s={s} />
+            <ImportUploadStep
+                fileInputId="category-coa-mapping-file"
+                fileLabel="Excel File (.xlsx only)"
+                fileDescription="Select an .xlsx file. Only .xlsx is accepted (ExcelJS)."
+                error={error}
+                loading={loading}
+                onFileChange={handleFileChange}
+                sheets={sheets}
+                selectedSheets={selectedSheets}
+                selectionMode="single"
+                onSheetsChange={handleSheetsChange}
+                onNext={() => {
+                    ensureCalibrationsInitialized();
+                    setStep('calibrate');
+                }}
+                nextDisabled={selectedSheets.length === 0}
+            />
             <CalibrateStep s={s} />
             <VerifyFormatStep s={s} />
             <VerifyMapStep s={s} />
