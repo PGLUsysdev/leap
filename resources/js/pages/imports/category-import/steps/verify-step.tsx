@@ -1,10 +1,16 @@
 // resources/js/pages/imports/category-import/steps/verify-step.tsx
 
+import { useEffect, useState } from 'react';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ImportVerifyIssues } from '@/components/imports/import-verify-issues';
 import type { CategoryImportState } from '../types';
 
 export function VerifyStep({ s }: { s: CategoryImportState }) {
@@ -23,6 +29,23 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
         setSkipProblematic,
         setStep,
     } = s;
+
+    // Issue-level tab state (Errors / Warnings), shared by whichever
+    // sheet's card is currently mounted.
+    const [activeIssueTab, setActiveIssueTab] = useState<string>('errors');
+
+    const currentResult = verifyResults[activeVerifySheet];
+    const hasErrors = (currentResult?.errors.length ?? 0) > 0;
+    const hasWarnings = false; // PPMP verify never emits warnings
+
+    // Snap the issue tab to a populated one when the shape changes.
+    // If both are populated, leave the user's choice alone.
+    useEffect(() => {
+        if (hasErrors && hasWarnings) return;
+        if (hasErrors) setActiveIssueTab('errors');
+        else if (hasWarnings) setActiveIssueTab('warnings');
+        else setActiveIssueTab('errors');
+    }, [hasErrors, hasWarnings]);
 
     return (
         <TabsContent value="verify" className="mt-4 flex flex-col gap-4">
@@ -57,6 +80,7 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
                         </span>
                     )}
                 </div>
+
                 {hasAnyVerify && (
                     <div className="mt-4 flex flex-wrap gap-2">
                         {selectedSheets.map((sh) => {
@@ -87,32 +111,36 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
                         })}
                     </div>
                 )}
-                {hasAnyVerify && selectedSheets.length > 1 && (
+
+                {hasAnyVerify && (
                     <Tabs
                         value={activeVerifySheet}
                         onValueChange={setActiveVerifySheet}
                         className="mt-4"
                     >
-                        <TabsList>
-                            {selectedSheets.map((sh) => {
-                                const r = verifyResults[sh];
+                        {selectedSheets.length > 1 && (
+                            <TabsList>
+                                {selectedSheets.map((sh) => {
+                                    const r = verifyResults[sh];
 
-                                return (
-                                    <TabsTrigger key={sh} value={sh}>
-                                        {sh}{' '}
-                                        {r?.valid ? (
-                                            <span className="ml-1 text-xs text-green-600">
-                                                ✓
-                                            </span>
-                                        ) : r ? (
-                                            <span className="ml-1 text-xs text-amber-600">
-                                                ❌ {r.errors.length}
-                                            </span>
-                                        ) : null}
-                                    </TabsTrigger>
-                                );
-                            })}
-                        </TabsList>
+                                    return (
+                                        <TabsTrigger key={sh} value={sh}>
+                                            {sh}{' '}
+                                            {r?.valid ? (
+                                                <span className="ml-1 text-xs text-green-600">
+                                                    ✓
+                                                </span>
+                                            ) : r ? (
+                                                <span className="ml-1 text-xs text-amber-600">
+                                                    ❌ {r.errors.length}
+                                                </span>
+                                            ) : null}
+                                        </TabsTrigger>
+                                    );
+                                })}
+                            </TabsList>
+                        )}
+
                         {selectedSheets.map((sh) => {
                             const verifyResult = verifyResults[sh];
 
@@ -128,24 +156,18 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
 
                             return (
                                 <TabsContent key={sh} value={sh}>
-                                    <div
-                                        className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? 'border-green-200 bg-green-50 text-green-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
-                                    >
+                                    <div className="mt-4 rounded-md border p-3 text-sm">
                                         <div className="font-medium">
-                                            {verifyResult.message}{' '}
-                                            <span className="text-xs font-normal opacity-70">
-                                                — {sh}
-                                            </span>
+                                            {verifyResult.message}
+                                            {selectedSheets.length > 1 && (
+                                                <span className="text-xs font-normal opacity-70">
+                                                    {' '}
+                                                    — {sh}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                            <Badge
-                                                variant={
-                                                    verifyResult.groups
-                                                        .procurement
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                            >
+                                            <Badge variant="outline">
                                                 Procurement:{' '}
                                                 {
                                                     verifyResult.groups
@@ -153,26 +175,12 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
                                                 }{' '}
                                                 cells
                                             </Badge>
-                                            <Badge
-                                                variant={
-                                                    verifyResult.groups
-                                                        .additional
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                            >
+                                            <Badge variant="outline">
                                                 Additional:{' '}
                                                 {verifyResult.groups.additional}{' '}
                                                 cells
                                             </Badge>
-                                            <Badge
-                                                variant={
-                                                    verifyResult.groups
-                                                        .nonProcurement
-                                                        ? 'default'
-                                                        : 'secondary'
-                                                }
-                                            >
+                                            <Badge variant="outline">
                                                 Non-Proc:{' '}
                                                 {
                                                     verifyResult.groups
@@ -181,20 +189,126 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
                                                 cells
                                             </Badge>
                                         </div>
+
                                         {verifyResult.details.length > 0 && (
-                                            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
-                                                {verifyResult.details.map(
-                                                    (d, i) => (
-                                                        <li key={i}>{d}</li>
-                                                    ),
-                                                )}
-                                            </ul>
+                                            <Accordion
+                                                type="single"
+                                                collapsible
+                                                className="mt-2"
+                                            >
+                                                <AccordionItem
+                                                    value="details"
+                                                    className="border-b-0"
+                                                >
+                                                    <AccordionTrigger className="py-1 text-xs hover:no-underline">
+                                                        Details (
+                                                        {
+                                                            verifyResult.details
+                                                                .length
+                                                        }
+                                                        )
+                                                    </AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <ul className="list-disc space-y-1 pl-5 text-xs opacity-80">
+                                                            {verifyResult.details.map(
+                                                                (d, i) => (
+                                                                    <li key={i}>
+                                                                        {d}
+                                                                    </li>
+                                                                ),
+                                                            )}
+                                                        </ul>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            </Accordion>
                                         )}
+
                                         <div className="mt-3">
-                                            <ImportVerifyIssues
-                                                errors={verifyResult.errors}
-                                                warnings={[]}
-                                            />
+                                            <Tabs
+                                                value={activeIssueTab}
+                                                onValueChange={
+                                                    setActiveIssueTab
+                                                }
+                                            >
+                                                <TabsList>
+                                                    <TabsTrigger
+                                                        value="errors"
+                                                        disabled={
+                                                            verifyResult.errors
+                                                                .length === 0
+                                                        }
+                                                    >
+                                                        Errors
+                                                        <span
+                                                            className={`ml-1 rounded px-1.5 py-0.5 text-xs ${
+                                                                verifyResult
+                                                                    .errors
+                                                                    .length > 0
+                                                                    ? 'bg-destructive text-destructive-foreground'
+                                                                    : 'bg-muted text-muted-foreground'
+                                                            }`}
+                                                        >
+                                                            {
+                                                                verifyResult
+                                                                    .errors
+                                                                    .length
+                                                            }
+                                                        </span>
+                                                    </TabsTrigger>
+                                                    <TabsTrigger
+                                                        value="warnings"
+                                                        disabled
+                                                    >
+                                                        Warnings
+                                                        <span className="bg-muted text-muted-foreground ml-1 rounded px-1.5 py-0.5 text-xs">
+                                                            0
+                                                        </span>
+                                                    </TabsTrigger>
+                                                </TabsList>
+                                                <TabsContent
+                                                    value="errors"
+                                                    className="mt-3 max-h-64 overflow-y-auto rounded border p-2"
+                                                >
+                                                    {verifyResult.errors
+                                                        .length === 0 ? (
+                                                        <p className="text-muted-foreground py-6 text-center text-sm">
+                                                            No errors.
+                                                        </p>
+                                                    ) : (
+                                                        <ul className="text-destructive flex flex-col gap-1 overflow-y-auto text-sm">
+                                                            {verifyResult.errors.map(
+                                                                (issue, i) => (
+                                                                    <li
+                                                                        key={`${issue.row}-${i}`}
+                                                                        className="flex gap-2 leading-relaxed"
+                                                                    >
+                                                                        <span className="shrink-0 pt-0.5 font-mono text-xs opacity-70">
+                                                                            Row{' '}
+                                                                            {
+                                                                                issue.row
+                                                                            }
+                                                                            :
+                                                                        </span>
+                                                                        <span className="min-w-0 flex-1">
+                                                                            {
+                                                                                issue.message
+                                                                            }
+                                                                        </span>
+                                                                    </li>
+                                                                ),
+                                                            )}
+                                                        </ul>
+                                                    )}
+                                                </TabsContent>
+                                                <TabsContent
+                                                    value="warnings"
+                                                    className="mt-3 max-h-64 overflow-y-auto rounded border p-2"
+                                                >
+                                                    <p className="text-muted-foreground py-6 text-center text-sm">
+                                                        No warnings.
+                                                    </p>
+                                                </TabsContent>
+                                            </Tabs>
                                         </div>
                                     </div>
                                 </TabsContent>
@@ -202,72 +316,9 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
                         })}
                     </Tabs>
                 )}
-                {hasAnyVerify &&
-                    selectedSheets.length === 1 &&
-                    (() => {
-                        const sh = selectedSheets[0];
-                        const verifyResult = verifyResults[sh];
 
-                        if (!verifyResult) return null;
-
-                        return (
-                            <div
-                                className={`mt-4 rounded-md border p-3 text-sm ${verifyResult.valid ? 'border-green-200 bg-green-50 text-green-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}
-                            >
-                                <div className="font-medium">
-                                    {verifyResult.message}
-                                </div>
-                                <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                    <Badge
-                                        variant={
-                                            verifyResult.groups.procurement
-                                                ? 'default'
-                                                : 'secondary'
-                                        }
-                                    >
-                                        Procurement:{' '}
-                                        {verifyResult.groups.procurement} cells
-                                    </Badge>
-                                    <Badge
-                                        variant={
-                                            verifyResult.groups.additional
-                                                ? 'default'
-                                                : 'secondary'
-                                        }
-                                    >
-                                        Additional:{' '}
-                                        {verifyResult.groups.additional} cells
-                                    </Badge>
-                                    <Badge
-                                        variant={
-                                            verifyResult.groups.nonProcurement
-                                                ? 'default'
-                                                : 'secondary'
-                                        }
-                                    >
-                                        Non-Proc:{' '}
-                                        {verifyResult.groups.nonProcurement}{' '}
-                                        cells
-                                    </Badge>
-                                </div>
-                                {verifyResult.details.length > 0 && (
-                                    <ul className="mt-2 list-disc space-y-1 pl-5 text-xs opacity-80">
-                                        {verifyResult.details.map((d, i) => (
-                                            <li key={i}>{d}</li>
-                                        ))}
-                                    </ul>
-                                )}
-                                <div className="mt-3">
-                                    <ImportVerifyIssues
-                                        errors={verifyResult.errors}
-                                        warnings={[]}
-                                    />
-                                </div>
-                            </div>
-                        );
-                    })()}
                 {hasAnyVerify && !allVerifyValid && (
-                    <div className="mt-4 flex items-center gap-2 rounded-md border border-amber-200 bg-white p-2">
+                    <div className="mt-4 flex items-center gap-2 rounded-md border p-2">
                         <Switch
                             checked={skipProblematic}
                             onCheckedChange={setSkipProblematic}

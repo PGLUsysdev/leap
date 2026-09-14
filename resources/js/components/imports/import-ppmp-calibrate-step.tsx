@@ -326,7 +326,7 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                         value={currentSheet}
                         onValueChange={(v) => setCurrentSheet(v ?? '')}
                     >
-                        <SelectTrigger className="w-[260px]">
+                        <SelectTrigger className="w-65">
                             <SelectValue placeholder="Select sheet to edit" />
                         </SelectTrigger>
                         <SelectContent>

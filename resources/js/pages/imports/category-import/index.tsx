@@ -3,6 +3,7 @@
 import { router } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
+import { ImportPpmpCalibrateStep } from '@/components/imports/import-ppmp-calibrate-step';
 import { ImportUploadStep } from '@/components/imports/import-upload-step';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { cellText } from '@/lib/excel/cell-helpers';
@@ -27,7 +28,6 @@ import type {
     ExtractResult,
     VerifyResult,
 } from './types';
-import { CalibrateStep } from './steps/calibrate-step';
 import { VerifyStep } from './steps/verify-step';
 import { ExtractStep } from './steps/extract-step';
 import { ImportStep } from './steps/import-step';
@@ -117,6 +117,18 @@ export default function CategoryImport({
             duplicates: extractResult.duplicates.length,
         };
     }, [extractResult]);
+
+    const verifyMarks = useMemo(() => {
+        const marks: Record<string, boolean> = {};
+
+        for (const [sheet, result] of Object.entries(verifyResults)) {
+            if (result) {
+                marks[sheet] = result.valid;
+            }
+        }
+
+        return marks;
+    }, [verifyResults]);
 
     function handleSheetToggle(sheet: string) {
         setSelectedSheets((prev) => {
@@ -704,7 +716,29 @@ export default function CategoryImport({
                 }}
                 nextDisabled={selectedSheets.length === 0}
             />
-            <CalibrateStep s={s} />
+            <ImportPpmpCalibrateStep
+                calibrationMode={calibrationMode}
+                setCalibrationMode={setCalibrationMode}
+                sharedConfig={sharedConfig}
+                setSharedConfig={setSharedConfig}
+                calibrations={calibrations}
+                setCalibrations={setCalibrations}
+                currentSheet={currentSheet}
+                setCurrentSheet={setCurrentSheet}
+                selectedSheets={selectedSheets}
+                getDefaultConfig={getDefaultSharedConfig}
+                onInvalidate={() => {
+                    setVerifyResults({});
+                    setExtractResult(null);
+                }}
+                verifyMarks={verifyMarks}
+                showGroupsSummary
+                showEffectiveBadges
+                onBack={() => setStep('upload')}
+                onNext={() => setStep('verify')}
+                canNext={canVerify}
+                nextLabel="Next: Verify Format"
+            />
             <VerifyStep s={s} />
             <ExtractStep s={s} />
             <ImportStep s={s} />
