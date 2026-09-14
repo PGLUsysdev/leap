@@ -36,9 +36,7 @@ import { UploadStep } from './steps/upload-step';
 import { CalibrateStep } from './steps/calibrate-step';
 import { VerifyStep } from './steps/verify-step';
 import { ExtractStep } from './steps/extract-step';
-import { ImportPpaStep } from './steps/import-ppa-step';
-import { ImportOutputsStep } from './steps/import-outputs-step';
-import { ImportFundingStep } from './steps/import-funding-step';
+import { ReviewAndImport } from './steps/review-import-step';
 
 export default function AipSummaryImport() {
     const {
@@ -177,13 +175,7 @@ export default function AipSummaryImport() {
 
     function goToImport(target: typeof importTarget) {
         setImportTarget(target);
-        setStep(
-            target === 'outputs'
-                ? 'import-outputs'
-                : target === 'funding'
-                  ? 'import-funding'
-                  : 'import-ppa',
-        );
+        setStep('review');
     }
 
     const selectedOfficeLabel = useMemo(() => {
@@ -993,8 +985,8 @@ export default function AipSummaryImport() {
                     disabled: !canExtract,
                 },
                 {
-                    value: importStep,
-                    label: `5. ${importTitle}`,
+                    value: 'review',
+                    label: '5. Review & Import',
                     disabled: !canImportPpa,
                 },
             ]}
@@ -1003,9 +995,7 @@ export default function AipSummaryImport() {
             <CalibrateStep s={s} />
             <VerifyStep s={s} />
             <ExtractStep s={s} />
-            <ImportPpaStep s={s} />
-            <ImportOutputsStep s={s} />
-            <ImportFundingStep s={s} />
+            <ReviewAndImport s={s} />
         </ImportPageShell>
     );
 }

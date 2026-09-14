@@ -18,8 +18,8 @@ export type PliQtyStep =
     | 'upload'
     | 'calibrate'
     | 'verify'
-    | 'review'
-    | 'import';
+    | 'extract'
+    | 'review';
 
 export type CalibrationMode = 'shared' | 'per-sheet';
 
@@ -113,6 +113,17 @@ export type PriceListQuantitiesImportState = {
     >;
     activeVerifySheet: string;
     setActiveVerifySheet: (s: string) => void;
+
+    // shared ppmp raw extract (after verify, strict)
+    ppmpExtractResults: Record<string, import('@/lib/ppmp/extract').PpmpExtractResult>;
+    setPpmpExtractResults: Dispatch<SetStateAction<Record<string, import('@/lib/ppmp/extract').PpmpExtractResult>>>;
+    ppmpRawItems: import('@/lib/ppmp/extract').RawPpmpItem[];
+    setPpmpRawItems: Dispatch<SetStateAction<import('@/lib/ppmp/extract').RawPpmpItem[]>>;
+    rawSheets: Record<string, import('@/lib/raw-extract').RawSheet>;
+    setRawSheets: Dispatch<SetStateAction<Record<string, import('@/lib/raw-extract').RawSheet>>>;
+    handlePpmpExtract: () => void;
+    canExtract: boolean;
+    hasAnyExtract: boolean;
 
     // extract results / review
     extractResults: Record<string, QuantitiesExtractResult>;

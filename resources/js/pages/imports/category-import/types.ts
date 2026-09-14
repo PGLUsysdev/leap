@@ -4,8 +4,10 @@ import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import type ExcelJS from 'exceljs';
 import type { ExistingCategory } from '@/lib/ppmp/normalize';
 import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
+import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
+import type { RawSheet } from '@/lib/raw-extract';
 
-export type CimpStep = 'upload' | 'calibrate' | 'verify' | 'extract';
+export type CimpStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'import';
 export type CalibrationMode = 'shared' | 'per-sheet';
 
 export type VerifyResult = {
@@ -137,11 +139,18 @@ export type CategoryImportState = {
     skipProblematic: boolean;
     setSkipProblematic: (v: boolean) => void;
 
-    // extract
+    // extract — legacy unique + new shared raw ppmp extract
     extractResult: ExtractResult | null;
     setExtractResult: Dispatch<SetStateAction<ExtractResult | null>>;
     extractionStats: ExtractionStats | null;
     handleExtract: () => void;
+    ppmpExtractResults: Record<string, PpmpExtractResult>;
+    setPpmpExtractResults: Dispatch<SetStateAction<Record<string, PpmpExtractResult>>>;
+    ppmpRawItems: RawPpmpItem[];
+    setPpmpRawItems: Dispatch<SetStateAction<RawPpmpItem[]>>;
+    rawSheets: Record<string, RawSheet>;
+    setRawSheets: Dispatch<SetStateAction<Record<string, RawSheet>>>;
+    handlePpmpExtract: () => void;
     selected: Set<string>;
     setSelected: Dispatch<SetStateAction<Set<string>>>;
     isAdditionalDraft: Record<string, boolean>;

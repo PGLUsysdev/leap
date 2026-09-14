@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ImportVerifyIssues } from '@/components/imports/import-verify-issues';
 import type { CategoryCoaMappingState } from '../types';
 
 export function VerifyFormatStep({ s }: { s: CategoryCoaMappingState }) {
@@ -11,7 +12,6 @@ export function VerifyFormatStep({ s }: { s: CategoryCoaMappingState }) {
         calibrationMode,
         sharedConfig,
         canVerifyFormat,
-        canVerifyMap,
         hasFormatResult,
         formatValid,
         formatResults,
@@ -168,24 +168,13 @@ export function VerifyFormatStep({ s }: { s: CategoryCoaMappingState }) {
                                             ))}
                                         </ul>
                                     )}
-                                    {r.errors.length > 0 && (
-                                        <div className="mt-3">
-                                            <div className="text-xs font-semibold">
-                                                Issues ({r.errors.length}) in{' '}
-                                                {sh}:
-                                            </div>
-                                            <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">
-                                                {r.errors.map((e, i) => (
-                                                    <li key={i}>
-                                                        <span className="font-mono">
-                                                            Row {e.row}:
-                                                        </span>{' '}
-                                                        {e.message}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )}
+                                    <div className="mt-3">
+                                        <ImportVerifyIssues
+                                            errors={r.errors}
+                                            warnings={[]}
+                                            details={[]}
+                                        />
+                                    </div>
                                     {!r.valid && (
                                         <p className="mt-2 text-xs text-amber-800">
                                             Fix calibration or sheet format —
@@ -245,23 +234,13 @@ export function VerifyFormatStep({ s }: { s: CategoryCoaMappingState }) {
                                     ))}
                                 </ul>
                             )}
-                            {r.errors.length > 0 && (
-                                <div className="mt-3">
-                                    <div className="text-xs font-semibold">
-                                        Issues ({r.errors.length}):
-                                    </div>
-                                    <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5 text-xs">
-                                        {r.errors.map((e, i) => (
-                                            <li key={i}>
-                                                <span className="font-mono">
-                                                    Row {e.row}:
-                                                </span>{' '}
-                                                {e.message}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
+                            <div className="mt-3">
+                                <ImportVerifyIssues
+                                    errors={r.errors}
+                                    warnings={[]}
+                                    details={[]}
+                                />
+                            </div>
                             {!r.valid && (
                                 <p className="mt-2 text-xs text-amber-800">
                                     Fix calibration or sheet format — Next is
@@ -283,10 +262,10 @@ export function VerifyFormatStep({ s }: { s: CategoryCoaMappingState }) {
                     Back
                 </Button>
                 <Button
-                    onClick={() => setStep('verifyMap')}
-                    disabled={!canVerifyMap}
+                    onClick={() => setStep('extract')}
+                    disabled={!hasFormatResult || !formatValid}
                 >
-                    Next: Verify & Map{' '}
+                    Next: Extract{' '}
                     {hasFormatResult && !formatValid ? '(blocked)' : ''}
                 </Button>
             </div>

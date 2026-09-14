@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TabsContent } from '@/components/ui/tabs';
+import { ImportVerifyIssues } from '@/components/imports/import-verify-issues';
 import type { PriceListImportState } from '../types';
 
 export function VerifyStep({ s }: { s: PriceListImportState }) {
@@ -73,22 +74,13 @@ export function VerifyStep({ s }: { s: PriceListImportState }) {
                                 >
                                     {r.message} — {active}
                                 </p>
-                                {r.errors.length > 0 && (
-                                    <div className="mt-2 max-h-48 overflow-auto rounded border p-2 text-xs">
-                                        {r.errors.map((e, i) => (
-                                            <div key={i}>
-                                                Row {e.row}: {e.message}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {r.details.length > 0 && (
-                                    <div className="text-muted-foreground mt-2 text-xs">
-                                        {r.details.map((d, i) => (
-                                            <div key={i}>{d}</div>
-                                        ))}
-                                    </div>
-                                )}
+                                <div className="mt-3">
+                                    <ImportVerifyIssues
+                                        errors={r.errors}
+                                        warnings={[]}
+                                        details={r.details}
+                                    />
+                                </div>
                             </div>
                         );
                     })()}

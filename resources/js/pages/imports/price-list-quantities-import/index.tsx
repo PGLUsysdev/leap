@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
 import { useImportWorkbook } from '@/hooks/use-import-workbook';
 import { getDefaultQuantitiesConfig } from '@/lib/ppmp/sheet-config';
+import { extractPpmpSheet, type PpmpExtractResult, type RawPpmpItem } from '@/lib/ppmp/extract';
+import { extractRawSheets, type RawSheet } from '@/lib/raw-extract';
 import type { QuantitiesSheetConfig } from '@/lib/ppmp/sheet-config';
 import {
     extractQuantitiesSheet,
@@ -13,6 +15,7 @@ import type {
     QuantitiesExtractResult,
     QuantitiesVerifyResult,
 } from '@/lib/ppmp/quantities-extract';
+import { verifyPpmpSheet } from '@/lib/ppmp/verify';
 import { matchQuantityItems } from '@/lib/ppmp/quantities-match';
 import type {
     ExistingMapping,
@@ -34,8 +37,10 @@ import type {
 import { UploadStep } from './steps/upload-step';
 import { CalibrateStep } from './steps/calibrate-step';
 import { VerifyStep } from './steps/verify-step';
+import { ExtractStep } from './steps/extract-step';
 import { ReviewStep } from './steps/review-step';
 import { ImportStep } from './steps/import-step';
+import { ReviewAndImport } from './steps/review-import-step';
 
 interface PriceListQuantitiesImportProps {
     existingCategories: ExistingCategory[];
@@ -73,6 +78,9 @@ export default function PriceListQuantitiesImport({
     const [extractResults, setExtractResults] = useState<
         Record<string, QuantitiesExtractResult>
     >({});
+    const [ppmpExtractResults, setPpmpExtractResults] = useState<Record<string, PpmpExtractResult>>({});
+    const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
+    const [rawSheets, setRawSheets] = useState<Record<string, RawSheet>>({});
     const [activeExtractSheet, setActiveExtractSheet] = useState<string>('');
     const [verifyResults, setVerifyResults] = useState<
         Record<string, QuantitiesVerifyResult>
@@ -106,6 +114,9 @@ export default function PriceListQuantitiesImport({
             setSharedConfig(null);
             setCalibrations({});
             setCurrentSheet('');
+            setPpmpExtractResults({});
+            setPpmpRawItems([]);
+            setRawSheets({});
             setExtractResults({});
             setVerifyResults({});
             setActiveExtractSheet('');
@@ -232,6 +243,8 @@ export default function PriceListQuantitiesImport({
         selectedSheets.length > 0 &&
         selectedSheets.every((s) => verifyResults[s]?.valid);
     const canReview = canVerify && hasAnyVerify && allVerifyValid;
+    const canExtract = canVerify && hasAnyVerify && allVerifyValid;
+    const hasAnyExtract = ppmpRawItems.length > 0;
     const canImport = Object.keys(extractResults).length > 0;
 
     const mappedBySheet = useMemo(() => {
@@ -389,6 +402,8 @@ export default function PriceListQuantitiesImport({
     }
 
     function handleVerify() {
+        setPpmpExtractResults({});
+        setPpmpRawItems([]);
         if (!workbook || selectedSheets.length === 0) {
             return;
         }
@@ -397,22 +412,68 @@ export default function PriceListQuantitiesImport({
             ensureCalibrationsInitialized();
         }
 
+        const flatSheets = (selectedSheets as unknown[])
+            .flat(Infinity)
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
+        console.log('[verify] selectedSheets raw:', selectedSheets, 'flatSheets:', flatSheets);
+        if (flatSheets.length !== selectedSheets.length) {
+            console.warn('[verify] flattened nested', selectedSheets, '→', flatSheets);
+            setSelectedSheets(flatSheets);
+        }
+
+        const availableNames = workbook
+            ? workbook.worksheets.map((ws) => ws.name)
+            : sheets;
+        const missing = flatSheets.filter((s) => !availableNames.includes(s));
+        if (missing.length > 0) {
+            console.warn(
+                '[verify] stale selectedSheets:',
+                flatSheets,
+                'available:',
+                availableNames,
+                'missing:',
+                missing,
+            );
+        }
+
         const next: Record<string, QuantitiesVerifyResult> = {};
 
-        for (const sheet of selectedSheets) {
-            const result = verifyQuantitiesSheet(
+        for (const sheet of flatSheets) {
+            const result = verifyPpmpSheet(
                 workbook,
                 sheet,
                 getEffectiveConfig(sheet),
             );
-            next[sheet] = result;
+            next[sheet] = {
+                valid: result.valid,
+                message: result.message,
+                errors: result.errors,
+                details: result.details,
+            };
         }
 
         setVerifyResults(next);
-        const firstInvalid = selectedSheets.find((s) => !next[s]?.valid);
-        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? '');
+        const firstInvalid = flatSheets.find((s) => !next[s]?.valid);
+        setActiveVerifySheet(firstInvalid ?? flatSheets[0] ?? '');
         setExtractResults({});
         setActiveExtractSheet('');
+    }
+
+    function handlePpmpExtract() {
+        if (!workbook || selectedSheets.length === 0) return;
+        const flatSheets = (selectedSheets as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+        const next: Record<string, PpmpExtractResult> = {};
+        const allRaw: RawPpmpItem[] = [];
+        for (const sheet of flatSheets) {
+            const cfg = getEffectiveConfig(sheet);
+            const res = extractPpmpSheet(workbook, sheet, cfg);
+            next[sheet] = res;
+            allRaw.push(...res.rawItems);
+        }
+        setPpmpExtractResults(next);
+        setPpmpRawItems(allRaw);
+        setRawSheets(extractRawSheets(workbook, flatSheets, (s) => getEffectiveConfig(s)));
     }
 
     function handleSheetToggle(name: string) {
@@ -431,6 +492,9 @@ export default function PriceListQuantitiesImport({
 
             return next;
         });
+        setPpmpExtractResults({});
+        setPpmpRawItems([]);
+        setRawSheets({});
         setExtractResults({});
         setVerifyResults({});
         setActiveExtractSheet('');
@@ -536,6 +600,8 @@ export default function PriceListQuantitiesImport({
         hasAnyVerify,
         allVerifyValid,
         canReview,
+        canExtract,
+        hasAnyExtract,
         canImport,
 
         calibrationMode,
@@ -556,6 +622,13 @@ export default function PriceListQuantitiesImport({
         handleFileChange,
         handleSheetToggle,
         handleVerify,
+        ppmpExtractResults,
+        setPpmpExtractResults,
+        ppmpRawItems,
+        setPpmpRawItems,
+        rawSheets,
+        setRawSheets,
+        handlePpmpExtract,
         runExtraction,
 
         verifyResults,
@@ -650,22 +723,22 @@ export default function PriceListQuantitiesImport({
                     disabled: !canVerify,
                 },
                 {
-                    value: 'review',
-                    label: '4. Review',
-                    disabled: !canReview,
+                    value: 'extract',
+                    label: '4. Extract',
+                    disabled: !canExtract,
                 },
                 {
-                    value: 'import',
-                    label: '5. Import',
-                    disabled: !canImport,
+                    value: 'review',
+                    label: '5. Review & Import',
+                    disabled: !canReview || !hasAnyExtract,
                 },
             ]}
         >
             <UploadStep s={s} />
             <CalibrateStep s={s} />
             <VerifyStep s={s} />
-            <ReviewStep s={s} />
-            <ImportStep s={s} />
+            <ExtractStep s={s} />
+            <ReviewAndImport s={s} />
         </ImportPageShell>
     );
 }

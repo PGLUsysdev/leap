@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { TabsContent } from '@/components/ui/tabs';
+import { ImportVerifyIssues } from '@/components/imports/import-verify-issues';
 import type { AipImportState } from '../types';
 
 export function VerifyStep({ s }: { s: AipImportState }) {
@@ -33,54 +34,14 @@ export function VerifyStep({ s }: { s: AipImportState }) {
             </div>
 
             {verifyResult && (
-                <div className="flex flex-col gap-2 rounded-md border p-3">
-                    <p
-                        className={`text-sm font-medium ${verifyResult.valid ? 'text-green-600' : 'text-destructive'}`}
-                    >
-                        {verifyResult.valid ? '✅ ' : '❌ '}
-                        {verifyResult.message}
-                    </p>
-                    {verifyResult.errors.length > 0 && (
-                        <ul className="flex max-h-64 flex-col gap-1 overflow-y-auto text-sm">
-                            {verifyResult.errors.map((issue, i) => (
-                                <li key={`error-${issue.row}-${i}`}>
-                                    <span className="text-muted-foreground font-mono">
-                                        Row {issue.row}:
-                                    </span>{' '}
-                                    {issue.message}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                    {verifyResult.warnings.length > 0 && (
-                        <>
-                            <p className="text-sm font-medium text-amber-600">
-                                ⚠ {verifyResult.warnings.length} warning
-                                {verifyResult.warnings.length === 1
-                                    ? ''
-                                    : 's'}{' '}
-                                — formatting only, sheet still passes
-                            </p>
-                            <ul className="flex max-h-64 flex-col gap-1 overflow-y-auto text-sm text-amber-700">
-                                {verifyResult.warnings.map((issue, i) => (
-                                    <li key={`warning-${issue.row}-${i}`}>
-                                        <span className="font-mono opacity-70">
-                                            Row {issue.row}:
-                                        </span>{' '}
-                                        {issue.message}
-                                    </li>
-                                ))}
-                            </ul>
-                        </>
-                    )}
-                    {verifyResult.details.length > 0 && (
-                        <ul className="text-muted-foreground flex flex-col gap-1 text-xs">
-                            {verifyResult.details.map((detail, i) => (
-                                <li key={i}>{detail}</li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
+                <ImportVerifyIssues
+                    errors={verifyResult.errors}
+                    warnings={verifyResult.warnings}
+                    details={verifyResult.details}
+                    message={verifyResult.message}
+                    valid={verifyResult.valid}
+                    warningsHint="formatting only, sheet still passes"
+                />
             )}
 
             <div className="flex items-center justify-between gap-2">

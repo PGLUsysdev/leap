@@ -8,12 +8,14 @@ import type {
     CategoryCoaRowConfig,
 } from '@/lib/ppmp/sheet-config';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
+import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
 
 export type CcmStep =
     | 'upload'
     | 'calibrate'
     | 'verifyFormat'
     | 'verifyMap'
+    | 'extract'
     | 'review';
 
 export type CalibrationMode = 'shared' | 'per-sheet';
@@ -168,6 +170,15 @@ export type CategoryCoaMappingState = {
     handleLogRelationships: () => void;
     isSaving: boolean;
     handleBulkCreateMappings: () => void;
+
+    // shared ppmp raw extract (after verify, strict)
+    ppmpExtractResults: Record<string, PpmpExtractResult>;
+    setPpmpExtractResults: Dispatch<SetStateAction<Record<string, PpmpExtractResult>>>;
+    ppmpRawItems: RawPpmpItem[];
+    setPpmpRawItems: Dispatch<SetStateAction<RawPpmpItem[]>>;
+    handlePpmpExtract: () => void;
+    canExtract: boolean;
+    hasAnyExtract: boolean;
 
     // page props
     existingCategories: ExistingCategory[];

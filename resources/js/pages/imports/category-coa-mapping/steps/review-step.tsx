@@ -170,8 +170,8 @@ export function ReviewStep({ s }: { s: CategoryCoaMappingState }) {
             )}
 
             <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep('verifyMap')}>
-                    Back
+                <Button variant="outline" onClick={() => setStep('extract')}>
+                    Back: Extract
                 </Button>
                 <Button variant="outline" onClick={() => setStep('calibrate')}>
                     Recalibrate

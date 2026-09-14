@@ -33,6 +33,7 @@ export type ImportStep =
     | 'calibrate'
     | 'verify'
     | 'extract'
+    | 'review'
     | 'import-ppa'
     | 'import-outputs'
     | 'import-funding';

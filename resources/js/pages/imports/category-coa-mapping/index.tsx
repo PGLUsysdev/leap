@@ -11,11 +11,14 @@ import {
 } from '@/lib/ppmp/normalize';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import { getDefaultMappingConfig } from '@/lib/ppmp/sheet-config';
+import { extractPpmpSheet, type PpmpExtractResult, type RawPpmpItem } from '@/lib/ppmp/extract';
+import { extractRawSheets } from '@/lib/raw-extract';
 import type {
     CategoryCoaSheetConfig,
     CategoryCoaColumnConfig,
     CategoryCoaRowConfig,
 } from '@/lib/ppmp/sheet-config';
+import { verifyPpmpSheet } from '@/lib/ppmp/verify';
 import { index as categoryCoaMappingIndex } from '@/routes/category-coa-mapping';
 import { index as importsIndex } from '@/routes/imports';
 
@@ -34,6 +37,7 @@ import { UploadStep } from './steps/upload-step';
 import { CalibrateStep } from './steps/calibrate-step';
 import { VerifyFormatStep } from './steps/verify-format-step';
 import { VerifyMapStep } from './steps/verify-map-step';
+import { ExtractStep } from './steps/extract-step';
 import { ReviewStep } from './steps/review-step';
 
 interface CategoryCoaMappingProps {
@@ -56,6 +60,8 @@ export default function CategoryCoaMappingImport({
         Record<string, CategoryCoaSheetConfig>
     >({});
     const [currentSheet, setCurrentSheet] = useState<string>('');
+    const [ppmpExtractResults, setPpmpExtractResults] = useState<Record<string, PpmpExtractResult>>({});
+    const [ppmpRawItems, setPpmpRawItems] = useState<RawPpmpItem[]>([]);
     const [coaOverrides, setCoaOverrides] = useState<Record<string, number>>(
         {},
     );
@@ -76,6 +82,8 @@ export default function CategoryCoaMappingImport({
             setCurrentSheet('');
             setSharedConfig(null);
             setCalibrations({});
+            setPpmpExtractResults({});
+            setPpmpRawItems([]);
             setFormatResults({});
             setActiveFormatSheet('');
             setActiveVerifySheet('');
@@ -102,7 +110,9 @@ export default function CategoryCoaMappingImport({
         selectedSheets.length > 0 &&
         selectedSheets.every((s) => formatResults[s]?.valid);
     const canVerifyMap = canVerifyFormat && hasFormatResult && formatValid;
-    const canReview = canVerifyMap && !!verification && verification.total > 0;
+    const canExtract = canVerifyFormat && hasFormatResult && formatValid;
+    const hasAnyExtract = ppmpRawItems.length > 0;
+    const canReview = canExtract && hasAnyExtract && !!verification && verification.total > 0;
 
     function getEffectiveConfig(sheet: string): CategoryCoaSheetConfig {
         if (calibrationMode === 'shared' && sharedConfig) return sharedConfig;
@@ -310,541 +320,62 @@ export default function CategoryCoaMappingImport({
     function verifyFormatForSheet(sheet: string): VerifyFormatResult | null {
         if (!workbook || !sheet) return null;
 
-        const ws = workbook.getWorksheet(sheet);
-
-        if (!ws) {
-            return {
-                valid: false,
-                message: `Worksheet "${sheet}" not found`,
-                errors: [{ row: 0, message: `Worksheet "${sheet}" not found` }],
-                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
-                details: [],
-            };
-        }
-
         const effective = getEffectiveConfig(sheet);
+        const result = verifyPpmpSheet(workbook, sheet, effective);
 
-        if (
-            effective.rowConfig.headerRow === '' ||
-            effective.rowConfig.headerRow == null
-        ) {
-            return {
-                valid: false,
-                message: 'Header Row is required',
-                errors: [
-                    {
-                        row: 0,
-                        message: 'Header Row is required — check calibration',
-                    },
-                ],
-                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
-                details: [],
-            };
-        }
-
-        if (
-            effective.rowConfig.additionalItemsHeaderRow === '' ||
-            effective.rowConfig.additionalItemsHeaderRow == null
-        ) {
-            return {
-                valid: false,
-                message: 'Additional Items Header Row is required',
-                errors: [
-                    {
-                        row: 0,
-                        message:
-                            'Additional Items Header Row is required — check calibration',
-                    },
-                ],
-                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
-                details: [],
-            };
-        }
-
-        if (
-            effective.rowConfig.nonProcurementHeaderRow === '' ||
-            effective.rowConfig.nonProcurementHeaderRow == null
-        ) {
-            return {
-                valid: false,
-                message: 'Non-Procurement Header Row is required',
-                errors: [
-                    {
-                        row: 0,
-                        message:
-                            'Non-Procurement Header Row is required — check calibration',
-                    },
-                ],
-                groups: { procurement: 0, additional: 0, nonProcurement: 0 },
-                details: [],
-            };
-        }
-
-        const { coaLabelMode } = effective;
-        const dataColumn = effective.columnConfig.category;
-        const coaColumn = effective.columnConfig.coa;
-        const lastRow = ws.actualRowCount;
-        const procurementStart = effective.rowConfig.headerRow + 1;
-        const procurementEnd = effective.rowConfig.additionalItemsHeaderRow
-            ? effective.rowConfig.additionalItemsHeaderRow - 1
-            : effective.rowConfig.nonProcurementHeaderRow
-              ? effective.rowConfig.nonProcurementHeaderRow - 1
-              : lastRow;
-        const additionalStart = effective.rowConfig.additionalItemsHeaderRow
-            ? effective.rowConfig.additionalItemsHeaderRow + 1
-            : -1;
-        const additionalEnd = effective.rowConfig.nonProcurementHeaderRow
-            ? effective.rowConfig.nonProcurementHeaderRow - 1
-            : lastRow;
-        const nonProcStart = effective.rowConfig.nonProcurementHeaderRow
-            ? effective.rowConfig.nonProcurementHeaderRow + 1
-            : -1;
-        const nonProcEnd = lastRow;
-
-        const errors: Array<{ row: number; message: string }> = [];
-        const details: string[] = [];
-        details.push(
-            `COA label mode: ${coaLabelMode === 'without-label' ? 'Without label (COA on item rows)' : 'With label (COA label rows)'}`,
-        );
-        details.push(
-            `Ranges: procurement [${procurementStart}..${procurementEnd}] additional [${additionalStart}..${additionalEnd}] non-proc [${nonProcStart}..${nonProcEnd}]`,
-        );
-
-        const groups = { procurement: 0, additional: 0, nonProcurement: 0 };
-        const countData = (s: number, e: number) => {
-            if (s < 0 || e < 0 || s > e) return 0;
-
-            let c = 0;
-
-            for (let r = s; r <= e && r <= lastRow; r++) {
-                const v = cellText(ws.getRow(r).getCell(dataColumn));
-
-                if (v) c++;
-            }
-
-            return c;
+        return {
+            valid: result.valid,
+            message: result.message,
+            errors: result.errors,
+            groups: result.groups,
+            details: result.details,
         };
-        groups.procurement = countData(procurementStart, procurementEnd);
-        groups.additional = effective.rowConfig.additionalItemsHeaderRow
-            ? countData(additionalStart, additionalEnd)
-            : 0;
-        groups.nonProcurement = effective.rowConfig.nonProcurementHeaderRow
-            ? countData(nonProcStart, nonProcEnd)
-            : 0;
-
-        if (!effective.rowConfig.additionalItemsHeaderRow) {
-            details.push(
-                'Additional Items header not calibrated — skipping additional group check',
-            );
-        }
-
-        if (!effective.rowConfig.nonProcurementHeaderRow) {
-            details.push(
-                'Non-Procurement header not calibrated — skipping non-procurement group check',
-            );
-        }
-
-        if (procurementStart > procurementEnd) {
-            errors.push({
-                row: procurementStart,
-                message: `Procurement range invalid [${procurementStart}..${procurementEnd}] — check header calibrations`,
-            });
-        } else if (groups.procurement === 0) {
-            errors.push({
-                row: procurementStart,
-                message:
-                    'No data found in procurement group — check header calibration',
-            });
-        }
-
-        if (
-            effective.rowConfig.additionalItemsHeaderRow &&
-            groups.additional === 0
-        ) {
-            errors.push({
-                row: additionalStart,
-                message: 'No data found in additional items group',
-            });
-        }
-
-        const verifySection = (
-            sectionName: 'procurement' | 'additional' | 'non-procurement',
-            startRow: number,
-            endRow: number,
-        ) => {
-            if (startRow < 0 || endRow < 0 || startRow > endRow) return;
-
-            if (
-                sectionName === 'additional' ||
-                sectionName === 'non-procurement'
-            ) {
-                let itemCount = 0;
-
-                for (let r = startRow; r <= endRow && r <= lastRow; r++) {
-                    const row = ws.getRow(r);
-                    const coaRaw = cellText(row.getCell(coaColumn));
-                    const dataRaw = cellText(row.getCell(dataColumn));
-                    const unitRaw = cellText(
-                        row.getCell(effective.columnConfig.unit),
-                    );
-                    const priceRaw = cellText(
-                        row.getCell(effective.columnConfig.price),
-                    );
-                    const itemRaw = cellText(
-                        row.getCell(effective.columnConfig.itemNumber),
-                    );
-
-                    if (!dataRaw && !coaRaw && !unitRaw && !priceRaw) continue;
-
-                    const dataNorm = dataRaw ? normalize(dataRaw) : null;
-
-                    if (!dataNorm) continue;
-
-                    if (dataNorm === 'description') continue;
-
-                    if (
-                        dataNorm === 'additional items for procurement' ||
-                        dataNorm === 'additional items' ||
-                        dataNorm === 'non-procurement requirements' ||
-                        dataNorm === 'non - procurement requirements' ||
-                        dataNorm ===
-                            'additional items for procurement - total' ||
-                        dataNorm === 'non-procurement requirements - total' ||
-                        dataNorm === 'non-procurement - total' ||
-                        isTotalRow(dataNorm)
-                    ) {
-                        continue;
-                    }
-
-                    const coaNorm = coaRaw ? normalize(coaRaw) : null;
-                    const isFalsy = (v: string | null) =>
-                        !v ||
-                        normalize(v) === '0' ||
-                        normalize(v) === '-' ||
-                        normalize(v) === '0.00';
-                    const priceNum = priceRaw
-                        ? Number(priceRaw.replace(/,/g, ''))
-                        : NaN;
-                    const isFalsyPrice =
-                        !priceRaw ||
-                        priceNum === 0 ||
-                        Number.isNaN(priceNum) ||
-                        isFalsy(priceRaw);
-                    const isFalsyUnit = isFalsy(unitRaw);
-                    const isFalsyCoa = !coaNorm;
-                    const isFalsyItem = !itemRaw;
-
-                    if (
-                        isFalsyItem &&
-                        isFalsyCoa &&
-                        isFalsyUnit &&
-                        isFalsyPrice
-                    )
-                        continue;
-
-                    if (coaNorm && dataRaw) {
-                        itemCount++;
-                        continue;
-                    }
-
-                    if (dataRaw && !coaNorm) {
-                        errors.push({
-                            row: r,
-                            message: `${sectionName} item at row ${r} ("${dataRaw}") missing COA (D) in ${sectionName}`,
-                        });
-                    }
-                }
-
-                details.push(
-                    `${sectionName} items: ${itemCount} pricelist rows checked (no categories) in rows [${startRow}..${endRow}]`,
-                );
-
-                return;
-            }
-
-            type CatGroup = {
-                cat: string;
-                catRow: number;
-                coas: Array<{ coa: string; coaRow: number; items: number }>;
-                totalRow?: number;
-            };
-            const catGroups: CatGroup[] = [];
-            let currentCat: CatGroup | null = null;
-            let currentCoa: {
-                coa: string;
-                coaRow: number;
-                items: number;
-            } | null = null;
-            const flushCat = (totalRow?: number) => {
-                if (currentCat) {
-                    if (currentCoa) {
-                        currentCat.coas.push(currentCoa);
-                        currentCoa = null;
-                    }
-
-                    if (totalRow) currentCat.totalRow = totalRow;
-
-                    catGroups.push(currentCat);
-                    currentCat = null;
-                }
-            };
-
-            for (let r = startRow; r <= endRow && r <= lastRow; r++) {
-                const row = ws.getRow(r);
-                const coaRaw = cellText(row.getCell(coaColumn));
-                const dataRaw = cellText(row.getCell(dataColumn));
-
-                if (!dataRaw && !coaRaw) continue;
-
-                const coaNorm = coaRaw ? normalize(coaRaw) : null;
-                const dataNorm = dataRaw ? normalize(dataRaw) : null;
-
-                if (dataNorm === 'description') continue;
-
-                if (coaNorm && dataRaw) {
-                    if (!currentCat) {
-                        errors.push({
-                            row: r,
-                            message: `Item at row ${r} ("${dataRaw}") found without active category in ${sectionName}`,
-                        });
-                        continue;
-                    }
-
-                    if (coaLabelMode === 'without-label') {
-                        if (
-                            !currentCoa ||
-                            coaNorm !== normalize(currentCoa.coa)
-                        ) {
-                            if (currentCoa) {
-                                if (currentCoa.items === 0) {
-                                    errors.push({
-                                        row: currentCoa.coaRow,
-                                        message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA (${sectionName})`,
-                                    });
-                                }
-
-                                currentCat.coas.push(currentCoa);
-                            }
-
-                            currentCoa = {
-                                coa: coaRaw!,
-                                coaRow: r,
-                                items: 1,
-                            };
-                        } else {
-                            currentCoa.items += 1;
-                        }
-
-                        continue;
-                    } else {
-                        if (!currentCoa) {
-                            errors.push({
-                                row: r,
-                                message: `Item at row ${r} ("${dataRaw}") found without active COA in cat "${currentCat.cat}" (${sectionName})`,
-                            });
-                            continue;
-                        }
-
-                        if (coaNorm !== normalize(currentCoa.coa)) {
-                            errors.push({
-                                row: r,
-                                message: `Item COA mismatch at row ${r}: D="${coaRaw}" != current COA "${currentCoa.coa}" in cat "${currentCat.cat}" (${sectionName})`,
-                            });
-                        }
-
-                        currentCoa.items += 1;
-                        continue;
-                    }
-                }
-
-                if (!dataRaw || !dataNorm) continue;
-
-                if (isTotalRow(dataNorm)) {
-                    const expected = currentCat
-                        ? normalize(`${currentCat.cat} - total`)
-                        : null;
-
-                    if (!currentCat) {
-                        errors.push({
-                            row: r,
-                            message: `Total "${dataRaw}" at row ${r} without active category (${sectionName})`,
-                        });
-                    } else if (expected && dataNorm !== expected) {
-                        errors.push({
-                            row: r,
-                            message: `Total mismatch at row ${r}: got "${dataRaw}" (norm "${dataNorm}") expected "${currentCat.cat} - TOTAL" (${sectionName})`,
-                        });
-                    }
-
-                    if (currentCat) {
-                        if (currentCoa) {
-                            currentCat.coas.push(currentCoa);
-                            currentCoa = null;
-                        }
-
-                        if (currentCat.coas.length === 0) {
-                            errors.push({
-                                row: r,
-                                message: `Category "${currentCat.cat}" at row ${currentCat.catRow} has no COA groups before total (${sectionName})`,
-                            });
-                        } else {
-                            for (const c of currentCat.coas) {
-                                if (c.items === 0) {
-                                    errors.push({
-                                        row: c.coaRow,
-                                        message: `COA "${c.coa}" at row ${c.coaRow} in cat "${currentCat.cat}" has no items (${sectionName})`,
-                                    });
-                                }
-                            }
-                        }
-
-                        flushCat(r);
-                    }
-
-                    continue;
-                }
-
-                if (coaLabelMode === 'with-label') {
-                    let isCoaLabel = false;
-                    let nextCoaRaw: string | null = null;
-                    let nextCoaNorm: string | null = null;
-
-                    if (r + 1 <= lastRow) {
-                        nextCoaRaw = cellText(
-                            ws.getRow(r + 1).getCell(coaColumn),
-                        );
-                        nextCoaNorm = nextCoaRaw ? normalize(nextCoaRaw) : null;
-
-                        if (nextCoaNorm && dataNorm && nextCoaNorm === dataNorm)
-                            isCoaLabel = true;
-                    }
-
-                    if (isCoaLabel) {
-                        if (!currentCat) {
-                            errors.push({
-                                row: r,
-                                message: `COA "${dataRaw}" at row ${r} found without active category (${sectionName})`,
-                            });
-                            continue;
-                        }
-
-                        if (currentCoa) {
-                            if (currentCoa.items === 0) {
-                                errors.push({
-                                    row: currentCoa.coaRow,
-                                    message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items before next COA (${sectionName})`,
-                                });
-                            }
-
-                            currentCat.coas.push(currentCoa);
-                        }
-
-                        currentCoa = { coa: dataRaw, coaRow: r, items: 0 };
-                        continue;
-                    }
-                }
-
-                if (currentCat) {
-                    errors.push({
-                        row: r,
-                        message: `Category "${dataRaw}" at row ${r} started before previous cat "${currentCat.cat}" (row ${currentCat.catRow}) closed with " - TOTAL" (${sectionName})`,
-                    });
-
-                    if (currentCoa) {
-                        if (currentCoa.items === 0) {
-                            errors.push({
-                                row: currentCoa.coaRow,
-                                message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items (${sectionName})`,
-                            });
-                        }
-
-                        currentCat.coas.push(currentCoa);
-                        currentCoa = null;
-                    }
-
-                    catGroups.push(currentCat);
-                }
-
-                currentCat = { cat: dataRaw, catRow: r, coas: [] };
-                currentCoa = null;
-            }
-
-            if (currentCat) {
-                if (currentCoa) {
-                    if (currentCoa.items === 0) {
-                        errors.push({
-                            row: currentCoa.coaRow,
-                            message: `COA "${currentCoa.coa}" at row ${currentCoa.coaRow} in cat "${currentCat.cat}" has no items at end (${sectionName})`,
-                        });
-                    }
-
-                    currentCat.coas.push(currentCoa);
-                }
-
-                if (!currentCat.totalRow) {
-                    errors.push({
-                        row: currentCat.catRow,
-                        message: `Category "${currentCat.cat}" at row ${currentCat.catRow} missing closing "${currentCat.cat} - TOTAL" (${sectionName}) (found ${currentCat.coas.length} COA(s))`,
-                    });
-                } else if (currentCat.coas.length === 0) {
-                    errors.push({
-                        row: currentCat.catRow,
-                        message: `Category "${currentCat.cat}" has no COAs (${sectionName})`,
-                    });
-                }
-
-                catGroups.push(currentCat);
-            }
-
-            if (catGroups.length) {
-                details.push(
-                    `${sectionName} groups: ${catGroups.length} cat(s) verified in rows [${startRow}..${endRow}]`,
-                );
-
-                for (const g of catGroups) {
-                    details.push(
-                        `  ${sectionName} Cat "${g.cat}" row ${g.catRow}: ${g.coas.length} COA(s)${g.totalRow ? ` → total at ${g.totalRow}` : ' MISSING total'}`,
-                    );
-                }
-            }
-        };
-
-        verifySection('procurement', procurementStart, procurementEnd);
-
-        if (effective.rowConfig.additionalItemsHeaderRow) {
-            verifySection('additional', additionalStart, additionalEnd);
-        }
-
-        if (effective.rowConfig.nonProcurementHeaderRow) {
-            verifySection('non-procurement', nonProcStart, nonProcEnd);
-        }
-
-        const valid = errors.length === 0;
-        const message = valid
-            ? `✅ Format OK — ${groups.procurement} procurement, ${groups.additional} additional, ${groups.nonProcurement} non-proc cells checked`
-            : `❌ Found ${errors.length} issue(s) in sheet format`;
-        console.log(`[${sheet}] Format Verification`, message, errors, details);
-
-        return { valid, message, errors, groups, details };
     }
 
     function handleVerifyFormat() {
+        setPpmpExtractResults({});
+        setPpmpRawItems([]);
         if (!workbook || selectedSheets.length === 0) return;
+
+        const flatSheets = (selectedSheets as unknown[])
+            .flat(Infinity)
+            .map((s) => String(s).trim())
+            .filter(Boolean) as string[];
+        console.log('[verifyFormat] selectedSheets raw:', selectedSheets, 'flatSheets:', flatSheets);
+        if (flatSheets.length !== selectedSheets.length || flatSheets.some((s, i) => s !== selectedSheets[i])) {
+            console.warn('[verifyFormat] flattened nested', selectedSheets, '→', flatSheets);
+            setSelectedSheets(flatSheets);
+        }
+
+        const availableNames = workbook
+            ? workbook.worksheets.map((ws) => ws.name)
+            : sheets;
+        const missing = flatSheets.filter((s) => !availableNames.includes(s));
+        if (missing.length > 0) {
+            console.warn(
+                '[verifyFormat] stale selectedSheets:',
+                flatSheets,
+                'available:',
+                availableNames,
+                'missing:',
+                missing,
+            );
+        }
 
         const next: Record<string, VerifyFormatResult> = {};
 
-        for (const sheet of selectedSheets) {
+        for (const sheet of flatSheets) {
             const result = verifyFormatForSheet(sheet);
 
             if (result) next[sheet] = result;
         }
 
         setFormatResults(next);
-        const firstInvalid = selectedSheets.find((s) => !next[s]?.valid);
-        setActiveFormatSheet(firstInvalid ?? selectedSheets[0] ?? '');
+        const firstInvalid = flatSheets.find((s) => !next[s]?.valid);
+        setActiveFormatSheet(firstInvalid ?? flatSheets[0] ?? '');
         setVerification(null);
         setCoaOverrides({});
-        setActiveVerifySheet(firstInvalid ?? selectedSheets[0] ?? '');
+        setActiveVerifySheet(firstInvalid ?? flatSheets[0] ?? '');
 
         if (Object.keys(next).length) {
             console.table(
@@ -858,7 +389,25 @@ export default function CategoryCoaMappingImport({
         }
     }
 
+    function handlePpmpExtract() {
+        if (!workbook || selectedSheets.length === 0) return;
+        const flatSheets = (selectedSheets as unknown[]).flat(Infinity).map((s) => String(s).trim()).filter(Boolean) as string[];
+        const next: Record<string, PpmpExtractResult> = {};
+        const allRaw: RawPpmpItem[] = [];
+        for (const sheet of flatSheets) {
+            const cfg = getEffectiveConfig(sheet);
+            const res = extractPpmpSheet(workbook, sheet, cfg);
+            next[sheet] = res;
+            allRaw.push(...res.rawItems);
+        }
+        setPpmpExtractResults(next);
+        setPpmpRawItems(allRaw);
+        setRawSheets(extractRawSheets(workbook, flatSheets, (s) => getEffectiveConfig(s)));
+    }
+
     function handleSheetToggle(sheet: string) {
+        setPpmpExtractResults({});
+        setPpmpRawItems([]);
         setSelectedSheets((prev) => {
             const next = prev.includes(sheet)
                 ? prev.filter((s) => s !== sheet)
@@ -1815,6 +1364,8 @@ export default function CategoryCoaMappingImport({
         hasFormatResult,
         formatValid,
         canVerifyMap,
+        canExtract,
+        hasAnyExtract,
         canReview,
 
         calibrationMode,
@@ -1859,6 +1410,12 @@ export default function CategoryCoaMappingImport({
         isSaving,
         handleBulkCreateMappings,
 
+        ppmpExtractResults,
+        setPpmpExtractResults,
+        ppmpRawItems,
+        setPpmpRawItems,
+        handlePpmpExtract,
+
         existingCategories,
         existingCoas,
         existingMappings,
@@ -1885,13 +1442,13 @@ export default function CategoryCoaMappingImport({
                     disabled: !canVerifyFormat,
                 },
                 {
-                    value: 'verifyMap',
-                    label: '4. Verify & Map',
-                    disabled: !canVerifyMap,
+                    value: 'extract',
+                    label: '4. Extract',
+                    disabled: !canExtract,
                 },
                 {
                     value: 'review',
-                    label: '5. Review & Save',
+                    label: '5. Review & Import',
                     disabled: !canReview,
                 },
             ]}
@@ -1900,6 +1457,7 @@ export default function CategoryCoaMappingImport({
             <CalibrateStep s={s} />
             <VerifyFormatStep s={s} />
             <VerifyMapStep s={s} />
+            <ExtractStep s={s} />
             <ReviewStep s={s} />
         </ImportPageShell>
     );

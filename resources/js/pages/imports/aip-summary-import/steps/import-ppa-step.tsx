@@ -32,7 +32,7 @@ export function ImportPpaStep({ s }: { s: AipImportState }) {
     } = s;
 
     return (
-        <TabsContent value="import-ppa" className="mt-4 flex flex-col gap-4">
+        <TabsContent value="ppa" className="mt-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold tracking-tight">
                     Import PPA

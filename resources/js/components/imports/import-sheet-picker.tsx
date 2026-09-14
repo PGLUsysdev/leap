@@ -22,7 +22,20 @@ export function ImportSheetPicker({
             <ToggleGroup
                 type="single"
                 value={value}
-                onValueChange={(v) => onChange(v ? [v] : [])}
+                onValueChange={((v: unknown) => {
+                    console.log('[picker] single raw v:', v, 'type:', typeof v, 'isArray:', Array.isArray(v));
+                    // Base-ui may emit string or string[] depending on version — normalize to string[]
+                    const normalized = Array.isArray(v)
+                        ? (v as unknown[])
+                              .flat()
+                              .map((s) => String(s).trim())
+                              .filter(Boolean)
+                        : v
+                          ? [String(v).trim()]
+                          : [];
+                    console.log('[picker] normalized arr:', normalized);
+                    onChange(normalized);
+                }) as unknown as (value: string) => void}
                 className="flex flex-wrap justify-start"
             >
                 {sheets.map((sheet) => (
@@ -38,7 +51,14 @@ export function ImportSheetPicker({
         <ToggleGroup
             type="multiple"
             value={selected}
-            onValueChange={onChange}
+            onValueChange={((v: unknown) => {
+                console.log('[picker] multiple raw v:', v, 'isArray:', Array.isArray(v));
+                const arr = Array.isArray(v)
+                    ? (v as unknown[]).flat().map((s) => String(s).trim()).filter(Boolean)
+                    : [];
+                console.log('[picker] normalized multiple arr:', arr);
+                onChange(arr);
+            }) as unknown as (value: string[]) => void}
             className="flex flex-wrap justify-start"
         >
             {sheets.map((sheet) => (

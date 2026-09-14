@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ImportVerifyIssues } from '@/components/imports/import-verify-issues';
 import type { CategoryImportState } from '../types';
 
 export function VerifyStep({ s }: { s: CategoryImportState }) {
@@ -189,27 +190,12 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
                                                 )}
                                             </ul>
                                         )}
-                                        {verifyResult.errors.length > 0 && (
-                                            <div className="mt-3">
-                                                <div className="text-xs font-semibold">
-                                                    Issues (
-                                                    {verifyResult.errors.length}
-                                                    ) in {sh}:
-                                                </div>
-                                                <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5">
-                                                    {verifyResult.errors.map(
-                                                        (e, i) => (
-                                                            <li key={i}>
-                                                                <span className="font-mono">
-                                                                    Row {e.row}:
-                                                                </span>{' '}
-                                                                {e.message}
-                                                            </li>
-                                                        ),
-                                                    )}
-                                                </ul>
-                                            </div>
-                                        )}
+                                        <div className="mt-3">
+                                            <ImportVerifyIssues
+                                                errors={verifyResult.errors}
+                                                warnings={[]}
+                                            />
+                                        </div>
                                     </div>
                                 </TabsContent>
                             );
@@ -271,24 +257,12 @@ export function VerifyStep({ s }: { s: CategoryImportState }) {
                                         ))}
                                     </ul>
                                 )}
-                                {verifyResult.errors.length > 0 && (
-                                    <div className="mt-3">
-                                        <div className="text-xs font-semibold">
-                                            Issues ({verifyResult.errors.length}
-                                            ):
-                                        </div>
-                                        <ul className="mt-1 max-h-48 list-disc overflow-auto pl-5">
-                                            {verifyResult.errors.map((e, i) => (
-                                                <li key={i}>
-                                                    <span className="font-mono">
-                                                        Row {e.row}:
-                                                    </span>{' '}
-                                                    {e.message}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
+                                <div className="mt-3">
+                                    <ImportVerifyIssues
+                                        errors={verifyResult.errors}
+                                        warnings={[]}
+                                    />
+                                </div>
                             </div>
                         );
                     })()}

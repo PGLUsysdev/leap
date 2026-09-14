@@ -40,7 +40,9 @@ export function useImportWorkbook(onReset?: () => void) {
             const buf = await file.arrayBuffer();
             await wb.xlsx.load(buf);
             setWorkbook(wb);
-            setSheets(wb.worksheets.map((ws) => ws.name));
+            setSheets(
+                wb.worksheets.map((ws) => ws.name.trim()).filter((n) => n.length > 0),
+            );
         } catch {
             setSheets([]);
             setWorkbook(null);

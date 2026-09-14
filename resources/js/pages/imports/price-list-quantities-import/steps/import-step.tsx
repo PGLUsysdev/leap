@@ -89,7 +89,7 @@ export function ImportStep({ s }: { s: PriceListQuantitiesImportState }) {
     } = s;
 
     return (
-        <TabsContent value="import" className="mt-4 flex flex-col gap-4">
+        <TabsContent value="review" className="mt-4 flex flex-col gap-4">
             {importSheets.length === 0 && (
                 <p className="text-muted-foreground text-sm">
                     Run extraction in Review first.

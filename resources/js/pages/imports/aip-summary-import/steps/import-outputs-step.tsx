@@ -57,7 +57,7 @@ export function ImportOutputsStep({ s }: { s: AipImportState }) {
 
     return (
         <TabsContent
-            value="import-outputs"
+            value="outputs"
             className="mt-4 flex flex-col gap-4"
         >
             <div className="flex flex-col gap-1">

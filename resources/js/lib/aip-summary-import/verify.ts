@@ -435,7 +435,7 @@ export function extractAipSummaryRows(
 /** Verify one sheet against the effective config. Structural only — no DB. */
 export function verifyAipSummarySheet(
     workbook: ExcelJS.Workbook,
-    sheetName: string,
+    sheetName: unknown,
     config: AipSummarySheetConfig,
 ): AipSummaryVerifyResult {
     if (config.headerRow === '' || config.headerRow == null) {
@@ -455,13 +455,34 @@ export function verifyAipSummarySheet(
         };
     }
 
-    const ws = workbook.getWorksheet(sheetName);
+    console.log('[verifyAipSummarySheet] sheetName:', sheetName, 'type:', typeof sheetName, 'isArray:', Array.isArray(sheetName));
+    const rawName = Array.isArray(sheetName)
+        ? String((sheetName as unknown[])[0] ?? sheetName)
+        : typeof sheetName === 'string'
+          ? sheetName
+          : String(sheetName ?? '');
+    const trimmedName = rawName.trim();
+    const numId = Number(trimmedName);
+    const ws =
+        workbook.getWorksheet(rawName) ??
+        workbook.getWorksheet(trimmedName) ??
+        (Number.isFinite(numId) ? workbook.getWorksheet(numId) : undefined) ??
+        workbook.worksheets.find((w) => w.name.trim() === trimmedName) ??
+        workbook.worksheets.find(
+            (w) => w.name.trim().toLowerCase() === trimmedName.toLowerCase(),
+        );
 
     if (!ws) {
+        const available = workbook.worksheets.map((w) => `"${w.name}"`).join(', ');
         return {
             valid: false,
-            message: `Worksheet "${sheetName}" not found`,
-            errors: [{ row: 0, message: `Worksheet "${sheetName}" not found` }],
+            message: `Worksheet "${rawName}" not found — available: ${available || 'none'}`,
+            errors: [
+                {
+                    row: 0,
+                    message: `Worksheet "${rawName}" not found — available: ${available || 'none'}. Please reselect sheet.`,
+                },
+            ],
             warnings: [],
             details: [],
             ppaBlocks: 0,

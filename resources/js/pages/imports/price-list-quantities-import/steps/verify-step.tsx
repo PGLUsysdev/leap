@@ -10,6 +10,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { TabsContent } from '@/components/ui/tabs';
+import { ImportVerifyIssues } from '@/components/imports/import-verify-issues';
 import type { PriceListQuantitiesImportState } from '../types';
 
 export function VerifyStep({ s }: { s: PriceListQuantitiesImportState }) {
@@ -146,25 +147,11 @@ export function VerifyStep({ s }: { s: PriceListQuantitiesImportState }) {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3">
-                        {verifyResults[activeVerifySheet].errors.length > 0 && (
-                            <ul className="text-destructive flex flex-col gap-1 text-sm">
-                                {verifyResults[activeVerifySheet].errors.map(
-                                    (e, i) => (
-                                        <li key={i}>
-                                            Row {e.row}: {e.message}
-                                        </li>
-                                    ),
-                                )}
-                            </ul>
-                        )}
-
-                        <ul className="text-muted-foreground flex flex-col gap-1 text-xs">
-                            {verifyResults[activeVerifySheet].details.map(
-                                (d, i) => (
-                                    <li key={i}>{d}</li>
-                                ),
-                            )}
-                        </ul>
+                        <ImportVerifyIssues
+                            errors={verifyResults[activeVerifySheet].errors}
+                            warnings={[]}
+                            details={verifyResults[activeVerifySheet].details}
+                        />
 
                         {allVerifyValid && (
                             <div>

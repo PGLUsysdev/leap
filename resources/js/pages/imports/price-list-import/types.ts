@@ -2,13 +2,15 @@
 
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import type ExcelJS from 'exceljs';
+import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
+import type { RawSheet } from '@/lib/raw-extract';
 import type { ExtractedCoaGroup } from '@/lib/ppmp/batch-match';
 import type { ExistingCategory, ExistingCoa } from '@/lib/ppmp/normalize';
 import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 
 export type PriceListSheetConfig = SharedSheetConfig;
 
-export type PliStep = 'upload' | 'calibrate' | 'verify' | 'review';
+export type PliStep = 'upload' | 'calibrate' | 'verify' | 'extract' | 'review';
 export type CalibrationMode = 'shared' | 'per-sheet';
 export type ReviewFilter = 'all' | 'errors' | 'duplicates' | 'longDesc';
 
@@ -188,6 +190,15 @@ export type PriceListImportState = {
     // import
     importing: boolean;
     handleImport: () => void;
+
+    // shared ppmp raw extract (after verify, strict)
+    ppmpExtractResults: Record<string, PpmpExtractResult>;
+    setPpmpExtractResults: import('react').Dispatch<import('react').SetStateAction<Record<string, PpmpExtractResult>>>;
+    ppmpRawItems: RawPpmpItem[];
+    setPpmpRawItems: import('react').Dispatch<import('react').SetStateAction<RawPpmpItem[]>>;
+    handlePpmpExtract: () => void;
+    rawSheets: Record<string, RawSheet>;
+    setRawSheets: import('react').Dispatch<import('react').SetStateAction<Record<string, RawSheet>>>;
 
     // page props
     existingCategories: ExistingCategory[];
