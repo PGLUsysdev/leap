@@ -2,6 +2,7 @@
 
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import type ExcelJS from 'exceljs';
+import type { TableMeta } from '@tanstack/react-table';
 import type { ExistingCategory } from '@/lib/ppmp/normalize';
 import type { SharedSheetConfig } from '@/lib/ppmp/sheet-config';
 import type { PpmpExtractResult, RawPpmpItem } from '@/lib/ppmp/extract';
@@ -89,6 +90,27 @@ export type ExtractionStats = {
     duplicates: number;
 };
 
+export type CategoryReviewRow = {
+    normalized: string;
+    raw: string;
+    sheets: string[];
+    sheetCount: number;
+    count: number;
+    locations: CatLocation[];
+    firstAddress: string;
+    matchType: 'strict' | 'partial' | 'none';
+    matchName: string | null;
+    topMatches: Array<{ name: string; score: number }>;
+};
+
+export type CategoryReviewTableMeta = TableMeta<CategoryReviewRow> & {
+    selected: Set<string>;
+    toggleOne: (normalized: string, checked: boolean) => void;
+    setSelected: (next: Set<string>) => void;
+    isAdditionalDraft: Record<string, boolean>;
+    toggleAdditional: (normalized: string, checked: boolean) => void;
+};
+
 export type CategoryImportState = {
     // workbook
     sheets: string[];
@@ -145,7 +167,9 @@ export type CategoryImportState = {
     extractionStats: ExtractionStats | null;
     handleExtract: () => void;
     ppmpExtractResults: Record<string, PpmpExtractResult>;
-    setPpmpExtractResults: Dispatch<SetStateAction<Record<string, PpmpExtractResult>>>;
+    setPpmpExtractResults: Dispatch<
+        SetStateAction<Record<string, PpmpExtractResult>>
+    >;
     ppmpRawItems: RawPpmpItem[];
     setPpmpRawItems: Dispatch<SetStateAction<RawPpmpItem[]>>;
     rawSheets: Record<string, RawSheet>;

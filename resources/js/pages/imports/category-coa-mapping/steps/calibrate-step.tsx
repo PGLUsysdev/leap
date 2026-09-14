@@ -33,7 +33,6 @@ export function CalibrateStep({ s }: { s: CategoryCoaMappingState }) {
                 s.setCoaOverrides({});
             }}
             verifyMarks={verifyMarks}
-            showCoaMatchField
             onBack={() => s.setStep('upload')}
             onNext={() => s.setStep('verifyFormat')}
             canNext={s.canVerifyFormat}

@@ -15,6 +15,7 @@ export function ExtractStep({ s }: { s: CategoryImportState }) {
         hasAnyVerify,
         verifyResults,
         handlePpmpExtract,
+        handleExtract,
         ppmpRawItems,
         ppmpExtractResults,
         rawSheets,
@@ -158,7 +159,13 @@ export function ExtractStep({ s }: { s: CategoryImportState }) {
                 <Button variant="outline" onClick={() => setStep('verify')}>
                     Back: Verify
                 </Button>
-                <Button onClick={() => setStep('import')} disabled={ppmpRawItems.length === 0}>
+                <Button
+                    onClick={() => {
+                        handleExtract();
+                        setStep('import');
+                    }}
+                    disabled={ppmpRawItems.length === 0}
+                >
                     Next: Import
                 </Button>
             </div>

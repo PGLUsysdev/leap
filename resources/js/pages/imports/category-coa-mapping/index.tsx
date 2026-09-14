@@ -504,35 +504,6 @@ export default function CategoryCoaMappingImport({
         setCoaOverrides({});
     }
 
-    function handleMatchFieldChange(
-        value: CategoryCoaSheetConfig['coaMatchField'],
-    ) {
-        if (calibrationMode === 'shared') {
-            setSharedConfig((prev) => ({
-                ...(prev ?? getDefaultMappingConfig()),
-                coaMatchField: value,
-            }));
-        } else {
-            if (!currentSheet) return;
-
-            setCalibrations((prev) => ({
-                ...prev,
-                [currentSheet]: {
-                    ...(prev[currentSheet] ??
-                        sharedConfig ??
-                        getDefaultMappingConfig()),
-                    coaMatchField: value,
-                },
-            }));
-        }
-
-        setVerification(null);
-        setFormatResults({});
-        setActiveFormatSheet(selectedSheets[0] ?? '');
-        setActiveVerifySheet(selectedSheets[0] ?? '');
-        setCoaOverrides({});
-    }
-
     function handleCoaLabelModeChange(
         value: CategoryCoaSheetConfig['coaLabelMode'],
     ) {
@@ -967,13 +938,8 @@ export default function CategoryCoaMappingImport({
         const verifiedPairs: VerifiedPair[] = uniquePairs.map((p) => {
             const catNorm = normalize(p.category);
             const coaNorm = normalize(p.coa);
-            const sheetCfg = getEffectiveConfig(p.sheet ?? '');
             const catRes = getCategoryMatch(catNorm, existingCategories);
-            const coaRes = getCoaMatch(
-                coaNorm,
-                existingCoas,
-                sheetCfg.coaMatchField ?? 'account_title',
-            );
+            const coaRes = getCoaMatch(coaNorm, existingCoas, 'account_title');
             const catExists = catRes.type === 'strict';
             const coaExists = coaRes.type === 'strict';
             const catId = catRes.match?.id ?? null;
@@ -1246,7 +1212,6 @@ export default function CategoryCoaMappingImport({
         console.log(`File:`, fileName);
         console.log(`Calibration (columnConfig):`, effective.columnConfig);
         console.log(`Calibration (rowConfig):`, effective.rowConfig);
-        console.log(`Calibration (coaMatchField):`, effective.coaMatchField);
         console.log(`Calibration (coaLabelMode):`, effective.coaLabelMode);
         console.log(`Calibration (full):`, effective);
 
@@ -1258,7 +1223,7 @@ export default function CategoryCoaMappingImport({
                 ws.actualRowCount,
             );
             console.log(
-                `Preview with calibration — headerRow ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow} → data starts ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow + 1}, category ${effective.columnConfig.category}, description ${effective.columnConfig.description}, coa ${effective.columnConfig.coa}, coaMatchField ${effective.coaMatchField}, coaLabelMode ${effective.coaLabelMode}, additional ${effective.rowConfig.additionalItemsHeaderRow === '' || effective.rowConfig.additionalItemsHeaderRow == null ? '—' : effective.rowConfig.additionalItemsHeaderRow}, nonProc ${effective.rowConfig.nonProcurementHeaderRow === '' || effective.rowConfig.nonProcurementHeaderRow == null ? '—' : effective.rowConfig.nonProcurementHeaderRow}`,
+                `Preview with calibration — headerRow ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow} → data starts ${effective.rowConfig.headerRow === '' || effective.rowConfig.headerRow == null ? '—' : effective.rowConfig.headerRow + 1}, category ${effective.columnConfig.category}, description ${effective.columnConfig.description}, coa ${effective.columnConfig.coa}, coaLabelMode ${effective.coaLabelMode}, additional ${effective.rowConfig.additionalItemsHeaderRow === '' || effective.rowConfig.additionalItemsHeaderRow == null ? '—' : effective.rowConfig.additionalItemsHeaderRow}, nonProc ${effective.rowConfig.nonProcurementHeaderRow === '' || effective.rowConfig.nonProcurementHeaderRow == null ? '—' : effective.rowConfig.nonProcurementHeaderRow}`,
             );
 
             if (
@@ -1382,7 +1347,6 @@ export default function CategoryCoaMappingImport({
         handleCopyCurrentToAll,
         handleRowConfigChange,
         handleColumnConfigChange,
-        handleMatchFieldChange,
         handleCoaLabelModeChange,
         handleResetCalibration,
 

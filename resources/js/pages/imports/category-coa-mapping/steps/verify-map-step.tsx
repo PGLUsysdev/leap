@@ -17,7 +17,6 @@ export function VerifyMapStep({ s }: { s: CategoryCoaMappingState }) {
     const {
         selectedSheets,
         currentSheet,
-        sharedConfig,
         existingCategories,
         existingCoas,
         existingMappings,
@@ -28,7 +27,6 @@ export function VerifyMapStep({ s }: { s: CategoryCoaMappingState }) {
         handleClearOverride,
         handleLog,
         handleLogRelationships,
-        getEffectiveConfig,
         canReview,
         setStep,
     } = s;
@@ -68,12 +66,9 @@ export function VerifyMapStep({ s }: { s: CategoryCoaMappingState }) {
                         </h3>
                         <p className="text-muted-foreground text-xs">
                             Checked against {existingCategories.length}{' '}
-                            categories, {existingCoas.length} COAs (
-                            {(currentSheet
-                                ? getEffectiveConfig(currentSheet).coaMatchField
-                                : sharedConfig?.coaMatchField) ??
-                                'account_title'}
-                            ), {existingMappings.length} existing mappings
+                            categories, {existingCoas.length} COAs
+                            (account_title), {existingMappings.length} existing
+                            mappings
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs">
                             <Badge
@@ -435,13 +430,9 @@ export function VerifyMapStep({ s }: { s: CategoryCoaMappingState }) {
                     <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
                         <span className="text-muted-foreground text-xs">
                             Detailed logs in console (F12) — with top
-                            suggestions. Mode:{' '}
-                            {(currentSheet
-                                ? getEffectiveConfig(currentSheet).coaMatchField
-                                : sharedConfig?.coaMatchField) ??
-                                'account_title'}{' '}
-                            — overrides are row-unique (
-                            {Object.keys(coaOverrides).length} active).
+                            suggestions. Mode: account_title — overrides are
+                            row-unique ({Object.keys(coaOverrides).length}{' '}
+                            active).
                         </span>
                         <div className="flex gap-2">
                             {Object.keys(coaOverrides).length > 0 && (

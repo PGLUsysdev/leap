@@ -35,8 +35,6 @@ import type {
 
 export type PpmpCalibrationMode = 'shared' | 'per-sheet';
 
-export type PpmpCoaMatchField = NonNullable<SharedSheetConfig['coaMatchField']>;
-
 interface ImportPpmpCalibrateStepProps<TConfig extends SharedSheetConfig> {
     tabsValue?: string;
 
@@ -59,7 +57,6 @@ interface ImportPpmpCalibrateStepProps<TConfig extends SharedSheetConfig> {
 
     // opt-in sections (only the flows that need them pass these)
     showQtyStart?: boolean;
-    showCoaMatchField?: boolean;
     showGroupsSummary?: boolean;
     showEffectiveBadges?: boolean;
 
@@ -98,7 +95,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
 
     verifyMarks,
     showQtyStart = false,
-    showCoaMatchField = false,
     showGroupsSummary = false,
     showEffectiveBadges = false,
 
@@ -156,10 +152,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
 
     function applyCoaLabelMode(mode: TConfig['coaLabelMode']) {
         applyPatch({ coaLabelMode: mode } as unknown as Partial<TConfig>);
-    }
-
-    function applyCoaMatchField(value: PpmpCoaMatchField) {
-        applyPatch({ coaMatchField: value } as unknown as Partial<TConfig>);
     }
 
     function ensureInitialized() {
@@ -547,35 +539,6 @@ export function ImportPpmpCalibrateStep<TConfig extends SharedSheetConfig>({
                         />
                     </Field>
                 </div>
-
-                {showCoaMatchField && (
-                    <Field className="mt-4">
-                        <FieldLabel>COA Match Field</FieldLabel>
-                        <Select
-                            value={cfg.coaMatchField ?? 'auto'}
-                            onValueChange={(v) =>
-                                applyCoaMatchField(v as PpmpCoaMatchField)
-                            }
-                        >
-                            <SelectTrigger className="w-[200px]">
-                                <SelectValue placeholder="Select match field" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectItem value="auto">
-                                        Auto (title or number)
-                                    </SelectItem>
-                                    <SelectItem value="account_title">
-                                        Account Title
-                                    </SelectItem>
-                                    <SelectItem value="account_number">
-                                        Account Number
-                                    </SelectItem>
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </Field>
-                )}
 
                 <Field className="mt-4">
                     <FieldLabel>COA items format *</FieldLabel>

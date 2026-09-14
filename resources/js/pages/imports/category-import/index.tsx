@@ -99,8 +99,8 @@ export default function CategoryImport({
         selectedSheets.every((s) => verifyResults[s]?.valid);
     const hasAnyVerify = selectedSheets.some((s) => !!verifyResults[s]);
     const canExtract = canVerify && hasAnyVerify && allVerifyValid;
-    const hasAnyExtract = ppmpRawItems.length > 0 || !!extractResult;
-    const canImport = canExtract && hasAnyExtract;
+    const canImport =
+        canExtract && !!extractResult && extractResult.unique.length > 0;
 
     const extractionStats = useMemo(() => {
         if (!extractResult) return null;

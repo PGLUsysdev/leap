@@ -27,7 +27,6 @@ describe('getDefaultSharedConfig', () => {
             nonProcurementHeaderRow: '',
         });
         expect(cfg.coaLabelMode).toBe('with-label');
-        expect(cfg.coaMatchField).toBe('account_title');
     });
 
     it('should_ReturnFreshObjects_When_CalledTwice', () => {
@@ -59,7 +58,6 @@ describe('shared calibration shape', () => {
                 nonProcurementHeaderRow: 200,
             },
             coaLabelMode: 'without-label',
-            coaMatchField: 'account_title',
         };
         // Act + Assert: every standard field survives a spread (per-sheet patching).
         const patched: SharedSheetConfig = {
@@ -70,7 +68,6 @@ describe('shared calibration shape', () => {
         expect(patched.rowConfig.additionalItemsHeaderRow).toBe(100);
         expect(patched.rowConfig.nonProcurementHeaderRow).toBe(200);
         expect(patched.coaLabelMode).toBe('with-label');
-        expect(patched.coaMatchField).toBe('account_title');
     });
 });
 

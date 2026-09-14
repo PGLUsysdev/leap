@@ -8,7 +8,7 @@ import {
     // getFacetedUniqueValues,
     getFilteredRowModel,
     // getGroupedRowModel,
-    // getPaginationRowModel,
+    getPaginationRowModel,
     // getSortedRowModel,
     flexRender,
 } from '@tanstack/react-table';
@@ -74,6 +74,12 @@ interface TableProps<TData> {
     only?: string[];
     getSubRows?: (row: TData) => TData[] | undefined;
     showFooter?: boolean;
+    /**
+     * Opt-in client-side pagination. When set (and no `paginationData`
+     * server pagination), the table paginates `data` locally with this
+     * page size. Omit to render all (filtered) rows as before.
+     */
+    pageSize?: number;
 
     withRowSpan?: boolean;
 
@@ -132,11 +138,17 @@ export default function Table<TData>({
     only,
     getSubRows,
     showFooter = false,
+    pageSize,
 
     withRowSpan = false,
     withColgroup = false,
 }: TableProps<TData>) {
     const isServer = !!paginationData;
+    const paginate =
+        !isServer &&
+        typeof pageSize === 'number' &&
+        Number.isFinite(pageSize) &&
+        pageSize > 0;
 
     const { url } = usePage();
 
@@ -254,16 +266,20 @@ export default function Table<TData>({
         getFilteredRowModel: !isServer ? getFilteredRowModel() : undefined,
         // getFilteredRowModel: getFilteredRowModel(),
         // getGroupedRowModel: getGroupedRowModel(),
-        // getPaginationRowModel: getPaginationRowModel(),
+        getPaginationRowModel: paginate ? getPaginationRowModel() : undefined,
         // getSortedRowModel: getSortedRowModel(),
 
         getSubRows,
         filterFromLeafRows: true,
+        autoResetPageIndex: true,
 
         initialState: {
             columnPinning: {
                 right: ['actions'],
             },
+            ...(paginate
+                ? { pagination: { pageIndex: 0, pageSize: pageSize as number } }
+                : {}),
         },
         state: {
             globalFilter,
@@ -288,6 +304,12 @@ export default function Table<TData>({
     });
 
     const rows = table.getRowModel().rows;
+
+    useEffect(() => {
+        if (paginate && typeof pageSize === 'number') {
+            table.setPageSize(pageSize);
+        }
+    }, [pageSize, paginate]);
 
     /**
      * Row-span data per spanned column id. Each spanned column groups rows
@@ -604,6 +626,60 @@ export default function Table<TData>({
                 <ScrollBar orientation="vertical" className="z-2" />
                 <ScrollBar orientation="horizontal" className="z-2" />
             </ScrollArea>
+
+            {paginate && (
+                <div className="bg-background flex w-full items-center justify-center gap-2">
+                    <div className="flex items-center gap-1 px-4 py-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => table.setPageIndex(0)}
+                            disabled={!table.getCanPreviousPage()}
+                            aria-label="First page"
+                        >
+                            <ChevronsLeft />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => table.previousPage()}
+                            disabled={!table.getCanPreviousPage()}
+                            aria-label="Previous page"
+                        >
+                            <ChevronLeft />
+                        </Button>
+                        <span className="text-muted-foreground px-2 text-xs whitespace-nowrap">
+                            Page{' '}
+                            {table.getPageCount() === 0
+                                ? 0
+                                : table.getState().pagination.pageIndex +
+                                  1}{' '}
+                            of {table.getPageCount()} ·{' '}
+                            {table.getFilteredRowModel().rows.length} rows
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => table.nextPage()}
+                            disabled={!table.getCanNextPage()}
+                            aria-label="Next page"
+                        >
+                            <ChevronRight />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                                table.setPageIndex(table.getPageCount() - 1)
+                            }
+                            disabled={!table.getCanNextPage()}
+                            aria-label="Last page"
+                        >
+                            <ChevronsRight />
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {paginationData && (
                 <div className="bg-background flex w-full justify-center">

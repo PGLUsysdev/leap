@@ -131,9 +131,6 @@ export type CategoryCoaMappingState = {
     handleCopyCurrentToAll: () => void;
     handleRowConfigChange: (patch: Partial<CategoryCoaRowConfig>) => void;
     handleColumnConfigChange: (patch: Partial<CategoryCoaColumnConfig>) => void;
-    handleMatchFieldChange: (
-        value: CategoryCoaSheetConfig['coaMatchField'],
-    ) => void;
     handleCoaLabelModeChange: (
         value: CategoryCoaSheetConfig['coaLabelMode'],
     ) => void;

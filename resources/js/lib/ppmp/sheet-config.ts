@@ -25,7 +25,6 @@ export type SharedSheetConfig = {
     columnConfig: SheetColumnConfig;
     rowConfig: SheetRowConfig;
     coaLabelMode: 'with-label' | 'without-label';
-    coaMatchField?: 'auto' | 'account_number' | 'account_title';
 };
 
 export function getDefaultSharedConfig(): SharedSheetConfig {
@@ -44,7 +43,6 @@ export function getDefaultSharedConfig(): SharedSheetConfig {
             nonProcurementHeaderRow: '',
         },
         coaLabelMode: 'with-label',
-        coaMatchField: 'account_title',
     };
 }
 
