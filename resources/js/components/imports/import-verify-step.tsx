@@ -1,10 +1,6 @@
 // resources/js/components/imports/import-verify-step.tsx
 //
-// Shared PPMP verify step shell (category-import, category-coa-mapping, …).
-// Pages keep their own state and only pass values + callbacks. Per-sheet
-// cards show message + group badges + details accordion + issue list via
-// `ImportVerifyIssues`. Optional `skip` section lets a flow proceed past
-// invalid sheets (e.g. category-import's skip-problematic).
+// Shared PPMP verify step shell. Single-sheet mode: one result, no tabs.
 
 import type { ReactNode } from 'react';
 import {
@@ -16,7 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsContent } from '@/components/ui/tabs';
 import { ImportVerifyIssues } from '@/components/imports/import-verify-issues';
 
 export type PpmpVerifySheetResult = {
@@ -42,12 +38,11 @@ interface ImportPpmpVerifyStepProps {
     verifyButtonLabel: string;
     canVerify: boolean;
     onVerify: () => void;
-    selectedSheets: string[];
-    results: Record<string, PpmpVerifySheetResult>;
-    hasResult: boolean;
+    /** The sheet being verified, or null if none selected. */
+    selectedSheet: string | null;
+    /** Result for the selected sheet, if any. */
+    result: PpmpVerifySheetResult | null;
     allValid: boolean;
-    activeSheet: string;
-    onActiveChange: (s: string) => void;
     skip?: PpmpVerifySkipSection | null;
     onBack: () => void;
     onNext: () => void;
@@ -63,12 +58,9 @@ export function ImportPpmpVerifyStep({
     verifyButtonLabel,
     canVerify,
     onVerify,
-    selectedSheets,
-    results,
-    hasResult,
+    selectedSheet,
+    result,
     allValid,
-    activeSheet,
-    onActiveChange,
     skip = null,
     onBack,
     onNext,
@@ -76,7 +68,7 @@ export function ImportPpmpVerifyStep({
     backLabel = 'Back',
     nextLabel,
 }: ImportPpmpVerifyStepProps) {
-    const validCount = selectedSheets.filter((s) => results[s]?.valid).length;
+    const hasResult = !!result;
 
     return (
         <TabsContent value={tabsValue} className="mt-4 flex flex-col gap-4">
@@ -95,7 +87,7 @@ export function ImportPpmpVerifyStep({
                     </Button>
                     {hasResult && (
                         <span className="text-muted-foreground text-xs">
-                            {validCount}/{selectedSheets.length} valid
+                            {result!.valid ? 'valid ✅' : 'failed ❌'}
                             {allValid && ' — all ✅'}
                         </span>
                     )}
@@ -103,156 +95,62 @@ export function ImportPpmpVerifyStep({
 
                 {hasResult && (
                     <div className="mt-4 flex flex-wrap gap-2">
-                        {selectedSheets.map((sh) => {
-                            const r = results[sh];
-
-                            if (!r) {
-                                return (
-                                    <Badge key={sh} variant="secondary">
-                                        {sh}: —
-                                    </Badge>
-                                );
+                        <Badge
+                            variant={result!.valid ? 'default' : 'secondary'}
+                            className={
+                                result!.valid ? 'bg-green-600' : 'bg-amber-500'
                             }
-
-                            return (
-                                <Badge
-                                    key={sh}
-                                    variant={r.valid ? 'default' : 'secondary'}
-                                    className={
-                                        r.valid
-                                            ? 'bg-green-600'
-                                            : 'bg-amber-500'
-                                    }
-                                >
-                                    {sh}: {r.valid ? '✅' : '❌'}{' '}
-                                    {r.errors.length} issues
-                                </Badge>
-                            );
-                        })}
+                        >
+                            {selectedSheet ?? '—'}:{' '}
+                            {result!.valid ? '✅' : '❌'}{' '}
+                            {result!.errors.length} issues
+                        </Badge>
                     </div>
                 )}
 
                 {hasResult && (
-                    <Tabs
-                        value={activeSheet}
-                        onValueChange={onActiveChange}
-                        className="mt-4"
-                    >
-                        {selectedSheets.length > 1 && (
-                            <TabsList>
-                                {selectedSheets.map((sh) => {
-                                    const r = results[sh];
+                    <div className="mt-4 rounded-md border p-3 text-sm">
+                        <div className="font-medium">{result!.message}</div>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                            <Badge variant="outline">
+                                Procurement: {result!.groups.procurement} cells
+                            </Badge>
+                            <Badge variant="outline">
+                                Additional: {result!.groups.additional} cells
+                            </Badge>
+                            <Badge variant="outline">
+                                Non-Proc: {result!.groups.nonProcurement} cells
+                            </Badge>
+                        </div>
 
-                                    return (
-                                        <TabsTrigger key={sh} value={sh}>
-                                            {sh}{' '}
-                                            {r?.valid ? (
-                                                <span className="ml-1 text-xs text-green-600">
-                                                    ✓
-                                                </span>
-                                            ) : r ? (
-                                                <span className="ml-1 text-xs text-amber-600">
-                                                    ❌ {r.errors.length}
-                                                </span>
-                                            ) : null}
-                                        </TabsTrigger>
-                                    );
-                                })}
-                            </TabsList>
+                        {result!.details.length > 0 && (
+                            <Accordion className="mt-2">
+                                <AccordionItem
+                                    value="details"
+                                    className="border-b-0"
+                                >
+                                    <AccordionTrigger className="py-1 text-xs hover:no-underline">
+                                        Details ({result!.details.length})
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <ul className="list-disc space-y-1 pl-5 text-xs opacity-80">
+                                            {result!.details.map((d, i) => (
+                                                <li key={i}>{d}</li>
+                                            ))}
+                                        </ul>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
                         )}
 
-                        {selectedSheets.map((sh) => {
-                            const verifyResult = results[sh];
-
-                            if (!verifyResult) {
-                                return (
-                                    <TabsContent key={sh} value={sh}>
-                                        <div className="text-muted-foreground p-4 text-sm">
-                                            Not verified yet.
-                                        </div>
-                                    </TabsContent>
-                                );
-                            }
-
-                            return (
-                                <TabsContent key={sh} value={sh}>
-                                    <div className="mt-4 rounded-md border p-3 text-sm">
-                                        <div className="font-medium">
-                                            {verifyResult.message}
-                                            {selectedSheets.length > 1 && (
-                                                <span className="text-xs font-normal opacity-70">
-                                                    {' '}
-                                                    — {sh}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                            <Badge variant="outline">
-                                                Procurement:{' '}
-                                                {
-                                                    verifyResult.groups
-                                                        .procurement
-                                                }{' '}
-                                                cells
-                                            </Badge>
-                                            <Badge variant="outline">
-                                                Additional:{' '}
-                                                {verifyResult.groups.additional}{' '}
-                                                cells
-                                            </Badge>
-                                            <Badge variant="outline">
-                                                Non-Proc:{' '}
-                                                {
-                                                    verifyResult.groups
-                                                        .nonProcurement
-                                                }{' '}
-                                                cells
-                                            </Badge>
-                                        </div>
-
-                                        {verifyResult.details.length > 0 && (
-                                            <Accordion className="mt-2">
-                                                <AccordionItem
-                                                    value="details"
-                                                    className="border-b-0"
-                                                >
-                                                    <AccordionTrigger className="py-1 text-xs hover:no-underline">
-                                                        Details (
-                                                        {
-                                                            verifyResult.details
-                                                                .length
-                                                        }
-                                                        )
-                                                    </AccordionTrigger>
-                                                    <AccordionContent>
-                                                        <ul className="list-disc space-y-1 pl-5 text-xs opacity-80">
-                                                            {verifyResult.details.map(
-                                                                (d, i) => (
-                                                                    <li key={i}>
-                                                                        {d}
-                                                                    </li>
-                                                                ),
-                                                            )}
-                                                        </ul>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            </Accordion>
-                                        )}
-
-                                        <div className="mt-3">
-                                            <ImportVerifyIssues
-                                                errors={verifyResult.errors}
-                                                warnings={
-                                                    verifyResult.warnings ?? []
-                                                }
-                                                details={[]}
-                                            />
-                                        </div>
-                                    </div>
-                                </TabsContent>
-                            );
-                        })}
-                    </Tabs>
+                        <div className="mt-3">
+                            <ImportVerifyIssues
+                                errors={result!.errors}
+                                warnings={result!.warnings ?? []}
+                                details={[]}
+                            />
+                        </div>
+                    </div>
                 )}
 
                 {skip && hasResult && !allValid && (
@@ -264,8 +162,10 @@ export function ImportPpmpVerifyStep({
                         />
                         <span className="text-xs">
                             Skip {skip.problematicCount} problematic row(s)
-                            across {skip.invalidSheetCount} sheet(s) and proceed
-                            to extraction (they will show as{' '}
+                            {skip.invalidSheetCount > 0
+                                ? ` in ${skip.invalidSheetCount} sheet(s)`
+                                : ''}{' '}
+                            and proceed to extraction (they will show as{' '}
                             <span className="font-medium">
                                 skipped: problematic
                             </span>{' '}

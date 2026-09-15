@@ -54,7 +54,6 @@ export default function CategoryImport({
     const [rawSheets, setRawSheets] = useState<Record<string, RawSheet>>({});
     const [step, setStep] = useState<CimpStep>('upload');
     const [importing, setImporting] = useState(false);
-    const [skipProblematic, setSkipProblematic] = useState(false);
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
@@ -116,7 +115,6 @@ export default function CategoryImport({
         setPpmpExtractResults({});
         setPpmpRawItems([]);
         setRawSheets({});
-        setSkipProblematic(false);
         setSelected(new Set());
     }
 
@@ -142,7 +140,6 @@ export default function CategoryImport({
     }
 
     function handleVerify() {
-        setSkipProblematic(false);
         setExtractResult(null);
         setPpmpExtractResults({});
         setPpmpRawItems([]);
@@ -202,29 +199,6 @@ export default function CategoryImport({
         const excludedTotal: ExtractResult['excludedTotal'] = [];
         const excludedCoa: ExtractResult['excludedCoa'] = [];
         const skippedCoaNotEmpty: ExtractResult['skippedCoaNotEmpty'] = [];
-        const skippedProblematic: ExtractResult['skippedProblematic'] = [];
-
-        const probRows = new Set<number>();
-        const probNorms = new Set<string>();
-
-        if (skipProblematic) {
-            const vr = verifyResults[sheet];
-
-            if (vr && !vr.valid) {
-                for (const e of vr.errors) {
-                    probRows.add(e.row);
-                    const quoted = e.message.match(/"([^"]+)"/g);
-
-                    if (quoted) {
-                        for (const q of quoted) {
-                            const inner = q.slice(1, -1);
-
-                            if (inner) probNorms.add(normalize(inner));
-                        }
-                    }
-                }
-            }
-        }
 
         const startRow = headerRow + 1;
         const lastRow = ws.actualRowCount;
@@ -261,38 +235,6 @@ export default function CategoryImport({
 
             if (nonProcurementHeaderRow && r > nonProcurementHeaderRow)
                 continue;
-
-            if (
-                skipProblematic &&
-                (probRows.has(r) || probNorms.has(dataNorm))
-            ) {
-                const reason = probRows.has(r)
-                    ? `row ${r} flagged in verify (${sheet})`
-                    : `normalized "${dataNorm}" flagged (${sheet})`;
-                skippedProblematic.push({
-                    row: r,
-                    raw: dataRaw,
-                    normalized: dataNorm,
-                    reason,
-                    sheet,
-                });
-                continue;
-            }
-
-            if (
-                skipProblematic &&
-                coaNorm &&
-                (probRows.has(r) || probNorms.has(coaNorm))
-            ) {
-                skippedProblematic.push({
-                    row: r,
-                    raw: dataRaw,
-                    normalized: dataNorm,
-                    reason: `COA "${coaRaw}" flagged (${sheet})`,
-                    sheet,
-                });
-                continue;
-            }
 
             if (coaNorm) {
                 skippedCoaNotEmpty.push({
@@ -416,7 +358,6 @@ export default function CategoryImport({
             excludedTotal,
             excludedCoa,
             skippedCoaNotEmpty,
-            skippedProblematic,
         });
         setSelected(new Set(unique.map((u) => u.normalized)));
     }
@@ -475,8 +416,6 @@ export default function CategoryImport({
         activeVerifySheet,
         setActiveVerifySheet,
         handleVerify,
-        skipProblematic,
-        setSkipProblematic,
 
         extractResult,
         setExtractResult,
@@ -566,33 +505,22 @@ export default function CategoryImport({
                 verifyButtonLabel="Verify Sheet"
                 canVerify={canVerify}
                 onVerify={handleVerify}
-                selectedSheets={selectedSheet ? [selectedSheet] : []}
-                results={verifyResults}
-                hasResult={hasAnyVerify}
+                selectedSheet={selectedSheet}
+                result={
+                    selectedSheet
+                        ? (verifyResults[selectedSheet] ?? null)
+                        : null
+                }
                 allValid={allVerifyValid}
-                activeSheet={activeVerifySheet}
-                onActiveChange={setActiveVerifySheet}
-                skip={{
-                    checked: skipProblematic,
-                    onChange: setSkipProblematic,
-                    problematicCount: Object.values(verifyResults).reduce(
-                        (a, r) => a + (r.valid ? 0 : r.errors.length),
-                        0,
-                    ),
-                    invalidSheetCount:
-                        selectedSheet && !verifyResults[selectedSheet]?.valid
-                            ? 1
-                            : 0,
-                }}
                 onBack={() => setStep('calibrate')}
                 onNext={() => setStep('extract')}
                 canNext={canExtract}
                 nextLabel={
                     allVerifyValid
                         ? 'Next: Extract'
-                        : skipProblematic && hasAnyVerify
-                          ? 'Next: Extract (skipping problematic)'
-                          : 'Fix verification first'
+                        : hasAnyVerify
+                          ? 'Next: Extract (fix verification first)'
+                          : 'Next: Extract (verify first)'
                 }
             />
             <ImportExtractStep
@@ -612,7 +540,7 @@ export default function CategoryImport({
                 canNext={ppmpRawItems.length > 0}
                 nextLabel="Next: Import"
             />
-            <ImportStep s={s} />
+            {/*<ImportStep s={s} />*/}
         </ImportPageShell>
     );
 }

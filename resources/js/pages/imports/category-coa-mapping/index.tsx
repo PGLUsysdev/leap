@@ -853,19 +853,26 @@ export default function CategoryCoaMappingImport({
                 tabsValue="verify"
                 title="Verify Sheet Format — check calibration and structure (all 3 sections)"
                 description="Checks the selected sheet with current calibration. Validates cat → coa(s) → items → cat - TOTAL per section."
-                verifyButtonLabel="Verify Format"
+                verifyButtonLabel="Verify Sheet"
                 canVerify={canVerifyFormat}
                 onVerify={handleVerifyFormat}
-                selectedSheets={selectedSheet ? [selectedSheet] : []}
-                results={formatResults}
-                hasResult={hasFormatResult}
+                selectedSheet={selectedSheet}
+                result={
+                    selectedSheet
+                        ? (formatResults[selectedSheet] ?? null)
+                        : null
+                }
                 allValid={formatValid}
-                activeSheet={activeFormatSheet}
-                onActiveChange={setActiveFormatSheet}
                 onBack={() => setStep('calibrate')}
                 onNext={() => setStep('extract')}
                 canNext={hasFormatResult && formatValid}
-                nextLabel={`Next: Extract${hasFormatResult && !formatValid ? ' (blocked)' : ''}`}
+                nextLabel={
+                    formatValid
+                        ? 'Next: Extract'
+                        : hasFormatResult
+                          ? 'Next: Extract (fix verification first)'
+                          : 'Next: Extract (verify first)'
+                }
             />
             <ImportExtractStep
                 sheet={selectedSheet}
@@ -884,7 +891,7 @@ export default function CategoryCoaMappingImport({
                 canNext={canReview}
                 nextLabel="Next: Review & Save"
             />
-            <ReviewStep s={s} />
+            {/*<ReviewStep s={s} />*/}
         </ImportPageShell>
     );
 }

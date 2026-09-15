@@ -1,10 +1,7 @@
 // resources/js/components/imports/import-extract-step.tsx
 //
 // Shared Extract step — raw 1:1 row×col dump, no formatting.
-// All PPMP importers use `extractRawSheet` (lib/raw-extract.ts) via this UI.
-// Shows every row 1..lastRow and every col 1..columnCount as raw cellText, 1:1,
-// rendered with the shared DataTable (search included). No virtualization,
-// show all. Strict: Extract disabled until Verify passes.
+// Single-sheet: one `sheet`, one raw grid, no per-sheet iteration.
 
 import { useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -20,13 +17,14 @@ import { normalize } from '@/lib/ppmp/normalize';
 type RawGridRow = RawSheet['rows'][number];
 
 interface ImportExtractStepProps {
-    sheets: string[];
+    /** The sheet being extracted, or null if none selected. */
+    sheet: string | null;
     canExtract: boolean;
     hasAnyVerify?: boolean;
     allVerifyValid?: boolean;
-    // PPMP raw items aggregated across all sheets (legacy fallback when rawSheets absent)
+    /** PPMP raw items aggregated from the current sheet (legacy fallback). */
     ppmpItems?: RawPpmpItem[];
-    // Raw 1:1 sheets — preferred for pure raw view
+    /** Raw 1:1 sheet data — preferred for the pure raw view. */
     rawSheets?: Record<string, RawSheet>;
     onRunExtract: () => void;
     onBack: () => void;
@@ -37,7 +35,7 @@ interface ImportExtractStepProps {
 }
 
 export function ImportExtractStep({
-    sheets,
+    sheet,
     canExtract,
     hasAnyVerify,
     allVerifyValid,
@@ -54,14 +52,15 @@ export function ImportExtractStep({
     const hasRawSheets = rawSheets && Object.keys(rawSheets).length > 0;
     const [hideEmptyRows, setHideEmptyRows] = useState(true);
 
-    const isCellEmpty = (v: string | null) => v == null || String(v).trim() === '';
+    const isCellEmpty = (v: string | null) =>
+        v == null || String(v).trim() === '';
     const isCellFalsy = (v: string | null) => {
         if (isCellEmpty(v)) return true;
         const n = normalize(String(v));
         return n === '-' || n === '—' || n === '0' || n === '0.00';
     };
-    const isRowEmpty = (r: { cells: Record<string, string | null> }) => Object.values(r.cells).every(isCellEmpty);
-    const isRowFalsy = (r: { cells: Record<string, string | null> }) => Object.values(r.cells).every(isCellFalsy);
+    const isRowFalsy = (r: { cells: Record<string, string | null> }) =>
+        Object.values(r.cells).every(isCellFalsy);
 
     const showQtyTotal = ppmpItems.some((it) => it.qtys);
     const itemColumns: ColumnDef<RawPpmpItem>[] = [
@@ -173,119 +172,138 @@ export function ImportExtractStep({
     return (
         <TabsContent value="extract" className="mt-4 flex flex-col gap-4">
             <p className="text-muted-foreground text-sm">
-                Raw 1:1 extraction — {sheets.length} sheet{sheets.length === 1 ? '' : 's'} selected, strict verify required before extract. Shows every row × every column as in Excel, no formatting.
+                Raw 1:1 extraction{sheet ? ` — sheet ${sheet}` : ''}, strict
+                verify required before extract. Shows every row × every column
+                as in Excel, no formatting.
             </p>
-                    {!canExtract ? (
-                        <div className="text-muted-foreground rounded-lg border p-8 text-center text-sm">
-                            {hasAnyVerify ? (
-                                <>
-                                    Verification failed — {hasAnyVerify && !allVerifyValid ? 'fix verify errors to enable extract.' : 'run verify first.'} ({sheets.length} sheets)
-                                </>
-                            ) : (
-                                'Verify format first (must be valid) to enable extraction.'
-                            )}
+
+            {!canExtract ? (
+                <div className="text-muted-foreground rounded-lg border p-8 text-center text-sm">
+                    {hasAnyVerify
+                        ? 'Verification failed — fix verify errors to enable extract.'
+                        : 'Verify format first (must be valid) to enable extraction.'}
+                </div>
+            ) : (
+                <>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={onRunExtract} disabled={!sheet}>
+                            Extract Raw 1:1
+                        </Button>
+                        {hasRawSheets ? (
+                            <span className="text-muted-foreground text-sm">
+                                {Object.values(rawSheets!).reduce(
+                                    (sum, sh) => sum + sh.rows.length,
+                                    0,
+                                )}{' '}
+                                rows ×{' '}
+                                {Object.values(rawSheets!)[0]?.columnCount ?? 0}{' '}
+                                cols
+                            </span>
+                        ) : ppmpCount > 0 ? (
+                            <span className="text-muted-foreground text-sm">
+                                Raw {ppmpCount} item rows
+                            </span>
+                        ) : null}
+                    </div>
+
+                    {hasRawSheets && (
+                        <div className="flex items-center gap-2">
+                            <Switch
+                                id="hide-empty-rows"
+                                checked={hideEmptyRows}
+                                onCheckedChange={setHideEmptyRows}
+                            />
+                            <Label
+                                htmlFor="hide-empty-rows"
+                                className="text-xs"
+                            >
+                                Hide fully empty / falsy rows
+                            </Label>
+                            <span className="text-muted-foreground text-xs">
+                                {hideEmptyRows ? '(hidden)' : '(shown)'} —
+                                respects calibration cols, rows from headerRow
+                            </span>
                         </div>
-                    ) : (
-                        <>
-                            <div className="flex items-center gap-2">
-                                <Button onClick={onRunExtract} disabled={sheets.length === 0}>
-                                    Extract Raw 1:1 ({sheets.length} sheets)
-                                </Button>
-                                {hasRawSheets ? (
-                                    <span className="text-muted-foreground text-sm">
-                                        {Object.keys(rawSheets!).length} sheet{Object.keys(rawSheets!).length === 1 ? '' : 's'} · {Object.values(rawSheets!).reduce((sum, sh) => sum + sh.rows.length, 0)} rows × {Object.values(rawSheets!)[0]?.columnCount ?? 0} cols
-                                    </span>
-                                ) : ppmpCount > 0 ? (
-                                    <span className="text-muted-foreground text-sm">
-                                        Raw {ppmpCount} item rows
-                                    </span>
-                                ) : null}
-                            </div>
-
-                            {/* Raw 1:1 sheets — show all rows × all cols, no virtualization, keep simple */}
-                            {hasRawSheets && (
-                                <div className="flex items-center gap-2">
-                                    <Switch id="hide-empty-rows" checked={hideEmptyRows} onCheckedChange={setHideEmptyRows} />
-                                    <Label htmlFor="hide-empty-rows" className="text-xs">
-                                        Hide fully empty / falsy rows
-                                    </Label>
-                                    <span className="text-muted-foreground text-xs">
-                                        {hideEmptyRows ? '(hidden)' : '(shown)'} — respects calibration cols, rows from headerRow
-                                    </span>
-                                </div>
-                            )}
-                            {hasRawSheets &&
-                                Object.entries(rawSheets!).map(([sheetName, raw]) => {
-                                    const filteredRows = hideEmptyRows ? raw.rows.filter((r) => !isRowFalsy(r)) : raw.rows;
-                                    const hiddenCount = raw.rows.length - filteredRows.length;
-                                    const rawGridColumns: ColumnDef<RawGridRow>[] = [
-                                        {
-                                            id: 'row',
-                                            header: 'Row',
-                                            size: 64,
-                                            cell: ({ row }) => (
-                                                <div className="px-1 font-mono text-xs">
-                                                    {row.original.rowNumber}
-                                                </div>
-                                            ),
-                                        },
-                                        ...raw.columnLetters.map(
-                                            (col): ColumnDef<RawGridRow> => ({
-                                                id: col,
-                                                header: col,
-                                                size: 140,
-                                                cell: ({ row }) => {
-                                                    const v =
-                                                        row.original.cells[col];
-
-                                                    return (
-                                                        <div
-                                                            className="max-w-[18ch] truncate px-1 whitespace-nowrap"
-                                                            title={v ?? ''}
-                                                        >
-                                                            {v ?? '—'}
-                                                        </div>
-                                                    );
-                                                },
-                                            }),
-                                        ),
-                                    ];
-
-                                    return (
-                                        <div
-                                            key={sheetName}
-                                            className="flex flex-col gap-2"
-                                        >
-                                            <div className="bg-muted/30 flex items-center justify-between rounded-md border px-3 py-2 text-xs font-medium">
-                                                <span>
-                                                    Sheet: {sheetName} — {raw.rowCount} rows × {raw.columnCount} cols
-                                                    {hideEmptyRows && hiddenCount > 0 && ` · ${hiddenCount} empty/falsy hidden`}
-                                                </span>
-                                                <span className="text-muted-foreground font-normal">
-                                                    Showing {filteredRows.length} of {raw.rows.length} rows
-                                                </span>
-                                            </div>
-                                            <DataTable
-                                                data={filteredRows}
-                                                columns={rawGridColumns}
-                                                withColgroup
-                                                className="h-[420px]"
-                                            />
-                                        </div>
-                                    );
-                                })}
-
-                            {/* Legacy formatted items fallback (if rawSheets not yet wired) */}
-                            {!hasRawSheets && ppmpItems.length > 0 && (
-                                <DataTable
-                                    data={ppmpItems}
-                                    columns={itemColumns}
-                                    withColgroup
-                                    className="h-[420px]"
-                                />
-                            )}
-                        </>
                     )}
+
+                    {hasRawSheets &&
+                        Object.entries(rawSheets!).map(([sheetName, raw]) => {
+                            const filteredRows = hideEmptyRows
+                                ? raw.rows.filter((r) => !isRowFalsy(r))
+                                : raw.rows;
+                            const hiddenCount =
+                                raw.rows.length - filteredRows.length;
+                            const rawGridColumns: ColumnDef<RawGridRow>[] = [
+                                {
+                                    id: 'row',
+                                    header: 'Row',
+                                    size: 64,
+                                    cell: ({ row }) => (
+                                        <div className="px-1 font-mono text-xs">
+                                            {row.original.rowNumber}
+                                        </div>
+                                    ),
+                                },
+                                ...raw.columnLetters.map(
+                                    (col): ColumnDef<RawGridRow> => ({
+                                        id: col,
+                                        header: col,
+                                        size: 140,
+                                        cell: ({ row }) => {
+                                            const v = row.original.cells[col];
+
+                                            return (
+                                                <div
+                                                    className="max-w-[18ch] truncate px-1 whitespace-nowrap"
+                                                    title={v ?? ''}
+                                                >
+                                                    {v ?? '—'}
+                                                </div>
+                                            );
+                                        },
+                                    }),
+                                ),
+                            ];
+
+                            return (
+                                <div
+                                    key={sheetName}
+                                    className="flex flex-col gap-2"
+                                >
+                                    <div className="bg-muted/30 flex items-center justify-between rounded-md border px-3 py-2 text-xs font-medium">
+                                        <span>
+                                            Sheet: {sheetName} — {raw.rowCount}{' '}
+                                            rows × {raw.columnCount} cols
+                                            {hideEmptyRows &&
+                                                hiddenCount > 0 &&
+                                                ` · ${hiddenCount} empty/falsy hidden`}
+                                        </span>
+                                        <span className="text-muted-foreground font-normal">
+                                            Showing {filteredRows.length} of{' '}
+                                            {raw.rows.length} rows
+                                        </span>
+                                    </div>
+                                    <DataTable
+                                        data={filteredRows}
+                                        columns={rawGridColumns}
+                                        withColgroup
+                                        className="h-[420px]"
+                                    />
+                                </div>
+                            );
+                        })}
+
+                    {/* Legacy formatted items fallback (if rawSheets not yet wired) */}
+                    {!hasRawSheets && ppmpItems.length > 0 && (
+                        <DataTable
+                            data={ppmpItems}
+                            columns={itemColumns}
+                            withColgroup
+                            className="h-[420px]"
+                        />
+                    )}
+                </>
+            )}
 
             <div className="flex justify-between">
                 <Button variant="outline" onClick={onBack}>

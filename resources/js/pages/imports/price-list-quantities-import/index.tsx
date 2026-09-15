@@ -584,6 +584,8 @@ export default function PriceListQuantitiesImport({
         >
             <ImportUploadStep
                 fileInputId="price-list-quantities-file"
+                fileLabel="Excel File (.xlsx only)"
+                fileDescription="Select a PPMP workbook (.xlsx)."
                 error={error}
                 loading={loading}
                 onFileChange={handleFileChange}
@@ -624,19 +626,26 @@ export default function PriceListQuantitiesImport({
                         locked until the sheet passes.
                     </>
                 }
-                verifyButtonLabel="Run Verify"
+                verifyButtonLabel="Verify Sheet"
                 canVerify={canVerify}
                 onVerify={handleVerify}
-                selectedSheets={selectedSheet ? [selectedSheet] : []}
-                results={verifyResults}
-                hasResult={hasAnyVerify}
+                selectedSheet={selectedSheet}
+                result={
+                    selectedSheet
+                        ? (verifyResults[selectedSheet] ?? null)
+                        : null
+                }
                 allValid={allVerifyValid}
-                activeSheet={activeVerifySheet}
-                onActiveChange={setActiveVerifySheet}
                 onBack={() => setStep('calibrate')}
                 onNext={() => setStep('extract')}
                 canNext={allVerifyValid}
-                nextLabel="Next: Extract"
+                nextLabel={
+                    allVerifyValid
+                        ? 'Next: Extract'
+                        : hasAnyVerify
+                          ? 'Next: Extract (fix verification first)'
+                          : 'Next: Extract (verify first)'
+                }
             />
             <ImportExtractStep
                 sheet={selectedSheet}
@@ -655,7 +664,7 @@ export default function PriceListQuantitiesImport({
                 }
                 nextLabel="Next: Review"
             />
-            <ReviewAndImport s={s} />
+            {/*<ReviewAndImport s={s} />*/}
         </ImportPageShell>
     );
 }

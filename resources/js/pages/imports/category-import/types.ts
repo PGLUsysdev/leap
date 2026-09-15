@@ -74,13 +74,6 @@ export type ExtractResult = {
         normalized: string;
         sheet: string;
     }>;
-    skippedProblematic: Array<{
-        row: number;
-        raw: string;
-        normalized: string;
-        reason: string;
-        sheet: string;
-    }>;
 };
 
 export type ExtractionStats = {
@@ -143,8 +136,6 @@ export type CategoryImportState = {
     activeVerifySheet: string;
     setActiveVerifySheet: (s: string) => void;
     handleVerify: () => void;
-    skipProblematic: boolean;
-    setSkipProblematic: (v: boolean) => void;
 
     // extract
     extractResult: ExtractResult | null;

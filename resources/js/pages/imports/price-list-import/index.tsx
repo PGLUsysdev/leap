@@ -1,7 +1,7 @@
 // resources/js/pages/imports/price-list-import/index.tsx
 
 import { Link, router } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type ExcelJS from 'exceljs';
 import { ImportPageShell } from '@/components/imports/import-page-shell';
 import { ImportUploadStep } from '@/components/imports/import-upload-step';
@@ -88,7 +88,6 @@ export default function PriceListImport({
     const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all');
     const [showDuplicateDetails, setShowDuplicateDetails] = useState(false);
     const [excludeMissingCategory, setExcludeMissingCategory] = useState(true);
-    const [isMounted, setIsMounted] = useState(false);
 
     const { sheets, workbook, fileName, loading, error, handleFileChange } =
         useImportWorkbook(() => {
@@ -107,10 +106,6 @@ export default function PriceListImport({
             setShowDuplicateDetails(false);
             setStep('upload');
         });
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     const canCalibrate = selectedSheet !== null;
     const rowsCalibrated =
@@ -797,7 +792,6 @@ export default function PriceListImport({
         selectedSheet,
         loading,
         error,
-        isMounted,
 
         step,
         setStep,
@@ -960,26 +954,33 @@ export default function PriceListImport({
                 }}
                 onBack={() => setStep('upload')}
                 onNext={() => setStep('verify')}
-                canNext={isMounted ? !!config : true}
+                canNext={canVerify}
                 nextLabel="Next: Verify Format"
             />
             <ImportPpmpVerifyStep
                 tabsValue="verify"
                 title="Verify price list format per sheet"
                 description="Checks the selected sheet — cat → coa(s) → items → cat - total."
-                verifyButtonLabel="Run Verify"
+                verifyButtonLabel="Verify Sheet"
                 canVerify={canVerify}
                 onVerify={handleVerify}
-                selectedSheets={selectedSheet ? [selectedSheet] : []}
-                results={verifyResults}
-                hasResult={hasAnyVerify}
+                selectedSheet={selectedSheet}
+                result={
+                    selectedSheet
+                        ? (verifyResults[selectedSheet] ?? null)
+                        : null
+                }
                 allValid={allVerifyValid}
-                activeSheet={activeVerifySheet}
-                onActiveChange={setActiveVerifySheet}
                 onBack={() => setStep('calibrate')}
                 onNext={() => setStep('extract')}
-                canNext={isMounted ? allVerifyValid : true}
-                nextLabel={`Next: Extract ${allVerifyValid ? '✓' : '(fix errors first)'}`}
+                canNext={allVerifyValid}
+                nextLabel={
+                    allVerifyValid
+                        ? 'Next: Extract'
+                        : hasAnyVerify
+                          ? 'Next: Extract (fix verification first)'
+                          : 'Next: Extract (verify first)'
+                }
             />
             <ImportExtractStep
                 sheet={selectedSheet}
@@ -1001,7 +1002,7 @@ export default function PriceListImport({
                 }
                 nextLabel="Next: Review & Import"
             />
-            <ReviewStep s={s} />
+            {/*<ReviewStep s={s} />*/}
         </ImportPageShell>
     );
 }
